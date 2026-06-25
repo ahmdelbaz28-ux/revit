@@ -1,4 +1,4 @@
-"""fireai.core.release_gates — Release Gate Evaluation
+"""fireai.core.release_gates — Release Gate Evaluation.
 =====================================================
 
 Implements the 8 release gates that must ALL pass before a design
@@ -28,7 +28,7 @@ SAFETY PRINCIPLE:
 from __future__ import annotations
 
 import math
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # GATE DEFINITIONS
@@ -51,7 +51,7 @@ _GATE_NAMES = {
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
-def _gate_input_validation(input_payload: Optional[Dict]) -> Dict[str, Any]:
+def _gate_input_validation(input_payload: dict | None) -> dict[str, Any]:
     """G1: Input payload must have been validated (not None)."""
     if input_payload is None:
         return {"passed": False, "reason": "Input payload is None — contract validation failed"}
@@ -67,7 +67,7 @@ def _gate_input_validation(input_payload: Optional[Dict]) -> Dict[str, Any]:
     return {"passed": True, "reason": "Input validated"}
 
 
-def _gate_nfpa_spacing(nfpa_results: Optional[Dict]) -> Dict[str, Any]:
+def _gate_nfpa_spacing(nfpa_results: dict | None) -> dict[str, Any]:
     """G2: NFPA 72 spacing calculation must have succeeded."""
     if nfpa_results is None:
         return {"passed": False, "reason": "NFPA 72 spacing results unavailable"}
@@ -84,7 +84,7 @@ def _gate_nfpa_spacing(nfpa_results: Optional[Dict]) -> Dict[str, Any]:
     return {"passed": True, "reason": "NFPA 72 spacing compliant"}
 
 
-def _gate_coverage(coverage_pct: Optional[float]) -> Dict[str, Any]:
+def _gate_coverage(coverage_pct: float | None) -> dict[str, Any]:
     """G3: Coverage must meet standard threshold (99.0%)."""
     if coverage_pct is None:
         return {"passed": False, "reason": "Coverage not computed"}
@@ -101,7 +101,7 @@ def _gate_coverage(coverage_pct: Optional[float]) -> Dict[str, Any]:
     return {"passed": True, "reason": f"Coverage {coverage_pct:.2f}% ≥ 99.0%"}
 
 
-def _gate_wall_distance(wall_violations: int) -> Dict[str, Any]:
+def _gate_wall_distance(wall_violations: int) -> dict[str, Any]:
     """G4: No dead-air-space wall distance violations."""
     if wall_violations is None:
         return {"passed": False, "reason": "Wall violations not checked"}
@@ -115,7 +115,7 @@ def _gate_wall_distance(wall_violations: int) -> Dict[str, Any]:
     return {"passed": True, "reason": "No wall distance violations"}
 
 
-def _gate_battery(battery_result: Optional[Dict]) -> Dict[str, Any]:
+def _gate_battery(battery_result: dict | None) -> dict[str, Any]:
     """G5: Battery must be adequate per NFPA 72 §10.6.7.
 
     If no battery data provided, this gate PASSES (not all designs
@@ -137,7 +137,7 @@ def _gate_battery(battery_result: Optional[Dict]) -> Dict[str, Any]:
     return {"passed": True, "reason": "Battery capacity adequate per NFPA 72 §10.6.7"}
 
 
-def _gate_voltage_drop(loop_data: Optional[Dict]) -> Dict[str, Any]:
+def _gate_voltage_drop(loop_data: dict | None) -> dict[str, Any]:
     """G6: Voltage drop must be within limits per NFPA 72 §10.6.4.
 
     If no loop data provided, this gate PASSES (not all designs
@@ -182,7 +182,7 @@ def _gate_voltage_drop(loop_data: Optional[Dict]) -> Dict[str, Any]:
     return {"passed": True, "reason": "Voltage drop within limits"}
 
 
-def _gate_fault_isolation(loop_data: Optional[Dict]) -> Dict[str, Any]:
+def _gate_fault_isolation(loop_data: dict | None) -> dict[str, Any]:
     """G7: SLC fault isolator placement per NFPA 72 §12.3.
 
     If no loop data provided, this gate PASSES.
@@ -225,7 +225,7 @@ def _gate_fault_isolation(loop_data: Optional[Dict]) -> Dict[str, Any]:
     return {"passed": True, "reason": "Fault isolation compliant"}
 
 
-def _gate_safety_tier(safety_tier_value: Optional[str]) -> Dict[str, Any]:
+def _gate_safety_tier(safety_tier_value: str | None) -> dict[str, Any]:
     """G8: Safety tier must be PROOF_VERIFIED or PROOF_VALID."""
     if safety_tier_value is None:
         return {"passed": False, "reason": "Safety tier not determined"}
@@ -246,16 +246,16 @@ def _gate_safety_tier(safety_tier_value: Optional[str]) -> Dict[str, Any]:
 
 
 def verify_and_evaluate(
-    input_payload: Optional[Dict] = None,
-    nfpa_results: Optional[Dict] = None,
-    evidence_envelope: Optional[Any] = None,
-    drift_records: Optional[List[Dict]] = None,
-    loop_data: Optional[Dict] = None,
-    aset_rset_result: Optional[Dict] = None,
-    battery_result: Optional[Dict] = None,
-    stale_detector_ids: Optional[List[str]] = None,
-    evidence_secret_key: Optional[str] = None,
-) -> Dict[str, Any]:
+    input_payload: dict | None = None,
+    nfpa_results: dict | None = None,
+    evidence_envelope: Any | None = None,
+    drift_records: list[dict] | None = None,
+    loop_data: dict | None = None,
+    aset_rset_result: dict | None = None,
+    battery_result: dict | None = None,
+    stale_detector_ids: list[str] | None = None,
+    evidence_secret_key: str | None = None,
+) -> dict[str, Any]:
     """Evaluate all 8 release gates.
 
     ALL gates must pass for release_status = "green".
@@ -390,7 +390,7 @@ def verify_and_evaluate(
     }
 
 
-def describe_blockers(gate_result: Dict[str, Any]) -> List[str]:
+def describe_blockers(gate_result: dict[str, Any]) -> list[str]:
     """Describe all blocking issues in human-readable form.
 
     Args:

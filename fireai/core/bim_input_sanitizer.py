@@ -1,4 +1,4 @@
-"""bim_input_sanitizer.py — Safety-Critical Input Sanitization for BIM Parameters
+"""bim_input_sanitizer.py — Safety-Critical Input Sanitization for BIM Parameters.
 ================================================================================
 LIFE-SAFETY CRITICAL: Unsanitized inputs to BIM parameters can cause:
   1. Remote Code Execution (RCE) via eval()/exec() in MCP tool handlers
@@ -26,7 +26,6 @@ from __future__ import annotations
 import logging
 import math
 import re
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -220,8 +219,8 @@ def sanitize_file_path(file_path: str) -> str:
 
 def validate_numeric_parameter(
     value: str,
-    min_value: Optional[float] = None,
-    max_value: Optional[float] = None,
+    min_value: float | None = None,
+    max_value: float | None = None,
     param_name: str = "parameter",
 ) -> float:
     """Validate and convert a string to a numeric parameter value.

@@ -1,4 +1,4 @@
-"""fireai/core/safe_building_engine.py
+"""fireai/core/safe_building_engine.py.
 ===================================
 Replaces ProcessPoolExecutor bindings triggering Deadlocks at CBC level,
 with safely managed, lock-restricted threading executing pure multi-node
@@ -39,7 +39,7 @@ import logging
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Any, Dict, List
+from typing import Any
 
 from .spatial_engine.density_optimizer import DETECTOR_RADIUS
 
@@ -78,7 +78,7 @@ class SafeBuildingEngine:
         coverage_radius: float = DETECTOR_RADIUS,
         candidate_step: float = 1.0,
         time_limit_s: float = 60.0,
-    ):
+    ) -> None:
         self.max_threads = max_threads
         self.coverage_radius = coverage_radius
         self.candidate_step = candidate_step
@@ -87,7 +87,7 @@ class SafeBuildingEngine:
             threading.RLock()
         )  # Hard barrier avoiding C++ Memory Corruption on solver library instance loading.
 
-    def _solve_mip_safe(self, room_spec: Dict[str, Any]) -> Dict[str, Any]:
+    def _solve_mip_safe(self, room_spec: dict[str, Any]) -> dict[str, Any]:
         """Solve MIP for a single room in a thread-safe manner.
 
         Uses solve_set_covering_mip (function-based) which is the VERIFIED
@@ -155,7 +155,7 @@ class SafeBuildingEngine:
             logger.error("Safe Solver Failure upon %s: %s", room_spec.get("room_id", "UNK"), ex)
             return {"room_id": room_spec.get("room_id", "UNK"), "success": False, "status": "ERROR", "error": str(ex)}
 
-    def run_multi_floor_safety_analysis(self, floor_spec_registry: List[Dict[str, Any]]) -> List[Dict]:
+    def run_multi_floor_safety_analysis(self, floor_spec_registry: list[dict[str, Any]]) -> list[dict]:
         """Run MIP analysis across multiple floors in a thread-safe manner.
 
         Flattens the floor/room hierarchy into a list of room specifications,

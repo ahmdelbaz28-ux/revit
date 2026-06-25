@@ -12,7 +12,7 @@ from __future__ import annotations
 import math
 import uuid
 from datetime import datetime, timezone
-from typing import List, Literal, Optional, TypeVar
+from typing import Literal, TypeVar
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -36,7 +36,7 @@ T = TypeVar("T")
 class PaginatedResponse(BaseModel):
     """Generic paginated response wrapper."""
 
-    data: List
+    data: list
     total: int = Field(ge=0)
     page: int = Field(ge=1)
     limit: int = Field(ge=1)
@@ -76,10 +76,10 @@ class CreateProjectInput(BaseModel):
 class UpdateProjectInput(BaseModel):
     """Input for updating an existing project."""
 
-    name: Optional[str] = Field(default=None, min_length=1, max_length=255)
-    description: Optional[str] = Field(default=None, max_length=5000)  # V113: max_length prevents DoS
-    author: Optional[str] = Field(default=None, max_length=255)  # V113: max_length prevents DoS
-    status: Optional[Literal["active", "archived", "draft"]] = Field(default=None)
+    name: str | None = Field(default=None, min_length=1, max_length=255)
+    description: str | None = Field(default=None, max_length=5000)  # V113: max_length prevents DoS
+    author: str | None = Field(default=None, max_length=255)  # V113: max_length prevents DoS
+    status: Literal["active", "archived", "draft"] | None = Field(default=None)
 
 
 # ============================================================================
@@ -126,11 +126,11 @@ class CreateDeviceInput(BaseModel):
     category: str = Field(min_length=1, max_length=255)
     x: float
     y: float
-    z: Optional[float] = Field(default=0.0)
-    rotation: Optional[float] = Field(default=0.0)
-    voltage: Optional[float] = Field(default=0.0, ge=0)
-    current: Optional[float] = Field(default=0.0, ge=0)
-    load: Optional[float] = Field(default=0.0, ge=0)
+    z: float | None = Field(default=0.0)
+    rotation: float | None = Field(default=0.0)
+    voltage: float | None = Field(default=0.0, ge=0)
+    current: float | None = Field(default=0.0, ge=0)
+    load: float | None = Field(default=0.0, ge=0)
     load_unit: Literal["A", "mA", "W"] = Field(
         default="A",
         description=(
@@ -140,7 +140,7 @@ class CreateDeviceInput(BaseModel):
             "battery sizing calculations."
         ),
     )
-    properties: Optional[dict] = Field(default=None)
+    properties: dict | None = Field(default=None)
 
     @field_validator("load")
     @classmethod
@@ -167,14 +167,14 @@ class UpdateDeviceInput(BaseModel):
     a 1000x error in life-safety battery sizing calculations.
     """
 
-    name: Optional[str] = Field(default=None, min_length=1, max_length=255)
-    x: Optional[float] = Field(default=None)
-    y: Optional[float] = Field(default=None)
-    z: Optional[float] = Field(default=None)
-    rotation: Optional[float] = Field(default=None)
-    voltage: Optional[float] = Field(default=None, ge=0)
-    current: Optional[float] = Field(default=None, ge=0)
-    load: Optional[float] = Field(default=None, ge=0)
+    name: str | None = Field(default=None, min_length=1, max_length=255)
+    x: float | None = Field(default=None)
+    y: float | None = Field(default=None)
+    z: float | None = Field(default=None)
+    rotation: float | None = Field(default=None)
+    voltage: float | None = Field(default=None, ge=0)
+    current: float | None = Field(default=None, ge=0)
+    load: float | None = Field(default=None, ge=0)
     load_unit: Literal["A", "mA", "W"] = Field(
         default="A",
         description=(
@@ -182,7 +182,7 @@ class UpdateDeviceInput(BaseModel):
             "Must match the unit of the load value being set."
         ),
     )
-    properties: Optional[dict] = Field(default=None)
+    properties: dict | None = Field(default=None)
 
 
 # ============================================================================
@@ -209,9 +209,9 @@ class CreateConnectionInput(BaseModel):
 
     fromId: str = Field(min_length=1, max_length=255)
     toId: str = Field(min_length=1, max_length=255)
-    cableSize: Optional[str] = Field(default="1.5mm²")
-    length: Optional[float] = Field(default=0.0, ge=0)
-    type: Optional[str] = Field(default="power")
+    cableSize: str | None = Field(default="1.5mm²")
+    length: float | None = Field(default=0.0, ge=0)
+    type: str | None = Field(default="power")
 
     @field_validator("toId")
     @classmethod
@@ -250,15 +250,15 @@ class Report(BaseModel):
     createdAt: str = Field(
         default_factory=lambda: datetime.now(timezone.utc).isoformat()
     )
-    completedAt: Optional[str] = Field(default=None)
+    completedAt: str | None = Field(default=None)
 
 
 class GenerateReportInput(BaseModel):
     """Input for generating a new report."""
 
     type: str = Field(min_length=1, max_length=255)
-    name: Optional[str] = Field(default=None, max_length=255)
-    parameters: Optional[dict] = Field(default=None)
+    name: str | None = Field(default=None, max_length=255)
+    parameters: dict | None = Field(default=None)
 
     @field_validator("parameters")
     @classmethod
@@ -306,7 +306,7 @@ class SyncStatus(BaseModel):
         default_factory=lambda: datetime.now(timezone.utc).isoformat()
     )
     pendingChanges: int = Field(default=0, ge=0)
-    error: Optional[str] = Field(default=None)
+    error: str | None = Field(default=None)
 
 
 # ============================================================================

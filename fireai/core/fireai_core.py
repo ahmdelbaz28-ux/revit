@@ -26,7 +26,7 @@ import os
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from fireai.core.audit_store import AuditStore, SecurityError
 from fireai.core.learning_store import LearningStore
@@ -87,15 +87,15 @@ class EnhancedRoomResult:
     """
 
     room_id: str = ""
-    detector_positions: List[Tuple[float, float]] = field(default_factory=list)
+    detector_positions: list[tuple[float, float]] = field(default_factory=list)
     detector_type: Any = DetectorType.SMOKE
     confidence: ConfidenceLevel = ConfidenceLevel.MEDIUM
     confidence_score: float = 0.0
-    wall_violations: List = field(default_factory=list)
-    warnings: List[str] = field(default_factory=list)
-    errors: List[str] = field(default_factory=list)
-    placement_proof: Optional[PlacementProof] = None
-    resilience: Optional[ResilienceResult] = None
+    wall_violations: list = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
+    placement_proof: PlacementProof | None = None
+    resilience: ResilienceResult | None = None
     compliant: bool = False
     safe_to_submit: bool = False
     occupancy_class: Any = None
@@ -121,7 +121,7 @@ class EnhancedRoomResult:
         return not self.compliant and len(self.errors) > 0
 
 
-def _resolve_db_path(db_path: Optional[str] = None) -> str:
+def _resolve_db_path(db_path: str | None = None) -> str:
     """Resolve the database path from argument, environment, or sensible default.
 
     Priority:
@@ -166,8 +166,8 @@ class FireAISystem:
 
     db_path: str
 
-    _expert: Optional[Any] = field(default=None, init=False)
-    learning: Optional[LearningStore] = field(default=None, init=False)
+    _expert: Any | None = field(default=None, init=False)
+    learning: LearningStore | None = field(default=None, init=False)
 
     def __post_init__(self):
         """Initialize internal components."""
@@ -441,10 +441,10 @@ class FireAISystem:
 
     def analyse_floor(
         self,
-        rooms: List[RoomSpec],
+        rooms: list[RoomSpec],
         user_id: str = "system",
         run_resilience: bool = True,
-    ) -> List[EnhancedRoomResult]:
+    ) -> list[EnhancedRoomResult]:
         """Analyze multiple rooms as a floor and log to audit trail.
 
         Args:
@@ -504,7 +504,7 @@ class FireAISystem:
 
         return results
 
-    def get_audit_trail(self) -> List[Dict[str, Any]]:
+    def get_audit_trail(self) -> list[dict[str, Any]]:
         """Get the complete audit trail."""
         return AuditStore.get_events()
 
@@ -513,7 +513,7 @@ class FireAISystem:
         is_valid, _ = AuditStore.verify_chain()
         return is_valid
 
-    def get_memory_summary(self) -> Dict[str, Any]:
+    def get_memory_summary(self) -> dict[str, Any]:
         """Get learning store summary."""
         if not self.learning:
             return {"error": "Learning store not initialized"}
@@ -530,18 +530,18 @@ class FireAISystem:
     def run_integration(
         self,
         building_id: str,
-        floors: Optional[List[Dict[str, Any]]] = None,
-        panel_positions: Optional[List[Tuple[float, float, float]]] = None,
-        obstacle_polygons: Optional[List[List[Tuple[float, float]]]] = None,
-        acoustic_config: Optional[Dict[str, Any]] = None,
+        floors: list[dict[str, Any]] | None = None,
+        panel_positions: list[tuple[float, float, float]] | None = None,
+        obstacle_polygons: list[list[tuple[float, float]]] | None = None,
+        acoustic_config: dict[str, Any] | None = None,
         nfpa_year: int = 2022,
         enable_kernel_v30: bool = True,
         enable_hash_chain_audit: bool = True,
         enable_monte_carlo: bool = True,
         enable_bim_sync: bool = True,
-        bim_source: Optional[str] = None,
+        bim_source: str | None = None,
         user_id: str = "system",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Run the FULL integration pipeline wiring all 8 subsystems.
 
         This is the main entry point that connects the entire FireAI

@@ -1,5 +1,4 @@
-"""fireai/integration — External system integration bridges
-"""
+"""fireai/integration — External system integration bridges."""
 
 from fireai.integration.autocad_bridge import AutoCADBridge
 from fireai.integration.bentley_bridge import BentleyBridge

@@ -33,7 +33,6 @@ import logging
 import time
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional
 
 import httpx
 from tenacity import retry, stop_after_attempt, wait_exponential
@@ -219,11 +218,11 @@ class HazmatService:
 
     PUBCHEM_URL = "https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound"
 
-    def __init__(self, cache_ttl: float = 604800.0, request_timeout: float = 15.0):
+    def __init__(self, cache_ttl: float = 604800.0, request_timeout: float = 15.0) -> None:
         self._cache: dict[str, tuple[HazardousMaterialData, float]] = {}
         self._cache_ttl = cache_ttl
         self._request_timeout = request_timeout
-        self._client: Optional[httpx.AsyncClient] = None
+        self._client: httpx.AsyncClient | None = None
 
     async def _get_client(self) -> httpx.AsyncClient:
         """Lazy-initialize the HTTP client."""
@@ -241,7 +240,7 @@ class HazmatService:
             await self._client.aclose()
             self._client = None
 
-    def _get_cached(self, material_name: str) -> Optional[HazardousMaterialData]:
+    def _get_cached(self, material_name: str) -> HazardousMaterialData | None:
         """Get cached material data."""
         key = material_name.strip().lower()
         entry = self._cache.get(key)
@@ -257,7 +256,7 @@ class HazmatService:
         key = material_name.strip().lower()
         self._cache[key] = (data, time.time())
 
-    def _lookup_internal_db(self, material_name: str) -> Optional[HazardousMaterialData]:
+    def _lookup_internal_db(self, material_name: str) -> HazardousMaterialData | None:
         """Look up material in the internal database.
 
         The internal DB contains the 12 most common hazardous materials
@@ -436,7 +435,7 @@ class HazmatService:
 
 
 # Singleton
-_hazmat_service: Optional[HazmatService] = None
+_hazmat_service: HazmatService | None = None
 
 
 def get_hazmat_service() -> HazmatService:

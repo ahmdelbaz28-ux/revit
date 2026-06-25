@@ -1,4 +1,4 @@
-"""fireai.core.constraint_engine — Code-Based Routing Constraints
+"""fireai.core.constraint_engine — Code-Based Routing Constraints.
 ==============================================================
 
 Deterministic constraint engine for fire alarm cable routing.
@@ -29,7 +29,6 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 from enum import Enum
-from typing import List, Optional, Tuple
 
 # Reuse wire gauge and resistance data
 from fireai.core.cable_routing_engine import WireGauge
@@ -184,7 +183,7 @@ class RoutingConstraintSet:
 
     """
 
-    results: Tuple[ConstraintResult, ...]
+    results: tuple[ConstraintResult, ...]
     # V114 FIX: Fail-safe — all_satisfied must be PROVEN, not assumed
     all_satisfied: bool = False
     critical_violations: int = 0
@@ -229,7 +228,7 @@ class ConstraintEngine:
         max_fastening_interval_mm: float = MAX_CABLE_FASTENING_INTERVAL_MM,
         bend_penalty_m: float = BEND_PENALTY_M,
         elevation_penalty_m: float = ELEVATION_PENALTY_M,
-    ):
+    ) -> None:
         """Initialize the constraint engine with project specifications.
 
         Args:
@@ -655,8 +654,8 @@ class ConstraintEngine:
 
     def check_class_a_separation(
         self,
-        outgoing_path: List[Tuple[float, float, float]],
-        return_path: List[Tuple[float, float, float]],
+        outgoing_path: list[tuple[float, float, float]],
+        return_path: list[tuple[float, float, float]],
         min_separation_m: float = 0.3,
     ) -> ConstraintResult:
         """Check Class A circuit outgoing/return path separation.
@@ -935,13 +934,13 @@ class ConstraintEngine:
         num_fasteners: int = 0,
         circuit_type: str = "NAC",
         is_class_a: bool = False,
-        outgoing_path: Optional[List[Tuple[float, float, float]]] = None,
-        return_path: Optional[List[Tuple[float, float, float]]] = None,
+        outgoing_path: list[tuple[float, float, float]] | None = None,
+        return_path: list[tuple[float, float, float]] | None = None,
         ambient_temp_c: float = 30.0,
-        conductor_operating_temp_c: Optional[float] = None,
+        conductor_operating_temp_c: float | None = None,
         num_current_carrying: int = 2,
         conductor_temp_rating_c: float = 90,
-        conduit_size_inches: Optional[float] = None,
+        conduit_size_inches: float | None = None,
     ) -> RoutingConstraintSet:
         """Run ALL constraint checks and return combined result.
 
@@ -1124,8 +1123,8 @@ class ConstraintEngine:
 
     def compute_move_cost(
         self,
-        from_cell: Tuple[int, int, int],
-        to_cell: Tuple[int, int, int],
+        from_cell: tuple[int, int, int],
+        to_cell: tuple[int, int, int],
         is_near_electrical: bool = False,
         grid_resolution: float = 0.1,
     ) -> float:
@@ -1177,8 +1176,8 @@ class ConstraintEngine:
 
     @staticmethod
     def compute_bend_cost(
-        prev_dir: Optional[Tuple[int, int, int]],
-        curr_dir: Tuple[int, int, int],
+        prev_dir: tuple[int, int, int] | None,
+        curr_dir: tuple[int, int, int],
     ) -> float:
         """Compute the cost of a direction change (bend).
 
@@ -1210,8 +1209,8 @@ class ConstraintEngine:
 
     @staticmethod
     def manhattan_heuristic(
-        current: Tuple[int, int, int],
-        goal: Tuple[int, int, int],
+        current: tuple[int, int, int],
+        goal: tuple[int, int, int],
         grid_resolution: float = 0.1,
     ) -> float:
         """Manhattan distance heuristic for A* pathfinding.

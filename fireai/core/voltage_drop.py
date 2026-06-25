@@ -1,4 +1,4 @@
-"""fireai/core/voltage_drop.py — Voltage Drop & Battery Calculator
+"""fireai/core/voltage_drop.py — Voltage Drop & Battery Calculator.
 ================================================================
 LIFE-SAFETY CRITICAL: Incorrect voltage drop calculations can cause
 horns and strobes to fail during a fire, meaning NO ALARM in occupied

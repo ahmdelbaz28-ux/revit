@@ -24,7 +24,6 @@ Reference: agent.md Rules 1-21, Priority Hierarchy
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
@@ -120,9 +119,9 @@ async def search_memories(request: MemorySearchRequest):
 
 @router.get("/all", summary="Get all memories", dependencies=[Depends(require_permission(Permission.QOMN_READ))])
 async def get_all_memories(
-    user_id: Optional[str] = Query(None, description="Filter by user/engineer"),
-    agent_id: Optional[str] = Query(None, description="Filter by agent"),
-    run_id: Optional[str] = Query(None, description="Filter by project/run"),
+    user_id: str | None = Query(None, description="Filter by user/engineer"),
+    agent_id: str | None = Query(None, description="Filter by agent"),
+    run_id: str | None = Query(None, description="Filter by project/run"),
 ):
     """Get all memories for a given scope.
 

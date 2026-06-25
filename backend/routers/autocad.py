@@ -1,4 +1,4 @@
-"""backend/routers/autocad.py — AutoCAD Integration Endpoints
+"""backend/routers/autocad.py — AutoCAD Integration Endpoints.
 ==========================================================
 
 REST API endpoints for AutoCAD integration operations.
@@ -52,15 +52,14 @@ from backend.services.autocad_service import AutoCADService
 # V133 PHASE 1.2: Path traversal protection — same shared helper used by revit.py.
 # Per OWASP Path Traversal Cheat Sheet. Prevents ../../etc/passwd, null-byte
 # injection, argument injection (leading "-"), and disallowed extensions.
-from parsers._path_security import validate_input_path, UnsafePathError
-
+from parsers._path_security import UnsafePathError, validate_input_path
 
 # Allowed file extensions for AutoCAD operations
 _AUTOCAD_ALLOWED_EXTENSIONS = frozenset({".dwg", ".dxf", ".rvt", ".rfa", ".ifc"})
 
 
 def _validate_autocad_file_path(filepath: str) -> str:
-    """Validate DWG/DXF file path against path traversal and injection attacks.
+    r"""Validate DWG/DXF file path against path traversal and injection attacks.
 
     V133 PHASE 1.2: Mirrors the protection already in revit.py:_validate_file_path.
     Previously, autocad.py used only ``os.path.exists()`` which accepted ANY path,
@@ -82,6 +81,7 @@ def _validate_autocad_file_path(filepath: str) -> str:
     Raises:
         HTTPException(404): If file not found (benign case).
         HTTPException(400): If path is unsafe (path traversal, null byte, etc.).
+
     """
     try:
         safe_path = validate_input_path(

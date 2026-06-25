@@ -1,5 +1,4 @@
-"""fireai – NFPA 72-2022 Automated Fire Detector Placement Engine
-"""
+"""fireai – NFPA 72-2022 Automated Fire Detector Placement Engine."""
 
 from __future__ import annotations
 
@@ -127,4 +126,4 @@ def __getattr__(name):
     raise AttributeError(f"module 'fireai' has no attribute '{name}'")
 
 
-__all__ = ["__version__"] + _PUBLIC_NAMES
+__all__ = ["__version__", *_PUBLIC_NAMES]

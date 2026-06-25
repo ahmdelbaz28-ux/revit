@@ -1,4 +1,4 @@
-"""fireai/integration/iot_pipeline.py
+"""fireai/integration/iot_pipeline.py.
 ====================================
 IoT Device Integration — MQTT/OPC-UA sensor ingestion and real-time
 event processing for fire alarm system monitoring.
@@ -27,7 +27,7 @@ import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Set
+from typing import Any, Callable
 
 from fireai.core.event_bus import EventBus
 
@@ -91,7 +91,7 @@ class SensorReading:
     timestamp: datetime
     quality: float = 1.0  # 0.0 (bad) to 1.0 (good)
     protocol: CommunicationProtocol = CommunicationProtocol.MQTT
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         if not self.sensor_id.strip():
@@ -117,8 +117,8 @@ class SecurityEvent:
     message: str
     timestamp: datetime
     reading_value: float = 0.0
-    threshold: Optional[float] = None
-    details: Dict[str, Any] = field(default_factory=dict)
+    threshold: float | None = None
+    details: dict[str, Any] = field(default_factory=dict)
 
 
 # ===========================================================================
@@ -133,8 +133,8 @@ class SensorConfig:
     min_value: float = -1e9
     max_value: float = 1e9
     rate_of_change_limit: float = 1e9  # max change per second
-    warning_threshold: Optional[float] = None
-    alarm_threshold: Optional[float] = None
+    warning_threshold: float | None = None
+    alarm_threshold: float | None = None
     comm_loss_seconds: float = 300.0  # 5 minutes default
     unit: str = ""
 
@@ -156,31 +156,31 @@ class IoTPipeline:
       - All events published to event_bus for downstream processing
     """
 
-    def __init__(self, event_bus: Optional[EventBus] = None) -> None:
+    def __init__(self, event_bus: EventBus | None = None) -> None:
         self._event_bus = event_bus or EventBus.instance()
-        self._sensor_configs: Dict[str, SensorConfig] = {}
-        self._last_readings: Dict[str, SensorReading] = {}
-        self._rate_buffers: Dict[str, List[tuple[float, float]]] = {}
-        self._last_heartbeat: Dict[str, float] = {}
+        self._sensor_configs: dict[str, SensorConfig] = {}
+        self._last_readings: dict[str, SensorReading] = {}
+        self._rate_buffers: dict[str, list[tuple[float, float]]] = {}
+        self._last_heartbeat: dict[str, float] = {}
 
         # MQTT state
-        self._mqtt_client: Optional[Any] = None
+        self._mqtt_client: Any | None = None
         self._mqtt_connected: bool = False
         self._mqtt_broker: str = ""
         self._mqtt_port: int = 1883
         self._mqtt_topic: str = ""
         self._mqtt_reconnect_delay: float = 1.0
         self._mqtt_max_reconnect_delay: float = 60.0
-        self._mqtt_event_handler: Optional[Callable[[SensorReading], None]] = None
+        self._mqtt_event_handler: Callable[[SensorReading], None] | None = None
 
         # OPC-UA state
-        self._opcua_client: Optional[Any] = None
+        self._opcua_client: Any | None = None
         self._opcua_connected: bool = False
         self._opcua_endpoint: str = ""
         self._opcua_session_timeout: float = 600.0
 
         # Event processing state
-        self._comm_loss_timer: Optional[asyncio.Task[None]] = None
+        self._comm_loss_timer: asyncio.Task[None] | None = None
         self._running: bool = False
 
     # ── Configuration ──────────────────────────────────────────────────
@@ -188,7 +188,7 @@ class IoTPipeline:
     def register_sensor(self, config: SensorConfig) -> None:
         self._sensor_configs[config.sensor_id] = config
 
-    def get_sensor_config(self, sensor_id: str) -> Optional[SensorConfig]:
+    def get_sensor_config(self, sensor_id: str) -> SensorConfig | None:
         return self._sensor_configs.get(sensor_id)
 
     def unregister_sensor(self, sensor_id: str) -> None:
@@ -331,7 +331,7 @@ class IoTPipeline:
         self,
         sensor_id: str,
         value: float,
-        timestamp: Optional[datetime] = None,
+        timestamp: datetime | None = None,
     ) -> SensorReading:
         """Ingest a sensor reading: validate and process.
 
@@ -421,7 +421,7 @@ class IoTPipeline:
 
     def process_event(
         self, reading: SensorReading
-    ) -> Optional[SecurityEvent]:
+    ) -> SecurityEvent | None:
         """Process a sensor reading and generate a SecurityEvent if
         any thresholds or anomaly conditions are triggered.
 
@@ -443,23 +443,22 @@ class IoTPipeline:
             return None
 
         # Threshold crossing detection
-        if config.alarm_threshold is not None:
-            if reading.value >= config.alarm_threshold:
-                return SecurityEvent(
-                    event_id=self._generate_event_id(),
-                    sensor_id=reading.sensor_id,
-                    event_type="THRESHOLD_ALARM",
-                    severity=EventSeverity.CRITICAL,
-                    message=(
-                        f"Sensor {reading.sensor_id} value "
-                        f"{reading.value:.2f} {reading.unit} "
-                        f"exceeds alarm threshold "
-                        f"{config.alarm_threshold:.2f} {reading.unit}"
-                    ),
-                    timestamp=reading.timestamp,
-                    reading_value=reading.value,
-                    threshold=config.alarm_threshold,
-                )
+        if config.alarm_threshold is not None and reading.value >= config.alarm_threshold:
+            return SecurityEvent(
+                event_id=self._generate_event_id(),
+                sensor_id=reading.sensor_id,
+                event_type="THRESHOLD_ALARM",
+                severity=EventSeverity.CRITICAL,
+                message=(
+                    f"Sensor {reading.sensor_id} value "
+                    f"{reading.value:.2f} {reading.unit} "
+                    f"exceeds alarm threshold "
+                    f"{config.alarm_threshold:.2f} {reading.unit}"
+                ),
+                timestamp=reading.timestamp,
+                reading_value=reading.value,
+                threshold=config.alarm_threshold,
+            )
 
         if config.warning_threshold is not None:
             if reading.value >= config.warning_threshold:
@@ -598,14 +597,14 @@ class IoTPipeline:
 
     def get_latest_reading(
         self, sensor_id: str
-    ) -> Optional[SensorReading]:
+    ) -> SensorReading | None:
         """Get the latest reading for a sensor."""
         return self._last_readings.get(sensor_id)
 
-    def get_connected_sensors(self) -> Set[str]:
+    def get_connected_sensors(self) -> set[str]:
         """Get set of sensor IDs with recent heartbeats."""
         now = time.monotonic()
-        connected: Set[str] = set()
+        connected: set[str] = set()
         for sensor_id in self._sensor_configs:
             last_hb = self._last_heartbeat.get(sensor_id)
             if last_hb is not None:

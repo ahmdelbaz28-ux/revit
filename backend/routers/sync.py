@@ -281,7 +281,7 @@ def _validate_ws_api_key(websocket: WebSocket) -> bool:
 
 
 @ws_router.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket):
+async def websocket_endpoint(websocket: WebSocket) -> None:
     """WebSocket endpoint for real-time project updates.
 
     SECURITY:

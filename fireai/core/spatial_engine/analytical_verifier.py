@@ -30,7 +30,6 @@ NFPA 72-2022 §17.7.4.2.3.1: Coverage radius R = 0.7 × S
 import math
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Dict, List, Set, Tuple
 
 
 @dataclass
@@ -41,9 +40,9 @@ class AnalyticalResult:
     wall_coverage_complete: bool = False
     corner_coverage_complete: bool = False
     midpoint_coverage_complete: bool = False
-    uncovered_corners: List[Tuple[float, float]] = field(default_factory=list)
-    uncovered_midpoints: List[Tuple[float, float]] = field(default_factory=list)
-    wall_gaps: List[Tuple[str, float, float]] = field(default_factory=list)  # (wall, start, end)
+    uncovered_corners: list[tuple[float, float]] = field(default_factory=list)
+    uncovered_midpoints: list[tuple[float, float]] = field(default_factory=list)
+    wall_gaps: list[tuple[str, float, float]] = field(default_factory=list)  # (wall, start, end)
     max_gap_m: float = 0.0
     coverage_estimate_pct: float = 0.0
     details: str = ""
@@ -67,7 +66,7 @@ class AnalyticalVerifier:
     there's a bug in at least one of them.
     """
 
-    def __init__(self, coverage_radius: float, wall_min: float = 0.10):
+    def __init__(self, coverage_radius: float, wall_min: float = 0.10) -> None:
         self.R = coverage_radius
         self.wm = wall_min
         self.R2 = coverage_radius**2 + 1e-9
@@ -76,7 +75,7 @@ class AnalyticalVerifier:
         self,
         width: float,
         length: float,
-        detectors: List[Tuple[float, float]],
+        detectors: list[tuple[float, float]],
     ) -> AnalyticalResult:
         """Verify coverage using pure analytical methods.
 
@@ -131,18 +130,15 @@ class AnalyticalVerifier:
 
         return result
 
-    def _point_covered(self, px: float, py: float, detectors: List[Tuple[float, float]]) -> bool:
+    def _point_covered(self, px: float, py: float, detectors: list[tuple[float, float]]) -> bool:
         """Check if a point is within R of any detector."""
-        for dx, dy in detectors:
-            if (px - dx) ** 2 + (py - dy) ** 2 <= self.R2:
-                return True
-        return False
+        return any((px - dx) ** 2 + (py - dy) ** 2 <= self.R2 for dx, dy in detectors)
 
     def _check_corners(
         self,
         width: float,
         length: float,
-        detectors: List[Tuple[float, float]],
+        detectors: list[tuple[float, float]],
         result: AnalyticalResult,
     ) -> bool:
         """Check all 4 room corners are covered."""
@@ -161,7 +157,7 @@ class AnalyticalVerifier:
 
     def _check_midpoints(
         self,
-        detectors: List[Tuple[float, float]],
+        detectors: list[tuple[float, float]],
         result: AnalyticalResult,
     ) -> bool:
         """Check all detector-to-detector midpoints are covered.
@@ -187,19 +183,19 @@ class AnalyticalVerifier:
         cell = two_r  # bin size = 2R so adjacent bins contain all candidates
 
         # Build spatial bin index
-        bins: Dict[Tuple[int, int], List[int]] = defaultdict(list)
+        bins: dict[tuple[int, int], list[int]] = defaultdict(list)
         for i, (xi, yi) in enumerate(detectors):
-            bx = int(math.floor(xi / cell))
-            by = int(math.floor(yi / cell))
+            bx = math.floor(xi / cell)
+            by = math.floor(yi / cell)
             bins[(bx, by)].append(i)
 
         all_covered = True
-        seen_pairs: Set[Tuple[int, int]] = set()
+        seen_pairs: set[tuple[int, int]] = set()
         pairs_checked = 0
 
         for i, (xi, yi) in enumerate(detectors):
-            bx = int(math.floor(xi / cell))
-            by = int(math.floor(yi / cell))
+            bx = math.floor(xi / cell)
+            by = math.floor(yi / cell)
             # Check 3×3 Moore neighbourhood — covers all pairs within 2R
             for dbx in (-1, 0, 1):
                 for dby in (-1, 0, 1):
@@ -229,7 +225,7 @@ class AnalyticalVerifier:
         self,
         width: float,
         length: float,
-        detectors: List[Tuple[float, float]],
+        detectors: list[tuple[float, float]],
         result: AnalyticalResult,
     ) -> bool:
         """Check all 4 walls are fully covered using interval merging."""
@@ -283,7 +279,7 @@ class AnalyticalVerifier:
 
     def _check_wall(
         self,
-        detectors: List[Tuple[float, float]],
+        detectors: list[tuple[float, float]],
         perp_fn,
         par_fn,
         wall_length: float,
@@ -349,7 +345,7 @@ class AnalyticalVerifier:
         self,
         width: float,
         length: float,
-        detectors: List[Tuple[float, float]],
+        detectors: list[tuple[float, float]],
     ) -> float:
         """Estimate coverage percentage using area calculation.
 
@@ -398,7 +394,7 @@ class AnalyticalVerifier:
         self,
         width: float,
         length: float,
-        detectors: List[Tuple[float, float]],
+        detectors: list[tuple[float, float]],
     ) -> float:
         """Find the maximum distance from any detector.
 

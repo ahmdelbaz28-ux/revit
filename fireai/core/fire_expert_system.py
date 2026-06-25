@@ -1,4 +1,4 @@
-"""fire_expert_system.py
+"""fire_expert_system.py.
 =====================
 Fire-detection expert system – rectangular rooms, NFPA 72 compliance.
 
@@ -9,7 +9,7 @@ engine, replacing any previous naive grid algorithm.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, List
+from typing import Any
 
 from fireai.core.nfpa72_calculations import calculate_coverage_radius_from_height
 from fireai.core.spatial_engine.density_optimizer import (
@@ -31,7 +31,7 @@ class FireExpertSystem:
     print(result.summary())
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.optimizer = DensityOptimizer()
 
     # ── public API ──────────────────────────────────────────────────────────────
@@ -68,7 +68,7 @@ class FireExpertSystem:
         theory = DensityOptimizer.theoretical_lower_bound(room, coverage_radius=spec.radius)
         return AnalysisResult(layout=layout, theoretical_lower_bound=theory)
 
-    def analyse_batch(self, rooms: List[dict]) -> List[AnalysisResult]:
+    def analyse_batch(self, rooms: list[dict]) -> list[AnalysisResult]:
         """Analyse a list of room dicts (keys: name, width, length[, ceiling_height])."""
         return [self.analyse_room(**r) for r in rooms]
 

@@ -1,4 +1,4 @@
-"""fireai.core.circuit_topology — NFPA 72 Circuit Topology Classes
+"""fireai.core.circuit_topology — NFPA 72 Circuit Topology Classes.
 ===============================================================
 
 Implements circuit topology models for fire alarm system wiring:
@@ -30,7 +30,7 @@ from __future__ import annotations
 import enum
 import math
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # CIRCUIT CLASS DESIGNATION — NFPA 72 §12.2
@@ -126,7 +126,7 @@ class CircuitDevice:
     position_y: float = 0.0
     position_z: float = 0.0
     current_a: float = 0.0
-    zone_id: Optional[str] = None
+    zone_id: str | None = None
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -170,10 +170,10 @@ class CircuitTopology:
     circuit_id: str
     circuit_class: CircuitClass = CircuitClass.CLASS_B
     circuit_type: CircuitType = CircuitType.SLC
-    devices: List[CircuitDevice] = field(default_factory=list)
+    devices: list[CircuitDevice] = field(default_factory=list)
     cable_length_m: float = 0.0
     return_length_m: float = 0.0
-    panel_position: Tuple[float, float, float] = (0.0, 0.0, 0.0)
+    panel_position: tuple[float, float, float] = (0.0, 0.0, 0.0)
 
     # ─── Device management ─────────────────────────────────────────────────
 
@@ -206,7 +206,7 @@ class CircuitTopology:
                 return True
         return False
 
-    def get_isolator_indices(self) -> List[int]:
+    def get_isolator_indices(self) -> list[int]:
         """Return indices of fault isolator devices in the device list.
 
         Per NFPA 72 §12.3, fault isolators must be placed on SLC circuits
@@ -218,7 +218,7 @@ class CircuitTopology:
         """
         return [i for i, dev in enumerate(self.devices) if "isolator" in dev.device_type.lower()]
 
-    def get_device_count_between_isolators(self) -> List[int]:
+    def get_device_count_between_isolators(self) -> list[int]:
         """Calculate device counts between consecutive isolators.
 
         NFPA 72 §12.3.1: No more than 32 addressable devices shall be
@@ -281,7 +281,7 @@ class CircuitTopology:
 
     # ─── Validation ────────────────────────────────────────────────────────
 
-    def validate(self) -> Dict[str, Any]:
+    def validate(self) -> dict[str, Any]:
         """Validate this circuit topology against NFPA 72 requirements.
 
         Checks:

@@ -25,9 +25,9 @@ import os
 import sqlite3
 import threading
 import uuid
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from datetime import datetime, timezone
-from typing import Any, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -146,7 +146,7 @@ class Database:
     @contextmanager
     def _transaction(self):
         """Yield a cursor inside a locked, auto-committing transaction.
-        
+
         Returns a SQLite cursor or PostgreSQL cursor depending on the backend.
         """
         if self._is_postgres:
@@ -423,7 +423,7 @@ class Database:
 
         return self.get_project(project_data["id"])
 
-    def get_project(self, project_id: str) -> Optional[dict]:
+    def get_project(self, project_id: str) -> dict | None:
         """Get a project by ID, with device and connection counts — single query."""
         with self._transaction() as cur:
             cur.execute(
@@ -465,10 +465,7 @@ class Database:
         _ALLOWED_PROJECT_SORTS = {"id", "name", "created_at", "updated_at", "status", "author"}
         if sort not in _ALLOWED_PROJECT_SORTS:
             sort = "created_at"
-        if order.upper() not in ("ASC", "DESC"):
-            order = "DESC"
-        else:
-            order = order.upper()
+        order = "DESC" if order.upper() not in ("ASC", "DESC") else order.upper()
 
         with self._transaction() as cur:
             # Get total count
@@ -515,7 +512,7 @@ class Database:
             "totalPages": total_pages,
         }
 
-    def update_project(self, project_id: str, updates: dict) -> Optional[dict]:
+    def update_project(self, project_id: str, updates: dict) -> dict | None:
         """Update a project. Returns updated project or None if not found."""
         existing = self.get_project(project_id)
         if not existing:
@@ -622,7 +619,7 @@ class Database:
 
         return self.get_device(project_id, device_data["id"])
 
-    def get_device(self, project_id: str, device_id: str) -> Optional[dict]:
+    def get_device(self, project_id: str, device_id: str) -> dict | None:
         """Get a device by ID within a project."""
         with self._transaction() as cur:
             cur.execute(
@@ -657,10 +654,7 @@ class Database:
         }
         if sort not in _ALLOWED_DEVICE_SORTS:
             sort = "created_at"
-        if order.upper() not in ("ASC", "DESC"):
-            order = "DESC"
-        else:
-            order = order.upper()
+        order = "DESC" if order.upper() not in ("ASC", "DESC") else order.upper()
 
         with self._transaction() as cur:
             cur.execute(
@@ -686,7 +680,7 @@ class Database:
             "totalPages": total_pages,
         }
 
-    def update_device(self, project_id: str, device_id: str, updates: dict) -> Optional[dict]:
+    def update_device(self, project_id: str, device_id: str, updates: dict) -> dict | None:
         """Update a device. Returns updated device or None if not found."""
         existing = self.get_device(project_id, device_id)
         if not existing:
@@ -819,7 +813,7 @@ class Database:
 
         return self.get_connection(project_id, conn_data["id"])
 
-    def get_connection(self, project_id: str, connection_id: str) -> Optional[dict]:
+    def get_connection(self, project_id: str, connection_id: str) -> dict | None:
         """Get a connection by ID within a project."""
         with self._transaction() as cur:
             cur.execute(
@@ -844,10 +838,7 @@ class Database:
         _ALLOWED_CONNECTION_SORTS = {"id", "created_at", "type", "length", "cable_size"}
         if sort not in _ALLOWED_CONNECTION_SORTS:
             sort = "created_at"
-        if order.upper() not in ("ASC", "DESC"):
-            order = "DESC"
-        else:
-            order = order.upper()
+        order = "DESC" if order.upper() not in ("ASC", "DESC") else order.upper()
 
         with self._transaction() as cur:
             cur.execute(
@@ -976,7 +967,7 @@ class Database:
 
         return self.get_report(project_id, report_data["id"])
 
-    def get_report(self, project_id: str, report_id: str) -> Optional[dict]:
+    def get_report(self, project_id: str, report_id: str) -> dict | None:
         """Get a report by ID within a project."""
         with self._transaction() as cur:
             cur.execute(
@@ -1001,10 +992,7 @@ class Database:
         _ALLOWED_REPORT_SORTS = {"id", "created_at", "type", "status", "name"}
         if sort not in _ALLOWED_REPORT_SORTS:
             sort = "created_at"
-        if order.upper() not in ("ASC", "DESC"):
-            order = "DESC"
-        else:
-            order = order.upper()
+        order = "DESC" if order.upper() not in ("ASC", "DESC") else order.upper()
 
         with self._transaction() as cur:
             cur.execute(
@@ -1030,7 +1018,7 @@ class Database:
             "totalPages": total_pages,
         }
 
-    def update_report(self, project_id: str, report_id: str, updates: dict) -> Optional[dict]:
+    def update_report(self, project_id: str, report_id: str, updates: dict) -> dict | None:
         """Update a report. Returns updated report or None if not found."""
         set_clauses = []
         values = []
@@ -1065,7 +1053,7 @@ class Database:
     # Sync Status
     # ========================================================================
 
-    def get_sync_status(self, project_id: str) -> Optional[dict]:
+    def get_sync_status(self, project_id: str) -> dict | None:
         """Get sync status for a project."""
         with self._transaction() as cur:
             cur.execute(
@@ -1318,10 +1306,8 @@ class Database:
                 self._pg_pool.closeall()
                 logger.info("PostgreSQL connection pool closed")
         else:
-            try:
+            with suppress(Exception):
                 self._conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
-            except Exception:
-                pass
             self._conn.close()
 
     def __del__(self) -> None:
@@ -1335,7 +1321,7 @@ class Database:
 # Singleton instance — imported by routers
 # ============================================================================
 
-_db: Optional[Database] = None
+_db: Database | None = None
 
 
 _db_lock = threading.Lock()

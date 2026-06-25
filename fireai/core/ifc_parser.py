@@ -1,4 +1,4 @@
-"""fireai.core.ifc_parser — IFC Building Geometry Extraction
+"""fireai.core.ifc_parser — IFC Building Geometry Extraction.
 =========================================================
 
 Reads building geometry from IFC files (ISO 16739) and produces a
@@ -36,7 +36,6 @@ import math
 import os
 from dataclasses import dataclass
 from enum import Enum
-from typing import List, Optional, Tuple
 
 log = logging.getLogger(__name__)
 
@@ -135,7 +134,7 @@ class BoundingBox3D:
         return self.max_z - self.min_z
 
     @property
-    def center(self) -> Tuple[float, float, float]:
+    def center(self) -> tuple[float, float, float]:
         """Center point of the bounding box."""
         return (
             (self.min_x + self.max_x) / 2.0,
@@ -177,7 +176,7 @@ class SpaceInfo:
     space_id: str
     space_name: str = ""
     space_number: str = ""
-    bounding_box: Optional[BoundingBox3D] = None
+    bounding_box: BoundingBox3D | None = None
     floor_elevation: float = 0.0
     ceiling_elevation: float = 3.0
     is_fire_zone: bool = False
@@ -205,10 +204,10 @@ class BuildingModel:
     """
 
     building_name: str = ""
-    elements: Tuple[BoundingBox3D, ...] = ()
-    spaces: Tuple[SpaceInfo, ...] = ()
-    grid_origin: Tuple[float, float, float] = (0.0, 0.0, 0.0)
-    grid_size: Tuple[int, int, int] = (0, 0, 0)
+    elements: tuple[BoundingBox3D, ...] = ()
+    spaces: tuple[SpaceInfo, ...] = ()
+    grid_origin: tuple[float, float, float] = (0.0, 0.0, 0.0)
+    grid_size: tuple[int, int, int] = (0, 0, 0)
     grid_resolution: float = 0.1  # 100mm
     grid_data: bytes = b""
     computation_hash: str = ""
@@ -278,8 +277,8 @@ def _classify_ifc_element(ifc_class: str) -> IfcElementType:
 
 def _extract_fire_rating(
     element,
-    element_type: Optional[IfcElementType] = None,
-) -> Tuple[bool, float]:
+    element_type: IfcElementType | None = None,
+) -> tuple[bool, float]:
     """Extract fire rating from IFC element properties.
 
     Checks Pset_FireRatingCommon and similar property sets.
@@ -342,7 +341,7 @@ def _extract_fire_rating(
     return is_rated, rating_hours
 
 
-def _compute_world_placement(element) -> Optional[Tuple[float, float, float]]:
+def _compute_world_placement(element) -> tuple[float, float, float] | None:
     """Recursively resolve nested IfcLocalPlacement chain to world coordinates.
 
     IFC supports nested placements where an IfcLocalPlacement references a
@@ -367,7 +366,7 @@ def _compute_world_placement(element) -> Optional[Tuple[float, float, float]]:
 
         # Accumulate offsets walking UP the PlacementRelTo chain.
         # Parent placements are added first (outermost), then local offsets.
-        offsets: List[Tuple[float, float, float]] = []
+        offsets: list[tuple[float, float, float]] = []
 
         current = placement
         visited = set()  # Guard against circular references
@@ -423,7 +422,7 @@ def _compute_world_placement(element) -> Optional[Tuple[float, float, float]]:
         return None
 
 
-def _extract_extrusion_direction(item) -> Optional[Tuple[float, float, float]]:
+def _extract_extrusion_direction(item) -> tuple[float, float, float] | None:
     """Extract the extrusion direction from an IfcExtrudedAreaSolid.
 
     IfcExtrudedAreaSolid.ExtrudedDirection is a unit IfcDirection vector
@@ -478,7 +477,7 @@ def _is_z_axis_direction(dx: float, dy: float, dz: float, tolerance: float = 1e-
     return abs(nx) < tolerance and abs(ny) < tolerance
 
 
-def _get_element_bbox(element, settings=None) -> Optional[BoundingBox3D]:
+def _get_element_bbox(element, settings=None) -> BoundingBox3D | None:
     """Extract bounding box from an IFC element.
 
     Uses IfcOpenShell geometry processing to get the actual 3D
@@ -1019,10 +1018,10 @@ def _extract_building_model(ifc_model) -> BuildingModel:
 
 
 def _build_occupancy_grid(
-    elements: List[BoundingBox3D],
+    elements: list[BoundingBox3D],
     resolution: float = 0.1,
     padding_m: float = 1.0,
-) -> Tuple[Tuple[float, float, float], Tuple[int, int, int], bytes]:
+) -> tuple[tuple[float, float, float], tuple[int, int, int], bytes]:
     """Build a 3D occupancy grid from extracted building elements.
 
     Grid Convention:
@@ -1064,9 +1063,9 @@ def _build_occupancy_grid(
     max_z += padding_m
 
     # Grid dimensions
-    nx = max(1, int(math.ceil((max_x - min_x) / resolution)))
-    ny = max(1, int(math.ceil((max_y - min_y) / resolution)))
-    nz = max(1, int(math.ceil((max_z - min_z) / resolution)))
+    nx = max(1, math.ceil((max_x - min_x) / resolution))
+    ny = max(1, math.ceil((max_y - min_y) / resolution))
+    nz = max(1, math.ceil((max_z - min_z) / resolution))
 
     # Safety limit: don't create grids larger than 50M cells
     max_cells = 50_000_000
@@ -1120,8 +1119,8 @@ def _build_occupancy_grid(
 
 
 def build_abstract_model(
-    obstacles: List[BoundingBox3D],
-    spaces: Optional[List[SpaceInfo]] = None,
+    obstacles: list[BoundingBox3D],
+    spaces: list[SpaceInfo] | None = None,
     building_name: str = "Abstract",
     resolution: float = 0.1,
 ) -> BuildingModel:
@@ -1199,7 +1198,7 @@ def world_to_grid(
     x: float,
     y: float,
     z: float,
-) -> Tuple[int, int, int]:
+) -> tuple[int, int, int]:
     """Convert world coordinates (meters) to grid indices.
 
     V63 FIX: Uses math.floor instead of int() for coordinate
@@ -1230,7 +1229,7 @@ def grid_to_world(
     ix: int,
     iy: int,
     iz: int,
-) -> Tuple[float, float, float]:
+) -> tuple[float, float, float]:
     """Convert grid indices to world coordinates (cell center).
 
     Args:

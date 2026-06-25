@@ -1,4 +1,4 @@
-"""langwatch_integration.py — LangWatch AI Observability Integration
+"""langwatch_integration.py — LangWatch AI Observability Integration.
 ====================================================================
 
 MISSION PHASE 2 — AI Observability & Reliability (CORRECTED TARGET)
@@ -39,6 +39,7 @@ References
 - agent.md V75 (AI is advisory only)
 - agent.md Rule 17 (Root-Cause Analysis — target the right module)
 - NFPA 72-2022 §17.6.3 (spacing requirements)
+
 """
 
 from __future__ import annotations
@@ -46,8 +47,7 @@ from __future__ import annotations
 import functools
 import logging
 import os
-from contextlib import contextmanager
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable
 
 logger = logging.getLogger(__name__)
 
@@ -79,11 +79,11 @@ class LangWatchClient:
     break because of observability tooling.
     """
 
-    _instance: Optional["LangWatchClient"] = None
+    _instance: LangWatchClient | None = None
     _client: Any = None
     _initialized: bool = False
 
-    def __new__(cls) -> "LangWatchClient":
+    def __new__(cls) -> LangWatchClient:
         if cls._instance is None:
             cls._instance = super().__new__(cls)
         return cls._instance
@@ -144,7 +144,7 @@ class LangWatchClient:
             logger.debug("LangWatch trace creation failed: %s", exc)
             return _NoOpTraceContext()
 
-    def record_event(self, event_type: str, data: Dict[str, Any]) -> None:
+    def record_event(self, event_type: str, data: dict[str, Any]) -> None:
         """Record an event in LangWatch (e.g., LLM call, hallucination check).
 
         Silently no-ops if LangWatch is unavailable.
@@ -162,7 +162,7 @@ class LangWatchClient:
 class _NoOpTraceContext:
     """No-op context manager for when LangWatch is unavailable."""
 
-    def __enter__(self) -> "_NoOpTraceContext":
+    def __enter__(self) -> _NoOpTraceContext:
         return self
 
     def __exit__(self, *args: Any) -> None:
@@ -171,7 +171,7 @@ class _NoOpTraceContext:
     def update(self, **kwargs: Any) -> None:
         pass
 
-    def span(self, name: str, **kwargs: Any) -> "_NoOpTraceContext":
+    def span(self, name: str, **kwargs: Any) -> _NoOpTraceContext:
         return self
 
 
@@ -315,8 +315,8 @@ def _summarize_result(result: Any, max_length: int = 500) -> str:
 def hallucination_check_spacing(
     suggested_spacing_m: float,
     detector_type: str,
-    operation_id: Optional[str] = None,
-) -> Dict[str, Any]:
+    operation_id: str | None = None,
+) -> dict[str, Any]:
     """Cross-reference AI-suggested spacing against NFPA 72 maximums.
 
     Per agent.md V75: AI is advisory only, but we STILL verify its
@@ -335,6 +335,7 @@ def hallucination_check_spacing(
             - max_allowed_m: float
             - confidence: float (0.0 = hallucination, 1.0 = safe)
             - warning: str (human-readable warning if hallucination detected)
+
     """
     import math
 
@@ -423,7 +424,7 @@ def record_confidence_score(
     decision: str,
     confidence: float,
     reasoning: str = "",
-    operation_id: Optional[str] = None,
+    operation_id: str | None = None,
 ) -> None:
     """Record a confidence score for an automated design decision.
 
@@ -434,6 +435,7 @@ def record_confidence_score(
         confidence: Confidence score (0.0 to 1.0).
         reasoning: Optional reasoning text from the LLM.
         operation_id: Optional operation ID for traceability.
+
     """
     import math
 
@@ -474,12 +476,12 @@ def record_confidence_score(
 
 
 __all__ = [
+    "LANGWATCH_API_KEY_ENV",
+    "NFPA72_MAX_HEAT_SPACING_M",
+    "NFPA72_MAX_SMOKE_SPACING_M",
     "LangWatchClient",
     "get_langwatch",
-    "trace_llm_call",
     "hallucination_check_spacing",
     "record_confidence_score",
-    "NFPA72_MAX_SMOKE_SPACING_M",
-    "NFPA72_MAX_HEAT_SPACING_M",
-    "LANGWATCH_API_KEY_ENV",
+    "trace_llm_call",
 ]

@@ -1,4 +1,4 @@
-"""fireai.core.stairwell_smoke_control — Stairwell Smoke Control Integrator
+"""fireai.core.stairwell_smoke_control — Stairwell Smoke Control Integrator.
 =========================================================================
 
 V20 CRITICAL LIFE-SAFETY MODULE — Extended per QOMN-FIRE principles.
@@ -46,7 +46,7 @@ import logging
 import math
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 # Import smoke control primitives from building_systems_integration — these
 # provide the foundational evaluate_smoke_control() validator and the
@@ -237,12 +237,12 @@ class StairwellZone:
 
     zone_id: str
     name: str
-    floors_served: List[str]
+    floors_served: list[str]
     top_floor_z: float
-    roof_vent_location: Optional[Tuple[float, float]] = None
-    landing_locations: Optional[Dict[str, Tuple[float, float]]] = None
+    roof_vent_location: tuple[float, float] | None = None
+    landing_locations: dict[str, tuple[float, float]] | None = None
     is_exterior: bool = False
-    design_pressure_pa: Optional[float] = None
+    design_pressure_pa: float | None = None
     has_pressurization_fan: bool = False
     has_pressure_switches: bool = False
     # V114 FIX: Fail-safe — interlock must be confirmed, not assumed
@@ -250,7 +250,7 @@ class StairwellZone:
     fail_safe_state: FailSafeState = FailSafeState.MAINTAIN_PRESSURIZATION
     has_emergency_power: bool = False
     vestibule_type: VestibuleType = VestibuleType.NO_VESTIBULE
-    vestibule_design_pressure_pa: Optional[float] = None
+    vestibule_design_pressure_pa: float | None = None
 
 
 @dataclass(frozen=True)
@@ -275,7 +275,7 @@ class PressurizationInjection:
     device_type: str
     zone_id: str
     floor_id: str
-    location: Tuple[float, float]
+    location: tuple[float, float]
     action: str
     nfpa_reference: str
 
@@ -360,7 +360,7 @@ class VestibulePressurizationResult:
 
     zone_id: str
     vestibule_type: VestibuleType
-    design_pressure_pa: Optional[float]
+    design_pressure_pa: float | None
     is_compliant: bool
     violations: tuple = ()
 
@@ -427,11 +427,11 @@ class StairwellSmokeControlResult:
     zone_id: str
     building_height_m: float
     pressurization_required: bool
-    smoke_control_result: Optional[SmokeControlResult]
-    fan_status: Optional[FanStatusResult]
-    activation_result: Optional[FireAlarmActivationResult]
-    vestibule_result: Optional[VestibulePressurizationResult]
-    fail_safe_assessment: Optional[FailSafeAssessment]
+    smoke_control_result: SmokeControlResult | None
+    fan_status: FanStatusResult | None
+    activation_result: FireAlarmActivationResult | None
+    vestibule_result: VestibulePressurizationResult | None
+    fail_safe_assessment: FailSafeAssessment | None
     injections: tuple = ()
     is_compliant: bool = False
     violations: tuple = ()
@@ -631,8 +631,8 @@ class StairwellSmokeControlIntegrator:
 
     def generate_active_smoke_defense(
         self,
-        stairwells: List[Dict[str, Any]],
-        building_height_m: Optional[float] = None,
+        stairwells: list[dict[str, Any]],
+        building_height_m: float | None = None,
     ) -> Any:
         """Generate active smoke control device injections for stairwells.
 
@@ -677,19 +677,18 @@ class StairwellSmokeControlIntegrator:
 
         """
         # Validate override height
-        if building_height_m is not None:
-            if not math.isfinite(building_height_m):
-                raise ValueError(
-                    f"building_height_m must be finite, got {building_height_m}. "
-                    f"Non-finite height disables pressurization analysis — "
-                    f"NaN comparisons silently return False."
-                )
+        if building_height_m is not None and not math.isfinite(building_height_m):
+            raise ValueError(
+                f"building_height_m must be finite, got {building_height_m}. "
+                f"Non-finite height disables pressurization analysis — "
+                f"NaN comparisons silently return False."
+            )
 
         bldg_height = building_height_m if building_height_m is not None else self.building_height_m
 
         all_violations: list = []
-        all_injections: List[Dict[str, Any]] = []
-        zone_results: List[StairwellSmokeControlResult] = []
+        all_injections: list[dict[str, Any]] = []
+        zone_results: list[StairwellSmokeControlResult] = []
 
         # Determine if pressurization is required based on building height
         # V25 FIX: NFPA 101 §7.2.3.9 says buildings "exceeding 75 ft"
@@ -769,7 +768,7 @@ class StairwellSmokeControlIntegrator:
             injections = self._generate_injections(stair, zone_id, name, floors_served)
 
             # Aggregate violations
-            zone_violations: List[str] = []
+            zone_violations: list[str] = []
             if smoke_control_result and not smoke_control_result.is_compliant:
                 zone_violations.extend(smoke_control_result.violations)
             if activation_result and not activation_result.is_compliant:
@@ -1004,10 +1003,10 @@ class StairwellSmokeControlIntegrator:
 
     def _assess_smoke_control(
         self,
-        stair: Dict[str, Any],
+        stair: dict[str, Any],
         zone_id: str,
         name: str,
-    ) -> Optional[SmokeControlResult]:
+    ) -> SmokeControlResult | None:
         """Delegate smoke control assessment to evaluate_smoke_control().
 
         Uses the ``evaluate_smoke_control`` function from
@@ -1065,7 +1064,7 @@ class StairwellSmokeControlIntegrator:
 
     def _assess_fan_status(
         self,
-        stair: Dict[str, Any],
+        stair: dict[str, Any],
         zone_id: str,
         name: str,
     ) -> FanStatusResult:
@@ -1145,7 +1144,7 @@ class StairwellSmokeControlIntegrator:
 
     def _assess_fire_alarm_activation(
         self,
-        stair: Dict[str, Any],
+        stair: dict[str, Any],
         zone_id: str,
         name: str,
     ) -> FireAlarmActivationResult:
@@ -1174,7 +1173,7 @@ class StairwellSmokeControlIntegrator:
                 f"Stairwell '{name}' ({zone_id}): activation_delay_s must be finite, got {activation_delay_s}."
             )
 
-        violations: List[str] = []
+        violations: list[str] = []
         activation_required = True  # Always required for high-rise stairwells
 
         # NFPA 72 §21.5: Fire alarm interlock required
@@ -1223,7 +1222,7 @@ class StairwellSmokeControlIntegrator:
 
     def _assess_vestibule(
         self,
-        stair: Dict[str, Any],
+        stair: dict[str, Any],
         zone_id: str,
         name: str,
     ) -> VestibulePressurizationResult:
@@ -1262,7 +1261,7 @@ class StairwellSmokeControlIntegrator:
             )
             vestibule_type = VestibuleType.NO_VESTIBULE
 
-        violations: List[str] = []
+        violations: list[str] = []
 
         # Pressurized vestibule requires valid design pressure
         if vestibule_type == VestibuleType.PRESSURIZED_VESTIBULE:
@@ -1339,7 +1338,7 @@ class StairwellSmokeControlIntegrator:
 
     def _assess_fail_safe(
         self,
-        stair: Dict[str, Any],
+        stair: dict[str, Any],
         zone_id: str,
         name: str,
     ) -> FailSafeAssessment:
@@ -1380,7 +1379,7 @@ class StairwellSmokeControlIntegrator:
             )
             fail_safe_state = FailSafeState.MAINTAIN_PRESSURIZATION
 
-        violations: List[str] = []
+        violations: list[str] = []
 
         # Can the stairwell maintain pressurization on power loss?
         can_maintain = fail_safe_state == FailSafeState.MAINTAIN_PRESSURIZATION and has_emergency_power
@@ -1447,11 +1446,11 @@ class StairwellSmokeControlIntegrator:
 
     def _generate_injections(
         self,
-        stair: Dict[str, Any],
+        stair: dict[str, Any],
         zone_id: str,
         name: str,
-        floors_served: List[str],
-    ) -> List[PressurizationInjection]:
+        floors_served: list[str],
+    ) -> list[PressurizationInjection]:
         """Generate device injections for the Sequence of Operations.
 
         Creates control and monitoring device entries for:
@@ -1470,7 +1469,7 @@ class StairwellSmokeControlIntegrator:
             List of PressurizationInjection objects.
 
         """
-        injections: List[PressurizationInjection] = []
+        injections: list[PressurizationInjection] = []
 
         has_fan = stair.get("has_pressurization_fan", False)
         has_switches = stair.get("has_pressure_switches", False)

@@ -1,4 +1,4 @@
-"""fireai/core/seismic_joint_penalyer.py
+"""fireai/core/seismic_joint_penalyer.py.
 ======================================
 Seismic / Building Expansion Joint Routing Penalty Engine.
 
@@ -33,7 +33,7 @@ from __future__ import annotations
 import logging
 import math
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 # ---------------------------------------------------------------------------
 # Provenance — graceful degradation
@@ -84,8 +84,8 @@ class StructuralJoint:
     """Represents a seismic or expansion joint as a line segment."""
 
     joint_id: str
-    start: Tuple[float, float]
-    end: Tuple[float, float]
+    start: tuple[float, float]
+    end: tuple[float, float]
     joint_type: str = "seismic"
     expected_displacement_mm: float = 25.0
 
@@ -95,7 +95,7 @@ class JointCrossing:
     """Records a single path crossing of a structural joint."""
 
     joint_id: str
-    crossing_point: Tuple[float, float]
+    crossing_point: tuple[float, float]
     path_segment_index: int
     approach_angle_deg: float  # Angle between path segment and joint normal
     is_orthogonal: bool  # True if within ORTHOGONAL_TOLERANCE_DEG of 90°
@@ -107,17 +107,17 @@ class FlexibleJunctionTie:
     """Represents a required flexible conduit transition at a joint crossing."""
 
     joint_id: str
-    location: Tuple[float, float]
+    location: tuple[float, float]
     conduit_type: str = "LFMC"
     length_m: float = FLEXIBLE_TRANSITION_LENGTH_M
 
 
 def _segments_intersect(
-    p1: Tuple[float, float],
-    p2: Tuple[float, float],
-    p3: Tuple[float, float],
-    p4: Tuple[float, float],
-) -> Optional[Tuple[float, float]]:
+    p1: tuple[float, float],
+    p2: tuple[float, float],
+    p3: tuple[float, float],
+    p4: tuple[float, float],
+) -> tuple[float, float] | None:
     """Find the intersection point of two line segments."""
     x1, y1 = p1
     x2, y2 = p2
@@ -140,10 +140,10 @@ def _segments_intersect(
 
 
 def _compute_approach_angle(
-    path_start: Tuple[float, float],
-    path_end: Tuple[float, float],
-    joint_start: Tuple[float, float],
-    joint_end: Tuple[float, float],
+    path_start: tuple[float, float],
+    path_end: tuple[float, float],
+    joint_start: tuple[float, float],
+    joint_end: tuple[float, float],
 ) -> float:
     """Compute the crossing angle between the path and the joint line.
 
@@ -221,8 +221,8 @@ class SeismicJointPenalyer:
 
     def detect_structural_shearing(
         self,
-        path: List[Tuple[float, float]],
-        seismic_joints: List[StructuralJoint],
+        path: list[tuple[float, float]],
+        seismic_joints: list[StructuralJoint],
     ) -> Any:
         """Analyse a routing path for structural joint crossings.
 
@@ -231,8 +231,8 @@ class SeismicJointPenalyer:
         generate flexible conduit transitions.
         """
         violations: list = []
-        crossings: List[JointCrossing] = []
-        flexible_junctions: List[FlexibleJunctionTie] = []
+        crossings: list[JointCrossing] = []
+        flexible_junctions: list[FlexibleJunctionTie] = []
 
         for seg_idx in range(len(path) - 1):
             p1 = path[seg_idx]
@@ -315,7 +315,7 @@ class SeismicJointPenalyer:
         # Build penalty grid cells for A* integration
         # Joint cells get a moderate cost (not prohibitive) to encourage
         # orthogonal approach
-        penalty_cells: List[Dict[str, Any]] = []
+        penalty_cells: list[dict[str, Any]] = []
         for joint in seismic_joints:
             x1, y1 = joint.start
             x2, y2 = joint.end

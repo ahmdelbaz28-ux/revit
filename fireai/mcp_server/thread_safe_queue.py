@@ -1,4 +1,4 @@
-"""thread_safe_queue.py — Thread-Safe Model Update Queue for Revit API
+"""thread_safe_queue.py — Thread-Safe Model Update Queue for Revit API.
 ===================================================================
 LIFE-SAFETY CRITICAL: The Revit API is SINGLE-THREADED — all model
 modifications MUST occur on the Revit UI thread. Any attempt to modify
@@ -39,7 +39,7 @@ import time
 import uuid
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -191,10 +191,10 @@ class ThreadSafeModelUpdateQueue:
 
         """
         self._queue: queue.PriorityQueue = queue.PriorityQueue(maxsize=max_size)
-        self._results: Dict[str, ModelUpdateResult] = {}
+        self._results: dict[str, ModelUpdateResult] = {}
         self._results_lock = threading.Lock()
-        self._results_events: Dict[str, threading.Event] = {}
-        self._action_log: List[Dict[str, Any]] = []
+        self._results_events: dict[str, threading.Event] = {}
+        self._action_log: list[dict[str, Any]] = []
         self._log_lock = threading.Lock()
         self._stats = {
             "enqueued": 0,
@@ -279,7 +279,7 @@ class ThreadSafeModelUpdateQueue:
 
         return action.action_id
 
-    def dequeue(self, timeout: float = 1.0) -> Optional[ModelUpdateAction]:
+    def dequeue(self, timeout: float = 1.0) -> ModelUpdateAction | None:
         """Dequeue the next action for execution.
 
         SAFETY: This should ONLY be called by the C# IExternalEventHandler
@@ -293,7 +293,7 @@ class ThreadSafeModelUpdateQueue:
 
         """
         try:
-            priority, action = self._queue.get(block=True, timeout=timeout)
+            _priority, action = self._queue.get(block=True, timeout=timeout)
             return action
         except queue.Empty:
             return None
@@ -383,12 +383,12 @@ class ThreadSafeModelUpdateQueue:
         """Return the number of pending actions in the queue."""
         return self._queue.qsize()
 
-    def get_stats(self) -> Dict[str, int]:
+    def get_stats(self) -> dict[str, int]:
         """Return queue statistics."""
         with self._stats_lock:
             return dict(self._stats)
 
-    def get_audit_log(self, last_n: int = 100) -> List[Dict[str, Any]]:
+    def get_audit_log(self, last_n: int = 100) -> list[dict[str, Any]]:
         """Return the last N audit log entries."""
         with self._log_lock:
             return list(self._action_log[-last_n:])

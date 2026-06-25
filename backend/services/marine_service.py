@@ -1,4 +1,4 @@
-"""backend/services/marine_service.py — Marine Fire-Safety Service Layer
+"""backend/services/marine_service.py — Marine Fire-Safety Service Layer.
 =====================================================================
 Service layer that orchestrates the marine package engines behind the
 backend/routers/marine.py REST API.
@@ -15,7 +15,7 @@ Workflow:
 
 from __future__ import annotations
 
-from typing import Any, Dict, List
+from typing import Any
 
 from marine.core.types import (
     DetectorPlacement,
@@ -69,8 +69,8 @@ class MarineService:
     def design_full(
         self,
         ship: ShipProject,
-        zones: List[MarineZone] | None = None,
-    ) -> Dict[str, Any]:
+        zones: list[MarineZone] | None = None,
+    ) -> dict[str, Any]:
         """Run the complete marine fire-safety design pipeline.
 
         Args:
@@ -93,7 +93,7 @@ class MarineService:
         adjacency_result = compute_escape_route_adjacency(zones)
 
         # 2. Detection design
-        all_detectors: List[DetectorPlacement] = []
+        all_detectors: list[DetectorPlacement] = []
         for zone in zones:
             sel = select_detector_type(zone, ship)
             for dt_str in sel.details.get("selected_types", []):
@@ -107,7 +107,7 @@ class MarineService:
         div_result = validate_fire_divisions(zones, divisions)
 
         # 4. Extinguishing
-        extinguishing: List[ExtinguishingDesign] = []
+        extinguishing: list[ExtinguishingDesign] = []
         for zone in zones:
             try:
                 design = size_system(zone, ship)

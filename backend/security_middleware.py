@@ -1,4 +1,4 @@
-"""backend/security_middleware.py — Security Headers & Correlation Middleware
+"""backend/security_middleware.py — Security Headers & Correlation Middleware.
 ==========================================================================
 
 Centralizes security-critical HTTP middleware for the FireAI backend:
@@ -220,7 +220,7 @@ class SecurityHeadersMiddleware:
         # Pre-computed set of header names we're adding, for O(1) dedup check.
         # If an upstream handler already set one of our headers, we DO NOT
         # override it (defense-in-depth: respect explicit per-route policy).
-        our_header_names = {k for k, _ in [(h[0].decode("latin-1"), h[1]) for h in extra_headers]}
+        {k for k, _ in [(h[0].decode("latin-1"), h[1]) for h in extra_headers]}
 
         async def send_with_security_headers(message: Message) -> None:
             """Wrap send() to inject security headers into http.response.start."""
@@ -325,10 +325,7 @@ def _is_public_path(path: str) -> bool:
     if path in _PUBLIC_PATHS_EXACT:
         return True
     # Prefix match for documented sub-paths (e.g. /docs/static/*)
-    for prefix in _PUBLIC_PATH_PREFIXES:
-        if path.startswith(prefix):
-            return True
-    return False
+    return any(path.startswith(prefix) for prefix in _PUBLIC_PATH_PREFIXES)
 
 
 class ApiKeyMiddleware:

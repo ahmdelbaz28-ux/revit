@@ -1,4 +1,4 @@
-"""backend/routers/analyze.py - Project-level analyze endpoints
+"""backend/routers/analyze.py - Project-level analyze endpoints.
 =============================================================
 Endpoints for running NFPA 72 / NEC calculations in the context of a
 project / room:
@@ -15,7 +15,7 @@ can choose between (a) low-level kernel calls (/api/qomn/...) or
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
@@ -98,7 +98,7 @@ class RoomAnalyzeRequest(BaseModel):
     room_id: str = Field(
         ..., description="Room identifier (must match {project_id} or be scoped to it)"
     )
-    room_polygon: List[List[float]] = Field(
+    room_polygon: list[list[float]] = Field(
         ..., description="Room polygon as [[x,y], ...] list of vertices"
     )
     ceiling_height_m: float = Field(
@@ -118,7 +118,7 @@ class RoomAnalyzeRequest(BaseModel):
     "/analyze/battery",
     dependencies=[Depends(require_permission(Permission.QOMN_EXECUTE))],
 )
-async def analyze_battery(req: BatteryRequest) -> Dict[str, Any]:
+async def analyze_battery(req: BatteryRequest) -> dict[str, Any]:
     """Compute NFPA 72 battery capacity.
 
     Returns:
@@ -151,7 +151,7 @@ async def analyze_battery(req: BatteryRequest) -> Dict[str, Any]:
     "/analyze/voltage",
     dependencies=[Depends(require_permission(Permission.QOMN_EXECUTE))],
 )
-async def analyze_voltage(req: VoltageRequest) -> Dict[str, Any]:
+async def analyze_voltage(req: VoltageRequest) -> dict[str, Any]:
     """Compute NEC voltage drop.
 
     Returns:
@@ -182,7 +182,7 @@ async def analyze_voltage(req: VoltageRequest) -> Dict[str, Any]:
     "/projects/{project_id}/analyze/room",
     dependencies=[Depends(require_permission(Permission.QOMN_EXECUTE))],
 )
-async def analyze_project_room(project_id: str, req: RoomAnalyzeRequest) -> Dict[str, Any]:
+async def analyze_project_room(project_id: str, req: RoomAnalyzeRequest) -> dict[str, Any]:
     """Run the full FireAI pipeline for a room in a project.
 
     Returns the full PipelineResult.to_dict() output, augmented with

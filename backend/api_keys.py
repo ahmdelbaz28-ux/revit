@@ -16,7 +16,6 @@ import secrets
 import threading
 import time
 from pathlib import Path
-from typing import Optional
 
 # Import bcrypt for stronger password hashing
 try:
@@ -25,6 +24,8 @@ try:
 except ImportError:
     HAS_BCRYPT = False
     logging.warning("bcrypt not available - using SHA-256 for API key hashing (less secure)")
+
+import contextlib
 
 from backend.rbac import APIKeyInfo, Role
 
@@ -301,10 +302,8 @@ def _save_keys(keys: dict) -> None:
             os.fsync(f.fileno())
     except Exception:
         # Make sure we don't leave a stale .tmp file
-        try:
+        with contextlib.suppress(OSError):
             os.unlink(tmp_path)
-        except OSError:
-            pass
         raise
     # Atomic rename (POSIX guarantees atomicity when src and dst are on the
     # same filesystem). On Windows, os.replace is atomic too.
@@ -368,7 +367,7 @@ def add_api_key(key: str, role: Role, description: str = "") -> str:
     return key_hash
 
 
-def validate_api_key(key: str) -> Optional[APIKeyInfo]:
+def validate_api_key(key: str) -> APIKeyInfo | None:
     """Validate an API key and return its info including role.
 
     Returns None if the key is invalid or empty.
@@ -439,12 +438,11 @@ def validate_api_key(key: str) -> Optional[APIKeyInfo]:
 
     # Verify the key against the stored bcrypt hash OUTSIDE the lock
     # (bcrypt.checkpw is slow — don't hold the lock during it).
-    if stored_hash:
-        if not _verify_key(key, stored_hash):
-            # Lookup matched but bcrypt verification failed — possible
-            # HMAC collision or tampering. Reject.
-            logger.warning("API key HMAC lookup matched but bcrypt verify failed")
-            return None
+    if stored_hash and not _verify_key(key, stored_hash):
+        # Lookup matched but bcrypt verification failed — possible
+        # HMAC collision or tampering. Reject.
+        logger.warning("API key HMAC lookup matched but bcrypt verify failed")
+        return None
 
     api_key_info = APIKeyInfo(
         key_hash=lookup,
@@ -472,7 +470,7 @@ def validate_api_key(key: str) -> Optional[APIKeyInfo]:
     return api_key_info
 
 
-def validate_api_key_by_hash(key_hash: str) -> Optional[APIKeyInfo]:
+def validate_api_key_by_hash(key_hash: str) -> APIKeyInfo | None:
     """Validate an API key by its hash (for internal lookups).
 
     Returns None if the hash is not found.

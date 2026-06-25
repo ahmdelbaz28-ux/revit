@@ -1,4 +1,4 @@
-"""v2.py — API v2 Routers for FireAI Cloud-Native Endpoints
+"""v2.py — API v2 Routers for FireAI Cloud-Native Endpoints.
 ============================================================
 
 MISSION TASK 3.1 — API Versioning with /api/v2/ structure
@@ -35,14 +35,15 @@ References
 ----------
 - agent.md Rule 6/14: VERIFY BEFORE CHANGING
 - RFC 7234: HTTP Caching — Deprecation and Sunset headers
+
 """
 
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
-from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
@@ -73,8 +74,8 @@ class GenerativeDesignRequest(BaseModel):
 class BIMExtractRoomsRequest(BaseModel):
     """Request body for /api/v2/bim/extract-rooms."""
 
-    source: Optional[str] = Field(None, description="File path or URL")
-    provider: Optional[str] = Field(None, description="Provider name (default: env var)")
+    source: str | None = Field(None, description="File path or URL")
+    provider: str | None = Field(None, description="Provider name (default: env var)")
 
 
 class IFC43MapDetectorRequest(BaseModel):
@@ -101,7 +102,7 @@ class ARExportRequest(BaseModel):
 
     building_id: str = "API_Building"
     format: str = Field("both", pattern="^(glb|usdz|both)$")
-    nodes: List[Dict[str, Any]] = Field(
+    nodes: list[dict[str, Any]] = Field(
         default_factory=list,
         description="AR scene nodes (optional — empty uses DigitalTwin)",
     )
@@ -112,7 +113,7 @@ class WebhookSubscribeRequest(BaseModel):
 
     url: str
     secret: str = Field(..., min_length=32)  # V135 F-33: NIST SP 800-107
-    event_types: List[str] = Field(default_factory=list)
+    event_types: list[str] = Field(default_factory=list)
 
 
 class WebhookPublishRequest(BaseModel):
@@ -120,8 +121,8 @@ class WebhookPublishRequest(BaseModel):
 
     event_type: str
     source: str
-    data: Dict[str, Any]
-    trace_id: Optional[str] = None
+    data: dict[str, Any]
+    trace_id: str | None = None
 
 
 class SmokeDensityPointRequest(BaseModel):
@@ -141,11 +142,11 @@ class SmokeSimulationStateRequest(BaseModel):
     """
 
     room_id: str = Field(..., max_length=200)
-    smoke_density_points: List[SmokeDensityPointRequest] = Field(
+    smoke_density_points: list[SmokeDensityPointRequest] = Field(
         default_factory=list, max_length=10000
     )
-    visibility_at_height: Dict[float, float] = Field(default_factory=dict)
-    fds_run_id: Optional[str] = None
+    visibility_at_height: dict[float, float] = Field(default_factory=dict)
+    fds_run_id: str | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -154,16 +155,16 @@ class SmokeSimulationStateRequest(BaseModel):
 
 
 @router.post("/generative/design")
-async def generate_design_variants(req: GenerativeDesignRequest) -> Dict[str, Any]:
+async def generate_design_variants(req: GenerativeDesignRequest) -> dict[str, Any]:
     """Generate 3 layout variants (Cost-Min, Standard, Safety-Max).
 
     Returns scored variants with recommendation based on occupancy.
     """
     try:
+        from fireai.core.spatial_engine.density_optimizer import Room
         from fireai.core.spatial_engine.generative_layout_agent import (
             GenerativeLayoutAgent,
         )
-        from fireai.core.spatial_engine.density_optimizer import Room
 
         agent = GenerativeLayoutAgent(use_multiprocessing=req.use_multiprocessing)
         room = Room(
@@ -191,7 +192,7 @@ async def generate_design_variants(req: GenerativeDesignRequest) -> Dict[str, An
 
 
 @router.get("/bim/providers")
-async def list_bim_providers() -> Dict[str, Any]:
+async def list_bim_providers() -> dict[str, Any]:
     """List all registered BIM providers."""
     from fireai.bridges.bim_provider import BIMProviderRegistry
 
@@ -204,7 +205,7 @@ async def list_bim_providers() -> Dict[str, Any]:
 
 
 @router.post("/bim/extract-rooms")
-async def extract_rooms(req: BIMExtractRoomsRequest) -> Dict[str, Any]:
+async def extract_rooms(req: BIMExtractRoomsRequest) -> dict[str, Any]:
     """Extract rooms via configured BIM provider.
 
     V137 F-5 FIX: Added source path validation to prevent SSRF/path traversal.
@@ -287,7 +288,7 @@ async def extract_rooms(req: BIMExtractRoomsRequest) -> Dict[str, Any]:
 
 
 @router.get("/bim/health")
-async def bim_health() -> Dict[str, Any]:
+async def bim_health() -> dict[str, Any]:
     """Health check for active BIM provider."""
     from fireai.bridges.bim_provider import get_provider
 
@@ -307,7 +308,7 @@ async def bim_health() -> Dict[str, Any]:
 
 
 @router.post("/ifc43/map-detector")
-async def map_detector_to_ifc43(req: IFC43MapDetectorRequest) -> Dict[str, Any]:
+async def map_detector_to_ifc43(req: IFC43MapDetectorRequest) -> dict[str, Any]:
     """Map a FireAI detector to IFC 4.3 ADD2 representation."""
     from fireai.bridges.ifc43_mapper import IFC43Mapper
 
@@ -326,7 +327,7 @@ async def map_detector_to_ifc43(req: IFC43MapDetectorRequest) -> Dict[str, Any]:
 
 
 @router.post("/ifc43/map-project")
-async def map_project_to_ifc43(req: Dict[str, Any]) -> Dict[str, Any]:
+async def map_project_to_ifc43(req: dict[str, Any]) -> dict[str, Any]:
     """Map an entire FireAI project to IFC 4.3 ADD2."""
     from fireai.bridges.ifc43_mapper import IFC43Mapper
 
@@ -348,7 +349,7 @@ async def map_project_to_ifc43(req: Dict[str, Any]) -> Dict[str, Any]:
 
 
 @router.post("/ar/export")
-async def export_ar_snapshot(req: ARExportRequest) -> Dict[str, Any]:
+async def export_ar_snapshot(req: ARExportRequest) -> dict[str, Any]:
     """Export DigitalTwin snapshot to GLB/USDZ for AR visualization.
 
     Returns base64-encoded file content for each requested format.
@@ -404,11 +405,11 @@ async def export_ar_snapshot(req: ARExportRequest) -> Dict[str, Any]:
 
 
 @router.post("/webhooks/subscribe")
-async def subscribe_webhook(req: WebhookSubscribeRequest) -> Dict[str, Any]:
+async def subscribe_webhook(req: WebhookSubscribeRequest) -> dict[str, Any]:
     """Subscribe to webhook events."""
     from fireai.infrastructure.webhook_service import (
-        get_webhook_service,
         WebhookSubscription,
+        get_webhook_service,
     )
 
     service = get_webhook_service()
@@ -431,7 +432,7 @@ async def subscribe_webhook(req: WebhookSubscribeRequest) -> Dict[str, Any]:
 
 
 @router.get("/webhooks/subscriptions")
-async def list_webhook_subscriptions() -> Dict[str, Any]:
+async def list_webhook_subscriptions() -> dict[str, Any]:
     """List all webhook subscriptions."""
     from fireai.infrastructure.webhook_service import get_webhook_service
 
@@ -452,7 +453,7 @@ async def list_webhook_subscriptions() -> Dict[str, Any]:
 
 
 @router.delete("/webhooks/subscriptions/{sub_id}")
-async def unsubscribe_webhook(sub_id: str) -> Dict[str, Any]:
+async def unsubscribe_webhook(sub_id: str) -> dict[str, Any]:
     """Remove a webhook subscription."""
     from fireai.infrastructure.webhook_service import get_webhook_service
 
@@ -464,7 +465,7 @@ async def unsubscribe_webhook(sub_id: str) -> Dict[str, Any]:
 
 
 @router.post("/webhooks/publish")
-async def publish_webhook_event(req: WebhookPublishRequest) -> Dict[str, Any]:
+async def publish_webhook_event(req: WebhookPublishRequest) -> dict[str, Any]:
     """Publish an event to all matching webhook subscribers."""
     from fireai.infrastructure.webhook_service import get_webhook_service
 
@@ -488,7 +489,7 @@ async def publish_webhook_event(req: WebhookPublishRequest) -> Dict[str, Any]:
 
 
 @router.post("/smoke-simulation/state")
-async def create_smoke_state(req: SmokeSimulationStateRequest) -> Dict[str, Any]:
+async def create_smoke_state(req: SmokeSimulationStateRequest) -> dict[str, Any]:
     """Create or update smoke simulation state for a room.
 
     If FDS data is provided (fds_run_id), creates a validated state.
@@ -548,7 +549,7 @@ async def create_smoke_state(req: SmokeSimulationStateRequest) -> Dict[str, Any]
 
 
 @router.get("/health")
-async def v2_health() -> Dict[str, Any]:
+async def v2_health() -> dict[str, Any]:
     """Health check for v2 API endpoints."""
     return {
         "status": "ok",
@@ -586,7 +587,7 @@ async def v2_health() -> Dict[str, Any]:
 
 
 @router.get("/auth/csrf-token")
-async def get_csrf_token(request: Request) -> Dict[str, Any]:
+async def get_csrf_token(request: Request) -> dict[str, Any]:
     """Issue a CSRF token via Double Submit Cookie pattern.
 
     Sets the CSRF token in:
@@ -598,12 +599,13 @@ async def get_csrf_token(request: Request) -> Dict[str, Any]:
 
     Per OWASP CSRF Prevention Cheat Sheet — Double Submit Cookie pattern.
     """
+    from fastapi.responses import JSONResponse
+
     from backend.security_csrf import (
         CSRF_COOKIE_NAME,
         build_csrf_cookie_header,
         generate_csrf_token,
     )
-    from fastapi.responses import JSONResponse
 
     token = generate_csrf_token()
 

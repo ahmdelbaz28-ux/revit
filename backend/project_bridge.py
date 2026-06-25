@@ -30,17 +30,18 @@ Device mapping between System A and System B:
 
 from __future__ import annotations
 
+import contextlib
 import json
 import logging
 from datetime import datetime, timezone
-from typing import Any, Dict
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
 _TARGET_DB = "udm_elements"
 
 
-def sync_project_to_udm(project_data: Dict[str, Any]) -> bool:
+def sync_project_to_udm(project_data: dict[str, Any]) -> bool:
     """Sync a project from System A to System B after creation.
 
     Maps System A fields to System B fields and creates the project
@@ -132,7 +133,7 @@ def sync_project_to_udm(project_data: Dict[str, Any]) -> bool:
         return False
 
 
-def sync_project_update_to_udm(project_id: str, updates: Dict[str, Any]) -> bool:
+def sync_project_update_to_udm(project_id: str, updates: dict[str, Any]) -> bool:
     """Sync a project update from System A to System B.
 
     Records the sync status in sync_operations.
@@ -292,7 +293,7 @@ def sync_project_delete_to_udm(project_id: str) -> bool:
 #   - Redundant devices that waste budget without adding coverage
 
 
-def sync_device_to_udm(project_id: str, device_data: Dict[str, Any]) -> bool:
+def sync_device_to_udm(project_id: str, device_data: dict[str, Any]) -> bool:
     """Sync a device from System A to System B after creation.
 
     Maps System A device fields to System B element fields so that
@@ -415,7 +416,7 @@ def sync_device_to_udm(project_id: str, device_data: Dict[str, Any]) -> bool:
         return False
 
 
-def sync_device_update_to_udm(project_id: str, device_id: str, updates: Dict[str, Any]) -> bool:
+def sync_device_update_to_udm(project_id: str, device_id: str, updates: dict[str, Any]) -> bool:
     """Sync a device update from System A to System B.
 
     Records the sync status in sync_operations.
@@ -593,7 +594,7 @@ def sync_device_delete_to_udm(project_id: str, device_id: str) -> bool:
 #     System A connection fields     → System B relationship `metadata` (JSON)
 
 
-def sync_connection_to_udm(project_id: str, connection_data: Dict[str, Any]) -> bool:
+def sync_connection_to_udm(project_id: str, connection_data: dict[str, Any]) -> bool:
     """Sync a connection from System A to System B after creation.
 
     Maps System A connection fields to System B relationship fields so that
@@ -644,10 +645,8 @@ def sync_connection_to_udm(project_id: str, connection_data: Dict[str, Any]) -> 
                 "ADD COLUMN is_deleted INTEGER DEFAULT 0",
                 "ADD COLUMN last_modified_timestamp TEXT",
             ]:
-                try:
+                with contextlib.suppress(Exception):
                     udm.bridge_sql(f"ALTER TABLE relationships {col}")
-                except Exception:
-                    pass
 
             now = datetime.now(timezone.utc).isoformat()
             udm.bridge_insert(
@@ -709,10 +708,8 @@ def sync_connection_delete_to_udm(project_id: str, connection_id: str) -> bool:
                 "ADD COLUMN is_deleted INTEGER DEFAULT 0",
                 "ADD COLUMN last_modified_timestamp TEXT",
             ]:
-                try:
+                with contextlib.suppress(Exception):
                     udm.bridge_sql(f"ALTER TABLE relationships {col}")
-                except Exception:
-                    pass
 
             now = datetime.now(timezone.utc).isoformat()
             udm.bridge_sql(

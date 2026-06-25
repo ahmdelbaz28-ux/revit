@@ -28,7 +28,7 @@ instead of raising a hard error, since both systems are in production.
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -36,17 +36,17 @@ logger = logging.getLogger(__name__)
 class ContractViolation(Exception):
     """Raised when a response fails contract validation."""
 
-    def __init__(self, endpoint: str, violations: List[str]):
+    def __init__(self, endpoint: str, violations: list[str]) -> None:
         self.endpoint = endpoint
         self.violations = violations
         super().__init__(f"Contract violation on {endpoint}: {', '.join(violations)}")
 
 
 def _validate_fields(
-    data: Dict[str, Any],
-    required: Dict[str, type],
-    optional: Dict[str, type] = None,
-) -> List[str]:
+    data: dict[str, Any],
+    required: dict[str, type],
+    optional: dict[str, type] | None = None,
+) -> list[str]:
     """Validate that data has required fields with correct types.
 
     Supports field aliases: each field name can be a pipe-separated string
@@ -82,7 +82,7 @@ def _validate_fields(
     return violations
 
 
-def validate_project(data: Dict[str, Any]) -> Dict[str, Any]:
+def validate_project(data: dict[str, Any]) -> dict[str, Any]:
     """Validate a project response against the API contract.
 
     V115: Supports BOTH System A (digital_twin.db) and System B (UDM) field names.
@@ -115,7 +115,7 @@ def validate_project(data: Dict[str, Any]) -> Dict[str, Any]:
     return data
 
 
-def validate_device(data: Dict[str, Any]) -> Dict[str, Any]:
+def validate_device(data: dict[str, Any]) -> dict[str, Any]:
     """Validate a device response against the API contract.
 
     V115: Supports BOTH naming conventions.
@@ -152,7 +152,7 @@ def validate_device(data: Dict[str, Any]) -> Dict[str, Any]:
     return data
 
 
-def validate_connection(data: Dict[str, Any]) -> Dict[str, Any]:
+def validate_connection(data: dict[str, Any]) -> dict[str, Any]:
     """Validate a connection response against the API contract.
 
     V115: Supports BOTH naming conventions.
@@ -183,7 +183,7 @@ def validate_connection(data: Dict[str, Any]) -> Dict[str, Any]:
     return data
 
 
-def validate_paginated(data: Dict[str, Any], item_validator=None) -> Dict[str, Any]:
+def validate_paginated(data: dict[str, Any], item_validator=None) -> dict[str, Any]:
     """Validate a paginated response.
 
     V115: Supports both naming conventions.
@@ -215,7 +215,7 @@ def validate_paginated(data: Dict[str, Any], item_validator=None) -> Dict[str, A
     return data
 
 
-def validate_health(data: Dict[str, Any]) -> Dict[str, Any]:
+def validate_health(data: dict[str, Any]) -> dict[str, Any]:
     """Validate a health check response."""
     required = {
         "status": str,

@@ -1,4 +1,4 @@
-"""fireai.core.audit_log — QOMN-FIRE Layer 4: Audit Log (Immutable Record)
+"""fireai.core.audit_log — QOMN-FIRE Layer 4: Audit Log (Immutable Record).
 ========================================================================
 
 Creates permanent, tamper-evident record of every computation.
@@ -27,7 +27,6 @@ import threading
 import uuid
 from dataclasses import asdict, dataclass, fields
 from datetime import datetime, timezone
-from typing import List, Optional, Tuple
 
 # Sentinel: first entry in the chain has this as prev_entry_hash
 GENESIS_PREV_HASH = "0" * 64
@@ -100,9 +99,9 @@ def create_audit_entry(
     output_value: str,
     output_hash: str,
     status: str,
-    prev_entry_hash: Optional[str] = None,
-    entry_id: Optional[str] = None,
-    timestamp: Optional[str] = None,
+    prev_entry_hash: str | None = None,
+    entry_id: str | None = None,
+    timestamp: str | None = None,
 ) -> AuditEntry:
     """Factory function to create an :class:`AuditEntry` with auto-computed hashes.
 
@@ -187,7 +186,7 @@ class AuditEntry:
     status: str
     prev_entry_hash: str
     entry_hash: str
-    hmac_signature: Optional[str]
+    hmac_signature: str | None
 
 
 # ---------------------------------------------------------------------------
@@ -210,7 +209,7 @@ class AuditLog:
 
     """
 
-    def __init__(self, db_path: str = ":memory:", hmac_key: Optional[bytes] = None) -> None:
+    def __init__(self, db_path: str = ":memory:", hmac_key: bytes | None = None) -> None:
         self._db_path = db_path
         self._hmac_key = hmac_key
         # V69-11 FIX: Thread-safe lock for hash chain integrity
@@ -276,7 +275,7 @@ class AuditLog:
                     raise ValueError(f"Entry hash mismatch: expected {recomputed}, got {entry.entry_hash}")
 
             # --- HMAC signature ---
-            hmac_sig: Optional[str] = None
+            hmac_sig: str | None = None
             if self._hmac_key is not None:
                 hmac_sig = compute_hmac(entry.entry_hash, self._hmac_key)
                 object.__setattr__(entry, "hmac_signature", hmac_sig)
@@ -303,7 +302,7 @@ class AuditLog:
             self._conn.commit()
             return entry.entry_id
 
-    def verify_chain(self) -> Tuple[bool, List[str]]:
+    def verify_chain(self) -> tuple[bool, list[str]]:
         """Verify the integrity of the entire hash chain.
 
         Returns
@@ -324,9 +323,9 @@ class AuditLog:
             self._check_closed()
             return self._verify_chain_unlocked()
 
-    def _verify_chain_unlocked(self) -> Tuple[bool, List[str]]:
+    def _verify_chain_unlocked(self) -> tuple[bool, list[str]]:
         """Internal: verify chain (caller must hold self._lock)."""
-        errors: List[str] = []
+        errors: list[str] = []
 
         cur = self._conn.execute("SELECT entry_id, prev_entry_hash, entry_hash FROM audit_entries ORDER BY rowid ASC;")
         rows = cur.fetchall()
@@ -371,7 +370,7 @@ class AuditLog:
         is_valid = len(errors) == 0
         return is_valid, errors
 
-    def get_entry(self, entry_id: str) -> Optional[AuditEntry]:
+    def get_entry(self, entry_id: str) -> AuditEntry | None:
         """Retrieve a single entry by its ``entry_id``.
 
         Returns ``None`` if the entry does not exist.
@@ -391,7 +390,7 @@ class AuditLog:
             col_names = [desc[0] for desc in cur.description]
             return self._row_to_entry(dict(zip(col_names, row, strict=False)))
 
-    def get_analysis(self, analysis_id: str) -> List[AuditEntry]:
+    def get_analysis(self, analysis_id: str) -> list[AuditEntry]:
         """Retrieve all entries belonging to an analysis, in insertion order.
 
         Raises
@@ -443,7 +442,7 @@ class AuditLog:
 
         return json.dumps(export_obj, indent=2, sort_keys=True)
 
-    def verify_export(self, json_str: str) -> Tuple[bool, str]:
+    def verify_export(self, json_str: str) -> tuple[bool, str]:
         """Verify the integrity of an exported JSON string.
 
         Returns
@@ -524,7 +523,7 @@ class AuditLog:
 
     # -- Internal helpers --------------------------------------------------
 
-    def _last_entry_hash(self) -> Optional[str]:
+    def _last_entry_hash(self) -> str | None:
         """Return the ``entry_hash`` of the most recently inserted entry."""
         cur = self._conn.execute(_LAST_ENTRY_HASH_SQL)
         row = cur.fetchone()

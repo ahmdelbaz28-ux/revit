@@ -1,4 +1,4 @@
-"""fireai.core.detector_response — NFPA 72 Detector Response Time Modeling
+"""fireai.core.detector_response — NFPA 72 Detector Response Time Modeling.
 =======================================================================
 
 Implements detector response time estimation per NFPA 72 and fire

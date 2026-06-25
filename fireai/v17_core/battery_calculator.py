@@ -1,4 +1,4 @@
-"""v17_core/battery_calculator.py — NFPA 72 §10.6.7 Battery Aging & Temperature Derating
+"""v17_core/battery_calculator.py — NFPA 72 §10.6.7 Battery Aging & Temperature Derating.
 ======================================================================================
 CRITICAL LIFE-SAFETY MODULE — Part of the V17 Critical Trilogy
 
@@ -43,7 +43,7 @@ Usage:
 
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Any
 
 # Import the correct provenance shim (not the consultant's fireai.v8_core path)
 try:
@@ -131,7 +131,7 @@ class StrictBatterySizer:
         quiescent_ma: float,
         alarm_ma: float,
         panel_ambient_temp_c: float = 25.0,
-        installed_battery_ah: Optional[float] = None,
+        installed_battery_ah: float | None = None,
         battery_cells: int = 6,
     ) -> Any:
         """Calculate minimum required battery capacity with full derating.
@@ -236,7 +236,7 @@ class StrictBatterySizer:
                 overall=conf_level,
             )
 
-            value_dict: Dict[str, Any] = {
+            value_dict: dict[str, Any] = {
                 "min_required_ah": result.required_ah,
                 "base_ah": result.total_load_ah,
                 "thermal_derate": result.temperature_derating,

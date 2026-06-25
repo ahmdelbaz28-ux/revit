@@ -21,7 +21,7 @@ from fastapi.testclient import TestClient
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
 @pytest.fixture(scope="module", autouse=True)
-def _setup_env():
+def _setup_env() -> None:
     """Set development environment for testing."""
     os.environ["FIREAI_ENV"] = "development"
     os.environ["FIREAI_API_KEY"] = ""
@@ -83,7 +83,7 @@ def project_with_two_devices(client):
 class TestConnectionDeviceValidation:
     """Tests for device existence validation during connection creation."""
 
-    def test_create_connection_nonexistent_source_device(self, client, project_with_two_devices):
+    def test_create_connection_nonexistent_source_device(self, client, project_with_two_devices) -> None:
         """Connection with nonexistent source device must return 400."""
         pid, _, dev2 = project_with_two_devices
         dev2_id = dev2.get("id") or dev2.get("device_id")
@@ -99,7 +99,7 @@ class TestConnectionDeviceValidation:
         )
         assert resp.status_code == 400
 
-    def test_create_connection_nonexistent_target_device(self, client, project_with_two_devices):
+    def test_create_connection_nonexistent_target_device(self, client, project_with_two_devices) -> None:
         """Connection with nonexistent target device must return 400."""
         pid, dev1, _ = project_with_two_devices
         dev1_id = dev1.get("id") or dev1.get("device_id")
@@ -115,7 +115,7 @@ class TestConnectionDeviceValidation:
         )
         assert resp.status_code == 400
 
-    def test_create_connection_both_devices_nonexistent(self, client, project_with_two_devices):
+    def test_create_connection_both_devices_nonexistent(self, client, project_with_two_devices) -> None:
         """Connection with both devices nonexistent must return 400."""
         pid, _, _ = project_with_two_devices
         resp = client.post(
@@ -130,7 +130,7 @@ class TestConnectionDeviceValidation:
         )
         assert resp.status_code == 400
 
-    def test_create_connection_self_connection_rejected(self, client, project_with_two_devices):
+    def test_create_connection_self_connection_rejected(self, client, project_with_two_devices) -> None:
         """Connection with fromId == toId must be rejected (self-connection)."""
         pid, dev1, _ = project_with_two_devices
         dev1_id = dev1.get("id") or dev1.get("device_id")
@@ -147,7 +147,7 @@ class TestConnectionDeviceValidation:
         # Self-connection validation in schema returns 422
         assert resp.status_code in (400, 422)
 
-    def test_create_connection_in_nonexistent_project(self, client):
+    def test_create_connection_in_nonexistent_project(self, client) -> None:
         """Connection in nonexistent project must return 404."""
         resp = client.post(
             "/api/projects/nonexistent-proj-id/connections",
@@ -170,7 +170,7 @@ class TestConnectionDeviceValidation:
 class TestConnectionCustomParameters:
     """Tests for connection creation with custom cable and type parameters."""
 
-    def test_create_connection_with_custom_cable_size(self, client, project_with_two_devices):
+    def test_create_connection_with_custom_cable_size(self, client, project_with_two_devices) -> None:
         """Connection with custom cableSize must be stored correctly."""
         pid, dev1, dev2 = project_with_two_devices
         dev1_id = dev1.get("id") or dev1.get("device_id")
@@ -189,7 +189,7 @@ class TestConnectionCustomParameters:
         data = resp.json().get("data", resp.json())
         assert data.get("cableSize") == "2.5mm²"
 
-    def test_create_connection_with_signal_type(self, client, project_with_two_devices):
+    def test_create_connection_with_signal_type(self, client, project_with_two_devices) -> None:
         """Connection with type='signal' must be stored correctly."""
         pid, dev1, dev2 = project_with_two_devices
         dev1_id = dev1.get("id") or dev1.get("device_id")
@@ -208,7 +208,7 @@ class TestConnectionCustomParameters:
         data = resp.json().get("data", resp.json())
         assert data.get("type") == "signal"
 
-    def test_create_connection_default_cable_size(self, client, project_with_two_devices):
+    def test_create_connection_default_cable_size(self, client, project_with_two_devices) -> None:
         """Connection without cableSize must default to '1.5mm²'."""
         pid, dev1, dev2 = project_with_two_devices
         dev1_id = dev1.get("id") or dev1.get("device_id")
@@ -225,7 +225,7 @@ class TestConnectionCustomParameters:
         data = resp.json().get("data", resp.json())
         assert data.get("cableSize") == "1.5mm²"
 
-    def test_create_connection_default_type(self, client, project_with_two_devices):
+    def test_create_connection_default_type(self, client, project_with_two_devices) -> None:
         """Connection without type must default to 'power'."""
         pid, dev1, dev2 = project_with_two_devices
         dev1_id = dev1.get("id") or dev1.get("device_id")
@@ -251,30 +251,30 @@ class TestConnectionCustomParameters:
 class TestConnectionListing:
     """Tests for connection listing with pagination and sort."""
 
-    def test_list_connections_with_sort(self, client, project_with_two_devices):
+    def test_list_connections_with_sort(self, client, project_with_two_devices) -> None:
         """Listing connections with sort parameter must succeed."""
         pid, _, _ = project_with_two_devices
         resp = client.get(f"/api/projects/{pid}/connections?sort=createdAt&order=asc")
         assert resp.status_code == 200
 
-    def test_list_connections_sort_by_length(self, client, project_with_two_devices):
+    def test_list_connections_sort_by_length(self, client, project_with_two_devices) -> None:
         """Listing connections sorted by length must succeed."""
         pid, _, _ = project_with_two_devices
         resp = client.get(f"/api/projects/{pid}/connections?sort=length&order=asc")
         assert resp.status_code == 200
 
-    def test_list_connections_sort_by_type(self, client, project_with_two_devices):
+    def test_list_connections_sort_by_type(self, client, project_with_two_devices) -> None:
         """Listing connections sorted by type must succeed."""
         pid, _, _ = project_with_two_devices
         resp = client.get(f"/api/projects/{pid}/connections?sort=type&order=desc")
         assert resp.status_code == 200
 
-    def test_list_connections_nonexistent_project_404(self, client):
+    def test_list_connections_nonexistent_project_404(self, client) -> None:
         """Listing connections for nonexistent project must return 404."""
         resp = client.get("/api/projects/nonexistent-proj/connections")
         assert resp.status_code == 404
 
-    def test_list_connections_pagination(self, client, project_with_two_devices):
+    def test_list_connections_pagination(self, client, project_with_two_devices) -> None:
         """Listing connections with pagination must include metadata."""
         pid, _, _ = project_with_two_devices
         resp = client.get(f"/api/projects/{pid}/connections?page=1&limit=10")
@@ -292,7 +292,7 @@ class TestConnectionListing:
 class TestConnectionDeletion:
     """Tests for connection deletion edge cases."""
 
-    def test_delete_connection_then_verify_gone(self, client, project_with_two_devices):
+    def test_delete_connection_then_verify_gone(self, client, project_with_two_devices) -> None:
         """After deleting a connection, it should not be findable."""
         pid, dev1, dev2 = project_with_two_devices
         dev1_id = dev1.get("id") or dev1.get("device_id")
@@ -311,12 +311,12 @@ class TestConnectionDeletion:
         del_resp = client.delete(f"/api/projects/{pid}/connections/{conn_id}")
         assert del_resp.status_code == 200
 
-    def test_delete_connection_nonexistent_project_404(self, client):
+    def test_delete_connection_nonexistent_project_404(self, client) -> None:
         """Deleting connection in nonexistent project must return 404."""
         resp = client.delete("/api/projects/nonexistent-proj/connections/some-conn")
         assert resp.status_code == 404
 
-    def test_delete_connection_twice(self, client, project_with_two_devices):
+    def test_delete_connection_twice(self, client, project_with_two_devices) -> None:
         """Deleting a connection twice must return 404 on second attempt."""
         pid, dev1, dev2 = project_with_two_devices
         dev1_id = dev1.get("id") or dev1.get("device_id")

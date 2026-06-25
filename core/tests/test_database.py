@@ -1,4 +1,4 @@
-"""core/tests/test_database.py — Comprehensive unit tests for core/database.py
+"""core/tests/test_database.py — Comprehensive unit tests for core/database.py.
 
 Tests the UniversalDataModel SQLite store covering:
 - Database initialization (in-memory and file-based)
@@ -114,12 +114,12 @@ def sample_element_3() -> UniversalElement:
 class TestUniversalDataModelInit:
     """Tests for database initialization and configuration."""
 
-    def test_in_memory_initialization(self, udm: UniversalDataModel):
+    def test_in_memory_initialization(self, udm: UniversalDataModel) -> None:
         """Test that an in-memory database initializes correctly."""
         assert udm._db_path == ":memory:"
         assert udm._conn is not None
 
-    def test_file_based_initialization(self, tmp_path):
+    def test_file_based_initialization(self, tmp_path) -> None:
         """Test that a file-based database initializes and creates directory."""
         db_file = str(tmp_path / "test_udm.db")
         model = UniversalDataModel(db_path=db_file)
@@ -128,7 +128,7 @@ class TestUniversalDataModelInit:
         model.close()
         os.unlink(db_file)
 
-    def test_creates_directory_for_file_db(self, tmp_path):
+    def test_creates_directory_for_file_db(self, tmp_path) -> None:
         """Test that directory is created for file-based databases."""
         db_dir = str(tmp_path / "nested" / "dir")
         db_file = os.path.join(db_dir, "test.db")
@@ -137,7 +137,7 @@ class TestUniversalDataModelInit:
         model.close()
         os.unlink(db_file)
 
-    def test_wal_mode_enabled(self, tmp_path):
+    def test_wal_mode_enabled(self, tmp_path) -> None:
         """Test that WAL journal mode is set for file-based databases.
 
         Note: In-memory databases use 'memory' mode, so we test with a file.
@@ -151,21 +151,21 @@ class TestUniversalDataModelInit:
         os.unlink(db_file)
         assert mode.lower() == "wal"
 
-    def test_memory_db_journal_mode(self, udm: UniversalDataModel):
+    def test_memory_db_journal_mode(self, udm: UniversalDataModel) -> None:
         """Test that in-memory databases use 'memory' journal mode."""
         cursor = udm._conn.cursor()
         cursor.execute("PRAGMA journal_mode")
         mode = cursor.fetchone()[0]
         assert mode.lower() == "memory"
 
-    def test_foreign_keys_enabled(self, udm: UniversalDataModel):
+    def test_foreign_keys_enabled(self, udm: UniversalDataModel) -> None:
         """Test that foreign key constraints are enabled."""
         cursor = udm._conn.cursor()
         cursor.execute("PRAGMA foreign_keys")
         fk = cursor.fetchone()[0]
         assert fk == 1
 
-    def test_tables_created(self, udm: UniversalDataModel):
+    def test_tables_created(self, udm: UniversalDataModel) -> None:
         """Test that all expected tables are created on initialization."""
         cursor = udm._conn.cursor()
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")
@@ -174,7 +174,7 @@ class TestUniversalDataModelInit:
         assert "relationships" in tables
         assert "conflicts" in tables
 
-    def test_indexes_created(self, udm: UniversalDataModel):
+    def test_indexes_created(self, udm: UniversalDataModel) -> None:
         """Test that performance indexes are created."""
         cursor = udm._conn.cursor()
         cursor.execute("SELECT name FROM sqlite_master WHERE type='index' ORDER BY name")
@@ -192,12 +192,12 @@ class TestUniversalDataModelInit:
 class TestContextManager:
     """Tests for the context manager protocol."""
 
-    def test_context_manager_enter(self):
+    def test_context_manager_enter(self) -> None:
         """Test __enter__ returns the model instance."""
         with UniversalDataModel(db_path=":memory:") as udm:
             assert isinstance(udm, UniversalDataModel)
 
-    def test_context_manager_exit_closes(self):
+    def test_context_manager_exit_closes(self) -> None:
         """Test __exit__ calls close() on the model."""
         model = UniversalDataModel(db_path=":memory:")
         model.__exit__(None, None, None)
@@ -205,7 +205,7 @@ class TestContextManager:
         with pytest.raises(RuntimeError):
             model._conn.execute("SELECT 1")
 
-    def test_close_idempotent(self, udm: UniversalDataModel):
+    def test_close_idempotent(self, udm: UniversalDataModel) -> None:
         """Test that close() can be called multiple times without error."""
         udm.close()
         udm.close()  # Should not raise
@@ -217,31 +217,31 @@ class TestContextManager:
 class TestAddElement:
     """Tests for the add_element method."""
 
-    def test_add_element_success(self, udm: UniversalDataModel, sample_element: UniversalElement):
+    def test_add_element_success(self, udm: UniversalDataModel, sample_element: UniversalElement) -> None:
         """Test adding a valid element returns True."""
         result = udm.add_element(sample_element)
         assert result is True
 
-    def test_add_element_persists(self, udm: UniversalDataModel, sample_element: UniversalElement):
+    def test_add_element_persists(self, udm: UniversalDataModel, sample_element: UniversalElement) -> None:
         """Test that an added element can be retrieved."""
         udm.add_element(sample_element)
         retrieved = udm.get_element("elem-001")
         assert retrieved is not None
         assert retrieved.element_id == "elem-001"
 
-    def test_add_duplicate_element_returns_false(self, udm: UniversalDataModel, sample_element: UniversalElement):
+    def test_add_duplicate_element_returns_false(self, udm: UniversalDataModel, sample_element: UniversalElement) -> None:
         """Test that adding the same element twice returns False on second attempt."""
         udm.add_element(sample_element)
         result = udm.add_element(sample_element)
         assert result is False
 
-    def test_add_element_with_minimal_fields(self, udm: UniversalDataModel):
+    def test_add_element_with_minimal_fields(self, udm: UniversalDataModel) -> None:
         """Test adding an element with only the mandatory element_id."""
         elem = UniversalElement(element_id="minimal-001")
         result = udm.add_element(elem)
         assert result is True
 
-    def test_add_element_stores_json_data(self, udm: UniversalDataModel, sample_element: UniversalElement):
+    def test_add_element_stores_json_data(self, udm: UniversalDataModel, sample_element: UniversalElement) -> None:
         """Test that element data is stored as JSON in the database."""
         udm.add_element(sample_element)
         cursor = udm._conn.cursor()
@@ -252,7 +252,7 @@ class TestAddElement:
         assert data["element_id"] == "elem-001"
         assert data["source_file"] == "floor_plan.dwg"
 
-    def test_add_element_extracts_element_type(self, udm: UniversalDataModel, sample_element: UniversalElement):
+    def test_add_element_extracts_element_type(self, udm: UniversalDataModel, sample_element: UniversalElement) -> None:
         """Test that element_type is extracted to the indexed column."""
         udm.add_element(sample_element)
         cursor = udm._conn.cursor()
@@ -260,7 +260,7 @@ class TestAddElement:
         row = cursor.fetchone()
         assert row["element_type"] == "wall"
 
-    def test_add_element_extracts_project_id(self, udm: UniversalDataModel, sample_element: UniversalElement):
+    def test_add_element_extracts_project_id(self, udm: UniversalDataModel, sample_element: UniversalElement) -> None:
         """Test that project_id is extracted to the indexed column."""
         udm.add_element(sample_element)
         cursor = udm._conn.cursor()
@@ -268,11 +268,11 @@ class TestAddElement:
         row = cursor.fetchone()
         assert row["project_id"] == "proj-alpha"
 
-    def test_add_element_with_duck_typing(self, udm: UniversalDataModel):
+    def test_add_element_with_duck_typing(self, udm: UniversalDataModel) -> None:
         """Test that add_element works with any object having element_id and to_dict()."""
 
         class FakeElement:
-            def __init__(self):
+            def __init__(self) -> None:
                 self.element_id = "duck-001"
 
             def to_dict(self):
@@ -282,7 +282,7 @@ class TestAddElement:
         result = udm.add_element(elem)
         assert result is True
 
-    def test_add_element_without_properties(self, udm: UniversalDataModel):
+    def test_add_element_without_properties(self, udm: UniversalDataModel) -> None:
         """Test adding element with no properties sets element_type to unknown."""
         elem = UniversalElement(element_id="no-props-001")
         udm.add_element(elem)
@@ -295,19 +295,19 @@ class TestAddElement:
 class TestGetElement:
     """Tests for the get_element method."""
 
-    def test_get_existing_element(self, udm: UniversalDataModel, sample_element: UniversalElement):
+    def test_get_existing_element(self, udm: UniversalDataModel, sample_element: UniversalElement) -> None:
         """Test retrieving an existing element by ID."""
         udm.add_element(sample_element)
         result = udm.get_element("elem-001")
         assert result is not None
         assert result.element_id == "elem-001"
 
-    def test_get_nonexistent_element(self, udm: UniversalDataModel):
+    def test_get_nonexistent_element(self, udm: UniversalDataModel) -> None:
         """Test retrieving a non-existent element returns None."""
         result = udm.get_element("nonexistent-id")
         assert result is None
 
-    def test_get_element_preserves_properties(self, udm: UniversalDataModel, sample_element: UniversalElement):
+    def test_get_element_preserves_properties(self, udm: UniversalDataModel, sample_element: UniversalElement) -> None:
         """Test that properties are preserved on retrieval."""
         udm.add_element(sample_element)
         result = udm.get_element("elem-001")
@@ -321,7 +321,7 @@ class TestGetElement:
         assert result.properties.width == 0.25
         assert result.properties.load_bearing is True
 
-    def test_get_element_preserves_geometry(self, udm: UniversalDataModel, sample_element: UniversalElement):
+    def test_get_element_preserves_geometry(self, udm: UniversalDataModel, sample_element: UniversalElement) -> None:
         """Test that geometry is preserved on retrieval."""
         udm.add_element(sample_element)
         result = udm.get_element("elem-001")
@@ -330,7 +330,7 @@ class TestGetElement:
         assert len(result.geometry.points) == 4
         assert result.geometry.polyline_closed is True
 
-    def test_get_element_preserves_metadata(self, udm: UniversalDataModel, sample_element: UniversalElement):
+    def test_get_element_preserves_metadata(self, udm: UniversalDataModel, sample_element: UniversalElement) -> None:
         """Test that source metadata is preserved on retrieval."""
         udm.add_element(sample_element)
         result = udm.get_element("elem-001")
@@ -345,19 +345,19 @@ class TestGetElement:
 class TestGetAllElements:
     """Tests for the get_all_elements method."""
 
-    def test_get_all_empty(self, udm: UniversalDataModel):
+    def test_get_all_empty(self, udm: UniversalDataModel) -> None:
         """Test getting elements from empty database returns empty list."""
         result = udm.get_all_elements()
         assert result == []
 
-    def test_get_all_includes_all(self, udm: UniversalDataModel, sample_element, sample_element_2):
+    def test_get_all_includes_all(self, udm: UniversalDataModel, sample_element, sample_element_2) -> None:
         """Test getting all elements returns all added elements."""
         udm.add_element(sample_element)
         udm.add_element(sample_element_2)
         result = udm.get_all_elements()
         assert len(result) == 2
 
-    def test_get_all_includes_deleted_by_default(self, udm: UniversalDataModel, sample_element):
+    def test_get_all_includes_deleted_by_default(self, udm: UniversalDataModel, sample_element) -> None:
         """Test that get_all_elements includes soft-deleted elements by default."""
         udm.add_element(sample_element)
         udm.delete_element("elem-001")
@@ -365,14 +365,14 @@ class TestGetAllElements:
         assert len(result) == 1
         assert result[0].is_deleted is True
 
-    def test_get_all_excludes_deleted(self, udm: UniversalDataModel, sample_element):
+    def test_get_all_excludes_deleted(self, udm: UniversalDataModel, sample_element) -> None:
         """Test that get_all_elements with include_deleted=False excludes soft-deleted."""
         udm.add_element(sample_element)
         udm.delete_element("elem-001")
         result = udm.get_all_elements(include_deleted=False)
         assert len(result) == 0
 
-    def test_get_all_mixed_deleted(self, udm: UniversalDataModel, sample_element, sample_element_2):
+    def test_get_all_mixed_deleted(self, udm: UniversalDataModel, sample_element, sample_element_2) -> None:
         """Test that only active elements are returned when include_deleted=False."""
         udm.add_element(sample_element)
         udm.add_element(sample_element_2)
@@ -385,24 +385,24 @@ class TestGetAllElements:
 class TestUpdateElement:
     """Tests for the update_element method."""
 
-    def test_update_element_success(self, udm: UniversalDataModel, sample_element):
+    def test_update_element_success(self, udm: UniversalDataModel, sample_element) -> None:
         """Test updating an existing element returns True."""
         udm.add_element(sample_element)
         result = udm.update_element("elem-001", {"source_file": "updated_plan.dwg"})
         assert result is True
 
-    def test_update_nonexistent_element(self, udm: UniversalDataModel):
+    def test_update_nonexistent_element(self, udm: UniversalDataModel) -> None:
         """Test updating a non-existent element returns False."""
         result = udm.update_element("nonexistent", {"source_file": "x.dwg"})
         assert result is False
 
-    def test_update_invalid_keys_raises_valueerror(self, udm: UniversalDataModel, sample_element):
+    def test_update_invalid_keys_raises_valueerror(self, udm: UniversalDataModel, sample_element) -> None:
         """Test that updating with invalid keys raises ValueError (C-3 fix)."""
         udm.add_element(sample_element)
         with pytest.raises(ValueError, match="invalid keys"):
             udm.update_element("elem-001", {"evil_key": "malicious"})
 
-    def test_update_multiple_fields(self, udm: UniversalDataModel, sample_element):
+    def test_update_multiple_fields(self, udm: UniversalDataModel, sample_element) -> None:
         """Test updating multiple valid fields at once."""
         udm.add_element(sample_element)
         udm.update_element("elem-001", {
@@ -414,7 +414,7 @@ class TestUpdateElement:
         assert result.source_file == "new_plan.dwg"
         assert result.last_modified_by == "revit"
 
-    def test_update_increments_version(self, udm: UniversalDataModel, sample_element):
+    def test_update_increments_version(self, udm: UniversalDataModel, sample_element) -> None:
         """Test that updating an element increments its version."""
         udm.add_element(sample_element)
         assert udm.get_element("elem-001").version == 0
@@ -422,14 +422,14 @@ class TestUpdateElement:
         result = udm.get_element("elem-001")
         assert result.version == 1
 
-    def test_update_is_deleted_field(self, udm: UniversalDataModel, sample_element):
+    def test_update_is_deleted_field(self, udm: UniversalDataModel, sample_element) -> None:
         """Test that is_deleted is an updatable field."""
         udm.add_element(sample_element)
         udm.update_element("elem-001", {"is_deleted": True})
         result = udm.get_element("elem-001")
         assert result.is_deleted is True
 
-    def test_update_properties_field(self, udm: UniversalDataModel, sample_element):
+    def test_update_properties_field(self, udm: UniversalDataModel, sample_element) -> None:
         """Test that properties is an updatable field."""
         udm.add_element(sample_element)
         new_props = {"element_type": "door", "name": "Updated Door"}
@@ -437,7 +437,7 @@ class TestUpdateElement:
         result = udm.get_element("elem-001")
         assert result is not None
 
-    def test_update_project_id_field(self, udm: UniversalDataModel, sample_element):
+    def test_update_project_id_field(self, udm: UniversalDataModel, sample_element) -> None:
         """Test that project_id is an updatable field."""
         udm.add_element(sample_element)
         udm.update_element("elem-001", {"project_id": "proj-gamma"})
@@ -445,7 +445,7 @@ class TestUpdateElement:
         assert result is not None
         assert result.project_id == "proj-gamma"
 
-    def test_update_with_source_parameter(self, udm: UniversalDataModel, sample_element):
+    def test_update_with_source_parameter(self, udm: UniversalDataModel, sample_element) -> None:
         """Test updating with a ChangeSource parameter for audit trail."""
         udm.add_element(sample_element)
         result = udm.update_element(
@@ -459,18 +459,18 @@ class TestUpdateElement:
 class TestDeleteElement:
     """Tests for the delete_element (soft-delete) method."""
 
-    def test_delete_existing_element(self, udm: UniversalDataModel, sample_element):
+    def test_delete_existing_element(self, udm: UniversalDataModel, sample_element) -> None:
         """Test soft-deleting an existing element returns True."""
         udm.add_element(sample_element)
         result = udm.delete_element("elem-001")
         assert result is True
 
-    def test_delete_nonexistent_element(self, udm: UniversalDataModel):
+    def test_delete_nonexistent_element(self, udm: UniversalDataModel) -> None:
         """Test soft-deleting a non-existent element returns False."""
         result = udm.delete_element("nonexistent")
         assert result is False
 
-    def test_soft_delete_marks_is_deleted(self, udm: UniversalDataModel, sample_element):
+    def test_soft_delete_marks_is_deleted(self, udm: UniversalDataModel, sample_element) -> None:
         """Test that soft-delete sets is_deleted flag to True."""
         udm.add_element(sample_element)
         udm.delete_element("elem-001")
@@ -478,7 +478,7 @@ class TestDeleteElement:
         assert result is not None
         assert result.is_deleted is True
 
-    def test_soft_delete_preserves_data(self, udm: UniversalDataModel, sample_element):
+    def test_soft_delete_preserves_data(self, udm: UniversalDataModel, sample_element) -> None:
         """Test that soft-deleted element data is still retrievable."""
         udm.add_element(sample_element)
         udm.delete_element("elem-001")
@@ -487,7 +487,7 @@ class TestDeleteElement:
         assert result.element_id == "elem-001"
         assert result.source_file == "floor_plan.dwg"
 
-    def test_delete_with_source_parameter(self, udm: UniversalDataModel, sample_element):
+    def test_delete_with_source_parameter(self, udm: UniversalDataModel, sample_element) -> None:
         """Test soft-deleting with a ChangeSource parameter."""
         udm.add_element(sample_element)
         result = udm.delete_element("elem-001", source=ChangeSource.MANUAL)
@@ -500,30 +500,30 @@ class TestDeleteElement:
 class TestBatchOperations:
     """Tests for the add_elements_batch method."""
 
-    def test_batch_add_success(self, udm: UniversalDataModel, sample_element, sample_element_2, sample_element_3):
+    def test_batch_add_success(self, udm: UniversalDataModel, sample_element, sample_element_2, sample_element_3) -> None:
         """Test adding multiple elements in a batch."""
         elements = [sample_element, sample_element_2, sample_element_3]
         count = udm.add_elements_batch(elements)
         assert count == 3
 
-    def test_batch_add_empty_list(self, udm: UniversalDataModel):
+    def test_batch_add_empty_list(self, udm: UniversalDataModel) -> None:
         """Test batch adding an empty list returns 0."""
         count = udm.add_elements_batch([])
         assert count == 0
 
-    def test_batch_add_duplicate_handling(self, udm: UniversalDataModel, sample_element):
+    def test_batch_add_duplicate_handling(self, udm: UniversalDataModel, sample_element) -> None:
         """Test that duplicates in batch are handled (INSERT OR IGNORE)."""
         udm.add_element(sample_element)
         count = udm.add_elements_batch([sample_element])
         assert count == 0
 
-    def test_batch_add_mixed_duplicates(self, udm: UniversalDataModel, sample_element, sample_element_2):
+    def test_batch_add_mixed_duplicates(self, udm: UniversalDataModel, sample_element, sample_element_2) -> None:
         """Test batch with some duplicates: only new elements are added."""
         udm.add_element(sample_element)
         count = udm.add_elements_batch([sample_element, sample_element_2])
         assert count == 1
 
-    def test_batch_elements_retrievable(self, udm: UniversalDataModel, sample_element, sample_element_2):
+    def test_batch_elements_retrievable(self, udm: UniversalDataModel, sample_element, sample_element_2) -> None:
         """Test that batch-added elements can be individually retrieved."""
         udm.add_elements_batch([sample_element, sample_element_2])
         assert udm.get_element("elem-001") is not None
@@ -536,7 +536,7 @@ class TestBatchOperations:
 class TestGetElementsByType:
     """Tests for the get_elements_by_type method (V129 indexed query)."""
 
-    def test_get_by_type_wall(self, udm: UniversalDataModel, sample_element, sample_element_2):
+    def test_get_by_type_wall(self, udm: UniversalDataModel, sample_element, sample_element_2) -> None:
         """Test filtering elements by type 'wall'."""
         udm.add_element(sample_element)  # WALL
         udm.add_element(sample_element_2)  # DOOR
@@ -544,7 +544,7 @@ class TestGetElementsByType:
         assert len(result) == 1
         assert result[0].element_id == "elem-001"
 
-    def test_get_by_type_door(self, udm: UniversalDataModel, sample_element, sample_element_2):
+    def test_get_by_type_door(self, udm: UniversalDataModel, sample_element, sample_element_2) -> None:
         """Test filtering elements by type 'door'."""
         udm.add_element(sample_element)  # WALL
         udm.add_element(sample_element_2)  # DOOR
@@ -552,27 +552,27 @@ class TestGetElementsByType:
         assert len(result) == 1
         assert result[0].element_id == "elem-002"
 
-    def test_get_by_type_no_match(self, udm: UniversalDataModel, sample_element):
+    def test_get_by_type_no_match(self, udm: UniversalDataModel, sample_element) -> None:
         """Test filtering by a type that doesn't exist returns empty list."""
         udm.add_element(sample_element)
         result = udm.get_elements_by_type("roof")
         assert result == []
 
-    def test_get_by_type_excludes_deleted(self, udm: UniversalDataModel, sample_element):
+    def test_get_by_type_excludes_deleted(self, udm: UniversalDataModel, sample_element) -> None:
         """Test that get_elements_by_type excludes soft-deleted by default."""
         udm.add_element(sample_element)
         udm.delete_element("elem-001")
         result = udm.get_elements_by_type("wall")
         assert result == []
 
-    def test_get_by_type_includes_deleted(self, udm: UniversalDataModel, sample_element):
+    def test_get_by_type_includes_deleted(self, udm: UniversalDataModel, sample_element) -> None:
         """Test that get_elements_by_type with include_deleted=True includes soft-deleted."""
         udm.add_element(sample_element)
         udm.delete_element("elem-001")
         result = udm.get_elements_by_type("wall", include_deleted=True)
         assert len(result) == 1
 
-    def test_get_by_type_empty_db(self, udm: UniversalDataModel):
+    def test_get_by_type_empty_db(self, udm: UniversalDataModel) -> None:
         """Test querying an empty database returns empty list."""
         result = udm.get_elements_by_type("wall")
         assert result == []
@@ -581,7 +581,7 @@ class TestGetElementsByType:
 class TestGetElementsByProject:
     """Tests for the get_elements_by_project method (V129 indexed query)."""
 
-    def test_get_by_project_alpha(self, udm: UniversalDataModel, sample_element, sample_element_2, sample_element_3):
+    def test_get_by_project_alpha(self, udm: UniversalDataModel, sample_element, sample_element_2, sample_element_3) -> None:
         """Test filtering elements by project 'proj-alpha'."""
         udm.add_element(sample_element)  # proj-alpha
         udm.add_element(sample_element_2)  # proj-alpha
@@ -589,7 +589,7 @@ class TestGetElementsByProject:
         result = udm.get_elements_by_project("proj-alpha")
         assert len(result) == 2
 
-    def test_get_by_project_beta(self, udm: UniversalDataModel, sample_element, sample_element_3):
+    def test_get_by_project_beta(self, udm: UniversalDataModel, sample_element, sample_element_3) -> None:
         """Test filtering elements by project 'proj-beta'."""
         udm.add_element(sample_element)  # proj-alpha
         udm.add_element(sample_element_3)  # proj-beta
@@ -597,27 +597,27 @@ class TestGetElementsByProject:
         assert len(result) == 1
         assert result[0].element_id == "elem-003"
 
-    def test_get_by_project_no_match(self, udm: UniversalDataModel, sample_element):
+    def test_get_by_project_no_match(self, udm: UniversalDataModel, sample_element) -> None:
         """Test filtering by a project that doesn't exist returns empty list."""
         udm.add_element(sample_element)
         result = udm.get_elements_by_project("nonexistent-project")
         assert result == []
 
-    def test_get_by_project_excludes_deleted(self, udm: UniversalDataModel, sample_element):
+    def test_get_by_project_excludes_deleted(self, udm: UniversalDataModel, sample_element) -> None:
         """Test that get_elements_by_project excludes soft-deleted by default."""
         udm.add_element(sample_element)
         udm.delete_element("elem-001")
         result = udm.get_elements_by_project("proj-alpha")
         assert result == []
 
-    def test_get_by_project_includes_deleted(self, udm: UniversalDataModel, sample_element):
+    def test_get_by_project_includes_deleted(self, udm: UniversalDataModel, sample_element) -> None:
         """Test that get_elements_by_project with include_deleted=True includes soft-deleted."""
         udm.add_element(sample_element)
         udm.delete_element("elem-001")
         result = udm.get_elements_by_project("proj-alpha", include_deleted=True)
         assert len(result) == 1
 
-    def test_get_by_project_none_project(self, udm: UniversalDataModel):
+    def test_get_by_project_none_project(self, udm: UniversalDataModel) -> None:
         """Test querying elements that have no project_id."""
         elem = UniversalElement(element_id="no-proj-001")
         udm.add_element(elem)
@@ -632,18 +632,18 @@ class TestGetElementsByProject:
 class TestConflictDetection:
     """Tests for the detect_conflicts method."""
 
-    def test_no_conflicts_empty_db(self, udm: UniversalDataModel):
+    def test_no_conflicts_empty_db(self, udm: UniversalDataModel) -> None:
         """Test that an empty database has no conflicts."""
         conflicts = udm.detect_conflicts()
         assert conflicts == []
 
-    def test_no_conflicts_single_element(self, udm: UniversalDataModel, sample_element):
+    def test_no_conflicts_single_element(self, udm: UniversalDataModel, sample_element) -> None:
         """Test that a single element produces no conflicts."""
         udm.add_element(sample_element)
         conflicts = udm.detect_conflicts()
         assert conflicts == []
 
-    def test_conflicts_from_same_handle(self, udm: UniversalDataModel):
+    def test_conflicts_from_same_handle(self, udm: UniversalDataModel) -> None:
         """Test that elements sharing the same autocad_handle produce conflicts."""
         elem1 = UniversalElement(
             element_id="dup-001",
@@ -663,7 +663,7 @@ class TestConflictDetection:
         assert len(conflicts) >= 1
         assert conflicts[0].conflict_type == ConflictType.PROPERTY_CONFLICT
 
-    def test_conflicts_excludes_deleted(self, udm: UniversalDataModel):
+    def test_conflicts_excludes_deleted(self, udm: UniversalDataModel) -> None:
         """Test that soft-deleted elements are not considered in conflict detection."""
         elem1 = UniversalElement(
             element_id="del-001",
@@ -688,12 +688,12 @@ class TestConflictDetection:
 class TestResolveConflict:
     """Tests for the resolve_conflict method."""
 
-    def test_resolve_nonexistent_conflict(self, udm: UniversalDataModel):
+    def test_resolve_nonexistent_conflict(self, udm: UniversalDataModel) -> None:
         """Test resolving a non-existent conflict returns None."""
         result = udm.resolve_conflict("nonexistent-conflict")
         assert result is None
 
-    def test_resolve_persisted_conflict(self, udm: UniversalDataModel, sample_element):
+    def test_resolve_persisted_conflict(self, udm: UniversalDataModel, sample_element) -> None:
         """Test resolving a conflict that exists in the conflicts table."""
         # Add element first to satisfy foreign key constraint
         udm.add_element(sample_element)
@@ -713,7 +713,7 @@ class TestResolveConflict:
         assert result.resolved is True
         assert result.resolution == {"strategy": "SEMANTIC_MERGE"}
 
-    def test_resolve_with_last_write_wins(self, udm: UniversalDataModel, sample_element_2):
+    def test_resolve_with_last_write_wins(self, udm: UniversalDataModel, sample_element_2) -> None:
         """Test resolving a conflict with LAST_WRITE_WINS strategy."""
         # Add element first to satisfy foreign key constraint
         udm.add_element(sample_element_2)
@@ -729,7 +729,7 @@ class TestResolveConflict:
         assert result is not None
         assert result.resolved is True
 
-    def test_resolve_marks_conflict_in_db(self, udm: UniversalDataModel, sample_element_3):
+    def test_resolve_marks_conflict_in_db(self, udm: UniversalDataModel, sample_element_3) -> None:
         """Test that resolving a conflict updates the database."""
         # Add element first to satisfy foreign key constraint
         udm.add_element(sample_element_3)
@@ -753,7 +753,7 @@ class TestResolveConflict:
 class TestGetStatistics:
     """Tests for the get_statistics method."""
 
-    def test_statistics_empty_db(self, udm: UniversalDataModel):
+    def test_statistics_empty_db(self, udm: UniversalDataModel) -> None:
         """Test statistics on an empty database."""
         stats = udm.get_statistics()
         assert stats.total_elements == 0
@@ -763,7 +763,7 @@ class TestGetStatistics:
         assert stats.total_conflicts == 0
         assert stats.unresolved_conflicts == 0
 
-    def test_statistics_with_elements(self, udm: UniversalDataModel, sample_element, sample_element_2):
+    def test_statistics_with_elements(self, udm: UniversalDataModel, sample_element, sample_element_2) -> None:
         """Test statistics after adding elements."""
         udm.add_element(sample_element)
         udm.add_element(sample_element_2)
@@ -772,7 +772,7 @@ class TestGetStatistics:
         assert stats.active_elements == 2
         assert stats.deleted_elements == 0
 
-    def test_statistics_after_deletion(self, udm: UniversalDataModel, sample_element, sample_element_2):
+    def test_statistics_after_deletion(self, udm: UniversalDataModel, sample_element, sample_element_2) -> None:
         """Test statistics after soft-deleting an element."""
         udm.add_element(sample_element)
         udm.add_element(sample_element_2)
@@ -782,7 +782,7 @@ class TestGetStatistics:
         assert stats.active_elements == 1
         assert stats.deleted_elements == 1
 
-    def test_statistics_with_conflicts(self, udm: UniversalDataModel):
+    def test_statistics_with_conflicts(self, udm: UniversalDataModel) -> None:
         """Test statistics with persisted conflicts."""
         # Add elements first to satisfy foreign key constraints
         elem1 = UniversalElement(element_id="e1", properties=SemanticProperties(element_type=ElementType.WALL))
@@ -811,7 +811,7 @@ class TestGetStatistics:
 class TestDictToElement:
     """Tests for the _dict_to_element static method."""
 
-    def test_dict_to_element_full(self):
+    def test_dict_to_element_full(self) -> None:
         """Test deserializing a full element dictionary."""
         data = {
             "element_id": "test-001",
@@ -852,7 +852,7 @@ class TestDictToElement:
         assert result.source_file == "test.dwg"
         assert result.version == 3
 
-    def test_dict_to_element_minimal(self):
+    def test_dict_to_element_minimal(self) -> None:
         """Test deserializing an element with minimal data."""
         data = {"element_id": "min-001"}
         result = UniversalDataModel._dict_to_element(data)
@@ -861,21 +861,21 @@ class TestDictToElement:
         assert result.properties is None
         assert result.geometry is None
 
-    def test_dict_to_element_with_version_override(self):
+    def test_dict_to_element_with_version_override(self) -> None:
         """Test that version parameter overrides data version."""
         data = {"element_id": "v-001", "version": 5}
         result = UniversalDataModel._dict_to_element(data, version=10)
         assert result is not None
         assert result.version == 10
 
-    def test_dict_to_element_with_is_deleted_override(self):
+    def test_dict_to_element_with_is_deleted_override(self) -> None:
         """Test that is_deleted parameter is respected."""
         data = {"element_id": "d-001", "is_deleted": False}
         result = UniversalDataModel._dict_to_element(data, is_deleted=True)
         assert result is not None
         assert result.is_deleted is True
 
-    def test_dict_to_element_unknown_element_type(self):
+    def test_dict_to_element_unknown_element_type(self) -> None:
         """Test that an unknown element_type is kept as string."""
         data = {
             "element_id": "unk-001",
@@ -887,7 +887,7 @@ class TestDictToElement:
         # Should fall back to string since "custom_type" is not in ElementType
         assert isinstance(result.properties.element_type, str) or hasattr(result.properties.element_type, 'value')
 
-    def test_dict_to_element_with_relationships(self):
+    def test_dict_to_element_with_relationships(self) -> None:
         """Test deserializing with multiple relationships."""
         data = {
             "element_id": "rel-001",
@@ -902,7 +902,7 @@ class TestDictToElement:
         assert result.relationships[0].relationship_type == "contains"
         assert result.relationships[1].relationship_type == "adjacent"
 
-    def test_dict_to_element_with_malformed_timestamp(self):
+    def test_dict_to_element_with_malformed_timestamp(self) -> None:
         """Test that malformed timestamps default to None without error."""
         data = {
             "element_id": "ts-001",
@@ -914,7 +914,7 @@ class TestDictToElement:
         assert result.created_timestamp is None
         assert result.last_modified_timestamp is None
 
-    def test_dict_to_element_with_geometry_points(self):
+    def test_dict_to_element_with_geometry_points(self) -> None:
         """Test that geometry points are correctly deserialized."""
         data = {
             "element_id": "geom-001",
@@ -942,11 +942,11 @@ class TestDictToElement:
 class TestElementLikeProtocol:
     """Tests for the _ElementLike protocol."""
 
-    def test_universal_element_satisfies_protocol(self, sample_element):
+    def test_universal_element_satisfies_protocol(self, sample_element) -> None:
         """Test that UniversalElement satisfies _ElementLike protocol."""
         assert isinstance(sample_element, _ElementLike)
 
-    def test_duck_typed_element_satisfies_protocol(self):
+    def test_duck_typed_element_satisfies_protocol(self) -> None:
         """Test that a duck-typed object satisfies _ElementLike protocol."""
 
         class FakeElement:
@@ -964,7 +964,7 @@ class TestElementLikeProtocol:
 class TestRoundTrip:
     """Tests verifying that elements survive a full add→get cycle."""
 
-    def test_round_trip_with_all_fields(self, udm: UniversalDataModel, sample_element):
+    def test_round_trip_with_all_fields(self, udm: UniversalDataModel, sample_element) -> None:
         """Test that an element with all fields survives add→get round trip."""
         udm.add_element(sample_element)
         retrieved = udm.get_element("elem-001")
@@ -975,7 +975,7 @@ class TestRoundTrip:
         assert retrieved.revit_element_id == sample_element.revit_element_id
         assert retrieved.project_id == sample_element.project_id
 
-    def test_round_trip_preserves_geometry(self, udm: UniversalDataModel, sample_element):
+    def test_round_trip_preserves_geometry(self, udm: UniversalDataModel, sample_element) -> None:
         """Test that geometry survives add→get round trip."""
         udm.add_element(sample_element)
         retrieved = udm.get_element("elem-001")
@@ -987,7 +987,7 @@ class TestRoundTrip:
             assert abs(orig.y - got.y) < 1e-9
             assert abs(orig.z - got.z) < 1e-9
 
-    def test_to_dict_round_trip(self, sample_element):
+    def test_to_dict_round_trip(self, sample_element) -> None:
         """Test that to_dict() output can be deserialized correctly."""
         data = sample_element.to_dict()
         result = UniversalDataModel._dict_to_element(data)

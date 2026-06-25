@@ -1,4 +1,4 @@
-"""bim_provider.py — Provider-Agnostic BIM Abstraction Layer
+"""bim_provider.py — Provider-Agnostic BIM Abstraction Layer.
 ==============================================================
 
 MISSION TASK 1.2 — Architectural Decoupling (The Sustainability Layer)
@@ -54,15 +54,15 @@ References
 - agent.md Rule 17: NO HALF-SOLUTIONS (Protocol + Registry + 3 providers)
 - agent.md Rule 12: Safety-First (source field for audit traceability)
 - PEP 544: Protocols — Structural subtyping (https://peps.python.org/pep-0544/)
+
 """
 
 from __future__ import annotations
 
 import logging
 import os
-from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional, Protocol, Tuple, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
 
 # Re-export BIMRoom from revit_bim_sync for backward compatibility.
 # Per agent.md Rule 2 (NO UNAUTHORIZED CHANGES): we do NOT move BIMRoom
@@ -129,15 +129,15 @@ class BIMProvider(Protocol):
         ...
 
     @property
-    def capabilities(self) -> Tuple[BIMProviderCapability, ...]:
+    def capabilities(self) -> tuple[BIMProviderCapability, ...]:
         """Tuple of capability flags this provider supports."""
         ...
 
     def extract_rooms(
         self,
-        source: Optional[str] = None,
+        source: str | None = None,
         **kwargs: Any,
-    ) -> List[BIMRoom]:
+    ) -> list[BIMRoom]:
         """Extract rooms from the BIM source.
 
         Args:
@@ -155,26 +155,28 @@ class BIMProvider(Protocol):
         Safety:
             Every returned BIMRoom MUST have ``source`` set to a
             non-empty string identifying the provider.
+
         """
         ...
 
     def read_devices(
         self,
-        source: Optional[str] = None,
+        source: str | None = None,
         **kwargs: Any,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Read existing fire alarm devices from the BIM source.
 
         Returns:
             List of device dicts with at minimum: device_id, room_id,
             x, y, z, type. Empty list if no devices.
+
         """
         ...
 
     def write_devices(
         self,
-        devices: List[Dict[str, Any]],
-        target: Optional[str] = None,
+        devices: list[dict[str, Any]],
+        target: str | None = None,
         **kwargs: Any,
     ) -> int:
         """Write fire alarm devices back to the BIM source.
@@ -188,10 +190,11 @@ class BIMProvider(Protocol):
 
         Raises:
             NotImplementedError: If provider lacks DEVICE_WRITE capability.
+
         """
         ...
 
-    def health_check(self) -> Dict[str, Any]:
+    def health_check(self) -> dict[str, Any]:
         """Verify provider is operational.
 
         Returns:
@@ -202,6 +205,7 @@ class BIMProvider(Protocol):
                 - error: Optional[str] (None if healthy)
 
         Used by /api/v2/health/bim endpoint to monitor BIM integration.
+
         """
         ...
 
@@ -221,8 +225,8 @@ class BIMProviderRegistry:
     time or app startup). Lookup via ``get()`` is read-only and safe.
     """
 
-    _providers: Dict[str, type] = {}
-    _instances: Dict[str, "BIMProvider"] = {}
+    _providers: dict[str, type] = {}
+    _instances: dict[str, BIMProvider] = {}
 
     @classmethod
     def register(cls, name: str, provider_class: type) -> None:
@@ -236,6 +240,7 @@ class BIMProviderRegistry:
             TypeError: If provider_class doesn't implement BIMProvider.
             ValueError: If name is empty or already registered with a
                 different class.
+
         """
         if not name or not isinstance(name, str):
             raise ValueError("Provider name must be a non-empty string")
@@ -267,9 +272,9 @@ class BIMProviderRegistry:
     @classmethod
     def get(
         cls,
-        name: Optional[str] = None,
+        name: str | None = None,
         **kwargs: Any,
-    ) -> Optional["BIMProvider"]:
+    ) -> BIMProvider | None:
         """Get a provider instance by name.
 
         Args:
@@ -283,6 +288,7 @@ class BIMProviderRegistry:
         Note:
             Instances are cached per (name, kwargs). Subsequent calls
             return the same instance.
+
         """
         if name is None:
             name = os.environ.get("FIREAI_BIM_PROVIDER")
@@ -320,7 +326,7 @@ class BIMProviderRegistry:
         return cls._instances[cache_key]
 
     @classmethod
-    def list_available(cls) -> List[str]:
+    def list_available(cls) -> list[str]:
         """List all registered provider names."""
         return list(cls._providers.keys())
 
@@ -340,7 +346,7 @@ class BIMProviderRegistry:
 
 
 # Convenience function for callers
-def get_provider(name: Optional[str] = None, **kwargs: Any) -> Optional[BIMProvider]:
+def get_provider(name: str | None = None, **kwargs: Any) -> BIMProvider | None:
     """Get the active BIM provider (or None if none configured)."""
     return BIMProviderRegistry.get(name, **kwargs)
 
@@ -369,7 +375,7 @@ class LocalRevitProvider:
         - MULTI_USER ❌ (one Revit instance per machine)
     """
 
-    _CAPABILITIES: Tuple[BIMProviderCapability, ...] = (
+    _CAPABILITIES: tuple[BIMProviderCapability, ...] = (
         BIMProviderCapability.ROOM_EXTRACTION,
         BIMProviderCapability.DEVICE_READ,
     )
@@ -385,14 +391,14 @@ class LocalRevitProvider:
         return "local_revit"
 
     @property
-    def capabilities(self) -> Tuple[BIMProviderCapability, ...]:
+    def capabilities(self) -> tuple[BIMProviderCapability, ...]:
         return self._CAPABILITIES
 
     def extract_rooms(
         self,
-        source: Optional[str] = None,
+        source: str | None = None,
         **kwargs: Any,
-    ) -> List[BIMRoom]:
+    ) -> list[BIMRoom]:
         """Extract rooms via RevitAPIBridge.
 
         Args:
@@ -402,6 +408,7 @@ class LocalRevitProvider:
 
         Returns:
             List of BIMRoom. Empty list if no rooms or no source.
+
         """
         try:
             rooms = self._bridge.extract_rooms(source_path=source, **kwargs)  # type: ignore[arg-type]
@@ -418,9 +425,9 @@ class LocalRevitProvider:
 
     def read_devices(
         self,
-        source: Optional[str] = None,
+        source: str | None = None,
         **kwargs: Any,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Read devices from BIM source.
 
         Note: RevitAPIBridge doesn't have a dedicated device reader;
@@ -432,8 +439,8 @@ class LocalRevitProvider:
 
     def write_devices(
         self,
-        devices: List[Dict[str, Any]],
-        target: Optional[str] = None,
+        devices: list[dict[str, Any]],
+        target: str | None = None,
         **kwargs: Any,
     ) -> int:
         """Write devices to Revit (only works inside Revit API).
@@ -441,6 +448,7 @@ class LocalRevitProvider:
         Raises:
             NotImplementedError: When not running inside Revit (no
                 DEVICE_WRITE capability available).
+
         """
         # RevitAPIBridge has no write_devices method yet — stub
         raise NotImplementedError(
@@ -449,7 +457,7 @@ class LocalRevitProvider:
             "script that creates the devices when run inside Revit."
         )
 
-    def health_check(self) -> Dict[str, Any]:
+    def health_check(self) -> dict[str, Any]:
         """Check if the underlying bridge is operational."""
         try:
             mode = self._bridge._mode  # type: ignore[attr-defined]
@@ -490,7 +498,7 @@ class IfcFileProvider:
         - MULTI_USER ❌ (file locking not implemented)
     """
 
-    _CAPABILITIES: Tuple[BIMProviderCapability, ...] = (
+    _CAPABILITIES: tuple[BIMProviderCapability, ...] = (
         BIMProviderCapability.ROOM_EXTRACTION,
         BIMProviderCapability.DEVICE_READ,
         # V135 F-10 FIX: Removed DEVICE_WRITE — write_devices is a stub that
@@ -520,14 +528,14 @@ class IfcFileProvider:
         return "ifc_file"
 
     @property
-    def capabilities(self) -> Tuple[BIMProviderCapability, ...]:
+    def capabilities(self) -> tuple[BIMProviderCapability, ...]:
         return self._CAPABILITIES
 
     def extract_rooms(
         self,
-        source: Optional[str] = None,
+        source: str | None = None,
         **kwargs: Any,
-    ) -> List[BIMRoom]:
+    ) -> list[BIMRoom]:
         """Extract rooms from an IFC file.
 
         Args:
@@ -535,6 +543,7 @@ class IfcFileProvider:
 
         Returns:
             List of BIMRoom. Empty list if no rooms or file unreadable.
+
         """
         if not self._ifc_available:
             logger.error("ifcopenshell not installed — cannot extract rooms from IFC")
@@ -545,13 +554,14 @@ class IfcFileProvider:
 
         try:
             import ifcopenshell
+
             from fireai.core.ifc_parser import IfcParser
 
             parser = IfcParser()
             ifc_file = ifcopenshell.open(source)
             rooms_data = parser.extract_rooms(ifc_file)
 
-            rooms: List[BIMRoom] = []
+            rooms: list[BIMRoom] = []
             for r in rooms_data:
                 room = BIMRoom(
                     room_id=r.get("room_id", "UNKNOWN"),
@@ -575,9 +585,9 @@ class IfcFileProvider:
 
     def read_devices(
         self,
-        source: Optional[str] = None,
+        source: str | None = None,
         **kwargs: Any,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Read fire alarm devices from IFC file."""
         if not self._ifc_available or not source:
             return []
@@ -586,7 +596,7 @@ class IfcFileProvider:
             ifc_file = ifcopenshell.open(source)
             # Look for IfcDistributionFlowElement / IfcFlowTerminal subtypes
             # that represent fire alarm devices
-            devices: List[Dict[str, Any]] = []
+            devices: list[dict[str, Any]] = []
             for elem in ifc_file.by_type("IfcDistributionElement"):
                 # Filter to fire alarm related predefined types
                 pd_type = getattr(elem, "PredefinedType", None)
@@ -604,8 +614,8 @@ class IfcFileProvider:
 
     def write_devices(
         self,
-        devices: List[Dict[str, Any]],
-        target: Optional[str] = None,
+        devices: list[dict[str, Any]],
+        target: str | None = None,
         **kwargs: Any,
     ) -> int:
         """Write devices to IFC file (append mode).
@@ -626,7 +636,7 @@ class IfcFileProvider:
             "entities with proper spatial containment."
         )
 
-    def health_check(self) -> Dict[str, Any]:
+    def health_check(self) -> dict[str, Any]:
         return {
             "healthy": self._ifc_available,
             "latency_ms": 0.0,
@@ -670,19 +680,19 @@ class AutodeskForgeProvider:
         can detect availability via health_check().
     """
 
-    _CAPABILITIES: Tuple[BIMProviderCapability, ...] = (
+    _CAPABILITIES: tuple[BIMProviderCapability, ...] = (
         BIMProviderCapability.CLOUD_NATIVE,
         BIMProviderCapability.MULTI_USER,
     )
 
     def __init__(
         self,
-        client_id: Optional[str] = None,
-        client_secret: Optional[str] = None,
+        client_id: str | None = None,
+        client_secret: str | None = None,
     ) -> None:
         self._client_id = client_id or os.environ.get("APS_CLIENT_ID")
         self._client_secret = client_secret or os.environ.get("APS_CLIENT_SECRET")
-        self._token: Optional[str] = None
+        self._token: str | None = None
         self._token_expires: float = 0.0
 
         if not self._client_id or not self._client_secret:
@@ -696,10 +706,10 @@ class AutodeskForgeProvider:
         return "autodesk_forge"
 
     @property
-    def capabilities(self) -> Tuple[BIMProviderCapability, ...]:
+    def capabilities(self) -> tuple[BIMProviderCapability, ...]:
         return self._CAPABILITIES
 
-    def _get_auth_token(self) -> Optional[str]:
+    def _get_auth_token(self) -> str | None:
         """Get APS OAuth2 token (cached until expiry).
 
         Returns:
@@ -709,6 +719,7 @@ class AutodeskForgeProvider:
             This is a STUB. Full implementation should call:
             POST https://developer.api.autodesk.com/authentication/v1/authenticate
             with client_credentials grant type.
+
         """
         if not self._client_id or not self._client_secret:
             return None
@@ -733,9 +744,9 @@ class AutodeskForgeProvider:
 
     def extract_rooms(
         self,
-        source: Optional[str] = None,
+        source: str | None = None,
         **kwargs: Any,
-    ) -> List[BIMRoom]:
+    ) -> list[BIMRoom]:
         """Extract rooms via APS Model Derivative API.
 
         Args:
@@ -748,6 +759,7 @@ class AutodeskForgeProvider:
             3. GET /modelderivative/v2/designdata/{urn}/metadata/{guid}
             4. Filter objects to IfcSpace / Revit Room category
             5. Get geometry via /manifest/{urn} → SVF2 → parse
+
         """
         token = self._get_auth_token()
         if not token:
@@ -765,17 +777,17 @@ class AutodeskForgeProvider:
 
     def read_devices(
         self,
-        source: Optional[str] = None,
+        source: str | None = None,
         **kwargs: Any,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Read devices via APS Model Derivative API."""
         logger.warning("AutodeskForgeProvider.read_devices is a STUB")
         return []
 
     def write_devices(
         self,
-        devices: List[Dict[str, Any]],
-        target: Optional[str] = None,
+        devices: list[dict[str, Any]],
+        target: str | None = None,
         **kwargs: Any,
     ) -> int:
         """Write devices via APS Design Automation API (cloud Revit)."""
@@ -785,7 +797,7 @@ class AutodeskForgeProvider:
             "AppBundle + Activity to enable cloud-based Revit writing."
         )
 
-    def health_check(self) -> Dict[str, Any]:
+    def health_check(self) -> dict[str, Any]:
         """Check APS connectivity and credentials.
 
         V135 F-19 FIX: The OLD code returned ``healthy: True`` when
@@ -829,12 +841,12 @@ BIMProviderRegistry.register("autodesk_forge", AutodeskForgeProvider)
 
 
 __all__ = [
+    "AutodeskForgeProvider",
     "BIMProvider",
     "BIMProviderCapability",
     "BIMProviderRegistry",
-    "LocalRevitProvider",
-    "IfcFileProvider",
-    "AutodeskForgeProvider",
-    "get_provider",
     "BIMRoom",  # re-exported from revit_bim_sync
+    "IfcFileProvider",
+    "LocalRevitProvider",
+    "get_provider",
 ]

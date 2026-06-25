@@ -1,4 +1,4 @@
-"""FireAI Rules Engine — Integration Bridge
+"""FireAI Rules Engine — Integration Bridge.
 ==========================================
 
 Bridges the new Rules Engine with the existing FireAI compliance
@@ -21,7 +21,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from fireai.core.rules_engine.engine import (
     Fact,
@@ -44,16 +44,16 @@ def room_to_facts(
     room_id: str,
     ceiling_height_m: float,
     detector_type: str = "smoke",
-    room_area_m2: Optional[float] = None,
+    room_area_m2: float | None = None,
     is_corridor: bool = False,
     occupancy_type: str = "office",
-) -> List[Fact]:
+) -> list[Fact]:
     """Convert a room specification to Rule Engine facts.
 
     This is the main entry point for analyzing a room through the
     declarative rules engine.
     """
-    facts = [
+    return [
         Fact(
             fact_type="room",
             properties={
@@ -68,7 +68,6 @@ def room_to_facts(
             nfpa_reference="NFPA 72 §17.6.3.1",
         )
     ]
-    return facts
 
 
 def detector_to_fact(
@@ -77,9 +76,9 @@ def detector_to_fact(
     detector_type: str,
     x: float,
     y: float,
-    distance_to_wall_m: Optional[float] = None,
-    listed_spacing_m: Optional[float] = None,
-    wall_distance_max_m: Optional[float] = None,
+    distance_to_wall_m: float | None = None,
+    listed_spacing_m: float | None = None,
+    wall_distance_max_m: float | None = None,
 ) -> Fact:
     """Convert a detector to a Rule Engine fact."""
     properties = {
@@ -200,7 +199,7 @@ def voltage_drop_result_to_fact(
 
 def fault_isolation_result_to_fact(
     compliant: bool,
-    violations: List[Dict[str, Any]],
+    violations: list[dict[str, Any]],
     device_count: int,
     isolator_count: int,
     nfpa_section: str = "NFPA 72 §12.3",
@@ -242,12 +241,12 @@ class ComplianceReport:
 
     session_id: str
     is_safe: bool
-    critical_issues: List[Dict[str, Any]] = field(default_factory=list)
-    violations: List[Dict[str, Any]] = field(default_factory=list)
-    compliance_checks: List[Dict[str, Any]] = field(default_factory=list)
-    derived_facts: List[Dict[str, Any]] = field(default_factory=list)
-    audit_summary: Dict[str, Any] = field(default_factory=dict)
-    nfpa_references: List[str] = field(default_factory=list)
+    critical_issues: list[dict[str, Any]] = field(default_factory=list)
+    violations: list[dict[str, Any]] = field(default_factory=list)
+    compliance_checks: list[dict[str, Any]] = field(default_factory=list)
+    derived_facts: list[dict[str, Any]] = field(default_factory=list)
+    audit_summary: dict[str, Any] = field(default_factory=dict)
+    nfpa_references: list[str] = field(default_factory=list)
     timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 
@@ -360,7 +359,7 @@ class NFPA72ComplianceChecker:
         self.tms = TruthMaintenanceSystem()
         self._sync_tms_after_evaluate = True
 
-    def validate_tms_consistency(self) -> List[str]:
+    def validate_tms_consistency(self) -> list[str]:
         """Check TMS consistency between engine and standalone TMS.
 
         Returns list of stale fact IDs. Empty list = consistent.
@@ -374,7 +373,7 @@ class NFPA72ComplianceChecker:
         room_id: str,
         ceiling_height_m: float,
         detector_type: str = "smoke",
-        room_area_m2: Optional[float] = None,
+        room_area_m2: float | None = None,
         is_corridor: bool = False,
         occupancy_type: str = "office",
     ) -> str:
@@ -398,9 +397,9 @@ class NFPA72ComplianceChecker:
         detector_type: str,
         x: float,
         y: float,
-        distance_to_wall_m: Optional[float] = None,
-        listed_spacing_m: Optional[float] = None,
-        wall_distance_max_m: Optional[float] = None,
+        distance_to_wall_m: float | None = None,
+        listed_spacing_m: float | None = None,
+        wall_distance_max_m: float | None = None,
     ) -> str:
         """Add a detector for compliance analysis."""
         fact = detector_to_fact(
@@ -498,7 +497,7 @@ class NFPA72ComplianceChecker:
     def add_fault_isolation_result(
         self,
         compliant: bool,
-        violations: List[Dict[str, Any]],
+        violations: list[dict[str, Any]],
         device_count: int,
         isolator_count: int,
     ) -> str:
@@ -562,11 +561,11 @@ class NFPA72ComplianceChecker:
 
         return report
 
-    def get_audit_log(self) -> List[RuleAuditEntry]:
+    def get_audit_log(self) -> list[RuleAuditEntry]:
         """Get the complete audit log for this session."""
         return self.engine.get_audit_log()
 
-    def explain(self, fact_id: str) -> Dict[str, Any]:
+    def explain(self, fact_id: str) -> dict[str, Any]:
         """Explain how a fact was derived (truth maintenance)."""
         return self.engine.explain(fact_id)
 
@@ -623,10 +622,10 @@ class DualComplianceResult:
     rules_engine_safe: bool
     clause_engine_safe: bool
     engines_agree: bool
-    divergence_details: List[str] = field(default_factory=list)
-    rules_engine_report: Optional[ComplianceReport] = None
-    clause_engine_violations: List[str] = field(default_factory=list)
-    combined_violations: List[str] = field(default_factory=list)
+    divergence_details: list[str] = field(default_factory=list)
+    rules_engine_report: ComplianceReport | None = None
+    clause_engine_violations: list[str] = field(default_factory=list)
+    combined_violations: list[str] = field(default_factory=list)
 
     def __post_init__(self):
         """Ensure is_safe is the AND of both engines AND agreement."""
@@ -636,7 +635,7 @@ class DualComplianceResult:
 
 
 def dual_compliance_check(
-    context: Dict[str, Any],
+    context: dict[str, Any],
     session_id: str = "",
 ) -> DualComplianceResult:
     """Run BOTH compliance engines and REJECT on divergence.

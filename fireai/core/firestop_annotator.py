@@ -1,4 +1,4 @@
-"""fireai/core/firestop_annotator.py
+"""fireai/core/firestop_annotator.py.
 =================================
 Checks spatial overlap of routing topologies against 2D wall objects,
 identifying fire-rated boundary penetrations per IBC Section 714.
@@ -23,7 +23,7 @@ Safety:
 
 from __future__ import annotations
 
-from typing import Any, List, Tuple
+from typing import Any
 
 try:
     from shapely.geometry import LineString
@@ -49,11 +49,11 @@ class FirestoppingAnnotator:
 
     """
 
-    def __init__(self, fire_rated_walls_lines: List[Tuple[Tuple[float, float], Tuple[float, float]]]):
+    def __init__(self, fire_rated_walls_lines: list[tuple[tuple[float, float], tuple[float, float]]]) -> None:
         # In real integration, wall line strings or full polygon footprints can be stored here
         self.fire_lines = [LineString(fw) for fw in fire_rated_walls_lines] if SHAPELY_AVAILABLE else []
 
-    def locate_penetrations(self, cable_route: List[Tuple[float, float]]) -> List[Tuple[float, float]]:
+    def locate_penetrations(self, cable_route: list[tuple[float, float]]) -> list[tuple[float, float]]:
         """Find all points where a cable route crosses fire-rated walls.
 
         Uses Shapely LineString intersection testing for exact coordinate
@@ -86,7 +86,7 @@ class FirestoppingAnnotator:
 
         return penetration_coords
 
-    def draft_callouts_to_dxf(self, msp: Any, cable_route: List[Tuple[float, float]]) -> int:
+    def draft_callouts_to_dxf(self, msp: Any, cable_route: list[tuple[float, float]]) -> int:
         """Generate firestopping callouts on a DXF modelspace.
 
         For each penetration point found, draws:

@@ -1,4 +1,4 @@
-"""bim_unit_detector.py — Automated BIM Unit Detection
+"""bim_unit_detector.py — Automated BIM Unit Detection.
 =======================================================
 
 MISSION PHASE 4.2 — Fix the Hardcoded Scale Bug
@@ -35,6 +35,7 @@ References
 - DXF Reference: $INSUNITS system variable
 - Revit API: internal units are feet (1 ft = 0.3048 m)
 - agent.md Rule 17 (Root-Cause Analysis) — fix the root cause, not the symptom
+
 """
 
 from __future__ import annotations
@@ -44,7 +45,7 @@ import math
 import os
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -102,7 +103,7 @@ class UnitSystem(str, Enum):
 
 # DXF $INSUNITS system variable values (per DXF Reference, AC1009+)
 # These map integer codes to UnitSystem enum values.
-_DXF_INSUNITS_MAP: Dict[int, UnitSystem] = {
+_DXF_INSUNITS_MAP: dict[int, UnitSystem] = {
     0: UnitSystem.UNKNOWN,      # Unspecified
     1: UnitSystem.INCHES,       # Imperial inches
     2: UnitSystem.FEET,         # Imperial feet
@@ -133,15 +134,16 @@ class UnitDetectionResult:
         source: How the unit was detected ('ifc_header', 'dxf_insunits', 'heuristic', 'default').
         confidence: Detection confidence (1.0 = certain, 0.5 = heuristic guess).
         warning: Optional warning message if confidence is low.
+
     """
 
     unit: UnitSystem
     scale_to_metres: float
     source: str
     confidence: float = 1.0
-    warning: Optional[str] = None
+    warning: str | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "unit": self.unit.value,
             "description": self.unit.description,
@@ -171,6 +173,7 @@ def detect_bim_unit(filepath: str) -> UnitDetectionResult:
 
     Returns:
         UnitDetectionResult with detected unit + scale factor.
+
     """
     if not filepath or not isinstance(filepath, str):
         return _default_result("Invalid filepath")
@@ -206,7 +209,7 @@ def detect_bim_unit(filepath: str) -> UnitDetectionResult:
 # ---------------------------------------------------------------------------
 
 
-def _detect_from_ifc(filepath: str) -> Optional[UnitDetectionResult]:
+def _detect_from_ifc(filepath: str) -> UnitDetectionResult | None:
     """Detect unit from IFC file header.
 
     IFC files declare units in the HEADER section:
@@ -218,7 +221,7 @@ def _detect_from_ifc(filepath: str) -> Optional[UnitDetectionResult]:
         #2 = IFCSIUNIT(*, .LENGTHUNIT., $, .METRE.);
     """
     try:
-        with open(filepath, "r", encoding="utf-8", errors="replace") as f:
+        with open(filepath, encoding="utf-8", errors="replace") as f:
             # Read first 100KB — header is at the top
             content = f.read(100_000)
 
@@ -233,28 +236,28 @@ def _detect_from_ifc(filepath: str) -> Optional[UnitDetectionResult]:
                     source="ifc_header",
                     confidence=1.0,
                 )
-            elif ".CENTI." in content and ".METRE." in content:
+            if ".CENTI." in content and ".METRE." in content:
                 return UnitDetectionResult(
                     unit=UnitSystem.CENTIMETRES,
                     scale_to_metres=UnitSystem.CENTIMETRES.scale_to_metres,
                     source="ifc_header",
                     confidence=1.0,
                 )
-            elif ".METRE." in content:
+            if ".METRE." in content:
                 return UnitDetectionResult(
                     unit=UnitSystem.METRES,
                     scale_to_metres=UnitSystem.METRES.scale_to_metres,
                     source="ifc_header",
                     confidence=1.0,
                 )
-            elif ".FOOT." in content:
+            if ".FOOT." in content:
                 return UnitDetectionResult(
                     unit=UnitSystem.FEET,
                     scale_to_metres=UnitSystem.FEET.scale_to_metres,
                     source="ifc_header",
                     confidence=1.0,
                 )
-            elif ".INCH." in content:
+            if ".INCH." in content:
                 return UnitDetectionResult(
                     unit=UnitSystem.INCHES,
                     scale_to_metres=UnitSystem.INCHES.scale_to_metres,
@@ -281,7 +284,7 @@ def _detect_from_ifc(filepath: str) -> Optional[UnitDetectionResult]:
 # ---------------------------------------------------------------------------
 
 
-def _detect_from_dxf(filepath: str) -> Optional[UnitDetectionResult]:
+def _detect_from_dxf(filepath: str) -> UnitDetectionResult | None:
     """Detect unit from DXF $INSUNITS system variable.
 
     DXF files are text-based (ASCII). The $INSUNITS variable is in the
@@ -292,7 +295,7 @@ def _detect_from_dxf(filepath: str) -> Optional[UnitDetectionResult]:
         4          <- code (4 = millimetres)
     """
     try:
-        with open(filepath, "r", encoding="utf-8", errors="replace") as f:
+        with open(filepath, encoding="utf-8", errors="replace") as f:
             # Read first 50KB — HEADER is at the top
             content = f.read(50_000)
 
@@ -346,7 +349,7 @@ def _detect_from_dxf(filepath: str) -> Optional[UnitDetectionResult]:
 # ---------------------------------------------------------------------------
 
 
-def _detect_from_heuristic(filepath: str) -> Optional[UnitDetectionResult]:
+def _detect_from_heuristic(filepath: str) -> UnitDetectionResult | None:
     """Detect unit heuristically based on coordinate magnitudes.
 
     Strategy:
@@ -383,7 +386,7 @@ def _detect_from_heuristic(filepath: str) -> Optional[UnitDetectionResult]:
                 confidence=0.6,
                 warning=f"Heuristic detection: diagonal={diagonal:.1f} suggests metres",
             )
-        elif 500.0 < diagonal <= 50000.0:
+        if 500.0 < diagonal <= 50000.0:
             # Likely millimetres
             return UnitDetectionResult(
                 unit=UnitSystem.MILLIMETRES,
@@ -392,7 +395,7 @@ def _detect_from_heuristic(filepath: str) -> Optional[UnitDetectionResult]:
                 confidence=0.6,
                 warning=f"Heuristic detection: diagonal={diagonal:.1f} suggests millimetres",
             )
-        elif 50.0 < diagonal <= 5000.0:
+        if 50.0 < diagonal <= 5000.0:
             # Likely centimetres
             return UnitDetectionResult(
                 unit=UnitSystem.CENTIMETRES,
@@ -401,7 +404,7 @@ def _detect_from_heuristic(filepath: str) -> Optional[UnitDetectionResult]:
                 confidence=0.5,
                 warning=f"Heuristic detection: diagonal={diagonal:.1f} suggests centimetres",
             )
-        elif 15.0 < diagonal <= 1500.0:
+        if 15.0 < diagonal <= 1500.0:
             # Likely feet (Revit internal)
             return UnitDetectionResult(
                 unit=UnitSystem.FEET,
@@ -433,7 +436,7 @@ def _sample_coordinates(filepath: str, max_points: int = 1000) -> list:
     """
     coords = []
     try:
-        with open(filepath, "r", encoding="utf-8", errors="replace") as f:
+        with open(filepath, encoding="utf-8", errors="replace") as f:
             content = f.read(500_000)  # Read up to 500KB
 
         import re
@@ -443,7 +446,7 @@ def _sample_coordinates(filepath: str, max_points: int = 1000) -> list:
             r"IfcCartesianPoint\(\(\s*([-\d.]+)\s*,\s*([-\d.]+)\s*,\s*([-\d.]+)\s*\)\)",
             content,
         )
-        for x, y, z in ifc_matches[:max_points]:
+        for x, y, _z in ifc_matches[:max_points]:
             try:
                 coords.append((float(x), float(y)))
             except ValueError:
@@ -488,7 +491,7 @@ def _default_result(reason: str) -> UnitDetectionResult:
 
 
 __all__ = [
-    "UnitSystem",
     "UnitDetectionResult",
+    "UnitSystem",
     "detect_bim_unit",
 ]

@@ -12,7 +12,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Set
 
 
 class Role(str, Enum):
@@ -77,7 +76,7 @@ class Permission(str, Enum):
 
 
 # Role-permission mapping
-ROLE_PERMISSIONS: dict[Role, Set[Permission]] = {
+ROLE_PERMISSIONS: dict[Role, set[Permission]] = {
     Role.ADMIN: {
         # Admins have ALL permissions
         *Permission.__members__.values()
@@ -149,6 +148,6 @@ def has_permission(role: Role, permission: Permission) -> bool:
     return permission in ROLE_PERMISSIONS.get(role, set())
 
 
-def get_role_permissions(role: Role) -> Set[Permission]:
+def get_role_permissions(role: Role) -> set[Permission]:
     """Get all permissions for a role."""
     return ROLE_PERMISSIONS.get(role, set())

@@ -1,4 +1,4 @@
-"""fireai.conduit.catalog — Immutable Fitting Catalog
+"""fireai.conduit.catalog — Immutable Fitting Catalog.
 ===================================================
 
 All fitting data is hardcoded from manufacturer published dimensions and
@@ -33,7 +33,7 @@ from __future__ import annotations
 import math
 import re
 from dataclasses import dataclass
-from typing import Dict, Tuple
+from typing import Tuple
 
 from fireai.conduit.errors import CatalogError
 from fireai.conduit.types import ConduitType, FittingType, Result, TradeSize
@@ -143,7 +143,7 @@ _CatalogKey = Tuple[ConduitType, TradeSize, FittingType]
 # EMT ½": L = π × 4.0 × 90/180 = π × 4.0 / 2 = 6.28318...
 # Catalog tables show 6.283 — verified ✓
 
-_CATALOG: Dict[_CatalogKey, Fitting] = {}
+_CATALOG: dict[_CatalogKey, Fitting] = {}
 
 
 def _reg(f: Fitting) -> None:
@@ -469,6 +469,6 @@ def catalog_size() -> int:
     return len(_CATALOG)
 
 
-def all_fittings() -> Dict[_CatalogKey, Fitting]:
+def all_fittings() -> dict[_CatalogKey, Fitting]:
     """Return a copy of the full catalog (read-only view)."""
     return dict(_CATALOG)

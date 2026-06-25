@@ -1,4 +1,4 @@
-"""fireai/core/tests/test_helpers.py — Reusable Test Utilities
+"""fireai/core/tests/test_helpers.py — Reusable Test Utilities.
 ============================================================
 Task 2.18: Improve test utilities
 
@@ -19,7 +19,6 @@ import math
 import os
 import tempfile
 from datetime import datetime, timezone
-from typing import Dict, List, Optional
 
 import pytest
 
@@ -121,9 +120,9 @@ def make_element(
     element_id: str = "test-elem-001",
     element_type: ElementType = ElementType.WALL,
     name: str = "Test Wall",
-    height: Optional[float] = 3.0,
-    width: Optional[float] = 0.2,
-    geometry: Optional[Geometry] = None,
+    height: float | None = 3.0,
+    width: float | None = 0.2,
+    geometry: Geometry | None = None,
     **kwargs,
 ) -> UniversalElement:
     """Create a UniversalElement with sensible defaults.
@@ -156,7 +155,7 @@ def make_element(
     )
 
 
-def make_elements_batch(count: int, prefix: str = "ELEM") -> List[UniversalElement]:
+def make_elements_batch(count: int, prefix: str = "ELEM") -> list[UniversalElement]:
     """Create a batch of UniversalElement objects.
 
     Args:
@@ -188,7 +187,7 @@ def make_room_dict(
     width: float = 10.0,
     length: float = 8.0,
     ceiling_height: float = 3.0,
-) -> Dict:
+) -> dict:
     """Create a room dict compatible with FloorAnalyser.
 
     Args:
@@ -216,7 +215,7 @@ def make_floor_rooms(
     room_width: float = 10.0,
     room_length: float = 8.0,
     ceiling_height: float = 3.0,
-) -> Dict[str, List[Dict]]:
+) -> dict[str, list[dict]]:
     """Create a floor dict for BuildingEngine.
 
     Args:
@@ -363,27 +362,27 @@ def temp_dxf_file():
 class TestHelperGeometryFactories:
     """Verify geometry helper functions produce correct results."""
 
-    def test_make_square_area(self):
+    def test_make_square_area(self) -> None:
         geom = make_square(10.0)
         assert abs(geom.area - 100.0) < 0.01
 
-    def test_make_square_perimeter(self):
+    def test_make_square_perimeter(self) -> None:
         geom = make_square(10.0)
         assert abs(geom.perimeter - 40.0) < 0.01
 
-    def test_make_square_offset(self):
+    def test_make_square_offset(self) -> None:
         geom = make_square(5.0, x0=100.0, y0=200.0)
         assert abs(geom.area - 25.0) < 0.01
 
-    def test_make_rectangle_area(self):
+    def test_make_rectangle_area(self) -> None:
         geom = make_rectangle(12.0, 8.0)
         assert abs(geom.area - 96.0) < 0.01
 
-    def test_make_l_shape_area(self):
+    def test_make_l_shape_area(self) -> None:
         geom = make_l_shape()
         assert abs(geom.area - 75.0) < 0.01
 
-    def test_make_circle_polygon_area(self):
+    def test_make_circle_polygon_area(self) -> None:
         geom = make_circle_polygon(radius=10.0, num_points=72)
         expected_area = math.pi * 100.0  # πr²
         assert abs(geom.area - expected_area) < 5.0  # Rough check for polygon approx
@@ -392,22 +391,22 @@ class TestHelperGeometryFactories:
 class TestHelperElementFactories:
     """Verify element helper functions produce correct objects."""
 
-    def test_make_element_defaults(self):
+    def test_make_element_defaults(self) -> None:
         elem = make_element()
         assert elem.element_id == "test-elem-001"
         assert elem.properties.name == "Test Wall"
 
-    def test_make_element_custom(self):
+    def test_make_element_custom(self) -> None:
         elem = make_element("custom-id", ElementType.DOOR, "My Door", height=2.1, width=0.9)
         assert elem.element_id == "custom-id"
         assert elem.properties.element_type == ElementType.DOOR
 
-    def test_make_elements_batch_count(self):
+    def test_make_elements_batch_count(self) -> None:
         elems = make_elements_batch(25)
         assert len(elems) == 25
         assert all(e.element_id.startswith("ELEM_") for e in elems)
 
-    def test_make_elements_batch_unique_ids(self):
+    def test_make_elements_batch_unique_ids(self) -> None:
         elems = make_elements_batch(50, prefix="TEST")
         ids = [e.element_id for e in elems]
         assert len(set(ids)) == 50  # All unique
@@ -416,21 +415,21 @@ class TestHelperElementFactories:
 class TestHelperRoomDicts:
     """Verify room dict helper functions."""
 
-    def test_make_room_dict_structure(self):
+    def test_make_room_dict_structure(self) -> None:
         room = make_room_dict()
         assert "room_id" in room
         assert "name" in room
         assert "polygon_coords" in room
         assert "ceiling_height" in room
 
-    def test_make_room_dict_coords(self):
+    def test_make_room_dict_coords(self) -> None:
         room = make_room_dict(width=12.0, length=8.0)
         coords = room["polygon_coords"]
         assert len(coords) == 4
         assert coords[1] == (12.0, 0)
         assert coords[2] == (12.0, 8.0)
 
-    def test_make_floor_rooms_structure(self):
+    def test_make_floor_rooms_structure(self) -> None:
         floor = make_floor_rooms("L1", 5)
         assert "L1" in floor
         assert len(floor["L1"]) == 5
@@ -439,11 +438,11 @@ class TestHelperRoomDicts:
 class TestHelperAssertions:
     """Verify assertion helpers work correctly."""
 
-    def test_assert_valid_geometry_passes(self):
+    def test_assert_valid_geometry_passes(self) -> None:
         geom = make_square(10.0)
         assert_valid_geometry(geom)  # Should not raise
 
-    def test_assert_valid_point3d_passes(self):
+    def test_assert_valid_point3d_passes(self) -> None:
         point = Point3D(x=1.0, y=2.0, z=3.0)
         assert_valid_point3d(point)  # Should not raise
 
@@ -451,33 +450,33 @@ class TestHelperAssertions:
 class TestHelperFixtures:
     """Verify pytest fixtures work correctly."""
 
-    def test_in_memory_db_fixture(self, in_memory_db):
+    def test_in_memory_db_fixture(self, in_memory_db) -> None:
         elem = make_element("fixture-test")
         assert in_memory_db.add_element(elem) is True
         retrieved = in_memory_db.get_element("fixture-test")
         assert retrieved is not None
 
-    def test_sample_element_fixture(self, sample_element):
+    def test_sample_element_fixture(self, sample_element) -> None:
         assert sample_element.element_id == "sample-001"
         assert sample_element.properties.element_type == ElementType.WALL
 
-    def test_sample_elements_10_fixture(self, sample_elements_10):
+    def test_sample_elements_10_fixture(self, sample_elements_10) -> None:
         assert len(sample_elements_10) == 10
 
-    def test_square_geometry_fixture(self, square_geometry):
+    def test_square_geometry_fixture(self, square_geometry) -> None:
         assert abs(square_geometry.area - 100.0) < 0.01
 
-    def test_l_shaped_geometry_fixture(self, l_shaped_geometry):
+    def test_l_shaped_geometry_fixture(self, l_shaped_geometry) -> None:
         assert abs(l_shaped_geometry.area - 75.0) < 0.01
 
-    def test_sample_room_dict_fixture(self, sample_room_dict):
+    def test_sample_room_dict_fixture(self, sample_room_dict) -> None:
         assert sample_room_dict["room_id"] == "R001"
         assert sample_room_dict["ceiling_height"] == 3.0
 
-    def test_sample_floor_fixture(self, sample_floor):
+    def test_sample_floor_fixture(self, sample_floor) -> None:
         assert "GF" in sample_floor
         assert len(sample_floor["GF"]) == 3
 
-    def test_temp_dxf_file_fixture(self, temp_dxf_file):
+    def test_temp_dxf_file_fixture(self, temp_dxf_file) -> None:
         assert os.path.exists(temp_dxf_file)
         assert temp_dxf_file.endswith(".dxf")

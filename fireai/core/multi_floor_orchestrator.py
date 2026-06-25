@@ -1,4 +1,4 @@
-"""fireai/core/multi_floor_orchestrator.py
+"""fireai/core/multi_floor_orchestrator.py.
 ========================================
 LIFE-SAFETY CRITICAL: Multi-Floor Building Orchestrator for FireAI.
 
@@ -41,7 +41,7 @@ import math
 import time
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional, Set
+from typing import Any
 
 # ── Internal imports ──────────────────────────────────────────────────────
 from fireai.core.floor_orchestrator import FloorOrchestrator, RoomResult
@@ -209,13 +209,13 @@ class SLCLoop:
     loop_class: SLCLoopClass = SLCLoopClass.CLASS_B
     device_count: int = 0
     max_devices: int = MAX_SLC_DEVICES_PER_LOOP
-    device_addresses: List[str] = field(default_factory=list)
-    floors_served: Set[str] = field(default_factory=set)
+    device_addresses: list[str] = field(default_factory=list)
+    floors_served: set[str] = field(default_factory=set)
     panel_id: str = ""
     cable_length_m: float = 0.0
     # V114 FIX: Fail-safe — voltage compliance must be PROVEN, not assumed
     voltage_drop_compliant: bool = False
-    warnings: List[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
     nfpa_reference: str = _CITE_NFPA72_21_2_2
 
     @property
@@ -253,14 +253,14 @@ class VerticalZone:
     """
 
     zone_id: str
-    floor_ids: List[str] = field(default_factory=list)
+    floor_ids: list[str] = field(default_factory=list)
     floors_per_zone: int = OTHER_FLOORS_PER_ZONE
     occupancy_type: str = "business"
     total_area_sqm: float = 0.0
     total_devices: int = 0
     # V114 FIX: Fail-safe — area compliance must be PROVEN, not assumed
     area_compliant: bool = False
-    warnings: List[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
     nfpa_reference: str = _CITE_NFPA72_21_3_3
 
     @property
@@ -293,16 +293,16 @@ class FloorAssignment:
     floor_id: str
     floor_index: int = 0
     elevation_m: float = 0.0
-    room_results: List[RoomResult] = field(default_factory=list)
+    room_results: list[RoomResult] = field(default_factory=list)
     total_devices: int = 0
     total_detectors: int = 0
     total_notification: int = 0
     total_modules: int = 0
     area_sqm: float = 0.0
     occupancy_type: str = "business"
-    slc_loops: List[str] = field(default_factory=list)
+    slc_loops: list[str] = field(default_factory=list)
     vertical_zone_id: str = ""
-    warnings: List[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -325,13 +325,13 @@ class SmokeSpreadResult:
 
     pathway: SmokeSpreadPathway = SmokeSpreadPathway.STAIRWELL
     source_floor: str = ""
-    affected_floors: List[str] = field(default_factory=list)
+    affected_floors: list[str] = field(default_factory=list)
     propagation_time_s: float = 0.0
     pressurization_required: bool = False
     duct_detection_required: bool = False
     barrier_rating_required_h: float = MIN_SMOKE_BARRIER_RATING_H
-    violations: List[str] = field(default_factory=list)
-    warnings: List[str] = field(default_factory=list)
+    violations: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
     nfpa_reference: str = ""
 
 
@@ -356,16 +356,16 @@ class ElevatorRecallResult:
     """
 
     elevator_id: str = ""
-    floors_served: List[str] = field(default_factory=list)
+    floors_served: list[str] = field(default_factory=list)
     designated_recall_floor: str = DEFAULT_RECALL_FLOOR
     phase_i_compliant: bool = False
     phase_ii_compliant: bool = False
     shunt_trip_compliant: bool = False
-    shunt_trip_result: Optional[Any] = None
+    shunt_trip_result: Any | None = None
     has_smoke_detector_at_recall: bool = False
     has_heat_detector_in_shaft: bool = False
-    violations: List[str] = field(default_factory=list)
-    warnings: List[str] = field(default_factory=list)
+    violations: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
     nfpa_reference: str = _CITE_NFPA72_21_3_2
 
 
@@ -393,7 +393,7 @@ class RiserRoutingResult:
     voltage_drop_pct: float = 0.0
     voltage_drop_compliant: bool = False  # V112: FAIL-SAFE — not compliant until verified
     route_valid: bool = False  # V112: FAIL-SAFE — route not valid until verified
-    violations: List[str] = field(default_factory=list)
+    violations: list[str] = field(default_factory=list)
     nfpa_reference: str = "NFPA 72-2022 §27.4.1 / NEC Art. 760"
 
 
@@ -427,20 +427,20 @@ class BuildingAnalysis:
 
     building_id: str = ""
     total_floors: int = 0
-    floor_assignments: List[FloorAssignment] = field(default_factory=list)
-    slc_loops: List[SLCLoop] = field(default_factory=list)
-    vertical_zones: List[VerticalZone] = field(default_factory=list)
-    smoke_spread_results: List[SmokeSpreadResult] = field(default_factory=list)
-    elevator_recall_results: List[ElevatorRecallResult] = field(default_factory=list)
-    riser_routing_results: List[RiserRoutingResult] = field(default_factory=list)
+    floor_assignments: list[FloorAssignment] = field(default_factory=list)
+    slc_loops: list[SLCLoop] = field(default_factory=list)
+    vertical_zones: list[VerticalZone] = field(default_factory=list)
+    smoke_spread_results: list[SmokeSpreadResult] = field(default_factory=list)
+    elevator_recall_results: list[ElevatorRecallResult] = field(default_factory=list)
+    riser_routing_results: list[RiserRoutingResult] = field(default_factory=list)
     total_devices: int = 0
     total_detectors: int = 0
     total_slc_loops: int = 0
     total_vertical_zones: int = 0
     compliant: bool = False
     analysis_time_s: float = 0.0
-    warnings: List[str] = field(default_factory=list)
-    errors: List[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
     disclaimer: str = (
         "This report is produced by FireAI Multi-Floor Orchestrator. "
         "It MUST be reviewed by a licensed fire protection engineer. "
@@ -502,7 +502,7 @@ class MultiFloorOrchestrator:
 
     def __init__(
         self,
-        floor_orchestrator: Optional[FloorOrchestrator] = None,
+        floor_orchestrator: FloorOrchestrator | None = None,
         slc_loop_class: SLCLoopClass = SLCLoopClass.CLASS_B,
         max_slc_devices: int = MAX_SLC_DEVICES_PER_LOOP,
         building_height_m: float = 0.0,
@@ -540,14 +540,14 @@ class MultiFloorOrchestrator:
     def orchestrate(
         self,
         building_id: str,
-        floors: Dict[str, List[Any]],
+        floors: dict[str, list[Any]],
         occupancy_type: str = "business",
-        floor_elevations: Optional[Dict[str, float]] = None,
-        floor_areas: Optional[Dict[str, float]] = None,
-        elevators: Optional[List[Dict[str, Any]]] = None,
-        stairwells: Optional[List[Dict[str, Any]]] = None,
-        hvac_ducts: Optional[List[Dict[str, Any]]] = None,
-        smoke_barriers: Optional[List[Dict[str, Any]]] = None,
+        floor_elevations: dict[str, float] | None = None,
+        floor_areas: dict[str, float] | None = None,
+        elevators: list[dict[str, Any]] | None = None,
+        stairwells: list[dict[str, Any]] | None = None,
+        hvac_ducts: list[dict[str, Any]] | None = None,
+        smoke_barriers: list[dict[str, Any]] | None = None,
         project_name: str = "",
         source_dxf: str = "",
     ) -> BuildingAnalysis:
@@ -636,7 +636,7 @@ class MultiFloorOrchestrator:
             )
             analysis.vertical_zones = vertical_zones
             # Back-reference: assign vertical zone IDs to floor assignments
-            zone_floor_map: Dict[str, str] = {}
+            zone_floor_map: dict[str, str] = {}
             for vz in vertical_zones:
                 for fid in vz.floor_ids:
                     zone_floor_map[fid] = vz.zone_id
@@ -730,10 +730,10 @@ class MultiFloorOrchestrator:
     def _analyze_floors(
         self,
         analysis: BuildingAnalysis,
-        floors: Dict[str, List[Any]],
+        floors: dict[str, list[Any]],
         occupancy_type: str,
-        floor_elevations: Dict[str, float],
-        floor_areas: Dict[str, float],
+        floor_elevations: dict[str, float],
+        floor_areas: dict[str, float],
         project_name: str,
         source_dxf: str,
     ) -> None:
@@ -824,8 +824,8 @@ class MultiFloorOrchestrator:
 
     def _assign_slc_loops(
         self,
-        floor_assignments: List[FloorAssignment],
-    ) -> List[SLCLoop]:
+        floor_assignments: list[FloorAssignment],
+    ) -> list[SLCLoop]:
         """Assign devices to SLC loops respecting the 250-device limit.
 
         Per NFPA 72 §21.2.2, a single SLC loop shall not have more than
@@ -853,8 +853,8 @@ class MultiFloorOrchestrator:
         if not floor_assignments:
             return []
 
-        loops: List[SLCLoop] = []
-        current_loop: Optional[SLCLoop] = None
+        loops: list[SLCLoop] = []
+        current_loop: SLCLoop | None = None
         loop_counter = 0
         address_counter = 0
 
@@ -945,7 +945,7 @@ class MultiFloorOrchestrator:
     def _estimate_loop_cable(
         self,
         loop: SLCLoop,
-        floor_assignments: List[FloorAssignment],
+        floor_assignments: list[FloorAssignment],
     ) -> None:
         """Estimate cable length for an SLC loop and verify voltage drop.
 
@@ -1011,10 +1011,10 @@ class MultiFloorOrchestrator:
 
     def _design_vertical_zones(
         self,
-        floor_assignments: List[FloorAssignment],
+        floor_assignments: list[FloorAssignment],
         occupancy_type: str,
-        floor_areas: Optional[Dict[str, float]] = None,
-    ) -> List[VerticalZone]:
+        floor_areas: dict[str, float] | None = None,
+    ) -> list[VerticalZone]:
         """Design vertical zones grouping floors per NFPA 72 §21.3.3.
 
         Zone floor limits per §21.3.3:
@@ -1052,9 +1052,9 @@ class MultiFloorOrchestrator:
         if not sorted_floors:
             return []
 
-        zones: List[VerticalZone] = []
+        zones: list[VerticalZone] = []
         zone_counter = 0
-        current_floors: List[FloorAssignment] = []
+        current_floors: list[FloorAssignment] = []
         current_area = 0.0
         current_devices = 0
 
@@ -1130,13 +1130,13 @@ class MultiFloorOrchestrator:
 
     def _analyze_smoke_spread(
         self,
-        floor_assignments: List[FloorAssignment],
-        elevators: List[Dict[str, Any]],
-        stairwells: List[Dict[str, Any]],
-        hvac_ducts: List[Dict[str, Any]],
-        smoke_barriers: List[Dict[str, Any]],
+        floor_assignments: list[FloorAssignment],
+        elevators: list[dict[str, Any]],
+        stairwells: list[dict[str, Any]],
+        hvac_ducts: list[dict[str, Any]],
+        smoke_barriers: list[dict[str, Any]],
         building_height_m: float,
-    ) -> List[SmokeSpreadResult]:
+    ) -> list[SmokeSpreadResult]:
         """Analyze smoke spread through vertical shafts and HVAC.
 
         This method evaluates the potential for smoke to propagate between
@@ -1179,7 +1179,7 @@ class MultiFloorOrchestrator:
             List of SmokeSpreadResult, one per pathway analyzed.
 
         """
-        results: List[SmokeSpreadResult] = []
+        results: list[SmokeSpreadResult] = []
 
         if not floor_assignments:
             return results
@@ -1286,10 +1286,9 @@ class MultiFloorOrchestrator:
                         )
 
             # Estimate smoke fill time for unpressurized stairwell
-            if not has_fan and result.pressurization_required:
-                if building_height_m > 0:
-                    # Stack effect drives smoke upward at ~2-4 m/s
-                    result.propagation_time_s = building_height_m / STACK_EFFECT_VELOCITY_MPS
+            if not has_fan and result.pressurization_required and building_height_m > 0:
+                # Stack effect drives smoke upward at ~2-4 m/s
+                result.propagation_time_s = building_height_m / STACK_EFFECT_VELOCITY_MPS
 
             results.append(result)
 
@@ -1425,9 +1424,9 @@ class MultiFloorOrchestrator:
 
     def _check_elevator_recall(
         self,
-        elevators: List[Dict[str, Any]],
-        floor_assignments: List[FloorAssignment],
-    ) -> List[ElevatorRecallResult]:
+        elevators: list[dict[str, Any]],
+        floor_assignments: list[FloorAssignment],
+    ) -> list[ElevatorRecallResult]:
         """Check elevator recall compliance per NFPA 72 §21.3.2 / ASME A17.1.
 
         Per §21.3.2, elevator recall consists of two phases:
@@ -1472,7 +1471,7 @@ class MultiFloorOrchestrator:
             List of ElevatorRecallResult, one per elevator.
 
         """
-        results: List[ElevatorRecallResult] = []
+        results: list[ElevatorRecallResult] = []
 
         if not elevators:
             return results
@@ -1624,9 +1623,9 @@ class MultiFloorOrchestrator:
 
     def _route_risers(
         self,
-        floor_assignments: List[FloorAssignment],
-        slc_loops: List[SLCLoop],
-    ) -> List[RiserRoutingResult]:
+        floor_assignments: list[FloorAssignment],
+        slc_loops: list[SLCLoop],
+    ) -> list[RiserRoutingResult]:
         """Route riser cables between floors using CableRoutingEngine.
 
         Riser cables are the vertical backbone of the fire alarm system,
@@ -1645,7 +1644,7 @@ class MultiFloorOrchestrator:
             List of RiserRoutingResult, one per floor-to-floor segment.
 
         """
-        results: List[RiserRoutingResult] = []
+        results: list[RiserRoutingResult] = []
 
         if not floor_assignments:
             return results
@@ -1798,11 +1797,7 @@ class MultiFloorOrchestrator:
                 return False
 
         # Riser voltage drop compliance
-        for rr in analysis.riser_routing_results:
-            if not rr.voltage_drop_compliant:
-                return False
-
-        return True
+        return all(rr.voltage_drop_compliant for rr in analysis.riser_routing_results)
 
 
 # ============================================================================
@@ -1810,28 +1805,28 @@ class MultiFloorOrchestrator:
 # ============================================================================
 
 __all__ = [
-    # Main class
-    "MultiFloorOrchestrator",
-    # Dataclasses
-    "BuildingAnalysis",
-    "FloorAssignment",
-    "VerticalZone",
-    "SLCLoop",
-    "SmokeSpreadResult",
-    "ElevatorRecallResult",
-    "RiserRoutingResult",
-    # Enums
-    "SLCLoopClass",
-    "OccupancyType",
-    "ElevatorRecallPhase",
-    "SmokeSpreadPathway",
+    "DEFAULT_RECALL_FLOOR",
     # Constants
     "MAX_SLC_DEVICES_PER_LOOP",
-    "RESIDENTIAL_FLOORS_PER_ZONE",
-    "OTHER_FLOORS_PER_ZONE",
-    "MAX_ZONE_AREA_SQM",
     "MAX_ZONE_AREA_SQFT",
-    "DEFAULT_RECALL_FLOOR",
-    "STACK_EFFECT_VELOCITY_MPS",
+    "MAX_ZONE_AREA_SQM",
     "MIN_SMOKE_BARRIER_RATING_H",
+    "OTHER_FLOORS_PER_ZONE",
+    "RESIDENTIAL_FLOORS_PER_ZONE",
+    "STACK_EFFECT_VELOCITY_MPS",
+    # Dataclasses
+    "BuildingAnalysis",
+    "ElevatorRecallPhase",
+    "ElevatorRecallResult",
+    "FloorAssignment",
+    # Main class
+    "MultiFloorOrchestrator",
+    "OccupancyType",
+    "RiserRoutingResult",
+    "SLCLoop",
+    # Enums
+    "SLCLoopClass",
+    "SmokeSpreadPathway",
+    "SmokeSpreadResult",
+    "VerticalZone",
 ]

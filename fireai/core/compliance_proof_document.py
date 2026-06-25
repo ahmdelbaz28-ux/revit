@@ -1,4 +1,4 @@
-"""D2: Compliance Proof Document Generator — AHJ-Ready Markdown
+"""D2: Compliance Proof Document Generator — AHJ-Ready Markdown.
 =============================================================
 Generates a comprehensive NFPA 72 compliance proof document from
 verified placement results. This document is intended for submission
@@ -37,7 +37,6 @@ from __future__ import annotations
 import datetime
 import math
 from dataclasses import dataclass, field
-from typing import List, Optional
 
 from fireai.core.spatial_engine.consensus_engine import (
     ConfidenceLevel,
@@ -69,8 +68,8 @@ class RoomVerificationRecord:
 
     room: Room
     layout: DetectorLayout
-    consensus: Optional[ConsensusResult] = None
-    notes: List[str] = field(default_factory=list)
+    consensus: ConsensusResult | None = None
+    notes: list[str] = field(default_factory=list)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -115,12 +114,12 @@ class ComplianceProofDocument:
         designer: str = "",
         nfpa_edition: str = "2022",
         jurisdiction: str = "",
-    ):
+    ) -> None:
         self.project_name = project_name
         self.designer = designer
         self.nfpa_edition = nfpa_edition
         self.jurisdiction = jurisdiction
-        self.records: List[RoomVerificationRecord] = []
+        self.records: list[RoomVerificationRecord] = []
         self.generation_date = datetime.datetime.now(datetime.timezone.utc).strftime(
             "%Y-%m-%d %H:%M UTC"
         )  # V54 FIX (AUDIT-012): timezone-aware UTC
@@ -129,8 +128,8 @@ class ComplianceProofDocument:
         self,
         room: Room,
         layout: DetectorLayout,
-        consensus: Optional[ConsensusResult] = None,
-        notes: Optional[List[str]] = None,
+        consensus: ConsensusResult | None = None,
+        notes: list[str] | None = None,
     ) -> None:
         """Add a room's verification result to the document."""
         self.records.append(
@@ -475,7 +474,7 @@ class ComplianceProofDocument:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
-def _cli_main():
+def _cli_main() -> None:
     """Command-line interface for generating compliance proof documents."""
     import argparse
     import sys

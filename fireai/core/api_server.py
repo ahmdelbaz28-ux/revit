@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """api_server.py — FastAPI REST wrapper for FireAI
-Based on V10 Enhanced + LearningStore
+Based on V10 Enhanced + LearningStore.
 
 SECURITY FIXES APPLIED:
   - API Key authentication required for all design endpoints
@@ -29,7 +29,7 @@ import os
 import secrets
 import threading
 import time
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, List
 
 if TYPE_CHECKING:
     from fireai.core.fireai_core import FireAISystem
@@ -141,7 +141,7 @@ class RateLimiter:
 
     _MAX_CLIENTS = 10_000  # Evict stale entries beyond this
 
-    def __init__(self, max_requests: int = 100, window_seconds: int = 60):
+    def __init__(self, max_requests: int = 100, window_seconds: int = 60) -> None:
         self._max = max_requests
         self._window = window_seconds
         self._clients: dict[str, list[float]] = {}
@@ -197,7 +197,7 @@ from fireai.core.nfpa72_models import CeilingSpec, CeilingType, RoomSpec
 # 1. Any import error crashed the entire module
 # 2. Database was opened before env vars were set
 # 3. Testing required mocking the global singleton
-_system: Optional[FireAISystem] = None
+_system: FireAISystem | None = None
 _system_lock = threading.Lock()
 
 
@@ -257,8 +257,7 @@ async def rate_limit_middleware(request: Request, call_next):
             status_code=429,
             detail="Rate limit exceeded. Try again later.",
         )
-    response = await call_next(request)
-    return response
+    return await call_next(request)
 
 
 # ============================================================================
@@ -288,9 +287,9 @@ VALID_OCCUPANCY_TYPES = {
 
 class RoomRequest(BaseModel):
     room_id: str = Field(..., min_length=1, max_length=128, pattern=r"^[a-zA-Z0-9_\-\.]+$")
-    polygon: List[List[float]] = Field(..., min_length=3, max_length=MAX_POLYGON_POINTS)
+    polygon: list[list[float]] = Field(..., min_length=3, max_length=MAX_POLYGON_POINTS)
     height: float = Field(3.0, gt=MIN_CEILING_HEIGHT, le=MAX_CEILING_HEIGHT)
-    height_high: Optional[float] = Field(None, gt=MIN_CEILING_HEIGHT, le=MAX_CEILING_HEIGHT)
+    height_high: float | None = Field(None, gt=MIN_CEILING_HEIGHT, le=MAX_CEILING_HEIGHT)
     ceiling_type: str = "FLAT"
     occupancy_type: str = "office"
     run_resilience: bool = True
@@ -358,11 +357,11 @@ class RoomResponse(BaseModel):
     occupancy: str
     coverage_pct: float
     wall_violations: int
-    resilient: Optional[bool]
-    resilience_pass_rate: Optional[float]
-    warnings: List[str]
-    errors: List[str]
-    detector_positions: List[DetectorPos]
+    resilient: bool | None
+    resilience_pass_rate: float | None
+    warnings: list[str]
+    errors: list[str]
+    detector_positions: list[DetectorPos]
 
 
 # ============================================================================
@@ -455,7 +454,7 @@ def analyse_room(req: RoomRequest):
 
 
 @app.post("/analyse/floor", response_model=List[RoomResponse], dependencies=[Depends(verify_api_key)])
-def analyse_floor(rooms: List[RoomRequest]):
+def analyse_floor(rooms: list[RoomRequest]):
     """Analyse multiple rooms (floor) — authenticated, max 50 rooms."""
     if not rooms:
         raise HTTPException(status_code=422, detail="No rooms provided.")
@@ -500,16 +499,16 @@ class IntegrationRequest(BaseModel):
     """Request model for the full integration pipeline."""
 
     building_id: str = Field(..., min_length=1, max_length=256)
-    floors: Optional[List[dict]] = None
-    panel_positions: Optional[List[List[float]]] = None
-    obstacle_polygons: Optional[List[List[List[float]]]] = None
-    acoustic_config: Optional[dict] = None
+    floors: list[dict] | None = None
+    panel_positions: list[list[float]] | None = None
+    obstacle_polygons: list[list[list[float]]] | None = None
+    acoustic_config: dict | None = None
     nfpa_year: int = Field(2022, ge=2019, le=2025)
     enable_kernel_v30: bool = True
     enable_hash_chain_audit: bool = True
     enable_monte_carlo: bool = True
     enable_bim_sync: bool = True
-    bim_source: Optional[str] = None
+    bim_source: str | None = None
 
 
 @app.post("/integration", dependencies=[Depends(verify_api_key)])
@@ -536,7 +535,7 @@ def run_integration(req: IntegrationRequest):
         if req.obstacle_polygons:
             obstacle_polygons = [[(v[0], v[1]) for v in poly] for poly in req.obstacle_polygons]
 
-        result = _get_system().run_integration(
+        return _get_system().run_integration(
             building_id=req.building_id,
             floors=req.floors,
             panel_positions=panel_positions,
@@ -550,7 +549,6 @@ def run_integration(req: IntegrationRequest):
             bim_source=req.bim_source,
             user_id="api",
         )
-        return result
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc))
     except Exception as exc:

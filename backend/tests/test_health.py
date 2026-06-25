@@ -33,42 +33,42 @@ def _health_data(client):
 class TestHealthEndpoint:
     """Tests for GET /api/health."""
 
-    def test_health_returns_200(self, client):
+    def test_health_returns_200(self, client) -> None:
         """Health endpoint must return HTTP 200."""
         response = client.get("/api/health")
         assert response.status_code == 200, f"Expected 200, got {response.status_code}"
 
-    def test_health_has_status_field(self, client):
+    def test_health_has_status_field(self, client) -> None:
         """Health response must include a 'status' field."""
         data = _health_data(client)
         assert "status" in data, "Missing 'status' field in health response"
 
-    def test_health_status_is_ok_or_degraded(self, client):
+    def test_health_status_is_ok_or_degraded(self, client) -> None:
         """Status must be 'ok' or 'degraded' — never 'error' or missing."""
         data = _health_data(client)
         assert data["status"] in ("ok", "degraded"), f"Unexpected status: {data['status']}"
 
-    def test_health_has_version(self, client):
+    def test_health_has_version(self, client) -> None:
         """Health response must include a 'version' field."""
         data = _health_data(client)
         assert "version" in data, "Missing 'version' field"
 
-    def test_health_has_uptime(self, client):
+    def test_health_has_uptime(self, client) -> None:
         """Health response must include uptime information."""
         data = _health_data(client)
         assert "uptime" in data or "uptime_seconds" in data, "Missing uptime field"
 
-    def test_health_has_database_status(self, client):
+    def test_health_has_database_status(self, client) -> None:
         """Health response must report database connectivity."""
         data = _health_data(client)
         assert "database" in data, "Missing 'database' field"
 
-    def test_health_has_timestamp(self, client):
+    def test_health_has_timestamp(self, client) -> None:
         """Health response must include a timestamp."""
         data = _health_data(client)
         assert "timestamp" in data, "Missing 'timestamp' field"
 
-    def test_security_headers_present(self, client):
+    def test_security_headers_present(self, client) -> None:
         """Security headers must be present on health response."""
         response = client.get("/api/health")
         assert "x-frame-options" in response.headers, "Missing X-Frame-Options header"
@@ -80,12 +80,12 @@ class TestHealthEndpoint:
 class TestStatisticsEndpoint:
     """Tests for GET /api/reports/statistics."""
 
-    def test_statistics_returns_200(self, client):
+    def test_statistics_returns_200(self, client) -> None:
         """Statistics endpoint must return HTTP 200."""
         response = client.get("/api/reports/statistics")
         assert response.status_code == 200, f"Expected 200, got {response.status_code}"
 
-    def test_statistics_has_counts(self, client):
+    def test_statistics_has_counts(self, client) -> None:
         """Statistics response must include element and project counts."""
         response = client.get("/api/reports/statistics")
         data = response.json()

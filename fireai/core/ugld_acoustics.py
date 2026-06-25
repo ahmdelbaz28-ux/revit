@@ -1,4 +1,4 @@
-"""ugld_acoustics.py — Ultrasonic Gas Leak Detection (UGLD) Acoustic Physics Engine
+"""ugld_acoustics.py — Ultrasonic Gas Leak Detection (UGLD) Acoustic Physics Engine.
 ==================================================================================
 V23 — Parallel Acoustic Detection Layer
 
@@ -82,7 +82,6 @@ from __future__ import annotations
 
 import math
 from enum import Enum
-from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -476,7 +475,7 @@ class UGLDTriggerResult(BaseModel):
     margin_to_snr_db: float = Field(
         description=("Margin above SNR requirement = snr_db - 6 dB minimum. Negative = insufficient SNR."),
     )
-    fail_reason: Optional[str] = Field(
+    fail_reason: str | None = Field(
         default=None,
         description="If not triggered, which condition failed and why.",
     )
@@ -525,7 +524,7 @@ def check_ugld_trigger(
     triggered = threshold_met and snr_met
 
     # Determine fail reason if not triggered
-    fail_reason: Optional[str] = None
+    fail_reason: str | None = None
     if not triggered:
         reasons = []
         if not threshold_met:
@@ -640,19 +639,19 @@ def speed_of_sound(temp_c: float) -> float:
 
 
 __all__ = [
-    # Enums
-    "UGLDFrequencyBand",
-    # Models
-    "UltrasonicSensor",
-    "AcousticPropagation",
-    "UGLDTriggerResult",
-    # Functions
-    "check_ugld_trigger",
-    "atmospheric_attenuation_db_per_m",
-    "max_detection_range_m",
-    "speed_of_sound",
     # Constants
     "_DEFAULT_UGLD_FREQUENCY_HZ",
-    "_MIN_SNR_DB",
     "_ISO_9613_ALPHA_20C_50RH",
+    "_MIN_SNR_DB",
+    "AcousticPropagation",
+    # Enums
+    "UGLDFrequencyBand",
+    "UGLDTriggerResult",
+    # Models
+    "UltrasonicSensor",
+    "atmospheric_attenuation_db_per_m",
+    # Functions
+    "check_ugld_trigger",
+    "max_detection_range_m",
+    "speed_of_sound",
 ]

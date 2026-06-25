@@ -1,4 +1,4 @@
-"""backend/services/digital_twin_service.py — Digital Twin Engine
+"""backend/services/digital_twin_service.py — Digital Twin Engine.
 ================================================================
 
 COMPLETE Digital Twin implementation including:
@@ -19,10 +19,10 @@ ARCHITECTURE:
 USAGE:
     from backend.services.digital_twin_service import DigitalTwinService
     service = DigitalTwinService()
-    
+
     # AutoCAD → Revit
     revit_model = service.convert_autocad_to_revit("input.dwg")
-    
+
     # Revit → AutoCAD
     dwg_file = service.convert_revit_to_autocad("model.rvt")
 """
@@ -181,7 +181,7 @@ class VersionInfo:
 
 class SemanticMapper:
     """Maps AutoCAD entities to Revit elements and vice versa.
-    
+
     Conversion Rules:
     - Lines on "Walls" layer → Revit Walls
     - Hatches on "Floors" layer → Revit Floors
@@ -189,15 +189,15 @@ class SemanticMapper:
     - Text → Revit Text Notes
     """
 
-    def __init__(self, config: ConversionConfig):
+    def __init__(self, config: ConversionConfig) -> None:
         self.config = config
 
     def map_autocad_to_revit(self, autocad_entity: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """Map a single AutoCAD entity to Revit element specification.
-        
+
         Args:
             autocad_entity: AutoCAD entity data from DWGReader
-        
+
         Returns:
             Revit element specification or None if unmappable
 
@@ -397,10 +397,10 @@ class SemanticMapper:
 
     def map_revit_to_autocad(self, revit_element: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """Map a single Revit element to AutoCAD entity specification.
-        
+
         Args:
             revit_element: Revit element data from RVTReader
-        
+
         Returns:
             AutoCAD entity specification or None if unmappable
 
@@ -544,7 +544,7 @@ class SemanticMapper:
 
 class DigitalTwinEngine:
     """Core conversion engine for AutoCAD ↔ Revit.
-    
+
     Workflow:
     1. Read source file
     2. Extract entities
@@ -554,7 +554,7 @@ class DigitalTwinEngine:
     6. Record version history
     """
 
-    def __init__(self, config: Optional[ConversionConfig] = None):
+    def __init__(self, config: Optional[ConversionConfig] = None) -> None:
         self.config = config or ConversionConfig()
         self.mapper = SemanticMapper(self.config)
         self.version_manager = VersionManager()
@@ -562,12 +562,12 @@ class DigitalTwinEngine:
     def convert_autocad_to_revit(self, dwg_filepath: str, rvt_filepath: str,
                                   template_path: Optional[str] = None) -> ConversionResult:
         """Convert AutoCAD DWG to Revit RVT.
-        
+
         Args:
             dwg_filepath: Path to input DWG file
             rvt_filepath: Path to output RVT file
             template_path: Optional Revit template file
-        
+
         Returns:
             ConversionResult with success status and details
 
@@ -660,11 +660,11 @@ class DigitalTwinEngine:
 
     def convert_revit_to_autocad(self, rvt_filepath: str, dwg_filepath: str) -> ConversionResult:
         """Convert Revit RVT to AutoCAD DWG.
-        
+
         Args:
             rvt_filepath: Path to input RVT file
             dwg_filepath: Path to output DWG file
-        
+
         Returns:
             ConversionResult with success status and details
 
@@ -765,7 +765,7 @@ class VersionManager:
 
     VERSION_FILE = "conversion_history.json"
 
-    def __init__(self, history_dir: Optional[str] = None):
+    def __init__(self, history_dir: Optional[str] = None) -> None:
         self.history_dir = Path(history_dir or os.getenv("CONVERSION_HISTORY_DIR", "."))
         self.history_file = self.history_dir / self.VERSION_FILE
 
@@ -812,7 +812,7 @@ class VersionManager:
 
     def rollback(self, version_id: str, target_file: str) -> bool:
         """Rollback to a specific version.
-        
+
         Restores the target file from backup.
         """
         history = self._load_history()
@@ -850,7 +850,7 @@ class VersionManager:
             logger.error("History file corrupted: %s", self.history_file)
             return []
 
-    def _save_history(self, history: List[Dict[str, Any]]):
+    def _save_history(self, history: List[Dict[str, Any]]) -> None:
         """Save version history to file."""
         self.history_dir.mkdir(parents=True, exist_ok=True)
 
@@ -864,21 +864,21 @@ class VersionManager:
 
 class DigitalTwinService:
     """Main Digital Twin service — orchestrates bidirectional conversion.
-    
+
     Usage:
         service = DigitalTwinService()
-        
+
         # AutoCAD → Revit
         result = service.convert_autocad_to_revit("input.dwg", "output.rvt")
-        
+
         # Revit → AutoCAD
         result = service.convert_revit_to_autocad("model.rvt", "output.dwg")
-        
+
         # Get history
         history = service.get_conversion_history()
     """
 
-    def __init__(self, config: Optional[ConversionConfig] = None):
+    def __init__(self, config: Optional[ConversionConfig] = None) -> None:
         self.config = config or ConversionConfig()
         self.engine = DigitalTwinEngine(self.config)
 
@@ -909,7 +909,7 @@ class ConversionConfigManager:
 
     CONFIG_FILE = "conversion_config.json"
 
-    def __init__(self, config_dir: Optional[str] = None):
+    def __init__(self, config_dir: Optional[str] = None) -> None:
         self.config_dir = Path(config_dir or os.getenv("CONVERSION_CONFIG_DIR", "."))
         self.config_file = self.config_dir / self.CONFIG_FILE
 
@@ -945,7 +945,7 @@ class ConversionConfigManager:
 
     def update_mapping(self, layer: str, category: str, direction: str = "autocad_to_revit") -> bool:
         """Update a single mapping rule.
-        
+
         Args:
             layer: AutoCAD layer name or Revit category
             category: Revit category name or AutoCAD layer

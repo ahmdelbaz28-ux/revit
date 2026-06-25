@@ -1,4 +1,4 @@
-"""fireai.conduit.fitting_engine — NEC Fitting Placement Engine
+"""fireai.conduit.fitting_engine — NEC Fitting Placement Engine.
 =============================================================
 
 Transforms a routed waypoint path into a complete ConduitRun with all
@@ -28,7 +28,6 @@ from __future__ import annotations
 
 import math
 import uuid
-from typing import Optional, Tuple
 
 from fireai.conduit.bend import (
     MAX_CUMULATIVE_BEND_DEG,
@@ -102,7 +101,7 @@ def place_fittings(
     path: RoutePath,
     conduit_type: ConduitType,
     trade_size: TradeSize,
-    run_id: Optional[str] = None,
+    run_id: str | None = None,
 ) -> Result[ConduitRun, PhysicsError | CodeViolationError]:
     """Place fittings along a routed path to produce a complete ConduitRun.
 
@@ -238,7 +237,7 @@ def _is_direction_change(
     quantised to the dominant axis (orthogonal routing guarantees
     only one axis changes at a time).
     """
-    def dom_dir(a: Point3D, b: Point3D) -> Tuple[int, int, int]:
+    def dom_dir(a: Point3D, b: Point3D) -> tuple[int, int, int]:
         dx, dy, dz = b.x - a.x, b.y - a.y, b.z - a.z
         return (
             (1 if dx > 0 else -1 if dx < 0 else 0),

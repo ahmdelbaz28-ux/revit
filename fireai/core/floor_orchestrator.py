@@ -10,7 +10,7 @@ from __future__ import annotations
 import logging
 import time
 from dataclasses import dataclass, field
-from typing import List, Literal, Optional, Tuple, cast
+from typing import Literal, cast
 
 from .audit_trail import AuditTrail
 from .nfpa72_coverage import verify_full_coverage
@@ -41,17 +41,17 @@ logger = logging.getLogger("fireai.orchestrator")
 class RoomResult:
     room_id: str
     status: str
-    radius_m: Optional[float] = None
-    spacing_m: Optional[float] = None
-    geometry: Optional[str] = None
+    radius_m: float | None = None
+    spacing_m: float | None = None
+    geometry: str | None = None
     detector_count: int = 0
-    detector_positions: List[Tuple[float, float]] = field(default_factory=list)
+    detector_positions: list[tuple[float, float]] = field(default_factory=list)
     coverage_pct: float = 0.0
     worst_case_distance_m: float = 0.0
     solve_time_s: float = 0.0
-    warnings: List[str] = field(default_factory=list)
-    errors: List[str] = field(default_factory=list)
-    audit_notes: List[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
+    audit_notes: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -59,7 +59,7 @@ class FloorResult:
     project_name: str
     source_dxf: str
     total_rooms: int
-    room_results: List[RoomResult] = field(default_factory=list)
+    room_results: list[RoomResult] = field(default_factory=list)
     rooms_passed: int = 0
     rooms_failed: int = 0
     rooms_errored: int = 0
@@ -72,7 +72,7 @@ class FloorResult:
         "All calculations reference NFPA 72 (2022 Edition)."
     )
 
-    def compute(self):
+    def compute(self) -> None:
         self.rooms_passed = sum(1 for r in self.room_results if r.status == "PASS")
         self.rooms_failed = sum(1 for r in self.room_results if r.status == "FAIL")
         self.rooms_errored = sum(1 for r in self.room_results if r.status == "ERROR")
@@ -116,7 +116,7 @@ class FloorResult:
             self.status = "ERROR"
 
     def save_audit(self, output_dir: str = "audit"):
-        """Save audit trail to JSON file for liability protection"""
+        """Save audit trail to JSON file for liability protection."""
         import json
         import re
         from datetime import datetime, timezone
@@ -194,11 +194,11 @@ class FloorOrchestrator:
     3. RuntimeError FAILS FAST — stops everything.
     """
 
-    def __init__(self, grid_res: float = 0.25, audit_trail: Optional[AuditTrail] = None):
+    def __init__(self, grid_res: float = 0.25, audit_trail: AuditTrail | None = None) -> None:
         self.grid_res = grid_res
         self.audit_trail = audit_trail
 
-    def process(self, room_specs: List[RoomSpec], project_name: str = "", source_dxf: str = "") -> FloorResult:
+    def process(self, room_specs: list[RoomSpec], project_name: str = "", source_dxf: str = "") -> FloorResult:
         logger.info("Processing: %s (%s rooms)", project_name, len(room_specs))
 
         result = FloorResult(
@@ -267,7 +267,7 @@ class FloorOrchestrator:
             # get 9.1m spacing instead of ~5.2m — 40% fewer detectors than required.
             # The system must fail loudly rather than silently approve unsafe designs.
             if spec.ceiling_spec is None:
-                result = RoomResult(
+                return RoomResult(
                     room_id=spec.name,
                     status="ERROR",
                     errors=[f"Room '{spec.name}' has no ceiling specification — cannot compute NFPA 72 detector placement. All rooms require ceiling height data."],
@@ -276,7 +276,6 @@ class FloorOrchestrator:
                 # does not exist — would raise AttributeError, crashing entire building
                 # analysis when any room has missing ceiling spec. The result is already
                 # an ERROR RoomResult and will be returned to process() for logging.
-                return result
             ceiling_h = spec.ceiling_spec.height_at_low_point_m
             room_data = Room(name=spec.name, width=spec.width_m, length=spec.depth_m, ceiling_height=ceiling_h)
             # CRITICAL FIX: Use height-adjusted coverage radius per NFPA 72

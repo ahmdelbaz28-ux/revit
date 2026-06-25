@@ -1,4 +1,4 @@
-"""fireai/core/routing_global_class_a.py
+"""fireai/core/routing_global_class_a.py.
 =====================================
 WRAPPER — Delegates to EliteClassARouter (routing_engine_v10.py).
 
@@ -18,8 +18,6 @@ The canonical engine: fireai.core.routing_engine_v10.EliteClassARouter
 """
 
 from __future__ import annotations
-
-from typing import List, Tuple
 
 from fireai.core.provenance import (
     ConfidenceLevel,
@@ -44,7 +42,7 @@ class EliteGlobalRouter:
 
     """
 
-    def __init__(self, global_bounds: Tuple[float, float, float, float], resolution: float = 0.25):
+    def __init__(self, global_bounds: tuple[float, float, float, float], resolution: float = 0.25) -> None:
         min_x, min_y, max_x, max_y = global_bounds
         width = max_x - min_x
         length = max_y - min_y
@@ -56,14 +54,14 @@ class EliteGlobalRouter:
         self._min_x = min_x
         self._min_y = min_y
 
-    def apply_class_a_separation(self, outgoing_path: List[Tuple[float, float]], min_sep_m: float = 1.0) -> None:
+    def apply_class_a_separation(self, outgoing_path: list[tuple[float, float]], min_sep_m: float = 1.0) -> None:
         """No-op for backward compatibility. Separation is applied internally
         by EliteClassARouter.generate_class_a_loop().
         """
         pass  # Delegated to EliteClassARouter internally
 
     def route_class_a_loop(
-        self, panel: Tuple[float, float], terminal_device: Tuple[float, float]
+        self, panel: tuple[float, float], terminal_device: tuple[float, float]
     ) -> DecisionProvenance:
         """Compute a full Class A loop via EliteClassARouter and wrap
         the result in a DecisionProvenance for audit trail compatibility.

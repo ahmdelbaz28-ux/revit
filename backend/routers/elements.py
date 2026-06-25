@@ -1,4 +1,4 @@
-"""FireAI Digital Twin - Elements Router
+"""FireAI Digital Twin - Elements Router.
 ======================================
 CRUD endpoints for building elements.
 """
@@ -8,7 +8,6 @@ from __future__ import annotations
 import logging
 import math
 import re
-from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
@@ -30,9 +29,9 @@ router = APIRouter(prefix="/api/v1/elements", tags=["elements"])
 
 @router.get("", response_model=ApiResponse[PaginatedData[ElementResponse]], dependencies=[Depends(require_permission(Permission.ELEMENT_READ))])
 async def list_elements(
-    element_type: Optional[str] = Query(None, description="Filter by element type"),
-    project_id: Optional[str] = Query(None, description="Filter by project ID"),
-    is_deleted: Optional[bool] = Query(None, description="Include deleted elements"),
+    element_type: str | None = Query(None, description="Filter by element type"),
+    project_id: str | None = Query(None, description="Filter by project ID"),
+    is_deleted: bool | None = Query(None, description="Include deleted elements"),
     page: int = Query(1, ge=1, description="Page number"),
     page_size: int = Query(20, ge=1, le=100, description="Items per page"),
     sort_by: str = Query("created_timestamp", description="Sort field"),

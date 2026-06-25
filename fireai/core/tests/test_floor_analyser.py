@@ -58,27 +58,27 @@ def kitchen_room():
 class TestFloorAnalyserInit:
     """Verify FloorAnalyser initialization and configuration."""
 
-    def test_basic_initialization(self, optimizer):
+    def test_basic_initialization(self, optimizer) -> None:
         fa = FloorAnalyser("L1", optimizer)
         assert fa.floor_id == "L1"
         assert fa.opt is optimizer
         assert fa.use_mip is False
         assert fa.use_scenarios is False
 
-    def test_mip_enabled(self, optimizer):
+    def test_mip_enabled(self, optimizer) -> None:
         fa = FloorAnalyser("L1", optimizer, use_mip=True)
         assert fa.use_mip is True
 
-    def test_scenario_enabled(self, optimizer):
+    def test_scenario_enabled(self, optimizer) -> None:
         fa = FloorAnalyser("L1", optimizer, use_scenarios=True)
         assert fa.use_scenarios is True
 
-    def test_custom_mip_params(self, optimizer):
+    def test_custom_mip_params(self, optimizer) -> None:
         fa = FloorAnalyser("L1", optimizer, use_mip=True, mip_candidate_step=0.5, mip_time_limit=5.0)
         assert fa.mip_candidate_step == 0.5
         assert fa.mip_time_limit == 5.0
 
-    def test_sensor_advisor_initialized(self, optimizer):
+    def test_sensor_advisor_initialized(self, optimizer) -> None:
         fa = FloorAnalyser("L1", optimizer)
         assert fa.sensor_advisor is not None
 
@@ -90,24 +90,24 @@ class TestFloorAnalyserInit:
 class TestAnalyseBasic:
     """Basic analysis scenarios for FloorAnalyser."""
 
-    def test_single_room(self, analyser, simple_room):
+    def test_single_room(self, analyser, simple_room) -> None:
         report = analyser.analyse([simple_room])
         assert isinstance(report, FloorReport)
         assert report.floor_id == "GF"
         assert len(report.room_summaries) == 1
 
-    def test_multiple_rooms(self, analyser, simple_room, large_room):
+    def test_multiple_rooms(self, analyser, simple_room, large_room) -> None:
         report = analyser.analyse([simple_room, large_room])
         assert len(report.room_summaries) == 2
         assert report.total_detectors > 0
 
-    def test_empty_rooms_list(self, analyser):
+    def test_empty_rooms_list(self, analyser) -> None:
         report = analyser.analyse([])
         assert isinstance(report, FloorReport)
         assert len(report.room_summaries) == 0
         assert "No rooms provided" in report.floor_warnings[0]
 
-    def test_room_summary_fields(self, analyser, simple_room):
+    def test_room_summary_fields(self, analyser, simple_room) -> None:
         report = analyser.analyse([simple_room])
         summary = report.room_summaries[0]
         assert isinstance(summary, RoomSummary)
@@ -116,7 +116,7 @@ class TestAnalyseBasic:
         assert summary.detector_count >= 0
         assert 0.0 <= summary.coverage_pct <= 100.0 + 1e-6
 
-    def test_compliant_room_has_detectors(self, analyser, simple_room):
+    def test_compliant_room_has_detectors(self, analyser, simple_room) -> None:
         report = analyser.analyse([simple_room])
         summary = report.room_summaries[0]
         if summary.compliant:
@@ -132,19 +132,19 @@ class TestAnalyseBasic:
 class TestSafetyRefusal:
     """NFPA 72 §17.6.4 — safety refusal for inappropriate detector types."""
 
-    def test_kitchen_smoke_detector_refused(self, analyser, kitchen_room):
+    def test_kitchen_smoke_detector_refused(self, analyser, kitchen_room) -> None:
         report = analyser.analyse([kitchen_room])
         summary = report.room_summaries[0]
         assert summary.refused is True
         assert summary.refusal_reason is not None
         assert summary.detector_count == 0
 
-    def test_office_not_refused(self, analyser, simple_room):
+    def test_office_not_refused(self, analyser, simple_room) -> None:
         report = analyser.analyse([simple_room])
         summary = report.room_summaries[0]
         assert summary.refused is False
 
-    def test_kitchen_heat_detector_not_refused(self, optimizer, kitchen_room):
+    def test_kitchen_heat_detector_not_refused(self, optimizer, kitchen_room) -> None:
         kitchen_room["detector_type"] = "heat"
         analyser = FloorAnalyser("GF", optimizer)
         report = analyser.analyse([kitchen_room])
@@ -160,20 +160,20 @@ class TestSafetyRefusal:
 class TestCoverageAndCompliance:
     """Coverage percentage and compliance validation."""
 
-    def test_standard_room_high_coverage(self, analyser, simple_room):
+    def test_standard_room_high_coverage(self, analyser, simple_room) -> None:
         report = analyser.analyse([simple_room])
         summary = report.room_summaries[0]
         # Standard room should achieve high coverage
         assert summary.coverage_pct > 90.0 or summary.refused
 
-    def test_large_room_needs_more_detectors(self, analyser, simple_room, large_room):
+    def test_large_room_needs_more_detectors(self, analyser, simple_room, large_room) -> None:
         report = analyser.analyse([simple_room, large_room])
         small_summary = report.room_summaries[0]
         large_summary = report.room_summaries[1]
         if not small_summary.refused and not large_summary.refused:
             assert large_summary.detector_count >= small_summary.detector_count
 
-    def test_floor_report_totals(self, analyser, simple_room, large_room):
+    def test_floor_report_totals(self, analyser, simple_room, large_room) -> None:
         report = analyser.analyse([simple_room, large_room])
         total = sum(s.detector_count for s in report.room_summaries)
         assert report.total_detectors == total
@@ -186,7 +186,7 @@ class TestCoverageAndCompliance:
 class TestCeilingHeightVariations:
     """Dynamic coverage radius from NFPA 72 Table 17.6.3.1.1."""
 
-    def test_low_ceiling_warning(self, optimizer):
+    def test_low_ceiling_warning(self, optimizer) -> None:
         room = {
             "room_id": "R_low",
             "name": "Low Room",
@@ -201,7 +201,7 @@ class TestCeilingHeightVariations:
             has_low_warning = any("LOW_CEILING" in w for w in summary.warnings)
             assert has_low_warning or summary.coverage_pct > 0
 
-    def test_high_ceiling_reduces_radius(self, optimizer):
+    def test_high_ceiling_reduces_radius(self, optimizer) -> None:
         room_low = {
             "room_id": "R_low_h",
             "name": "LowH",
@@ -221,7 +221,7 @@ class TestCeilingHeightVariations:
         assert report_low.room_summaries[0].coverage_radius_used > 0
         assert report_high.room_summaries[0].coverage_radius_used > 0
 
-    def test_none_ceiling_height_defaults_to_3m(self, optimizer):
+    def test_none_ceiling_height_defaults_to_3m(self, optimizer) -> None:
         room = {
             "room_id": "R_none",
             "name": "No Ceiling",
@@ -240,24 +240,24 @@ class TestCeilingHeightVariations:
 class TestFloorReport:
     """FloorReport data class and aggregation."""
 
-    def test_report_has_correct_floor_id(self, analyser, simple_room):
+    def test_report_has_correct_floor_id(self, analyser, simple_room) -> None:
         report = analyser.analyse([simple_room])
         assert report.floor_id == "GF"
 
-    def test_safe_to_submit_when_all_compliant(self, analyser, simple_room):
+    def test_safe_to_submit_when_all_compliant(self, analyser, simple_room) -> None:
         report = analyser.analyse([simple_room])
         summary = report.room_summaries[0]
         if summary.compliant:
             assert report.safe_to_submit is True
 
-    def test_non_compliant_rooms_tracked(self, optimizer, kitchen_room):
+    def test_non_compliant_rooms_tracked(self, optimizer, kitchen_room) -> None:
         fa = FloorAnalyser("GF", optimizer)
         report = fa.analyse([kitchen_room])
         summary = report.room_summaries[0]
         if summary.refused:
             assert kitchen_room["room_id"] in report.unsafe_rooms or summary.compliant is False
 
-    def test_analysis_time_recorded(self, analyser, simple_room):
+    def test_analysis_time_recorded(self, analyser, simple_room) -> None:
         report = analyser.analyse([simple_room])
         assert report.analysis_time_s >= 0
 
@@ -269,7 +269,7 @@ class TestFloorReport:
 class TestHeatDetectorSupport:
     """Heat detector type detection and coverage radius calculation."""
 
-    def test_heat_detector_type(self, optimizer):
+    def test_heat_detector_type(self, optimizer) -> None:
         room = {
             "room_id": "R_heat",
             "name": "Heat Room",
@@ -292,7 +292,7 @@ class TestHeatDetectorSupport:
 class TestGeometryHandling:
     """Geometry sanitization and non-rectangular room handling."""
 
-    def test_degenerate_geometry_rejected(self, optimizer):
+    def test_degenerate_geometry_rejected(self, optimizer) -> None:
         room = {
             "room_id": "R_degen",
             "name": "Degenerate",
@@ -304,7 +304,7 @@ class TestGeometryHandling:
         summary = report.room_summaries[0]
         assert summary.refused is True or summary.method == "rejected_geometry"
 
-    def test_no_polygon_coords(self, optimizer):
+    def test_no_polygon_coords(self, optimizer) -> None:
         """Room without polygon_coords — _build_room requires it."""
         # _build_room requires polygon_coords, so this should raise KeyError
         # unless the room has polygon_coords set.
@@ -318,7 +318,7 @@ class TestGeometryHandling:
         report = fa.analyse([room])
         assert len(report.room_summaries) == 1
 
-    def test_l_shape_room(self, optimizer):
+    def test_l_shape_room(self, optimizer) -> None:
         """L-shaped room (6 unique vertices) classified correctly."""
         room = {
             "room_id": "R_lshape",
@@ -340,7 +340,7 @@ class TestGeometryHandling:
 class TestRoomSummary:
     """RoomSummary dataclass field defaults and construction."""
 
-    def test_default_values(self):
+    def test_default_values(self) -> None:
         rs = RoomSummary(room_id="R1", name="Test", detector_count=0)
         assert rs.coverage_pct == 0.0
         assert rs.nfpa_valid is False
@@ -351,7 +351,7 @@ class TestRoomSummary:
         assert rs.warnings == []
         assert rs.scenario_pass is None
 
-    def test_custom_values(self):
+    def test_custom_values(self) -> None:
         rs = RoomSummary(
             room_id="R1", name="Test", detector_count=5,
             coverage_pct=99.5, nfpa_valid=True, proof_valid=True,
@@ -369,7 +369,7 @@ class TestRoomSummary:
 class TestFloorReportDataclass:
     """FloorReport dataclass field defaults."""
 
-    def test_default_values(self):
+    def test_default_values(self) -> None:
         fr = FloorReport(floor_id="L1")
         assert fr.total_detectors == 0
         assert fr.fully_compliant is False

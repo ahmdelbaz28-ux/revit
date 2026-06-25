@@ -1,4 +1,4 @@
-"""backend/services/revit_service.py — Revit Integration Service
+"""backend/services/revit_service.py — Revit Integration Service.
 =============================================================
 
 Complete Revit integration service with full Revit API support.
@@ -6,7 +6,7 @@ Handles connections, file operations, element manipulation, and AI agent command
 
 CONNECTION METHODS:
 1. API - Direct Revit API (pythonnet) - Best performance
-2. MACRO - Revit Macro API - Free, runs inside Revit  
+2. MACRO - Revit Macro API - Free, runs inside Revit
 3. SIMULATION - Development mode - No Revit needed
 
 FEATURES:
@@ -127,7 +127,7 @@ if IS_WINDOWS and HAS_PYTHONNET:
 
 class RevitService:
     """Complete Revit integration service.
-    
+
     Handles:
     - Multiple connection methods (API, Macro, Simulation)
     - Element CRUD (Walls, Floors, Doors, Windows, Columns, Beams)
@@ -136,7 +136,7 @@ class RevitService:
     - AI command interpretation
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._platform = platform.system()
         self._is_windows = self._platform == "Windows"
 
@@ -167,7 +167,7 @@ class RevitService:
     # =========================================================================
 
     def connect(self, method: str = 'auto') -> bool:
-        """Connect to Revit. Methods: 'api', 'macro', 'simulation', 'auto'"""
+        """Connect to Revit. Methods: 'api', 'macro', 'simulation', 'auto'."""
         method = method.lower()
         if method == 'auto':
             method = 'api' if HAS_REVIT_API else 'simulation'
@@ -232,10 +232,10 @@ class RevitService:
     def _extract_element_data(self, element) -> Dict[str, Any]:
         """Extract detailed data from a Revit element.
         In a real implementation, this would extract actual element properties.
-        
+
         Args:
             element: Revit element object
-            
+
         Returns:
             Dict containing element data
 
@@ -326,10 +326,10 @@ class RevitService:
 
     def read_rvt(self, filepath: str) -> Dict[str, Any]:
         """Read elements from an RVT file.
-        
+
         Args:
             filepath: Path to the RVT file to read
-            
+
         Returns:
             Dictionary containing elements data and metadata
 
@@ -406,11 +406,11 @@ class RevitService:
 
     def write_rvt(self, filepath: str, elements: List[Dict[str, Any]]) -> bool:
         """Write elements to an RVT file.
-        
+
         Args:
             filepath: Path to save the RVT file
             elements: List of element dictionaries to write
-            
+
         Returns:
             bool: True if write successful, False otherwise
 
@@ -458,13 +458,13 @@ class RevitService:
     def create_wall(self, start_point: List[float], end_point: List[float],
                    height: float = 3000.0, level: str = "Level 1") -> Optional[str]:
         """Create a wall in the active Revit document.
-        
+
         Args:
             start_point: Starting coordinates [x, y, z]
-            end_point: Ending coordinates [x, y, z] 
+            end_point: Ending coordinates [x, y, z]
             height: Wall height in millimeters
             level: Level name for the wall
-            
+
         Returns:
             Element ID of created wall or None if failed
 
@@ -487,11 +487,11 @@ class RevitService:
 
     def create_floor(self, boundary: List[List[float]], level: str = "Level 1") -> Optional[str]:
         """Create a floor in the active Revit document.
-        
+
         Args:
             boundary: List of boundary points [[x, y, z], ...]
             level: Level name for the floor
-            
+
         Returns:
             Element ID of created floor or None if failed
 
@@ -515,12 +515,12 @@ class RevitService:
     def create_column(self, location: List[float], height: float = 3000.0,
                      level: str = "Level 1") -> Optional[str]:
         """Create a column in the active Revit document.
-        
+
         Args:
             location: Location point [x, y, z]
             height: Column height in millimeters
             level: Level name for the column
-            
+
         Returns:
             Element ID of created column or None if failed
 
@@ -543,7 +543,7 @@ class RevitService:
 
     def get_document_info(self) -> Dict[str, Any]:
         """Get information about the active Revit document.
-        
+
         Returns:
             Dictionary containing document information
 
@@ -574,10 +574,10 @@ class RevitService:
 
     def save(self, filepath: str) -> bool:
         """Save the active document to a file.
-        
+
         Args:
             filepath: Path to save the document
-            
+
         Returns:
             bool: True if save successful, False otherwise
 
@@ -682,8 +682,7 @@ class RevitService:
         category: Optional[str] = None,
         element_class: Optional[str] = None
     ) -> List[Dict[str, Any]]:
-        """Get elements using FilteredElementCollector pattern.
-        """
+        """Get elements using FilteredElementCollector pattern."""
         if not self._connected:
             return []
 
@@ -1267,9 +1266,8 @@ class RevitService:
                 if namespace.lower() not in entry.get("Namespace", "").lower():
                     match = False
 
-            if api_type and match:
-                if entry.get("Type", "").lower() != api_type.lower():
-                    match = False
+            if api_type and match and entry.get("Type", "").lower() != api_type.lower():
+                match = False
 
             if match:
                 results.append(RevitAPIInfo(

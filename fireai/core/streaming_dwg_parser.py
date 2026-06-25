@@ -1,4 +1,4 @@
-"""streaming_dwg_parser.py — Real-time DWG Streaming Parser
+"""streaming_dwg_parser.py — Real-time DWG Streaming Parser.
 =========================================================
 Solves Section 11.1: "Process 100MB+ DWG files without loading entire
 file into memory."
@@ -29,7 +29,7 @@ import math
 import os
 import time
 from dataclasses import dataclass
-from typing import Any, Dict, Generator, Iterator, List, Tuple
+from typing import Any, Generator, Iterator
 
 logger = logging.getLogger("fireai.streaming_dwg_parser")
 
@@ -44,7 +44,7 @@ class StreamedRoom:
     """Room assembled from streaming DWG/DXF parse."""
 
     room_id: str
-    polygon: List[Tuple[float, float]]  # (x, y) vertices in metres
+    polygon: list[tuple[float, float]]  # (x, y) vertices in metres
     area_m2: float = 0.0
     floor_id: str = ""
     source_line: int = 0  # line/byte offset in source file
@@ -75,7 +75,7 @@ class StreamingStats:
 # ---------------------------------------------------------------------------
 
 
-def _shoelace_area(poly: List[Tuple[float, float]]) -> float:
+def _shoelace_area(poly: list[tuple[float, float]]) -> float:
     """Compute polygon area using the shoelace formula.
 
     Returns NaN if any coordinate is NaN (the value propagates
@@ -98,7 +98,7 @@ def _shoelace_area(poly: List[Tuple[float, float]]) -> float:
 
 
 def _assemble_closed_polygons_v29(
-    lines: List[Tuple[Tuple[float, float], Tuple[float, float]]],
+    lines: list[tuple[tuple[float, float], tuple[float, float]]],
     tolerance: float = 0.01,
     return_consumed: bool = False,
 ) -> list | tuple[list, set]:
@@ -134,24 +134,24 @@ def _assemble_closed_polygons_v29(
 
     # Phase 1: Build spatial grid index
     cell_size = tolerance
-    grid_start: Dict[Tuple[int, int], set] = {}
-    grid_end: Dict[Tuple[int, int], set] = {}
+    grid_start: dict[tuple[int, int], set] = {}
+    grid_end: dict[tuple[int, int], set] = {}
 
     for idx, (start, end) in enumerate(lines):
         sx, sy = start
         ex, ey = end
-        cs = (int(math.floor(sx / cell_size)), int(math.floor(sy / cell_size)))
-        ce = (int(math.floor(ex / cell_size)), int(math.floor(ey / cell_size)))
+        cs = (math.floor(sx / cell_size), math.floor(sy / cell_size))
+        ce = (math.floor(ex / cell_size), math.floor(ey / cell_size))
         grid_start.setdefault(cs, set()).add(idx)
         grid_end.setdefault(ce, set()).add(idx)
 
     consumed: set = set()
-    closed_polygons: List[List[Tuple[float, float]]] = []
+    closed_polygons: list[list[tuple[float, float]]] = []
 
     def _find_neighbours(px: float, py: float) -> list:
         """Return line indices whose start or end is within tolerance of (px,py)."""
-        cx = int(math.floor(px / cell_size))
-        cy = int(math.floor(py / cell_size))
+        cx = math.floor(px / cell_size)
+        cy = math.floor(py / cell_size)
         candidates = set()
         for dx in (-1, 0, 1):
             for dy in (-1, 0, 1):
@@ -278,11 +278,11 @@ class StreamingDXFParser:
         stats = StreamingStats()
         t0 = time.perf_counter()
         room_counter = 0
-        pending_lines: List[Tuple[Tuple[float, float], Tuple[float, float]]] = []
+        pending_lines: list[tuple[tuple[float, float], tuple[float, float]]] = []
 
         try:
             with open(filepath, encoding="utf-8", errors="replace", buffering=131_072) as fh:  # 128KB read buffer
-                chunk_buf: List[str] = []
+                chunk_buf: list[str] = []
                 for raw_line in fh:
                     stats.bytes_read += len(raw_line.encode("utf-8"))
                     stats.lines_parsed += 1
@@ -353,13 +353,13 @@ class StreamingDXFParser:
 
     def _parse_dxf_chunk(
         self,
-        lines: List[str],
-    ) -> List[Tuple[Tuple[float, float], Tuple[float, float]]]:
+        lines: list[str],
+    ) -> list[tuple[tuple[float, float], tuple[float, float]]]:
         """Extract LINE entity endpoints from DXF text chunk.
         DXF format: group code on one line, value on next.
         Returns list of ((x1,y1),(x2,y2)) segments.
         """
-        segments: List[Tuple[Tuple[float, float], Tuple[float, float]]] = []
+        segments: list[tuple[tuple[float, float], tuple[float, float]]] = []
         s = self.scale
         i = 0
         n = len(lines)
@@ -397,7 +397,7 @@ class StreamingDXFParser:
 
             # LWPOLYLINE entity (more compact)
             if code == "0" and val.upper() == "LWPOLYLINE":
-                verts: List[Tuple[float, float]] = []
+                verts: list[tuple[float, float]] = []
                 cx = cy = None
                 j = i + 2
                 while j < min(i + 500, n - 1):
@@ -456,9 +456,9 @@ class ParallelRoomProcessor:
 
     def process_batch(
         self,
-        rooms: List[Any],
+        rooms: list[Any],
         optimize_fn: Any,  # DensityOptimizer instance or callable
-    ) -> List[Any]:
+    ) -> list[Any]:
         """Process N rooms in parallel using multiprocessing.Pool.
         Falls back to sequential if multiprocessing unavailable.
 
@@ -480,8 +480,7 @@ class ParallelRoomProcessor:
             # Use spawn context to avoid fork issues with Shapely
             ctx = mp.get_context("spawn")
             with ctx.Pool(processes=self.n_workers) as pool:
-                results = pool.map(optimize_fn, rooms, chunksize=self.chunk_size)
-            return results
+                return pool.map(optimize_fn, rooms, chunksize=self.chunk_size)
         except Exception:
             # Fallback: sequential
             return [optimize_fn(room) for room in rooms]
@@ -495,7 +494,7 @@ class ParallelRoomProcessor:
         """Process streaming rooms: buffer buffer_size rooms, process in parallel,
         yield results. Combines Section 11.1 (streaming) + 11.3 (parallel).
         """
-        buffer: List[Any] = []
+        buffer: list[Any] = []
         for room in room_stream:
             buffer.append(room)
             if len(buffer) >= buffer_size:

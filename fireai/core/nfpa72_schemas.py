@@ -1,4 +1,4 @@
-"""FireAI — Pydantic Input Schemas for NFPA 72 Calculations
+"""FireAI — Pydantic Input Schemas for NFPA 72 Calculations.
 
 PDF Audit Phase 2: Architectural Rigidity
 Per "From Prototype to Production-Grade" §Phase 2, Appendix A.2:

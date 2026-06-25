@@ -1,4 +1,4 @@
-"""fireai.core.nfpa72_engine — Core NFPA 72 Engineering Calculations
+"""fireai.core.nfpa72_engine — Core NFPA 72 Engineering Calculations.
 =================================================================
 
 Implements the fundamental NFPA 72 fire alarm engineering calculations:
@@ -40,7 +40,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from typing import Any, Dict, List
+from typing import Any
 
 from fireai.constants.nec import (
     COPPER_TEMP_COEFFICIENT,
@@ -354,7 +354,7 @@ def estimate_detector_count(
     room_area_m2: float,
     ceiling_height_m: float,
     detector_type: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Estimate minimum number of detectors for a room.
 
     Reference: NFPA 72 §17.6.3.1, §17.7.4.2.3.1
@@ -784,8 +784,7 @@ def get_ambient_derating_factor(
 
     for temp in sorted_temps:
         if temp >= ambient_temp_c:
-            factor = AMBIENT_TEMP_CORRECTION_FACTORS[temp][col_idx]
-            return factor
+            return AMBIENT_TEMP_CORRECTION_FACTORS[temp][col_idx]
 
     # Above highest table entry — use linear extrapolation (conservative)
     highest_temp = sorted_temps[-1]
@@ -971,7 +970,7 @@ def check_ampacity(
 _MAX_DEVICES_BETWEEN_ISOLATORS = 32
 
 
-def verify_fault_isolator_placement(devices: List[Dict[str, Any]]) -> Dict[str, Any]:
+def verify_fault_isolator_placement(devices: list[dict[str, Any]]) -> dict[str, Any]:
     """Verify fault isolator placement on SLC circuits.
 
     NFPA 72 §12.3 requires that a single fault (short or open) on a

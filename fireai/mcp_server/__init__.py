@@ -1,4 +1,4 @@
-"""fireai.mcp_server — Model Context Protocol Server for Revit Integration
+"""fireai.mcp_server — Model Context Protocol Server for Revit Integration.
 =======================================================================
 LIFE-SAFETY CRITICAL: This module provides the bridge between AI assistants
 (Claude, GPT, etc.) and the Revit BIM model. It is the PRIMARY attack

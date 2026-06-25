@@ -1,4 +1,4 @@
-"""fireai/integration/autocad_bridge.py
+"""fireai/integration/autocad_bridge.py.
 ======================================
 AutoCAD Integration — DWG/DXF processing and AutoCAD APS/Forge compatibility.
 
@@ -19,13 +19,14 @@ References:
 
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import logging
 import os
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from fireai.core.event_bus import EventBus, Events
 
@@ -57,7 +58,7 @@ class LayerCategory(str, Enum):
     ELEC_PANEL = "ELEC-PANEL"
 
 
-LAYER_MAP: Dict[str, LayerCategory] = {
+LAYER_MAP: dict[str, LayerCategory] = {
     "arch-wall": LayerCategory.ARCH_WALL,
     "arch-walls": LayerCategory.ARCH_WALL,
     "a-wall": LayerCategory.ARCH_WALL,
@@ -101,7 +102,7 @@ LAYER_MAP: Dict[str, LayerCategory] = {
 class LayerData:
     name: str
     category: LayerCategory
-    entities: List[Dict[str, Any]] = field(default_factory=list)
+    entities: list[dict[str, Any]] = field(default_factory=list)
     color: int = 7  # AutoCAD color index (default = white)
     linetype: str = "CONTINUOUS"
     is_frozen: bool = False
@@ -113,17 +114,17 @@ class DWGEntity:
     handle: str
     dxf_type: str
     layer: str
-    coordinates: List[Tuple[float, float, float]]
-    properties: Dict[str, Any] = field(default_factory=dict)
+    coordinates: list[tuple[float, float, float]]
+    properties: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
 class DesignData:
     source_file: str = ""
     file_hash: str = ""
-    layers: List[LayerData] = field(default_factory=list)
-    entities: List[DWGEntity] = field(default_factory=list)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    layers: list[LayerData] = field(default_factory=list)
+    entities: list[DWGEntity] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
     imported_at: str = ""
 
 
@@ -141,13 +142,13 @@ class _DXFTextParser:
     """
 
     def __init__(self) -> None:
-        self._layers: Dict[str, List[Dict[str, Any]]] = {}
+        self._layers: dict[str, list[dict[str, Any]]] = {}
         self._current_section: str = ""
-        self._current_entity: Optional[Dict[str, Any]] = None
-        self._current_code: Optional[int] = None
-        self._header: Dict[str, Any] = {}
+        self._current_entity: dict[str, Any] | None = None
+        self._current_code: int | None = None
+        self._header: dict[str, Any] = {}
 
-    def parse(self, content: str) -> Dict[str, Any]:
+    def parse(self, content: str) -> dict[str, Any]:
         self._layers = {}
         self._current_section = ""
         self._current_entity = None
@@ -205,12 +206,10 @@ class _DXFTextParser:
                     ] = value_line
             elif code == 62:
                 if self._current_entity is not None:
-                    try:
+                    with contextlib.suppress(ValueError):
                         self._current_entity.setdefault(
                             "properties", {}
                         )["color"] = int(value_line)
-                    except ValueError:
-                        pass
             elif code == 6:
                 if self._current_entity is not None:
                     self._current_entity.setdefault("properties", {})[
@@ -292,10 +291,10 @@ class AutoCADBridge:
         LayerCategory.ARCH_COLUMN,
     }
 
-    def __init__(self, event_bus: Optional[EventBus] = None) -> None:
+    def __init__(self, event_bus: EventBus | None = None) -> None:
         self._event_bus = event_bus or EventBus.instance()
         self._has_ezdxf: bool = self._check_ezdxf()
-        self._last_design: Optional[DesignData] = None
+        self._last_design: DesignData | None = None
 
     # ── Import ──────────────────────────────────────────────────────────
 
@@ -464,7 +463,7 @@ class AutoCADBridge:
         if output_dir and not os.path.exists(output_dir):
             os.makedirs(output_dir, exist_ok=True)
 
-        lines: List[str] = []
+        lines: list[str] = []
         lines.append("0")
         lines.append("SECTION")
         lines.append("2")
@@ -562,7 +561,7 @@ class AutoCADBridge:
 
     def get_fire_layers(
         self, design: DesignData
-    ) -> List[LayerData]:
+    ) -> list[LayerData]:
         return [
             l
             for l in design.layers
@@ -571,7 +570,7 @@ class AutoCADBridge:
 
     def get_arch_layers(
         self, design: DesignData
-    ) -> List[LayerData]:
+    ) -> list[LayerData]:
         return [
             l
             for l in design.layers
@@ -591,12 +590,12 @@ class AutoCADBridge:
             )
             return False
 
-    def _parse_dxf_ezdxf(self, content: str) -> Dict[str, List[Dict[str, Any]]]:
+    def _parse_dxf_ezdxf(self, content: str) -> dict[str, list[dict[str, Any]]]:
         import io
 
         import ezdxf
 
-        layers: Dict[str, List[Dict[str, Any]]] = {}
+        layers: dict[str, list[dict[str, Any]]] = {}
 
         try:
             doc = ezdxf.readfile(
@@ -644,8 +643,8 @@ class AutoCADBridge:
 
     def _extract_ezdxf_coords(
         self, entity: Any
-    ) -> List[List[float]]:
-        coords: List[List[float]] = []
+    ) -> list[list[float]]:
+        coords: list[list[float]] = []
         dxf_type = entity.dxftype()
 
         if dxf_type == "LINE":
@@ -675,15 +674,15 @@ class AutoCADBridge:
 
     def _parse_dxf_text(
         self, content: str
-    ) -> Dict[str, List[Dict[str, Any]]]:
+    ) -> dict[str, list[dict[str, Any]]]:
         parser = _DXFTextParser()
         return parser.parse(content)["layers"]
 
     def _classify_layers(
         self,
-        raw_layers: Dict[str, List[Dict[str, Any]]],
-    ) -> List[LayerData]:
-        classified: List[LayerData] = []
+        raw_layers: dict[str, list[dict[str, Any]]],
+    ) -> list[LayerData]:
+        classified: list[LayerData] = []
 
         for raw_name, entities in sorted(raw_layers.items()):
             lower_name = raw_name.lower().strip()

@@ -1,4 +1,4 @@
-"""hybrid_survivability.py — Layer 7: Hybrid Survivability Index Engine
+"""hybrid_survivability.py — Layer 7: Hybrid Survivability Index Engine.
 ====================================================================
 V24 — Intersection of Optical (Layer 5) and Acoustic (V23) coverage.
 
@@ -51,7 +51,6 @@ import datetime
 import json
 import logging
 from enum import Enum
-from typing import Dict, List, Optional, Tuple
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -183,7 +182,7 @@ class HybridPointResult(BaseModel):
         default=0,
         description="Number of flame detectors covering this point.",
     )
-    best_acoustic_detail: Optional[AcousticCoverageDetail] = Field(
+    best_acoustic_detail: AcousticCoverageDetail | None = Field(
         default=None,
         description="Best UGLD sensor result for this point (highest SNR).",
     )
@@ -201,7 +200,7 @@ class HybridSurvivabilityMap(BaseModel):
     model_config = ConfigDict(frozen=True, strict=True)
 
     total_points: int = Field(ge=0, description="Total grid points analyzed.")
-    point_results: Dict[int, HybridPointResult] = Field(
+    point_results: dict[int, HybridPointResult] = Field(
         default_factory=dict,
         description="Per-point hybrid results, keyed by grid index.",
     )
@@ -249,7 +248,7 @@ class HybridSurvivabilityMap(BaseModel):
     )
 
     # Diagnostics (OUTPUT model — warnings belong here)
-    warnings: List[str] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
 
     @property
     def redundant_hybrid_pct(self) -> float:
@@ -373,10 +372,10 @@ class HybridSurvivabilityEngine:
     def analyse(
         self,
         optical_result: CoverageResult,
-        grid: List[RayTracePoint],
-        ugld_sensors: List[UltrasonicSensor],
-        sensor_positions: Dict[str, Tuple[float, float, float]],
-        acoustic_obstacles: Optional[List[AcousticObstacle]] = None,
+        grid: list[RayTracePoint],
+        ugld_sensors: list[UltrasonicSensor],
+        sensor_positions: dict[str, tuple[float, float, float]],
+        acoustic_obstacles: list[AcousticObstacle] | None = None,
     ) -> HybridSurvivabilityMap:
         """Run hybrid survivability analysis.
 
@@ -416,7 +415,7 @@ class HybridSurvivabilityEngine:
                 raise ValueError(f"UGLD sensor '{sensor.sensor_id}' has no position in sensor_positions mapping.")
 
         obstacles = acoustic_obstacles or []
-        warnings: List[str] = []
+        warnings: list[str] = []
 
         if not ugld_sensors:
             warnings.append(
@@ -426,16 +425,16 @@ class HybridSurvivabilityEngine:
 
         # ── Step 1: Optical coverage lookup ───────────────────────────
         # redundancy_map: Dict[int, int] → point_index → detector_count
-        optical_map: Dict[int, int] = optical_result.redundancy_map
+        optical_map: dict[int, int] = optical_result.redundancy_map
 
         # ── Step 2: Acoustic analysis per grid point ──────────────────
         # For each grid point (treated as leak source), find the best
         # UGLD sensor result (highest SNR across all sensors).
-        acoustic_map: Dict[int, AcousticCoverageDetail] = {}
+        acoustic_map: dict[int, AcousticCoverageDetail] = {}
 
         for pt_idx, pt in enumerate(grid):
             leak_point = (pt.x, pt.y, pt.z)
-            best_detail: Optional[AcousticCoverageDetail] = None
+            best_detail: AcousticCoverageDetail | None = None
             best_snr = float("-inf")
 
             for sensor in ugld_sensors:
@@ -469,7 +468,7 @@ class HybridSurvivabilityEngine:
                 acoustic_map[pt_idx] = best_detail
 
         # ── Step 3: Classify each point ───────────────────────────────
-        point_results: Dict[int, HybridPointResult] = {}
+        point_results: dict[int, HybridPointResult] = {}
         counts = {
             SurvivabilityClass.REDUNDANT_HYBRID: 0,
             SurvivabilityClass.OPTICAL_ONLY: 0,
@@ -584,14 +583,14 @@ class HybridSurvivabilityEngine:
         }
 
         total_pts = hybrid_map.total_points
-        cls_counts: Dict[str, int] = {
+        cls_counts: dict[str, int] = {
             "REDUNDANT_HYBRID": 0,
             "OPTICAL_ONLY": 0,
             "ACOUSTIC_ONLY": 0,
             "BLIND_SPOT": 0,
         }
 
-        points_out: List[Dict] = []
+        points_out: list[dict] = []
         for _pt_idx, pr in hybrid_map.point_results.items():
             cls_str = pr.survivability_class.value
             cls_counts[cls_str] += 1

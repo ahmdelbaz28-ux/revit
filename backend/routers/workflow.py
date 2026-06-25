@@ -19,7 +19,6 @@ from __future__ import annotations
 import hmac
 import logging
 import os
-from typing import Optional
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query
 
@@ -35,7 +34,7 @@ def _get_fireai_api_key():
     return os.getenv("FIREAI_API_KEY", "")
 
 
-def verify_api_key_dep(x_api_key: Optional[str] = Header(None, alias="X-API-Key")):
+def verify_api_key_dep(x_api_key: str | None = Header(None, alias="X-API-Key")) -> None:
     """Verify API key from X-API-Key header."""
     _api_key = _get_fireai_api_key()
     if _api_key and (not x_api_key or not hmac.compare_digest(x_api_key, _api_key)):
@@ -165,11 +164,11 @@ async def start_workflow(
         ..., min_length=1, max_length=1000,
         description="Path to DWG/PDF/DXF file to analyze",
     ),
-    latitude: Optional[float] = Query(
+    latitude: float | None = Query(
         None, ge=-90, le=90,
         description="Building latitude for environmental context",
     ),
-    longitude: Optional[float] = Query(
+    longitude: float | None = Query(
         None, ge=-180, le=180,
         description="Building longitude for environmental context",
     ),
@@ -255,7 +254,7 @@ async def get_workflow_status(
 @router.post("/{workflow_id}/approve", dependencies=[Depends(require_permission(Permission.WORKFLOW_MANAGE))])
 async def approve_workflow(
     workflow_id: str,
-    reviewer_comments: Optional[str] = Query(
+    reviewer_comments: str | None = Query(
         None, max_length=2000,
         description="Reviewer comments (optional but recommended)",
     ),
@@ -295,7 +294,7 @@ async def approve_workflow(
 @router.post("/{workflow_id}/reject", dependencies=[Depends(require_permission(Permission.WORKFLOW_MANAGE))])
 async def reject_workflow(
     workflow_id: str,
-    reviewer_comments: Optional[str] = Query(
+    reviewer_comments: str | None = Query(
         None, max_length=2000,
         description="Reviewer comments (required for rejection — explain why)",
     ),

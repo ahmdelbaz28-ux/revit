@@ -97,7 +97,7 @@ def mock_floor_result():
         status="PASS",
         detector_count=4,
     )
-    result = FloorResult(
+    return FloorResult(
         project_name="test_GF",
         source_dxf="test.dxf",
         total_rooms=1,
@@ -108,7 +108,6 @@ def mock_floor_result():
         total_detectors=4,
         status="APPROVED",
     )
-    return result
 
 
 @pytest.fixture
@@ -123,7 +122,7 @@ def mock_floor_result_many_devices():
                 detector_count=10,
             )
         )
-    result = FloorResult(
+    return FloorResult(
         project_name="test_L1",
         source_dxf="test.dxf",
         total_rooms=50,
@@ -134,7 +133,6 @@ def mock_floor_result_many_devices():
         total_detectors=500,
         status="APPROVED",
     )
-    return result
 
 
 @pytest.fixture
@@ -227,22 +225,22 @@ def tall_building_spec():
 class TestSLCLoopClass:
     """Tests for SLCLoopClass enum."""
 
-    def test_class_a_value(self):
+    def test_class_a_value(self) -> None:
         assert SLCLoopClass.CLASS_A.value == "A"
 
-    def test_class_b_value(self):
+    def test_class_b_value(self) -> None:
         assert SLCLoopClass.CLASS_B.value == "B"
 
-    def test_class_a_is_str(self):
+    def test_class_a_is_str(self) -> None:
         assert isinstance(SLCLoopClass.CLASS_A, str)
 
-    def test_class_b_is_str(self):
+    def test_class_b_is_str(self) -> None:
         assert isinstance(SLCLoopClass.CLASS_B, str)
 
-    def test_members_count(self):
+    def test_members_count(self) -> None:
         assert len(SLCLoopClass) == 2
 
-    def test_from_value(self):
+    def test_from_value(self) -> None:
         assert SLCLoopClass("A") is SLCLoopClass.CLASS_A
         assert SLCLoopClass("B") is SLCLoopClass.CLASS_B
 
@@ -250,75 +248,75 @@ class TestSLCLoopClass:
 class TestOccupancyType:
     """Tests for OccupancyType enum."""
 
-    def test_residential_value(self):
+    def test_residential_value(self) -> None:
         assert OccupancyType.RESIDENTIAL.value == "residential"
 
-    def test_business_value(self):
+    def test_business_value(self) -> None:
         assert OccupancyType.BUSINESS.value == "business"
 
-    def test_mercantile_value(self):
+    def test_mercantile_value(self) -> None:
         assert OccupancyType.MERCANTILE.value == "mercantile"
 
-    def test_educational_value(self):
+    def test_educational_value(self) -> None:
         assert OccupancyType.EDUCATIONAL.value == "educational"
 
-    def test_industrial_value(self):
+    def test_industrial_value(self) -> None:
         assert OccupancyType.INDUSTRIAL.value == "industrial"
 
-    def test_institutional_value(self):
+    def test_institutional_value(self) -> None:
         assert OccupancyType.INSTITUTIONAL.value == "institutional"
 
-    def test_storage_value(self):
+    def test_storage_value(self) -> None:
         assert OccupancyType.STORAGE.value == "storage"
 
-    def test_assembly_value(self):
+    def test_assembly_value(self) -> None:
         assert OccupancyType.ASSEMBLY.value == "assembly"
 
-    def test_members_count(self):
+    def test_members_count(self) -> None:
         assert len(OccupancyType) == 8
 
-    def test_is_str_enum(self):
+    def test_is_str_enum(self) -> None:
         assert isinstance(OccupancyType.BUSINESS, str)
 
 
 class TestElevatorRecallPhase:
     """Tests for ElevatorRecallPhase enum."""
 
-    def test_phase_i_value(self):
+    def test_phase_i_value(self) -> None:
         assert ElevatorRecallPhase.PHASE_I.value == "PHASE_I"
 
-    def test_phase_ii_value(self):
+    def test_phase_ii_value(self) -> None:
         assert ElevatorRecallPhase.PHASE_II.value == "PHASE_II"
 
-    def test_shunt_trip_value(self):
+    def test_shunt_trip_value(self) -> None:
         assert ElevatorRecallPhase.SHUNT_TRIP.value == "SHUNT_TRIP"
 
-    def test_members_count(self):
+    def test_members_count(self) -> None:
         assert len(ElevatorRecallPhase) == 3
 
 
 class TestSmokeSpreadPathway:
     """Tests for SmokeSpreadPathway enum."""
 
-    def test_elevator_shaft_value(self):
+    def test_elevator_shaft_value(self) -> None:
         assert SmokeSpreadPathway.ELEVATOR_SHAFT.value == "elevator_shaft"
 
-    def test_stairwell_value(self):
+    def test_stairwell_value(self) -> None:
         assert SmokeSpreadPathway.STAIRWELL.value == "stairwell"
 
-    def test_hvac_duct_value(self):
+    def test_hvac_duct_value(self) -> None:
         assert SmokeSpreadPathway.HVAC_DUCT.value == "hvac_duct"
 
-    def test_pipe_chase_value(self):
+    def test_pipe_chase_value(self) -> None:
         assert SmokeSpreadPathway.PIPE_CHASE.value == "pipe_chase"
 
-    def test_conduit_value(self):
+    def test_conduit_value(self) -> None:
         assert SmokeSpreadPathway.CONDUIT.value == "conduit"
 
-    def test_joint_value(self):
+    def test_joint_value(self) -> None:
         assert SmokeSpreadPathway.JOINT.value == "construction_joint"
 
-    def test_members_count(self):
+    def test_members_count(self) -> None:
         assert len(SmokeSpreadPathway) == 6
 
 
@@ -330,7 +328,7 @@ class TestSmokeSpreadPathway:
 class TestSLCLoopDataclass:
     """Tests for SLCLoop dataclass and its computed properties."""
 
-    def test_default_values(self):
+    def test_default_values(self) -> None:
         loop = SLCLoop(loop_id="SLC-1")
         assert loop.loop_class == SLCLoopClass.CLASS_B
         assert loop.device_count == 0
@@ -343,7 +341,7 @@ class TestSLCLoopDataclass:
         assert loop.warnings == []
         assert loop.nfpa_reference == "NFPA 72-2022 §21.2.2"
 
-    def test_custom_values(self):
+    def test_custom_values(self) -> None:
         loop = SLCLoop(
             loop_id="SLC-5",
             loop_class=SLCLoopClass.CLASS_A,
@@ -359,49 +357,49 @@ class TestSLCLoopDataclass:
         assert loop.panel_id == "FACP-2"
         assert loop.cable_length_m == 150.0
 
-    def test_utilization_pct_zero_devices(self):
+    def test_utilization_pct_zero_devices(self) -> None:
         loop = SLCLoop(loop_id="SLC-1", device_count=0, max_devices=250)
         assert loop.utilization_pct == 0.0
 
-    def test_utilization_pct_half(self):
+    def test_utilization_pct_half(self) -> None:
         loop = SLCLoop(loop_id="SLC-1", device_count=125, max_devices=250)
         assert loop.utilization_pct == 50.0
 
-    def test_utilization_pct_full(self):
+    def test_utilization_pct_full(self) -> None:
         loop = SLCLoop(loop_id="SLC-1", device_count=250, max_devices=250)
         assert loop.utilization_pct == 100.0
 
-    def test_utilization_pct_over_capacity(self):
+    def test_utilization_pct_over_capacity(self) -> None:
         loop = SLCLoop(loop_id="SLC-1", device_count=300, max_devices=250)
         assert loop.utilization_pct == 120.0
 
-    def test_utilization_pct_zero_max_devices(self):
+    def test_utilization_pct_zero_max_devices(self) -> None:
         """Edge case: max_devices=0 should return 0.0 to avoid division by zero."""
         loop = SLCLoop(loop_id="SLC-1", device_count=10, max_devices=0)
         assert loop.utilization_pct == 0.0
 
-    def test_utilization_pct_rounding(self):
+    def test_utilization_pct_rounding(self) -> None:
         loop = SLCLoop(loop_id="SLC-1", device_count=1, max_devices=3)
         # 100 * 1/3 = 33.333... → rounds to 33.3
         assert loop.utilization_pct == 33.3
 
-    def test_is_compliant_within_limit(self):
+    def test_is_compliant_within_limit(self) -> None:
         loop = SLCLoop(loop_id="SLC-1", device_count=250, max_devices=250)
         assert loop.is_compliant is True
 
-    def test_is_compliant_below_limit(self):
+    def test_is_compliant_below_limit(self) -> None:
         loop = SLCLoop(loop_id="SLC-1", device_count=100, max_devices=250)
         assert loop.is_compliant is True
 
-    def test_is_compliant_over_limit(self):
+    def test_is_compliant_over_limit(self) -> None:
         loop = SLCLoop(loop_id="SLC-1", device_count=251, max_devices=250)
         assert loop.is_compliant is False
 
-    def test_is_compliant_at_zero(self):
+    def test_is_compliant_at_zero(self) -> None:
         loop = SLCLoop(loop_id="SLC-1", device_count=0, max_devices=250)
         assert loop.is_compliant is True
 
-    def test_floors_served_is_set(self):
+    def test_floors_served_is_set(self) -> None:
         loop = SLCLoop(loop_id="SLC-1")
         loop.floors_served.add("GF")
         loop.floors_served.add("L1")
@@ -412,7 +410,7 @@ class TestSLCLoopDataclass:
 class TestVerticalZoneDataclass:
     """Tests for VerticalZone dataclass and is_compliant property."""
 
-    def test_default_values(self):
+    def test_default_values(self) -> None:
         zone = VerticalZone(zone_id="VZ-01")
         assert zone.floor_ids == []
         assert zone.floors_per_zone == OTHER_FLOORS_PER_ZONE
@@ -423,7 +421,7 @@ class TestVerticalZoneDataclass:
         assert zone.warnings == []
         assert zone.nfpa_reference == "NFPA 72-2022 §21.3.3"
 
-    def test_custom_values(self):
+    def test_custom_values(self) -> None:
         zone = VerticalZone(
             zone_id="VZ-02",
             floor_ids=["GF", "L1"],
@@ -438,7 +436,7 @@ class TestVerticalZoneDataclass:
         assert zone.total_area_sqm == 1000.0
         assert zone.total_devices == 50
 
-    def test_is_compliant_both_pass(self):
+    def test_is_compliant_both_pass(self) -> None:
         zone = VerticalZone(
             zone_id="VZ-01",
             floor_ids=["GF"],
@@ -447,7 +445,7 @@ class TestVerticalZoneDataclass:
         )
         assert zone.is_compliant is True
 
-    def test_is_compliant_area_fail(self):
+    def test_is_compliant_area_fail(self) -> None:
         zone = VerticalZone(
             zone_id="VZ-01",
             floor_ids=["GF"],
@@ -456,7 +454,7 @@ class TestVerticalZoneDataclass:
         )
         assert zone.is_compliant is False
 
-    def test_is_compliant_floor_count_exceeded(self):
+    def test_is_compliant_floor_count_exceeded(self) -> None:
         zone = VerticalZone(
             zone_id="VZ-01",
             floor_ids=["GF", "L1", "L2"],
@@ -465,7 +463,7 @@ class TestVerticalZoneDataclass:
         )
         assert zone.is_compliant is False
 
-    def test_is_compliant_residential_one_floor_ok(self):
+    def test_is_compliant_residential_one_floor_ok(self) -> None:
         zone = VerticalZone(
             zone_id="VZ-01",
             floor_ids=["F1"],
@@ -474,7 +472,7 @@ class TestVerticalZoneDataclass:
         )
         assert zone.is_compliant is True
 
-    def test_is_compliant_residential_two_floors_fail(self):
+    def test_is_compliant_residential_two_floors_fail(self) -> None:
         zone = VerticalZone(
             zone_id="VZ-01",
             floor_ids=["F1", "F2"],
@@ -487,7 +485,7 @@ class TestVerticalZoneDataclass:
 class TestFloorAssignmentDataclass:
     """Tests for FloorAssignment dataclass."""
 
-    def test_default_values(self):
+    def test_default_values(self) -> None:
         fa = FloorAssignment(floor_id="GF")
         assert fa.floor_id == "GF"
         assert fa.floor_index == 0
@@ -503,7 +501,7 @@ class TestFloorAssignmentDataclass:
         assert fa.vertical_zone_id == ""
         assert fa.warnings == []
 
-    def test_custom_values(self):
+    def test_custom_values(self) -> None:
         fa = FloorAssignment(
             floor_id="L3",
             floor_index=3,
@@ -526,7 +524,7 @@ class TestFloorAssignmentDataclass:
 class TestSmokeSpreadResultDataclass:
     """Tests for SmokeSpreadResult dataclass."""
 
-    def test_default_values(self):
+    def test_default_values(self) -> None:
         result = SmokeSpreadResult()
         assert result.pathway == SmokeSpreadPathway.STAIRWELL
         assert result.source_floor == ""
@@ -539,7 +537,7 @@ class TestSmokeSpreadResultDataclass:
         assert result.warnings == []
         assert result.nfpa_reference == ""
 
-    def test_custom_values(self):
+    def test_custom_values(self) -> None:
         result = SmokeSpreadResult(
             pathway=SmokeSpreadPathway.ELEVATOR_SHAFT,
             source_floor="L2",
@@ -559,7 +557,7 @@ class TestSmokeSpreadResultDataclass:
 class TestElevatorRecallResultDataclass:
     """Tests for ElevatorRecallResult dataclass."""
 
-    def test_default_values(self):
+    def test_default_values(self) -> None:
         result = ElevatorRecallResult()
         assert result.elevator_id == ""
         assert result.floors_served == []
@@ -574,7 +572,7 @@ class TestElevatorRecallResultDataclass:
         assert result.warnings == []
         assert result.nfpa_reference == "NFPA 72-2022 §21.3.2"
 
-    def test_custom_values(self):
+    def test_custom_values(self) -> None:
         result = ElevatorRecallResult(
             elevator_id="ELEV-1",
             floors_served=["GF", "L1", "L2"],
@@ -596,7 +594,7 @@ class TestElevatorRecallResultDataclass:
 class TestRiserRoutingResultDataclass:
     """Tests for RiserRoutingResult dataclass."""
 
-    def test_default_values(self):
+    def test_default_values(self) -> None:
         result = RiserRoutingResult()
         assert result.from_floor == ""
         assert result.to_floor == ""
@@ -608,7 +606,7 @@ class TestRiserRoutingResultDataclass:
         assert result.violations == []
         assert result.nfpa_reference == "NFPA 72-2022 §27.4.1 / NEC Art. 760"
 
-    def test_custom_values(self):
+    def test_custom_values(self) -> None:
         result = RiserRoutingResult(
             from_floor="GF",
             to_floor="L1",
@@ -630,7 +628,7 @@ class TestRiserRoutingResultDataclass:
 class TestBuildingAnalysisDataclass:
     """Tests for BuildingAnalysis dataclass."""
 
-    def test_default_values(self):
+    def test_default_values(self) -> None:
         analysis = BuildingAnalysis()
         assert analysis.building_id == ""
         assert analysis.total_floors == 0
@@ -649,13 +647,13 @@ class TestBuildingAnalysisDataclass:
         assert analysis.warnings == []
         assert analysis.errors == []
 
-    def test_disclaimer_present(self):
+    def test_disclaimer_present(self) -> None:
         analysis = BuildingAnalysis()
         assert "FireAI" in analysis.disclaimer
         assert "licensed fire protection engineer" in analysis.disclaimer
         assert "NFPA 72" in analysis.disclaimer
 
-    def test_custom_values(self):
+    def test_custom_values(self) -> None:
         analysis = BuildingAnalysis(
             building_id="BLDG-001",
             total_floors=5,
@@ -676,28 +674,28 @@ class TestBuildingAnalysisDataclass:
 class TestConstants:
     """Tests for module-level constants."""
 
-    def test_max_slc_devices(self):
+    def test_max_slc_devices(self) -> None:
         assert MAX_SLC_DEVICES_PER_LOOP == 250
 
-    def test_residential_floors_per_zone(self):
+    def test_residential_floors_per_zone(self) -> None:
         assert RESIDENTIAL_FLOORS_PER_ZONE == 1
 
-    def test_other_floors_per_zone(self):
+    def test_other_floors_per_zone(self) -> None:
         assert OTHER_FLOORS_PER_ZONE == 2
 
-    def test_max_zone_area_sqft(self):
+    def test_max_zone_area_sqft(self) -> None:
         assert MAX_ZONE_AREA_SQFT == 20_000.0
 
-    def test_max_zone_area_sqm(self):
+    def test_max_zone_area_sqm(self) -> None:
         assert pytest.approx(20_000.0 * 0.092903, rel=1e-4) == MAX_ZONE_AREA_SQM
 
-    def test_default_recall_floor(self):
+    def test_default_recall_floor(self) -> None:
         assert DEFAULT_RECALL_FLOOR == "GF"
 
-    def test_stack_effect_velocity(self):
+    def test_stack_effect_velocity(self) -> None:
         assert STACK_EFFECT_VELOCITY_MPS == 3.0
 
-    def test_min_smoke_barrier_rating(self):
+    def test_min_smoke_barrier_rating(self) -> None:
         assert MIN_SMOKE_BARRIER_RATING_H == 1.0
 
 
@@ -709,7 +707,7 @@ class TestConstants:
 class TestMultiFloorOrchestratorInit:
     """Tests for MultiFloorOrchestrator initialization."""
 
-    def test_default_init(self):
+    def test_default_init(self) -> None:
         mo = MultiFloorOrchestrator()
         assert mo.slc_loop_class == SLCLoopClass.CLASS_B
         assert mo.max_slc_devices == MAX_SLC_DEVICES_PER_LOOP
@@ -718,7 +716,7 @@ class TestMultiFloorOrchestratorInit:
         assert mo.grid_res == 0.25
         assert isinstance(mo.floor_orchestrator, FloorOrchestrator)
 
-    def test_custom_init(self, floor_orchestrator):
+    def test_custom_init(self, floor_orchestrator) -> None:
         mo = MultiFloorOrchestrator(
             floor_orchestrator=floor_orchestrator,
             slc_loop_class=SLCLoopClass.CLASS_A,
@@ -734,19 +732,19 @@ class TestMultiFloorOrchestratorInit:
         assert mo.panel_id == "FACP-2"
         assert mo.grid_res == 0.5
 
-    def test_invalid_max_slc_devices_zero(self):
+    def test_invalid_max_slc_devices_zero(self) -> None:
         with pytest.raises(ValueError, match="max_slc_devices=0 must be >= 1"):
             MultiFloorOrchestrator(max_slc_devices=0)
 
-    def test_invalid_max_slc_devices_negative(self):
+    def test_invalid_max_slc_devices_negative(self) -> None:
         with pytest.raises(ValueError, match="max_slc_devices=-5 must be >= 1"):
             MultiFloorOrchestrator(max_slc_devices=-5)
 
-    def test_invalid_building_height_negative(self):
+    def test_invalid_building_height_negative(self) -> None:
         with pytest.raises(ValueError, match="building_height_m=-1.0 must be >= 0"):
             MultiFloorOrchestrator(building_height_m=-1.0)
 
-    def test_zero_building_height_logs_critical(self, caplog):
+    def test_zero_building_height_logs_critical(self, caplog) -> None:
         """Zero building height should log a CRITICAL message about inactive smoke analysis."""
         import logging
         with caplog.at_level(logging.CRITICAL, logger="fireai.core.multi_floor_orchestrator"):
@@ -762,15 +760,15 @@ class TestMultiFloorOrchestratorInit:
 class TestOrchestrate:
     """Tests for MultiFloorOrchestrator.orchestrate()."""
 
-    def test_empty_building_id_raises(self, orchestrator):
+    def test_empty_building_id_raises(self, orchestrator) -> None:
         with pytest.raises(ValueError, match="building_id must be a non-empty string"):
             orchestrator.orchestrate(building_id="", floors={"GF": []})
 
-    def test_whitespace_building_id_raises(self, orchestrator):
+    def test_whitespace_building_id_raises(self, orchestrator) -> None:
         with pytest.raises(ValueError, match="building_id must be a non-empty string"):
             orchestrator.orchestrate(building_id="   ", floors={"GF": []})
 
-    def test_no_floors_returns_error(self, orchestrator):
+    def test_no_floors_returns_error(self, orchestrator) -> None:
         result = orchestrator.orchestrate(building_id="B1", floors={})
         assert isinstance(result, BuildingAnalysis)
         assert result.building_id == "B1"
@@ -778,7 +776,7 @@ class TestOrchestrate:
         assert result.compliant is False
         assert any("No floors" in e for e in result.errors)
 
-    def test_basic_orchestration_with_empty_floors(self, orchestrator, sample_building_spec):
+    def test_basic_orchestration_with_empty_floors(self, orchestrator, sample_building_spec) -> None:
         """Test orchestrate with a basic building spec where all rooms are empty."""
         result = orchestrator.orchestrate(**sample_building_spec)
         assert isinstance(result, BuildingAnalysis)
@@ -787,19 +785,19 @@ class TestOrchestrate:
         assert len(result.floor_assignments) == 3
         assert result.analysis_time_s >= 0.0
 
-    def test_floor_assignments_created(self, orchestrator, sample_building_spec):
+    def test_floor_assignments_created(self, orchestrator, sample_building_spec) -> None:
         """Verify floor assignments are created for each floor."""
         result = orchestrator.orchestrate(**sample_building_spec)
         floor_ids = {fa.floor_id for fa in result.floor_assignments}
         assert floor_ids == {"GF", "L1", "L2"}
 
-    def test_floor_assignments_warnings_for_empty_rooms(self, orchestrator, sample_building_spec):
+    def test_floor_assignments_warnings_for_empty_rooms(self, orchestrator, sample_building_spec) -> None:
         """Floors with no room specs should have a warning."""
         result = orchestrator.orchestrate(**sample_building_spec)
         for fa in result.floor_assignments:
             assert any("no room specs" in w for w in fa.warnings)
 
-    def test_floor_elevations_set(self, orchestrator, sample_building_spec):
+    def test_floor_elevations_set(self, orchestrator, sample_building_spec) -> None:
         """Floor elevations should be propagated to floor assignments."""
         result = orchestrator.orchestrate(**sample_building_spec)
         elev_map = {fa.floor_id: fa.elevation_m for fa in result.floor_assignments}
@@ -807,78 +805,78 @@ class TestOrchestrate:
         assert elev_map["L1"] == 3.5
         assert elev_map["L2"] == 7.0
 
-    def test_floor_areas_set(self, orchestrator, sample_building_spec):
+    def test_floor_areas_set(self, orchestrator, sample_building_spec) -> None:
         """Floor areas should be propagated to floor assignments."""
         result = orchestrator.orchestrate(**sample_building_spec)
         area_map = {fa.floor_id: fa.area_sqm for fa in result.floor_assignments}
         assert area_map["GF"] == 500.0
         assert area_map["L1"] == 500.0
 
-    def test_occupancy_type_set(self, orchestrator, sample_building_spec):
+    def test_occupancy_type_set(self, orchestrator, sample_building_spec) -> None:
         result = orchestrator.orchestrate(**sample_building_spec)
         for fa in result.floor_assignments:
             assert fa.occupancy_type == "business"
 
-    def test_floors_sorted_by_elevation(self, orchestrator, sample_building_spec):
+    def test_floors_sorted_by_elevation(self, orchestrator, sample_building_spec) -> None:
         """Floors should be sorted by elevation in the result."""
         result = orchestrator.orchestrate(**sample_building_spec)
         indices = [fa.floor_index for fa in result.floor_assignments]
         assert indices == sorted(indices)
 
-    def test_vertical_zones_created(self, orchestrator, sample_building_spec):
+    def test_vertical_zones_created(self, orchestrator, sample_building_spec) -> None:
         """Vertical zones should be created for the building."""
         result = orchestrator.orchestrate(**sample_building_spec)
         assert len(result.vertical_zones) > 0
         assert all(isinstance(vz, VerticalZone) for vz in result.vertical_zones)
 
-    def test_vertical_zone_back_reference(self, orchestrator, sample_building_spec):
+    def test_vertical_zone_back_reference(self, orchestrator, sample_building_spec) -> None:
         """Floor assignments should reference their vertical zone."""
         result = orchestrator.orchestrate(**sample_building_spec)
         for fa in result.floor_assignments:
             assert fa.vertical_zone_id != ""
 
-    def test_smoke_spread_results_created(self, orchestrator, sample_building_spec):
+    def test_smoke_spread_results_created(self, orchestrator, sample_building_spec) -> None:
         result = orchestrator.orchestrate(**sample_building_spec)
         assert len(result.smoke_spread_results) > 0
 
-    def test_elevator_recall_results_created(self, orchestrator, sample_building_spec):
+    def test_elevator_recall_results_created(self, orchestrator, sample_building_spec) -> None:
         result = orchestrator.orchestrate(**sample_building_spec)
         assert len(result.elevator_recall_results) == 1
         assert result.elevator_recall_results[0].elevator_id == "ELEV-1"
 
-    def test_riser_routing_results_created(self, orchestrator, sample_building_spec):
+    def test_riser_routing_results_created(self, orchestrator, sample_building_spec) -> None:
         """With 3 floors, there should be 2 riser segments (GF→L1, L1→L2)."""
         result = orchestrator.orchestrate(**sample_building_spec)
         assert len(result.riser_routing_results) == 2
 
-    def test_total_devices_aggregated(self, orchestrator, sample_building_spec):
+    def test_total_devices_aggregated(self, orchestrator, sample_building_spec) -> None:
         """Total devices should be the sum across all floor assignments."""
         result = orchestrator.orchestrate(**sample_building_spec)
         expected = sum(fa.total_devices for fa in result.floor_assignments)
         assert result.total_devices == expected
 
-    def test_total_detectors_aggregated(self, orchestrator, sample_building_spec):
+    def test_total_detectors_aggregated(self, orchestrator, sample_building_spec) -> None:
         result = orchestrator.orchestrate(**sample_building_spec)
         expected = sum(fa.total_detectors for fa in result.floor_assignments)
         assert result.total_detectors == expected
 
-    def test_total_slc_loops(self, orchestrator, sample_building_spec):
+    def test_total_slc_loops(self, orchestrator, sample_building_spec) -> None:
         result = orchestrator.orchestrate(**sample_building_spec)
         assert result.total_slc_loops == len(result.slc_loops)
 
-    def test_total_vertical_zones(self, orchestrator, sample_building_spec):
+    def test_total_vertical_zones(self, orchestrator, sample_building_spec) -> None:
         result = orchestrator.orchestrate(**sample_building_spec)
         assert result.total_vertical_zones == len(result.vertical_zones)
 
-    def test_analysis_time_recorded(self, orchestrator, sample_building_spec):
+    def test_analysis_time_recorded(self, orchestrator, sample_building_spec) -> None:
         result = orchestrator.orchestrate(**sample_building_spec)
         assert result.analysis_time_s > 0.0 or result.analysis_time_s == 0.0  # May be very fast
 
-    def test_disclaimer_present(self, orchestrator, sample_building_spec):
+    def test_disclaimer_present(self, orchestrator, sample_building_spec) -> None:
         result = orchestrator.orchestrate(**sample_building_spec)
         assert "licensed fire protection engineer" in result.disclaimer
 
-    def test_single_floor_building(self, orchestrator):
+    def test_single_floor_building(self, orchestrator) -> None:
         """A single-floor building should still produce valid results."""
         result = orchestrator.orchestrate(
             building_id="SINGLE-001",
@@ -891,7 +889,7 @@ class TestOrchestrate:
         # No riser routing for a single floor
         assert len(result.riser_routing_results) == 0
 
-    def test_with_project_name_and_source_dxf(self, orchestrator, sample_building_spec):
+    def test_with_project_name_and_source_dxf(self, orchestrator, sample_building_spec) -> None:
         """Project name and source DXF should be accepted without error."""
         sample_building_spec["project_name"] = "TestProject"
         sample_building_spec["source_dxf"] = "test.dxf"
@@ -907,11 +905,11 @@ class TestOrchestrate:
 class TestSLCLoopAssignment:
     """Tests for _assign_slc_loops."""
 
-    def test_empty_floor_assignments(self, orchestrator):
+    def test_empty_floor_assignments(self, orchestrator) -> None:
         result = orchestrator._assign_slc_loops(floor_assignments=[])
         assert result == []
 
-    def test_single_floor_single_loop(self, orchestrator):
+    def test_single_floor_single_loop(self, orchestrator) -> None:
         """A floor with few devices should fit in a single loop."""
         fa = FloorAssignment(
             floor_id="GF",
@@ -927,7 +925,7 @@ class TestSLCLoopAssignment:
         assert "GF" in loops[0].floors_served
         assert fa.slc_loops == ["SLC-1"]
 
-    def test_multi_floor_single_loop(self, orchestrator):
+    def test_multi_floor_single_loop(self, orchestrator) -> None:
         """Multiple floors with few devices should share a single loop."""
         fa1 = FloorAssignment(floor_id="GF", floor_index=0, total_devices=60, area_sqm=500.0, elevation_m=0.0)
         fa2 = FloorAssignment(floor_id="L1", floor_index=1, total_devices=60, area_sqm=500.0, elevation_m=3.5)
@@ -937,7 +935,7 @@ class TestSLCLoopAssignment:
         assert "GF" in loops[0].floors_served
         assert "L1" in loops[0].floors_served
 
-    def test_loop_split_on_capacity(self, orchestrator):
+    def test_loop_split_on_capacity(self, orchestrator) -> None:
         """Devices exceeding one loop should be split across loops."""
         fa = FloorAssignment(
             floor_id="GF",
@@ -953,7 +951,7 @@ class TestSLCLoopAssignment:
         assert loops[0].is_compliant is True
         assert loops[1].is_compliant is True
 
-    def test_device_addresses_format(self, orchestrator):
+    def test_device_addresses_format(self, orchestrator) -> None:
         """Device addresses should follow the format SLC-N:MMM."""
         fa = FloorAssignment(floor_id="GF", floor_index=0, total_devices=5, area_sqm=500.0, elevation_m=0.0)
         loops = orchestrator._assign_slc_loops([fa])
@@ -961,24 +959,24 @@ class TestSLCLoopAssignment:
         assert loops[0].device_addresses[0] == "SLC-1:001"
         assert loops[0].device_addresses[4] == "SLC-1:005"
 
-    def test_loop_class_b_default(self, orchestrator):
+    def test_loop_class_b_default(self, orchestrator) -> None:
         """Default loop class should be Class B."""
         fa = FloorAssignment(floor_id="GF", floor_index=0, total_devices=10, area_sqm=500.0, elevation_m=0.0)
         loops = orchestrator._assign_slc_loops([fa])
         assert loops[0].loop_class == SLCLoopClass.CLASS_B
 
-    def test_loop_class_a(self, orchestrator_class_a):
+    def test_loop_class_a(self, orchestrator_class_a) -> None:
         """Class A loops should be created when configured."""
         fa = FloorAssignment(floor_id="GF", floor_index=0, total_devices=10, area_sqm=500.0, elevation_m=0.0)
         loops = orchestrator_class_a._assign_slc_loops([fa])
         assert loops[0].loop_class == SLCLoopClass.CLASS_A
 
-    def test_panel_id_set(self, orchestrator):
+    def test_panel_id_set(self, orchestrator) -> None:
         fa = FloorAssignment(floor_id="GF", floor_index=0, total_devices=5, area_sqm=500.0, elevation_m=0.0)
         loops = orchestrator._assign_slc_loops([fa])
         assert loops[0].panel_id == "FACP-1"
 
-    def test_floor_with_zero_devices_skipped(self, orchestrator):
+    def test_floor_with_zero_devices_skipped(self, orchestrator) -> None:
         """Floors with 0 devices should not create loops."""
         fa1 = FloorAssignment(floor_id="GF", floor_index=0, total_devices=0, area_sqm=500.0, elevation_m=0.0)
         fa2 = FloorAssignment(floor_id="L1", floor_index=1, total_devices=20, area_sqm=500.0, elevation_m=3.5)
@@ -987,14 +985,14 @@ class TestSLCLoopAssignment:
         assert "GF" not in loops[0].floors_served
         assert "L1" in loops[0].floors_served
 
-    def test_many_loops_creation(self):
+    def test_many_loops_creation(self) -> None:
         """A building with many devices should create the right number of loops."""
         mo = MultiFloorOrchestrator(max_slc_devices=10, building_height_m=10.0)
         fa = FloorAssignment(floor_id="GF", floor_index=0, total_devices=35, area_sqm=500.0, elevation_m=0.0)
         loops = mo._assign_slc_loops([fa])
         assert len(loops) == 4  # 10 + 10 + 10 + 5
 
-    def test_loop_warning_on_split(self, orchestrator):
+    def test_loop_warning_on_split(self, orchestrator) -> None:
         """Warning should be added when a floor exceeds single loop capacity."""
         fa = FloorAssignment(
             floor_id="GF", floor_index=0, total_devices=300, area_sqm=1000.0, elevation_m=0.0
@@ -1004,7 +1002,7 @@ class TestSLCLoopAssignment:
         all_warnings = [w for loop in loops for w in loop.warnings]
         assert any("exceeds single loop capacity" in w for w in all_warnings)
 
-    def test_cable_length_estimated(self, orchestrator):
+    def test_cable_length_estimated(self, orchestrator) -> None:
         """Cable length should be estimated for loops."""
         fa = FloorAssignment(
             floor_id="GF", floor_index=0, total_devices=10,
@@ -1014,7 +1012,7 @@ class TestSLCLoopAssignment:
         # Cable length should be > 0 when area is provided
         assert loops[0].cable_length_m > 0.0
 
-    def test_cable_length_class_a_doubled(self, orchestrator_class_a):
+    def test_cable_length_class_a_doubled(self, orchestrator_class_a) -> None:
         """Class A loops should have approximately double the cable length of Class B."""
         FloorAssignment(
             floor_id="GF", floor_index=0, total_devices=10,
@@ -1040,13 +1038,13 @@ class TestSLCLoopAssignment:
         # Class A cable should be approximately 2x Class B
         assert loops_a[0].cable_length_m == pytest.approx(2.0 * loops_b[0].cable_length_m, rel=0.01)
 
-    def test_floor_slc_loops_back_reference(self, orchestrator):
+    def test_floor_slc_loops_back_reference(self, orchestrator) -> None:
         """Floor assignments should have their SLC loops referenced."""
         fa = FloorAssignment(floor_id="GF", floor_index=0, total_devices=10, area_sqm=500.0, elevation_m=0.0)
         orchestrator._assign_slc_loops([fa])
         assert "SLC-1" in fa.slc_loops
 
-    def test_floors_sorted_by_index_in_loop_assignment(self, orchestrator):
+    def test_floors_sorted_by_index_in_loop_assignment(self, orchestrator) -> None:
         """Floors should be processed in index order."""
         fa2 = FloorAssignment(floor_id="L1", floor_index=1, total_devices=30, area_sqm=500.0, elevation_m=3.5)
         fa1 = FloorAssignment(floor_id="GF", floor_index=0, total_devices=30, area_sqm=500.0, elevation_m=0.0)
@@ -1063,11 +1061,11 @@ class TestSLCLoopAssignment:
 class TestVerticalZoneDesign:
     """Tests for _design_vertical_zones."""
 
-    def test_empty_floor_assignments(self, orchestrator):
+    def test_empty_floor_assignments(self, orchestrator) -> None:
         result = orchestrator._design_vertical_zones([], "business")
         assert result == []
 
-    def test_business_occupancy_two_floors_per_zone(self, orchestrator):
+    def test_business_occupancy_two_floors_per_zone(self, orchestrator) -> None:
         """Business occupancy allows 2 floors per zone."""
         floors = [
             FloorAssignment(floor_id="GF", floor_index=0, total_devices=10, area_sqm=500.0),
@@ -1081,7 +1079,7 @@ class TestVerticalZoneDesign:
         assert zones[0].floors_per_zone == 2
         assert zones[1].floors_per_zone == 2
 
-    def test_residential_occupancy_one_floor_per_zone(self, orchestrator):
+    def test_residential_occupancy_one_floor_per_zone(self, orchestrator) -> None:
         """Residential occupancy allows only 1 floor per zone."""
         floors = [
             FloorAssignment(floor_id="F1", floor_index=0, total_devices=10, area_sqm=400.0),
@@ -1092,7 +1090,7 @@ class TestVerticalZoneDesign:
         assert len(zones) == 3  # 1 floor per zone
         assert zones[0].floors_per_zone == 1
 
-    def test_sleeping_occupancy_treated_as_residential(self, orchestrator):
+    def test_sleeping_occupancy_treated_as_residential(self, orchestrator) -> None:
         """Sleeping occupancy should be treated like residential (1 floor/zone)."""
         floors = [
             FloorAssignment(floor_id="F1", floor_index=0, total_devices=10, area_sqm=400.0),
@@ -1102,7 +1100,7 @@ class TestVerticalZoneDesign:
         assert len(zones) == 2
         assert zones[0].floors_per_zone == 1
 
-    def test_institutional_occupancy_one_floor_per_zone(self, orchestrator):
+    def test_institutional_occupancy_one_floor_per_zone(self, orchestrator) -> None:
         """Institutional occupancy should be treated like residential."""
         floors = [
             FloorAssignment(floor_id="F1", floor_index=0, total_devices=10, area_sqm=400.0),
@@ -1112,7 +1110,7 @@ class TestVerticalZoneDesign:
         assert len(zones) == 2
         assert zones[0].floors_per_zone == 1
 
-    def test_zone_area_compliance(self, orchestrator):
+    def test_zone_area_compliance(self, orchestrator) -> None:
         """Zones within area limits should be compliant."""
         floors = [
             FloorAssignment(floor_id="GF", floor_index=0, total_devices=10, area_sqm=800.0),
@@ -1124,7 +1122,7 @@ class TestVerticalZoneDesign:
         # 1600 sqm < MAX_ZONE_AREA_SQM ≈ 1858 sqm → area_compliant
         assert zones[0].area_compliant is True
 
-    def test_zone_area_exceeded(self, orchestrator):
+    def test_zone_area_exceeded(self, orchestrator) -> None:
         """Zones exceeding area limits should be non-compliant."""
         # Each floor has area close to MAX_ZONE_AREA_SQM
         floors = [
@@ -1138,7 +1136,7 @@ class TestVerticalZoneDesign:
         # Actually, adding L1 to current zone would exceed area → flush zone and start new
         assert len(zones) >= 1
 
-    def test_zone_ids_sequential(self, orchestrator):
+    def test_zone_ids_sequential(self, orchestrator) -> None:
         """Zone IDs should be sequentially numbered: VZ-01, VZ-02, etc."""
         floors = [
             FloorAssignment(floor_id=f"F{i}", floor_index=i, total_devices=10, area_sqm=400.0)
@@ -1148,14 +1146,14 @@ class TestVerticalZoneDesign:
         zone_ids = [z.zone_id for z in zones]
         assert zone_ids == ["VZ-01", "VZ-02", "VZ-03", "VZ-04"]
 
-    def test_zone_occupancy_type_set(self, orchestrator):
+    def test_zone_occupancy_type_set(self, orchestrator) -> None:
         floors = [
             FloorAssignment(floor_id="GF", floor_index=0, total_devices=10, area_sqm=500.0),
         ]
         zones = orchestrator._design_vertical_zones(floors, "mercantile")
         assert zones[0].occupancy_type == "mercantile"
 
-    def test_total_devices_in_zone(self, orchestrator):
+    def test_total_devices_in_zone(self, orchestrator) -> None:
         floors = [
             FloorAssignment(floor_id="GF", floor_index=0, total_devices=30, area_sqm=500.0),
             FloorAssignment(floor_id="L1", floor_index=1, total_devices=20, area_sqm=500.0),
@@ -1174,14 +1172,14 @@ class TestVerticalZoneDesign:
 class TestSmokeSpreadAnalysis:
     """Tests for _analyze_smoke_spread."""
 
-    def test_empty_floor_assignments(self, orchestrator):
+    def test_empty_floor_assignments(self, orchestrator) -> None:
         result = orchestrator._analyze_smoke_spread(
             floor_assignments=[], elevators=[], stairwells=[],
             hvac_ducts=[], smoke_barriers=[], building_height_m=45.0,
         )
         assert result == []
 
-    def test_elevator_shaft_analysis(self, orchestrator):
+    def test_elevator_shaft_analysis(self, orchestrator) -> None:
         """Elevator shafts should produce SmokeSpreadResult with ELEVATOR_SHAFT pathway."""
         floors = [FloorAssignment(floor_id="GF", floor_index=0, area_sqm=500.0, elevation_m=0.0)]
         elevators = [
@@ -1203,7 +1201,7 @@ class TestSmokeSpreadAnalysis:
         assert elev_results[0].affected_floors == ["GF", "L1", "L2"]
         assert elev_results[0].propagation_time_s > 0
 
-    def test_elevator_no_shaft_detector_violation(self, orchestrator):
+    def test_elevator_no_shaft_detector_violation(self, orchestrator) -> None:
         """Missing shaft smoke detector should produce a violation."""
         floors = [FloorAssignment(floor_id="GF", floor_index=0, area_sqm=500.0, elevation_m=0.0)]
         elevators = [
@@ -1223,7 +1221,7 @@ class TestSmokeSpreadAnalysis:
         assert len(elev_results[0].violations) > 0
         assert any("lacks smoke detection" in v for v in elev_results[0].violations)
 
-    def test_elevator_unpressurized_tall_building_warning(self, orchestrator):
+    def test_elevator_unpressurized_tall_building_warning(self, orchestrator) -> None:
         """Unpressurized elevator shaft in tall building should produce a warning."""
         floors = [FloorAssignment(floor_id="GF", floor_index=0, area_sqm=500.0, elevation_m=0.0)]
         elevators = [
@@ -1243,7 +1241,7 @@ class TestSmokeSpreadAnalysis:
         elev_results = [r for r in results if r.pathway == SmokeSpreadPathway.ELEVATOR_SHAFT]
         assert any("not pressurized" in w for w in elev_results[0].warnings)
 
-    def test_stairwell_pressurization_required(self, orchestrator):
+    def test_stairwell_pressurization_required(self, orchestrator) -> None:
         """Stairwells in tall buildings should require pressurization."""
         floors = [FloorAssignment(floor_id="GF", floor_index=0, area_sqm=500.0, elevation_m=0.0)]
         stairwells = [
@@ -1263,7 +1261,7 @@ class TestSmokeSpreadAnalysis:
         assert len(stair_results) == 1
         assert stair_results[0].pressurization_required is True
 
-    def test_stairwell_no_fan_violation(self, orchestrator):
+    def test_stairwell_no_fan_violation(self, orchestrator) -> None:
         """Missing pressurization fan in tall building should produce a violation."""
         floors = [FloorAssignment(floor_id="GF", floor_index=0, area_sqm=500.0, elevation_m=0.0)]
         stairwells = [
@@ -1282,7 +1280,7 @@ class TestSmokeSpreadAnalysis:
         assert len(stair_results[0].violations) > 0
         assert any("lacks pressurization fan" in v for v in stair_results[0].violations)
 
-    def test_stairwell_fan_no_switches_warning(self, orchestrator):
+    def test_stairwell_fan_no_switches_warning(self, orchestrator) -> None:
         """Fan present but no pressure switches should produce a warning."""
         floors = [FloorAssignment(floor_id="GF", floor_index=0, area_sqm=500.0, elevation_m=0.0)]
         stairwells = [
@@ -1301,7 +1299,7 @@ class TestSmokeSpreadAnalysis:
         stair_results = [r for r in results if r.pathway == SmokeSpreadPathway.STAIRWELL]
         assert any("lacks differential pressure monitoring" in w for w in stair_results[0].warnings)
 
-    def test_stairwell_low_pressure_violation(self, orchestrator):
+    def test_stairwell_low_pressure_violation(self, orchestrator) -> None:
         """Design pressure below 25 Pa should produce a violation."""
         floors = [FloorAssignment(floor_id="GF", floor_index=0, area_sqm=500.0, elevation_m=0.0)]
         stairwells = [
@@ -1320,7 +1318,7 @@ class TestSmokeSpreadAnalysis:
         stair_results = [r for r in results if r.pathway == SmokeSpreadPathway.STAIRWELL]
         assert any("below minimum 25 Pa" in v for v in stair_results[0].violations)
 
-    def test_stairwell_high_pressure_violation(self, orchestrator):
+    def test_stairwell_high_pressure_violation(self, orchestrator) -> None:
         """Design pressure above 85 Pa should produce a violation (doors can't open)."""
         floors = [FloorAssignment(floor_id="GF", floor_index=0, area_sqm=500.0, elevation_m=0.0)]
         stairwells = [
@@ -1339,7 +1337,7 @@ class TestSmokeSpreadAnalysis:
         stair_results = [r for r in results if r.pathway == SmokeSpreadPathway.STAIRWELL]
         assert any("exceeds maximum 85 Pa" in v for v in stair_results[0].violations)
 
-    def test_hvac_duct_detection_required(self, orchestrator):
+    def test_hvac_duct_detection_required(self, orchestrator) -> None:
         """HVAC ducts with >2000 CFM should require duct detection."""
         floors = [FloorAssignment(floor_id="GF", floor_index=0, area_sqm=500.0, elevation_m=0.0)]
         hvac_ducts = [
@@ -1359,7 +1357,7 @@ class TestSmokeSpreadAnalysis:
         assert duct_results[0].duct_detection_required is True
         assert len(duct_results[0].violations) > 0
 
-    def test_hvac_duct_below_threshold(self, orchestrator):
+    def test_hvac_duct_below_threshold(self, orchestrator) -> None:
         """HVAC ducts with ≤2000 CFM should not require duct detection."""
         floors = [FloorAssignment(floor_id="GF", floor_index=0, area_sqm=500.0, elevation_m=0.0)]
         hvac_ducts = [
@@ -1378,7 +1376,7 @@ class TestSmokeSpreadAnalysis:
         assert duct_results[0].duct_detection_required is False
         assert len(duct_results[0].violations) == 0
 
-    def test_hvac_duct_unknown_cfm_warning(self, orchestrator):
+    def test_hvac_duct_unknown_cfm_warning(self, orchestrator) -> None:
         """HVAC ducts with unknown CFM should produce a warning (conservative)."""
         floors = [FloorAssignment(floor_id="GF", floor_index=0, area_sqm=500.0, elevation_m=0.0)]
         hvac_ducts = [
@@ -1397,7 +1395,7 @@ class TestSmokeSpreadAnalysis:
         assert duct_results[0].duct_detection_required is True
         assert any("airflow CFM unknown" in w for w in duct_results[0].warnings)
 
-    def test_hvac_exhaust_duct_exempt(self, orchestrator):
+    def test_hvac_exhaust_duct_exempt(self, orchestrator) -> None:
         """Exhaust ducts should be exempt from duct detection requirements."""
         floors = [FloorAssignment(floor_id="GF", floor_index=0, area_sqm=500.0, elevation_m=0.0)]
         hvac_ducts = [
@@ -1416,7 +1414,7 @@ class TestSmokeSpreadAnalysis:
         assert duct_results[0].duct_detection_required is False
         assert any("exhaust type" in w for w in duct_results[0].warnings)
 
-    def test_smoke_barrier_below_rating_violation(self, orchestrator):
+    def test_smoke_barrier_below_rating_violation(self, orchestrator) -> None:
         """Smoke barriers below minimum rating should produce a violation."""
         floors = [FloorAssignment(floor_id="GF", floor_index=0, area_sqm=500.0, elevation_m=0.0)]
         barriers = [
@@ -1434,7 +1432,7 @@ class TestSmokeSpreadAnalysis:
         assert len(barrier_results) == 1
         assert any("below minimum" in v for v in barrier_results[0].violations)
 
-    def test_smoke_barrier_adequate_rating(self, orchestrator):
+    def test_smoke_barrier_adequate_rating(self, orchestrator) -> None:
         """Smoke barriers with adequate rating should not produce violations."""
         floors = [FloorAssignment(floor_id="GF", floor_index=0, area_sqm=500.0, elevation_m=0.0)]
         barriers = [
@@ -1451,7 +1449,7 @@ class TestSmokeSpreadAnalysis:
         barrier_results = [r for r in results if r.pathway == SmokeSpreadPathway.JOINT]
         assert len(barrier_results[0].violations) == 0
 
-    def test_no_pathways_tall_building_warning(self, orchestrator):
+    def test_no_pathways_tall_building_warning(self, orchestrator) -> None:
         """Tall building with no shaft data should produce a general warning."""
         floors = [FloorAssignment(floor_id="GF", floor_index=0, area_sqm=500.0, elevation_m=0.0)]
         results = orchestrator._analyze_smoke_spread(
@@ -1462,7 +1460,7 @@ class TestSmokeSpreadAnalysis:
         assert results[0].pressurization_required is True
         assert any("No vertical shaft data" in w for w in results[0].warnings)
 
-    def test_no_pathways_short_building(self, orchestrator):
+    def test_no_pathways_short_building(self, orchestrator) -> None:
         """Short building with no shaft data should produce no results."""
         floors = [FloorAssignment(floor_id="GF", floor_index=0, area_sqm=500.0, elevation_m=0.0)]
         results = orchestrator._analyze_smoke_spread(
@@ -1471,7 +1469,7 @@ class TestSmokeSpreadAnalysis:
         )
         assert len(results) == 0
 
-    def test_stack_effect_propagation_time(self, orchestrator):
+    def test_stack_effect_propagation_time(self, orchestrator) -> None:
         """Propagation time should be calculated based on stack effect."""
         floors = [FloorAssignment(floor_id="GF", floor_index=0, area_sqm=500.0, elevation_m=0.0)]
         elevators = [
@@ -1490,7 +1488,7 @@ class TestSmokeSpreadAnalysis:
         elev_results = [r for r in results if r.pathway == SmokeSpreadPathway.ELEVATOR_SHAFT]
         assert elev_results[0].propagation_time_s > 0.0
 
-    def test_zero_building_height_no_propagation(self):
+    def test_zero_building_height_no_propagation(self) -> None:
         """With zero building height, propagation time should not be calculated."""
         mo = MultiFloorOrchestrator(building_height_m=0.0)
         floors = [FloorAssignment(floor_id="GF", floor_index=0, area_sqm=500.0, elevation_m=0.0)]
@@ -1518,13 +1516,13 @@ class TestSmokeSpreadAnalysis:
 class TestElevatorRecall:
     """Tests for _check_elevator_recall."""
 
-    def test_no_elevators(self, orchestrator):
+    def test_no_elevators(self, orchestrator) -> None:
         result = orchestrator._check_elevator_recall(
             elevators=[], floor_assignments=[]
         )
         assert result == []
 
-    def test_fully_compliant_elevator(self, orchestrator):
+    def test_fully_compliant_elevator(self, orchestrator) -> None:
         """A fully compliant elevator should have no violations."""
         floors = [FloorAssignment(floor_id="GF", floor_index=0, area_sqm=500.0)]
         elevators = [
@@ -1549,7 +1547,7 @@ class TestElevatorRecall:
         assert results[0].has_smoke_detector_at_recall is True
         assert len(results[0].violations) == 0
 
-    def test_missing_phase_i_violation(self, orchestrator):
+    def test_missing_phase_i_violation(self, orchestrator) -> None:
         floors = [FloorAssignment(floor_id="GF", floor_index=0, area_sqm=500.0)]
         elevators = [
             {
@@ -1566,7 +1564,7 @@ class TestElevatorRecall:
         assert results[0].phase_i_compliant is False
         assert any("Phase I recall NOT PROVIDED" in v for v in results[0].violations)
 
-    def test_missing_phase_ii_violation(self, orchestrator):
+    def test_missing_phase_ii_violation(self, orchestrator) -> None:
         floors = [FloorAssignment(floor_id="GF", floor_index=0, area_sqm=500.0)]
         elevators = [
             {
@@ -1583,7 +1581,7 @@ class TestElevatorRecall:
         assert results[0].phase_ii_compliant is False
         assert any("Phase II" in v for v in results[0].violations)
 
-    def test_missing_recall_smoke_detector_violation(self, orchestrator):
+    def test_missing_recall_smoke_detector_violation(self, orchestrator) -> None:
         floors = [FloorAssignment(floor_id="GF", floor_index=0, area_sqm=500.0)]
         elevators = [
             {
@@ -1600,7 +1598,7 @@ class TestElevatorRecall:
         assert results[0].phase_i_compliant is False  # Overridden back to False
         assert any("No smoke detector at recall" in v for v in results[0].violations)
 
-    def test_missing_machine_room_heat_detector_violation(self, orchestrator):
+    def test_missing_machine_room_heat_detector_violation(self, orchestrator) -> None:
         floors = [FloorAssignment(floor_id="GF", floor_index=0, area_sqm=500.0)]
         elevators = [
             {
@@ -1616,7 +1614,7 @@ class TestElevatorRecall:
         results = orchestrator._check_elevator_recall(elevators, floors)
         assert any("No heat detector in machine room" in v for v in results[0].violations)
 
-    def test_missing_shunt_trip_violation(self, orchestrator):
+    def test_missing_shunt_trip_violation(self, orchestrator) -> None:
         floors = [FloorAssignment(floor_id="GF", floor_index=0, area_sqm=500.0)]
         elevators = [
             {
@@ -1633,7 +1631,7 @@ class TestElevatorRecall:
         assert any("Shunt trip breaker NOT PROVIDED" in v for v in results[0].violations)
         assert results[0].shunt_trip_compliant is False
 
-    def test_shunt_trip_without_machine_room_hd_not_compliant(self, orchestrator):
+    def test_shunt_trip_without_machine_room_hd_not_compliant(self, orchestrator) -> None:
         """Shunt trip present but no machine room heat detector → not compliant."""
         floors = [FloorAssignment(floor_id="GF", floor_index=0, area_sqm=500.0)]
         elevators = [
@@ -1650,7 +1648,7 @@ class TestElevatorRecall:
         results = orchestrator._check_elevator_recall(elevators, floors)
         assert results[0].shunt_trip_compliant is False
 
-    def test_invalid_recall_floor_warning(self, orchestrator):
+    def test_invalid_recall_floor_warning(self, orchestrator) -> None:
         """Recall floor not in building floor list should produce a warning."""
         floors = [FloorAssignment(floor_id="GF", floor_index=0, area_sqm=500.0)]
         elevators = [
@@ -1668,7 +1666,7 @@ class TestElevatorRecall:
         results = orchestrator._check_elevator_recall(elevators, floors)
         assert any("not found in building floor list" in w for w in results[0].warnings)
 
-    def test_no_alternate_recall_floor_warning(self, orchestrator):
+    def test_no_alternate_recall_floor_warning(self, orchestrator) -> None:
         """Missing alternate recall floor should produce a warning."""
         floors = [FloorAssignment(floor_id="GF", floor_index=0, area_sqm=500.0)]
         elevators = [
@@ -1687,7 +1685,7 @@ class TestElevatorRecall:
         results = orchestrator._check_elevator_recall(elevators, floors)
         assert any("No alternate recall floor" in w for w in results[0].warnings)
 
-    def test_with_alternate_recall_floor_no_warning(self, orchestrator):
+    def test_with_alternate_recall_floor_no_warning(self, orchestrator) -> None:
         """Having an alternate recall floor should not produce the warning."""
         floors = [FloorAssignment(floor_id="GF", floor_index=0, area_sqm=500.0)]
         elevators = [
@@ -1706,7 +1704,7 @@ class TestElevatorRecall:
         results = orchestrator._check_elevator_recall(elevators, floors)
         assert not any("No alternate recall floor" in w for w in results[0].warnings)
 
-    def test_default_recall_floor(self, orchestrator):
+    def test_default_recall_floor(self, orchestrator) -> None:
         """Default recall floor should be 'GF'."""
         floors = [FloorAssignment(floor_id="GF", floor_index=0, area_sqm=500.0)]
         elevators = [
@@ -1723,7 +1721,7 @@ class TestElevatorRecall:
         results = orchestrator._check_elevator_recall(elevators, floors)
         assert results[0].designated_recall_floor == "GF"
 
-    def test_multiple_elevators(self, orchestrator):
+    def test_multiple_elevators(self, orchestrator) -> None:
         """Multiple elevators should produce multiple results."""
         floors = [FloorAssignment(floor_id="GF", floor_index=0, area_sqm=500.0)]
         elevators = [
@@ -1760,16 +1758,16 @@ class TestElevatorRecall:
 class TestRiserRouting:
     """Tests for _route_risers."""
 
-    def test_empty_floor_assignments(self, orchestrator):
+    def test_empty_floor_assignments(self, orchestrator) -> None:
         result = orchestrator._route_risers(floor_assignments=[], slc_loops=[])
         assert result == []
 
-    def test_single_floor_no_risers(self, orchestrator):
+    def test_single_floor_no_risers(self, orchestrator) -> None:
         floors = [FloorAssignment(floor_id="GF", floor_index=0, elevation_m=0.0)]
         result = orchestrator._route_risers(floor_assignments=floors, slc_loops=[])
         assert len(result) == 0
 
-    def test_two_floors_one_segment(self, orchestrator):
+    def test_two_floors_one_segment(self, orchestrator) -> None:
         floors = [
             FloorAssignment(floor_id="GF", floor_index=0, elevation_m=0.0, area_sqm=500.0),
             FloorAssignment(floor_id="L1", floor_index=1, elevation_m=3.5, area_sqm=500.0),
@@ -1781,7 +1779,7 @@ class TestRiserRouting:
         assert result[0].to_floor == "L1"
         assert result[0].cable_length_m > 0.0
 
-    def test_three_floors_two_segments(self, orchestrator):
+    def test_three_floors_two_segments(self, orchestrator) -> None:
         floors = [
             FloorAssignment(floor_id="GF", floor_index=0, elevation_m=0.0, area_sqm=500.0),
             FloorAssignment(floor_id="L1", floor_index=1, elevation_m=3.5, area_sqm=500.0),
@@ -1795,7 +1793,7 @@ class TestRiserRouting:
         assert result[1].from_floor == "L1"
         assert result[1].to_floor == "L2"
 
-    def test_default_inter_floor_height(self, orchestrator):
+    def test_default_inter_floor_height(self, orchestrator) -> None:
         """When floor elevations are the same, default 3.5m should be used."""
         floors = [
             FloorAssignment(floor_id="GF", floor_index=0, elevation_m=0.0, area_sqm=500.0),
@@ -1807,7 +1805,7 @@ class TestRiserRouting:
         # Should still produce a result with default vertical distance
         assert result[0].cable_length_m > 0.0
 
-    def test_wire_gauge_upgraded_on_high_drop(self, orchestrator):
+    def test_wire_gauge_upgraded_on_high_drop(self, orchestrator) -> None:
         """When voltage drop exceeds limits, wire gauge should be upgraded."""
         floors = [
             FloorAssignment(floor_id="GF", floor_index=0, elevation_m=0.0, area_sqm=500.0),
@@ -1819,7 +1817,7 @@ class TestRiserRouting:
         # The result should have a wire gauge (at least "14")
         assert result[0].wire_gauge in ("14", "12", "10", "8", "6", "4", "2", "1/0")
 
-    def test_voltage_drop_compliant_flag(self, orchestrator):
+    def test_voltage_drop_compliant_flag(self, orchestrator) -> None:
         """Voltage drop compliant flag should be set correctly."""
         floors = [
             FloorAssignment(floor_id="GF", floor_index=0, elevation_m=0.0, area_sqm=500.0),
@@ -1830,7 +1828,7 @@ class TestRiserRouting:
         assert isinstance(result[0].voltage_drop_compliant, bool)
         assert isinstance(result[0].voltage_drop_pct, float)
 
-    def test_voltage_drop_violation_recorded(self, orchestrator):
+    def test_voltage_drop_violation_recorded(self, orchestrator) -> None:
         """When voltage drop exceeds limits, a violation should be recorded."""
         floors = [
             FloorAssignment(floor_id="GF", floor_index=0, elevation_m=0.0, area_sqm=500.0),
@@ -1842,7 +1840,7 @@ class TestRiserRouting:
             assert len(result[0].violations) > 0
             assert any("voltage drop" in v.lower() for v in result[0].violations)
 
-    def test_riser_reference(self, orchestrator):
+    def test_riser_reference(self, orchestrator) -> None:
         floors = [
             FloorAssignment(floor_id="GF", floor_index=0, elevation_m=0.0, area_sqm=500.0),
             FloorAssignment(floor_id="L1", floor_index=1, elevation_m=3.5, area_sqm=500.0),
@@ -1861,12 +1859,12 @@ class TestRiserRouting:
 class TestComplianceEvaluation:
     """Tests for _evaluate_compliance."""
 
-    def test_empty_analysis_compliant(self):
+    def test_empty_analysis_compliant(self) -> None:
         """An analysis with no results should be compliant (nothing to violate)."""
         analysis = BuildingAnalysis()
         assert MultiFloorOrchestrator._evaluate_compliance(analysis) is True
 
-    def test_slc_loop_non_compliant(self):
+    def test_slc_loop_non_compliant(self) -> None:
         """Non-compliant SLC loop should make building non-compliant."""
         analysis = BuildingAnalysis()
         analysis.slc_loops = [
@@ -1874,7 +1872,7 @@ class TestComplianceEvaluation:
         ]
         assert MultiFloorOrchestrator._evaluate_compliance(analysis) is False
 
-    def test_slc_loop_voltage_drop_non_compliant(self):
+    def test_slc_loop_voltage_drop_non_compliant(self) -> None:
         """SLC loop with voltage drop non-compliant should make building non-compliant."""
         analysis = BuildingAnalysis()
         analysis.slc_loops = [
@@ -1882,7 +1880,7 @@ class TestComplianceEvaluation:
         ]
         assert MultiFloorOrchestrator._evaluate_compliance(analysis) is False
 
-    def test_vertical_zone_non_compliant(self):
+    def test_vertical_zone_non_compliant(self) -> None:
         """Non-compliant vertical zone should make building non-compliant."""
         analysis = BuildingAnalysis()
         analysis.vertical_zones = [
@@ -1895,7 +1893,7 @@ class TestComplianceEvaluation:
         ]
         assert MultiFloorOrchestrator._evaluate_compliance(analysis) is False
 
-    def test_smoke_spread_violations(self):
+    def test_smoke_spread_violations(self) -> None:
         """Smoke spread violations should make building non-compliant."""
         analysis = BuildingAnalysis()
         analysis.smoke_spread_results = [
@@ -1903,7 +1901,7 @@ class TestComplianceEvaluation:
         ]
         assert MultiFloorOrchestrator._evaluate_compliance(analysis) is False
 
-    def test_elevator_recall_violations(self):
+    def test_elevator_recall_violations(self) -> None:
         """Elevator recall violations should make building non-compliant."""
         analysis = BuildingAnalysis()
         analysis.elevator_recall_results = [
@@ -1911,7 +1909,7 @@ class TestComplianceEvaluation:
         ]
         assert MultiFloorOrchestrator._evaluate_compliance(analysis) is False
 
-    def test_riser_voltage_drop_non_compliant(self):
+    def test_riser_voltage_drop_non_compliant(self) -> None:
         """Non-compliant riser voltage drop should make building non-compliant."""
         analysis = BuildingAnalysis()
         analysis.riser_routing_results = [
@@ -1919,7 +1917,7 @@ class TestComplianceEvaluation:
         ]
         assert MultiFloorOrchestrator._evaluate_compliance(analysis) is False
 
-    def test_fully_compliant(self):
+    def test_fully_compliant(self) -> None:
         """All systems compliant should make building compliant."""
         analysis = BuildingAnalysis()
         analysis.slc_loops = [
@@ -1942,7 +1940,7 @@ class TestComplianceEvaluation:
 class TestFailSafeBehavior:
     """Tests for fail-safe behavior — subsystems should not crash each other."""
 
-    def test_floor_analysis_failure_continues(self, orchestrator, sample_building_spec):
+    def test_floor_analysis_failure_continues(self, orchestrator, sample_building_spec) -> None:
         """If floor analysis fails, other subsystems should still run."""
         with patch.object(
             orchestrator, "_analyze_floors", side_effect=RuntimeError("Floor analysis crashed")
@@ -1953,7 +1951,7 @@ class TestFailSafeBehavior:
         # Other subsystems should still have run
         assert result.total_slc_loops >= 0
 
-    def test_slc_assignment_failure_continues(self, orchestrator, sample_building_spec):
+    def test_slc_assignment_failure_continues(self, orchestrator, sample_building_spec) -> None:
         """If SLC assignment fails, other subsystems should still run."""
         with patch.object(
             orchestrator, "_assign_slc_loops", side_effect=RuntimeError("SLC crashed")
@@ -1962,7 +1960,7 @@ class TestFailSafeBehavior:
         assert isinstance(result, BuildingAnalysis)
         assert any("SLC loop assignment failed" in e for e in result.errors)
 
-    def test_vertical_zone_failure_continues(self, orchestrator, sample_building_spec):
+    def test_vertical_zone_failure_continues(self, orchestrator, sample_building_spec) -> None:
         """If vertical zone design fails, other subsystems should still run."""
         with patch.object(
             orchestrator, "_design_vertical_zones", side_effect=RuntimeError("Zone crashed")
@@ -1971,7 +1969,7 @@ class TestFailSafeBehavior:
         assert isinstance(result, BuildingAnalysis)
         assert any("Vertical zone design failed" in e for e in result.errors)
 
-    def test_smoke_spread_failure_continues(self, orchestrator, sample_building_spec):
+    def test_smoke_spread_failure_continues(self, orchestrator, sample_building_spec) -> None:
         """If smoke spread analysis fails, other subsystems should still run."""
         with patch.object(
             orchestrator, "_analyze_smoke_spread", side_effect=RuntimeError("Smoke crashed")
@@ -1980,7 +1978,7 @@ class TestFailSafeBehavior:
         assert isinstance(result, BuildingAnalysis)
         assert any("Smoke spread analysis failed" in e for e in result.errors)
 
-    def test_elevator_recall_failure_continues(self, orchestrator, sample_building_spec):
+    def test_elevator_recall_failure_continues(self, orchestrator, sample_building_spec) -> None:
         """If elevator recall fails, other subsystems should still run."""
         with patch.object(
             orchestrator, "_check_elevator_recall", side_effect=RuntimeError("Elevator crashed")
@@ -1989,7 +1987,7 @@ class TestFailSafeBehavior:
         assert isinstance(result, BuildingAnalysis)
         assert any("Elevator recall check failed" in e for e in result.errors)
 
-    def test_riser_routing_failure_continues(self, orchestrator, sample_building_spec):
+    def test_riser_routing_failure_continues(self, orchestrator, sample_building_spec) -> None:
         """If riser routing fails, other subsystems should still run."""
         with patch.object(
             orchestrator, "_route_risers", side_effect=RuntimeError("Riser crashed")
@@ -2002,7 +2000,7 @@ class TestFailSafeBehavior:
 class TestOrchestrateWithFloorOrchestrator:
     """Tests for orchestrate with a mocked FloorOrchestrator that returns real data."""
 
-    def test_with_mock_floor_orchestrator(self, mock_floor_result):
+    def test_with_mock_floor_orchestrator(self, mock_floor_result) -> None:
         """Test orchestrate with a mocked FloorOrchestrator.process()."""
         fo = MagicMock(spec=FloorOrchestrator)
         fo.process.return_value = mock_floor_result
@@ -2025,7 +2023,7 @@ class TestOrchestrateWithFloorOrchestrator:
         # FloorOrchestrator.process should have been called
         fo.process.assert_called_once()
 
-    def test_floor_result_status_warning(self):
+    def test_floor_result_status_warning(self) -> None:
         """Floor with non-APPROVED status should produce a warning."""
         room = RoomResult(room_id="R1", status="FAIL", detector_count=2)
         floor_result = FloorResult(
@@ -2054,7 +2052,7 @@ class TestOrchestrateWithFloorOrchestrator:
         fa = result.floor_assignments[0]
         assert any("status: REJECTED" in w for w in fa.warnings)
 
-    def test_device_count_from_room_results(self):
+    def test_device_count_from_room_results(self) -> None:
         """Device counts should be derived from room results."""
         rooms = [
             RoomResult(room_id="R1", status="PASS", detector_count=5),
@@ -2101,7 +2099,7 @@ class TestOrchestrateWithFloorOrchestrator:
 class TestResidentialBuilding:
     """Tests for residential building orchestration."""
 
-    def test_residential_zone_design(self, orchestrator, residential_building_spec):
+    def test_residential_zone_design(self, orchestrator, residential_building_spec) -> None:
         """Residential buildings should have 1 floor per zone."""
         result = orchestrator.orchestrate(**residential_building_spec)
         assert len(result.vertical_zones) == 4  # 4 floors, 1 per zone
@@ -2109,7 +2107,7 @@ class TestResidentialBuilding:
             assert zone.floors_per_zone == 1
             assert len(zone.floor_ids) == 1
 
-    def test_residential_occupancy_type_in_zones(self, orchestrator, residential_building_spec):
+    def test_residential_occupancy_type_in_zones(self, orchestrator, residential_building_spec) -> None:
         result = orchestrator.orchestrate(**residential_building_spec)
         for zone in result.vertical_zones:
             assert zone.occupancy_type == "residential"
@@ -2123,7 +2121,7 @@ class TestResidentialBuilding:
 class TestTallBuilding:
     """Tests for tall building scenarios requiring pressurization."""
 
-    def test_tall_building_stairwell_pressurization(self, tall_building_spec):
+    def test_tall_building_stairwell_pressurization(self, tall_building_spec) -> None:
         """Tall building (>22.86m) should require stairwell pressurization."""
         mo = MultiFloorOrchestrator(building_height_m=25.0)
         result = mo.orchestrate(**tall_building_spec)
@@ -2135,7 +2133,7 @@ class TestTallBuilding:
         assert len(stair_results) > 0
         assert stair_results[0].pressurization_required is True
 
-    def test_tall_building_no_fan_violation(self, tall_building_spec):
+    def test_tall_building_no_fan_violation(self, tall_building_spec) -> None:
         """Tall building with unpressurized stairwell should have violations."""
         mo = MultiFloorOrchestrator(building_height_m=25.0)
         result = mo.orchestrate(**tall_building_spec)
@@ -2156,14 +2154,14 @@ class TestTallBuilding:
 class TestEdgeCases:
     """Tests for edge cases and boundary conditions."""
 
-    def test_building_id_with_special_characters(self, orchestrator):
+    def test_building_id_with_special_characters(self, orchestrator) -> None:
         result = orchestrator.orchestrate(
             building_id="BLDG-2024/REV.B",
             floors={"GF": []},
         )
         assert result.building_id == "BLDG-2024/REV.B"
 
-    def test_very_large_building(self):
+    def test_very_large_building(self) -> None:
         """Test with a large number of floors."""
         mo = MultiFloorOrchestrator(building_height_m=100.0)
         floors_spec = {f"F{i}": [] for i in range(20)}
@@ -2180,7 +2178,7 @@ class TestEdgeCases:
         assert len(result.floor_assignments) == 20
         assert len(result.riser_routing_results) == 19
 
-    def test_all_fields_none_optional(self, orchestrator):
+    def test_all_fields_none_optional(self, orchestrator) -> None:
         """Orchestrate should work with only required parameters."""
         result = orchestrator.orchestrate(
             building_id="MINIMAL",
@@ -2189,7 +2187,7 @@ class TestEdgeCases:
         assert result.building_id == "MINIMAL"
         assert result.total_floors == 1
 
-    def test_area_compliant_boundary(self, orchestrator):
+    def test_area_compliant_boundary(self, orchestrator) -> None:
         """Test vertical zone at the exact area boundary."""
         # Zone area exactly at the limit
         area_exactly_at_limit = MAX_ZONE_AREA_SQM
@@ -2205,7 +2203,7 @@ class TestEdgeCases:
         # area_exactly_at_limit <= MAX_ZONE_AREA_SQM → should be compliant
         assert zones[0].area_compliant is True
 
-    def test_area_just_over_boundary(self, orchestrator):
+    def test_area_just_over_boundary(self, orchestrator) -> None:
         """Test vertical zone just over the area boundary."""
         area_over_limit = MAX_ZONE_AREA_SQM + 1.0
         floors = [
@@ -2219,7 +2217,7 @@ class TestEdgeCases:
         )
         assert zones[0].area_compliant is False
 
-    def test_slc_loop_at_exact_capacity(self):
+    def test_slc_loop_at_exact_capacity(self) -> None:
         """SLC loop with exactly max devices should be compliant."""
         mo = MultiFloorOrchestrator(max_slc_devices=10, building_height_m=10.0)
         fa = FloorAssignment(
@@ -2231,7 +2229,7 @@ class TestEdgeCases:
         assert loops[0].device_count == 10
         assert loops[0].is_compliant is True
 
-    def test_slc_loop_one_over_capacity(self):
+    def test_slc_loop_one_over_capacity(self) -> None:
         """SLC loop with max+1 devices should split into two loops."""
         mo = MultiFloorOrchestrator(max_slc_devices=10, building_height_m=10.0)
         fa = FloorAssignment(
@@ -2241,7 +2239,7 @@ class TestEdgeCases:
         loops = mo._assign_slc_loops([fa])
         assert len(loops) == 2
 
-    def test_occupancy_type_case_insensitive(self, orchestrator):
+    def test_occupancy_type_case_insensitive(self, orchestrator) -> None:
         """Occupancy type should be case-insensitive for zone design."""
         floors = [
             FloorAssignment(floor_id="F1", floor_index=0, total_devices=10, area_sqm=400.0),
@@ -2253,7 +2251,7 @@ class TestEdgeCases:
 
         assert len(zones_lower) == len(zones_upper) == len(zones_mixed) == 2
 
-    def test_elevator_with_empty_floors_served(self, orchestrator):
+    def test_elevator_with_empty_floors_served(self, orchestrator) -> None:
         """Elevator with no floors served should not crash."""
         floors = [FloorAssignment(floor_id="GF", floor_index=0, area_sqm=500.0)]
         elevators = [
@@ -2271,7 +2269,7 @@ class TestEdgeCases:
         assert len(results) == 1
         assert results[0].floors_served == []  # Empty floor list propagated
 
-    def test_stairwell_with_stairwell_id_key(self, orchestrator):
+    def test_stairwell_with_stairwell_id_key(self, orchestrator) -> None:
         """Stairwell with 'stairwell_id' key instead of 'zone_id' should work."""
         floors = [FloorAssignment(floor_id="GF", floor_index=0, area_sqm=500.0, elevation_m=0.0)]
         stairwells = [

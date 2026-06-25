@@ -24,7 +24,7 @@ from fastapi.testclient import TestClient
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
 @pytest.fixture(scope="module", autouse=True)
-def _setup_env():
+def _setup_env() -> None:
     """Set development environment for testing."""
     os.environ["FIREAI_ENV"] = "development"
     os.environ["FIREAI_API_KEY"] = ""
@@ -46,12 +46,12 @@ def client():
 class TestMonitorHealth:
     """Tests for GET /api/monitor/health."""
 
-    def test_monitor_health_returns_200(self, client):
+    def test_monitor_health_returns_200(self, client) -> None:
         """Aggregated health endpoint must return 200."""
         response = client.get("/api/monitor/health")
         assert response.status_code == 200
 
-    def test_monitor_health_has_status(self, client):
+    def test_monitor_health_has_status(self, client) -> None:
         """Health response must include a status field."""
         response = client.get("/api/monitor/health")
         data = response.json()
@@ -59,19 +59,19 @@ class TestMonitorHealth:
         body = data.get("data", data)
         assert "status" in body
 
-    def test_monitor_health_status_values(self, client):
+    def test_monitor_health_status_values(self, client) -> None:
         """Status must be one of ok, degraded, or error."""
         response = client.get("/api/monitor/health")
         data = response.json().get("data", response.json())
         assert data["status"] in ("ok", "degraded", "error")
 
-    def test_monitor_health_has_uptime(self, client):
+    def test_monitor_health_has_uptime(self, client) -> None:
         """Health response must include uptime information."""
         response = client.get("/api/monitor/health")
         data = response.json().get("data", response.json())
         assert "uptime_seconds" in data or "uptime" in data
 
-    def test_monitor_health_has_engines(self, client):
+    def test_monitor_health_has_engines(self, client) -> None:
         """Health response must include engine summary."""
         response = client.get("/api/monitor/health")
         data = response.json().get("data", response.json())
@@ -86,19 +86,19 @@ class TestMonitorHealth:
 class TestMonitorMetrics:
     """Tests for GET /api/monitor/metrics."""
 
-    def test_monitor_metrics_returns_200(self, client):
+    def test_monitor_metrics_returns_200(self, client) -> None:
         """Prometheus metrics endpoint must return 200."""
         response = client.get("/api/monitor/metrics")
         assert response.status_code == 200
 
-    def test_monitor_metrics_prometheus_format(self, client):
+    def test_monitor_metrics_prometheus_format(self, client) -> None:
         """Metrics must be in Prometheus text format."""
         response = client.get("/api/monitor/metrics")
         content_type = response.headers.get("content-type", "")
         # Should be text/plain for Prometheus exposition format
         assert "text" in content_type or response.status_code == 200
 
-    def test_monitor_metrics_contains_fireai_metrics(self, client):
+    def test_monitor_metrics_contains_fireai_metrics(self, client) -> None:
         """Metrics output must contain fireai_ prefixed metrics."""
         response = client.get("/api/monitor/metrics")
         text = response.text
@@ -113,12 +113,12 @@ class TestMonitorMetrics:
 class TestMonitorEngineStatus:
     """Tests for GET /api/monitor/engine-status."""
 
-    def test_engine_status_returns_200(self, client):
+    def test_engine_status_returns_200(self, client) -> None:
         """Engine status endpoint must return 200."""
         response = client.get("/api/monitor/engine-status")
         assert response.status_code == 200
 
-    def test_engine_status_has_engines_list(self, client):
+    def test_engine_status_has_engines_list(self, client) -> None:
         """Engine status must return a list of engines."""
         response = client.get("/api/monitor/engine-status")
         data = response.json()
@@ -129,7 +129,7 @@ class TestMonitorEngineStatus:
         elif isinstance(body, dict):
             assert "engines" in body or "success" in body
 
-    def test_engine_status_each_engine_has_status(self, client):
+    def test_engine_status_each_engine_has_status(self, client) -> None:
         """Each engine entry must have a status field."""
         response = client.get("/api/monitor/engine-status")
         data = response.json()
@@ -148,17 +148,17 @@ class TestMonitorEngineStatus:
 class TestMonitorAgentActivity:
     """Tests for GET /api/monitor/agent-activity."""
 
-    def test_agent_activity_returns_200(self, client):
+    def test_agent_activity_returns_200(self, client) -> None:
         """Agent activity endpoint must return 200."""
         response = client.get("/api/monitor/agent-activity")
         assert response.status_code == 200
 
-    def test_agent_activity_with_limit(self, client):
+    def test_agent_activity_with_limit(self, client) -> None:
         """Agent activity endpoint must accept limit parameter."""
         response = client.get("/api/monitor/agent-activity?limit=5")
         assert response.status_code == 200
 
-    def test_agent_activity_returns_list(self, client):
+    def test_agent_activity_returns_list(self, client) -> None:
         """Agent activity must return a list of activity entries."""
         response = client.get("/api/monitor/agent-activity")
         data = response.json()
@@ -178,17 +178,17 @@ class TestMonitorAgentActivity:
 class TestMonitorSecurityAlerts:
     """Tests for GET /api/monitor/security-alerts."""
 
-    def test_security_alerts_returns_200(self, client):
+    def test_security_alerts_returns_200(self, client) -> None:
         """Security alerts endpoint must return 200."""
         response = client.get("/api/monitor/security-alerts")
         assert response.status_code == 200
 
-    def test_security_alerts_with_limit(self, client):
+    def test_security_alerts_with_limit(self, client) -> None:
         """Security alerts endpoint must accept limit parameter."""
         response = client.get("/api/monitor/security-alerts?limit=10")
         assert response.status_code == 200
 
-    def test_security_alerts_with_severity_filter(self, client):
+    def test_security_alerts_with_severity_filter(self, client) -> None:
         """Security alerts must accept severity filter parameter."""
         response = client.get("/api/monitor/security-alerts?severity=high")
         assert response.status_code == 200
@@ -202,12 +202,12 @@ class TestMonitorSecurityAlerts:
 class TestMonitorAlerts:
     """Tests for GET /api/monitor/alerts."""
 
-    def test_alerts_returns_200(self, client):
+    def test_alerts_returns_200(self, client) -> None:
         """Alerts endpoint must return 200."""
         response = client.get("/api/monitor/alerts")
         assert response.status_code == 200
 
-    def test_alerts_returns_list(self, client):
+    def test_alerts_returns_list(self, client) -> None:
         """Alerts must return a list of active alerts."""
         response = client.get("/api/monitor/alerts")
         data = response.json()
@@ -227,7 +227,7 @@ class TestMonitorAlerts:
 class TestMonitorStatePropagation:
     """Tests that changes to MonitorState are visible through HTTP endpoints."""
 
-    def test_engine_degraded_reflected_in_health(self, client):
+    def test_engine_degraded_reflected_in_health(self, client) -> None:
         """Setting an engine to error should be reflected in health endpoint."""
         from backend.routers.monitor import MonitorState
         monitor = MonitorState()
@@ -242,7 +242,7 @@ class TestMonitorStatePropagation:
         # Restore
         monitor.set_engine_status("facp-engine", "running")
 
-    def test_agent_activity_visible_via_http(self, client):
+    def test_agent_activity_visible_via_http(self, client) -> None:
         """Adding agent activity should be visible through HTTP endpoint."""
         from backend.routers.monitor import MonitorState
         monitor = MonitorState()
@@ -254,7 +254,7 @@ class TestMonitorStatePropagation:
         response = client.get("/api/monitor/agent-activity?limit=5")
         assert response.status_code == 200
 
-    def test_security_alert_visible_via_http(self, client):
+    def test_security_alert_visible_via_http(self, client) -> None:
         """Adding a security alert should be visible through HTTP endpoint."""
         from backend.routers.monitor import MonitorState
         monitor = MonitorState()

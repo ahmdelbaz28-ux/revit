@@ -17,7 +17,7 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 from functools import lru_cache
-from typing import Any, Dict, List, Literal, Optional, Tuple
+from typing import Any, Literal
 
 from .nfpa72_models import (
     CeilingSpec,
@@ -99,7 +99,7 @@ def calculate_smoke_detector_spacing(
     ceiling_spec: CeilingSpec,
     room_width_m: float,
     room_depth_m: float
-) -> Tuple[int, int]:
+) -> tuple[int, int]:
     """Calculate number of smoke detectors needed per NFPA 72 spacing.
 
     Args:
@@ -160,7 +160,7 @@ def calculate_heat_detector_spacing_rectangular(
     room_width_m: float,
     room_depth_m: float,
     spacing_m: float = 6.1
-) -> Tuple[int, int]:
+) -> tuple[int, int]:
     """Calculate number of heat detectors needed using rectangular spacing.
 
     Args:
@@ -179,8 +179,8 @@ def calculate_heat_detector_spacing_rectangular(
 def generate_heat_detector_positions(
     room_spec: RoomSpec,
     ceiling_spec: CeilingSpec,
-    spacing_m: float = None
-) -> List[Tuple[float, float]]:
+    spacing_m: float | None = None
+) -> list[tuple[float, float]]:
     """Generate heat detector positions using square grid pattern.
     CRITICAL FIX: Now applies NFPA 72 height-adjusted spacing for heat detectors.
     At high ceilings, heat detector spacing MUST be reduced per Table 17.6.3.5.1.
@@ -226,8 +226,8 @@ def generate_heat_detector_positions(
             positions.append((round(x, 4), round(y, 4)))
     return positions
 def is_point_covered_by_heat_detectors(
-    point: Tuple[float, float],
-    detector_positions: List[Tuple[float, float]],
+    point: tuple[float, float],
+    detector_positions: list[tuple[float, float]],
     spacing_m: float = 6.1
 ) -> bool:
     """Check if a point is covered by any heat detector.
@@ -252,10 +252,10 @@ def is_point_covered_by_heat_detectors(
 # SLOPED CEILING CALCULATIONS - Ridge Zone
 # ============================================================================
 def calculate_ridge_zone_boundary(
-    ridge_line: Tuple[float, float, float, float],
+    ridge_line: tuple[float, float, float, float],
     slope_degrees: float,
     buffer_m: float = 0.9
-) -> Tuple[float, float, float, float]:
+) -> tuple[float, float, float, float]:
     """Calculate ridge zone boundary for sloped ceiling.
     Per NFPA 72, for sloped ceilings > 1.5°, at least one detector
     must be located in the ridge zone (within 0.9m / 3ft of the ridge).
@@ -292,8 +292,8 @@ def calculate_ridge_zone_boundary(
         x2 + nx * buffer_m, y2 + ny * buffer_m
     )
 def is_in_ridge_zone(
-    point: Tuple[float, float],
-    ridge_line: Tuple[float, float, float, float],
+    point: tuple[float, float],
+    ridge_line: tuple[float, float, float, float],
     slope_degrees: float,
     buffer_m: float = 0.9
 ) -> bool:
@@ -395,39 +395,26 @@ def calculate_detector_requirements(
 # Test exported symbols
 __all__ = [\
 \
-    # Smoke calculations\
-\
-    "calculate_smoke_detector_radius",\
-\
-    "calculate_smoke_detector_spacing",\
-\
-    "get_smoke_detector_radius",\
-\
-    "get_smoke_detector_coverage_max",\
-\
-    # Heat calculations\
-\
+    "calculate_detector_requirements",
     "calculate_heat_detector_coverage_chebyshev",\
 \
-    "calculate_heat_detector_spacing_rectangular",\
-\
-    "generate_heat_detector_positions",\
-\
-    "is_point_covered_by_heat_detectors",\
-\
-    "get_heat_detector_placement_params",\
-\
     # Sloped ceiling\
-\
+    "calculate_heat_detector_spacing_rectangular",
     "calculate_ridge_zone_boundary",\
 \
-    "is_in_ridge_zone",\
-\
-    "requires_ridge_zone_detector",\
-\
     # Combined\
+    # Smoke calculations\
+    "calculate_smoke_detector_radius",\
 \
-    "calculate_detector_requirements",\
+    # Heat calculations\
+    "calculate_smoke_detector_spacing",
+    "generate_heat_detector_positions",
+    "get_heat_detector_placement_params",
+    "get_smoke_detector_coverage_max",
+    "get_smoke_detector_radius",
+    "is_in_ridge_zone",
+    "is_point_covered_by_heat_detectors",
+    "requires_ridge_zone_detector",
 \
 ]
 
@@ -651,7 +638,7 @@ class CoverageSpec:
     spacing_max: float
     wall_distance_max: float = 0.0
     nfpa_ref: str = "NFPA 72-2022 Table 17.6.3.1.1"
-    warning: Optional[str] = None
+    warning: str | None = None
 
 
 def calculate_coverage_radius_from_height(
@@ -705,7 +692,7 @@ def calculate_coverage_radius_from_height(
     if ceiling_height <= 0:
         raise ValueError(f"ceiling_height {ceiling_height}m must be positive.")
 
-    warning: Optional[str] = None
+    warning: str | None = None
 
     if ceiling_height > _NFPA72_ABSOLUTE_MAX_HEIGHT:
         # Use conservative fallback spacing for heights beyond the table
@@ -893,7 +880,7 @@ _DUCT_DETECTOR_MAX_SPACING_M: float = 10.0  # NFPA 72 §17.7.5.4.2
 def calculate_duct_detector_positions(
     duct: HVACDuct,
     max_spacing_m: float = _DUCT_DETECTOR_MAX_SPACING_M,
-) -> List[Tuple[float, float]]:
+) -> list[tuple[float, float]]:
     """Compute required detector positions along an HVAC duct centreline.
 
     NFPA 72 §17.7.5.4.2 requires detectors at intervals ≤ 10 m along
@@ -912,7 +899,7 @@ def calculate_duct_detector_positions(
         return [tuple(centreline[0])] if centreline else []
 
     # Build cumulative arc lengths along centreline
-    arc_lengths: List[float] = [0.0]
+    arc_lengths: list[float] = [0.0]
     for i in range(1, len(centreline)):
         x0, y0 = centreline[i - 1]
         x1, y1 = centreline[i]
@@ -923,7 +910,7 @@ def calculate_duct_detector_positions(
         return [tuple(centreline[0])]
 
     num_intervals = math.ceil(total_length / max_spacing_m)
-    positions: List[Tuple[float, float]] = []
+    positions: list[tuple[float, float]] = []
 
     for k in range(num_intervals):
         target = (k + 0.5) * (total_length / num_intervals)  # midpoint of each interval
@@ -954,7 +941,7 @@ def check_voltage_drop(
     cable_resistance_ohm_per_m: float,
     cable_length_m: float,
     max_drop_fraction: float = 0.10,
-) -> Dict[str, float]:
+) -> dict[str, float]:
     """Check that voltage drop along a cable run does not exceed the limit.
 
     V78 FIX: Changed default from 0.15 (15%) to 0.10 (10%). 15% does not
@@ -1096,7 +1083,7 @@ def required_battery_capacity_ah(
 # Old values for AWG 14/12/10 were ~18% too low (20°C values, unsafe direction).
 # AWG 18/16 are solid in Table 8; all others are stranded (Class B).
 
-AWG_RESISTANCE_TABLE: Dict[int, Dict[str, float]] = {
+AWG_RESISTANCE_TABLE: dict[int, dict[str, float]] = {
     # AWG: {"ohm_per_1000ft": R, "ohm_per_m": R/304.8, "metric_mm2": area, "ampacity_75c": A}
     18: {"ohm_per_1000ft": 7.770, "ohm_per_m": 0.02549, "metric_mm2": 0.823, "ampacity_75c": 14},
     16: {"ohm_per_1000ft": 4.890, "ohm_per_m": 0.01604, "metric_mm2": 1.31,  "ampacity_75c": 18},
@@ -1111,7 +1098,7 @@ AWG_RESISTANCE_TABLE: Dict[int, Dict[str, float]] = {
 # They remain in AWG_RESISTANCE_TABLE for reference/lookup but are excluded from
 # auto-selection to prevent dangerously thin wire from being specified.
 _FA_MIN_AWG: int = 14  # Minimum AWG permitted for fire alarm circuits per NEC 760.71
-AWG_GAUGES: List[int] = sorted(
+AWG_GAUGES: list[int] = sorted(
     [g for g in AWG_RESISTANCE_TABLE if g >= _FA_MIN_AWG],
     reverse=True
 )  # [14, 12, 10]
@@ -1124,7 +1111,7 @@ AWG_GAUGES: List[int] = sorted(
 # 50-200 ms of activation.  For voltage drop calculations under alarm
 # conditions (NFPA 72 §10.14.1), inrush must be considered.
 
-DEVICE_CURRENT_DRAW: Dict[str, Dict[str, float]] = {
+DEVICE_CURRENT_DRAW: dict[str, dict[str, float]] = {
     # device_type: {"steady_a": steady-state, "inrush_a": peak inrush, "inrush_factor": multiplier}
     "strobe_15cd":       {"steady_a": 0.15, "inrush_a": 0.38, "inrush_factor": 2.5},
     "strobe_30cd":       {"steady_a": 0.22, "inrush_a": 0.55, "inrush_factor": 2.5},
@@ -1154,7 +1141,7 @@ DEVICE_MIN_OPERATING_VOLTAGE_V: float = 16.0
 def calculate_inrush_current(
     device_type: str,
     quantity: int,
-) -> Dict[str, float]:
+) -> dict[str, float]:
     """Calculate steady-state and inrush (worst-case) current for NAC devices.
 
     NFPA 72 §10.14.1 requires that voltage at the most remote device be
@@ -1218,9 +1205,9 @@ def calculate_inrush_current(
 # ---------------------------------------------------------------------------
 
 def calculate_nac_loading(
-    devices: List[Dict[str, Any]],
+    devices: list[dict[str, Any]],
     panel_voltage_v: float = 24.0,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Calculate total NAC circuit loading for mixed device types.
 
     Aggregates steady-state and inrush currents across all devices on a
@@ -1243,8 +1230,8 @@ def calculate_nac_loading(
     """
     steady_total = 0.0
     inrush_total = 0.0
-    details: List[Dict[str, Any]] = []
-    warnings: List[str] = []
+    details: list[dict[str, Any]] = []
+    warnings: list[str] = []
 
     for dev in devices:
         dtype = dev.get("device_type", "horn")
@@ -1288,7 +1275,7 @@ def auto_select_awg(
     cable_length_m: float,
     max_drop_fraction: float = 0.10,
     min_device_voltage_v: float = 16.0,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Automatically select the smallest AWG wire gauge that satisfies voltage drop.
 
     Evaluates each AWG gauge from smallest permitted (14) to largest (10), and
@@ -1320,7 +1307,7 @@ def auto_select_awg(
             all_candidates:   Results for every gauge evaluated.
 
     """
-    all_candidates: List[Dict[str, Any]] = []
+    all_candidates: list[dict[str, Any]] = []
     selected = None
 
     for awg in AWG_GAUGES:

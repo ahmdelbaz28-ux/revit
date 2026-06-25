@@ -1,4 +1,4 @@
-"""fireai.conduit.fill — NEC Chapter 9 Conduit Fill Calculator
+"""fireai.conduit.fill — NEC Chapter 9 Conduit Fill Calculator.
 ============================================================
 
 Implements conduit fill percentage calculation and trade size
@@ -30,7 +30,6 @@ DESIGN NOTE (from pyRevit conduit discussion, discourse.pyrevitlabs.io):
 from __future__ import annotations
 
 import math
-from typing import Dict, List, Optional, Tuple
 
 from fireai.conduit.errors import CodeViolationError, PhysicsError, Severity
 from fireai.conduit.types import (
@@ -69,7 +68,7 @@ def _max_fill_pct(conductor_count: int) -> float:
 
 # Format: (ConduitType, TradeSize) → internal area in²
 # Source: NEC 2022 Chapter 9, Table 4
-_INTERNAL_AREA_IN2: Dict[Tuple[ConduitType, TradeSize], float] = {
+_INTERNAL_AREA_IN2: dict[tuple[ConduitType, TradeSize], float] = {
     # EMT — Electrical Metallic Tubing (NEC Table 4, EMT section)
     (ConduitType.EMT, TradeSize.HALF):      0.304,
     (ConduitType.EMT, TradeSize.THREE_QTR): 0.533,
@@ -104,7 +103,7 @@ _INTERNAL_AREA_IN2: Dict[Tuple[ConduitType, TradeSize], float] = {
 }
 
 # Ordered trade sizes for "next larger" recommendation
-_TRADE_SIZE_ORDER: List[TradeSize] = [
+_TRADE_SIZE_ORDER: list[TradeSize] = [
     TradeSize.HALF,
     TradeSize.THREE_QTR,
     TradeSize.ONE,
@@ -114,7 +113,7 @@ _TRADE_SIZE_ORDER: List[TradeSize] = [
 ]
 
 
-def _next_larger_size(current: TradeSize) -> Optional[TradeSize]:
+def _next_larger_size(current: TradeSize) -> TradeSize | None:
     """Return the next larger trade size, or None if already at maximum."""
     try:
         idx = _TRADE_SIZE_ORDER.index(current)
@@ -163,7 +162,7 @@ def get_internal_area(
 def calculate_fill(
     conduit_type: ConduitType,
     trade_size: TradeSize,
-    cable_diameters_in: List[float],
+    cable_diameters_in: list[float],
 ) -> Result[FillResult, PhysicsError | CodeViolationError]:
     """Calculate conduit fill percentage per NEC Chapter 9, Table 1.
 
@@ -248,7 +247,7 @@ def calculate_fill(
 
     # ── Recommendation if non-compliant ──────────────────────────────────────
 
-    recommended: Optional[TradeSize] = None
+    recommended: TradeSize | None = None
     if not is_compliant:
         # Walk up trade sizes until fill is compliant
         candidate = _next_larger_size(trade_size)
@@ -303,7 +302,7 @@ def calculate_fill(
 def calculate_fill_compliant(
     conduit_type: ConduitType,
     trade_size: TradeSize,
-    cable_diameters_in: List[float],
+    cable_diameters_in: list[float],
 ) -> Result[FillResult, PhysicsError | CodeViolationError]:
     """Identical to calculate_fill but returns Result.ok() even when
     fill is non-compliant, embedding the violation in FillResult.

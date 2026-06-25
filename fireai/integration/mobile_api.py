@@ -1,4 +1,4 @@
-"""fireai/integration/mobile_api.py
+"""fireai/integration/mobile_api.py.
 ==================================
 Mobile Platform — Secure API layer for iOS/Android field applications.
 
@@ -15,7 +15,7 @@ import time
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from fireai.core.event_bus import EventBus, Events
 
@@ -33,7 +33,7 @@ class _RateLimiter:
     def __init__(self, max_requests: int = 60, window_seconds: int = 60) -> None:
         self._max = max_requests
         self._window = window_seconds
-        self._buckets: Dict[str, List[float]] = {}
+        self._buckets: dict[str, list[float]] = {}
 
     def allow(self, user_id: str) -> bool:
         now = time.monotonic()
@@ -100,7 +100,7 @@ class AuthToken:
     refresh_token: str
     expires_at: datetime
     user_id: str
-    scope: List[str] = field(default_factory=lambda: ["read"])
+    scope: list[str] = field(default_factory=lambda: ["read"])
 
     @property
     def is_expired(self) -> bool:
@@ -139,7 +139,7 @@ class FieldReport:
     user_id: str
     findings: str
     submitted_at: datetime
-    photos: List[str] = field(default_factory=list)
+    photos: list[str] = field(default_factory=list)
     status: str = "SUBMITTED"
 
 
@@ -154,10 +154,10 @@ class ReportResult:
 class SyncPackage:
     user_id: str
     generated_at: datetime
-    projects: List[ProjectSummary] = field(default_factory=list)
-    tasks: List[FieldTask] = field(default_factory=list)
-    inspections: List[Dict[str, Any]] = field(default_factory=list)
-    reference_data: Dict[str, Any] = field(default_factory=dict)
+    projects: list[ProjectSummary] = field(default_factory=list)
+    tasks: list[FieldTask] = field(default_factory=list)
+    inspections: list[dict[str, Any]] = field(default_factory=list)
+    reference_data: dict[str, Any] = field(default_factory=dict)
     checksum: str = ""
 
 
@@ -177,14 +177,14 @@ class MobileAPI:
       - Offline sync package generation
     """
 
-    def __init__(self, event_bus: Optional[EventBus] = None) -> None:
+    def __init__(self, event_bus: EventBus | None = None) -> None:
         self._event_bus = event_bus or EventBus.instance()
         self._rate_limiter = _RateLimiter()
-        self._tokens: Dict[str, AuthToken] = {}
-        self._users: Dict[str, Dict[str, Any]] = {}
-        self._projects: Dict[str, ProjectSummary] = {}
-        self._tasks: Dict[str, FieldTask] = {}
-        self._reports: Dict[str, FieldReport] = {}
+        self._tokens: dict[str, AuthToken] = {}
+        self._users: dict[str, dict[str, Any]] = {}
+        self._projects: dict[str, ProjectSummary] = {}
+        self._tasks: dict[str, FieldTask] = {}
+        self._reports: dict[str, FieldReport] = {}
 
     # ── Authentication ──────────────────────────────────────────────────
 
@@ -247,7 +247,7 @@ class MobileAPI:
 
         raise PermissionError("Invalid refresh token")
 
-    def validate_token(self, token: str) -> Optional[AuthToken]:
+    def validate_token(self, token: str) -> AuthToken | None:
         auth_token = self._tokens.get(token)
         if auth_token is None:
             return None
@@ -258,7 +258,7 @@ class MobileAPI:
 
     # ── Projects ────────────────────────────────────────────────────────
 
-    def get_projects(self, user_id: str) -> List[ProjectSummary]:
+    def get_projects(self, user_id: str) -> list[ProjectSummary]:
         return list(self._projects.values())
 
     def add_project(self, project: ProjectSummary) -> None:
@@ -266,7 +266,7 @@ class MobileAPI:
 
     # ── Field Tasks ─────────────────────────────────────────────────────
 
-    def get_field_tasks(self, user_id: str) -> List[FieldTask]:
+    def get_field_tasks(self, user_id: str) -> list[FieldTask]:
         return [
             task
             for task in self._tasks.values()
@@ -366,7 +366,7 @@ class MobileAPI:
                 + str(sync_data.tasks)
                 + str(sync_data.generated_at.isoformat())
             )
-            sync_data = SyncPackage(
+            return SyncPackage(
                 user_id=sync_data.user_id,
                 generated_at=sync_data.generated_at,
                 projects=sync_data.projects,
@@ -378,7 +378,6 @@ class MobileAPI:
                 ).hexdigest()[:16],
             )
 
-            return sync_data
         except Exception as exc:
             logger.error("Offline sync failed for user %s: %s", user_id, exc)
             raise
@@ -389,7 +388,7 @@ class MobileAPI:
         self,
         username: str,
         password: str,
-        scope: Optional[List[str]] = None,
+        scope: list[str] | None = None,
     ) -> None:
         if username in self._users:
             raise ValueError(f"User {username} already exists")

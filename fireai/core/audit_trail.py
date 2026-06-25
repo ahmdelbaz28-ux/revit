@@ -29,7 +29,7 @@ import json
 import threading
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Dict, List
+from typing import Any
 
 
 @dataclass(frozen=True)
@@ -37,10 +37,10 @@ class AuditEntry:
     timestamp_utc: str
     room_id: str
     operation: str
-    inputs: Dict[str, Any]
-    outputs: Dict[str, Any]
+    inputs: dict[str, Any]
+    outputs: dict[str, Any]
     nfpa_reference: str
-    notes: List[str] = field(default_factory=list)
+    notes: list[str] = field(default_factory=list)
     entry_hash: str = field(default="", init=False)
 
     def __post_init__(self):
@@ -91,20 +91,20 @@ class AuditTrail:
         assert trail.verify_integrity()
     """
 
-    def __init__(self, project_name: str, floor_id: str = "FL01"):
+    def __init__(self, project_name: str, floor_id: str = "FL01") -> None:
         self.project_name = project_name
         self.floor_id = floor_id
         self.created_at = datetime.now(timezone.utc).isoformat()
-        self._entries: List[AuditEntry] = []
+        self._entries: list[AuditEntry] = []
         self._lock = threading.Lock()
 
-    def _add(self, entry: AuditEntry):
+    def _add(self, entry: AuditEntry) -> None:
         with self._lock:
             self._entries.append(entry)
 
     # ── Core logging methods (V5.1.2 originals) ──────────────────────
 
-    def log_radius_lookup(self, room_id, ceiling_height_m, radius_m, table_row):
+    def log_radius_lookup(self, room_id, ceiling_height_m, radius_m, table_row) -> None:
         self._add(
             AuditEntry(
                 timestamp_utc=datetime.now(timezone.utc).isoformat(),
@@ -116,7 +116,7 @@ class AuditTrail:
             )
         )
 
-    def log_rejection(self, room_id: str, reason: str):
+    def log_rejection(self, room_id: str, reason: str) -> None:
         """Log rejected input before it reaches the solver."""
         self._add(
             AuditEntry(
@@ -129,7 +129,7 @@ class AuditTrail:
             )
         )
 
-    def log_heat_params(self, room_id, listed_spacing_m, adjusted_spacing_m, adjustments):
+    def log_heat_params(self, room_id, listed_spacing_m, adjusted_spacing_m, adjustments) -> None:
         self._add(
             AuditEntry(
                 timestamp_utc=datetime.now(timezone.utc).isoformat(),
@@ -142,7 +142,7 @@ class AuditTrail:
             )
         )
 
-    def log_coverage_result(self, room_id, detector_count, coverage_pct, worst_case_m, status):
+    def log_coverage_result(self, room_id, detector_count, coverage_pct, worst_case_m, status) -> None:
         self._add(
             AuditEntry(
                 timestamp_utc=datetime.now(timezone.utc).isoformat(),
@@ -154,7 +154,7 @@ class AuditTrail:
             )
         )
 
-    def log_dxf_parse(self, source_file, units, scale, rooms_found, rooms_skipped):
+    def log_dxf_parse(self, source_file, units, scale, rooms_found, rooms_skipped) -> None:
         self._add(
             AuditEntry(
                 timestamp_utc=datetime.now(timezone.utc).isoformat(),
@@ -166,7 +166,7 @@ class AuditTrail:
             )
         )
 
-    def log_nfpa_violation(self, room_id, violation, nfpa_ref):
+    def log_nfpa_violation(self, room_id, violation, nfpa_ref) -> None:
         self._add(
             AuditEntry(
                 timestamp_utc=datetime.now(timezone.utc).isoformat(),
@@ -181,7 +181,7 @@ class AuditTrail:
 
     # ── V5.2.0 new methods ───────────────────────────────────────────
 
-    def log_placement(self, room_id, detector_count, detector_type, coverage_pct, positions):
+    def log_placement(self, room_id, detector_count, detector_type, coverage_pct, positions) -> None:
         """Log a detector placement decision. NFPA 72 §17.6.3."""
         self._add(
             AuditEntry(
@@ -199,7 +199,7 @@ class AuditTrail:
             )
         )
 
-    def log_wall_distance_violation(self, room_id, detector_index, position, wall, distance_m):
+    def log_wall_distance_violation(self, room_id, detector_index, position, wall, distance_m) -> None:
         """Log a wall distance violation. NFPA 72 §17.6.3.1.1."""
         self._add(
             AuditEntry(
@@ -213,7 +213,7 @@ class AuditTrail:
             )
         )
 
-    def log_duct_detector_placement(self, room_id, duct_id, detector_count, positions):
+    def log_duct_detector_placement(self, room_id, duct_id, detector_count, positions) -> None:
         """Log duct detector placement. NFPA 72 §17.7.5."""
         self._add(
             AuditEntry(
@@ -226,7 +226,7 @@ class AuditTrail:
             )
         )
 
-    def log_safe_fallback_used(self, room_id, original_height_m, clamped_height_m, effective_height_m):
+    def log_safe_fallback_used(self, room_id, original_height_m, clamped_height_m, effective_height_m) -> None:
         """Log safe fallback activation for out-of-range ceiling height. Table 17.6.3.1."""
         self._add(
             AuditEntry(
@@ -240,7 +240,7 @@ class AuditTrail:
             )
         )
 
-    def log_boundary_limit_warning(self, room_id, coverage_pct):
+    def log_boundary_limit_warning(self, room_id, coverage_pct) -> None:
         """Log BOUNDARY_LIMIT warning when coverage > 99.9% but proof_valid=False."""
         self._add(
             AuditEntry(
@@ -264,27 +264,24 @@ class AuditTrail:
         with self._lock:
             return len(self._entries)
 
-    def get_room_trail(self, room_id: str) -> List[AuditEntry]:
+    def get_room_trail(self, room_id: str) -> list[AuditEntry]:
         with self._lock:
             return [e for e in self._entries if e.room_id == room_id]
 
-    def to_list(self) -> List[dict]:
+    def to_list(self) -> list[dict]:
         with self._lock:
             return [e.to_dict() for e in self._entries]
 
     def verify_integrity(self) -> bool:
         with self._lock:
-            for entry in self._entries:
-                if entry._compute_hash() != entry.entry_hash:
-                    return False
-            return True
+            return all(entry._compute_hash() == entry.entry_hash for entry in self._entries)
 
-    def entries(self) -> List[AuditEntry]:
+    def entries(self) -> list[AuditEntry]:
         """Return a copy of all entries (thread-safe)."""
         with self._lock:
             return list(self._entries)
 
-    def summary(self) -> Dict[str, Any]:
+    def summary(self) -> dict[str, Any]:
         """Return a summary dict of the audit trail."""
         with self._lock:
             return {

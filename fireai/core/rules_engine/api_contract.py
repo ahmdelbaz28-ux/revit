@@ -1,4 +1,4 @@
-"""FireAI Type-Safe API Contract System
+"""FireAI Type-Safe API Contract System.
 ======================================
 
 Inspired by tRPC's end-to-end type safety, this module provides:
@@ -26,7 +26,7 @@ from __future__ import annotations
 import logging
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Dict, Generic, List, Optional, Type, TypeVar
+from typing import Any, Generic, TypeVar
 
 from pydantic import BaseModel, Field, ValidationError
 
@@ -63,9 +63,9 @@ class APIContract(BaseModel, Generic[T]):
 
     endpoint: str
     method: str = "GET"
-    request_schema: Optional[str] = None  # Pydantic model class name
-    response_schema: Optional[str] = None  # Pydantic model class name
-    nfpa_reference: Optional[str] = None
+    request_schema: str | None = None  # Pydantic model class name
+    response_schema: str | None = None  # Pydantic model class name
+    nfpa_reference: str | None = None
     safety_critical: bool = False
     version: str = "1.0.0"
     description: str = ""
@@ -113,15 +113,15 @@ class ContractValidator:
         severity: ContractSeverity = ContractSeverity.STRICT,
     ) -> None:
         self.severity = severity
-        self._contracts: Dict[str, Dict[str, Type[BaseModel]]] = {}
-        self._violation_log: List[ContractViolationDetail] = []
+        self._contracts: dict[str, dict[str, type[BaseModel]]] = {}
+        self._violation_log: list[ContractViolationDetail] = []
 
     def register(
         self,
         endpoint: str,
         method: str,
-        response_model: Type[BaseModel],
-        nfpa_reference: Optional[str] = None,
+        response_model: type[BaseModel],
+        nfpa_reference: str | None = None,
         safety_critical: bool = False,
     ) -> None:
         """Register a response contract for an endpoint."""
@@ -137,8 +137,8 @@ class ContractValidator:
         self,
         endpoint: str,
         method: str,
-        data: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        data: dict[str, Any],
+    ) -> dict[str, Any]:
         """Validate a response against its contract.
 
         Returns the validated data. Raises on STRICT violations.
@@ -194,7 +194,7 @@ class ContractValidator:
             )
             return data
 
-        response_model: Type[BaseModel] = contract["response_model"]
+        response_model: type[BaseModel] = contract["response_model"]
         safety_critical: bool = contract.get("safety_critical", False)  # type: ignore[assignment]
 
         try:
@@ -235,9 +235,9 @@ class ContractValidator:
         self,
         endpoint: str,
         method: str,
-        data: Dict[str, Any],
-        request_model: Type[BaseModel],
-    ) -> Dict[str, Any]:
+        data: dict[str, Any],
+        request_model: type[BaseModel],
+    ) -> dict[str, Any]:
         """Validate a request body against its contract.
 
         For mutating endpoints (POST, PUT, PATCH, DELETE), request
@@ -260,11 +260,11 @@ class ContractValidator:
             logger.error("Request validation failed on %s:%s: %s", method, endpoint, e.errors())
             raise
 
-    def get_violations(self) -> List[ContractViolationDetail]:
+    def get_violations(self) -> list[ContractViolationDetail]:
         """Get all recorded contract violations for audit."""
         return list(self._violation_log)
 
-    def get_openapi_components(self) -> Dict[str, Any]:
+    def get_openapi_components(self) -> dict[str, Any]:
         """Generate OpenAPI schema components from registered contracts.
 
         This replaces manual schema definition and enables automatic
@@ -274,22 +274,22 @@ class ContractValidator:
         This gives us tRPC-like type safety without requiring TypeScript
         on the backend.
         """
-        schemas: Dict[str, Any] = {}
+        schemas: dict[str, Any] = {}
 
         for _key, contract in self._contracts.items():
-            response_model: Type[BaseModel] = contract["response_model"]
+            response_model: type[BaseModel] = contract["response_model"]
             schema = response_model.model_json_schema()
             model_name = response_model.__name__
             schemas[model_name] = schema
 
         return {"schemas": schemas}
 
-    def get_contract_summary(self) -> List[Dict[str, Any]]:
+    def get_contract_summary(self) -> list[dict[str, Any]]:
         """Get a summary of all registered contracts."""
         summary = []
         for key, contract in self._contracts.items():
             method, endpoint = key.split(":", 1)
-            response_model: Type[BaseModel] = contract["response_model"]
+            response_model: type[BaseModel] = contract["response_model"]
             summary.append(
                 {
                     "method": method,
@@ -309,7 +309,7 @@ class ContractValidator:
 
 def create_contract_aware_router(
     validator: ContractValidator,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Create router configuration that enforces contracts.
 
     This replaces the manual contract.py approach with automatic

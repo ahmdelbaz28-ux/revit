@@ -1,4 +1,4 @@
-"""sequence_of_operations.py — NFPA 72 §14.4 Cause & Effect Matrix Generator
+"""sequence_of_operations.py — NFPA 72 §14.4 Cause & Effect Matrix Generator.
 ==========================================================================
 CRITICAL LIFE-SAFETY MODULE — V18
 
@@ -55,7 +55,7 @@ import json
 import logging
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -153,7 +153,7 @@ class DeviceInputType(str, Enum):
 
 # Maps DeviceInputType → list of LogicFunction outputs
 # Each rule is derived from specific NFPA 72 sections
-CAUSE_EFFECT_RULES: Dict[DeviceInputType, List[LogicFunction]] = {
+CAUSE_EFFECT_RULES: dict[DeviceInputType, list[LogicFunction]] = {
     # Smoke detector (general area) → Full alarm per §10.14
     DeviceInputType.SMOKE_GENERAL: [
         LogicFunction.ALARM,
@@ -320,15 +320,15 @@ class MatrixRow:
     zone_id: str
     floor_id: str
     input_type: DeviceInputType
-    outputs_triggered: List[LogicFunction]
-    nfpa_references: List[str] = field(default_factory=list)
+    outputs_triggered: list[LogicFunction]
+    nfpa_references: list[str] = field(default_factory=list)
 
 
 # ============================================================================
 # NFPA 72 §14.4 Section References by Device Type
 # ============================================================================
 
-NFPA_REFERENCES: Dict[DeviceInputType, List[str]] = {
+NFPA_REFERENCES: dict[DeviceInputType, list[str]] = {
     DeviceInputType.SMOKE_GENERAL: [
         "NFPA 72-2022 §10.14",
         "NFPA 72-2022 §17.6.3",
@@ -404,7 +404,7 @@ class SequenceOfOperationsMatrix:
 
     def generate_matrix(
         self,
-        devices: List[DeviceInput],
+        devices: list[DeviceInput],
         occupancy_type: str = "business",
     ) -> Any:
         """Generate the complete cause-effect matrix for all devices.
@@ -419,8 +419,8 @@ class SequenceOfOperationsMatrix:
             provenance is unavailable.
 
         """
-        matrix_rows: List[MatrixRow] = []
-        warnings: List[str] = []
+        matrix_rows: list[MatrixRow] = []
+        warnings: list[str] = []
         violations: list[str] = []
 
         for dev in devices:
@@ -562,7 +562,7 @@ class SequenceOfOperationsMatrix:
 
     def generate_for_legacy_dicts(
         self,
-        devices: List[Dict],
+        devices: list[dict],
         occupancy_type: str = "business",
     ) -> Any:
         """Generate matrix from legacy dict-based devices (backward compat).
@@ -592,7 +592,7 @@ class SequenceOfOperationsMatrix:
             )
         return self.generate_matrix(typed_devices, occupancy_type)
 
-    def _classify_device(self, dev: Dict) -> DeviceInputType:
+    def _classify_device(self, dev: dict) -> DeviceInputType:
         """Classify a legacy dict device into DeviceInputType.
 
         Uses proper conditional logic, NOT the consultant's

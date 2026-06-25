@@ -1,4 +1,4 @@
-"""fireai/analytics/predictive_maintenance.py
+"""fireai/analytics/predictive_maintenance.py.
 ============================================
 Predictive Maintenance — Asset health scoring and failure prediction
 for fire alarm equipment using Weibull analysis and composite health models.
@@ -17,7 +17,6 @@ import math
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +63,7 @@ class AssetData:
     location: str = ""
     environment_rating: str = ""  # indoor, outdoor, hazardous, cleanroom
     design_life_years: float = 20.0
-    metadata: Dict[str, object] = field(default_factory=dict)
+    metadata: dict[str, object] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -105,9 +104,9 @@ class AssetHealth:
     asset_id: str
     health_score: float
     failure_probability: float
-    estimated_ttf_days: Optional[float]
+    estimated_ttf_days: float | None
     risk_level: RiskLevel
-    recommendations: List[str]
+    recommendations: list[str]
 
     def __post_init__(self) -> None:
         if not 0.0 <= self.health_score <= 1.0:
@@ -141,7 +140,7 @@ class PredictiveMaintenance:
     WEIGHT_ENV = 0.2
 
     # Environment factor lookup
-    ENVIRONMENT_FACTORS: Dict[str, float] = {
+    ENVIRONMENT_FACTORS: dict[str, float] = {
         "indoor": 1.0,
         "outdoor": 0.75,
         "hazardous": 0.55,
@@ -152,7 +151,7 @@ class PredictiveMaintenance:
     }
 
     # Default Weibull parameters by asset type (shape, scale_days)
-    DEFAULT_WEIBULL: Dict[AssetType, tuple[float, float]] = {
+    DEFAULT_WEIBULL: dict[AssetType, tuple[float, float]] = {
         AssetType.DETECTOR_SMOKE: (1.8, 3650.0),
         AssetType.DETECTOR_HEAT: (2.0, 4380.0),
         AssetType.DETECTOR_FLAME: (1.5, 2920.0),
@@ -165,7 +164,7 @@ class PredictiveMaintenance:
     }
 
     def __init__(self) -> None:
-        self._history_cache: Dict[str, List[MaintenanceEvent]] = {}
+        self._history_cache: dict[str, list[MaintenanceEvent]] = {}
 
     # ── Public API ────────────────────────────────────────────────────────
 
@@ -205,8 +204,8 @@ class PredictiveMaintenance:
 
     def predict_failure(
         self,
-        maintenance_history: List[MaintenanceEvent],
-        asset: Optional[AssetData] = None,
+        maintenance_history: list[MaintenanceEvent],
+        asset: AssetData | None = None,
     ) -> FailurePrediction:
         asset_type = asset.asset_type if asset else AssetType.DETECTOR_SMOKE
         shape, scale = self.DEFAULT_WEIBULL.get(asset_type, (1.8, 3650.0))
@@ -398,7 +397,7 @@ class PredictiveMaintenance:
     # ── Internal: Weibull fitting ────────────────────────────────────────
 
     def _fit_weibull(
-        self, history: List[MaintenanceEvent]
+        self, history: list[MaintenanceEvent]
     ) -> tuple[float, float]:
         """Fit Weibull parameters using method of moments on time-between-failures.
 
@@ -421,7 +420,7 @@ class PredictiveMaintenance:
             )
 
         # Compute time-between-failures in days
-        tbf: List[float] = []
+        tbf: list[float] = []
         prev = repair_events[0].timestamp
         for event in repair_events[1:]:
             delta = (event.timestamp - prev).total_seconds() / 86400.0
@@ -469,7 +468,7 @@ class PredictiveMaintenance:
         self,
         health_score: float,
         prediction: FailurePrediction,
-    ) -> Optional[float]:
+    ) -> float | None:
         if health_score <= 0.05:
             return 0.0
         if health_score >= 0.95:
@@ -485,8 +484,8 @@ class PredictiveMaintenance:
         asset: AssetData,
         health_score: float,
         risk_level: RiskLevel,
-    ) -> List[str]:
-        recs: List[str] = []
+    ) -> list[str]:
+        recs: list[str] = []
 
         if risk_level == RiskLevel.CRITICAL:
             recs.append(

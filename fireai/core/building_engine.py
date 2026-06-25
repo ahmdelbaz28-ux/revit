@@ -1,4 +1,4 @@
-"""fireai/core/building_engine.py  V0.2
+"""fireai/core/building_engine.py  V0.2.
 =====================================
 Building-level fire alarm design analyser.
 
@@ -47,7 +47,6 @@ from __future__ import annotations
 import logging
 import time
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
 
 # ── V0.3 SAFETY GUARD: ProcessPoolExecutor prohibition ────────────────
 # CBC (PuLP solver) is a C-level library that does NOT release the GIL.
@@ -118,23 +117,23 @@ class BuildingReport:
     """
 
     building_id: str
-    floor_reports: List[FloorReport] = field(default_factory=list)
+    floor_reports: list[FloorReport] = field(default_factory=list)
     total_detectors: int = 0
     total_theoretical_lower_bound: int = 0
     total_duct_devices: int = 0
     total_floors: int = 0
     fully_compliant: bool = False
     safe_to_submit: bool = False
-    non_compliant_floors: List[str] = field(default_factory=list)
-    unsafe_floors: List[str] = field(default_factory=list)
-    building_warnings: List[str] = field(default_factory=list)
+    non_compliant_floors: list[str] = field(default_factory=list)
+    unsafe_floors: list[str] = field(default_factory=list)
+    building_warnings: list[str] = field(default_factory=list)
     analysis_time_s: float = 0.0
     # V5.0: Project learning profile (populated after all floors analysed)
-    project_profile: Optional[BuildingProjectProfile] = None
+    project_profile: BuildingProjectProfile | None = None
     # V0.2: Fire zone assignments per floor (Consultant #6 Criticism #2)
-    zone_reports: Dict[str, ZoneReport] = field(default_factory=dict)
+    zone_reports: dict[str, ZoneReport] = field(default_factory=dict)
     # V0.2: DeltaCache statistics (Consultant #6 Criticism #3)
-    cache_stats: Optional[Dict] = None
+    cache_stats: dict | None = None
 
 
 # ──────────────────────────────────────────────────────────────────
@@ -201,10 +200,10 @@ class BuildingEngine:
         self,
         building_id: str,
         optimizer: DensityOptimizer,
-        audit_trail: Optional[object] = None,
-        audit_store: Optional[object] = None,
-        zone_constraints: Optional[ZoneConstraints] = None,
-        delta_cache_path: Optional[str] = None,
+        audit_trail: object | None = None,
+        audit_store: object | None = None,
+        zone_constraints: ZoneConstraints | None = None,
+        delta_cache_path: str | None = None,
     ) -> None:
         self.building_id = building_id
         self.opt = optimizer  # V7.3 as-is, shared read-only
@@ -217,7 +216,7 @@ class BuildingEngine:
 
     # ─── public ──────────────────────────────────────────────────────
 
-    def analyse(self, floors: Dict[str, list]) -> BuildingReport:
+    def analyse(self, floors: dict[str, list]) -> BuildingReport:
         """Analyse all floors in the building and return a BuildingReport.
 
         Each floor is processed sequentially by an independent FloorAnalyser.

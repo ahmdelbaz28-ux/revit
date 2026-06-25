@@ -1,4 +1,4 @@
-"""csrf_middleware.py — Production-Grade CSRF Protection (Double Submit Cookie)
+"""csrf_middleware.py — Production-Grade CSRF Protection (Double Submit Cookie).
 ==============================================================================
 
 MISSION PHASE 1.1 — Cybersecurity Hardening (The Shield)
@@ -47,6 +47,7 @@ References
 ----------
 - OWASP CSRF Prevention Cheat Sheet: https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html
 - agent.md Rule 12 (Safety-First) + Rule 17 (Root-Cause Analysis)
+
 """
 
 from __future__ import annotations
@@ -54,7 +55,7 @@ from __future__ import annotations
 import hmac
 import logging
 import secrets
-from typing import Awaitable, Callable, MutableMapping
+from typing import Callable, MutableMapping
 
 logger = logging.getLogger(__name__)
 
@@ -104,6 +105,7 @@ CSRF_EXEMPT_PATHS = frozenset({
 # The OLD hardcoded True overrode the dev_allow_http parameter, causing the
 # Secure attribute to be omitted in production behind TLS-terminating proxies.
 import os as _os
+
 _DEV_ALLOW_HTTP_COOKIES = _os.environ.get("FIREAI_DEV_ALLOW_HTTP_COOKIES", "").lower() in ("1", "true", "yes")
 
 
@@ -120,6 +122,7 @@ def generate_csrf_token() -> str:
 
     Returns:
         43-character CSRF token string.
+
     """
     return secrets.token_urlsafe(CSRF_TOKEN_LENGTH)
 
@@ -137,6 +140,7 @@ def validate_csrf_token(token: str) -> bool:
 
     Returns:
         True if token format is valid.
+
     """
     if not isinstance(token, str) or len(token) < 32:
         return False
@@ -163,6 +167,7 @@ def tokens_match(cookie_token: str, header_token: str) -> bool:
 
     Returns:
         True if tokens are valid AND match (constant-time).
+
     """
     if not validate_csrf_token(cookie_token) or not validate_csrf_token(header_token):
         return False
@@ -205,6 +210,7 @@ class CSRFMiddleware:
             app: ASGI application to wrap.
             exempt_paths: Additional paths to exempt (merged with default).
             dev_allow_http: If True, allow Secure cookies on HTTP (dev only).
+
         """
         self.app = app
         self.exempt_paths = CSRF_EXEMPT_PATHS | (exempt_paths or frozenset())
@@ -226,6 +232,7 @@ class CSRFMiddleware:
             scope: ASGI scope dict.
             receive: ASGI receive callable.
             send: ASGI send callable.
+
         """
         # V135 F-22 / V137 F-2 FIX: WebSocket connections need Origin header
         # validation to prevent Cross-Site WebSocket Hijacking (CSWSH).
@@ -348,6 +355,7 @@ class CSRFMiddleware:
 
         Returns:
             Token string or None if not found.
+
         """
         for name, value in headers:
             if name == b"cookie":
@@ -370,6 +378,7 @@ class CSRFMiddleware:
 
         Returns:
             Token string or None if not found.
+
         """
         for name, value in headers:
             if name == CSRF_HEADER_NAME.encode("ascii"):
@@ -441,6 +450,7 @@ def build_csrf_cookie_header(token: str, is_https: bool = True) -> str:
 
     Returns:
         Set-Cookie header value string.
+
     """
     # V137 F-9: __Host- prefix REQUIRES Secure attribute per RFC 6265bis.
     # Even in dev mode with _DEV_ALLOW_HTTP_COOKIES=True, we MUST include
@@ -461,12 +471,12 @@ def build_csrf_cookie_header(token: str, is_https: bool = True) -> str:
 
 
 __all__ = [
-    "CSRFMiddleware",
     "CSRF_COOKIE_NAME",
-    "CSRF_HEADER_NAME",
     "CSRF_EXEMPT_PATHS",
-    "generate_csrf_token",
-    "validate_csrf_token",
-    "tokens_match",
+    "CSRF_HEADER_NAME",
+    "CSRFMiddleware",
     "build_csrf_cookie_header",
+    "generate_csrf_token",
+    "tokens_match",
+    "validate_csrf_token",
 ]

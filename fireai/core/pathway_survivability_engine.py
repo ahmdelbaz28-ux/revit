@@ -1,4 +1,4 @@
-"""pathway_survivability_engine.py — NFPA 72-2022 §12.4 Pathway Survivability
+"""pathway_survivability_engine.py — NFPA 72-2022 §12.4 Pathway Survivability.
 
 CRITICAL LIFE-SAFETY MODULE
 ============================
@@ -35,7 +35,6 @@ from __future__ import annotations
 import logging
 import math
 from dataclasses import dataclass, field
-from typing import List
 
 from fireai.core.contracts import (
     CableType,
@@ -148,13 +147,13 @@ class SurvivabilityResult:
     """
 
     building_level: PathwaySurvivabilityLevel = PathwaySurvivabilityLevel.LEVEL_1
-    cable_requirements: List[CableRequirement] = field(default_factory=list)
-    warnings: List[str] = field(default_factory=list)
-    errors: List[str] = field(default_factory=list)
+    cable_requirements: list[CableRequirement] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
     # V114 FIX: Fail-safe — compliance must be PROVEN, not assumed
     compliant: bool = False
     nfpa_version: str = "NFPA 72-2022"
-    classification_rationale: List[str] = field(default_factory=list)
+    classification_rationale: list[str] = field(default_factory=list)
 
 
 # ============================================================================
@@ -349,13 +348,13 @@ class PathwaySurvivabilityEngine:
         self,
         spec: BuildingSpec,
         level: PathwaySurvivabilityLevel,
-    ) -> List[CableRequirement]:
+    ) -> list[CableRequirement]:
         """Generate per-route-type cable requirements based on survivability level.
 
         Maps the survivability level to specific cable types and enclosure
         requirements for each route type (riser, horizontal, plenum, general).
         """
-        requirements: List[CableRequirement] = []
+        requirements: list[CableRequirement] = []
 
         # ── Riser cables (vertical shafts between floors) ────────────────
 

@@ -1,4 +1,4 @@
-"""Consensus Verification Engine — Triple Verification System
+"""Consensus Verification Engine — Triple Verification System.
 ===========================================================
 Combines results from all three independent verification engines
 to produce a consensus verdict with confidence level.
@@ -32,7 +32,7 @@ from __future__ import annotations
 
 import enum
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, List, Optional, Union
+from typing import TYPE_CHECKING
 
 from .analytical_verifier import AnalyticalVerifier
 from .voronoi_verifier import VoronoiVerifier
@@ -61,10 +61,10 @@ class EngineName(enum.Enum):
 class EngineVerdict:
     """Result from a single verification engine."""
 
-    engine: Union[EngineName, EngineNameV2]
+    engine: EngineName | EngineNameV2
     passed: bool
     details: str = ""
-    raw_result: Optional[object] = None  # The full result object from the engine
+    raw_result: object | None = None  # The full result object from the engine
 
 
 @dataclass
@@ -73,10 +73,10 @@ class ConsensusResult:
 
     confidence: ConfidenceLevel
     is_safe: bool  # True only if VERIFIED (3/3)
-    engines: List[EngineVerdict] = field(default_factory=list)
+    engines: list[EngineVerdict] = field(default_factory=list)
     n_pass: int = 0
     n_total: int = 0
-    discrepancies: List[str] = field(default_factory=list)
+    discrepancies: list[str] = field(default_factory=list)
     recommendation: str = ""
 
     @property
@@ -105,7 +105,7 @@ class ConsensusEngine:
             print(f"FAIL: {result.discrepancies}")
     """
 
-    def __init__(self, coverage_radius: float, wall_min: float = 0.10):
+    def __init__(self, coverage_radius: float, wall_min: float = 0.10) -> None:
         self.R = coverage_radius
         self.wm = wall_min
         self._analytical = AnalyticalVerifier(coverage_radius, wall_min)
@@ -115,9 +115,9 @@ class ConsensusEngine:
         self,
         width: float,
         length: float,
-        detectors: List[tuple],
-        grid_proof_valid: Optional[bool] = None,
-        grid_coverage_pct: Optional[float] = None,
+        detectors: list[tuple],
+        grid_proof_valid: bool | None = None,
+        grid_coverage_pct: float | None = None,
     ) -> ConsensusResult:
         """Run all verification engines and produce consensus.
 
@@ -133,7 +133,7 @@ class ConsensusEngine:
             ConsensusResult with combined verdict.
 
         """
-        verdicts: List[EngineVerdict] = []
+        verdicts: list[EngineVerdict] = []
 
         # Engine 1: Analytical
         try:

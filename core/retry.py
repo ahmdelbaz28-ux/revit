@@ -1,4 +1,4 @@
-"""core/retry.py — AI Agent Skill Retry & Fault Tolerance System
+"""core/retry.py — AI Agent Skill Retry & Fault Tolerance System.
 =============================================================
 
 Production-ready retry mechanism using Tenacity patterns.
@@ -49,7 +49,7 @@ def network_retry(
     )
 ):
     """Retry decorator for network operations with exponential backoff.
-    
+
     Args:
         max_attempts: Maximum number of retry attempts
         max_delay: Maximum delay between retries in seconds
@@ -88,7 +88,7 @@ def skill_retry(
     )
 ):
     """Retry decorator for skill loading and initialization.
-    
+
     Args:
         max_attempts: Maximum number of retry attempts
         max_delay: Maximum delay between retries in seconds
@@ -121,7 +121,7 @@ def conditional_retry(
     max_delay: int = 60
 ):
     """Retry decorator that retries based on return value condition.
-    
+
     Args:
         condition_func: Function that returns True if retry is needed
         max_attempts: Maximum number of retry attempts
@@ -149,7 +149,7 @@ def timeout_retry(
     exceptions: Tuple[Type[BaseException], ...] = (TimeoutError,)
 ):
     """Retry decorator with total timeout constraint.
-    
+
     Args:
         timeout_seconds: Total timeout in seconds
         max_delay: Maximum delay between retries in seconds
@@ -181,7 +181,7 @@ def persistent_retry(
     )
 ):
     """Persistent retry decorator for critical operations.
-    
+
     Args:
         max_attempts: Maximum number of retry attempts (high for critical ops)
         exceptions: Tuple of exception types to retry on
@@ -213,7 +213,7 @@ def async_network_retry(
     )
 ):
     """Async version of network retry decorator.
-    
+
     Args:
         max_attempts: Maximum number of retry attempts
         max_delay: Maximum delay between retries in seconds
@@ -259,7 +259,7 @@ def circuit_breaker_retry(
     )
 ):
     """Circuit breaker pattern with retry capability.
-    
+
     Args:
         failure_threshold: Number of consecutive failures before opening circuit
         recovery_timeout: Time in seconds before attempting to close circuit
@@ -310,12 +310,11 @@ timeout_retry_config = timeout_retry(timeout_seconds=120)
 
 
 # Example usage functions
-async def example_usage():
-    """Example usage of retry decorators.
-    """
+async def example_usage() -> None:
+    """Example usage of retry decorators."""
 
     @network_retry(max_attempts=5)
-    def fetch_skill_content_sync(url: str):
+    def fetch_skill_content_sync(url: str) -> str:
         """Example sync function."""
         # Simulate network operation
         if url == "bad_url":
@@ -323,7 +322,7 @@ async def example_usage():
         return f"Fetched content from {url}"
 
     @async_network_retry(max_attempts=3)
-    async def fetch_skill_content_async(url: str):
+    async def fetch_skill_content_async(url: str) -> str:
         """Example async function."""
         # Simulate async network operation
         if url == "bad_url":
@@ -331,7 +330,7 @@ async def example_usage():
         return f"Fetched content from {url}"
 
     @skill_retry(max_attempts=3)
-    def load_skill_module(path: str):
+    def load_skill_module(path: str) -> str:
         """Example skill loading function."""
         # Simulate skill loading
         if path == "invalid_path":

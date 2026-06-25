@@ -1,5 +1,4 @@
-"""fireai/agents — Intelligent Agents for FireAI Platform
-"""
+"""fireai/agents — Intelligent Agents for FireAI Platform."""
 
 from fireai.agents.learning_agent import (
     DesignExperience,

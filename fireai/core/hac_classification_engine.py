@@ -1,4 +1,4 @@
-"""hac_classification_engine.py – Hazardous Area Classification Engine
+"""hac_classification_engine.py – Hazardous Area Classification Engine.
 =====================================================================
 Classifies hazardous areas from physical parameters (physics-first,
 no manual human input for zone assignment).
@@ -35,7 +35,6 @@ import math
 import warnings as _warnings
 from dataclasses import dataclass
 from enum import Enum
-from typing import Dict, List, Optional, Tuple
 
 from fireai.core.international_reg_selector import (
     ATEXZone,
@@ -145,7 +144,7 @@ _V21_TO_HAZMAT = {
 }
 
 # Temperature class limits (legacy, used by _check_temperature_class)
-T_CLASS_MAX_TEMP: Dict[str, float] = {
+T_CLASS_MAX_TEMP: dict[str, float] = {
     "T1": 450.0,
     "T2": 300.0,
     "T2A": 280.0,
@@ -163,7 +162,7 @@ T_CLASS_MAX_TEMP: Dict[str, float] = {
 }
 
 # Zone hazard ordering (legacy)
-_ZONE_HAZARD_ORDER: Dict[ATEXZone, int] = {
+_ZONE_HAZARD_ORDER: dict[ATEXZone, int] = {
     ATEXZone.ZONE_0: 0,
     ATEXZone.ZONE_20: 1,
     ATEXZone.ZONE_1: 2,
@@ -174,7 +173,7 @@ _ZONE_HAZARD_ORDER: Dict[ATEXZone, int] = {
 }
 
 # Base radii per IEC 60079-10-1 Annex A (legacy)
-_BASE_RADII_M: Dict[ATEXZone, float] = {
+_BASE_RADII_M: dict[ATEXZone, float] = {
     ATEXZone.ZONE_0: 3.0,
     ATEXZone.ZONE_1: 6.0,
     ATEXZone.ZONE_2: 10.0,
@@ -206,15 +205,15 @@ class SubstancePropertiesLegacy:
 
     substance_name: str
     cas_number: str = ""
-    lfl_vol_pct: Optional[float] = None
-    ufl_vol_pct: Optional[float] = None
-    flash_point_c: Optional[float] = None
-    autoignition_c: Optional[float] = None
+    lfl_vol_pct: float | None = None
+    ufl_vol_pct: float | None = None
+    flash_point_c: float | None = None
+    autoignition_c: float | None = None
     vapor_density: float = 1.0
-    mec_g_m3: Optional[float] = None
-    mie_mj: Optional[float] = None
-    kst_bar_m_s: Optional[float] = None
-    pmax_bar: Optional[float] = None
+    mec_g_m3: float | None = None
+    mie_mj: float | None = None
+    kst_bar_m_s: float | None = None
+    pmax_bar: float | None = None
     dust_group: str = ""
     nec_group: str = ""
     temperature_class: str = "T3"
@@ -251,17 +250,17 @@ class HACResultLegacy:
 
     space_id: str
     substance: SubstancePropertiesLegacy
-    release_sources: Tuple[ReleaseSource, ...]
+    release_sources: tuple[ReleaseSource, ...]
     ventilation_degree: VentilationDegree
     ventilation_avail: VentilationAvailability
     classified_zone: ATEXZone
     zone_extent: ZoneExtentLegacy
     hazard_class: HazardClass
-    nec_division: Optional[str] = None
+    nec_division: str | None = None
     temperature_class: str = "T3"
     confidence_pct: float = 100.0
-    assumptions: Tuple[str, ...] = ()
-    warnings: Tuple[str, ...] = ()
+    assumptions: tuple[str, ...] = ()
+    warnings: tuple[str, ...] = ()
     nfpa_reference: str = ""
     iec_reference: str = ""
 
@@ -273,7 +272,7 @@ class HACResultLegacy:
 # ── GAP-01: IEC 60079-10-1 Annex B ventilation tables ───────────────
 
 # IEC 60079-10-1:2015 Annex B Table B.2 — ventilation effectiveness (f)
-_VENT_EFFECTIVENESS: Dict[str, float] = {
+_VENT_EFFECTIVENESS: dict[str, float] = {
     "HIGH": 1.0,  # f = 1.0 (well-ventilated, uniform flow)
     "MEDIUM": 0.5,  # f = 0.5 (moderate, some dead zones)
     "LOW": 0.2,  # f = 0.2 (poor distribution, stratification)
@@ -285,14 +284,14 @@ _VENT_EFFECTIVENESS: Dict[str, float] = {
 # Annex B Table B.1, PRIMARY should be 0.50 (not 0.25). The old value was
 # more conservative (produces 2× larger zones) but non-compliant with IEC.
 # A regulatory audit would flag this as incorrect. Using IEC value for compliance.
-_RELEASE_GRADE_CK: Dict[str, float] = {
+_RELEASE_GRADE_CK: dict[str, float] = {
     "CONTINUOUS": 0.25,  # Zone 0 vicinity — IEC 60079-10-1 Annex B Table B.1
     "PRIMARY": 0.50,  # Zone 1 vicinity — IEC 60079-10-1 Annex B Table B.1
     "SECONDARY": 0.50,  # Zone 2 vicinity — IEC 60079-10-1 Annex B Table B.1
 }
 
 # Minimum air changes per hour (ACH) by ventilation level
-_VENT_ACH: Dict[str, float] = {
+_VENT_ACH: dict[str, float] = {
     "HIGH": 12.0,  # forced ventilation
     "MEDIUM": 6.0,  # general mechanical ventilation
     "LOW": 1.0,  # natural ventilation
@@ -301,12 +300,12 @@ _VENT_ACH: Dict[str, float] = {
 
 # ── GAP-02: IEC 60079-10-1 §4.2 release_grade × ventilation matrix ─────
 
-_GAS_ZONE_RELEASE_BASE: Dict[str, ZoneType] = {
+_GAS_ZONE_RELEASE_BASE: dict[str, ZoneType] = {
     "CONTINUOUS": ZoneType.ZONE_0,
     "PRIMARY": ZoneType.ZONE_1,
     "SECONDARY": ZoneType.ZONE_2,
 }
-_DUST_ZONE_RELEASE_BASE: Dict[str, ZoneType] = {
+_DUST_ZONE_RELEASE_BASE: dict[str, ZoneType] = {
     "CONTINUOUS": ZoneType.ZONE_20,
     "PRIMARY": ZoneType.ZONE_21,
     "SECONDARY": ZoneType.ZONE_22,
@@ -316,7 +315,7 @@ _DUST_ZONE_RELEASE_BASE: Dict[str, ZoneType] = {
 # Higher index = less severe zone. HIGH ventilation should reduce severity
 # (move to higher index = less severe zone), POOR should increase severity
 # (move to lower index = more severe zone).
-_VENT_ZONE_DELTA: Dict[str, int] = {
+_VENT_ZONE_DELTA: dict[str, int] = {
     "HIGH": +1,  # reduces severity (e.g. Zone 1 → Zone 2)
     "MEDIUM": 0,  # no change to zone type
     "LOW": 0,  # no change, but extent increases
@@ -561,8 +560,8 @@ class HACClassificationEngine:
         # Burgess-Wheeler LFL correction only activates above 25°C, so 20°C
         # produced no correction and narrower zone extents.
         ambient_temp_c: float = 40.0,
-        env_context: Optional[EnvironmentalContext] = None,
-        release_grade: Optional[ReleaseGrade] = None,
+        env_context: EnvironmentalContext | None = None,
+        release_grade: ReleaseGrade | None = None,
         release_rate_kg_s: float = 0.0,
         room_volume_m3: float = 1000.0,
     ) -> HACResult:
@@ -580,8 +579,8 @@ class HACClassificationEngine:
         if release_grade is None:
             release_grade = ReleaseGrade.PRIMARY
 
-        warnings: List[str] = []
-        critical_flags: List[str] = []
+        warnings: list[str] = []
+        critical_flags: list[str] = []
 
         # V21.2: Apply Burgess-Wheeler LFL correction if env_context provided
         # V51 FIX: When env_context is None, Burgess-Wheeler was SILENTLY SKIPPED.
@@ -786,13 +785,12 @@ class HACClassificationEngine:
     ) -> HACResult:
         """IEC 60079-10-1 gas zone classification (V21.2 with LFL correction)."""
         # Fix #9: Flash point check (NFPA 497 §4.2)
-        if sub.flash_point_c is not None:
-            if sub.flash_point_c > ambient + 20.0:
-                warnings.append(
-                    f"Flash point ({sub.flash_point_c}C) > ambient+20C "
-                    f"({ambient + 20:.0f}C). Liquid may not produce flammable "
-                    f"atmosphere unless heated. [NFPA 497 §4.2]"
-                )
+        if sub.flash_point_c is not None and sub.flash_point_c > ambient + 20.0:
+            warnings.append(
+                f"Flash point ({sub.flash_point_c}C) > ambient+20C "
+                f"({ambient + 20:.0f}C). Liquid may not produce flammable "
+                f"atmosphere unless heated. [NFPA 497 §4.2]"
+            )
 
         # Fix #12: Temperature class vs autoignition check
         if sub.autoignition_c is not None:
@@ -1112,7 +1110,7 @@ class HACClassificationEngine:
         self,
         space_id: str,
         substance: SubstancePropertiesLegacy,
-        release_sources: List[ReleaseSource],
+        release_sources: list[ReleaseSource],
         ventilation_degree: VentilationDegree,
         ventilation_avail: VentilationAvailability,
         room_volume_m3: float = 100.0,
@@ -1137,8 +1135,8 @@ class HACClassificationEngine:
         if not release_sources:
             return self._safe_result(space_id, substance)
 
-        warnings: List[str] = []
-        assumptions: List[str] = []
+        warnings: list[str] = []
+        assumptions: list[str] = []
 
         worst_grade = self._worst_grade(release_sources)
         base_zone = self._grade_to_base_zone(worst_grade, substance)
@@ -1219,7 +1217,7 @@ class HACClassificationEngine:
     # ── Legacy private helpers ──────────────────────────────────────────────
 
     @staticmethod
-    def _worst_grade(sources: List[ReleaseSource]) -> ReleaseGrade:
+    def _worst_grade(sources: list[ReleaseSource]) -> ReleaseGrade:
         order = {ReleaseGrade.CONTINUOUS: 0, ReleaseGrade.PRIMARY: 1, ReleaseGrade.SECONDARY: 2}
         return min(sources, key=lambda s: order[s.grade]).grade
 
@@ -1424,7 +1422,7 @@ class HACClassificationEngine:
         return dust_zone
 
     @staticmethod
-    def _check_flash_point(substance, worst_grade, ambient_temp_c, warnings):
+    def _check_flash_point(substance, worst_grade, ambient_temp_c, warnings) -> None:
         if substance.flash_point_c is not None and substance.material_type in (
             HazardousMaterial.VAPOR,
             HazardousMaterial.GAS,
@@ -1438,7 +1436,7 @@ class HACClassificationEngine:
                 )
 
     @staticmethod
-    def _check_dust_properties(substance, warnings):
+    def _check_dust_properties(substance, warnings) -> None:
         if substance.material_type not in (HazardousMaterial.DUST_COMB, HazardousMaterial.DUST_HYBRID):
             return
         if substance.mie_mj is not None and substance.mie_mj < 3.0:
@@ -1450,7 +1448,7 @@ class HACClassificationEngine:
             )
 
     @staticmethod
-    def _check_temperature_class(substance, warnings):
+    def _check_temperature_class(substance, warnings) -> None:
         if substance.autoignition_c is None:
             return
         max_surface_temp = T_CLASS_MAX_TEMP.get(substance.temperature_class)

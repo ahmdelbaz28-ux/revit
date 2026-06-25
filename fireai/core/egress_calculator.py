@@ -1,4 +1,4 @@
-"""fireai.core.egress_calculator — Egress Time Calculation per NFPA 101
+"""fireai.core.egress_calculator — Egress Time Calculation per NFPA 101.
 =====================================================================
 
 Implements egress time calculation for occupant evacuation:
@@ -25,7 +25,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from typing import Any, Dict
+from typing import Any
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # CONSTANTS
@@ -170,10 +170,7 @@ def calculate_egress_time(
     rset = premovement_time_s + total_travel
 
     # Safety factor
-    if rset > 0:
-        safety_factor = aset_s / rset
-    else:
-        safety_factor = float("inf")
+    safety_factor = aset_s / rset if rset > 0 else float("inf")
 
     is_adequate = safety_factor >= _SAFETY_FACTOR
 
@@ -195,7 +192,7 @@ def minimum_exit_width(
     required_rset_s: float,
     premovement_time_s: float = 60.0,
     is_stair: bool = False,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Calculate minimum exit width for a given RSET requirement.
 
     NFPA 101 §7.3 — Egress capacity:

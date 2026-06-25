@@ -30,7 +30,6 @@ import logging
 import math
 import time
 from dataclasses import dataclass
-from typing import Optional
 
 import httpx
 from tenacity import retry, stop_after_attempt, wait_exponential
@@ -63,8 +62,8 @@ class ElevationData:
     atmospheric_pressure_pa: float
     pressure_correction_factor: float
     source: str
-    latitude: Optional[float] = None
-    longitude: Optional[float] = None
+    latitude: float | None = None
+    longitude: float | None = None
 
     @property
     def is_default(self) -> bool:
@@ -118,11 +117,11 @@ class ElevationService:
 
     OPENTOPO_URL = "https://api.opentopodata.org/v1/aster30m"
 
-    def __init__(self, cache_ttl: float = 86400.0, request_timeout: float = 10.0):
+    def __init__(self, cache_ttl: float = 86400.0, request_timeout: float = 10.0) -> None:
         self._cache: dict[str, tuple[ElevationData, float]] = {}
         self._cache_ttl = cache_ttl
         self._request_timeout = request_timeout
-        self._client: Optional[httpx.AsyncClient] = None
+        self._client: httpx.AsyncClient | None = None
 
     async def _get_client(self) -> httpx.AsyncClient:
         """Lazy-initialize the HTTP client."""
@@ -144,7 +143,7 @@ class ElevationService:
         """Generate cache key from coordinates (0.01° ≈ 1.1 km)."""
         return f"{latitude:.2f},{longitude:.2f}"
 
-    def _get_cached(self, latitude: float, longitude: float) -> Optional[ElevationData]:
+    def _get_cached(self, latitude: float, longitude: float) -> ElevationData | None:
         """Get cached elevation data if fresh."""
         key = self._cache_key(latitude, longitude)
         entry = self._cache.get(key)
@@ -285,7 +284,7 @@ class ElevationService:
 
 
 # Singleton
-_elevation_service: Optional[ElevationService] = None
+_elevation_service: ElevationService | None = None
 
 
 def get_elevation_service() -> ElevationService:

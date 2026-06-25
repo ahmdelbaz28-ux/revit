@@ -1,4 +1,4 @@
-"""audit_blockchain_bridge.py — Real Hash-Chain Audit (Not Blockchain)
+"""audit_blockchain_bridge.py — Real Hash-Chain Audit (Not Blockchain).
 ====================================================================
 SURGICAL FIX: blockchain_readiness_gate.py was calling itself "blockchain"
 but implementing SHA-256 hash chain. This is CORRECT engineering but
@@ -29,7 +29,7 @@ import threading
 import time
 import uuid
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 # ---------------------------------------------------------------------------
 # Honest naming constants
@@ -87,7 +87,7 @@ class AuditEntry:
 
     entry_id: str
     event_type: str
-    data: Dict[str, Any]
+    data: dict[str, Any]
     timestamp: float
     seq_num: int
     prev_hash: str  # hash of previous entry
@@ -141,8 +141,8 @@ class HashChainAuditStore:
     def __init__(
         self,
         db_path: str = ":memory:",
-        hmac_key: bytes = None,
-        secret_key: str = None,
+        hmac_key: bytes | None = None,
+        secret_key: str | None = None,
     ) -> None:
         # Derive HMAC key from secret or generate one
         if hmac_key is not None:
@@ -153,7 +153,7 @@ class HashChainAuditStore:
             # Generate ephemeral key (warning: survives only this session)
             self._hmac_key = os.urandom(32)
 
-        self._entries: List[AuditEntry] = []
+        self._entries: list[AuditEntry] = []
         self._prev_hash = self.GENESIS_HASH
         self._seq: int = 0
         self._lock = threading.RLock()
@@ -191,7 +191,7 @@ class HashChainAuditStore:
     def log(
         self,
         event_type: str,
-        data: Dict[str, Any],
+        data: dict[str, Any],
         actor: str = "system",
     ) -> AuditEntry:
         """Append tamper-evident entry to the hash chain.
@@ -261,7 +261,7 @@ class HashChainAuditStore:
 
             return entry
 
-    def add_event(self, event_type: str, data: Dict[str, Any]) -> AuditEntry:
+    def add_event(self, event_type: str, data: dict[str, Any]) -> AuditEntry:
         """Alias for log() — matches audit_store.AuditStore.add_event()."""
         return self.log(event_type, data)
 
@@ -269,7 +269,7 @@ class HashChainAuditStore:
     # SURGICAL FIX: Tamper detection on READ (was only on write before)
     # ------------------------------------------------------------------
 
-    def verify_chain(self) -> Tuple[bool, List[str]]:
+    def verify_chain(self) -> tuple[bool, list[str]]:
         """Verify entire hash chain integrity.
 
         SURGICAL FIX: Previous code only checked hash on write.
@@ -282,7 +282,7 @@ class HashChainAuditStore:
         with self._lock:
             entries = list(self._entries)
 
-        violations: List[str] = []
+        violations: list[str] = []
         prev_hash = self.GENESIS_HASH
 
         for entry in entries:
@@ -334,7 +334,7 @@ class HashChainAuditStore:
     # SURGICAL FIX: Merkle proof actually called from pipeline
     # ------------------------------------------------------------------
 
-    def build_merkle_proof(self, entry_id: str) -> Optional[Dict[str, Any]]:
+    def build_merkle_proof(self, entry_id: str) -> dict[str, Any] | None:
         """SURGICAL FIX: Merkle tree was built but proof.verify() was never
         called. Now builds proof AND verifies it before returning.
 
@@ -359,10 +359,10 @@ class HashChainAuditStore:
         merkle_root = levels[-1][0] if levels else "0" * 64
 
         # Build proof path
-        proof_path: List[Dict[str, str]] = []
+        proof_path: list[dict[str, str]] = []
         idx = target_idx
         for level in levels[:-1]:
-            padded = level + [level[-1]] if len(level) % 2 else level
+            padded = [*level, level[-1]] if len(level) % 2 else level
             if idx % 2 == 0:
                 sibling_idx = idx + 1
                 direction = "right"
@@ -402,14 +402,14 @@ class HashChainAuditStore:
         }
 
     @staticmethod
-    def _build_merkle_levels(hashes: List[str]) -> List[List[str]]:
+    def _build_merkle_levels(hashes: list[str]) -> list[list[str]]:
         if not hashes:
             return [["0" * 64]]
         levels = [list(hashes)]
         while len(levels[-1]) > 1:
             current = levels[-1]
             if len(current) % 2:
-                current = current + [current[-1]]
+                current = [*current, current[-1]]
             levels.append([_sha256(current[i] + current[i + 1]) for i in range(0, len(current), 2)])
         return levels
 
@@ -417,7 +417,7 @@ class HashChainAuditStore:
     # AHJ Compliance Report
     # ------------------------------------------------------------------
 
-    def compliance_report(self) -> Dict[str, Any]:
+    def compliance_report(self) -> dict[str, Any]:
         """Generate AHJ-ready compliance report.
 
         This is what fire marshals and AHJs can verify independently.
@@ -453,6 +453,6 @@ class HashChainAuditStore:
             ),
         }
 
-    def summary(self) -> Dict[str, Any]:
+    def summary(self) -> dict[str, Any]:
         """Alias for compliance_report() — matches AuditStore API."""
         return self.compliance_report()

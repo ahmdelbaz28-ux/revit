@@ -1,4 +1,4 @@
-"""FireAI Rules Engine — Core Engine
+"""FireAI Rules Engine — Core Engine.
 ==================================
 
 Pure-Python forward-chaining rules engine with:
@@ -18,13 +18,14 @@ Reference: NFPA 72-2022, durable_rules Rete algorithm
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import threading
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import IntEnum
-from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
+from typing import Any, Callable, List, Sequence
 
 logger = logging.getLogger(__name__)
 
@@ -67,10 +68,10 @@ class Fact:
     """
 
     fact_type: str
-    properties: Dict[str, Any] = field(default_factory=dict)
+    properties: dict[str, Any] = field(default_factory=dict)
     fact_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     source: str = "user_input"  # or 'derived', 'sensor', 'import'
-    nfpa_reference: Optional[str] = None  # e.g., "NFPA 72 §17.6.3.1"
+    nfpa_reference: str | None = None  # e.g., "NFPA 72 §17.6.3.1"
     asserted_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
     def matches(self, fact_type: str, **conditions) -> bool:
@@ -115,12 +116,12 @@ class RuleResult:
 
     rule_id: str
     rule_name: str
-    nfpa_reference: Optional[str]
+    nfpa_reference: str | None
     severity: RulePriority
     message: str
-    asserted_facts: List[Fact] = field(default_factory=list)
-    retracted_fact_ids: List[str] = field(default_factory=list)
-    matched_facts: List[str] = field(default_factory=list)  # fact_ids
+    asserted_facts: list[Fact] = field(default_factory=list)
+    retracted_fact_ids: list[str] = field(default_factory=list)
+    matched_facts: list[str] = field(default_factory=list)  # fact_ids
     session_id: str = ""
     timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     confidence: float = 1.0  # 0.0 to 1.0 — for uncertain inferences
@@ -137,13 +138,13 @@ class RuleAuditEntry:
 
     rule_id: str
     rule_name: str
-    nfpa_reference: Optional[str]
+    nfpa_reference: str | None
     evaluated_at: str
     fired: bool
     reason: str  # Why it fired or why it didn't
     session_id: str
-    matched_fact_ids: List[str] = field(default_factory=list)
-    result: Optional[RuleResult] = None
+    matched_fact_ids: list[str] = field(default_factory=list)
+    result: RuleResult | None = None
 
 
 # Type aliases for rule conditions and actions
@@ -167,21 +168,21 @@ class Rule:
 
     rule_id: str
     rule_name: str
-    nfpa_reference: Optional[str]  # e.g., "NFPA 72 §17.6.3.1"
+    nfpa_reference: str | None  # e.g., "NFPA 72 §17.6.3.1"
     priority: RulePriority = RulePriority.COMPLIANCE_CHECK
     description: str = ""
 
     # Condition: which fact types does this rule match?
     # Single-fact conditions (alpha network)
     fact_type: str = ""
-    condition: Optional[ConditionFn] = None
+    condition: ConditionFn | None = None
 
     # Multi-fact join conditions (beta network)
     # List of (fact_type_1, fact_type_2, join_predicate)
-    join_conditions: List[Tuple[str, str, JoinConditionFn]] = field(default_factory=list)
+    join_conditions: list[tuple[str, str, JoinConditionFn]] = field(default_factory=list)
 
     # Action: what happens when the rule fires
-    action: Optional[ActionFn] = None
+    action: ActionFn | None = None
 
     # Whether this rule derives new facts (for truth maintenance)
     derives_facts: bool = False
@@ -239,23 +240,23 @@ class RulesEngine:
         self,
         session_id: str = "",
         max_iterations: int = 100,
-        audit_callback: Optional[Callable[[RuleAuditEntry], None]] = None,
+        audit_callback: Callable[[RuleAuditEntry], None] | None = None,
     ) -> None:
         self.session_id = session_id or str(uuid.uuid4())
         self.max_iterations = max_iterations  # Prevent infinite loops
         self.audit_callback = audit_callback
 
-        self._rules: Dict[str, Rule] = {}
-        self._facts: Dict[str, Fact] = {}  # fact_id → Fact
-        self._results: List[RuleResult] = []
-        self._audit_log: List[RuleAuditEntry] = []
+        self._rules: dict[str, Rule] = {}
+        self._facts: dict[str, Fact] = {}  # fact_id → Fact
+        self._results: list[RuleResult] = []
+        self._audit_log: list[RuleAuditEntry] = []
 
         # Alpha network: fact_type → list of rule_ids that match
-        self._alpha_index: Dict[str, List[str]] = {}
+        self._alpha_index: dict[str, list[str]] = {}
 
         # TMS dependency tracking
-        self._derived_from: Dict[str, List[str]] = {}  # derived_fact_id → [source_fact_ids]
-        self._supports: Dict[str, List[str]] = {}  # source_fact_id → [derived_fact_ids]
+        self._derived_from: dict[str, list[str]] = {}  # derived_fact_id → [source_fact_ids]
+        self._supports: dict[str, list[str]] = {}  # source_fact_id → [derived_fact_ids]
 
         # Thread safety
         self._lock = threading.Lock()
@@ -371,19 +372,19 @@ class RulesEngine:
         logger.debug("Fact retracted: %s id=%s", fact.fact_type, fact_id)
         return True
 
-    def get_facts(self, fact_type: Optional[str] = None) -> List[Fact]:
+    def get_facts(self, fact_type: str | None = None) -> list[Fact]:
         """Get all facts, optionally filtered by type."""
         if fact_type is None:
             return list(self._facts.values())
         return [f for f in self._facts.values() if f.fact_type == fact_type]
 
-    def get_fact(self, fact_id: str) -> Optional[Fact]:
+    def get_fact(self, fact_id: str) -> Fact | None:
         """Get a specific fact by ID."""
         return self._facts.get(fact_id)
 
     # ── Evaluation ───────────────────────────────────────────────────────
 
-    def evaluate(self) -> List[RuleResult]:
+    def evaluate(self) -> list[RuleResult]:
         """Run the forward-chaining evaluation loop.
 
         This is the main entry point. It:
@@ -399,7 +400,7 @@ class RulesEngine:
 
         Returns all RuleResults from this evaluation cycle.
         """
-        all_results: List[RuleResult] = []
+        all_results: list[RuleResult] = []
         previous_fact_count = -1
 
         # Reset per-cycle counters for this evaluation pass.
@@ -434,12 +435,12 @@ class RulesEngine:
         self._results.extend(all_results)
         return all_results
 
-    def _evaluate_one_pass(self) -> List[RuleResult]:
+    def _evaluate_one_pass(self) -> list[RuleResult]:
         """One pass of the Rete-inspired evaluation cycle."""
-        results: List[RuleResult] = []
+        results: list[RuleResult] = []
 
         # Collect all rule candidates with their matching facts
-        candidates: List[Tuple[Rule, List[Fact]]] = []
+        candidates: list[tuple[Rule, list[Fact]]] = []
 
         # Phase 1: Alpha network — match individual facts
         # SAFETY: Rules with join_conditions are ONLY evaluated via
@@ -557,20 +558,18 @@ class RulesEngine:
                     )
                     self._audit_log.append(audit)
                     if self.audit_callback:
-                        try:
+                        with contextlib.suppress(Exception):
                             self.audit_callback(audit)
-                        except Exception:
-                            pass
 
         return results
 
-    def _evaluate_joins(self, alpha_candidates: List[Tuple[Rule, List[Fact]]]) -> List[Tuple[Rule, List[Fact]]]:
+    def _evaluate_joins(self, alpha_candidates: list[tuple[Rule, list[Fact]]]) -> list[tuple[Rule, list[Fact]]]:
         """Evaluate beta network join conditions.
 
         For rules with join_conditions, find pairs of facts that
         satisfy the join predicate across fact types.
         """
-        join_results: List[Tuple[Rule, List[Fact]]] = []
+        join_results: list[tuple[Rule, list[Fact]]] = []
 
         for rule in self._rules.values():
             if not rule.join_conditions:
@@ -617,9 +616,9 @@ class RulesEngine:
 
     def get_results(
         self,
-        severity: Optional[RulePriority] = None,
-        rule_id: Optional[str] = None,
-    ) -> List[RuleResult]:
+        severity: RulePriority | None = None,
+        rule_id: str | None = None,
+    ) -> list[RuleResult]:
         """Get evaluation results, optionally filtered."""
         results = self._results
         if severity is not None:
@@ -628,15 +627,15 @@ class RulesEngine:
             results = [r for r in results if r.rule_id == rule_id]
         return results
 
-    def get_audit_log(self) -> List[RuleAuditEntry]:
+    def get_audit_log(self) -> list[RuleAuditEntry]:
         """Get the complete audit log for this session."""
         return list(self._audit_log)
 
-    def get_safety_violations(self) -> List[RuleResult]:
+    def get_safety_violations(self) -> list[RuleResult]:
         """Get all CRITICAL_SAFETY and SAFETY_VIOLATION results."""
         return [r for r in self._results if r.severity <= RulePriority.SAFETY_VIOLATION]
 
-    def get_compliance_summary(self) -> Dict[str, Any]:
+    def get_compliance_summary(self) -> dict[str, Any]:
         """Get a summary of compliance status from rule results.
 
         Returns a structured summary suitable for engineering reports.
@@ -676,7 +675,7 @@ class RulesEngine:
             self._fired_combinations.clear()  # FIX: was missing — stale combos blocked rules after reset
             self._iteration = 0
 
-    def explain(self, fact_id: str, _visited: Optional[set] = None) -> Dict[str, Any]:
+    def explain(self, fact_id: str, _visited: set | None = None) -> dict[str, Any]:
         """Explain why a fact exists — trace its derivation chain.
 
         Safety-critical feature: you must be able to explain every

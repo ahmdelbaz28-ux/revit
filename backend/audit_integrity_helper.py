@@ -1,4 +1,4 @@
-"""audit_integrity_helper.py — Signed Audit Trail for DB Writes
+"""audit_integrity_helper.py — Signed Audit Trail for DB Writes.
 ===============================================================
 
 MISSION PHASE 1.3 — Audit Integrity with Correlation-ID
@@ -42,6 +42,7 @@ References
 - agent.md Rule 12 (Safety-First) + Rule 17 (Root-Cause Analysis)
 - NFPA 72-2022 §7.5 (Audit Trail)
 - RFC 4122 (UUID for Correlation-ID)
+
 """
 
 from __future__ import annotations
@@ -49,7 +50,7 @@ from __future__ import annotations
 import functools
 import logging
 from contextlib import contextmanager
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +60,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 
-def get_correlation_id() -> Optional[str]:
+def get_correlation_id() -> str | None:
     """Extract the Correlation-ID from the current request context.
 
     The CorrelationIdMiddleware (backend/request_context.py) stores the
@@ -68,6 +69,7 @@ def get_correlation_id() -> Optional[str]:
 
     Returns:
         Correlation-ID string, or None if not in a request context.
+
     """
     try:
         from backend.request_context import get_correlation_id as _get_cid
@@ -86,11 +88,11 @@ def get_correlation_id() -> Optional[str]:
 def record_audit_write(
     operation: str,
     table: str,
-    record_id: Optional[str] = None,
-    details: Optional[Dict[str, Any]] = None,
+    record_id: str | None = None,
+    details: dict[str, Any] | None = None,
     success: bool = True,
-    error: Optional[str] = None,
-) -> Optional[str]:
+    error: str | None = None,
+) -> str | None:
     """Record a signed audit entry for a database write operation.
 
     Per PHASE 1.3: every DB write MUST trigger a signed AuditStore entry
@@ -106,6 +108,7 @@ def record_audit_write(
 
     Returns:
         Audit event hash (for chain verification), or None if recording failed.
+
     """
     try:
         from fireai.core.audit_store import AuditStore
@@ -125,12 +128,11 @@ def record_audit_write(
         if details:
             audit_details["details"] = details
 
-        event_hash = AuditStore.add_event(
+        return AuditStore.add_event(
             event_type=f"DB_WRITE_{operation.upper()}",
             room_id=str(record_id or "DB_OPERATION"),
             details_dict=audit_details,
         )
-        return event_hash
 
     except Exception as exc:
         # Per fail-safe principle: audit failure MUST NOT block the operation
@@ -149,7 +151,7 @@ def record_audit_write(
 def audit_db_write(
     operation: str,
     table: str,
-    record_id_arg: Optional[str] = None,
+    record_id_arg: str | None = None,
 ) -> Callable:
     """Decorator that wraps a database write function with audit logging.
 
@@ -166,6 +168,7 @@ def audit_db_write(
 
     Returns:
         Decorated function.
+
     """
 
     def decorator(func: Callable) -> Callable:
@@ -234,8 +237,8 @@ def _extract_record_id(
     func: Callable,
     args: tuple,
     kwargs: dict,
-    record_id_arg: Optional[str],
-) -> Optional[str]:
+    record_id_arg: str | None,
+) -> str | None:
     """Extract the record ID from function arguments."""
     if record_id_arg:
         # Try kwargs first, then positional (using arg name)
@@ -255,7 +258,7 @@ def _extract_record_id(
     return None
 
 
-def _extract_changes(result: Any) -> Dict[str, Any]:
+def _extract_changes(result: Any) -> dict[str, Any]:
     """Extract change details from function result."""
     if result is None:
         return {}
@@ -280,8 +283,8 @@ def _extract_changes(result: Any) -> Dict[str, Any]:
 def audit_write_context(
     operation: str,
     table: str,
-    record_id: Optional[str] = None,
-    details: Optional[Dict[str, Any]] = None,
+    record_id: str | None = None,
+    details: dict[str, Any] | None = None,
 ):
     """Context manager for auditing database writes.
 
@@ -317,6 +320,6 @@ def audit_write_context(
 __all__ = [
     "audit_db_write",
     "audit_write_context",
-    "record_audit_write",
     "get_correlation_id",
+    "record_audit_write",
 ]

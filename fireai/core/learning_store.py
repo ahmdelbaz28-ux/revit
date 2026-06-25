@@ -13,7 +13,6 @@ confidence estimation based on real-world analysis results.
 import logging
 import sqlite3
 from datetime import datetime, timezone
-from typing import Optional, Tuple
 
 # Constants from V10 (never go below these)
 _CONFIDENCE_HIGH_THRESHOLD: float = 0.90  # ≥ 90 % → HIGH
@@ -29,7 +28,7 @@ class LearningStore:
     based on actual compliant results.
     """
 
-    def __init__(self, db_path: str = "fireai_learning.sqlite3"):
+    def __init__(self, db_path: str = "fireai_learning.sqlite3") -> None:
         """Initialize LearningStore with SQLite database.
 
         Args:
@@ -43,7 +42,7 @@ class LearningStore:
         self._create_tables()
         logger.info("LearningStore initialized: %s", db_path)
 
-    def _create_tables(self):
+    def _create_tables(self) -> None:
         """Create learning and calibration tables."""
         cursor = self.conn.cursor()
 
@@ -97,7 +96,7 @@ class LearningStore:
         coverage_pct: float,
         confidence_score: float,
         confidence_level: str,
-        resilience_pass_rate: Optional[float],
+        resilience_pass_rate: float | None,
         wall_violation_count: int,
         greedy_retries: int,
         proof_valid: bool,
@@ -165,7 +164,7 @@ class LearningStore:
             logger.warning("Failed to store experience: %s", e)
             return False
 
-    def get_calibrated_thresholds(self) -> Tuple[float, float]:
+    def get_calibrated_thresholds(self) -> tuple[float, float]:
         """Get calibrated confidence thresholds.
 
         Returns:
@@ -274,7 +273,7 @@ class LearningStore:
         logger.info("Recalibrated: high=%s, medium=%s, records=%s", high, medium, count)
         return True
 
-    def close(self):
+    def close(self) -> None:
         """Close database connection."""
         if self.conn:
             self.conn.close()

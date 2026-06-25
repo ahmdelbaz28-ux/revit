@@ -1,4 +1,4 @@
-"""Clause-Mapped Compliance Engine — NFPA 72 / NEC Validation
+"""Clause-Mapped Compliance Engine — NFPA 72 / NEC Validation.
 
 PDF Audit Phase 3: Domain Verification
 Per "From Prototype to Production-Grade" §Phase 3, Appendix B:
@@ -28,7 +28,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, List
+from typing import Any, Callable
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +39,7 @@ class ComplianceRule:
 
     clause_id: str
     description: str
-    validator: Callable[[Dict[str, Any]], bool]
+    validator: Callable[[dict[str, Any]], bool]
     remediation: str
     severity: str = "HIGH"
 
@@ -50,10 +50,10 @@ class ComplianceEngine:
     Each rule maps to a specific NFPA 72 or NEC clause.
     """
 
-    def __init__(self):
-        self.rules: List[ComplianceRule] = self._define_rules()
+    def __init__(self) -> None:
+        self.rules: list[ComplianceRule] = self._define_rules()
 
-    def _define_rules(self) -> List[ComplianceRule]:
+    def _define_rules(self) -> list[ComplianceRule]:
         """Define all compliance rules from the NFPA 72 / NEC matrix."""
         return [
             # ── NFPA 72 Chapter 17 — Detector Spacing ─────────────────
@@ -191,7 +191,7 @@ class ComplianceEngine:
             ),
         ]
 
-    def validate(self, context: Dict[str, Any]) -> List[str]:
+    def validate(self, context: dict[str, Any]) -> list[str]:
         """Run all compliance checks and return a list of violation messages."""
         violations = []
         logger.info("Starting compliance validation against %d rules.", len(self.rules))
@@ -219,7 +219,7 @@ class ComplianceEngine:
 
         return violations
 
-    def validate_and_report(self, context: Dict[str, Any]) -> Dict[str, Any]:
+    def validate_and_report(self, context: dict[str, Any]) -> dict[str, Any]:
         """Run validation and return structured report."""
         violations = self.validate(context)
         return {

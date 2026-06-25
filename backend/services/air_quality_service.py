@@ -38,7 +38,6 @@ import os
 import time
 from dataclasses import dataclass
 from enum import IntEnum
-from typing import Optional
 
 import httpx
 from tenacity import retry, stop_after_attempt, wait_exponential
@@ -84,8 +83,8 @@ class AirQualityData:
     pm10_ug_m3: float
     aqi_level: str
     source: str
-    latitude: Optional[float] = None
-    longitude: Optional[float] = None
+    latitude: float | None = None
+    longitude: float | None = None
     is_stale: bool = False
 
     @property
@@ -138,11 +137,11 @@ class AirQualityService:
     WAQI_GEO_URL = "https://api.waqi.info/feed/geo:{lat};{lon}/"
     WAQI_TOKEN = os.getenv("WAQI_API_TOKEN")  # Must be set explicitly — no insecure fallback
 
-    def __init__(self, cache_ttl: float = 1800.0, request_timeout: float = 10.0):
+    def __init__(self, cache_ttl: float = 1800.0, request_timeout: float = 10.0) -> None:
         self._cache: dict[str, tuple[AirQualityData, float]] = {}
         self._cache_ttl = cache_ttl
         self._request_timeout = request_timeout
-        self._client: Optional[httpx.AsyncClient] = None
+        self._client: httpx.AsyncClient | None = None
 
     async def _get_client(self) -> httpx.AsyncClient:
         """Lazy-initialize the HTTP client."""
@@ -164,7 +163,7 @@ class AirQualityService:
         """Generate cache key from coordinates (0.01° ≈ 1.1 km)."""
         return f"{latitude:.2f},{longitude:.2f}"
 
-    def _get_cached(self, latitude: float, longitude: float) -> Optional[AirQualityData]:
+    def _get_cached(self, latitude: float, longitude: float) -> AirQualityData | None:
         """Get cached air quality data if fresh."""
         key = self._cache_key(latitude, longitude)
         entry = self._cache.get(key)
@@ -311,7 +310,7 @@ class AirQualityService:
         for c_lo, c_hi, i_lo, i_hi in breakpoints:
             if c_lo <= pm25 <= c_hi:
                 aqi = ((i_hi - i_lo) / (c_hi - c_lo)) * (pm25 - c_lo) + i_lo
-                return int(round(aqi))
+                return round(aqi)
 
         # Above 500.4 → cap at 500
         return 500
@@ -452,7 +451,7 @@ class AirQualityService:
 
 
 # Singleton
-_air_quality_service: Optional[AirQualityService] = None
+_air_quality_service: AirQualityService | None = None
 
 
 def get_air_quality_service() -> AirQualityService:

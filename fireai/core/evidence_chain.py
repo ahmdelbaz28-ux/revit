@@ -1,4 +1,4 @@
-"""evidence_chain.py — Chained Evidence Envelopes for FireAI
+r"""evidence_chain.py — Chained Evidence Envelopes for FireAI.
 ==========================================================
 Adapted from Elite Platform V2 evidence_chain.py.
 
@@ -44,7 +44,7 @@ import hmac
 import json
 import math
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 
 def _float_round_default(obj: Any) -> Any:
@@ -72,7 +72,7 @@ def _float_round_default(obj: Any) -> Any:
         # If normalization didn't help (e.g. 0.3), use explicit rounding
         if repr(rounded) != repr(obj):
             # Fall back to 12-digit rounding for determinism
-            rounded = round(obj, 12 - 1 - int(math.floor(math.log10(abs(obj)))) if abs(obj) >= 1 else 12)
+            rounded = round(obj, 12 - 1 - math.floor(math.log10(abs(obj))) if abs(obj) >= 1 else 12)
         return rounded
     raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
 
@@ -158,7 +158,7 @@ class EvidenceChain:
         }
     )
 
-    def __init__(self, secret_key: str, signer_id: str, namespace: str = "fireai"):
+    def __init__(self, secret_key: str, signer_id: str, namespace: str = "fireai") -> None:
         if not secret_key:
             raise ValueError("secret_key must not be empty")
         if not signer_id:
@@ -202,10 +202,10 @@ class EvidenceChain:
 
     def build_envelope(
         self,
-        snapshot_payload: Dict[str, Any],
-        analysis_payload: Dict[str, Any],
-        previous_envelope: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        snapshot_payload: dict[str, Any],
+        analysis_payload: dict[str, Any],
+        previous_envelope: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """Build a signed evidence envelope linking input to output.
 
         Args:
@@ -234,10 +234,10 @@ class EvidenceChain:
 
     def verify_envelope(
         self,
-        envelope: Dict[str, Any],
-        snapshot_payload: Dict[str, Any],
-        analysis_payload: Dict[str, Any],
-        previous_envelope: Optional[Dict[str, Any]] = None,
+        envelope: dict[str, Any],
+        snapshot_payload: dict[str, Any],
+        analysis_payload: dict[str, Any],
+        previous_envelope: dict[str, Any] | None = None,
     ) -> bool:
         """Verify an evidence envelope against its source data.
 
@@ -311,10 +311,10 @@ class EvidenceChain:
 
     def verify_chain(
         self,
-        envelopes: List[Dict[str, Any]],
-        snapshot_payloads: List[Dict[str, Any]],
-        analysis_payloads: List[Dict[str, Any]],
-    ) -> Dict[str, Any]:
+        envelopes: list[dict[str, Any]],
+        snapshot_payloads: list[dict[str, Any]],
+        analysis_payloads: list[dict[str, Any]],
+    ) -> dict[str, Any]:
         """Verify an entire chain of evidence envelopes.
 
         This detects:
@@ -352,9 +352,9 @@ class EvidenceChain:
                 "first_break": None,
             }
 
-        errors: List[str] = []
-        first_break: Optional[int] = None
-        prev_timestamp: Optional[str] = None
+        errors: list[str] = []
+        first_break: int | None = None
+        prev_timestamp: str | None = None
 
         for i, envelope in enumerate(envelopes):
             prev_env = envelopes[i - 1] if i > 0 else None

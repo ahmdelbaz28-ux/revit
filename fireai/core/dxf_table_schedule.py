@@ -1,4 +1,4 @@
-"""fireai/core/dxf_table_schedule.py
+"""fireai/core/dxf_table_schedule.py.
 =================================
 Uses proper Autodesk CAD Data objects replacing plain MTEXT lines.
 Required functionality for enabling digital data link queries externally
@@ -48,7 +48,7 @@ class TrueAECDraftingTable:
 
     """
 
-    def __init__(self, table_position_xyz: tuple = (0.0, 0.0, 0.0)):
+    def __init__(self, table_position_xyz: tuple = (0.0, 0.0, 0.0)) -> None:
         self.position = table_position_xyz
 
     def draft_device_boq_table(self, msp, device_array: list, project_metadata: str = "Fire Alarm Device Log") -> bool:

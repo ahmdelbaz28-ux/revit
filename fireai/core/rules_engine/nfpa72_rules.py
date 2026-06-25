@@ -1,4 +1,4 @@
-"""FireAI Rules Engine — NFPA 72 Declarative Rule Definitions
+"""FireAI Rules Engine — NFPA 72 Declarative Rule Definitions.
 ============================================================
 
 Defines NFPA 72 fire alarm code compliance rules as declarative
@@ -27,7 +27,7 @@ Reference: NFPA 72-2022 (National Fire Alarm and Signaling Code)
 from __future__ import annotations
 
 import math
-from typing import Any, Dict, List
+from typing import Any
 
 # SAFETY FIX (HIGH-11): Import spacing table from nfpa72_engine instead of
 # duplicating it. Two separate implementations could silently diverge —
@@ -744,7 +744,7 @@ class NFPA72RuleSet:
         results = engine.evaluate()
     """
 
-    _ALL_RULES: List[Rule] = [
+    _ALL_RULES: list[Rule] = [
         # CRITICAL SAFETY (priority 0) — fires first
         RULE_CEILING_HEIGHT_EXCEEDS_TABLE,
         RULE_DETECTOR_SPACING_VIOLATION,
@@ -764,22 +764,22 @@ class NFPA72RuleSet:
     ]
 
     @classmethod
-    def all_rules(cls) -> List[Rule]:
+    def all_rules(cls) -> list[Rule]:
         """Get all NFPA 72 rules."""
         return list(cls._ALL_RULES)
 
     @classmethod
-    def critical_safety_rules(cls) -> List[Rule]:
+    def critical_safety_rules(cls) -> list[Rule]:
         """Get only CRITICAL_SAFETY priority rules."""
         return [r for r in cls._ALL_RULES if r.priority == RulePriority.CRITICAL_SAFETY]
 
     @classmethod
-    def rules_by_nfpa_section(cls, section: str) -> List[Rule]:
+    def rules_by_nfpa_section(cls, section: str) -> list[Rule]:
         """Get rules that reference a specific NFPA section."""
         return [r for r in cls._ALL_RULES if r.nfpa_reference and section in r.nfpa_reference]
 
     @classmethod
-    def summary(cls) -> List[Dict[str, Any]]:
+    def summary(cls) -> list[dict[str, Any]]:
         """Get a summary of all rules for documentation."""
         return [
             {

@@ -1,5 +1,4 @@
-"""fireai/analytics — Predictive Analytics and Machine Learning Pipeline
-"""
+"""fireai/analytics — Predictive Analytics and Machine Learning Pipeline."""
 
 from fireai.analytics.ml_pipeline import (
     DesignData,

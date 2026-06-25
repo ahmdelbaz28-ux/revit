@@ -1,4 +1,4 @@
-"""fireai_cli_engine.py – FireAI CLI Orchestration Engine
+"""fireai_cli_engine.py – FireAI CLI Orchestration Engine.
 =======================================================
 Coordinates the 5-layer + audit fire alarm design pipeline for standalone CLI usage.
 
@@ -33,7 +33,6 @@ from __future__ import annotations
 import logging
 import time
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Tuple
 
 from fireai.core.atex_hazardous_arbiter import ATEXHazardousArbiter
 from fireai.core.flame_detector_aoc_raytrace import (
@@ -85,7 +84,7 @@ class Layer1Result:
     country_code: str
     framework: str
     zone_system: str
-    warnings: Tuple[str, ...]
+    warnings: tuple[str, ...]
     success: bool
 
 
@@ -99,10 +98,10 @@ class Layer2Result:
     volume_m3: float
     ventilation: VentilationLevel
     hazard_type: HazardType
-    lfl_corrected: Optional[float]
-    lfl_correction_pct: Optional[float]
-    warnings: Tuple[str, ...]
-    critical_flags: Tuple[str, ...]
+    lfl_corrected: float | None
+    lfl_correction_pct: float | None
+    warnings: tuple[str, ...]
+    critical_flags: tuple[str, ...]
     success: bool
 
 
@@ -113,10 +112,10 @@ class Layer3Result:
     epl: str
     atex_category: str
     temp_class: str
-    protection_modes: Tuple[str, ...]
-    fire_detector_marking: Optional[str]
-    warnings: Tuple[str, ...]
-    errors: Tuple[str, ...]
+    protection_modes: tuple[str, ...]
+    fire_detector_marking: str | None
+    warnings: tuple[str, ...]
+    errors: tuple[str, ...]
     success: bool
 
 
@@ -127,8 +126,8 @@ class Layer5Result:
     total_points: int
     covered_points: int
     coverage_pct: float
-    per_detector: Dict[str, SingleDetectorResult]
-    warnings: Tuple[str, ...]
+    per_detector: dict[str, SingleDetectorResult]
+    warnings: tuple[str, ...]
     success: bool
 
 
@@ -139,10 +138,10 @@ class Layer6Result:
     audit_status: str  # "PASS" or "FAIL"
     total_checks: int
     passed_checks: int
-    critical_violations: Tuple[str, ...]  # CRITICAL violation messages
-    warning_violations: Tuple[str, ...]  # WARNING violation messages
-    info_violations: Tuple[str, ...]  # INFO violation messages
-    all_violations: Tuple[str, ...]  # All violation messages
+    critical_violations: tuple[str, ...]  # CRITICAL violation messages
+    warning_violations: tuple[str, ...]  # WARNING violation messages
+    info_violations: tuple[str, ...]  # INFO violation messages
+    all_violations: tuple[str, ...]  # All violation messages
     success: bool
 
 
@@ -150,15 +149,15 @@ class Layer6Result:
 class PipelineResult:
     """Complete 5-layer + audit pipeline result."""
 
-    layer1: Optional[Layer1Result] = None
-    layer2: Optional[Layer2Result] = None
-    layer3: Optional[Layer3Result] = None
-    layer5: Optional[Layer5Result] = None
-    layer6: Optional[Layer6Result] = None
-    env_context: Optional[EnvironmentalContext] = None
+    layer1: Layer1Result | None = None
+    layer2: Layer2Result | None = None
+    layer3: Layer3Result | None = None
+    layer5: Layer5Result | None = None
+    layer6: Layer6Result | None = None
+    env_context: EnvironmentalContext | None = None
     elapsed_seconds: float = 0.0
-    pipeline_warnings: Tuple[str, ...] = ()
-    pipeline_errors: Tuple[str, ...] = ()
+    pipeline_warnings: tuple[str, ...] = ()
+    pipeline_errors: tuple[str, ...] = ()
     success: bool = False
 
 
@@ -200,7 +199,7 @@ class CLIFireAIEngine:
         self,
         grid_step_m: float = 0.5,
         detector_threshold: float = 0.1,
-        env_context: Optional[EnvironmentalContext] = None,
+        env_context: EnvironmentalContext | None = None,
     ) -> None:
         """Initialize CLI engine with optional environmental context.
 
@@ -333,9 +332,9 @@ class CLIFireAIEngine:
         self,
         zone: ZoneType,
         hazard_type: HazardType,
-        autoignition_c: Optional[float] = None,
-        hac_warnings: Optional[List[str]] = None,
-        hac_critical: Optional[List[str]] = None,
+        autoignition_c: float | None = None,
+        hac_warnings: list[str] | None = None,
+        hac_critical: list[str] | None = None,
     ) -> Layer3Result:
         """Determine ATEX equipment specification with IEC 60079-14 thermal margin.
 
@@ -383,10 +382,10 @@ class CLIFireAIEngine:
 
     def run_layer5(
         self,
-        detectors: List[FlameDetectorSpec],
-        target_grid: List[RayTracePoint],
-        obstructions: List[Obstruction],
-        volumetric_media: Optional[List[VolumetricMedium]] = None,
+        detectors: list[FlameDetectorSpec],
+        target_grid: list[RayTracePoint],
+        obstructions: list[Obstruction],
+        volumetric_media: list[VolumetricMedium] | None = None,
     ) -> Layer5Result:
         """Compute optical coverage with volumetric media (Beer-Lambert).
 
@@ -446,9 +445,9 @@ class CLIFireAIEngine:
         zone: ZoneType,
         hazard_type: HazardType,
         min_redundancy: int = 0,
-        min_transmittance: Optional[float] = None,
-        substance: Optional[SubstanceProperties] = None,
-        detector_z_positions: Optional[List[float]] = None,
+        min_transmittance: float | None = None,
+        substance: SubstanceProperties | None = None,
+        detector_z_positions: list[float] | None = None,
         ceiling_height_m: float = 6.0,
     ) -> Layer6Result:
         """Run post-calculation safety audit against IEC/NFPA rules
@@ -498,10 +497,10 @@ class CLIFireAIEngine:
         country_code: str,
         substance: SubstanceProperties,
         ventilation: VentilationLevel,
-        detectors: List[FlameDetectorSpec],
-        target_grid: List[RayTracePoint],
-        obstructions: Optional[List[Obstruction]] = None,
-        volumetric_media: Optional[List[VolumetricMedium]] = None,
+        detectors: list[FlameDetectorSpec],
+        target_grid: list[RayTracePoint],
+        obstructions: list[Obstruction] | None = None,
+        volumetric_media: list[VolumetricMedium] | None = None,
         is_indoor: bool = True,
     ) -> PipelineResult:
         """Run the complete 5-layer pipeline.
@@ -511,8 +510,8 @@ class CLIFireAIEngine:
         """
         start_time = time.monotonic()
         obstructions = obstructions or []
-        pipeline_warnings: List[str] = []
-        pipeline_errors: List[str] = []
+        pipeline_warnings: list[str] = []
+        pipeline_errors: list[str] = []
 
         # ── Layer 1: Regulatory Framework ──
         logger.info("Layer 1: Resolving regulatory framework for %s", country_code)

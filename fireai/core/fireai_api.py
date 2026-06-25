@@ -7,7 +7,7 @@ import logging
 import os
 import secrets
 import uuid
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from fastapi import (
     BackgroundTasks,
@@ -86,7 +86,7 @@ _audit_trail = AuditTrail(project_name="api-session")
 # Task store for async operations (in-memory with TTL and cap)
 # CRITICAL FIX: Previously had no TTL, no cleanup, and no cap.
 # This caused unbounded memory growth in long-lived API workers.
-_task_store: Dict[str, Dict[str, Any]] = {}
+_task_store: dict[str, dict[str, Any]] = {}
 _MAX_TASK_STORE_SIZE = 1000  # Maximum number of tasks to keep
 _TASK_TTL_SECONDS = 3600  # Tasks expire after 1 hour
 
@@ -94,7 +94,7 @@ _TASK_TTL_SECONDS = 3600  # Tasks expire after 1 hour
 REQUEST_TIMEOUT_SECONDS: float = 30.0
 
 
-def _cleanup_task_store():
+def _cleanup_task_store() -> None:
     """Remove expired and excess tasks from the store."""
     import time as _time
 
@@ -145,28 +145,28 @@ async def verify_api_key(x_api_key: str = Header(...)) -> str:
 class RoomSpecIn(BaseModel):
     room_id: str
     name: str = ""
-    width_m: Optional[float] = None
-    depth_m: Optional[float] = None
-    polygon: Optional[List[List[float]]] = None
+    width_m: float | None = None
+    depth_m: float | None = None
+    polygon: list[list[float]] | None = None
     occupancy_type: str = "office"
-    ceiling_height_m: Optional[float] = None
+    ceiling_height_m: float | None = None
 
 
 class AnalyseRoomRequest(BaseModel):
     room: RoomSpecIn
-    forced_detector_type: Optional[str] = None
+    forced_detector_type: str | None = None
     required_coverage_pct: float = 100.0
 
 
 class AnalyseFloorRequest(BaseModel):
     floor_id: str
-    rooms: List[RoomSpecIn]
+    rooms: list[RoomSpecIn]
 
 
 class AnalyseFloorRequestV10(BaseModel):
-    """V10 Floor analysis request with resilience option"""
+    """V10 Floor analysis request with resilience option."""
 
-    rooms: List[RoomSpecIn]
+    rooms: list[RoomSpecIn]
     run_resilience: bool = True
 
 
@@ -175,10 +175,10 @@ class RoomResultOut(BaseModel):
     status: str
     detector_type: str
     detector_count: int
-    detector_positions: List[Dict[str, float]]
-    coverage_result: Optional[Dict[str, Any]] = None
+    detector_positions: list[dict[str, float]]
+    coverage_result: dict[str, Any] | None = None
     coverage_pct: float
-    errors: List[str] = []
+    errors: list[str] = []
     refused: bool = False
 
 
@@ -186,10 +186,10 @@ class FloorResultOut(BaseModel):
     floor_id: str
     fully_compliant: bool
     total_detectors: int
-    room_results: List[RoomResultOut]
-    non_compliant_rooms: List[str] = []
-    floor_warnings: List[str] = []
-    floor_errors: List[str] = []
+    room_results: list[RoomResultOut]
+    non_compliant_rooms: list[str] = []
+    floor_warnings: list[str] = []
+    floor_errors: list[str] = []
 
 
 # ============================================================================
@@ -276,24 +276,24 @@ def _build_room_spec(room_in: RoomSpecIn) -> RoomSpec:
 
 
 @app.get("/health", tags=["System"])
-async def get_health() -> Dict[str, str]:
+async def get_health() -> dict[str, str]:
     return {"status": "healthy", "version": "10.0.0"}
 
 
 @app.get("/version", tags=["System"])
-async def get_version() -> Dict[str, str]:
+async def get_version() -> dict[str, str]:
     return {"version": "10.0.0", "nfpa_version": "2022"}
 
 
 @app.get("/audit", tags=["Audit"], dependencies=[Depends(verify_api_key)])
-async def get_audit_trail() -> Dict[str, Any]:
+async def get_audit_trail() -> dict[str, Any]:
     return {"summary": _audit_trail.summary(), "entries": _audit_trail.to_list()}
 
 
 # Rate-limited endpoints
 @app.post("/projects/", tags=["Projects"], dependencies=[Depends(verify_api_key)])
 @limiter.limit("10/minute")
-async def upload_file(request: Request, file: UploadFile = File(...)) -> Dict[str, Any]:  # noqa: B008
+async def upload_file(request: Request, file: UploadFile = File(...)) -> dict[str, Any]:  # noqa: B008
     content = await file.read()
     if len(content) > MAX_FILE_SIZE_BYTES:
         raise HTTPException(status_code=413, detail=f"File too large. Maximum allowed size is {MAX_FILE_SIZE_MB} MB.")
@@ -318,7 +318,7 @@ async def analyse_room(request: Request, body: AnalyseRoomRequest) -> RoomResult
         _audit_trail.log_rejection(room_id=body.room.room_id, reason=str(e))
         raise HTTPException(status_code=422, detail="Invalid room specification. Check room parameters and try again.")
 
-    forced_type: Optional[DetectorType] = None
+    forced_type: DetectorType | None = None
     if body.forced_detector_type:
         try:
             forced_type = DetectorType(body.forced_detector_type)
@@ -489,7 +489,7 @@ async def analyse_floor_async(
     }
 
     # Schedule background task
-    def _process_floor(task_id: str, body_data: AnalyseFloorRequestV10):
+    def _process_floor(task_id: str, body_data: AnalyseFloorRequestV10) -> None:
         """Background task to process floor."""
         room_specs = []
         for r in body_data.rooms:

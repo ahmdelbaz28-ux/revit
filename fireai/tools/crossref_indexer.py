@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""FireAI — Constants Cross-Reference Index Generator
+"""FireAI — Constants Cross-Reference Index Generator.
 
 Tracks where each constant is used across the codebase.
 Generates impact analysis for constant changes.
@@ -178,7 +178,7 @@ EXAMPLE_WRONG_WALL = 0.10  # Renamed to avoid constant_indexer false positive
     return md
 
 
-def main():
+def main() -> int:
     root = Path(__file__).parent.parent.parent
     output_file = root / "fireai" / "CROSSREF_INDEX.md"
 

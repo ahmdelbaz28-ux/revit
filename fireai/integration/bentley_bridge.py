@@ -1,4 +1,4 @@
-"""fireai/integration/bentley_bridge.py
+"""fireai/integration/bentley_bridge.py.
 ======================================
 Bentley Systems Integration — OpenBuildings/STAAD integration via Bentley APIs.
 
@@ -21,7 +21,7 @@ import os
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from fireai.core.event_bus import EventBus, Events
 
@@ -81,11 +81,11 @@ class BentleyAsset:
     element_type: BentleyElementType
     name: str
     level: str
-    properties: Dict[str, Any] = field(default_factory=dict)
-    coordinates: List[float] = field(default_factory=list)
+    properties: dict[str, Any] = field(default_factory=dict)
+    coordinates: list[float] = field(default_factory=list)
     material: str = ""
     fire_rating: str = ""
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         if not self.asset_id.strip():
@@ -100,19 +100,19 @@ class SyncStatus:
     state: SyncState
     direction: SyncDirection
     elements_synced: int = 0
-    errors: List[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
     started_at: str = ""
     completed_at: str = ""
-    details: Dict[str, Any] = field(default_factory=dict)
+    details: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
 class DesignData:
     source_file: str = ""
     file_hash: str = ""
-    layers: List[Dict[str, Any]] = field(default_factory=list)
-    entities: List[Dict[str, Any]] = field(default_factory=list)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    layers: list[dict[str, Any]] = field(default_factory=list)
+    entities: list[dict[str, Any]] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
     imported_at: str = ""
 
 
@@ -151,10 +151,10 @@ class BentleyBridge:
         BentleyElementType.OPENING,
     }
 
-    def __init__(self, event_bus: Optional[EventBus] = None) -> None:
+    def __init__(self, event_bus: EventBus | None = None) -> None:
         self._event_bus = event_bus or EventBus.instance()
-        self._assets_cache: Dict[str, List[BentleyAsset]] = {}
-        self._sync_history: Dict[str, SyncStatus] = {}
+        self._assets_cache: dict[str, list[BentleyAsset]] = {}
+        self._sync_history: dict[str, SyncStatus] = {}
         self._api_connected: bool = False
 
     # ── Import ──────────────────────────────────────────────────────────
@@ -291,7 +291,7 @@ class BentleyBridge:
 
     def get_bentley_assets(
         self, project_id: str
-    ) -> List[BentleyAsset]:
+    ) -> list[BentleyAsset]:
         """Retrieve Bentley assets for a project.
 
         Args:
@@ -305,7 +305,7 @@ class BentleyBridge:
 
     def get_fire_relevant_assets(
         self, project_id: str
-    ) -> List[BentleyAsset]:
+    ) -> list[BentleyAsset]:
         """Get assets relevant to fire alarm design.
 
         Filters to structural elements that affect detector placement
@@ -327,7 +327,7 @@ class BentleyBridge:
 
     # ── Connection Management ───────────────────────────────────────────
 
-    def connect_api(self, credentials: Dict[str, str]) -> bool:
+    def connect_api(self, credentials: dict[str, str]) -> bool:
         """Connect to the Bentley iTwin API.
 
         Args:

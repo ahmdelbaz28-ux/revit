@@ -1,4 +1,4 @@
-"""fireai/core/tests/test_regression.py — Regression Tests for Known Bugs
+"""fireai/core/tests/test_regression.py — Regression Tests for Known Bugs.
 ======================================================================
 Task 2.19: Add regression tests for known bugs that were fixed.
 
@@ -84,7 +84,7 @@ class TestV79NaNInfBypass:
         BEFORE any comparison. Non-finite values are rejected.
     """
 
-    def test_nan_area_not_accepted_as_valid_room(self):
+    def test_nan_area_not_accepted_as_valid_room(self) -> None:
         """NaN area must NOT pass min/max area checks."""
         nan_area = float("nan")
         # This was the original bug: NaN < 2.0 is False, NaN > 50000 is False
@@ -93,7 +93,7 @@ class TestV79NaNInfBypass:
         # The fix: isfinite check catches NaN before comparisons
         assert not math.isfinite(nan_area)
 
-    def test_inf_area_not_accepted_as_valid_room(self):
+    def test_inf_area_not_accepted_as_valid_room(self) -> None:
         """Infinity area must NOT pass min/max area checks."""
         inf_area = float("inf")
         assert not (inf_area < 2.0)   # inf > 2.0 is True → caught by max
@@ -101,7 +101,7 @@ class TestV79NaNInfBypass:
         # But the isfinite check is the primary guard
         assert not math.isfinite(inf_area)
 
-    def test_neg_inf_area_not_accepted(self):
+    def test_neg_inf_area_not_accepted(self) -> None:
         """Negative infinity area must NOT pass min area check."""
         neg_inf = float("-inf")
         # -inf < 2.0 is True → would pass min check (BUG if no isfinite guard)
@@ -109,18 +109,18 @@ class TestV79NaNInfBypass:
         # But isfinite catches it
         assert not math.isfinite(neg_inf)
 
-    def test_estimate_detector_count_rejects_nan(self):
+    def test_estimate_detector_count_rejects_nan(self) -> None:
         """estimate_detector_count with NaN area returns error."""
         result = estimate_detector_count(float("nan"), 3.0, "smoke")
         assert result["min_detector_count"] == 0
         assert result["error"] is not None
 
-    def test_estimate_detector_count_rejects_inf(self):
+    def test_estimate_detector_count_rejects_inf(self) -> None:
         """estimate_detector_count with Inf area returns error."""
         result = estimate_detector_count(float("inf"), 3.0, "smoke")
         assert result["min_detector_count"] == 0
 
-    def test_estimate_detector_count_no_nan_in_result(self):
+    def test_estimate_detector_count_no_nan_in_result(self) -> None:
         """V79 + C-4 FIX: No NaN in result dictionary (JSON serialization)."""
         result = estimate_detector_count(float("nan"), 3.0, "smoke")
         # C-4 FIX: area_per_detector_m2 must be None, not float("nan")
@@ -130,7 +130,7 @@ class TestV79NaNInfBypass:
             if isinstance(value, float) and key != "error":
                 assert math.isfinite(value), f"NaN/Inf in result[{key}]"
 
-    def test_point3d_rejects_nan_coordinates(self):
+    def test_point3d_rejects_nan_coordinates(self) -> None:
         """Point3D rejects NaN in any coordinate."""
         with pytest.raises(ValueError, match="finite"):
             Point3D(x=float("nan"), y=0.0)
@@ -139,7 +139,7 @@ class TestV79NaNInfBypass:
         with pytest.raises(ValueError, match="finite"):
             Point3D(x=0.0, y=0.0, z=float("nan"))
 
-    def test_semantic_properties_rejects_nan_dimensions(self):
+    def test_semantic_properties_rejects_nan_dimensions(self) -> None:
         """SemanticProperties rejects NaN in height/width."""
         with pytest.raises(ValueError, match="finite"):
             SemanticProperties(element_type=ElementType.WALL, height=float("nan"))
@@ -168,7 +168,7 @@ class TestV83JSONInjection:
         is enforced. Invalid keys raise ValueError.
     """
 
-    def test_update_element_rejects_invalid_key(self, in_memory_db):
+    def test_update_element_rejects_invalid_key(self, in_memory_db) -> None:
         """update_element raises ValueError for keys not in whitelist."""
         elem = _make_element("test-v83")
         in_memory_db.add_element(elem)
@@ -176,7 +176,7 @@ class TestV83JSONInjection:
         with pytest.raises(ValueError, match="invalid keys"):
             in_memory_db.update_element("test-v83", {"evil_key": "hacked"})
 
-    def test_update_element_rejects_element_id_overwrite(self, in_memory_db):
+    def test_update_element_rejects_element_id_overwrite(self, in_memory_db) -> None:
         """System-managed field 'element_id' cannot be overwritten."""
         elem = _make_element("test-v83-id")
         in_memory_db.add_element(elem)
@@ -184,7 +184,7 @@ class TestV83JSONInjection:
         with pytest.raises(ValueError, match="invalid keys"):
             in_memory_db.update_element("test-v83-id", {"element_id": "different-id"})
 
-    def test_update_element_rejects_version_overwrite(self, in_memory_db):
+    def test_update_element_rejects_version_overwrite(self, in_memory_db) -> None:
         """System-managed field 'version' cannot be overwritten."""
         elem = _make_element("test-v83-ver")
         in_memory_db.add_element(elem)
@@ -192,7 +192,7 @@ class TestV83JSONInjection:
         with pytest.raises(ValueError, match="invalid keys"):
             in_memory_db.update_element("test-v83-ver", {"version": 999})
 
-    def test_update_element_accepts_valid_keys(self, in_memory_db):
+    def test_update_element_accepts_valid_keys(self, in_memory_db) -> None:
         """update_element accepts whitelisted keys."""
         elem = _make_element("test-v83-ok")
         in_memory_db.add_element(elem)
@@ -204,7 +204,7 @@ class TestV83JSONInjection:
         )
         assert result is True
 
-    def test_update_element_accepts_is_deleted(self, in_memory_db):
+    def test_update_element_accepts_is_deleted(self, in_memory_db) -> None:
         """'is_deleted' is in the whitelist (soft delete)."""
         elem = _make_element("test-v83-del")
         in_memory_db.add_element(elem)
@@ -212,7 +212,7 @@ class TestV83JSONInjection:
         result = in_memory_db.update_element("test-v83-del", {"is_deleted": True})
         assert result is True
 
-    def test_update_element_rejects_sql_injection_key(self, in_memory_db):
+    def test_update_element_rejects_sql_injection_key(self, in_memory_db) -> None:
         """SQL injection via key name is rejected."""
         elem = _make_element("test-v83-sqli")
         in_memory_db.add_element(elem)
@@ -223,7 +223,7 @@ class TestV83JSONInjection:
                 {"'; DROP TABLE elements; --": "pwned"},
             )
 
-    def test_updatable_keys_are_explicit(self):
+    def test_updatable_keys_are_explicit(self) -> None:
         """Verify the whitelist contains only expected keys."""
         from core.models import _ELEMENT_UPDATABLE_KEYS
 
@@ -231,18 +231,18 @@ class TestV83JSONInjection:
                     "is_deleted", "project_id"}
         assert frozenset(expected) == _ELEMENT_UPDATABLE_KEYS
 
-    def test_universal_element_mandatory_id(self):
+    def test_universal_element_mandatory_id(self) -> None:
         """V83 FIX: UniversalElement requires non-empty element_id."""
         with pytest.raises(ValueError, match="MANDATORY"):
             UniversalElement(element_id="")
 
-    def test_universal_element_frozen(self):
+    def test_universal_element_frozen(self) -> None:
         """V83 FIX: UniversalElement is frozen (immutable)."""
         elem = UniversalElement(element_id="frozen-test")
         with pytest.raises(AttributeError):
             elem.element_id = "changed"
 
-    def test_geometry_frozen(self):
+    def test_geometry_frozen(self) -> None:
         """V83 FIX: Geometry is frozen — points cannot be mutated."""
         pts = (Point3D(x=0.0, y=0.0), Point3D(x=10.0, y=0.0))
         geom = Geometry(points=pts, polyline_closed=False)
@@ -274,74 +274,74 @@ class TestV114NaNBypassGuards:
 
     # -- get_detector_spacing NaN guards --
 
-    def test_spacing_nan_height_raises(self):
+    def test_spacing_nan_height_raises(self) -> None:
         with pytest.raises(ValueError, match="positive finite"):
             get_detector_spacing(float("nan"), "smoke")
 
-    def test_spacing_inf_height_raises(self):
+    def test_spacing_inf_height_raises(self) -> None:
         with pytest.raises(ValueError, match="positive finite"):
             get_detector_spacing(float("inf"), "smoke")
 
-    def test_spacing_neg_inf_height_raises(self):
+    def test_spacing_neg_inf_height_raises(self) -> None:
         with pytest.raises(ValueError, match="positive finite"):
             get_detector_spacing(float("-inf"), "smoke")
 
     # -- calculate_battery NaN guards --
 
-    def test_battery_nan_standby_raises(self):
+    def test_battery_nan_standby_raises(self) -> None:
         with pytest.raises(ValueError, match="non-negative finite"):
             calculate_battery(float("nan"), 1.0)
 
-    def test_battery_nan_alarm_raises(self):
+    def test_battery_nan_alarm_raises(self) -> None:
         with pytest.raises(ValueError, match="non-negative finite"):
             calculate_battery(1.0, float("nan"))
 
-    def test_battery_nan_safety_margin_raises(self):
+    def test_battery_nan_safety_margin_raises(self) -> None:
         with pytest.raises(ValueError, match="non-negative finite"):
             calculate_battery(1.0, 1.0, safety_margin=float("nan"))
 
-    def test_battery_inf_standby_raises(self):
+    def test_battery_inf_standby_raises(self) -> None:
         with pytest.raises(ValueError, match="non-negative finite"):
             calculate_battery(float("inf"), 1.0)
 
     # -- calculate_voltage_drop NaN guards --
 
-    def test_voltage_drop_nan_current_raises(self):
+    def test_voltage_drop_nan_current_raises(self) -> None:
         with pytest.raises(ValueError, match="non-negative finite"):
             calculate_voltage_drop(float("nan"), 100.0)
 
-    def test_voltage_drop_nan_length_raises(self):
+    def test_voltage_drop_nan_length_raises(self) -> None:
         with pytest.raises(ValueError, match="non-negative finite"):
             calculate_voltage_drop(1.0, float("nan"))
 
-    def test_voltage_drop_nan_voltage_raises(self):
+    def test_voltage_drop_nan_voltage_raises(self) -> None:
         with pytest.raises(ValueError, match="positive finite"):
             calculate_voltage_drop(1.0, 100.0, ps_voltage=float("nan"))
 
-    def test_voltage_drop_nan_temp_raises(self):
+    def test_voltage_drop_nan_temp_raises(self) -> None:
         with pytest.raises(ValueError):
             calculate_voltage_drop(1.0, 100.0, ambient_temperature_c=float("nan"))
 
     # -- temperature_corrected_resistance NaN guards --
 
-    def test_temp_correction_nan_resistance_raises(self):
+    def test_temp_correction_nan_resistance_raises(self) -> None:
         with pytest.raises(ValueError):
             temperature_corrected_resistance(float("nan"))
 
-    def test_temp_correction_nan_temp_raises(self):
+    def test_temp_correction_nan_temp_raises(self) -> None:
         with pytest.raises(ValueError):
             temperature_corrected_resistance(8.45, float("nan"))
 
     # -- No NaN in any result values --
 
-    def test_no_nan_in_battery_result(self):
+    def test_no_nan_in_battery_result(self) -> None:
         """All BatteryResult fields must be finite."""
         result = calculate_battery(0.5, 1.5)
         assert math.isfinite(result.required_ah)
         assert math.isfinite(result.installed_ah)
         assert isinstance(result.is_adequate, bool)
 
-    def test_no_nan_in_voltage_drop_result(self):
+    def test_no_nan_in_voltage_drop_result(self) -> None:
         """All VoltageDropResult fields must be finite."""
         result = calculate_voltage_drop(1.0, 100.0, "14")
         assert math.isfinite(result.voltage_drop_v)
@@ -373,17 +373,17 @@ class TestV130SmokeFlatSpacing:
         within the spot-type detector range (up to 18.288m / 60ft).
     """
 
-    def test_constants_smoke_max_spacing_is_9_1(self):
+    def test_constants_smoke_max_spacing_is_9_1(self) -> None:
         """Canonical SSoT: SMOKE_MAX_SPACING_M == 9.1."""
         from fireai.constants.nfpa72 import SMOKE_MAX_SPACING_M
         assert SMOKE_MAX_SPACING_M == 9.1
 
-    def test_constants_smoke_coverage_radius(self):
+    def test_constants_smoke_coverage_radius(self) -> None:
         """Smoke coverage radius = 0.7 × 9.1 = 6.37m."""
         from fireai.constants.nfpa72 import SMOKE_COVERAGE_RADIUS_M
         assert SMOKE_COVERAGE_RADIUS_M == 6.37
 
-    def test_constants_smoke_height_table_all_flat(self):
+    def test_constants_smoke_height_table_all_flat(self) -> None:
         """Every entry in SMOKE_HEIGHT_SPACING_TABLE must be 9.1m."""
         from fireai.constants.nfpa72 import SMOKE_HEIGHT_SPACING_TABLE
         for h_max, spacing in SMOKE_HEIGHT_SPACING_TABLE:
@@ -392,7 +392,7 @@ class TestV130SmokeFlatSpacing:
                 f"NFPA 72 §17.7.3.2.3 requires flat 9.1m at ALL heights."
             )
 
-    def test_constants_combined_table_smoke_column_flat(self):
+    def test_constants_combined_table_smoke_column_flat(self) -> None:
         """Smoke column in COMBINED_HEIGHT_SPACING_TABLE must be 9.1m."""
         from fireai.constants.nfpa72 import COMBINED_HEIGHT_SPACING_TABLE
         for h_max, smoke_spacing, _heat_spacing in COMBINED_HEIGHT_SPACING_TABLE:
@@ -400,7 +400,7 @@ class TestV130SmokeFlatSpacing:
                 f"At h<={h_max}m, combined table smoke = {smoke_spacing}m, expected 9.1m"
             )
 
-    def test_constants_combined_table_heat_column_reduces(self):
+    def test_constants_combined_table_heat_column_reduces(self) -> None:
         """Heat column in COMBINED_HEIGHT_SPACING_TABLE must reduce with height."""
         from fireai.constants.nfpa72 import COMBINED_HEIGHT_SPACING_TABLE
         heat_values = [heat for _, _, heat in COMBINED_HEIGHT_SPACING_TABLE]
@@ -409,12 +409,12 @@ class TestV130SmokeFlatSpacing:
                 f"Heat spacing must decrease with height: {heat_values[i]} > {heat_values[i-1]}"
             )
 
-    def test_constants_smoke_fallback_is_9_1(self):
+    def test_constants_smoke_fallback_is_9_1(self) -> None:
         """SMOKE_SPACING_FALLBACK_M must be 9.1m."""
         from fireai.constants.nfpa72 import SMOKE_SPACING_FALLBACK_M
         assert SMOKE_SPACING_FALLBACK_M == 9.1
 
-    def test_get_detector_spacing_smoke_at_low_ceiling(self):
+    def test_get_detector_spacing_smoke_at_low_ceiling(self) -> None:
         """Smoke spacing at 3m ceiling should be from table."""
         result = get_detector_spacing(3.0, "smoke")
         # The nfpa72_engine uses its own internal table which may differ
@@ -422,7 +422,7 @@ class TestV130SmokeFlatSpacing:
         assert result.max_spacing_m > 0
         assert result.coverage_radius_m > 0
 
-    def test_get_detector_spacing_smoke_vs_heat(self):
+    def test_get_detector_spacing_smoke_vs_heat(self) -> None:
         """Smoke spacing >= heat spacing at same height (no height reduction for smoke)."""
         smoke = get_detector_spacing(6.0, "smoke")
         heat = get_detector_spacing(6.0, "heat")
@@ -431,7 +431,7 @@ class TestV130SmokeFlatSpacing:
         assert smoke.max_spacing_m > 0
         assert heat.max_spacing_m > 0
 
-    def test_v130_no_over_densification_at_high_ceiling(self):
+    def test_v130_no_over_densification_at_high_ceiling(self) -> None:
         """Smoke spacing at 12m ceiling should NOT be drastically reduced.
 
         Previous bug: spacing at 12m would be ~3.7m (heat table value).
@@ -445,12 +445,12 @@ class TestV130SmokeFlatSpacing:
         # Canonical value is 9.1m regardless of height
         assert SMOKE_MAX_SPACING_M == 9.1
 
-    def test_constants_max_ceiling_height_smoke(self):
+    def test_constants_max_ceiling_height_smoke(self) -> None:
         """Maximum ceiling height for smoke detectors is 18.288m (60ft)."""
         from fireai.constants.nfpa72 import SMOKE_MAX_CEILING_HEIGHT_M
         assert SMOKE_MAX_CEILING_HEIGHT_M == 18.288
 
-    def test_estimate_detector_count_uses_correct_radius(self):
+    def test_estimate_detector_count_uses_correct_radius(self) -> None:
         """estimate_detector_count should produce reasonable counts for typical rooms."""
         # 100 m² room at 3m ceiling with smoke detectors
         result = estimate_detector_count(100.0, 3.0, "smoke")
@@ -459,12 +459,12 @@ class TestV130SmokeFlatSpacing:
         # So 100 m² room should need just 1 detector
         assert result["min_detector_count"] >= 1
 
-    def test_heat_spacing_not_affected_by_v130(self):
+    def test_heat_spacing_not_affected_by_v130(self) -> None:
         """V130 fix should NOT change heat detector spacing."""
         from fireai.constants.nfpa72 import HEAT_MAX_SPACING_M
         assert HEAT_MAX_SPACING_M == 6.10  # 20ft unchanged
 
-    def test_heat_fallback_unaffected(self):
+    def test_heat_fallback_unaffected(self) -> None:
         """Heat fallback spacing is unchanged by V130."""
         from fireai.constants.nfpa72 import HEAT_SPACING_FALLBACK_M
         assert HEAT_SPACING_FALLBACK_M == 3.50

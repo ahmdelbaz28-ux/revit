@@ -1,4 +1,4 @@
-"""international_reg_selector.py – International Regulatory Jurisdiction Selector
+"""international_reg_selector.py – International Regulatory Jurisdiction Selector.
 ===============================================================================
 Maps project location to the correct regulatory framework for hazardous area
 classification. This is a LEGAL GATE — wrong jurisdiction = illegal design.
@@ -26,7 +26,6 @@ from __future__ import annotations
 
 import logging
 from enum import Enum
-from typing import Dict, List, Optional, Tuple
 
 from fireai.core.models_v21 import RegSelectorResult, RegulatoryFramework
 
@@ -108,7 +107,7 @@ class UnknownCountryError(Exception):
     Criminal liability protection for life-safety systems.
     """
 
-    def __init__(self, country_code: str):
+    def __init__(self, country_code: str) -> None:
         self.country_code = country_code
         super().__init__(
             f"Country '{country_code}' has no registered regulatory framework. "
@@ -126,7 +125,7 @@ class UnknownCountryError(Exception):
 # Fix #5: +15 missing countries added
 # Fix #3: Norway -> EFTA (not EU)
 # Fix #1: Canada -> CEC_CANADA (Zone system since 1998)
-COUNTRY_FRAMEWORK_MAP: Dict[str, RegulatoryFramework] = {
+COUNTRY_FRAMEWORK_MAP: dict[str, RegulatoryFramework] = {
     # EU member states -> ATEX
     "DE": RegulatoryFramework.ATEX_EU,
     "FR": RegulatoryFramework.ATEX_EU,
@@ -223,7 +222,7 @@ _ZONE_SYSTEM = {
 
 # Fix #2: Division-to-Zone conversion with hazard class distinction
 # Fix #4: CLASS_III (fibers) has no IEC equivalent
-_DIVISION_TO_ZONE: Dict[Tuple[str, str], Optional[str]] = {
+_DIVISION_TO_ZONE: dict[tuple[str, str], str | None] = {
     # Gas (CLASS_I)
     ("DIVISION_1", "CLASS_I"): "ZONE_1",
     ("DIVISION_2", "CLASS_I"): "ZONE_2",
@@ -246,9 +245,9 @@ class RegulatoryFrameworkLegacy:
     region: JurisdictionRegion
     system: HazardSystem
     primary_standard: str
-    secondary_standards: Tuple[str, ...] = ()
-    atex_directive: Optional[str] = None
-    iec_standard: Optional[str] = None
+    secondary_standards: tuple[str, ...] = ()
+    atex_directive: str | None = None
+    iec_standard: str | None = None
     zone_based: bool = True
     requires_notified_body: bool = False
     equipment_marking: str = ""
@@ -256,7 +255,7 @@ class RegulatoryFrameworkLegacy:
 
 
 # Legacy framework definitions
-_FRAMEWORKS: Dict[HazardSystem, RegulatoryFrameworkLegacy] = {
+_FRAMEWORKS: dict[HazardSystem, RegulatoryFrameworkLegacy] = {
     HazardSystem.NEC_DIVISION: RegulatoryFrameworkLegacy(
         region=JurisdictionRegion.USA,
         system=HazardSystem.NEC_DIVISION,
@@ -352,7 +351,7 @@ _FRAMEWORKS: Dict[HazardSystem, RegulatoryFrameworkLegacy] = {
 }
 
 # Country -> Region mapping (for legacy interface)
-_COUNTRY_TO_REGION: Dict[str, JurisdictionRegion] = {
+_COUNTRY_TO_REGION: dict[str, JurisdictionRegion] = {
     "US": JurisdictionRegion.USA,
     "USA": JurisdictionRegion.USA,
     "UNITED STATES": JurisdictionRegion.USA,
@@ -458,7 +457,7 @@ _COUNTRY_TO_REGION: Dict[str, JurisdictionRegion] = {
     "NIGERIA": JurisdictionRegion.WEST_AFRICA,
 }
 
-_REGION_TO_SYSTEM: Dict[JurisdictionRegion, HazardSystem] = {
+_REGION_TO_SYSTEM: dict[JurisdictionRegion, HazardSystem] = {
     JurisdictionRegion.USA: HazardSystem.NEC_DIVISION,
     JurisdictionRegion.CANADA: HazardSystem.CEC_ZONE,
     JurisdictionRegion.EU: HazardSystem.ATEX_ZONE,
@@ -485,7 +484,7 @@ _REGION_TO_SYSTEM: Dict[JurisdictionRegion, HazardSystem] = {
 }
 
 # Zone <-> Division conversion maps (legacy)
-DIVISION_TO_ZONE: Dict[Tuple[NECDivision, HazardClass], Optional[ATEXZone]] = {
+DIVISION_TO_ZONE: dict[tuple[NECDivision, HazardClass], ATEXZone | None] = {
     (NECDivision.DIVISION_1, HazardClass.CLASS_I): ATEXZone.ZONE_1,
     (NECDivision.DIVISION_2, HazardClass.CLASS_I): ATEXZone.ZONE_2,
     (NECDivision.DIVISION_1, HazardClass.CLASS_II): ATEXZone.ZONE_21,
@@ -498,7 +497,7 @@ DIVISION_TO_ZONE: Dict[Tuple[NECDivision, HazardClass], Optional[ATEXZone]] = {
     (NECDivision.DIVISION_2, HazardClass.CLASS_III): None,
 }
 
-ZONE_TO_DIVISION: Dict[ATEXZone, Tuple[NECDivision, HazardClass]] = {
+ZONE_TO_DIVISION: dict[ATEXZone, tuple[NECDivision, HazardClass]] = {
     ATEXZone.ZONE_0: (NECDivision.DIVISION_1, HazardClass.CLASS_I),
     ATEXZone.ZONE_1: (NECDivision.DIVISION_1, HazardClass.CLASS_I),
     ATEXZone.ZONE_2: (NECDivision.DIVISION_2, HazardClass.CLASS_I),
@@ -524,7 +523,7 @@ def resolve(country_code: str) -> RegSelectorResult:
         raise UnknownCountryError(code)
 
     framework = COUNTRY_FRAMEWORK_MAP[code]
-    warnings: List[str] = []
+    warnings: list[str] = []
 
     if framework == RegulatoryFramework.EFTA:
         warnings.append(
@@ -580,10 +579,10 @@ class JurisdictionResult:
     country_input: str
     region: JurisdictionRegion
     framework: RegulatoryFrameworkLegacy
-    equivalent_zone: Optional[ATEXZone] = None
-    equivalent_division: Optional[NECDivision] = None
-    warnings: Tuple[str, ...] = ()
-    errors: Tuple[str, ...] = ()
+    equivalent_zone: ATEXZone | None = None
+    equivalent_division: NECDivision | None = None
+    warnings: tuple[str, ...] = ()
+    errors: tuple[str, ...] = ()
 
     @property
     def is_valid(self) -> bool:
@@ -610,7 +609,7 @@ class InternationalRegSelector:
     def resolve(
         self,
         country: str,
-        override_system: Optional[HazardSystem] = None,
+        override_system: HazardSystem | None = None,
     ) -> JurisdictionResult:
         """Legacy resolve — still uses warning-based fallback for unknown countries.
         Prefer resolve_v21() for new code.
@@ -619,8 +618,8 @@ class InternationalRegSelector:
         region = _COUNTRY_TO_REGION.get(key, JurisdictionRegion.GLOBAL)
         system = _REGION_TO_SYSTEM.get(region, HazardSystem.IECEX_ZONE)
 
-        warnings: List[str] = []
-        errors: List[str] = []
+        warnings: list[str] = []
+        errors: list[str] = []
 
         if region == JurisdictionRegion.GLOBAL:
             warnings.append(
@@ -671,7 +670,7 @@ class InternationalRegSelector:
         self,
         zone: ATEXZone,
         hazard_class: HazardClass = HazardClass.CLASS_I,
-    ) -> Optional[NECDivision]:
+    ) -> NECDivision | None:
         """Convert ATEX Zone to NEC Division equivalent."""
         mapping = ZONE_TO_DIVISION.get(zone)
         if mapping is None:
@@ -692,7 +691,7 @@ class InternationalRegSelector:
         self,
         division: NECDivision,
         hazard_class: HazardClass = HazardClass.CLASS_I,
-    ) -> Optional[ATEXZone]:
+    ) -> ATEXZone | None:
         """Convert NEC Division to ATEX Zone equivalent."""
         result = DIVISION_TO_ZONE.get((division, hazard_class))
 
@@ -703,7 +702,7 @@ class InternationalRegSelector:
 
         return result
 
-    def list_supported_countries(self) -> List[str]:
+    def list_supported_countries(self) -> list[str]:
         return sorted(_COUNTRY_TO_REGION.keys())
 
     def get_framework(self, system: HazardSystem) -> RegulatoryFrameworkLegacy:

@@ -1,4 +1,4 @@
-"""fireai.conduit.bend — NEC Bend Radius Verifier
+"""fireai.conduit.bend — NEC Bend Radius Verifier.
 ===============================================
 
 Verifies that conduit bend radii meet NEC minimums and computes

@@ -1,4 +1,4 @@
-"""revit_bim_sync.py — BIM/Revit Sync Without Revit API Dependency
+"""revit_bim_sync.py — BIM/Revit Sync Without Revit API Dependency.
 ================================================================
 SURGICAL FIX: revit-connector/ existed but required Windows + Revit API.
 This meant the connector was useless in CI, cloud, and Linux environments.
@@ -24,7 +24,7 @@ import logging
 import math
 import uuid
 from dataclasses import dataclass
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -44,14 +44,14 @@ class BIMRoom:
     level_id: str
     area_m2: float
     ceiling_height_m: float
-    polygon: List[Tuple[float, float]]  # (x, y) in metres
+    polygon: list[tuple[float, float]]  # (x, y) in metres
     occupancy_type: str = "office"
     is_sprinklered: bool = False
     source: str = "unknown"  # "revit" | "ifc" | "json" | "dxf"
 
     @property
-    def bounding_box(self) -> Tuple[float, float, float, float]:
-        """(min_x, min_y, max_x, max_y)"""
+    def bounding_box(self) -> tuple[float, float, float, float]:
+        """(min_x, min_y, max_x, max_y)."""
         xs = [p[0] for p in self.polygon]
         ys = [p[1] for p in self.polygon]
         return min(xs), min(ys), max(xs), max(ys)
@@ -66,7 +66,7 @@ class BIMRoom:
         bb = self.bounding_box
         return bb[3] - bb[1]
 
-    def to_fireai_room_dict(self) -> Dict[str, Any]:
+    def to_fireai_room_dict(self) -> dict[str, Any]:
         """Convert to FireAI FloorAnalyser room_dict format."""
         return {
             "room_id": self.room_id,
@@ -134,7 +134,7 @@ class RevitAPIBridge:
         """True only when running inside Revit with live API."""
         return self._mode in ("revit_api", "pyrevit")
 
-    def extract_rooms(self, source: str) -> List[BIMRoom]:
+    def extract_rooms(self, source: str) -> list[BIMRoom]:
         """Extract rooms from BIM source.
 
         Args:
@@ -155,7 +155,7 @@ class RevitAPIBridge:
             f"or Revit live (need Windows + Revit)."
         )
 
-    def _extract_revit_live(self) -> List[BIMRoom]:
+    def _extract_revit_live(self) -> list[BIMRoom]:
         """Extract rooms from live Revit session."""
         try:
             import Autodesk.Revit.DB as DB
@@ -168,7 +168,7 @@ class RevitAPIBridge:
             collector = DB.FilteredElementCollector(doc)
             rooms = collector.OfCategory(DB.BuiltInCategory.OST_Rooms).WhereElementIsNotElementType().ToElements()
 
-            result: List[BIMRoom] = []
+            result: list[BIMRoom] = []
             for room in rooms:
                 if room.Area <= 0:
                     continue
@@ -204,7 +204,7 @@ class RevitAPIBridge:
                 f"Revit live extraction failed: {exc}. Ensure running inside Revit process with API access."
             )
 
-    def _extract_ifc(self, filepath: str) -> List[BIMRoom]:
+    def _extract_ifc(self, filepath: str) -> list[BIMRoom]:
         """Extract rooms from IFC file via ifcopenshell."""
         try:
             import ifcopenshell
@@ -213,7 +213,7 @@ class RevitAPIBridge:
 
             ifc_file = ifcopenshell.open(filepath)
             spaces = ifc_file.by_type("IfcSpace")
-            result: List[BIMRoom] = []
+            result: list[BIMRoom] = []
 
             for space in spaces:
                 name = space.Name or space.LongName or f"Room-{space.id()}"
@@ -290,7 +290,7 @@ class RevitAPIBridge:
         except ImportError:
             raise ImportError("ifcopenshell not installed. Install: pip install ifcopenshell")
 
-    def _extract_json(self, filepath: str) -> List[BIMRoom]:
+    def _extract_json(self, filepath: str) -> list[BIMRoom]:
         """Extract rooms from FireAI JSON export or Revit Dynamo JSON.
 
         This is the universal fallback — works in CI, cloud, Linux.
@@ -300,7 +300,7 @@ class RevitAPIBridge:
             data = json.load(f)
 
         rooms_data = data if isinstance(data, list) else data.get("rooms", [])
-        result: List[BIMRoom] = []
+        result: list[BIMRoom] = []
 
         for rd in rooms_data:
             polygon = rd.get("polygon_coords") or rd.get("polygon") or []
@@ -325,7 +325,7 @@ class RevitAPIBridge:
             )
         return result
 
-    def _extract_dxf(self, filepath: str) -> List[BIMRoom]:
+    def _extract_dxf(self, filepath: str) -> list[BIMRoom]:
         """Extract rooms from DXF using existing streaming parser.
 
         HIGH-11 FIX: Previously hardcoded scale_factor=0.001 (mm→m)
@@ -356,7 +356,7 @@ class RevitAPIBridge:
                 scale_factor=scale_factor,  # HIGH-11: was hardcoded 0.001
                 min_area_m2=1.0,
             )
-            rooms: List[BIMRoom] = []
+            rooms: list[BIMRoom] = []
             for i, streamed in enumerate(parser.stream_file(filepath)):
                 rooms.append(
                     BIMRoom(
@@ -430,7 +430,7 @@ class BIMSyncOrchestrator:
         self,
         source: str,
         analyser: Any = None,  # FloorAnalyser
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Extract rooms -> analyse -> return results.
 
         Args:

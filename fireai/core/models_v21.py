@@ -1,4 +1,4 @@
-"""models_v21.py – FireAI V21 Pydantic Models (Fast-Fail Validation)
+"""models_v21.py – FireAI V21 Pydantic Models (Fast-Fail Validation).
 ==================================================================
 Replaces dataclasses with Pydantic BaseModel for fail-fast validation.
 No dict/tuple passes through. No silent failures. Physics validators enforced.
@@ -38,7 +38,6 @@ import logging
 import math
 import threading
 from enum import Enum
-from typing import Dict, List, Optional, Tuple
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -115,7 +114,7 @@ class TemperatureClass(str, Enum):
 
 # Max surface temperature per class (IEC 60079-0:2017 §7.3)
 # Extended with subdivisions T2A-T2D, T3A-T3C, T4A
-_T_CLASS_MAX: Dict[str, float] = {
+_T_CLASS_MAX: dict[str, float] = {
     "T1": 450.0,
     "T2": 300.0,
     "T2A": 280.0,
@@ -169,7 +168,7 @@ class ThermalMarginRule(str, Enum):
     """IEC 60079-14 thermal margin strategies.
     STRICT_5PCT: 5% margin with minimum 10K (Zone 0/20)
     STANDARD_5PCT: 5% margin with minimum 5K (Zone 1/21)
-    BASIC: just strictly below (Zone 2/22)
+    BASIC: just strictly below (Zone 2/22).
     """
 
     STRICT_5PCT = "STRICT_5PCT"
@@ -243,7 +242,7 @@ class FoulingCategory(str, Enum):
       CLEAN:    0.85-1.00 (laboratory / controlled indoor)
       MODERATE: 0.70-0.85 (typical industrial)
       HEAVY:    0.55-0.70 (heavy industrial / dusty)
-      SEVERE:   0.00-0.55 (desert outdoor / chemical plant)
+      SEVERE:   0.00-0.55 (desert outdoor / chemical plant).
 
     Reference: FM Global DS 5-48 §3.2.1
     """
@@ -290,17 +289,17 @@ class SubstanceProperties(BaseModel):
 
     name: str
     hazard_type: HazardType
-    lfl_vol_pct: Optional[float] = Field(
+    lfl_vol_pct: float | None = Field(
         None, gt=0.0, le=100.0, description="Lower Flammable Limit (vol%). Must be >0."
     )
-    ufl_vol_pct: Optional[float] = Field(None, gt=0.0, le=100.0)
-    flash_point_c: Optional[float] = Field(None, ge=-200.0, le=500.0)
-    autoignition_c: Optional[float] = Field(None, ge=50.0, le=1000.0)
-    mec_g_m3: Optional[float] = Field(None, gt=0.0, description="Minimum Explosible Concentration (dust)")
-    kst_bar_m_s: Optional[float] = Field(None, ge=0.0, description="Dust explosion constant")
-    mie_mj: Optional[float] = Field(None, gt=0.0, description="Minimum Ignition Energy (mJ)")
-    density_kg_m3: Optional[float] = Field(None, gt=0.0)
-    molecular_weight: Optional[float] = Field(None, gt=0.0)
+    ufl_vol_pct: float | None = Field(None, gt=0.0, le=100.0)
+    flash_point_c: float | None = Field(None, ge=-200.0, le=500.0)
+    autoignition_c: float | None = Field(None, ge=50.0, le=1000.0)
+    mec_g_m3: float | None = Field(None, gt=0.0, description="Minimum Explosible Concentration (dust)")
+    kst_bar_m_s: float | None = Field(None, ge=0.0, description="Dust explosion constant")
+    mie_mj: float | None = Field(None, gt=0.0, description="Minimum Ignition Energy (mJ)")
+    density_kg_m3: float | None = Field(None, gt=0.0)
+    molecular_weight: float | None = Field(None, gt=0.0)
 
     @model_validator(mode="after")
     def physics_consistency(self) -> SubstanceProperties:
@@ -382,10 +381,10 @@ class HACResult(BaseModel):
     extent: ZoneExtent
     ventilation: VentilationLevel
     hazard_type: HazardType
-    warnings: List[str] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
     # POOR ventilation + Zone 0/20 is the most dangerous combination
     # The model enforces a warning cannot be silently dropped
-    critical_flags: List[str] = Field(default_factory=list)
+    critical_flags: list[str] = Field(default_factory=list)
 
     @model_validator(mode="after")
     def check_critical_combination(self) -> HACResult:
@@ -456,16 +455,16 @@ class ATEXEquipmentSpec(BaseModel):
     epl_required: str  # "Ga"/"Gb"/"Gc"/"Da"/"Db"/"Dc"/"Ma"/"Mb"
     atex_category: str  # "1G","2G","3G","1D","2D","3D","M1","M2"
     temp_class: TemperatureClass
-    protection_modes: List[str]  # e.g. ["ia","d","e"]
-    autoignition_c: Optional[float] = None  # V54 FIX (V48 #6): for thermal margin validation
-    hac_warnings: List[str] = Field(default_factory=list)
-    hac_critical: List[str] = Field(default_factory=list)
+    protection_modes: list[str]  # e.g. ["ia","d","e"]
+    autoignition_c: float | None = None  # V54 FIX (V48 #6): for thermal margin validation
+    hac_warnings: list[str] = Field(default_factory=list)
+    hac_critical: list[str] = Field(default_factory=list)
 
     @model_validator(mode="after")
     def epl_category_consistency(self) -> ATEXEquipmentSpec:
         """FIXED Fix #14: EPL hierarchy was inverted.
         Correct gas hierarchy: Ga > Gb > Gc (Ga = highest protection)
-        Correct dust hierarchy: Da > Db > Dc
+        Correct dust hierarchy: Da > Db > Dc.
         """
         # V54 FIX (V48 #4): Validate atex_category against ATEX 2014/34/EU Annex I.
         _VALID_ATEX_CATEGORIES = {"1G", "2G", "3G", "1D", "2D", "3D", "M1", "M2"}
@@ -485,7 +484,7 @@ class ATEXEquipmentSpec(BaseModel):
             ZoneType.ZONE_22: ("Dc", "3D"),
         }
         if self.zone in valid:
-            expected_epl, expected_cat = valid[self.zone]
+            expected_epl, _expected_cat = valid[self.zone]
             # EPL hierarchy: Ga satisfies Gb/Gc, Da satisfies Db/Dc
             # Gas hierarchy index: Ga=0, Gb=1, Gc=2
             gas_order = ["Ga", "Gb", "Gc"]
@@ -512,7 +511,7 @@ class ATEXEquipmentSpec(BaseModel):
     def protection_mode_zone_fit(self) -> ATEXEquipmentSpec:
         """FIXED Fix #17: 'ia' for Zone 2 is over-specified (costly, unnecessary).
         Zone 2 -> 'ic' is sufficient. Zone 1 -> 'ib' or 'ia'. Zone 0 -> 'ia' only.
-        [IEC 60079-14]
+        [IEC 60079-14].
         """
         zone_allowed = {
             # V25 FIX: IEC 60079-14 protection concepts permitted per zone.
@@ -588,7 +587,7 @@ class ATEXEquipmentSpec(BaseModel):
                             f"for {self.zone.value}. [IEC 60079-14 §5.3]"
                         )
                         # Cannot raise ValueError because frozen model; append to hac_critical
-                        object.__setattr__(self, "hac_critical", list(self.hac_critical) + [hac_critical_entry])
+                        object.__setattr__(self, "hac_critical", [*list(self.hac_critical), hac_critical_entry])
                         # MED-06 FIX: Log CRITICAL so violation is not silent
                         logger.critical(
                             "MED-06: %s — equipment specification is NOT compliant. "
@@ -604,7 +603,7 @@ class ATEXEquipmentSpec(BaseModel):
                             f"({self.autoignition_c}°C) for {self.zone.value}. "
                             f"[IEC 60079-14 §5.3]"
                         )
-                        object.__setattr__(self, "hac_critical", list(self.hac_critical) + [hac_critical_entry])
+                        object.__setattr__(self, "hac_critical", [*list(self.hac_critical), hac_critical_entry])
                         # MED-06 FIX: Log CRITICAL so violation is not silent
                         logger.critical(
                             "MED-06: %s — equipment specification is NOT compliant. "
@@ -624,8 +623,8 @@ class Obstruction(BaseModel):
     model_config = ConfigDict(frozen=True, strict=True)
 
     obstruction_id: str
-    vertices: List[List[float]]  # list of [x,y,z]
-    spectral_transparency: Dict[WavelengthBand, float] = Field(
+    vertices: list[list[float]]  # list of [x,y,z]
+    spectral_transparency: dict[WavelengthBand, float] = Field(
         default_factory=lambda: {
             WavelengthBand.UV: 0.0,
             WavelengthBand.VIS: 0.0,
@@ -664,17 +663,16 @@ class Obstruction(BaseModel):
 
 
 class FlameDetectorSpec(BaseModel):
-    """Flame detector physical specification for ray-trace engine.
-    """
+    """Flame detector physical specification for ray-trace engine."""
 
     model_config = ConfigDict(frozen=True, strict=True)
 
     detector_id: str
-    position: List[float] = Field(min_length=3, max_length=3)
-    orientation_vector: List[float] = Field(min_length=3, max_length=3)
+    position: list[float] = Field(min_length=3, max_length=3)
+    orientation_vector: list[float] = Field(min_length=3, max_length=3)
     rated_range_m: float = Field(gt=0.0, le=200.0)
     aoc_deg: float = Field(gt=0.0, le=180.0, description="Angle of Coverage (degrees)")
-    spectral_bands: List[WavelengthBand] = Field(min_length=1)
+    spectral_bands: list[WavelengthBand] = Field(min_length=1)
 
     @model_validator(mode="after")
     def orientation_not_zero(self) -> FlameDetectorSpec:
@@ -690,7 +688,7 @@ class FlameDetectorSpec(BaseModel):
         return self
 
     @property
-    def orientation_unit(self) -> List[float]:
+    def orientation_unit(self) -> list[float]:
         mag = math.sqrt(sum(v**2 for v in self.orientation_vector))
         return [v / mag for v in self.orientation_vector]
 
@@ -723,7 +721,7 @@ class RegSelectorResult(BaseModel):
     country_code: str
     framework: RegulatoryFramework
     zone_system: str  # "ZONE" or "DIVISION"
-    warnings: List[str]
+    warnings: list[str]
 
 
 # ===========================================================================
@@ -804,7 +802,7 @@ class EnvironmentalContext(BaseModel):
             "GLOBAL_IEC uses base IEC 60079 / NFPA 72 requirements."
         ),
     )
-    fouling_category: Optional[FoulingCategory] = Field(
+    fouling_category: FoulingCategory | None = Field(
         default=None,
         description=(
             "Categorical fouling environment. When set, generates regional "
@@ -827,7 +825,7 @@ class EnvironmentalContext(BaseModel):
         return self
 
     @property
-    def advisories(self) -> List[str]:
+    def advisories(self) -> list[str]:
         """Generate advisory warnings based on region vs actual values.
 
         The system NEVER silently overwrites engineer inputs. Instead,
@@ -845,7 +843,7 @@ class EnvironmentalContext(BaseModel):
             List of advisory warning strings
 
         """
-        warnings: List[str] = []
+        warnings: list[str] = []
 
         # MENA / GCC regions: peak summer temperatures 50-55C
         if self.region in (RegionProfile.MENA_SUMMER_OUTDOOR, RegionProfile.GULF_HCIS):
@@ -869,13 +867,12 @@ class EnvironmentalContext(BaseModel):
         # Egypt has moderate dust but not severe sandstorms like the Gulf.
         # Fouling advisory is only triggered for severe desert regions
         # (MENA_SUMMER_OUTDOOR, GULF_HCIS) where sandstorms are common.
-        if self.region == RegionProfile.EGYPT_CODE:
-            if self.ambient_temp_c < 45.0:
-                warnings.append(
-                    f"EGYPT region selected but ambient temperature "
-                    f"({self.ambient_temp_c:.1f}C) is below typical Egyptian "
-                    f"summer peak of 45.0C. Verify outdoor temperature assumption."
-                )
+        if self.region == RegionProfile.EGYPT_CODE and self.ambient_temp_c < 45.0:
+            warnings.append(
+                f"EGYPT region selected but ambient temperature "
+                f"({self.ambient_temp_c:.1f}C) is below typical Egyptian "
+                f"summer peak of 45.0C. Verify outdoor temperature assumption."
+            )
 
         return warnings
 
@@ -884,7 +881,7 @@ class EnvironmentalContext(BaseModel):
 # V21.2: Zone-Based Minimum Redundancy (NFPA 72 §17.8.3.4)
 # ===========================================================================
 
-MIN_REDUNDANCY_BY_ZONE: Dict[ZoneType, int] = {
+MIN_REDUNDANCY_BY_ZONE: dict[ZoneType, int] = {
     # High-risk zones require voting architecture (1oo2 minimum)
     ZoneType.ZONE_0: 3,  # 2oo3 voting — continuous presence
     ZoneType.ZONE_1: 2,  # 1oo2 minimum — NFPA 72 §17.8.3.4
@@ -1060,8 +1057,8 @@ def room_concentration_at_time(
 def burgess_wheeler_lfl(
     lfl_25c: float,
     ambient_temp_c: float,
-    heat_of_combustion_kj_mol: Optional[float] = None,
-    lfl_floor_ratio: Optional[float] = 0.5,
+    heat_of_combustion_kj_mol: float | None = None,
+    lfl_floor_ratio: float | None = 0.5,
 ) -> float:
     """Burgess-Wheeler LFL thermal correction.
 
@@ -1221,7 +1218,7 @@ def _select_temp_class_with_margin(
 # Source: Drysdale "An Introduction to Fire Dynamics" Table 4.1,
 #         ISO 13943:2017 §3.88 (smoke optical density), EN 54-12
 #         IR band values from NIST WebBook (representative order-of-magnitude).
-_DEFAULT_MEDIUM_ALPHA: Dict[str, Dict[str, float]] = {
+_DEFAULT_MEDIUM_ALPHA: dict[str, dict[str, float]] = {
     # SMOKE: condensed carbonaceous aerosol, d_p ≈ 0.1–1 µm
     # UV 2.0 m⁻¹, VIS 3.0 m⁻¹  (Mie scattering peak in visible)
     # IR1 (1–2.7 µm) 1.5 m⁻¹, IR3 (3.7–5 µm) 0.8 m⁻¹
@@ -1290,7 +1287,7 @@ class SpectralSignatureRegistry:
     """
 
     def __init__(self) -> None:
-        self._signatures: Dict[str, SpectralSignature] = {}
+        self._signatures: dict[str, SpectralSignature] = {}
         self._loaded = False
         self._lock = threading.Lock()
 
@@ -1862,7 +1859,7 @@ class SpectralSignatureRegistry:
             ),
         }
 
-    def get(self, cas_number: str) -> Optional[SpectralSignature]:
+    def get(self, cas_number: str) -> SpectralSignature | None:
         """Get spectral signature by CAS number. Returns None if unknown."""
         self._ensure_loaded()
         return self._signatures.get(cas_number)
@@ -1872,7 +1869,7 @@ class SpectralSignatureRegistry:
         self._ensure_loaded()
         self._signatures[signature.cas_number] = signature
 
-    def list_available(self) -> List[str]:
+    def list_available(self) -> list[str]:
         """List all available CAS numbers."""
         self._ensure_loaded()
         return sorted(self._signatures.keys())
@@ -1910,9 +1907,9 @@ class VolumetricMedium(BaseModel):
 
     medium_id: str
     medium_type: str = Field(description="SMOKE, STEAM, GAS_CLOUD, DUST_SUSPENSION")
-    bbox_min: List[float] = Field(min_length=3, max_length=3)
-    bbox_max: List[float] = Field(min_length=3, max_length=3)
-    cas_number: Optional[str] = Field(None, description="CAS number for spectral lookup in SpectralSignatureRegistry")
+    bbox_min: list[float] = Field(min_length=3, max_length=3)
+    bbox_max: list[float] = Field(min_length=3, max_length=3)
+    cas_number: str | None = Field(None, description="CAS number for spectral lookup in SpectralSignatureRegistry")
     concentration_factor: float = Field(
         default=1.0,
         gt=0.0,
@@ -1923,7 +1920,7 @@ class VolumetricMedium(BaseModel):
         ),
     )
     # Direct absorption coefficients (override CAS lookup if provided)
-    alpha_override: Optional[Dict[WavelengthBand, float]] = Field(
+    alpha_override: dict[WavelengthBand, float] | None = Field(
         None, description="Override absorption coefficients per band (m^-1)"
     )
 
@@ -2083,11 +2080,11 @@ def beer_lambert_transmittance(
 
 
 def volumetric_path_transmittance(
-    ray_start: Tuple[float, float, float],
-    ray_end: Tuple[float, float, float],
-    media: List[VolumetricMedium],
+    ray_start: tuple[float, float, float],
+    ray_end: tuple[float, float, float],
+    media: list[VolumetricMedium],
     band: WavelengthBand,
-    registry: Optional[SpectralSignatureRegistry] = None,
+    registry: SpectralSignatureRegistry | None = None,
 ) -> float:
     """Calculate total spectral transmittance along a ray path through
     multiple volumetric media (smoke, gas clouds, steam).
@@ -2135,10 +2132,10 @@ def volumetric_path_transmittance(
 
 
 def _ray_aabb_path_length(
-    origin: Tuple[float, ...],
-    end: Tuple[float, ...],
-    bbox_min: List[float],
-    bbox_max: List[float],
+    origin: tuple[float, ...],
+    end: tuple[float, ...],
+    bbox_min: list[float],
+    bbox_max: list[float],
 ) -> float:
     """Calculate the path length of a ray segment through an AABB.
     Returns 0.0 if the ray doesn't intersect the box.

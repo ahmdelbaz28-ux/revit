@@ -1,4 +1,4 @@
-"""unit_converter.py — Safety-Critical Unit Conversion Utility
+"""unit_converter.py — Safety-Critical Unit Conversion Utility.
 ============================================================
 LIFE-SAFETY CRITICAL: Incorrect unit conversions in BIM/Revit integration
 lead to catastrophic engineering errors. A pipe sized in feet instead of
@@ -348,27 +348,36 @@ def convert_polygon_revit_to_metres(
 # ═══════════════════════════════════════════════════════════════════════════════
 
 __all__ = [
+    "BAR_TO_PSI",
+    "CUBIC_FT_TO_CUBIC_M",
+    "CUBIC_M_TO_CUBIC_FT",
     # Conversion factors
-    "FEET_TO_METRES", "METRES_TO_FEET",
-    "INCHES_TO_MM", "MM_TO_INCHES",
-    "FEET_TO_MM", "MM_TO_FEET",
-    "SQFT_TO_SQM", "SQM_TO_SQFT",
-    "CUBIC_FT_TO_CUBIC_M", "CUBIC_M_TO_CUBIC_FT",
-    "GALLONS_US_TO_LITRES", "LITRES_TO_GALLONS_US",
-    "PSI_TO_BAR", "BAR_TO_PSI",
-    "PSI_TO_KPA", "KPA_TO_PSI",
-    "GPM_TO_LPM", "LPM_TO_GPM",
-    # Functions
-    "revit_internal_to_metres",
-    "metres_to_revit_internal",
-    "revit_internal_to_mm",
-    "mm_to_revit_internal",
-    "inches_to_mm",
-    "psi_to_bar",
+    "FEET_TO_METRES",
+    "FEET_TO_MM",
+    "GALLONS_US_TO_LITRES",
+    "GPM_TO_LPM",
+    "INCHES_TO_MM",
+    "KPA_TO_PSI",
+    "LITRES_TO_GALLONS_US",
+    "LPM_TO_GPM",
+    "METRES_TO_FEET",
+    "MM_TO_FEET",
+    "MM_TO_INCHES",
+    "PSI_TO_BAR",
+    "PSI_TO_KPA",
+    "SQFT_TO_SQM",
+    "SQM_TO_SQFT",
     "bar_to_psi",
-    "gpm_to_lpm",
-    "sqft_to_sqm",
-    "fahrenheit_to_celsius",
     "celsius_to_fahrenheit",
     "convert_polygon_revit_to_metres",
+    "fahrenheit_to_celsius",
+    "gpm_to_lpm",
+    "inches_to_mm",
+    "metres_to_revit_internal",
+    "mm_to_revit_internal",
+    "psi_to_bar",
+    # Functions
+    "revit_internal_to_metres",
+    "revit_internal_to_mm",
+    "sqft_to_sqm",
 ]

@@ -1,4 +1,4 @@
-"""backend/app.py — FastAPI Application Entry Point
+"""backend/app.py — FastAPI Application Entry Point.
 ===============================================
 
 Core FastAPI application with all CAD/BIM integration routes.
@@ -218,7 +218,7 @@ def _ensure_cache_reaper_started() -> None:
             return
         _cache_reaper_started = True
 
-        def _reaper_loop():
+        def _reaper_loop() -> None:
             while True:
                 try:
                     time.sleep(_CACHE_REAPER_INTERVAL)
@@ -256,7 +256,7 @@ async def cache_get(key: str):
         return entry["value"]
 
 
-async def cache_set(key: str, value: str, expire: int = 300):
+async def cache_set(key: str, value: str, expire: int = 300) -> None:
     """Set value in cache with expiration in seconds.
 
     STRESS-TEST FIX #3: If cache is at capacity, expired entries are
@@ -304,7 +304,7 @@ async def cache_set(key: str, value: str, expire: int = 300):
     _ensure_cache_reaper_started()
 
 
-async def cache_delete(key: str):
+async def cache_delete(key: str) -> None:
     """Delete key from cache."""
     with _cache_lock:
         _cache.pop(key, None)

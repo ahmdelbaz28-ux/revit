@@ -1,4 +1,4 @@
-"""fireai/core/sensitivity_analyzer.py  V1.0
+"""fireai/core/sensitivity_analyzer.py  V1.0.
 ==========================================
 Standalone sensitivity tool for FireAI engineers.
 
@@ -36,7 +36,6 @@ from __future__ import annotations
 import json
 import time
 from dataclasses import asdict, dataclass
-from typing import Dict, List, Optional, Tuple
 
 import fireai.core.spatial_engine.density_optimizer as _dm
 from fireai.core.spatial_engine.density_optimizer import (
@@ -67,9 +66,9 @@ class SensitivityReport:
 
     param_name: str
     baseline_value: float
-    points: List[SensitivityPoint]
+    points: list[SensitivityPoint]
     elasticity: float  # |Δcount%| / |Δparam%| averaged
-    safe_range: Tuple[float, float]  # values where proof_valid=True
+    safe_range: tuple[float, float]  # values where proof_valid=True
     recommendation: str
 
     def table(self) -> str:
@@ -123,8 +122,8 @@ class SensitivityAnalyzer:
         ceiling_height: float = 3.0,
         room_name: str = "room",
         param: str = "coverage_radius",
-        values: Optional[List[float]] = None,
-        baseline_value: Optional[float] = None,
+        values: list[float] | None = None,
+        baseline_value: float | None = None,
     ) -> SensitivityReport:
         """Run a single-parameter sensitivity sweep.
 
@@ -153,7 +152,7 @@ class SensitivityAnalyzer:
 
         values = sorted(set([base_val] + (values or [])))
         room = Room(name=room_name, width=width, length=length, ceiling_height=ceiling_height)
-        points: List[SensitivityPoint] = []
+        points: list[SensitivityPoint] = []
         old_step = _dm.VERIFY_STEP
 
         for val in values:
@@ -241,9 +240,9 @@ class SensitivityAnalyzer:
         length: float,
         ceiling_height: float = 3.0,
         room_name: str = "room",
-        radius_values: Optional[List[float]] = None,
-        verify_step_values: Optional[List[float]] = None,
-    ) -> Dict[str, SensitivityReport]:
+        radius_values: list[float] | None = None,
+        verify_step_values: list[float] | None = None,
+    ) -> dict[str, SensitivityReport]:
         """Run both supported parameters and return dict of reports."""
         return {
             "coverage_radius": self.analyse(
@@ -269,7 +268,7 @@ class SensitivityAnalyzer:
         with open(path, "w") as f:
             json.dump(report.to_dict(), f, indent=2)
 
-    def save_all_reports(self, reports: Dict[str, SensitivityReport], path: str) -> None:
+    def save_all_reports(self, reports: dict[str, SensitivityReport], path: str) -> None:
         """Save all reports to one JSON file."""
         with open(path, "w") as f:
             json.dump({k: v.to_dict() for k, v in reports.items()}, f, indent=2)

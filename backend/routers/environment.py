@@ -30,7 +30,6 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
-from typing import Optional
 
 from fastapi import APIRouter, Depends, Query
 
@@ -594,7 +593,7 @@ async def get_full_phase2_context(
     lat: float = Query(..., ge=-90, le=90, description="Latitude"),
     lon: float = Query(..., ge=-180, le=180, description="Longitude"),
     is_indoor: bool = Query(True, description="Indoor or outdoor environment"),
-    material: Optional[str] = Query(
+    material: str | None = Query(
         None, max_length=200,
         description="Optional hazardous material name for HAC data"
     ),

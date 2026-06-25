@@ -1,4 +1,4 @@
-"""fireai/agents/predictive_agent.py — Anticipatory Recommendations Agent
+"""fireai/agents/predictive_agent.py — Anticipatory Recommendations Agent.
 ========================================================================
 Analyzes future compliance state given design changes, suggests optimal
 detector placement, and performs what-if analysis for design alternatives.
@@ -11,7 +11,7 @@ import logging
 import math
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from fireai.agents.learning_agent import LearningAgent
 from fireai.analytics.ml_pipeline import DesignData, MLPipeline, RoomDesignData
@@ -49,7 +49,7 @@ class PlacementSuggestion:
     rationale: str = ""
     expected_coverage_improvement: float = 0.0
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
     def to_json(self) -> str:
@@ -59,7 +59,7 @@ class PlacementSuggestion:
 @dataclass
 class DesignChange:
     description: str = ""
-    changes: Dict[str, Any] = field(default_factory=dict)
+    changes: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -69,12 +69,12 @@ class FutureState:
     projected_coverage: float = 0.0
     compliance_status: str = "unknown"
     projected_compliance: str = "unknown"
-    risks: List[str] = field(default_factory=list)
-    recommendations: List[str] = field(default_factory=list)
+    risks: list[str] = field(default_factory=list)
+    recommendations: list[str] = field(default_factory=list)
     confidence: float = 0.0
     generated_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
     def to_json(self) -> str:
@@ -91,7 +91,7 @@ class WhatIfResult:
     recommendation: str = ""
     generated_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
     def to_json(self) -> str:
@@ -105,21 +105,21 @@ class PredictiveAgent:
     """Anticipatory recommendations and future-state analysis:
     - Suggests optimal detector placement before user asks
     - Analyzes future compliance state given design changes
-    - What-if analysis for design alternatives
+    - What-if analysis for design alternatives.
     """
 
     def __init__(
         self,
-        analytics_engine: Optional[PredictiveAnalyticsEngine] = None,
-        ml_pipeline: Optional[MLPipeline] = None,
-        learning_agent: Optional[LearningAgent] = None,
-    ):
+        analytics_engine: PredictiveAnalyticsEngine | None = None,
+        ml_pipeline: MLPipeline | None = None,
+        learning_agent: LearningAgent | None = None,
+    ) -> None:
         self.analytics = analytics_engine or PredictiveAnalyticsEngine()
         self.ml_pipeline = ml_pipeline or MLPipeline()
         self.learning_agent = learning_agent or LearningAgent()
 
-    def suggest_placement(self, room: RoomData) -> List[PlacementSuggestion]:
-        suggestions: List[PlacementSuggestion] = []
+    def suggest_placement(self, room: RoomData) -> list[PlacementSuggestion]:
+        suggestions: list[PlacementSuggestion] = []
 
         # Retrieve similar experiences for guidance
         similar = self.learning_agent.retrieve_similar(
@@ -176,7 +176,7 @@ class PredictiveAgent:
     def analyze_future_state(self, design: DesignData, changes: DesignChange) -> FutureState:
         current_coverage = sum(r.coverage_pct for r in design.rooms) / max(len(design.rooms), 1)
 
-        projected_rooms: List[RoomDesignData] = []
+        projected_rooms: list[RoomDesignData] = []
         for room in design.rooms:
             room_dict = {"area": room.area, "ceiling_height": room.ceiling_height, "detector_count": room.detector_count, "obstruction_count": room.obstruction_count, "beam_depth_ratio": room.beam_depth_ratio, "wall_proximity_min": room.wall_proximity_min, "hvac_proximity_min": room.hvac_proximity_min, "coverage_pct": room.coverage_pct}
             updated = dict(room_dict)
@@ -206,7 +206,7 @@ class PredictiveAgent:
         compliance = "compliant" if current_coverage >= 0.85 else "non_compliant"
         projected_comp = "compliant" if projected_coverage >= 0.85 else "non_compliant"
 
-        risks: List[str] = []
+        risks: list[str] = []
         if projected_coverage < 0.85:
             risks.append("Projected coverage below 85% threshold")
         for r in projected_design.rooms:
@@ -215,7 +215,7 @@ class PredictiveAgent:
             if r.beam_depth_ratio > 0.1:
                 risks.append(f"Room {r.room_id}: beam depth ratio exceeds 0.1")
 
-        recs: List[str] = []
+        recs: list[str] = []
         if projected_coverage < 0.90:
             recs.append(f"Add detectors to improve coverage from {projected_coverage:.1%} to >= 90%")
         if risks:
@@ -237,7 +237,7 @@ class PredictiveAgent:
     def what_if(self, design: DesignData, scenario: str) -> WhatIfResult:
         baseline = self.analyze_future_state(design, DesignChange(description="baseline", changes={}))
 
-        scenario_map: Dict[str, Dict[str, Any]] = {
+        scenario_map: dict[str, dict[str, Any]] = {
             "add_detectors": {"add_detectors": 2},
             "remove_detectors": {"add_detectors": -1},
             "reduce_obstructions": {"obstruction_count": 0},

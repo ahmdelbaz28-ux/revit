@@ -1,4 +1,4 @@
-"""smoke_simulation_state.py — Smoke Density & Visibility Gradient State
+"""smoke_simulation_state.py — Smoke Density & Visibility Gradient State.
 ========================================================================
 
 MISSION TASK 4.1 — Advanced Simulation Hooks for Fire Dynamics Simulators
@@ -65,6 +65,7 @@ References
 - SFPE Handbook of Fire Protection Engineering, 5th Ed.
 - NIST FDS User Guide: https://pages.nist.gov/fds-smv/
 - agent.md Rule 12: Safety-First
+
 """
 
 from __future__ import annotations
@@ -74,7 +75,7 @@ import math
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -93,7 +94,7 @@ EYE_LEVEL_CHILD_M: float = 1.2
 EYE_LEVEL_WHEELCHAIR_M: float = 1.1
 
 # Standard sampling heights for visibility gradient
-DEFAULT_VISIBILITY_HEIGHTS_M: Tuple[float, ...] = (0.5, 1.1, 1.7, 2.5, 3.0)
+DEFAULT_VISIBILITY_HEIGHTS_M: tuple[float, ...] = (0.5, 1.1, 1.7, 2.5, 3.0)
 
 # Source identifiers (for audit trail)
 SOURCE_PLACEHOLDER: str = "placeholder"
@@ -138,6 +139,7 @@ class SmokeDensityPoint:
             Typical soot yield: 0.01-0.10 kg/m³ in flaming fires.
         timestamp_s: Time from fire ignition (seconds).
         source: Data source identifier (placeholder/fds/cfast/manual).
+
     """
 
     x: float
@@ -196,10 +198,11 @@ class VisibilityGradient:
         visibility_at_height: Dict mapping height (m) → visibility (m).
         timestamp_s: Time from fire ignition.
         source: Data source identifier.
+
     """
 
     room_id: str
-    visibility_at_height: Dict[float, float] = field(default_factory=dict)
+    visibility_at_height: dict[float, float] = field(default_factory=dict)
     timestamp_s: float = 0.0
     source: str = SOURCE_PLACEHOLDER
 
@@ -212,7 +215,7 @@ class VisibilityGradient:
                 raise ValueError(f"Invalid visibility at height {h}: {v}")
 
     @property
-    def visibility_at_eye_level(self) -> Optional[float]:
+    def visibility_at_eye_level(self) -> float | None:
         """Visibility at standard adult eye level (1.7m)."""
         # Find closest height to 1.7m
         if not self.visibility_at_height:
@@ -232,14 +235,14 @@ class VisibilityGradient:
         return v_eye < VISIBILITY_TENABILITY_THRESHOLD_M
 
     @property
-    def min_visibility(self) -> Optional[float]:
+    def min_visibility(self) -> float | None:
         """Lowest visibility across all sampled heights."""
         if not self.visibility_at_height:
             return None
         return min(self.visibility_at_height.values())
 
     @property
-    def max_visibility(self) -> Optional[float]:
+    def max_visibility(self) -> float | None:
         """Highest visibility across all sampled heights."""
         if not self.visibility_at_height:
             return None
@@ -257,10 +260,11 @@ class FDSIntegrationConfig:
         simulation_duration_s: Total simulation time (seconds).
         soot_yield: Soot yield fraction (kg soot / kg fuel burned).
         ambient_pressure_pa: Ambient pressure (default 101325 Pa).
+
     """
 
-    fds_executable_path: Optional[str] = None
-    fds_service_url: Optional[str] = None
+    fds_executable_path: str | None = None
+    fds_service_url: str | None = None
     mesh_resolution_m: float = 0.1
     simulation_duration_s: float = 600.0  # 10 minutes default
     soot_yield: float = 0.05  # 5% soot yield (typical for hydrocarbon fires)
@@ -305,25 +309,26 @@ class SmokeSimulationState:
         fds_run_id: ID of the FDS run that produced validated data (if any).
         last_updated: ISO timestamp of last update.
         validation_warning: Human-readable warning for placeholder data.
+
     """
 
     room_id: str
-    smoke_density_points: List[SmokeDensityPoint] = field(default_factory=list)
-    visibility_gradient: Optional[VisibilityGradient] = None
+    smoke_density_points: list[SmokeDensityPoint] = field(default_factory=list)
+    visibility_gradient: VisibilityGradient | None = None
     status: SimulationStatus = SimulationStatus.PLACEHOLDER
-    fds_config: Optional[FDSIntegrationConfig] = None
-    fds_run_id: Optional[str] = None
+    fds_config: FDSIntegrationConfig | None = None
+    fds_run_id: str | None = None
     last_updated: str = field(
         default_factory=lambda: datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     )
-    validation_warning: Optional[str] = PLACEHOLDER_VALIDATION_WARNING
+    validation_warning: str | None = PLACEHOLDER_VALIDATION_WARNING
 
     # ------------------------------------------------------------------
     # Factory Methods
     # ------------------------------------------------------------------
 
     @classmethod
-    def create_placeholder(cls, room_id: str) -> "SmokeSimulationState":
+    def create_placeholder(cls, room_id: str) -> SmokeSimulationState:
         """Create a placeholder state with safe default values.
 
         The placeholder represents a "no data yet" state. It uses
@@ -335,6 +340,7 @@ class SmokeSimulationState:
 
         Returns:
             SmokeSimulationState with placeholder data.
+
         """
         return cls(
             room_id=room_id,
@@ -350,12 +356,12 @@ class SmokeSimulationState:
     def create_from_fds(
         cls,
         room_id: str,
-        smoke_density_points: List[SmokeDensityPoint],
-        visibility_at_height: Dict[float, float],
+        smoke_density_points: list[SmokeDensityPoint],
+        visibility_at_height: dict[float, float],
         fds_run_id: str,
         timestamp_s: float = 0.0,
-        fds_config: Optional[FDSIntegrationConfig] = None,
-    ) -> "SmokeSimulationState":
+        fds_config: FDSIntegrationConfig | None = None,
+    ) -> SmokeSimulationState:
         """Create a validated state from FDS simulation results.
 
         Args:
@@ -368,6 +374,7 @@ class SmokeSimulationState:
 
         Returns:
             SmokeSimulationState with validated data.
+
         """
         # Mark all points as FDS-sourced
         fds_points = [
@@ -401,8 +408,8 @@ class SmokeSimulationState:
 
     def update_from_fds(
         self,
-        smoke_density_points: List[SmokeDensityPoint],
-        visibility_at_height: Dict[float, float],
+        smoke_density_points: list[SmokeDensityPoint],
+        visibility_at_height: dict[float, float],
         fds_run_id: str,
         timestamp_s: float = 0.0,
     ) -> None:
@@ -416,6 +423,7 @@ class SmokeSimulationState:
             visibility_at_height: New visibility profile.
             fds_run_id: FDS run identifier.
             timestamp_s: Time from fire ignition.
+
         """
         self.smoke_density_points = [
             SmokeDensityPoint(
@@ -469,14 +477,14 @@ class SmokeSimulationState:
         return self.status == SimulationStatus.PLACEHOLDER
 
     @property
-    def max_smoke_density(self) -> Optional[float]:
+    def max_smoke_density(self) -> float | None:
         """Maximum smoke density across all measurement points."""
         if not self.smoke_density_points:
             return None
         return max(p.density_kg_m3 for p in self.smoke_density_points)
 
     @property
-    def avg_smoke_density_at_eye_level(self) -> Optional[float]:
+    def avg_smoke_density_at_eye_level(self) -> float | None:
         """Average smoke density at eye level (1.5-2.0m height)."""
         eye_level_points = [
             p for p in self.smoke_density_points
@@ -502,16 +510,13 @@ class SmokeSimulationState:
             return True
 
         # Check visibility
-        if self.visibility_gradient and self.visibility_gradient.is_tenability_threshold_exceeded:
-            return True
-
-        return False
+        return bool(self.visibility_gradient and self.visibility_gradient.is_tenability_threshold_exceeded)
 
     # ------------------------------------------------------------------
     # Serialization
     # ------------------------------------------------------------------
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to JSON-serializable dict for API responses."""
         return {
             "room_id": self.room_id,
@@ -563,7 +568,7 @@ class SmokeSimulationState:
     # Audit Safety
     # ------------------------------------------------------------------
 
-    def to_audit_safe_dict(self) -> Dict[str, Any]:
+    def to_audit_safe_dict(self) -> dict[str, Any]:
         """Convert to dict safe for AuditStore persistence.
 
         Per VERIFY-TASK4 SAFETY-R2: placeholder data MUST NEVER be
@@ -589,18 +594,18 @@ class SmokeSimulationState:
 
 
 __all__ = [
-    "SmokeSimulationState",
-    "SmokeDensityPoint",
-    "VisibilityGradient",
+    "DEFAULT_VISIBILITY_HEIGHTS_M",
+    "EYE_LEVEL_ADULT_M",
+    "PLACEHOLDER_VALIDATION_WARNING",
+    "SMOKE_DENSITY_TENABILITY_THRESHOLD_KG_M3",
+    "SOURCE_CFAST",
+    "SOURCE_FDS",
+    "SOURCE_MANUAL",
+    "SOURCE_PLACEHOLDER",
+    "VISIBILITY_TENABILITY_THRESHOLD_M",
     "FDSIntegrationConfig",
     "SimulationStatus",
-    "SOURCE_PLACEHOLDER",
-    "SOURCE_FDS",
-    "SOURCE_CFAST",
-    "SOURCE_MANUAL",
-    "PLACEHOLDER_VALIDATION_WARNING",
-    "VISIBILITY_TENABILITY_THRESHOLD_M",
-    "SMOKE_DENSITY_TENABILITY_THRESHOLD_KG_M3",
-    "EYE_LEVEL_ADULT_M",
-    "DEFAULT_VISIBILITY_HEIGHTS_M",
+    "SmokeDensityPoint",
+    "SmokeSimulationState",
+    "VisibilityGradient",
 ]

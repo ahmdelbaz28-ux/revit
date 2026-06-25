@@ -1,4 +1,4 @@
-"""core/models.py — Universal BIM Data Model (domain layer)
+"""core/models.py — Universal BIM Data Model (domain layer).
 =========================================================
 
 Frozen dataclass models for the Universal Data Model (UDM). These classes
@@ -48,7 +48,7 @@ import logging
 import math
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any
 
 __all__ = [
     "ChangeSource",
@@ -69,9 +69,7 @@ _logger = logging.getLogger(__name__)
 # ═══════════════════════════════════════════════════════════════════════════════
 
 try:
-    from backend.schemas import ChangeSource as ChangeSource
-    from backend.schemas import ConflictType as ConflictType
-    from backend.schemas import ElementType as ElementType
+    from backend.schemas import ChangeSource, ConflictType, ElementType
 except ImportError as _import_err:
     # Fallback for standalone usage (e.g., parsers without backend installed).
     # V83 FIX: Log the fallback reason — silent fallback hides real errors
@@ -161,7 +159,7 @@ class Geometry:
 
     """
 
-    points: Tuple[Point3D, ...] = ()
+    points: tuple[Point3D, ...] = ()
     polyline_closed: bool = False
     area: float = 0.0
     perimeter: float = 0.0
@@ -244,16 +242,16 @@ class SemanticProperties:
 
     """
 
-    element_type: Union[ElementType, str]
+    element_type: ElementType | str
     name: str = ""
-    description: Optional[str] = None
-    material: Optional[str] = None
-    fire_rating: Optional[str] = None
-    height: Optional[float] = None
-    width: Optional[float] = None
+    description: str | None = None
+    material: str | None = None
+    fire_rating: str | None = None
+    height: float | None = None
+    width: float | None = None
     load_bearing: bool = False
-    layer: Optional[str] = None
-    revit_category: Optional[str] = None
+    layer: str | None = None
+    revit_category: str | None = None
 
     def __post_init__(self) -> None:
         # V83 FIX: Validate numeric fields — negative/NaN/Inf heights are
@@ -271,7 +269,7 @@ class SemanticProperties:
                         "Negative dimensions indicate data corruption."
                     )
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Serialize to dictionary for JSON storage/API response."""
         return {
             "element_type": self.element_type.value if hasattr(self.element_type, 'value') else str(self.element_type),
@@ -312,10 +310,10 @@ class Relationship:
     to_element_id: str = ""
     relationship_type: str = ""
     is_parametric: bool = False
-    metadata: Optional[Dict[str, Any]] = None
-    connection_id: Optional[str] = None
+    metadata: dict[str, Any] | None = None
+    connection_id: str | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Serialize to dictionary for JSON storage/API response.
 
         V83 FIX: Now includes connection_id (was missing — data loss on
@@ -359,13 +357,13 @@ class Conflict:
     conflict_id: str = ""
     element_id: str = ""
     conflict_type: ConflictType = ConflictType.GEOMETRY_MISMATCH
-    source_a: Optional[str] = None
-    source_b: Optional[str] = None
-    change_a: Optional[Dict[str, Any]] = None
-    change_b: Optional[Dict[str, Any]] = None
-    resolution: Optional[Dict[str, Any]] = None
+    source_a: str | None = None
+    source_b: str | None = None
+    change_a: dict[str, Any] | None = None
+    change_b: dict[str, Any] | None = None
+    resolution: dict[str, Any] | None = None
     resolved: bool = False
-    timestamp: Optional[datetime] = None
+    timestamp: datetime | None = None
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -412,18 +410,18 @@ class UniversalElement:
     """
 
     element_id: str = ""
-    properties: Optional[SemanticProperties] = None
-    geometry: Optional[Geometry] = None
-    relationships: Tuple[Relationship, ...] = ()
-    source_file: Optional[str] = None
-    last_modified_by: Optional[str] = None
-    autocad_handle: Optional[str] = None
-    revit_element_id: Optional[int] = None
-    created_timestamp: Optional[datetime] = None
-    last_modified_timestamp: Optional[datetime] = None
+    properties: SemanticProperties | None = None
+    geometry: Geometry | None = None
+    relationships: tuple[Relationship, ...] = ()
+    source_file: str | None = None
+    last_modified_by: str | None = None
+    autocad_handle: str | None = None
+    revit_element_id: int | None = None
+    created_timestamp: datetime | None = None
+    last_modified_timestamp: datetime | None = None
     version: int = 0
     is_deleted: bool = False
-    project_id: Optional[str] = None
+    project_id: str | None = None
 
     def __post_init__(self) -> None:
         # V83 FIX: No uuid.uuid4() — element_id must be provided by caller.
@@ -437,9 +435,9 @@ class UniversalElement:
                 "externally-generated element ID."
             )
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Serialize to dictionary for JSON storage/API response."""
-        result: Dict[str, Any] = {
+        result: dict[str, Any] = {
             "element_id": self.element_id,
             "source_file": self.source_file,
             "last_modified_by": self.last_modified_by,

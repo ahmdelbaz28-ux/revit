@@ -77,7 +77,7 @@ from collections import OrderedDict, deque
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Callable, Dict, List, Literal, Optional, Tuple
+from typing import Any, Callable, Literal
 
 # Setup secure audit logger console format
 logging.basicConfig(level=logging.INFO, format="[%(asctime)s] [%(levelname)s] %(message)s")
@@ -158,8 +158,8 @@ class SafetyResult:
 
     value: Any
     status: StatusType
-    metadata: Dict[str, Any] = field(default_factory=dict)
-    audit_ref: Optional[str] = None  # HMAC audit reference for traceability
+    metadata: dict[str, Any] = field(default_factory=dict)
+    audit_ref: str | None = None  # HMAC audit reference for traceability
 
     def __post_init__(self):
         """V53 FIX: Validate status at construction time to prevent invalid values."""
@@ -302,7 +302,7 @@ class Config:
             )
             return default
 
-    def __init__(self):
+    def __init__(self) -> None:
         # Circuit Breaker Configuration
         self.CB_THRESHOLD: float = self._safe_float("QOMN_CB_THRESHOLD", 10.0, min_val=1.0)
         self.CB_WINDOW: float = self._safe_float("QOMN_CB_WINDOW", 60.0, min_val=1.0)
@@ -321,14 +321,14 @@ class Config:
         self.AUDIT_FLUSH_INTERVAL: float = self._safe_float("QOMN_AUDIT_FLUSH_INTERVAL", 1.0, min_val=0.1)
 
         # HMAC Secret Key
-        self.SECRET_KEY: Optional[bytes] = None
+        self.SECRET_KEY: bytes | None = None
         env_key = os.environ.get("QOMN_AUDIT_SECRET_KEY", "")
         if env_key:
             self.SECRET_KEY = env_key.encode("utf-8")
 
 
 # Error type to severity mapping for weighted circuit breaker
-ERROR_WEIGHTS: Dict[str, ErrorSeverity] = {
+ERROR_WEIGHTS: dict[str, ErrorSeverity] = {
     "ZeroDivisionError": ErrorSeverity.CRITICAL,
     "PhysicsGuardViolation": ErrorSeverity.CATASTROPHIC,
     "SafetyCriticalFailure": ErrorSeverity.CATASTROPHIC,
@@ -379,10 +379,10 @@ class AsyncAuditLogger:
     def __init__(
         self,
         filepath: str = "qomn_fire_healing_audit.jsonl",
-        secret_key: Optional[bytes] = None,
+        secret_key: bytes | None = None,
         max_bytes: int = 10 * 1024 * 1024,  # 10MB
         backup_count: int = 5,
-    ):
+    ) -> None:
         self.filepath = filepath
         self.max_bytes = max_bytes
         self.backup_count = backup_count
@@ -452,7 +452,7 @@ class AsyncAuditLogger:
         self._failed_writes: int = 0
         self._bytes_written: int = 0
 
-    def _rotate_if_needed(self):
+    def _rotate_if_needed(self) -> None:
         """Rotate audit log file if it exceeds max_bytes.
 
         Rotation strategy:
@@ -487,7 +487,7 @@ class AsyncAuditLogger:
         except OSError as e:
             logging.warning(f"[AUDIT ROTATION FAILED] {e}. Continuing without rotation.")
 
-    def log_event(self, event_data: Dict[str, Any]) -> bool:
+    def log_event(self, event_data: dict[str, Any]) -> bool:
         """Serializes, signs, and appends the healing event to the audit ledger.
         Returns True if logging succeeded, False if it failed (I/O error).
 
@@ -571,7 +571,7 @@ class AsyncAuditLogger:
                 )
                 return False
 
-    def stats(self) -> Dict[str, Any]:
+    def stats(self) -> dict[str, Any]:
         """Return audit logger statistics for operational monitoring."""
         with self.lock:
             return {
@@ -582,7 +582,7 @@ class AsyncAuditLogger:
                 "chain_hash": self._last_chain_hash,  # V76: Current chain tip
             }
 
-    def verify_chain(self, filepath: Optional[str] = None) -> Dict[str, Any]:
+    def verify_chain(self, filepath: str | None = None) -> dict[str, Any]:
         """V76 FIX: Verify the hash chain integrity of an audit log file.
 
         Reads the entire file and checks that each entry's previous_hash
@@ -594,7 +594,7 @@ class AsyncAuditLogger:
         audit entries to hide a healing action, the chain will be broken.
         """
         target = filepath or self.filepath
-        break_points: List[int] = []
+        break_points: list[int] = []
         total_entries = 0
         expected_hash = "0" * 64  # Genesis
 
@@ -669,7 +669,7 @@ class LruCache:
     from corrupting cached data.
     """
 
-    def __init__(self, maxsize: int = 128):
+    def __init__(self, maxsize: int = 128) -> None:
         self.maxsize = maxsize
         # V53 FIX (BUG 1): OrderedDict preserves insertion order and supports move_to_end
         self.cache: OrderedDict[str, Any] = OrderedDict()
@@ -679,7 +679,7 @@ class LruCache:
         self._misses: int = 0
         self._evictions: int = 0
 
-    def update(self, key: str, value: Any):
+    def update(self, key: str, value: Any) -> None:
         """Insert or update a key, marking it as most-recently-used.
 
         V58 FIX (BUG #11): Deep-copies value on insert to prevent caller from
@@ -696,7 +696,7 @@ class LruCache:
                 self._evictions += 1
             self.cache[key] = copy.deepcopy(value)  # V58 FIX: deep copy on insert
 
-    def get(self, key: str) -> Optional[Any]:
+    def get(self, key: str) -> Any | None:
         """Retrieve a cached value, marking it as most-recently-used.
         V53 FIX (BUG 6): Returns a deep copy to prevent caller from corrupting cache.
         V53 FIX (BUG 1): Moves accessed key to end (most recently used position).
@@ -710,7 +710,7 @@ class LruCache:
             self._misses += 1
             return None
 
-    def stats(self) -> Dict[str, int]:
+    def stats(self) -> dict[str, int]:
         """V53 FIX (BUG 10): Return cache statistics for operational monitoring."""
         with self.lock:
             return {  # type: ignore[dict-item]
@@ -755,7 +755,7 @@ class WeightedCircuitBreaker:
         window_seconds: float = 60.0,
         cooldown_seconds: float = 10.0,
         half_open_max: int = 3,
-    ):
+    ) -> None:
         self.threshold = threshold
         self.window_seconds = window_seconds
         self.cooldown_seconds = cooldown_seconds
@@ -875,7 +875,7 @@ class WeightedCircuitBreaker:
                     return True
             return False
 
-    def check_and_cooldown(self) -> Tuple[bool, str]:
+    def check_and_cooldown(self) -> tuple[bool, str]:
         """Combined check: returns (is_fully_open, state_at_check) tuple.
 
         V58 FIX (BUG #6): Acquires lock ONCE instead of twice. The original
@@ -926,7 +926,7 @@ class WeightedCircuitBreaker:
                 and self.half_open_count < self.half_open_max
             )
 
-    def health(self) -> Dict[str, Any]:
+    def health(self) -> dict[str, Any]:
         """V53 FIX (BUG 9): Returns health metrics for proactive monitoring.
         Allows operators to detect approaching threshold before breaker trips.
         V2.0 EXTENSION: Includes weighted metrics and half-open status.
@@ -953,7 +953,7 @@ class WeightedCircuitBreaker:
                 ),
             }
 
-    def reset(self):
+    def reset(self) -> None:
         """Reset the circuit breaker to CLOSED state."""
         with self.lock:
             self.state = self.CLOSED
@@ -979,7 +979,7 @@ class LLMCircuitBreaker:
     Without rate limiting, every error triggers an LLM call with no throttle.
     """
 
-    def __init__(self, max_rps: float = 5.0, timeout: float = 2.0):
+    def __init__(self, max_rps: float = 5.0, timeout: float = 2.0) -> None:
         self.max_rps = max_rps
         self.timeout = timeout
         self._call_timestamps: deque = deque()
@@ -1018,11 +1018,11 @@ class LLMCircuitBreaker:
                 self._call_timestamps.popleft()
             return len(self._call_timestamps) < self.max_rps
 
-    def record_failure(self):
+    def record_failure(self) -> None:
         """Record an LLM call failure for monitoring."""
         pass  # Placeholder for future circuit-breaking on LLM failures
 
-    def stats(self) -> Dict[str, Any]:
+    def stats(self) -> dict[str, Any]:
         """Return rate limiter statistics."""
         with self.lock:
             now = time.time()
@@ -1101,7 +1101,7 @@ def self_healing(
     default_value: Any = None,
     conservative_estimate: Any = 1.0,
     partial_result: Any = None,
-    physics_validator: Optional[Callable[[Any], bool]] = None,
+    physics_validator: Callable[[Any], bool] | None = None,
     force_mock_ollama: bool = False
 ):
     """Self-healing decorator enforcing three tiers of system healing.
@@ -1397,10 +1397,7 @@ def self_healing(
                 circuit_closed = cb.register_healing_event(error_type=err_type)
 
                 # Determine result status based on breaker state when error occurred
-                if was_half_open:
-                    result_status = SystemStatus.DEGRADED
-                else:
-                    result_status = SystemStatus.HEALED
+                result_status = SystemStatus.DEGRADED if was_half_open else SystemStatus.HEALED
 
                 # -----------------------------------------------------
                 # TIER 1: DETERMINISTIC RULE-BASED HEALING
@@ -1641,7 +1638,7 @@ def query_local_ollama_engine(
     func_name: str,
     err_type: str,
     err_msg: str,
-    inputs: Dict[str, Any],
+    inputs: dict[str, Any],
     source_code: str,
     default_fallback: Any,
     timeout: float = 2.0,
@@ -1744,7 +1741,7 @@ def validate_sprinkler_pressure(val: Any) -> bool:
 @self_healing(safe_minimum=7.0, default_value=7.0, physics_validator=validate_sprinkler_pressure)
 def calculate_sprinkler_pressure(flow_gpm: float, k_factor: float) -> float:
     """Computes required operating pressure: P = (Q / K)^2
-    Citing: NFPA 13 Section 23.4.4
+    Citing: NFPA 13 Section 23.4.4.
     """
     if k_factor == 0.0:
         raise ZeroDivisionError("K-Factor cannot be zero under active calculations.")
@@ -1762,18 +1759,17 @@ def validate_sequence_block(val: Any) -> bool:
     physics_validator=validate_sequence_block,
     force_mock_ollama=True  # Demonstrates Tier 2 fallback processing
 )
-def fetch_emergency_audio_sequence(sequence_list: List[str], index: int) -> str:
+def fetch_emergency_audio_sequence(sequence_list: list[str], index: int) -> str:
     """Fetches scheduled audio tone file.
-    Citing: NFPA 72 Section 18.4
+    Citing: NFPA 72 Section 18.4.
     """
     if index >= len(sequence_list):
         raise IndexError("Sequence index overflow.")
     return sequence_list[index]
 
 
-def demonstrate_and_verify_all_tiers():
-    """Demonstrates active runtime healing across all tiers, logging actions in the ledger.
-    """
+def demonstrate_and_verify_all_tiers() -> None:
+    """Demonstrates active runtime healing across all tiers, logging actions in the ledger."""
     print("\n" + "=" * 70)
     print("RUNNING QOMN-FIRE SELF-HEALING SYSTEM V2.0 (MERGED)")
     print("=" * 70)

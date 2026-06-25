@@ -1,4 +1,4 @@
-"""FireAI NFPA 72 Rules Engine — Safety-Critical Declarative Rules System
+"""FireAI NFPA 72 Rules Engine — Safety-Critical Declarative Rules System.
 ======================================================================
 
 A pure-Python forward-chaining rules engine designed specifically for
@@ -54,33 +54,33 @@ from fireai.core.rules_engine.truth_maintenance import (
 )
 
 __all__ = [
-    # Engine core
-    "RulesEngine",
-    "Rule",
-    "Fact",
-    "RulePriority",
-    "RuleResult",
-    "RuleAuditEntry",
-    # Truth Maintenance
-    "TruthMaintenanceSystem",
-    "DependencyRecord",
-    # NFPA 72 Rules
-    "NFPA72RuleSet",
-    # Compliance Bridge
-    "NFPA72ComplianceChecker",
-    "ComplianceReport",
-    "room_to_facts",
-    "detector_to_fact",
-    "hvac_to_fact",
-    "elevator_to_fact",
-    "results_to_report",
     # API Contract
     "APIContract",
-    "ContractValidator",
+    "ComplianceReport",
     "ContractSeverity",
+    "ContractValidator",
     "ContractViolationDetail",
+    "DependencyRecord",
+    "Fact",
+    # Compliance Bridge
+    "NFPA72ComplianceChecker",
+    # NFPA 72 Rules
+    "NFPA72RuleSet",
+    "Rule",
+    "RuleAuditEntry",
+    "RulePriority",
+    "RuleResult",
+    # Engine core
+    "RulesEngine",
+    # Truth Maintenance
+    "TruthMaintenanceSystem",
     "create_contract_aware_router",
+    "detector_to_fact",
+    "elevator_to_fact",
     "generate_typescript_config",
+    "hvac_to_fact",
+    "results_to_report",
+    "room_to_facts",
 ]
 
 __version__ = "1.0.0"

@@ -62,7 +62,7 @@ import os
 from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -131,14 +131,14 @@ class MemoryAddRequest(BaseModel):
         ...,
         description="Message(s) to extract memories from. Can be a string or list of message dicts."
     )
-    user_id: Optional[str] = Field(None, description="Engineer/user identifier")
-    agent_id: Optional[str] = Field(None, description="FireAI agent identifier")
-    run_id: Optional[str] = Field(None, description="Project/run identifier")
-    metadata: Optional[Dict[str, Any]] = Field(
+    user_id: str | None = Field(None, description="Engineer/user identifier")
+    agent_id: str | None = Field(None, description="FireAI agent identifier")
+    run_id: str | None = Field(None, description="Project/run identifier")
+    metadata: dict[str, Any] | None = Field(
         None,
         description="Additional metadata (category, project_type, standard, etc.)"
     )
-    memory_type: Optional[str] = Field(
+    memory_type: str | None = Field(
         None,
         description="Memory type: semantic_memory, episodic_memory, procedural_memory"
     )
@@ -148,9 +148,9 @@ class MemorySearchRequest(BaseModel):
     """Request model for searching memories."""
 
     query: str = Field(..., description="Search query")
-    user_id: Optional[str] = Field(None, description="Filter by engineer/user")
-    agent_id: Optional[str] = Field(None, description="Filter by agent")
-    run_id: Optional[str] = Field(None, description="Filter by project/run")
+    user_id: str | None = Field(None, description="Filter by engineer/user")
+    agent_id: str | None = Field(None, description="Filter by agent")
+    run_id: str | None = Field(None, description="Filter by project/run")
     top_k: int = Field(10, ge=1, le=50, description="Maximum results to return")
     threshold: float = Field(0.3, ge=0.0, le=1.0, description="Minimum similarity threshold")
 
@@ -160,17 +160,17 @@ class MemoryResult(BaseModel):
 
     id: str
     memory: str
-    score: Optional[float] = None
-    metadata: Optional[Dict[str, Any]] = None
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
+    score: float | None = None
+    metadata: dict[str, Any] | None = None
+    created_at: str | None = None
+    updated_at: str | None = None
     source: str = "memory"  # Always "memory" to distinguish from nfpa_engine results
 
 
 class MemorySearchResponse(BaseModel):
     """Response model for memory search."""
 
-    results: List[MemoryResult]
+    results: list[MemoryResult]
     query: str
     total: int
     source: str = "memory"
@@ -190,7 +190,7 @@ class MemoryServiceStatus(BaseModel):
     llm_provider: str = "unknown"
     embedder_provider: str = "unknown"
     embedding_dims: int = 0
-    error: Optional[str] = None
+    error: str | None = None
 
 
 # ── Memory Service ─────────────────────────────────────────────────────────────
@@ -211,13 +211,13 @@ class MemoryService:
       override deterministic calculations or bypass verification gates.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._memory = None
         self._status = MemoryServiceStatus()
         self._config = None
         self._initialize()
 
-    def _initialize(self):
+    def _initialize(self) -> None:
         """Initialize the Mem0 memory instance with FireAI-specific configuration.
 
         V76 Configuration (OpenAI Primary):
@@ -394,7 +394,7 @@ class MemoryService:
         """Check if the memory service is ready."""
         return self._status.initialized and self._memory is not None
 
-    def add_memory(self, request: MemoryAddRequest) -> Dict[str, Any]:
+    def add_memory(self, request: MemoryAddRequest) -> dict[str, Any]:
         """Add a memory to the FireAI memory store.
 
         SAFETY: Memory addition is non-blocking. Failure NEVER prevents calculations.
@@ -525,10 +525,10 @@ class MemoryService:
 
     def get_all_memories(
         self,
-        user_id: Optional[str] = None,
-        agent_id: Optional[str] = None,
-        run_id: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        user_id: str | None = None,
+        agent_id: str | None = None,
+        run_id: str | None = None,
+    ) -> dict[str, Any]:
         """Get all memories for a given scope.
 
         V113 FIX: mem0 v2 API compatibility.
@@ -647,7 +647,7 @@ class MemoryService:
                 "source": "memory_error",
             }
 
-    def delete_memory(self, memory_id: str) -> Dict[str, Any]:
+    def delete_memory(self, memory_id: str) -> dict[str, Any]:
         """Delete a specific memory by ID."""
         if not self.is_initialized:
             return {
@@ -673,7 +673,7 @@ class MemoryService:
                 "source": "memory_error",
             }
 
-    def get_memory_history(self, memory_id: str) -> Dict[str, Any]:
+    def get_memory_history(self, memory_id: str) -> dict[str, Any]:
         """Get the history of a specific memory (all changes over time).
 
         Supports agent.md's traceability requirement (Priority 7).
@@ -702,7 +702,7 @@ class MemoryService:
                 "source": "memory_error",
             }
 
-    async def close(self):
+    async def close(self) -> None:
         """Close the memory service and release resources. Per agent.md Rule 8."""
         logger.info("MemoryService closing...")
         self._memory = None
@@ -712,7 +712,7 @@ class MemoryService:
 
 # ── Singleton Management ──────────────────────────────────────────────────────
 
-_memory_service: Optional[MemoryService] = None
+_memory_service: MemoryService | None = None
 
 
 def get_memory_service() -> MemoryService:
@@ -723,7 +723,7 @@ def get_memory_service() -> MemoryService:
     return _memory_service
 
 
-async def close_memory_service():
+async def close_memory_service() -> None:
     """Close the singleton MemoryService instance."""
     global _memory_service
     if _memory_service is not None:

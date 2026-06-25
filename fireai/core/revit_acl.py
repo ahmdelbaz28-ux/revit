@@ -1,4 +1,4 @@
-"""revit_acl.py – Anti-Corruption Layer for Revit/BIM Data Import
+"""revit_acl.py – Anti-Corruption Layer for Revit/BIM Data Import.
 ==============================================================
 Protects strict Pydantic domain models from corrupted external data.
 
@@ -29,7 +29,7 @@ from __future__ import annotations
 import logging
 import re
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, model_validator
 
@@ -74,7 +74,7 @@ class ImportReport:
     total_elements: int = 0
     successful: int = 0
     skipped: int = 0
-    errors: List[ImportError] = field(default_factory=list)
+    errors: list[ImportError] = field(default_factory=list)
 
     @property
     def has_errors(self) -> bool:
@@ -117,7 +117,7 @@ class ImportReport:
 # Enum normalization helpers
 # ---------------------------------------------------------------------------
 
-_HAZARD_TYPE_ALIASES: Dict[str, str] = {
+_HAZARD_TYPE_ALIASES: dict[str, str] = {
     "GAS": "GAS",
     "VAPOR": "GAS",
     "GAS/VAPOR": "GAS",
@@ -133,7 +133,7 @@ _HAZARD_TYPE_ALIASES: Dict[str, str] = {
     "FIBRES": "FIBER",
 }
 
-_WAVELENGTH_BAND_ALIASES: Dict[str, str] = {
+_WAVELENGTH_BAND_ALIASES: dict[str, str] = {
     "UV": "UV",
     "ULTRAVIOLET": "UV",
     "VIS": "VIS",
@@ -149,7 +149,7 @@ _WAVELENGTH_BAND_ALIASES: Dict[str, str] = {
 }
 
 
-def _normalize_enum(raw: str, aliases: Dict[str, str]) -> Optional[str]:
+def _normalize_enum(raw: str, aliases: dict[str, str]) -> str | None:
     """Normalize an enum value from various external representations."""
     cleaned = str(raw).strip().upper().replace(" ", "_").replace("-", "_")
     return aliases.get(cleaned)
@@ -249,7 +249,7 @@ class RevitSubstanceDTO(BaseModel):
 
         return data
 
-    def to_domain(self, report: Optional[ImportReport] = None) -> Optional[SubstanceProperties]:
+    def to_domain(self, report: ImportReport | None = None) -> SubstanceProperties | None:
         """Convert this flexible DTO to a strict SubstanceProperties model.
         Returns None if conversion fails (logged to report).
         """
@@ -340,7 +340,7 @@ class RevitObstructionDTO(BaseModel):
 
         return data
 
-    def to_domain(self, report: Optional[ImportReport] = None) -> Optional[Obstruction]:
+    def to_domain(self, report: ImportReport | None = None) -> Obstruction | None:
         """Convert to strict Obstruction model."""
         try:
             # Ensure at least 2 vertices for a bounding box
@@ -384,8 +384,7 @@ class RevitObstructionDTO(BaseModel):
 
 
 class RevitDetectorDTO(BaseModel):
-    """Anti-Corruption Layer for flame detector data from Revit/BIM exports.
-    """
+    """Anti-Corruption Layer for flame detector data from Revit/BIM exports."""
 
     model_config = ConfigDict(frozen=False, strict=False, extra="allow")
 
@@ -431,7 +430,7 @@ class RevitDetectorDTO(BaseModel):
 
         return data
 
-    def to_domain(self, report: Optional[ImportReport] = None) -> Optional[FlameDetectorSpec]:
+    def to_domain(self, report: ImportReport | None = None) -> FlameDetectorSpec | None:
         """Convert to strict FlameDetectorSpec model."""
         try:
             return FlameDetectorSpec(
@@ -460,8 +459,8 @@ class RevitDetectorDTO(BaseModel):
 
 
 def import_substances_from_revit(
-    raw_data: List[Dict[str, Any]],
-) -> Tuple[List[SubstanceProperties], ImportReport]:
+    raw_data: list[dict[str, Any]],
+) -> tuple[list[SubstanceProperties], ImportReport]:
     """Import a batch of substance data from Revit/BIM export.
 
     Args:
@@ -474,7 +473,7 @@ def import_substances_from_revit(
     """
     report = ImportReport(total_elements=len(raw_data))
 
-    substances: List[SubstanceProperties] = []
+    substances: list[SubstanceProperties] = []
     for item in raw_data:
         dto = RevitSubstanceDTO(**item)
         domain = dto.to_domain(report)
@@ -488,12 +487,12 @@ def import_substances_from_revit(
 
 
 def import_obstructions_from_revit(
-    raw_data: List[Dict[str, Any]],
-) -> Tuple[List[Obstruction], ImportReport]:
+    raw_data: list[dict[str, Any]],
+) -> tuple[list[Obstruction], ImportReport]:
     """Import a batch of obstruction data from Revit/BIM export."""
     report = ImportReport(total_elements=len(raw_data))
 
-    obstructions: List[Obstruction] = []
+    obstructions: list[Obstruction] = []
     for item in raw_data:
         dto = RevitObstructionDTO(**item)
         domain = dto.to_domain(report)
@@ -507,12 +506,12 @@ def import_obstructions_from_revit(
 
 
 def import_detectors_from_revit(
-    raw_data: List[Dict[str, Any]],
-) -> Tuple[List[FlameDetectorSpec], ImportReport]:
+    raw_data: list[dict[str, Any]],
+) -> tuple[list[FlameDetectorSpec], ImportReport]:
     """Import a batch of detector data from Revit/BIM export."""
     report = ImportReport(total_elements=len(raw_data))
 
-    detectors: List[FlameDetectorSpec] = []
+    detectors: list[FlameDetectorSpec] = []
     for item in raw_data:
         dto = RevitDetectorDTO(**item)
         domain = dto.to_domain(report)

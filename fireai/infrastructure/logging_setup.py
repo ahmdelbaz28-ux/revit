@@ -6,7 +6,7 @@ import logging.handlers
 import os
 import re
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
 
 _SENSITIVE_PATTERNS: list[re.Pattern] = [
     re.compile(r'(?i)(api[_-]?key|apikey|secret|password|token|credential|auth[_-]?token)["\']?\s*[:=]\s*["\']?([^"\'&\s,;}]+)'),
@@ -23,12 +23,12 @@ def mask_sensitive(value: str) -> str:
 
 
 class JSONFormatter(logging.Formatter):
-    def __init__(self, service_name: str = 'fireai'):
+    def __init__(self, service_name: str = 'fireai') -> None:
         super().__init__()
         self.service_name = service_name
 
     def format(self, record: logging.LogRecord) -> str:
-        log_entry: Dict[str, Any] = {
+        log_entry: dict[str, Any] = {
             'timestamp': self.formatTime(record, datefmt='%Y-%m-%dT%H:%M:%S.%fZ'),
             'level': record.levelname,
             'logger': record.name,
@@ -63,7 +63,7 @@ class AsyncLogHandler(logging.handlers.RotatingFileHandler):
 def setup_logging(
     service_name: str,
     level: str = 'INFO',
-    log_dir: Optional[str] = None,
+    log_dir: str | None = None,
 ) -> logging.Logger:
     if log_dir is None:
         log_dir = os.path.join(

@@ -1,4 +1,4 @@
-"""enterprise_pipeline.py — V17 Enterprise Orchestrator
+"""enterprise_pipeline.py — V17 Enterprise Orchestrator.
 =====================================================
 Connects all V17 Critical Trilogy modules into a unified pipeline
 for AHJ submittal. This replaces the disconnected checks that could
@@ -36,7 +36,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -64,14 +64,14 @@ class V17SystemResult:
     acoustic_compliant: bool
     battery_compliant: bool
     tenability_compliant: bool
-    facp_compliant: Optional[bool] = None
-    as_built_compliant: Optional[bool] = None
+    facp_compliant: bool | None = None
+    as_built_compliant: bool | None = None
     all_compliant: bool = False
-    acoustic_result: Optional[Any] = None
-    battery_result: Optional[Any] = None
-    tenability_result: Optional[Any] = None
-    release_gate_result: Optional[Dict[str, Any]] = None
-    violations: List[Dict[str, Any]] = field(default_factory=list)
+    acoustic_result: Any | None = None
+    battery_result: Any | None = None
+    tenability_result: Any | None = None
+    release_gate_result: dict[str, Any] | None = None
+    violations: list[dict[str, Any]] = field(default_factory=list)
     summary: str = ""
 
 
@@ -96,7 +96,7 @@ class EnterpriseOrchestrator:
 
     def __init__(
         self,
-        acoustic_ambient_noise: Optional[Dict[str, float]] = None,
+        acoustic_ambient_noise: dict[str, float] | None = None,
         battery_standby_hours: float = 24.0,
         battery_alarm_minutes: float = 5.0,
         tenability_walking_speed_mps: float = 1.0,
@@ -148,11 +148,11 @@ class EnterpriseOrchestrator:
         self,
         room_id: str,
         occ_type: str,
-        speakers: List[dict],
-        check_points: List[dict],
-        barriers: Optional[List[dict]] = None,
+        speakers: list[dict],
+        check_points: list[dict],
+        barriers: list[dict] | None = None,
         mode: str = "public",
-        room_absorption_m2: Optional[float] = None,
+        room_absorption_m2: float | None = None,
     ) -> Any:
         """Run acoustic SPL compliance check.
 
@@ -184,7 +184,7 @@ class EnterpriseOrchestrator:
         quiescent_ma: float,
         alarm_ma: float,
         panel_ambient_temp_c: float = 25.0,
-        installed_battery_ah: Optional[float] = None,
+        installed_battery_ah: float | None = None,
         battery_cells: int = 6,
     ) -> Any:
         """Run battery aging and temperature derating check.
@@ -213,7 +213,7 @@ class EnterpriseOrchestrator:
         longest_travel_dist_m: float,
         estimated_fill_time_s: float,
         safety_margin: float = 2.0,
-        occupancy_type: Optional[str] = None,
+        occupancy_type: str | None = None,
         room_height_m: float = 3.0,
         is_sprinklered: bool = True,
     ) -> Any:
@@ -242,9 +242,9 @@ class EnterpriseOrchestrator:
 
     def run_full_check(
         self,
-        acoustic_params: Optional[Dict[str, Any]] = None,
-        battery_params: Optional[Dict[str, Any]] = None,
-        tenability_params: Optional[Dict[str, Any]] = None,
+        acoustic_params: dict[str, Any] | None = None,
+        battery_params: dict[str, Any] | None = None,
+        tenability_params: dict[str, Any] | None = None,
     ) -> V17SystemResult:
         """Run all three V17 critical checks and integrate results.
 
@@ -261,7 +261,7 @@ class EnterpriseOrchestrator:
             V17SystemResult with compliance status for all checks.
 
         """
-        all_violations: List[Dict[str, Any]] = []
+        all_violations: list[dict[str, Any]] = []
         acoustic_compliant = False
         battery_compliant = False
         tenability_compliant = False
@@ -338,7 +338,7 @@ class EnterpriseOrchestrator:
         try:
             from fireai.core.release_gates import verify_and_evaluate
 
-            gate_kwargs: Dict[str, Any] = {}
+            gate_kwargs: dict[str, Any] = {}
 
             # Gate 7: ASET/RSET
             if tenability_result and isinstance(tenability_result, dict):

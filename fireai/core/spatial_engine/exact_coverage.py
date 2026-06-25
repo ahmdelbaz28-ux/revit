@@ -34,7 +34,7 @@ NFPA 72-2022 §17.7.4.2.3.1: Coverage radius R = 0.7 × S
 import logging
 import math
 from dataclasses import dataclass, field
-from typing import Any, List, Optional, Tuple
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +66,7 @@ class ExactCoverageResult:
     effective_radius_m: float = 0.0
     n_sensors: int = 0
     room_shape_valid: bool = False  # V112: FAIL-SAFE — room shape not valid until verified
-    warnings: List[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
     details: str = ""
 
 
@@ -118,7 +118,7 @@ class ExactCoverageEngine:
     # polygon vertex count 4× (was 64 in original via Point.buffer default).
     _CIRCLE_SEGS = 16
 
-    def __init__(self, coverage_radius_m: float):
+    def __init__(self, coverage_radius_m: float) -> None:
         """Initialize with coverage radius.
 
         Args:
@@ -136,9 +136,9 @@ class ExactCoverageEngine:
 
     def verify(
         self,
-        room_boundary_coords: List[Tuple[float, float]],
-        sensor_locations: List[Tuple[float, float]],
-        obstacles: Optional[List[List[Tuple[float, float]]]] = None,
+        room_boundary_coords: list[tuple[float, float]],
+        sensor_locations: list[tuple[float, float]],
+        obstacles: list[list[tuple[float, float]]] | None = None,
         analytical_passed: bool = False,  # V30 B3: skip flag
     ) -> ExactCoverageResult:
         """Verify coverage using exact polygon difference.
@@ -410,9 +410,9 @@ class ExactCoverageEngine:
 
     def verify_with_obstacles(
         self,
-        room_boundary_coords: List[Tuple[float, float]],
-        sensor_locations: List[Tuple[float, float]],
-        obstacle_coords_list: List[List[Tuple[float, float]]],
+        room_boundary_coords: list[tuple[float, float]],
+        sensor_locations: list[tuple[float, float]],
+        obstacle_coords_list: list[list[tuple[float, float]]],
     ) -> ExactCoverageResult:
         """Convenience method for rooms with interior obstacles.
 

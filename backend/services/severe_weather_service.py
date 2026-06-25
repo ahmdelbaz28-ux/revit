@@ -48,7 +48,6 @@ except ImportError:
     # not silently fall back to an insecure parser.
     ET = None  # type: ignore[assignment]
 from dataclasses import dataclass
-from typing import Optional
 
 import httpx
 from tenacity import retry, stop_after_attempt, wait_exponential
@@ -303,11 +302,11 @@ class SevereWeatherService:
     US_LON_MIN = -125.0
     US_LON_MAX = -66.0
 
-    def __init__(self, cache_ttl: float = 600.0, request_timeout: float = 15.0):
+    def __init__(self, cache_ttl: float = 600.0, request_timeout: float = 15.0) -> None:
         self._cache: dict[str, tuple[SevereWeatherData, float]] = {}
         self._cache_ttl = cache_ttl
         self._request_timeout = request_timeout
-        self._client: Optional[httpx.AsyncClient] = None
+        self._client: httpx.AsyncClient | None = None
 
     async def _get_client(self) -> httpx.AsyncClient:
         """Lazy-initialize the HTTP client."""
@@ -332,7 +331,7 @@ class SevereWeatherService:
         """Generate cache key from coordinates."""
         return f"{latitude:.2f},{longitude:.2f}"
 
-    def _get_cached(self, latitude: float, longitude: float) -> Optional[SevereWeatherData]:
+    def _get_cached(self, latitude: float, longitude: float) -> SevereWeatherData | None:
         """Get cached data if fresh."""
         key = self._cache_key(latitude, longitude)
         entry = self._cache.get(key)
@@ -654,7 +653,7 @@ class SevereWeatherService:
 
         return alerts, has_power_risk, has_extreme_temp
 
-    def _parse_meteoalarm_warning(self, warning: dict) -> Optional[WeatherAlert]:
+    def _parse_meteoalarm_warning(self, warning: dict) -> WeatherAlert | None:
         """Parse a single MeteoAlarm warning dict into a WeatherAlert.
 
         MeteoAlarm JSON warning structure (varies by API version):
@@ -821,7 +820,7 @@ class SevereWeatherService:
 
     def _parse_meteoalarm_atom_entry(
         self, entry: ET.Element, ns: dict
-    ) -> Optional[WeatherAlert]:
+    ) -> WeatherAlert | None:
         """Parse a single Atom <entry> element into a WeatherAlert.
 
         MeteoAlarm Atom entries contain:
@@ -1067,7 +1066,7 @@ class SevereWeatherService:
 
     async def _resolve_country_code(
         self, latitude: float, longitude: float
-    ) -> Optional[str]:
+    ) -> str | None:
         """Resolve coordinates to an ISO 3166-1 alpha-2 country code.
 
         Uses the GeocodingService (reverse geocoding) to determine
@@ -1249,7 +1248,7 @@ class SevereWeatherService:
 
 
 # Singleton
-_severe_weather_service: Optional[SevereWeatherService] = None
+_severe_weather_service: SevereWeatherService | None = None
 
 
 def get_severe_weather_service() -> SevereWeatherService:

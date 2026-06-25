@@ -1,4 +1,4 @@
-"""flame_detector_aoc_raytrace.py – Flame Detector AOC Ray Trace Engine
+"""flame_detector_aoc_raytrace.py – Flame Detector AOC Ray Trace Engine.
 =====================================================================
 Computes Angle of Coverage (AOC) and Line of Sight (LOS) visibility
 for flame detectors using 3-D ray tracing geometry.
@@ -26,7 +26,7 @@ import math
 from dataclasses import dataclass, field
 from enum import Enum
 from statistics import median
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Tuple
 
 from fireai.core.models_v21 import (
     MIN_REDUNDANCY_BY_ZONE,
@@ -127,7 +127,7 @@ class RayTracePointLegacy:
     within_aoc: bool
     within_range: bool
     los_clear: bool
-    blocking_obstruction: Optional[str]
+    blocking_obstruction: str | None
     coverage_quality: CoverageQuality
     sensitivity_at_target: float
 
@@ -137,14 +137,14 @@ class DetectorCoverageResult:
     """Coverage analysis for one flame detector (legacy)."""
 
     detector: FlameDetectorSpecLegacy
-    coverage_polygon: Tuple[Point2D, ...]
+    coverage_polygon: tuple[Point2D, ...]
     covered_area_m2: float
-    uncovered_points: Tuple[Point2D, ...]
-    ray_results: Tuple[RayTracePointLegacy, ...]
+    uncovered_points: tuple[Point2D, ...]
+    ray_results: tuple[RayTracePointLegacy, ...]
     effective_range_m: float
     coverage_pct: float
-    obstructions_hit: Tuple[str, ...]
-    warnings: Tuple[str, ...]
+    obstructions_hit: tuple[str, ...]
+    warnings: tuple[str, ...]
     nfpa_reference: str = "NFPA 72-2022 §17.8"
     fm_reference: str = "FM Global DS 5-48"
 
@@ -154,15 +154,15 @@ class MultiDetectorCoverageResult:
     """Coverage analysis for multiple detectors (legacy)."""
 
     space_id: str
-    detectors: Tuple[FlameDetectorSpecLegacy, ...]
-    individual_results: Tuple[DetectorCoverageResult, ...]
+    detectors: tuple[FlameDetectorSpecLegacy, ...]
+    individual_results: tuple[DetectorCoverageResult, ...]
     combined_coverage_pct: float
     uncovered_area_m2: float
     total_covered_area_m2: float
-    redundancy_map: Dict[str, int]
+    redundancy_map: dict[str, int]
     min_redundancy: int
     is_nfpa_compliant: bool
-    warnings: Tuple[str, ...]
+    warnings: tuple[str, ...]
 
 
 # ---------------------------------------------------------------------------
@@ -175,7 +175,7 @@ class SingleDetectorResult:
     detector_id: str
     covered_pts: frozenset  # indices into target grid
     effective_range_m: float
-    spectral_transmittance_map: Dict[int, float] = field(default_factory=dict)
+    spectral_transmittance_map: dict[int, float] = field(default_factory=dict)
     warnings: tuple = ()
 
 
@@ -190,11 +190,11 @@ class CoverageResult:
     total_points: int
     covered_points: int
     coverage_fraction: float  # = covered / total (never overestimated)
-    per_detector: Dict[str, SingleDetectorResult]
-    warnings: List[str]
+    per_detector: dict[str, SingleDetectorResult]
+    warnings: list[str]
 
     # GAP-06 new fields — all defaulted for backward compat
-    redundancy_map: Dict[int, int] = field(default_factory=dict)
+    redundancy_map: dict[int, int] = field(default_factory=dict)
     min_redundancy: int = 0
     mean_redundancy: float = 0.0
     double_covered_pct: float = 0.0  # % of all points covered by >=2 detectors
@@ -287,7 +287,7 @@ class FlameDetectorAOCRayTrace:
 
     # ── V21 API ────────────────────────────────────────────────────────────
 
-    def _build_spatial_index(self, obstructions: List[V21Obstruction]) -> None:
+    def _build_spatial_index(self, obstructions: list[V21Obstruction]) -> None:
         """Q2: Build R-tree spatial index for obstructions.
         Falls back to list if rtree not installed.
         """
@@ -311,10 +311,10 @@ class FlameDetectorAOCRayTrace:
 
     def _get_candidate_obstructions(
         self,
-        obstructions: List[V21Obstruction],
-        ray_start: Tuple[float, float, float],
-        ray_end: Tuple[float, float, float],
-    ) -> List[int]:
+        obstructions: list[V21Obstruction],
+        ray_start: tuple[float, float, float],
+        ray_end: tuple[float, float, float],
+    ) -> list[int]:
         """Return indices of obstructions whose bounding box intersects the ray."""
         if self._rtree_available and self._spatial_index is not None:
             bbox = (
@@ -330,9 +330,9 @@ class FlameDetectorAOCRayTrace:
 
     def _ray_blocked_v21(
         self,
-        ray_start: Tuple[float, float, float],
-        ray_end: Tuple[float, float, float],
-        obstructions: List[V21Obstruction],
+        ray_start: tuple[float, float, float],
+        ray_end: tuple[float, float, float],
+        obstructions: list[V21Obstruction],
         band: WavelengthBand,
     ) -> bool:
         """Check if ray is blocked by any opaque obstruction for given spectral band.
@@ -351,9 +351,9 @@ class FlameDetectorAOCRayTrace:
 
     @staticmethod
     def _ray_intersects_box(
-        origin: Tuple[float, ...],
-        end: Tuple[float, ...],
-        vertices: List[List[float]],
+        origin: tuple[float, ...],
+        end: tuple[float, ...],
+        vertices: list[list[float]],
     ) -> bool:
         """AABB ray-box intersection (slab method). Fast, exact."""
         xs = [v[0] for v in vertices]
@@ -383,7 +383,7 @@ class FlameDetectorAOCRayTrace:
     def _in_aoc_v21(
         self,
         detector: V21FlameDetectorSpec,
-        target_pos: Tuple[float, float, float],
+        target_pos: tuple[float, float, float],
     ) -> bool:
         """Check if target is within detector's angle of coverage."""
         unit = detector.orientation_unit
@@ -400,8 +400,7 @@ class FlameDetectorAOCRayTrace:
 
     @staticmethod
     def _sensitivity_v21(distance_m: float, rated_range: float) -> float:
-        """Fix #19: Inverse square law, capped at 1.0 for near distances.
-        """
+        """Fix #19: Inverse square law, capped at 1.0 for near distances."""
         # V57 FIX (Finding 10): NaN distance bypasses guards — NaN <= 0 is False,
         # NaN <= rated_range is False, so NaN propagates to ratio = rated_range/NaN
         # = NaN, then NaN*NaN = NaN returned as sensitivity. Fail-safe: return 0.0.
@@ -416,10 +415,10 @@ class FlameDetectorAOCRayTrace:
 
     def _ray_spectral_transmittance_v21(
         self,
-        ray_start: Tuple[float, float, float],
-        ray_end: Tuple[float, float, float],
-        obstructions: List[V21Obstruction],
-        volumetric_media: List[VolumetricMedium],
+        ray_start: tuple[float, float, float],
+        ray_end: tuple[float, float, float],
+        obstructions: list[V21Obstruction],
+        volumetric_media: list[VolumetricMedium],
         band: WavelengthBand,
     ) -> float:
         """V21.2: Calculate total spectral transmittance along a ray.
@@ -442,17 +441,16 @@ class FlameDetectorAOCRayTrace:
 
         # Stage 2: Volumetric media (Beer-Lambert)
         if volumetric_media:
-            t_vol = volumetric_path_transmittance(ray_start, ray_end, volumetric_media, band, self._spectral_registry)
-            return t_vol
+            return volumetric_path_transmittance(ray_start, ray_end, volumetric_media, band, self._spectral_registry)
 
         return 1.0
 
     def analyse_single_v21(
         self,
         detector: V21FlameDetectorSpec,
-        target_grid: List[V21RayTracePoint],
-        obstructions: List[V21Obstruction],
-        volumetric_media: Optional[List[VolumetricMedium]] = None,
+        target_grid: list[V21RayTracePoint],
+        obstructions: list[V21Obstruction],
+        volumetric_media: list[VolumetricMedium] | None = None,
     ) -> SingleDetectorResult:
         """V21.2: Analyse one detector against all target points.
         Returns set of covered point indices and per-point spectral transmittance.
@@ -464,7 +462,7 @@ class FlameDetectorAOCRayTrace:
         guards in _in_aoc_v21 but produce incorrect results. The NaN guard at
         line ~468 only catches NaN DISTANCES, not NaN DETECTOR GEOMETRY.
         """
-        warnings: List[str] = []
+        warnings: list[str] = []
         volumetric_media = volumetric_media or []
 
         # V59 FIX (Finding 9): Check detector geometry for NaN/Inf
@@ -513,9 +511,9 @@ class FlameDetectorAOCRayTrace:
                 f"[Engineering judgment required]"
             )
 
-        covered_pts: Set[int] = set()
-        distances_covered: List[float] = []
-        spectral_map: Dict[int, float] = {}  # point_index -> transmittance
+        covered_pts: set[int] = set()
+        distances_covered: list[float] = []
+        spectral_map: dict[int, float] = {}  # point_index -> transmittance
 
         for ti, tp in enumerate(target_grid):
             tgt = tp.to_tuple()
@@ -564,12 +562,12 @@ class FlameDetectorAOCRayTrace:
 
     def analyse_multi_v21(
         self,
-        detectors: List[V21FlameDetectorSpec],
-        target_grid: List[V21RayTracePoint],
-        obstructions: List[V21Obstruction],
-        volumetric_media: Optional[List[VolumetricMedium]] = None,
-        zone_type: Optional[ZoneType] = None,
-        env_context: Optional[EnvironmentalContext] = None,
+        detectors: list[V21FlameDetectorSpec],
+        target_grid: list[V21RayTracePoint],
+        obstructions: list[V21Obstruction],
+        volumetric_media: list[VolumetricMedium] | None = None,
+        zone_type: ZoneType | None = None,
+        env_context: EnvironmentalContext | None = None,
     ) -> CoverageResult:
         """V21.2: Multi-detector analysis.
         Fix #20: No double-counting. Union of covered sets.
@@ -596,9 +594,9 @@ class FlameDetectorAOCRayTrace:
             fouling = 0.5
         self._build_spatial_index(obstructions)
 
-        all_warnings: List[str] = []
-        per_detector: Dict[str, SingleDetectorResult] = {}
-        union_covered: Set[int] = set()
+        all_warnings: list[str] = []
+        per_detector: dict[str, SingleDetectorResult] = {}
+        union_covered: set[int] = set()
 
         for det in detectors:
             result = self.analyse_single_v21(det, target_grid, obstructions, volumetric_media)
@@ -690,20 +688,20 @@ class FlameDetectorAOCRayTrace:
     def analyse_detector(
         self,
         detector: FlameDetectorSpecLegacy,
-        floor_bounds: Tuple[float, float, float, float],
-        obstructions: List[ObstructionLegacy] = None,
+        floor_bounds: tuple[float, float, float, float],
+        obstructions: list[ObstructionLegacy] | None = None,
         floor_z: float = 0.0,
     ) -> DetectorCoverageResult:
         """Legacy single-detector analysis (backward compatible)."""
         obstructions = obstructions or []
-        warnings: List[str] = []
+        warnings: list[str] = []
 
         aim = self._normalize(detector.aim_vector)
         targets = self._generate_grid(floor_bounds)
 
-        ray_results: List[RayTracePointLegacy] = []
-        covered_points: List[Point2D] = []
-        uncovered_points: List[Point2D] = []
+        ray_results: list[RayTracePointLegacy] = []
+        covered_points: list[Point2D] = []
+        uncovered_points: list[Point2D] = []
         obstructions_hit: set = set()
 
         for tx, ty in targets:
@@ -755,17 +753,17 @@ class FlameDetectorAOCRayTrace:
     def analyse_multi_detector(
         self,
         space_id: str,
-        detectors: List[FlameDetectorSpecLegacy],
-        floor_bounds: Tuple[float, float, float, float],
-        obstructions: List[ObstructionLegacy] = None,
+        detectors: list[FlameDetectorSpecLegacy],
+        floor_bounds: tuple[float, float, float, float],
+        obstructions: list[ObstructionLegacy] | None = None,
         floor_z: float = 0.0,
         min_redundancy: int = 1,
     ) -> MultiDetectorCoverageResult:
         """Legacy multi-detector analysis (backward compatible)."""
         obstructions = obstructions or []
-        warnings: List[str] = []
+        warnings: list[str] = []
 
-        individual: List[DetectorCoverageResult] = []
+        individual: list[DetectorCoverageResult] = []
         for det in detectors:
             res = self.analyse_detector(det, floor_bounds, obstructions, floor_z)
             individual.append(res)
@@ -775,7 +773,7 @@ class FlameDetectorAOCRayTrace:
         targets = self._generate_grid(floor_bounds)
         set(targets)
 
-        detector_covered_sets: List[set] = []
+        detector_covered_sets: list[set] = []
         for res in individual:
             covered_set = set()
             for ray in res.ray_results:
@@ -783,7 +781,7 @@ class FlameDetectorAOCRayTrace:
                     covered_set.add(ray.target)
             detector_covered_sets.append(covered_set)
 
-        coverage_count: Dict[Point2D, int] = {}
+        coverage_count: dict[Point2D, int] = {}
         for t in targets:
             count = 0
             for det_covered in detector_covered_sets:
@@ -824,7 +822,7 @@ class FlameDetectorAOCRayTrace:
         detector: FlameDetectorSpecLegacy,
         aim_norm: Point3D,
         target_3d: Point3D,
-        obstructions: List[ObstructionLegacy],
+        obstructions: list[ObstructionLegacy],
     ) -> RayTracePointLegacy:
         dx = target_3d[0] - detector.position[0]
         dy = target_3d[1] - detector.position[1]
@@ -879,7 +877,7 @@ class FlameDetectorAOCRayTrace:
         if not math.isfinite(sensitivity):
             sensitivity = 0.0
 
-        blocking: Optional[str] = None
+        blocking: str | None = None
         los_clear = True
         if within_aoc:
             for obs in obstructions:
@@ -947,10 +945,10 @@ class FlameDetectorAOCRayTrace:
 
     def _generate_grid(
         self,
-        bounds: Tuple[float, float, float, float],
-    ) -> List[Point2D]:
+        bounds: tuple[float, float, float, float],
+    ) -> list[Point2D]:
         min_x, min_y, max_x, max_y = bounds
-        pts: List[Point2D] = []
+        pts: list[Point2D] = []
         x = min_x + self.GRID_STEP_M / 2.0
         while x < max_x:
             y = min_y + self.GRID_STEP_M / 2.0
@@ -968,7 +966,7 @@ class FlameDetectorAOCRayTrace:
         return (v[0] / mag, v[1] / mag, v[2] / mag)
 
     @staticmethod
-    def _convex_hull_2d(points: List[Point2D]) -> List[Point2D]:
+    def _convex_hull_2d(points: list[Point2D]) -> list[Point2D]:
         """Graham scan convex hull."""
         if len(points) < 3:
             return points
@@ -977,12 +975,12 @@ class FlameDetectorAOCRayTrace:
             return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
 
         pts = sorted(set(points))
-        lower: List[Point2D] = []
+        lower: list[Point2D] = []
         for p in pts:
             while len(lower) >= 2 and cross(lower[-2], lower[-1], p) <= 0:
                 lower.pop()
             lower.append(p)
-        upper: List[Point2D] = []
+        upper: list[Point2D] = []
         for p in reversed(pts):
             while len(upper) >= 2 and cross(upper[-2], upper[-1], p) <= 0:
                 upper.pop()

@@ -1,4 +1,4 @@
-"""FireAI Digital Twin - Conflicts Router
+"""FireAI Digital Twin - Conflicts Router.
 =======================================
 Endpoints for conflict detection and resolution.
 
@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import logging
 import math
-from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
@@ -31,8 +30,8 @@ router = APIRouter(prefix="/api/v1/conflicts", tags=["conflicts"])
 
 @router.get("", response_model=ApiResponse[PaginatedData[ConflictResponse]], dependencies=[Depends(require_permission(Permission.CONFLICT_READ))])
 async def list_conflicts(
-    resolved: Optional[bool] = Query(None, description="Filter by resolution status"),
-    conflict_type: Optional[str] = Query(None, description="Filter by conflict type"),
+    resolved: bool | None = Query(None, description="Filter by resolution status"),
+    conflict_type: str | None = Query(None, description="Filter by conflict type"),
     page: int = Query(1, ge=1, description="Page number"),
     page_size: int = Query(20, ge=1, le=100, description="Items per page"),
     db: DatabaseService = Depends(get_db_service),

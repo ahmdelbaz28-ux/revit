@@ -233,7 +233,7 @@ class DensityOptimizer:
         radius: float = DETECTOR_RADIUS,
         max_iterations: int = DEFAULT_MAX_ITERATIONS,
         timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS,
-    ):
+    ) -> None:
         """Initialize DensityOptimizer with convergence guarantees.
 
         Args:
@@ -457,7 +457,7 @@ class DensityOptimizer:
         # Use calculated row distribution for NFPA compliance
         # _calculate_rows now returns y-coordinates directly
         y_coords = self._calculate_rows(L)
-        n_cols, step_x = self._calculate_columns(W)
+        _n_cols, step_x = self._calculate_columns(W)
 
         for row_index, y in enumerate(y_coords):
             # Use actual step_x for offset (not S/2)
@@ -569,7 +569,8 @@ class DensityOptimizer:
                     best_nx, best_ny, best_t = Nx, Ny, t
         if best_nx is None:
             return None
-        assert best_nx is not None and best_ny is not None
+        assert best_nx is not None
+        assert best_ny is not None
         xs = self._place(W, best_nx)
         ys = self._place(L, best_ny)
         assert self.R is not None
@@ -679,8 +680,8 @@ class DensityOptimizer:
         # Build grid points and a spatial index (cell_size = R)
         # Each cell stores indices of grid points that fall within it
         cell_size = R  # One cell per coverage radius
-        n_cells_x = max(1, int(math.ceil(W / cell_size)))
-        n_cells_y = max(1, int(math.ceil(L / cell_size)))
+        n_cells_x = max(1, math.ceil(W / cell_size))
+        n_cells_y = max(1, math.ceil(L / cell_size))
 
         # Grid point generation and spatial index
         grid_points: list[tuple[float, float]] = []
@@ -1224,10 +1225,7 @@ class DensityOptimizer:
                 continue
 
             d_perp_sq = d_perp * d_perp
-            if d_perp_sq >= R2:
-                half_width = 0.0
-            else:
-                half_width = math.sqrt(R2 - d_perp_sq)
+            half_width = 0.0 if d_perp_sq >= R2 else math.sqrt(R2 - d_perp_sq)
 
             center = par_fn(det)
             lo = max(0.0, center - half_width)

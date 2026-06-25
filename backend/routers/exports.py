@@ -11,6 +11,7 @@ metadata about the project, export timestamp, and software version.
 
 from __future__ import annotations
 
+import contextlib
 import io
 import json
 import logging
@@ -315,10 +316,8 @@ async def export_ifc(
                 ifc_bytes = f.read()
         finally:
             import os as _os
-            try:
+            with contextlib.suppress(OSError):
                 _os.unlink(tmp_path)
-            except OSError:
-                pass
 
         return StreamingResponse(
             io.BytesIO(ifc_bytes),

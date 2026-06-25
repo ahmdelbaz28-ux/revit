@@ -1,4 +1,4 @@
-"""fireai.core.secret_rotation — Secret Rotation & Key Management
+"""fireai.core.secret_rotation — Secret Rotation & Key Management.
 ===============================================================
 
 Provides a mechanism for rotating security-sensitive keys without
@@ -38,7 +38,6 @@ import secrets
 import threading
 import time
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Tuple
 
 from fireai.core.security_logging import SecurityEventType, security_audit
 
@@ -71,8 +70,8 @@ class KeyRotator:
 
         """
         self._default_grace_period_s = default_grace_period_s
-        self._current: Dict[str, str] = {}  # key_name → current_key_value
-        self._previous: Dict[str, _KeyRecord] = {}  # key_name → old_key_record
+        self._current: dict[str, str] = {}  # key_name → current_key_value
+        self._previous: dict[str, _KeyRecord] = {}  # key_name → old_key_record
         self._lock = threading.Lock()
 
     @staticmethod
@@ -103,8 +102,8 @@ class KeyRotator:
         key_name: str,
         old_key: str,
         new_key: str,
-        grace_period_s: Optional[float] = None,
-    ) -> Tuple[bool, str]:
+        grace_period_s: float | None = None,
+    ) -> tuple[bool, str]:
         """Rotate a security key.
 
         The old key must match the current key for rotation to succeed.
@@ -223,7 +222,7 @@ class KeyRotator:
         return secrets.token_urlsafe(length)
 
     @staticmethod
-    def validate_key_strength(key: str, min_length: int = 16) -> Tuple[bool, List[str]]:
+    def validate_key_strength(key: str, min_length: int = 16) -> tuple[bool, list[str]]:
         """Validate that a key meets minimum security requirements.
 
         Args:

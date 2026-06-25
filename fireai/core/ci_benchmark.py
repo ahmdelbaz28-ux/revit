@@ -1,4 +1,4 @@
-"""ci_benchmark.py — Automated CI Benchmark Suite
+"""ci_benchmark.py — Automated CI Benchmark Suite.
 ================================================
 Section 11.5: "Automated CI benchmark that fails PRs with >5% performance
 regression."
@@ -24,7 +24,7 @@ import sys
 import time
 import warnings
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable
 
 # ---------------------------------------------------------------------------
 # Benchmark result
@@ -44,7 +44,7 @@ class BenchResult:
     regression_pct: float = 0.0  # negative = improvement
     is_stub: bool = False  # True when real benchmark couldn't run (import failure)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "name": self.name,
             "ops_per_sec": round(self.ops_per_sec, 0),
@@ -60,7 +60,7 @@ class BenchResult:
 # ---------------------------------------------------------------------------
 
 
-def _run_timed(fn: Callable, n: int = 1_000, warmup: int = 100) -> Tuple[float, float]:
+def _run_timed(fn: Callable, n: int = 1_000, warmup: int = 100) -> tuple[float, float]:
     """Run fn n times, return (ops_per_sec, std_dev_pct).
     Uses multiple rounds for statistical stability.
     """
@@ -69,7 +69,7 @@ def _run_timed(fn: Callable, n: int = 1_000, warmup: int = 100) -> Tuple[float, 
         fn()
 
     ROUNDS = 5
-    round_times: List[float] = []
+    round_times: list[float] = []
     per_round = max(n // ROUNDS, 10)
 
     for _ in range(ROUNDS):
@@ -97,7 +97,7 @@ class CIBenchmarkSuite:
 
     def __init__(self, threshold_pct: float = 5.0) -> None:
         self.threshold = threshold_pct
-        self.results: List[BenchResult] = []
+        self.results: list[BenchResult] = []
 
     # ------------------------------------------------------------------
     # Individual benchmarks
@@ -248,7 +248,7 @@ class CIBenchmarkSuite:
     # Run all + compare
     # ------------------------------------------------------------------
 
-    def run_all(self) -> List[BenchResult]:
+    def run_all(self) -> list[BenchResult]:
         """Run all benchmarks. Returns list of results."""
         benchmark_fns = [
             self.bench_point3d_creation,
@@ -265,10 +265,7 @@ class CIBenchmarkSuite:
             try:
                 result = fn()
                 self.results.append(result)
-                if result.is_stub:
-                    status = "STUB"
-                else:
-                    status = "PASS" if result.passed else "FAIL"
+                status = "STUB" if result.is_stub else "PASS" if result.passed else "FAIL"
                 print(
                     f"  {status} {result.name:<45} "
                     f"{result.ops_per_sec:>12.0f} ops/sec  "
@@ -280,7 +277,7 @@ class CIBenchmarkSuite:
 
         return self.results
 
-    def save_baseline(self, path: Optional[str] = None) -> str:
+    def save_baseline(self, path: str | None = None) -> str:
         """Save current results as baseline for future comparison."""
         path = path or self.BASELINE_FILE
         data = {
@@ -293,7 +290,7 @@ class CIBenchmarkSuite:
         print(f"\nBaseline saved to: {path}")
         return path
 
-    def compare_to_baseline(self, path: Optional[str] = None) -> Tuple[bool, List[str]]:
+    def compare_to_baseline(self, path: str | None = None) -> tuple[bool, list[str]]:
         """Compare current results to saved baseline.
         Returns (all_passed, list_of_failures).
         Fails if any benchmark is >REGRESSION_THRESHOLD% slower.
@@ -306,7 +303,7 @@ class CIBenchmarkSuite:
         with open(path) as f:
             baseline = json.load(f)
 
-        failures: List[str] = []
+        failures: list[str] = []
         base_data = baseline.get("benchmarks", {})
 
         print(f"\n{'Benchmark':<45} {'Baseline':>12} {'Current':>12} {'Delta':>8}")
@@ -391,7 +388,7 @@ def main() -> int:
         return 0
 
     if args.baseline == "compare":
-        passed, failures = suite.compare_to_baseline(args.baseline_file)
+        _passed, failures = suite.compare_to_baseline(args.baseline_file)
         if failures:
             print(f"\nBENCHMARK REGRESSION DETECTED ({len(failures)} failures):")
             for f in failures:

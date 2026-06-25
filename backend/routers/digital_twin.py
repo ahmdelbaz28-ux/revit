@@ -1,4 +1,4 @@
-"""backend/routers/digital_twin.py — Digital Twin Conversion Endpoints
+"""backend/routers/digital_twin.py — Digital Twin Conversion Endpoints.
 ===================================================================
 
 Provides endpoints for bidirectional CAD/BIM conversion,

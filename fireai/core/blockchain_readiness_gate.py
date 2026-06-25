@@ -1,4 +1,4 @@
-"""blockchain_readiness_gate.py — Merkle Tree Readiness Gate for FireAI
+"""blockchain_readiness_gate.py — Merkle Tree Readiness Gate for FireAI.
 ====================================================================
 LOW PRIORITY MODULE
 
@@ -53,7 +53,7 @@ from __future__ import annotations
 
 import hashlib
 from dataclasses import dataclass
-from typing import Any, Dict, List
+from typing import Any
 
 # ============================================================================
 # Constants
@@ -109,7 +109,7 @@ class MerkleProof:
 
     leaf_index: int
     leaf_hash: str
-    siblings: Tuple[str, ...]
+    siblings: tuple[str, ...]
     merkle_root: str
 
     def verify(self) -> bool:
@@ -141,7 +141,6 @@ class MerkleProof:
 
 
 # Need to import Tuple for the frozen dataclass
-from typing import Tuple
 
 # ============================================================================
 # Merkle Tree
@@ -167,7 +166,7 @@ class MerkleTree:
 
     """
 
-    def __init__(self, leaves: List[str]) -> None:
+    def __init__(self, leaves: list[str]) -> None:
         """Build a Merkle tree from leaf hashes.
 
         Args:
@@ -175,7 +174,7 @@ class MerkleTree:
 
         """
         self._leaves = list(leaves)
-        self._levels: List[List[str]] = []
+        self._levels: list[list[str]] = []
         self._build_tree()
 
     def _build_tree(self) -> None:
@@ -190,7 +189,7 @@ class MerkleTree:
 
         # Build up to root
         while len(current_level) > 1:
-            next_level: List[str] = []
+            next_level: list[str] = []
 
             # Odd-leaf duplication: duplicate last leaf if odd count
             if len(current_level) % 2 == 1:
@@ -213,12 +212,12 @@ class MerkleTree:
         return self._levels[-1][0]
 
     @property
-    def leaves(self) -> List[str]:
+    def leaves(self) -> list[str]:
         """Original leaf hashes."""
         return self._leaves[:]
 
     @property
-    def tree_levels(self) -> List[List[str]]:
+    def tree_levels(self) -> list[list[str]]:
         """All levels of the tree (bottom to top). For debugging."""
         return [level[:] for level in self._levels]
 
@@ -228,7 +227,7 @@ class MerkleTree:
         return len(self._leaves)
 
     @classmethod
-    def from_leaves(cls, leaf_data: List[str]) -> MerkleTree:
+    def from_leaves(cls, leaf_data: list[str]) -> MerkleTree:
         """Create a MerkleTree from raw data (hashes each item first).
 
         Args:
@@ -260,16 +259,13 @@ class MerkleTree:
         if index < 0 or index >= len(self._leaves):
             raise IndexError(f"Leaf index {index} out of range [0, {len(self._leaves)})")
 
-        siblings: List[str] = []
+        siblings: list[str] = []
         current_index = index
 
         # Walk up the tree collecting siblings
         for level in self._levels[:-1]:  # All levels except root
             # Determine sibling index
-            if current_index % 2 == 0:
-                sibling_index = current_index + 1
-            else:
-                sibling_index = current_index - 1
+            sibling_index = current_index + 1 if current_index % 2 == 0 else current_index - 1
 
             # Get sibling (may be duplicated last element)
             if sibling_index < len(level):
@@ -320,7 +316,7 @@ class BlockchainReadinessGate:
 
     """
 
-    def __init__(self, design_artifacts: List[str]) -> None:
+    def __init__(self, design_artifacts: list[str]) -> None:
         self._artifacts = list(design_artifacts)
         self._tree = MerkleTree.from_leaves(design_artifacts)
 
@@ -393,9 +389,9 @@ class BlockchainReadinessGate:
 
     def anchor_to_audit_trail(
         self,
-        evidence_chain: List[Dict[str, Any]],
+        evidence_chain: list[dict[str, Any]],
         event_description: str = "Merkle tree anchored",
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Anchor the Merkle root to the existing evidence chain.
 
         This adds ONE event to the evidence_chain — it does NOT

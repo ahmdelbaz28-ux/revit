@@ -1,4 +1,4 @@
-"""generative_layout_agent.py — Generative Design Engine for FireAI
+"""generative_layout_agent.py — Generative Design Engine for FireAI.
 ====================================================================
 
 MISSION TASK 2 — Generative Design Engine (The Market Value Driver)
@@ -78,6 +78,7 @@ References
 - agent.md Rule 12: Safety-First (occupancy-aware recommendation)
 - agent.md V85 Bug #28: Deterministic run_id (content hash, not uuid4)
 - NFPA 72-2022 §17.6.3.1.1, §17.7.4.2.3.1
+
 """
 
 from __future__ import annotations
@@ -89,7 +90,7 @@ import os
 import time
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from fireai.core.boq_generator import UNIT_COSTS
 from fireai.core.spatial_engine.density_optimizer import (
@@ -97,7 +98,6 @@ from fireai.core.spatial_engine.density_optimizer import (
     DETECTOR_RADIUS,
     DensityOptimizer,
     DetectorLayout,
-    PLACEMENT_MARGIN,
     Room,
 )
 
@@ -175,10 +175,10 @@ class VariantResult:
     score: float
     is_recommended: bool = False
     is_compliant: bool = False
-    warnings: List[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
     generation_ms: float = 0.0
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to JSON-serializable dict (for API responses)."""
         return {
             "variant": self.variant.value,
@@ -204,13 +204,13 @@ class GenerativeResult:
     """Complete result from GenerativeLayoutAgent.generate_variants()."""
 
     room: Room
-    variants: Dict[LayoutVariant, VariantResult]
+    variants: dict[LayoutVariant, VariantResult]
     recommended_variant: LayoutVariant
     total_generation_ms: float
     run_id: str
-    audit_events: List[str] = field(default_factory=list)
+    audit_events: list[str] = field(default_factory=list)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "room": {
                 "name": self.room.name,
@@ -234,7 +234,7 @@ class GenerativeResult:
 # ---------------------------------------------------------------------------
 
 
-def _generate_variant_worker(args: Tuple[str, Dict[str, Any]]) -> Dict[str, Any]:
+def _generate_variant_worker(args: tuple[str, dict[str, Any]]) -> dict[str, Any]:
     """Multiprocessing worker — generates ONE variant.
 
     Must be module-level (not nested) for pickle compatibility with
@@ -245,6 +245,7 @@ def _generate_variant_worker(args: Tuple[str, Dict[str, Any]]) -> Dict[str, Any]
 
     Returns:
         Dict with variant result data (picklable).
+
     """
     variant_name, room_dict, optimizer_config = args
 
@@ -295,7 +296,7 @@ def _generate_variant_worker(args: Tuple[str, Dict[str, Any]]) -> Dict[str, Any]
             # which INTELLIGENTLY prunes the least-valuable detectors while
             # maintaining coverage. If still over cap, we re-run with standard
             # spacing (safer than arbitrary truncation).
-            cap = int(math.ceil(layout.theoretical_lower_bound * DENSITY_CAP_FACTOR))
+            cap = math.ceil(layout.theoretical_lower_bound * DENSITY_CAP_FACTOR)
             if layout.count > cap:
                 # Step 1: Try intelligent redundancy removal (preserves coverage)
                 optimizer._remove_redundant(layout)
@@ -350,7 +351,7 @@ def _generate_variant_worker(args: Tuple[str, Dict[str, Any]]) -> Dict[str, Any]
         }
 
 
-def _serialize_layout(layout: DetectorLayout) -> Dict[str, Any]:
+def _serialize_layout(layout: DetectorLayout) -> dict[str, Any]:
     """Serialize DetectorLayout to a picklable dict (for multiprocessing)."""
     return {
         "room": {
@@ -373,7 +374,7 @@ def _serialize_layout(layout: DetectorLayout) -> Dict[str, Any]:
     }
 
 
-def _deserialize_layout(data: Dict[str, Any]) -> DetectorLayout:
+def _deserialize_layout(data: dict[str, Any]) -> DetectorLayout:
     """Reconstruct DetectorLayout from serialized dict."""
     room = Room(
         name=data["room"]["name"],
@@ -381,7 +382,7 @@ def _deserialize_layout(data: Dict[str, Any]) -> DetectorLayout:
         length=data["room"]["length"],
         ceiling_height=data["room"]["ceiling_height"],
     )
-    layout = DetectorLayout(
+    return DetectorLayout(
         room=room,
         detectors=[tuple(d) for d in data["detectors"]],
         coverage_pct=data["coverage_pct"],
@@ -394,7 +395,6 @@ def _deserialize_layout(data: Dict[str, Any]) -> DetectorLayout:
         fallback_used=data["fallback_used"],
         coverage_radius=data["coverage_radius"],
     )
-    return layout
 
 
 # ---------------------------------------------------------------------------
@@ -420,7 +420,7 @@ class GenerativeLayoutAgent:
         redundancy_weight: float = REDUNDANCY_WEIGHT,
         cost_weight: float = COST_WEIGHT,
         use_multiprocessing: bool = True,
-        n_workers: Optional[int] = None,
+        n_workers: int | None = None,
     ) -> None:
         """Initialize the generative agent.
 
@@ -431,6 +431,7 @@ class GenerativeLayoutAgent:
             cost_weight: Weight for total cost (penalty).
             use_multiprocessing: If True, use multiprocessing for variants.
             n_workers: Number of worker processes. None = min(3, cpu_count).
+
         """
         # Validate weights
         total = coverage_weight + compliance_weight + redundancy_weight + cost_weight
@@ -462,7 +463,7 @@ class GenerativeLayoutAgent:
         room: Room,
         occupancy_type: str = "office",
         detector_type: str = "smoke",
-        audit_run_id: Optional[str] = None,
+        audit_run_id: str | None = None,
     ) -> GenerativeResult:
         """Generate all 3 layout variants for a room.
 
@@ -474,6 +475,7 @@ class GenerativeLayoutAgent:
 
         Returns:
             GenerativeResult with all 3 variants + recommendation.
+
         """
         t_total = time.perf_counter()
 
@@ -522,19 +524,19 @@ class GenerativeLayoutAgent:
             results = [self._generate_sequential(t) for t in tasks]
 
         # Build VariantResult objects
-        variants: Dict[LayoutVariant, VariantResult] = {}
-        audit_events: List[str] = []
+        variants: dict[LayoutVariant, VariantResult] = {}
+        audit_events: list[str] = []
 
         # V135 F-8: First pass — compute costs for all variants to determine
         # the reference_cost (median) used in the additive scoring formula.
         # V138 F-1 FIX: Also store generation_ms and error per variant to
         # avoid using stale loop variable `r` in the second loop.
-        variant_costs: Dict[LayoutVariant, float] = {}
-        variant_layouts: Dict[LayoutVariant, DetectorLayout] = {}
-        variant_overlaps: Dict[LayoutVariant, float] = {}
-        variant_compliance: Dict[LayoutVariant, bool] = {}
-        variant_gen_ms: Dict[LayoutVariant, float] = {}  # V138 F-1
-        variant_errors: Dict[LayoutVariant, Optional[str]] = {}  # V138 F-1
+        variant_costs: dict[LayoutVariant, float] = {}
+        variant_layouts: dict[LayoutVariant, DetectorLayout] = {}
+        variant_overlaps: dict[LayoutVariant, float] = {}
+        variant_compliance: dict[LayoutVariant, bool] = {}
+        variant_gen_ms: dict[LayoutVariant, float] = {}  # V138 F-1
+        variant_errors: dict[LayoutVariant, str | None] = {}  # V138 F-1
 
         for r in results:
             variant = LayoutVariant(r["variant"])
@@ -673,7 +675,7 @@ class GenerativeLayoutAgent:
                 if dist >= 2 * radius:
                     # No overlap
                     continue
-                elif dist == 0:
+                if dist == 0:
                     # Complete overlap
                     overlap = math.pi * radius ** 2
                 else:
@@ -686,12 +688,16 @@ class GenerativeLayoutAgent:
                     )
 
                 total_overlap_area += overlap
+                # V138 F-10 FIX: Use TOTAL coverage area (all detectors) as denominator
+                # not just overlapping pairs. The OLD code only counted pairs that overlap
+                # in the denominator, inflating overlap_pct for sparse layouts.
                 total_possible_area += math.pi * radius ** 2
 
         if total_possible_area == 0:
             return 0.0
 
-        # Overlap % = total overlap / total possible area
+        # V138 F-10: Overlap % = total overlap / total coverage area (all detectors)
+        # This gives the TRUE percentage of redundant coverage
         return min(100.0, (total_overlap_area / total_possible_area) * 100.0)
 
     def _compute_score(
@@ -727,7 +733,7 @@ class GenerativeLayoutAgent:
         import math
 
         # Validate inputs (per agent.md V57 NaN/Inf bypass)
-        for name, val in (("coverage_pct", coverage_pct),
+        for _name, val in (("coverage_pct", coverage_pct),
                           ("overlap_pct", overlap_pct),
                           ("total_cost", total_cost),
                           ("reference_cost", reference_cost)):
@@ -755,7 +761,7 @@ class GenerativeLayoutAgent:
 
     @staticmethod
     def _recommend_variant(
-        variants: Dict[LayoutVariant, VariantResult],
+        variants: dict[LayoutVariant, VariantResult],
         occupancy_type: str,
     ) -> LayoutVariant:
         """Recommend the best variant for the given occupancy.
@@ -828,8 +834,8 @@ class GenerativeLayoutAgent:
     # ------------------------------------------------------------------
 
     def _generate_parallel(
-        self, tasks: List[Tuple[str, Dict[str, Any], Dict[str, Any]]]
-    ) -> List[Dict[str, Any]]:
+        self, tasks: list[tuple[str, dict[str, Any], dict[str, Any]]]
+    ) -> list[dict[str, Any]]:
         """Generate variants in parallel using multiprocessing.Pool.
 
         Uses fork context per agent.md V37 (threads forbidden due to GIL).
@@ -837,8 +843,7 @@ class GenerativeLayoutAgent:
         try:
             ctx = multiprocessing.get_context(_MP_CONTEXT)
             with ctx.Pool(processes=self.n_workers) as pool:
-                results = pool.map(_generate_variant_worker, tasks)
-            return results
+                return pool.map(_generate_variant_worker, tasks)
         except Exception as exc:
             logger.warning(
                 "Multiprocessing failed (%s) — falling back to sequential. "
@@ -849,8 +854,8 @@ class GenerativeLayoutAgent:
 
     @staticmethod
     def _generate_sequential(
-        task: Tuple[str, Dict[str, Any], Dict[str, Any]]
-    ) -> Dict[str, Any]:
+        task: tuple[str, dict[str, Any], dict[str, Any]]
+    ) -> dict[str, Any]:
         """Generate a single variant sequentially (fallback)."""
         return _generate_variant_worker(task)
 
@@ -866,8 +871,8 @@ class GenerativeLayoutAgent:
         total_cost: float,
         score: float,
         is_compliant: bool,
-        error: Optional[str],
-    ) -> Optional[str]:
+        error: str | None,
+    ) -> str | None:
         """Record a GENERATIVE_ATTEMPT event in AuditStore.
 
         Per agent.md Rule 12 + NFPA 72 §7.5: every generative attempt
@@ -877,6 +882,7 @@ class GenerativeLayoutAgent:
         Returns:
             Audit event hash, or None if recording failed (graceful
             degradation — never block on audit failure).
+
         """
         try:
             from fireai.core.audit_store import AuditStore
@@ -900,12 +906,11 @@ class GenerativeLayoutAgent:
                 "source": "generative_layout_agent",
             }
 
-            event_hash = AuditStore.add_event(
+            return AuditStore.add_event(
                 event_type="GENERATIVE_ATTEMPT",
                 room_id=layout.room.name,
                 details_dict=details,
             )
-            return event_hash
 
         except Exception as exc:
             # Per fail-safe principle: audit failure MUST NOT block generation
@@ -918,14 +923,14 @@ class GenerativeLayoutAgent:
 
 
 __all__ = [
+    "COMPLIANCE_WEIGHT",
+    "COST_WEIGHT",
+    "COVERAGE_WEIGHT",
+    "HIGH_HAZARD_OCCUPANCIES",
+    "REDUNDANCY_WEIGHT",
+    "SAFETY_MAXIMIZED_SPACING_FACTOR",
+    "GenerativeLayoutAgent",
+    "GenerativeResult",
     "LayoutVariant",
     "VariantResult",
-    "GenerativeResult",
-    "GenerativeLayoutAgent",
-    "COVERAGE_WEIGHT",
-    "COMPLIANCE_WEIGHT",
-    "REDUNDANCY_WEIGHT",
-    "COST_WEIGHT",
-    "SAFETY_MAXIMIZED_SPACING_FACTOR",
-    "HIGH_HAZARD_OCCUPANCIES",
 ]

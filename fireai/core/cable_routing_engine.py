@@ -1,4 +1,4 @@
-"""fireai/core/cable_routing_engine.py
+"""fireai/core/cable_routing_engine.py.
 ====================================
 LIFE-SAFETY CRITICAL: Cable routing engine for the FireAI fire alarm
 engineering platform.  Routes Class A (ring) and Class B (home-run)
@@ -36,7 +36,7 @@ import logging
 import math
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 # Voltage drop module
 from fireai.core.voltage_drop import (
@@ -90,7 +90,7 @@ class _WireGaugeInstance:
         resistance_ohm_per_km_75c: float,
         diameter_mm: float,
         ampacity_a: float,
-    ):
+    ) -> None:
         self.awg_value = awg_value
         # Primary: 75°C resistance (NEC operating temperature for THHN/THWN)
         self.resistance_ohm_per_km = resistance_ohm_per_km_75c
@@ -120,16 +120,16 @@ class _WireGaugeInstance:
 class _WireGaugeMeta(type):
     """Metaclass enabling iteration over WireGauge class attributes."""
 
-    _ALL_GAUGES: Tuple[_WireGaugeInstance, ...]
-    VALID_GAUGES: Tuple[str, ...]
+    _ALL_GAUGES: tuple[_WireGaugeInstance, ...]
+    VALID_GAUGES: tuple[str, ...]
 
     def __iter__(cls):
         return iter(cls._ALL_GAUGES)  # type: ignore[attr-defined]
 
-    def __len__(cls):
+    def __len__(cls) -> int:
         return len(cls._ALL_GAUGES)  # type: ignore[attr-defined]
 
-    def __contains__(cls, item):
+    def __contains__(cls, item) -> bool:
         if isinstance(item, _WireGaugeInstance):
             return item in cls._ALL_GAUGES  # type: ignore[attr-defined]
         if isinstance(item, str):
@@ -160,19 +160,19 @@ class WireGauge(metaclass=_WireGaugeMeta):
     AWG_14: _WireGaugeInstance = _WireGaugeInstance("14",  8.450, 10.07, 1.628, 2.0)
     AWG_12: _WireGaugeInstance = _WireGaugeInstance("12",  5.310,  6.33, 2.053, 3.0)
 
-    _ALL_GAUGES: Tuple[_WireGaugeInstance, ...] = (AWG_18, AWG_16, AWG_14, AWG_12)
+    _ALL_GAUGES: tuple[_WireGaugeInstance, ...] = (AWG_18, AWG_16, AWG_14, AWG_12)
 
     # NEC Chapter 9 Table 8 — DC resistance at 75°C (Ω/m)
     # V FIX: Updated to 75°C operating temperature values to match
     # resistance_ohm_per_km (primary property).
-    RESISTANCE_PER_M: Dict[str, float] = {
+    RESISTANCE_PER_M: dict[str, float] = {
         "18": 0.02549,  # 25.49 Ω/km at 75°C
         "16": 0.01604,  # 16.04 Ω/km at 75°C
         "14": 0.01007,  # 10.07 Ω/km at 75°C
         "12": 0.00633,  # 6.33 Ω/km at 75°C
     }
 
-    VALID_GAUGES: Tuple[str, ...] = ("12", "14", "16", "18")
+    VALID_GAUGES: tuple[str, ...] = ("12", "14", "16", "18")
 
     @classmethod
     def get_resistance_per_m(cls, awg: str) -> float:
@@ -251,8 +251,8 @@ class RoutingObstacle3D:
 
     def intersects_line_segment(
         self,
-        p1: Tuple[float, float, float],
-        p2: Tuple[float, float, float],
+        p1: tuple[float, float, float],
+        p2: tuple[float, float, float],
     ) -> bool:
         """Check if a line segment intersects this obstacle (AABB intersection).
 
@@ -313,8 +313,8 @@ class VoltageDropSegment:
     """
 
     segment_index: int
-    from_point: Tuple[float, float, float]
-    to_point: Tuple[float, float, float]
+    from_point: tuple[float, float, float]
+    to_point: tuple[float, float, float]
     length_m: float
     current_a: float
     awg: str
@@ -354,9 +354,9 @@ class RouteResult:
     total_voltage_drop_v: float = 0.0
     total_voltage_drop_pct: float = 0.0
     end_of_line_voltage_v: float = 0.0
-    segments: Tuple[VoltageDropSegment, ...] = ()
-    warnings: Tuple[str, ...] = ()
-    violations: Tuple[str, ...] = ()
+    segments: tuple[VoltageDropSegment, ...] = ()
+    warnings: tuple[str, ...] = ()
+    violations: tuple[str, ...] = ()
     wire_gauge: Any = None  # WireGauge instance
     selected_gauge_is_minimum: bool = False
     total_return_length_m: float = 0.0
@@ -382,7 +382,7 @@ class CableRoutingEngine:
 
     def __init__(
         self,
-        obstacles: Optional[List[RoutingObstacle3D]] = None,
+        obstacles: list[RoutingObstacle3D] | None = None,
         ps_voltage: float = NOMINAL_VOLTAGE_FA,
         max_voltage_drop_pct: float = MAX_VOLTAGE_DROP_PCT,
     ) -> None:
@@ -404,7 +404,7 @@ class CableRoutingEngine:
 
         self._ps_voltage = ps_voltage
         self._max_drop_pct = max_voltage_drop_pct
-        self._obstacles: List[RoutingObstacle3D] = list(obstacles) if obstacles else []
+        self._obstacles: list[RoutingObstacle3D] = list(obstacles) if obstacles else []
 
         logger.info(
             "CableRoutingEngine initialized: %d obstacles, ps_voltage=%.0fV",
@@ -426,9 +426,9 @@ class CableRoutingEngine:
 
     def check_obstacle_intersections(
         self,
-        p1: Tuple[float, float, float],
-        p2: Tuple[float, float, float],
-    ) -> List[RoutingObstacle3D]:
+        p1: tuple[float, float, float],
+        p2: tuple[float, float, float],
+    ) -> list[RoutingObstacle3D]:
         """Check which obstacles a line segment intersects.
 
         Returns list of obstacles that the line from p1 to p2 passes through.
@@ -443,8 +443,8 @@ class CableRoutingEngine:
 
     @staticmethod
     def calculate_3d_distance(
-        p1: Tuple[float, float, float],
-        p2: Tuple[float, float, float],
+        p1: tuple[float, float, float],
+        p2: tuple[float, float, float],
     ) -> float:
         """Calculate 3D Euclidean distance between two points.
 
@@ -473,8 +473,8 @@ class CableRoutingEngine:
     def route_circuit(
         self,
         circuit: Any,
-        wire_gauge: Optional[_WireGaugeInstance] = None,
-        ps_voltage: Optional[float] = None,
+        wire_gauge: _WireGaugeInstance | None = None,
+        ps_voltage: float | None = None,
     ) -> RouteResult:
         """Route a circuit and verify voltage drop compliance.
 
@@ -614,9 +614,9 @@ class CableRoutingEngine:
         panel_pos = getattr(circuit, "panel_position", (0.0, 0.0, 0.0))
         devices = circuit.devices
 
-        segments: List[VoltageDropSegment] = []
-        warnings_list: List[str] = []
-        violations_list: List[str] = []
+        segments: list[VoltageDropSegment] = []
+        warnings_list: list[str] = []
+        violations_list: list[str] = []
         cumulative_drop = 0.0
 
         # Total current for all devices on the circuit

@@ -1,4 +1,4 @@
-"""backend/routers/facp.py — FACP Selection & Compliance REST API
+"""backend/routers/facp.py — FACP Selection & Compliance REST API.
 ================================================================
 REST endpoints for the Fire Alarm Control Panel selection engine.
 
@@ -31,7 +31,6 @@ SAFETY NOTE:
 from __future__ import annotations
 
 import logging
-from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
@@ -83,7 +82,7 @@ class FACPSelectionRequest(BaseModel):
         "US",
         description="Jurisdiction code: US, Canada, FDNY, etc."
     )
-    preferred_manufacturer: Optional[str] = Field(
+    preferred_manufacturer: str | None = Field(
         None,
         description="Preferred FACP manufacturer (e.g., NOTIFIER, SIEMENS, SIMPLEX)"
     )
@@ -108,7 +107,7 @@ class FACPVerificationRequest(BaseModel):
     requires_voice: bool = False
     requires_releasing: bool = False
     jurisdiction: str = "US"
-    preferred_manufacturer: Optional[str] = None
+    preferred_manufacturer: str | None = None
     min_temperature_c: float = Field(20.0, ge=-40.0, le=60.0)
     # Panel recommendation fields to verify
     recommended_model: str = Field(..., description="Model name of the panel to verify")
@@ -131,7 +130,7 @@ class FACPScheduleRequest(BaseModel):
     battery_size_ah: float = Field(..., gt=0)
     battery_derating_method: str = Field(...)
     power_supply_watts: int = Field(..., gt=0)
-    listings: List[str] = Field(default_factory=list)
+    listings: list[str] = Field(default_factory=list)
     signature_hash: str = Field(..., description="Cryptographic signature from selection")
     quantity: int = Field(1, gt=0, le=100, description="Number of panels (for schedule)")
 
@@ -154,13 +153,13 @@ class FACPSpecRequest(BaseModel):
     battery_size_ah: float = Field(..., gt=0)
     battery_derating_method: str = Field(...)
     power_supply_watts: int = Field(..., gt=0)
-    listings: List[str] = Field(default_factory=list)
+    listings: list[str] = Field(default_factory=list)
     signature_hash: str = Field(...)
 
 
 # ── Helper: Safe FACP module import ──────────────────────────────────────────
 
-_facp_available: Optional[bool] = None
+_facp_available: bool | None = None
 
 
 def _check_facp_available() -> bool:
@@ -192,7 +191,7 @@ def _check_facp_available() -> bool:
     return _facp_available
 
 
-def _require_facp():
+def _require_facp() -> None:
     """Raise 503 if FACP modules are not available."""
     if not _check_facp_available():
         raise HTTPException(

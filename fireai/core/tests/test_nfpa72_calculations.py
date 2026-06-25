@@ -78,21 +78,21 @@ def _heat_spec() -> HeatDetectorSpec:
 class TestGetHeatDetectorPlacementParams:
     """NFPA 72 §17.6.2.1 — heat detector placement parameters."""
 
-    def test_standard_height_returns_base_spacing(self):
+    def test_standard_height_returns_base_spacing(self) -> None:
         result = get_heat_detector_placement_params(_heat_spec(), ceiling_height_m=3.0)
         assert result["max_detector_spacing_m"] == 6.1  # 20 ft
         assert result["coverage_type"] == "square_grid"
 
-    def test_high_ceiling_reduces_spacing(self):
+    def test_high_ceiling_reduces_spacing(self) -> None:
         result_low = get_heat_detector_placement_params(_heat_spec(), ceiling_height_m=3.0)
         result_high = get_heat_detector_placement_params(_heat_spec(), ceiling_height_m=6.0)
         assert result_high["max_detector_spacing_m"] <= result_low["max_detector_spacing_m"]
 
-    def test_none_spec_raises_valueerror(self):
+    def test_none_spec_raises_valueerror(self) -> None:
         with pytest.raises(ValueError, match="HeatDetectorSpec is required"):
             get_heat_detector_placement_params(None, ceiling_height_m=3.0)
 
-    def test_very_high_ceiling_uses_fallback(self):
+    def test_very_high_ceiling_uses_fallback(self) -> None:
         result = get_heat_detector_placement_params(_heat_spec(), ceiling_height_m=15.0)
         assert result["max_detector_spacing_m"] == 3.50  # fallback
 
@@ -104,23 +104,23 @@ class TestGetHeatDetectorPlacementParams:
 class TestCalculateSmokeDetectorRadius:
     """NFPA 72 §17.6.3.1 — smoke detector coverage radius."""
 
-    def test_standard_height(self):
+    def test_standard_height(self) -> None:
         radius = calculate_smoke_detector_radius(3.0)
         assert isinstance(radius, float)
         assert radius > 0
 
-    def test_low_ceiling(self):
+    def test_low_ceiling(self) -> None:
         radius = calculate_smoke_detector_radius(2.5)
         assert radius > 0
 
-    def test_high_ceiling_smaller_radius(self):
+    def test_high_ceiling_smaller_radius(self) -> None:
         calculate_smoke_detector_radius(3.0)
         r_high = calculate_smoke_detector_radius(9.0)
         # Per NFPA 72 §17.7.3.2.3 flat spacing, smoke radius stays constant
         # but for heat, it reduces. Smoke radius should be stable.
         assert r_high > 0
 
-    def test_caching(self):
+    def test_caching(self) -> None:
         r1 = calculate_smoke_detector_radius(3.0)
         r2 = calculate_smoke_detector_radius(3.0)
         assert r1 == r2
@@ -133,18 +133,18 @@ class TestCalculateSmokeDetectorRadius:
 class TestCalculateSmokeDetectorSpacing:
     """NFPA 72 §17.6.3.1 — number of smoke detectors per room axis."""
 
-    def test_small_room(self):
+    def test_small_room(self) -> None:
         num_w, num_d = calculate_smoke_detector_spacing(_flat_ceiling(), 5.0, 5.0)
         assert num_w >= 1
         assert num_d >= 1
 
-    def test_large_room_needs_more(self):
+    def test_large_room_needs_more(self) -> None:
         small = calculate_smoke_detector_spacing(_flat_ceiling(), 5.0, 5.0)
         large = calculate_smoke_detector_spacing(_flat_ceiling(), 30.0, 30.0)
         assert large[0] > small[0]
         assert large[1] > small[1]
 
-    def test_minimum_one_detector(self):
+    def test_minimum_one_detector(self) -> None:
         num_w, num_d = calculate_smoke_detector_spacing(_flat_ceiling(), 0.5, 0.5)
         assert num_w == 1
         assert num_d == 1
@@ -157,22 +157,22 @@ class TestCalculateSmokeDetectorSpacing:
 class TestCalculateHeatDetectorCoverageChebyshev:
     """NFPA 72 Table 17.6.3.5.1 — heat detector Chebyshev (square) coverage."""
 
-    def test_center_covered(self):
+    def test_center_covered(self) -> None:
         assert calculate_heat_detector_coverage_chebyshev(5.0, 5.0, 5.0, 5.0) is True
 
-    def test_within_half_spacing_covered(self):
+    def test_within_half_spacing_covered(self) -> None:
         # spacing=6.1 → half = 3.05m
         assert calculate_heat_detector_coverage_chebyshev(5.0, 5.0, 7.0, 7.0) is True
 
-    def test_beyond_half_spacing_not_covered(self):
+    def test_beyond_half_spacing_not_covered(self) -> None:
         # spacing=6.1 → half = 3.05m; point at (10, 10) is 5m away
         assert calculate_heat_detector_coverage_chebyshev(5.0, 5.0, 10.0, 10.0) is False
 
-    def test_boundary_coverage(self):
+    def test_boundary_coverage(self) -> None:
         # Exactly at half-spacing boundary (3.05m from detector at origin)
         assert calculate_heat_detector_coverage_chebyshev(0.0, 0.0, 3.05, 0.0, spacing_m=6.1) is True
 
-    def test_custom_spacing(self):
+    def test_custom_spacing(self) -> None:
         # Smaller spacing → smaller coverage area
         covered = calculate_heat_detector_coverage_chebyshev(5.0, 5.0, 7.0, 7.0, spacing_m=3.0)
         assert covered is False  # half_spacing = 1.5m, distance ~2.83m > 1.5m
@@ -185,22 +185,22 @@ class TestCalculateHeatDetectorCoverageChebyshev:
 class TestCalculateHeatDetectorSpacingRectangular:
     """NFPA 72 §17.6.3.5 — rectangular heat detector grid."""
 
-    def test_small_room_one_detector(self):
+    def test_small_room_one_detector(self) -> None:
         num_w, num_d = calculate_heat_detector_spacing_rectangular(5.0, 5.0)
         assert num_w == 1
         assert num_d == 1
 
-    def test_large_room_multiple(self):
+    def test_large_room_multiple(self) -> None:
         num_w, num_d = calculate_heat_detector_spacing_rectangular(20.0, 20.0)
         assert num_w >= 3  # 20/6.1 ≈ 3.28 → ceil = 4
         assert num_d >= 3
 
-    def test_custom_spacing(self):
+    def test_custom_spacing(self) -> None:
         num_w, num_d = calculate_heat_detector_spacing_rectangular(20.0, 20.0, spacing_m=10.0)
         assert num_w == 2
         assert num_d == 2
 
-    def test_minimum_one_per_axis(self):
+    def test_minimum_one_per_axis(self) -> None:
         num_w, num_d = calculate_heat_detector_spacing_rectangular(1.0, 1.0)
         assert num_w == 1
         assert num_d == 1
@@ -213,31 +213,31 @@ class TestCalculateHeatDetectorSpacingRectangular:
 class TestGenerateHeatDetectorPositions:
     """V79 FIX — count-based placement to avoid skipped boundary detectors."""
 
-    def test_returns_list_of_tuples(self):
+    def test_returns_list_of_tuples(self) -> None:
         positions = generate_heat_detector_positions(_room(), _flat_ceiling())
         assert isinstance(positions, list)
         assert all(isinstance(p, tuple) and len(p) == 2 for p in positions)
 
-    def test_at_least_one_detector(self):
+    def test_at_least_one_detector(self) -> None:
         positions = generate_heat_detector_positions(_room(5.0, 5.0), _flat_ceiling())
         assert len(positions) >= 1
 
-    def test_large_room_has_multiple_positions(self):
+    def test_large_room_has_multiple_positions(self) -> None:
         positions = generate_heat_detector_positions(_room(30.0, 30.0), _flat_ceiling())
         assert len(positions) >= 4  # At minimum 2x2
 
-    def test_custom_spacing(self):
+    def test_custom_spacing(self) -> None:
         positions = generate_heat_detector_positions(
             _room(10.0, 10.0), _flat_ceiling(), spacing_m=6.1
         )
         assert len(positions) >= 1
 
-    def test_default_spacing_uses_height_adjusted(self):
+    def test_default_spacing_uses_height_adjusted(self) -> None:
         """When spacing_m is None, uses height-adjusted spacing from NFPA 72."""
         positions = generate_heat_detector_positions(_room(10.0, 10.0), _flat_ceiling())
         assert len(positions) >= 1
 
-    def test_v79_fix_boundary_coverage(self):
+    def test_v79_fix_boundary_coverage(self) -> None:
         """V79 FIX: 15m × 15m room should place detectors near far wall."""
         positions = generate_heat_detector_positions(
             _room(15.0, 15.0), _flat_ceiling(), spacing_m=6.1
@@ -258,19 +258,19 @@ class TestGenerateHeatDetectorPositions:
 class TestIsPointCoveredByHeatDetectors:
     """Combined Chebyshev coverage check across multiple detectors."""
 
-    def test_covered_by_single_detector(self):
+    def test_covered_by_single_detector(self) -> None:
         detectors = [(5.0, 5.0)]
         assert is_point_covered_by_heat_detectors((5.0, 5.0), detectors) is True
 
-    def test_not_covered_when_far(self):
+    def test_not_covered_when_far(self) -> None:
         detectors = [(5.0, 5.0)]
         assert is_point_covered_by_heat_detectors((20.0, 20.0), detectors) is False
 
-    def test_covered_by_second_detector(self):
+    def test_covered_by_second_detector(self) -> None:
         detectors = [(0.0, 0.0), (10.0, 10.0)]
         assert is_point_covered_by_heat_detectors((10.0, 10.0), detectors) is True
 
-    def test_empty_detector_list(self):
+    def test_empty_detector_list(self) -> None:
         assert is_point_covered_by_heat_detectors((5.0, 5.0), []) is False
 
 
@@ -281,22 +281,22 @@ class TestIsPointCoveredByHeatDetectors:
 class TestCalculateRidgeZoneBoundary:
     """NFPA 72 §17.6.3.4 — ridge zone for sloped ceilings."""
 
-    def test_flat_ceiling_no_ridge_zone(self):
+    def test_flat_ceiling_no_ridge_zone(self) -> None:
         result = calculate_ridge_zone_boundary((0, 0, 10, 0), slope_degrees=1.0)
         assert result == (0, 0, 10, 0)  # Unchanged
 
-    def test_sloped_ceiling_creates_zone(self):
+    def test_sloped_ceiling_creates_zone(self) -> None:
         result = calculate_ridge_zone_boundary((0, 0, 10, 0), slope_degrees=15.0)
         x1, y1, x2, y2 = result
         # Zone should be offset perpendicular to ridge
         assert (x1, y1, x2, y2) != (0, 0, 10, 0)
 
-    def test_degenerate_ridge(self):
+    def test_degenerate_ridge(self) -> None:
         """Zero-length ridge line returns unchanged."""
         result = calculate_ridge_zone_boundary((5, 5, 5, 5), slope_degrees=15.0)
         assert result == (5, 5, 5, 5)
 
-    def test_custom_buffer(self):
+    def test_custom_buffer(self) -> None:
         result_default = calculate_ridge_zone_boundary((0, 0, 10, 0), slope_degrees=15.0)
         result_wide = calculate_ridge_zone_boundary((0, 0, 10, 0), slope_degrees=15.0, buffer_m=2.0)
         # Wider buffer should produce larger offset
@@ -310,17 +310,17 @@ class TestCalculateRidgeZoneBoundary:
 class TestIsInRidgeZone:
     """Check if a point falls within the ridge zone."""
 
-    def test_flat_ceiling_always_in_zone(self):
+    def test_flat_ceiling_always_in_zone(self) -> None:
         assert is_in_ridge_zone((5, 5), (0, 0, 10, 0), slope_degrees=1.0) is True
 
-    def test_point_near_ridge_is_in_zone(self):
+    def test_point_near_ridge_is_in_zone(self) -> None:
         # Ridge along x-axis, point near it
         assert is_in_ridge_zone((5, 0.5), (0, 0, 10, 0), slope_degrees=15.0) is True
 
-    def test_point_far_from_ridge_not_in_zone(self):
+    def test_point_far_from_ridge_not_in_zone(self) -> None:
         assert is_in_ridge_zone((5, 10), (0, 0, 10, 0), slope_degrees=15.0) is False
 
-    def test_degenerate_ridge_line(self):
+    def test_degenerate_ridge_line(self) -> None:
         assert is_in_ridge_zone((5, 5), (0, 0, 0, 0), slope_degrees=15.0) is False
 
 
@@ -331,10 +331,10 @@ class TestIsInRidgeZone:
 class TestRequiresRidgeZoneDetector:
     """NFPA 72 §17.6.3.4 — ridge zone detector requirement."""
 
-    def test_flat_ceiling_no(self):
+    def test_flat_ceiling_no(self) -> None:
         assert requires_ridge_zone_detector(_flat_ceiling()) is False
 
-    def test_gentle_slope_no(self):
+    def test_gentle_slope_no(self) -> None:
         # Slope < 14 degrees — no ridge zone required
         # CeilingSpec computes slope from height diff; provide low diff
         CeilingSpec(
@@ -346,7 +346,7 @@ class TestRequiresRidgeZoneDetector:
         # use a flat ceiling instead for reliability
         assert requires_ridge_zone_detector(_flat_ceiling()) is False
 
-    def test_steep_slope_yes(self):
+    def test_steep_slope_yes(self) -> None:
         # Slope > 14 degrees — ridge zone required
         # CeilingSpec with height diff that produces >14° slope
         cs = _sloped_ceiling(low=3.0, high=5.0, slope=15.0)
@@ -362,20 +362,20 @@ class TestRequiresRidgeZoneDetector:
 class TestCalculateDetectorRequirements:
     """Combined detector requirements calculation."""
 
-    def test_smoke_detector_requirements(self):
+    def test_smoke_detector_requirements(self) -> None:
         result = calculate_detector_requirements(_room(), _flat_ceiling(), DetectorType.SMOKE)
         assert result["detector_type"].lower() == "smoke"
         assert result["total_detectors"] >= 1
         assert "radius" in result
         assert "max_coverage" in result
 
-    def test_heat_detector_requirements(self):
+    def test_heat_detector_requirements(self) -> None:
         result = calculate_detector_requirements(_room(), _flat_ceiling(), DetectorType.HEAT)
         assert result["detector_type"].lower() == "heat"
         assert result["total_detectors"] >= 1
         assert "spacing" in result
 
-    def test_includes_ridge_zone_info(self):
+    def test_includes_ridge_zone_info(self) -> None:
         result = calculate_detector_requirements(_room(), _flat_ceiling())
         assert "requires_ridge_zone" in result
         assert "ceiling_slope" in result
@@ -388,24 +388,24 @@ class TestCalculateDetectorRequirements:
 class TestMaxSpacing:
     """NFPA 72 §17.6.3 — spacing, radius, and wall distance calculations."""
 
-    def test_standard_spacing(self):
+    def test_standard_spacing(self) -> None:
         spacing = calculate_max_spacing(_flat_ceiling(), DetectorType.SMOKE)
         assert spacing > 0
         assert spacing >= 9.0  # At h<=3.0m, spacing should be ~9.1m
 
-    def test_radius_equals_0_7_times_spacing(self):
+    def test_radius_equals_0_7_times_spacing(self) -> None:
         """R = 0.7 × S per NFPA 72 §17.7.4.2.3.1."""
         spacing = calculate_max_spacing(_flat_ceiling(), DetectorType.SMOKE)
         radius = calculate_coverage_radius(_flat_ceiling(), DetectorType.SMOKE)
         assert abs(radius - spacing * 0.7) < 0.01
 
-    def test_wall_distance_is_half_spacing(self):
+    def test_wall_distance_is_half_spacing(self) -> None:
         """Wall distance = S/2 per NFPA 72 §17.6.3.1.1."""
         spacing = calculate_max_spacing(_flat_ceiling(), DetectorType.SMOKE)
         wall = calculate_max_wall_distance(_flat_ceiling(), DetectorType.SMOKE)
         assert abs(wall - spacing / 2.0) < 0.01
 
-    def test_sloped_ceiling_uses_lower_height(self):
+    def test_sloped_ceiling_uses_lower_height(self) -> None:
         spacing_flat = calculate_max_spacing(_flat_ceiling(3.0), DetectorType.SMOKE)
         spacing_sloped = calculate_max_spacing(
             _sloped_ceiling(low=3.0, high=6.0), DetectorType.SMOKE
@@ -421,7 +421,7 @@ class TestMaxSpacing:
 class TestEstimateDetectorCountPolygon:
     """Estimate detector count for arbitrary polygon shapes."""
 
-    def test_valid_polygon(self):
+    def test_valid_polygon(self) -> None:
         try:
             from shapely.geometry import Polygon
             poly = Polygon([(0, 0), (10, 0), (10, 10), (0, 10)])
@@ -430,7 +430,7 @@ class TestEstimateDetectorCountPolygon:
         except ImportError:
             pytest.skip("shapely not available")
 
-    def test_non_polygon_returns_zero(self):
+    def test_non_polygon_returns_zero(self) -> None:
         count = estimate_detector_count_polygon("not_a_polygon", 3.0, "smoke")
         assert count == 0
 
@@ -442,15 +442,15 @@ class TestEstimateDetectorCountPolygon:
 class TestMinimumDetectorCountRectangular:
     """Fix #10 — uses height-adjusted spacing, NOT max_coverage × 2."""
 
-    def test_small_room(self):
+    def test_small_room(self) -> None:
         count = minimum_detector_count_rectangular(5.0, 5.0, 3.0)
         assert count >= 1
 
-    def test_large_room(self):
+    def test_large_room(self) -> None:
         count = minimum_detector_count_rectangular(30.0, 30.0, 3.0)
         assert count >= 4  # At least 2x2
 
-    def test_high_ceiling_more_detectors(self):
+    def test_high_ceiling_more_detectors(self) -> None:
         count_low = minimum_detector_count_rectangular(20.0, 20.0, 3.0)
         count_high = minimum_detector_count_rectangular(20.0, 20.0, 9.0)
         # Higher ceilings may require different spacing
@@ -464,14 +464,14 @@ class TestMinimumDetectorCountRectangular:
 class TestCalculateCoverageRadiusFromHeight:
     """NFPA 72-2022 Table 17.6.3.1.1 — height-adjusted coverage specs."""
 
-    def test_standard_height_smoke(self):
+    def test_standard_height_smoke(self) -> None:
         spec = calculate_coverage_radius_from_height(3.0, "smoke")
         assert isinstance(spec, CoverageSpec)
         assert spec.radius > 0
         assert spec.spacing_max > 0
         assert spec.detector_type == "smoke"
 
-    def test_standard_height_heat(self):
+    def test_standard_height_heat(self) -> None:
         spec = calculate_coverage_radius_from_height(3.0, "heat")
         assert spec.radius > 0
         assert spec.detector_type == "heat"
@@ -479,45 +479,45 @@ class TestCalculateCoverageRadiusFromHeight:
         spec_smoke = calculate_coverage_radius_from_height(3.0, "smoke")
         assert spec.radius < spec_smoke.radius
 
-    def test_none_height_raises_typeerror(self):
+    def test_none_height_raises_typeerror(self) -> None:
         with pytest.raises(TypeError, match="must be a float"):
             calculate_coverage_radius_from_height(None)
 
-    def test_negative_height_raises_valueerror(self):
+    def test_negative_height_raises_valueerror(self) -> None:
         with pytest.raises(ValueError, match="must be positive"):
             calculate_coverage_radius_from_height(-1.0)
 
-    def test_nan_height_raises_valueerror(self):
+    def test_nan_height_raises_valueerror(self) -> None:
         with pytest.raises(ValueError, match="finite number"):
             calculate_coverage_radius_from_height(float("nan"))
 
-    def test_inf_height_raises_valueerror(self):
+    def test_inf_height_raises_valueerror(self) -> None:
         with pytest.raises(ValueError, match="finite number"):
             calculate_coverage_radius_from_height(float("inf"))
 
-    def test_high_ceiling_produces_warning(self):
+    def test_high_ceiling_produces_warning(self) -> None:
         spec = calculate_coverage_radius_from_height(15.0, "smoke")
         assert spec.warning is not None
         assert "exceeds NFPA 72" in spec.warning
 
-    def test_high_bay_warning(self):
+    def test_high_bay_warning(self) -> None:
         spec = calculate_coverage_radius_from_height(10.0, "smoke")
         assert spec.warning is not None
         assert "beam" in spec.warning.lower() or "High-bay" in spec.warning
 
-    def test_exactly_12_2m(self):
+    def test_exactly_12_2m(self) -> None:
         spec = calculate_coverage_radius_from_height(12.2, "smoke")
         assert spec.spacing_max == 9.10  # Flat per §17.7.3.2.3
 
-    def test_exactly_12_2m_heat(self):
+    def test_exactly_12_2m_heat(self) -> None:
         spec = calculate_coverage_radius_from_height(12.2, "heat")
         assert spec.spacing_max == 3.70
 
-    def test_wall_distance_is_half_spacing(self):
+    def test_wall_distance_is_half_spacing(self) -> None:
         spec = calculate_coverage_radius_from_height(3.0, "smoke")
         assert abs(spec.wall_distance_max - spec.spacing_max / 2.0) < 0.01
 
-    def test_area_formula(self):
+    def test_area_formula(self) -> None:
         spec = calculate_coverage_radius_from_height(3.0, "smoke")
         expected_area = math.pi * spec.radius ** 2
         assert abs(spec.area - expected_area) < 0.1
@@ -530,27 +530,27 @@ class TestCalculateCoverageRadiusFromHeight:
 class TestGetCeilingHeightWarnings:
     """Non-throwing ceiling height validation."""
 
-    def test_normal_height_no_warnings(self):
+    def test_normal_height_no_warnings(self) -> None:
         assert get_ceiling_height_warnings(3.0) == []
 
-    def test_low_height_warning(self):
+    def test_low_height_warning(self) -> None:
         warnings = get_ceiling_height_warnings(1.5)
         assert any("habitable" in w for w in warnings)
 
-    def test_exceeds_table_warning(self):
+    def test_exceeds_table_warning(self) -> None:
         warnings = get_ceiling_height_warnings(15.0)
         assert any("NFPA 72" in w for w in warnings)
 
-    def test_high_bay_warning(self):
+    def test_high_bay_warning(self) -> None:
         warnings = get_ceiling_height_warnings(10.0)
         assert any("beam" in w.lower() or "High-bay" in w for w in warnings)
 
-    def test_nan_returns_warning(self):
+    def test_nan_returns_warning(self) -> None:
         warnings = get_ceiling_height_warnings(float("nan"))
         assert len(warnings) >= 1
         assert "not a finite number" in warnings[0]
 
-    def test_inf_returns_warning(self):
+    def test_inf_returns_warning(self) -> None:
         warnings = get_ceiling_height_warnings(float("inf"))
         assert len(warnings) >= 1
 
@@ -562,31 +562,31 @@ class TestGetCeilingHeightWarnings:
 class TestBeamPocketCorrectionFactor:
     """NFPA 72 §17.6.3.6 — beam pocket spacing reduction."""
 
-    def test_shallow_beam_no_reduction(self):
+    def test_shallow_beam_no_reduction(self) -> None:
         factor = beam_pocket_correction_factor(0.2, 3.0)
         assert factor == 1.0  # 0.2/3.0 = 6.7% < 10%
 
-    def test_deep_beam_reduces_spacing(self):
+    def test_deep_beam_reduces_spacing(self) -> None:
         factor = beam_pocket_correction_factor(0.5, 3.0)
         assert factor < 1.0  # 0.5/3.0 = 16.7% > 10%
 
-    def test_nan_beam_depth_raises(self):
+    def test_nan_beam_depth_raises(self) -> None:
         with pytest.raises(ValueError, match="finite"):
             beam_pocket_correction_factor(float("nan"), 3.0)
 
-    def test_negative_beam_depth_raises(self):
+    def test_negative_beam_depth_raises(self) -> None:
         with pytest.raises(ValueError, match="non-negative"):
             beam_pocket_correction_factor(-0.1, 3.0)
 
-    def test_zero_ceiling_height_raises(self):
+    def test_zero_ceiling_height_raises(self) -> None:
         with pytest.raises(ValueError, match="positive"):
             beam_pocket_correction_factor(0.3, 0.0)
 
-    def test_nan_ceiling_height_raises(self):
+    def test_nan_ceiling_height_raises(self) -> None:
         with pytest.raises(ValueError, match="finite"):
             beam_pocket_correction_factor(0.3, float("nan"))
 
-    def test_minimum_factor_is_0_25(self):
+    def test_minimum_factor_is_0_25(self) -> None:
         """Very deep beams still have a floor of 0.25."""
         factor = beam_pocket_correction_factor(5.0, 3.0)  # 167% depth fraction
         assert factor >= 0.25
@@ -599,21 +599,21 @@ class TestBeamPocketCorrectionFactor:
 class TestCalculateCorridorSpacing:
     """NFPA 72 §17.6.3.3 — corridor detector spacing."""
 
-    def test_wide_corridor_uses_base_spacing(self):
+    def test_wide_corridor_uses_base_spacing(self) -> None:
         spacing = calculate_corridor_spacing(_flat_ceiling(), DetectorType.SMOKE, 4.0)
         base = calculate_max_spacing(_flat_ceiling(), DetectorType.SMOKE)
         assert spacing == base
 
-    def test_narrow_corridor_allows_larger_spacing(self):
+    def test_narrow_corridor_allows_larger_spacing(self) -> None:
         spacing = calculate_corridor_spacing(_flat_ceiling(), DetectorType.SMOKE, 2.0)
         # Narrow corridors can have larger along-corridor spacing
         assert spacing > 0
 
-    def test_nan_width_raises(self):
+    def test_nan_width_raises(self) -> None:
         with pytest.raises(ValueError, match="finite"):
             calculate_corridor_spacing(_flat_ceiling(), DetectorType.SMOKE, float("nan"))
 
-    def test_negative_width_raises(self):
+    def test_negative_width_raises(self) -> None:
         with pytest.raises(ValueError, match="positive"):
             calculate_corridor_spacing(_flat_ceiling(), DetectorType.SMOKE, -1.0)
 
@@ -625,27 +625,27 @@ class TestCalculateCorridorSpacing:
 class TestCalculateDuctDetectorPositions:
     """NFPA 72 §17.7.5.4.2 — HVAC duct detector positions."""
 
-    def test_short_duct(self):
+    def test_short_duct(self) -> None:
         duct = HVACDuct(duct_id="d1", centerline=[(0, 0), (5, 0)])
         positions = calculate_duct_detector_positions(duct)
         assert len(positions) >= 1
 
-    def test_long_duct_multiple_detectors(self):
+    def test_long_duct_multiple_detectors(self) -> None:
         duct = HVACDuct(duct_id="d1", centerline=[(0, 0), (30, 0)])
         positions = calculate_duct_detector_positions(duct)
         assert len(positions) >= 3  # 30m / 10m = 3 intervals
 
-    def test_single_point_duct(self):
+    def test_single_point_duct(self) -> None:
         duct = HVACDuct(duct_id="d1", centerline=[(5, 5)])
         positions = calculate_duct_detector_positions(duct)
         assert len(positions) == 1
 
-    def test_empty_centerline(self):
+    def test_empty_centerline(self) -> None:
         duct = HVACDuct(duct_id="d1", centerline=[])
         positions = calculate_duct_detector_positions(duct)
         assert len(positions) == 0
 
-    def test_custom_max_spacing(self):
+    def test_custom_max_spacing(self) -> None:
         duct = HVACDuct(duct_id="d1", centerline=[(0, 0), (20, 0)])
         positions = calculate_duct_detector_positions(duct, max_spacing_m=5.0)
         assert len(positions) >= 4  # 20m / 5m = 4 intervals
@@ -658,37 +658,37 @@ class TestCalculateDuctDetectorPositions:
 class TestCheckVoltageDrop:
     """NFPA 72 §10.14 — voltage drop verification."""
 
-    def test_compliant_drop(self):
+    def test_compliant_drop(self) -> None:
         result = check_voltage_drop(24.0, 0.5, 0.01, 100.0)
         assert result["compliant"] is True
         assert result["drop_v"] > 0
 
-    def test_excessive_drop(self):
+    def test_excessive_drop(self) -> None:
         result = check_voltage_drop(24.0, 2.0, 0.025, 300.0)
         assert result["compliant"] is False
 
-    def test_drop_fraction_calculation(self):
+    def test_drop_fraction_calculation(self) -> None:
         result = check_voltage_drop(24.0, 1.0, 0.01, 50.0)
         expected_drop = 1.0 * 0.01 * 50.0 * 2  # return path
         assert abs(result["drop_v"] - expected_drop) < 0.01
 
-    def test_nan_input_raises(self):
+    def test_nan_input_raises(self) -> None:
         with pytest.raises(ValueError, match="finite"):
             check_voltage_drop(float("nan"), 0.5, 0.01, 100.0)
 
-    def test_negative_supply_voltage_raises(self):
+    def test_negative_supply_voltage_raises(self) -> None:
         with pytest.raises(ValueError, match="positive"):
             check_voltage_drop(-24.0, 0.5, 0.01, 100.0)
 
-    def test_negative_cable_length_raises(self):
+    def test_negative_cable_length_raises(self) -> None:
         with pytest.raises(ValueError, match="non-negative"):
             check_voltage_drop(24.0, 0.5, 0.01, -100.0)
 
-    def test_invalid_max_drop_fraction(self):
+    def test_invalid_max_drop_fraction(self) -> None:
         with pytest.raises(ValueError, match=r"\(0, 1\]"):
             check_voltage_drop(24.0, 0.5, 0.01, 100.0, max_drop_fraction=0.0)
 
-    def test_custom_max_drop_fraction(self):
+    def test_custom_max_drop_fraction(self) -> None:
         # NAC circuits can have 20% drop per NFPA 72 §10.6.4
         result = check_voltage_drop(24.0, 1.0, 0.01, 100.0, max_drop_fraction=0.20)
         assert result["compliant"] is True
@@ -701,32 +701,32 @@ class TestCheckVoltageDrop:
 class TestRequiredBatteryCapacityAh:
     """NFPA 72 §10.6.7.2.1 — battery capacity calculation."""
 
-    def test_standard_calculation(self):
+    def test_standard_calculation(self) -> None:
         capacity = required_battery_capacity_ah(0.5, 1.0)
         # (0.5 * 24 + 1.0 * 5/60) * 1.2 = (12 + 0.0833) * 1.2 = 14.5
         assert capacity > 0
 
-    def test_minimum_standby_24h(self):
+    def test_minimum_standby_24h(self) -> None:
         with pytest.raises(ValueError, match="24h"):
             required_battery_capacity_ah(0.5, 1.0, standby_hours=12.0)
 
-    def test_zero_alarm_minutes_raises(self):
+    def test_zero_alarm_minutes_raises(self) -> None:
         with pytest.raises(ValueError, match="positive"):
             required_battery_capacity_ah(0.5, 1.0, alarm_minutes=0)
 
-    def test_safety_factor_below_1_raises(self):
+    def test_safety_factor_below_1_raises(self) -> None:
         with pytest.raises(ValueError, match="1.0"):
             required_battery_capacity_ah(0.5, 1.0, safety_factor=0.8)
 
-    def test_nan_input_raises(self):
+    def test_nan_input_raises(self) -> None:
         with pytest.raises(ValueError, match="finite"):
             required_battery_capacity_ah(float("nan"), 1.0)
 
-    def test_negative_standby_current_raises(self):
+    def test_negative_standby_current_raises(self) -> None:
         with pytest.raises(ValueError, match="non-negative"):
             required_battery_capacity_ah(-0.5, 1.0)
 
-    def test_calculation_accuracy(self):
+    def test_calculation_accuracy(self) -> None:
         capacity = required_battery_capacity_ah(1.0, 2.0, 24.0, 5.0, 1.2)
         expected = (1.0 * 24.0 + 2.0 * 5.0 / 60.0) * 1.2
         assert abs(capacity - round(expected, 3)) < 0.01
@@ -739,18 +739,18 @@ class TestRequiredBatteryCapacityAh:
 class TestCalculateInrushCurrent:
     """NFPA 72 §10.14.1 — inrush current for NAC devices."""
 
-    def test_known_device(self):
+    def test_known_device(self) -> None:
         result = calculate_inrush_current("strobe_15cd", 10)
         assert result["steady_total_a"] == pytest.approx(1.5, abs=0.01)
         assert result["inrush_total_a"] == pytest.approx(3.8, abs=0.01)
         assert result["quantity"] == 10
 
-    def test_unknown_device_uses_defaults(self):
+    def test_unknown_device_uses_defaults(self) -> None:
         result = calculate_inrush_current("unknown_device", 5)
         assert result["steady_total_a"] == pytest.approx(1.25, abs=0.01)
         assert result["inrush_factor"] == 2.5
 
-    def test_single_device(self):
+    def test_single_device(self) -> None:
         result = calculate_inrush_current("horn", 1)
         assert result["steady_total_a"] == pytest.approx(0.25, abs=0.01)
 
@@ -762,14 +762,14 @@ class TestCalculateInrushCurrent:
 class TestCalculateNACLoading:
     """NFPA 72 §18.5 — NAC circuit loading calculation."""
 
-    def test_within_limit(self):
+    def test_within_limit(self) -> None:
         result = calculate_nac_loading([
             {"device_type": "strobe_15cd", "quantity": 5}
         ])
         assert result["within_panel_limit"] is True
         assert result["warnings"] == []
 
-    def test_overloaded_circuit(self):
+    def test_overloaded_circuit(self) -> None:
         result = calculate_nac_loading([
             {"device_type": "strobe_75cd", "quantity": 10}
         ])
@@ -777,7 +777,7 @@ class TestCalculateNACLoading:
         assert result["within_panel_limit"] is False
         assert len(result["warnings"]) >= 1
 
-    def test_mixed_devices(self):
+    def test_mixed_devices(self) -> None:
         result = calculate_nac_loading([
             {"device_type": "strobe_15cd", "quantity": 5},
             {"device_type": "horn", "quantity": 5},
@@ -785,7 +785,7 @@ class TestCalculateNACLoading:
         assert result["steady_total_a"] > 0
         assert len(result["device_details"]) == 2
 
-    def test_high_inrush_warning(self):
+    def test_high_inrush_warning(self) -> None:
         result = calculate_nac_loading([
             {"device_type": "strobe_60cd", "quantity": 10}
         ])
@@ -800,23 +800,23 @@ class TestCalculateNACLoading:
 class TestAutoSelectAWG:
     """NEC Art. 760 + NFPA 72 §10.14 — automatic wire gauge selection."""
 
-    def test_short_run_selects_small_wire(self):
+    def test_short_run_selects_small_wire(self) -> None:
         result = auto_select_awg(24.0, 0.5, 50.0)
         assert result["selected_awg"] is not None
         assert result["compliant"] is True
 
-    def test_long_run_may_need_larger_wire(self):
+    def test_long_run_may_need_larger_wire(self) -> None:
         result = auto_select_awg(24.0, 2.0, 300.0)
         if result["selected_awg"] is not None:
             assert result["compliant"] is True
             assert result["voltage_at_device"] >= 16.0
 
-    def test_impossible_run_returns_none(self):
+    def test_impossible_run_returns_none(self) -> None:
         result = auto_select_awg(24.0, 5.0, 500.0)
         assert result["selected_awg"] is None
         assert result["compliant"] is False
 
-    def test_all_candidates_populated(self):
+    def test_all_candidates_populated(self) -> None:
         result = auto_select_awg(24.0, 0.5, 100.0)
         # V131 FIX: AWG_GAUGES now excludes AWG 18/16 per NEC 760.71.
         # The count should match the permitted gauges, not the full table.

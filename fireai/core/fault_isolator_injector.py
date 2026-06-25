@@ -1,4 +1,4 @@
-"""fault_isolator_injector.py — SLC Loop Fault Isolation per NFPA 72
+"""fault_isolator_injector.py — SLC Loop Fault Isolation per NFPA 72.
 =================================================================
 CRITICAL LIFE-SAFETY MODULE
 
@@ -32,7 +32,7 @@ Usage:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 # ============================================================================
 # Data Structures
@@ -44,11 +44,11 @@ class IsolatorPlacement:
     """Record of a single fault isolator injection."""
 
     position_index: int  # Where in the loop sequence it was inserted
-    position_xy: Tuple[float, float]  # Physical position (same as next device)
+    position_xy: tuple[float, float]  # Physical position (same as next device)
     reason: str  # Why it was inserted
     nfpa_citation: str  # Code reference
-    zone_id_before: Optional[str]  # Zone before isolator
-    zone_id_after: Optional[str]  # Zone after isolator
+    zone_id_before: str | None  # Zone before isolator
+    zone_id_after: str | None  # Zone after isolator
 
 
 @dataclass
@@ -58,9 +58,9 @@ class IsolatorInjectionResult:
     original_device_count: int
     injected_isolator_count: int
     total_device_count: int  # original + isolators
-    secure_loop: List[Dict[str, Any]]  # Devices + isolators in order
-    isolator_placements: List[IsolatorPlacement]
-    violations: List[str] = field(default_factory=list)
+    secure_loop: list[dict[str, Any]]  # Devices + isolators in order
+    isolator_placements: list[IsolatorPlacement]
+    violations: list[str] = field(default_factory=list)
     is_compliant: bool = False  # V112: FAIL-SAFE — starts NOT compliant until verified
 
 
@@ -87,8 +87,8 @@ NFPA_CITATION_ZONE_LIMIT = "NFPA 72-2022 §12.3.2"
 
 
 def inject_fault_isolators(
-    loop_devices: List[Dict[str, Any]],
-    zone_map: Optional[Dict[str, str]] = None,
+    loop_devices: list[dict[str, Any]],
+    zone_map: dict[str, str] | None = None,
     max_devices_between_isolators: int = DEFAULT_MAX_DEVICES_BETWEEN_ISOLATORS,
     class_a: bool = False,
 ) -> IsolatorInjectionResult:
@@ -128,14 +128,14 @@ def inject_fault_isolators(
             isolator_placements=[],
         )
 
-    secure_loop: List[Dict[str, Any]] = []
-    placements: List[IsolatorPlacement] = []
-    violations: List[str] = []
+    secure_loop: list[dict[str, Any]] = []
+    placements: list[IsolatorPlacement] = []
+    violations: list[str] = []
     devices_since_last_isolator = 0
-    current_zone: Optional[str] = None
+    current_zone: str | None = None
     isolator_count = 0
 
-    def _get_zone(device: Dict[str, Any]) -> Optional[str]:
+    def _get_zone(device: dict[str, Any]) -> str | None:
         """Extract zone ID from device or zone_map."""
         if device.get("zone_id"):
             return str(device["zone_id"])
@@ -147,12 +147,11 @@ def inject_fault_isolators(
                         return str(mapped)
         return None
 
-    def _get_position(device: Dict[str, Any]) -> Tuple[float, float]:
+    def _get_position(device: dict[str, Any]) -> tuple[float, float]:
         """Extract (x, y) position from device."""
         pos = device.get("position") or device.get("pos")
-        if pos is not None:
-            if isinstance(pos, (list, tuple)) and len(pos) >= 2:
-                return (float(pos[0]), float(pos[1]))
+        if pos is not None and isinstance(pos, (list, tuple)) and len(pos) >= 2:
+            return (float(pos[0]), float(pos[1]))
         # Fallback: position from tuple key
         if "x" in device and "y" in device:
             return (float(device["x"]), float(device["y"]))
@@ -160,11 +159,11 @@ def inject_fault_isolators(
 
     def _make_isolator(
         index: int,
-        position: Tuple[float, float],
+        position: tuple[float, float],
         reason: str,
-        zone_before: Optional[str],
-        zone_after: Optional[str],
-    ) -> Dict[str, Any]:
+        zone_before: str | None,
+        zone_after: str | None,
+    ) -> dict[str, Any]:
         """Create a fault isolator device dict."""
         return {
             "device_type": ISOLATOR_DEVICE_TYPE,
@@ -281,9 +280,9 @@ def inject_fault_isolators(
 
 
 def verify_isolator_compliance(
-    loop_devices: List[Dict[str, Any]],
+    loop_devices: list[dict[str, Any]],
     max_devices_between_isolators: int = DEFAULT_MAX_DEVICES_BETWEEN_ISOLATORS,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Verify that an existing loop already has adequate fault isolation.
 
     Useful for checking loops that were designed manually or by external tools.

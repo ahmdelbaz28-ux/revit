@@ -1,4 +1,4 @@
-"""backend/routers/revit.py — Revit Integration Endpoints
+"""backend/routers/revit.py — Revit Integration Endpoints.
 =====================================================
 
 REST API endpoints for Revit integration with full AI agent support.
@@ -153,9 +153,9 @@ _MAX_UPLOAD_SIZE = 50 * 1024 * 1024
 
 class ConnectRequest(BaseModel):
     """Request model for Revit connection.
-    
+
     Attributes:
-        method: Connection method - 'api' (Revit API), 'macro' (Revit Macro), 
+        method: Connection method - 'api' (Revit API), 'macro' (Revit Macro),
                 'simulation' (development), or 'auto' (automatic detection)
 
     """
@@ -211,7 +211,7 @@ class DocumentCloseRequest(BaseModel):
 
 class CreateWallRequest(BaseModel):
     """Request to create a wall.
-    
+
     Attributes:
         start_point: Start coordinates [x, y, z] in mm
         end_point: End coordinates [x, y, z] in mm
@@ -230,7 +230,7 @@ class CreateWallRequest(BaseModel):
 
 class CreateFloorRequest(BaseModel):
     """Request to create a floor.
-    
+
     Attributes:
         boundary_points: List of [x, y, z] points forming closed boundary
         level: Level name (default "Level 1")
@@ -248,7 +248,7 @@ class CreateFloorRequest(BaseModel):
 
 class CreateDoorRequest(BaseModel):
     """Request to create a door in a wall.
-    
+
     Attributes:
         host_wall_id: Wall element ID to place door in
         location_point: [x, y, z] insertion point
@@ -274,7 +274,7 @@ class CreateWindowRequest(BaseModel):
 
 class CreateColumnRequest(BaseModel):
     """Request to create a structural column.
-    
+
     Attributes:
         location_point: Base location [x, y, z]
         height: Column height in mm (default 3000)
@@ -300,7 +300,7 @@ class CreateBeamRequest(BaseModel):
 
 class CreateFamilyRequest(BaseModel):
     """Request to create a generic family instance.
-    
+
     Attributes:
         family_name: Family type name (e.g., "M_Single-Flush")
         category: Category name (e.g., "Doors", "Windows", "Furniture")
@@ -394,16 +394,16 @@ class LoadFamilyRequest(BaseModel):
 @router.post("/connect", response_model=ConnectResponse, tags=["revit"])
 async def connect_to_revit(request: ConnectRequest = None) -> ConnectResponse:
     """Connect to Revit application.
-    
+
     Connection Methods:
     - **api**: Direct Revit API via pythonnet (best performance, requires Revit)
     - **macro**: Revit Macro API (free, runs inside Revit)
     - **simulation**: Development mode (no Revit needed)
     - **auto**: Automatic detection of best method
-    
+
     Args:
         request: Connection parameters with method selection
-        
+
     Returns:
         Connection status with method used
 
@@ -887,7 +887,7 @@ async def get_worksets() -> ElementsResponse:
 @router.get("/families/{category}/symbols", tags=["revit"])
 async def get_family_symbols(category: str) -> Dict[str, Any]:
     """Get all family symbols for a category.
-    
+
     Categories: Doors, Windows, Columns, Furniture, etc.
     """
     svc = get_revit_service()
@@ -918,7 +918,7 @@ async def load_family(request: LoadFamilyRequest) -> Dict[str, Any]:
 @router.post("/search/api/load", tags=["revit"])
 async def load_api_data(request: LoadAPIDataRequest) -> Dict[str, Any]:
     """Load Revit API data from JSON file.
-    
+
     Load revit_data/RevitAPI2022.json or revit_data/RevitAPI2023.json first.
     """
     svc = get_revit_service()
@@ -931,7 +931,7 @@ async def load_api_data(request: LoadAPIDataRequest) -> Dict[str, Any]:
 @router.post("/search/api", response_model=APIResultResponse, tags=["revit"])
 async def search_api_data(request: SearchAPIRequest) -> APIResultResponse:
     """Search loaded API data locally.
-    
+
     Requires loading API data first via /search/api/load.
     """
     svc = get_revit_service()
@@ -985,7 +985,7 @@ async def search_online(
 @router.post("/execute", tags=["revit"], dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])
 async def execute_ai_command(request: AICommandRequest) -> Dict[str, Any]:
     """Execute a natural language command from AI agent.
-    
+
     Examples:
     - "Create a wall from 0,0,0 to 5000,0,0"
     - "Create a door in the selected wall"
@@ -998,5 +998,4 @@ async def execute_ai_command(request: AICommandRequest) -> Dict[str, Any]:
     if not svc.connected:
         raise HTTPException(status_code=503, detail="Not connected to Revit")
 
-    result = svc.execute_ai_command(request.command, request.context)
-    return result
+    return svc.execute_ai_command(request.command, request.context)

@@ -1,4 +1,4 @@
-"""smithery_mcp_integration.py — Agentic BIM Control (READ-ONLY + Human-Approved Writes)
+"""smithery_mcp_integration.py — Agentic BIM Control (READ-ONLY + Human-Approved Writes).
 =======================================================================================
 
 MISSION PHASE 3 — Agentic BIM Control via Smithery MCP (REDESIGNED FOR SAFETY)
@@ -44,6 +44,7 @@ References
 - agent.md V75 (AI is advisory only)
 - NFPA 72-2022 §23.8 (PE review required)
 - Smithery MCP: https://smithery.ai
+
 """
 
 from __future__ import annotations
@@ -55,7 +56,7 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -135,13 +136,14 @@ class ProposedAction:
         reviewed_at: Review timestamp (when reviewed).
         review_notes: Human reviewer notes.
         nfpa_reference: Applicable NFPA clause (if any).
+
     """
 
     id: str
     action_type: ActionType
     element_type: str
-    element_id: Optional[str] = None
-    parameters: Dict[str, Any] = field(default_factory=dict)
+    element_id: str | None = None
+    parameters: dict[str, Any] = field(default_factory=dict)
     proposed_by: str = "fireai_agent"
     proposed_at: str = field(
         default_factory=lambda: datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
@@ -151,9 +153,9 @@ class ProposedAction:
     status: ActionStatus = ActionStatus.PROPOSED
     # V134 F-5: New fields for enqueue transparency
     enqueue_status: str = "pending"  # "enqueued" / "dropped" / "failed" / "pending"
-    enqueue_error: Optional[str] = None
-    reviewed_by: Optional[str] = None
-    reviewed_at: Optional[str] = None
+    enqueue_error: str | None = None
+    reviewed_by: str | None = None
+    reviewed_at: str | None = None
     review_notes: str = ""
     nfpa_reference: str = ""
 
@@ -162,7 +164,7 @@ class ProposedAction:
         """V134 F-5: True if the proposal was successfully enqueued for human review."""
         return self.enqueue_status == "enqueued"
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "id": self.id,
             "action_type": self.action_type.value,
@@ -204,14 +206,14 @@ class RevitAPIDocsSearcher:
     """
 
     def __init__(self) -> None:
-        self._docs_cache: Dict[str, Dict[str, Any]] = {}
+        self._docs_cache: dict[str, dict[str, Any]] = {}
 
     def search(
         self,
         query: str,
         revit_version: str = "2023",
         max_results: int = 10,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Search Revit API docs for a query.
 
         Args:
@@ -221,13 +223,14 @@ class RevitAPIDocsSearcher:
 
         Returns:
             List of matching API entries.
+
         """
         docs = self._load_docs(revit_version)
         if not docs:
             return []
 
         query_lower = query.lower()
-        results: List[Dict[str, Any]] = []
+        results: list[dict[str, Any]] = []
 
         # The Revit API docs JSON can be either:
         # - A dict mapping APIName → entry data, OR
@@ -275,13 +278,14 @@ class RevitAPIDocsSearcher:
 
         Returns:
             True if class exists in the API docs.
+
         """
         docs = self._load_docs(revit_version)
         if not docs:
             return False
 
         class_name_lower = class_name.lower()
-        short_name = class_name.split(".")[-1]
+        short_name = class_name.rsplit(".", maxsplit=1)[-1]
         short_name_lower = short_name.lower()
 
         # V135 F-25 FIX: Use EXACT match instead of substring match.
@@ -296,13 +300,13 @@ class RevitAPIDocsSearcher:
                 return True
             # V135 F-25: Suffix match (e.g., "Wall" matches "T:Autodesk.Revit.DB.Wall")
             # but NOT substring (so "Wall" won't match "WallType")
-            for k in docs.keys():
+            for k in docs:
                 k_str = str(k)
                 # Match if key ends with .ShortName (e.g., ".Wall" at end of full name)
                 if k_str.endswith(f".{short_name}") or k_str == short_name:
                     return True
             return False
-        elif isinstance(docs, list):
+        if isinstance(docs, list):
             for entry in docs:
                 if not isinstance(entry, dict):
                     continue
@@ -317,7 +321,7 @@ class RevitAPIDocsSearcher:
 
         return False
 
-    def _load_docs(self, version: str) -> Dict[str, Any]:
+    def _load_docs(self, version: str) -> dict[str, Any]:
         """Load Revit API docs for a version (cached)."""
         if version in self._docs_cache:
             return self._docs_cache[version]
@@ -338,7 +342,7 @@ class RevitAPIDocsSearcher:
         for p in possible_paths:
             try:
                 if os.path.exists(p):
-                    with open(p, "r", encoding="utf-8") as f:
+                    with open(p, encoding="utf-8") as f:
                         docs = json.load(f)
                     self._docs_cache[version] = docs
                     return docs
@@ -382,11 +386,12 @@ class SmitheryMCPClient:
         # A human engineer must review and approve it in Revit.
     """
 
-    def __init__(self, api_key: Optional[str] = None) -> None:
+    def __init__(self, api_key: str | None = None) -> None:
         """Initialize Smithery MCP client.
 
         Args:
             api_key: Optional Smithery API key. If None, reads from env var.
+
         """
         self.api_key = api_key or os.environ.get(SMITHERY_API_KEY_ENV)
         self._docs_searcher = RevitAPIDocsSearcher()
@@ -409,7 +414,7 @@ class SmitheryMCPClient:
         query: str,
         revit_version: str = "2023",
         max_results: int = 10,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Search local Revit API documentation.
 
         This is a READ-ONLY operation — safe to execute without human review.
@@ -421,6 +426,7 @@ class SmitheryMCPClient:
 
         Returns:
             List of matching API entries.
+
         """
         return self._docs_searcher.search(query, revit_version, max_results)
 
@@ -432,7 +438,7 @@ class SmitheryMCPClient:
         """Verify a Revit API class exists (READ-ONLY)."""
         return self._docs_searcher.verify_class_exists(class_name, revit_version)
 
-    def read_rooms_from_bim(self, source: Optional[str] = None) -> List[Dict[str, Any]]:
+    def read_rooms_from_bim(self, source: str | None = None) -> list[dict[str, Any]]:
         """Read rooms from BIM source (READ-ONLY).
 
         Delegates to the BIMProvider abstraction (V132 TASK 1.2).
@@ -478,6 +484,7 @@ class SmitheryMCPClient:
 
         Returns:
             ProposedAction object (status=PROPOSED).
+
         """
         action = ProposedAction(
             id=f"prop-{uuid.uuid4().hex[:12]}",
@@ -499,7 +506,7 @@ class SmitheryMCPClient:
     def propose_update_element(
         self,
         element_id: str,
-        updates: Dict[str, Any],
+        updates: dict[str, Any],
         rationale: str = "",
         confidence: float = 0.0,
         nfpa_reference: str = "",
@@ -576,8 +583,8 @@ class SmitheryMCPClient:
         try:
             # Try to use the existing ThreadSafeModelUpdateQueue
             from fireai.mcp_server.thread_safe_queue import (
-                ThreadSafeModelUpdateQueue,
                 ModelUpdateRequest,
+                ThreadSafeModelUpdateQueue,
             )
 
             queue = ThreadSafeModelUpdateQueue.get_instance()
@@ -636,7 +643,7 @@ class SmitheryMCPClient:
         self,
         action: ProposedAction,
         success: bool = True,
-        error: Optional[str] = None,
+        error: str | None = None,
     ) -> None:
         """Record the proposed action in AuditStore."""
         try:
@@ -685,6 +692,7 @@ class SmitheryMCPClient:
 
         Returns:
             True if connected, False otherwise.
+
         """
         if not self.api_key:
             logger.warning("Cannot connect to Smithery: no API key")
@@ -710,7 +718,7 @@ class SmitheryMCPClient:
 # ---------------------------------------------------------------------------
 
 
-_smithery_client: Optional[SmitheryMCPClient] = None
+_smithery_client: SmitheryMCPClient | None = None
 
 
 def get_smithery_client() -> SmitheryMCPClient:
@@ -722,11 +730,11 @@ def get_smithery_client() -> SmitheryMCPClient:
 
 
 __all__ = [
-    "SmitheryMCPClient",
-    "RevitAPIDocsSearcher",
-    "ProposedAction",
-    "ActionType",
-    "ActionStatus",
-    "get_smithery_client",
     "SMITHERY_API_KEY_ENV",
+    "ActionStatus",
+    "ActionType",
+    "ProposedAction",
+    "RevitAPIDocsSearcher",
+    "SmitheryMCPClient",
+    "get_smithery_client",
 ]

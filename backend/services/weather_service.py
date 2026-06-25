@@ -27,7 +27,6 @@ import logging
 import math
 import time
 from dataclasses import dataclass
-from typing import Optional
 
 import httpx
 from tenacity import (
@@ -71,8 +70,8 @@ class WeatherData:
     relative_humidity_pct: float
     fetched_at: float
     source: str  # "open-meteo" | "default"
-    latitude: Optional[float] = None
-    longitude: Optional[float] = None
+    latitude: float | None = None
+    longitude: float | None = None
     is_stale: bool = False
 
     @property
@@ -119,11 +118,11 @@ class WeatherService:
         self,
         cache_ttl: float = 600.0,
         request_timeout: float = 10.0,
-    ):
+    ) -> None:
         self._cache: dict[str, tuple[WeatherData, float]] = {}
         self._cache_ttl = cache_ttl
         self._request_timeout = request_timeout
-        self._client: Optional[httpx.AsyncClient] = None
+        self._client: httpx.AsyncClient | None = None
 
     async def _get_client(self) -> httpx.AsyncClient:
         """Lazy-initialize the HTTP client (connection pooling)."""
@@ -145,7 +144,7 @@ class WeatherService:
         """Generate cache key from coordinates (0.01° ≈ 1.1 km)."""
         return f"{latitude:.2f},{longitude:.2f}"
 
-    def _get_cached(self, latitude: float, longitude: float) -> Optional[WeatherData]:
+    def _get_cached(self, latitude: float, longitude: float) -> WeatherData | None:
         """Get cached weather data if fresh (< TTL)."""
         key = self._cache_key(latitude, longitude)
         entry = self._cache.get(key)
@@ -361,7 +360,7 @@ class WeatherService:
 
 # ── Singleton instance for application-wide use ────────────────────────────
 
-_weather_service: Optional[WeatherService] = None
+_weather_service: WeatherService | None = None
 
 
 import threading

@@ -1,4 +1,4 @@
-"""nfpa72_technology_dispatcher.py — Automatic Detector Technology Selection
+"""nfpa72_technology_dispatcher.py — Automatic Detector Technology Selection.
 =========================================================================
 
 Automatically selects the appropriate detector TECHNOLOGY (not just radius)
@@ -40,7 +40,6 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -86,11 +85,11 @@ class TechnologyDecision:
     ceiling_height_m: float
     slope_degrees: float = 0.0
     reason: str = ""
-    nfpa_references: List[str] = field(default_factory=list)
+    nfpa_references: list[str] = field(default_factory=list)
     spacing_m: float = 0.0
     ridge_zone_required: bool = False
-    warnings: List[str] = field(default_factory=list)
-    fallback_technology: Optional[DetectorTechnology] = None
+    warnings: list[str] = field(default_factory=list)
+    fallback_technology: DetectorTechnology | None = None
 
 
 # ──────────────────────────────────────────────────────────────────
@@ -181,8 +180,8 @@ class EliteTechnologyDispatcher:
             TechnologyDecision with technology selection, spacing, and NFPA refs.
 
         """
-        warnings: List[str] = []
-        nfpa_refs: List[str] = []
+        warnings: list[str] = []
+        nfpa_refs: list[str] = []
         ridge_zone_required = slope_degrees > _SLOPE_RIDGE_ZONE_THRESHOLD_DEG
 
         # ─── Safety: reject invalid heights ─────────────────────────
@@ -321,7 +320,7 @@ class EliteTechnologyDispatcher:
                 f"Point-type smoke detectors with flat spacing "
                 f"S={spacing:.1f}m (R={0.7 * spacing:.2f}m) per §17.7.3.2.3."
             ),
-            nfpa_references=["NFPA 72-2022 §17.7.3.2.3"] + nfpa_refs,
+            nfpa_references=["NFPA 72-2022 §17.7.3.2.3", *nfpa_refs],
             spacing_m=round(spacing, 2),
             ridge_zone_required=ridge_zone_required,
             warnings=warnings,

@@ -1,4 +1,4 @@
-"""fireai.conduit.types — Type Definitions for Conduit Fitting System
+"""fireai.conduit.types — Type Definitions for Conduit Fitting System.
 ===================================================================
 
 All types used throughout the conduit fitting engine.
@@ -24,7 +24,7 @@ from __future__ import annotations
 import enum
 import math
 from dataclasses import dataclass, field
-from typing import Generic, List, Optional, Tuple, TypeVar
+from typing import Generic, TypeVar
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Result[T, E] — never raise in computation paths
@@ -45,7 +45,7 @@ class Result(Generic[T, E]):
 
     __slots__ = ("_error", "_ok", "_value")
 
-    def __init__(self, value: Optional[T], error: Optional[E], ok: bool) -> None:
+    def __init__(self, value: T | None, error: E | None, ok: bool) -> None:
         self._value = value
         self._error = error
         self._ok = ok
@@ -326,9 +326,9 @@ class ConduitRun:
     run_id:         str
     conduit_type:   ConduitType
     trade_size:     TradeSize
-    segments:       List[ConduitSegment] = field(default_factory=list)
-    fittings:       List[PlacedFitting]  = field(default_factory=list)
-    violations:     List[str]            = field(default_factory=list)
+    segments:       list[ConduitSegment] = field(default_factory=list)
+    fittings:       list[PlacedFitting]  = field(default_factory=list)
+    violations:     list[str]            = field(default_factory=list)
 
     @property
     def total_length_m(self) -> float:
@@ -388,7 +388,7 @@ class FillResult:
     fill_percentage:           float
     max_allowed_pct:           float
     is_compliant:              bool
-    recommended_size:          Optional[TradeSize]
+    recommended_size:          TradeSize | None
     nec_reference:             str
 
     def __repr__(self) -> str:
@@ -455,7 +455,7 @@ class RoutePath:
 
     """
 
-    waypoints:          Tuple[Point3D, ...]
+    waypoints:          tuple[Point3D, ...]
     total_length_m:     float
     bend_count:         int
     elevation_change_m: float

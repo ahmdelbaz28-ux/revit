@@ -1,4 +1,4 @@
-"""fireai/core/pdf_report.py  V1.0 — Building-level NFPA 72-2022 PDF Report
+"""fireai/core/pdf_report.py  V1.0 — Building-level NFPA 72-2022 PDF Report.
 ========================================================================
 Professional PDF compliance report generator for FireAI.
 
@@ -22,7 +22,6 @@ from __future__ import annotations
 
 import traceback
 from datetime import datetime, timezone
-from typing import Dict, List, Optional
 
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
@@ -104,7 +103,7 @@ STYLES = _build_styles()
 # ---------------------------------------------------------------------------
 
 
-def _header_footer(canvas, doc):
+def _header_footer(canvas, doc) -> None:
     canvas.saveState()
     w, h = A4
     # Header bar
@@ -184,7 +183,7 @@ def _base_table_style(col_count: int) -> TableStyle:
     )
 
 
-def _row_colour(style: TableStyle, row: int, colour):
+def _row_colour(style: TableStyle, row: int, colour) -> None:
     style.add("BACKGROUND", (0, row), (-1, row), colour)
 
 
@@ -195,7 +194,7 @@ def _row_colour(style: TableStyle, row: int, colour):
 # -- 1. Cover page --
 
 
-def _cover_page(report: BuildingReport) -> List:
+def _cover_page(report: BuildingReport) -> list:
     elems = []
     elems.append(Spacer(1, 3 * cm))
 
@@ -285,7 +284,7 @@ def _cover_page(report: BuildingReport) -> List:
 # -- 2. Building summary --
 
 
-def _building_summary(report: BuildingReport) -> List:
+def _building_summary(report: BuildingReport) -> list:
     elems = []
     elems.append(Paragraph("Building Summary", STYLES["SectionHead"]))
     elems.append(HRFlowable(width="100%", thickness=0.5, color=C_BLUE_MID, spaceAfter=8))
@@ -330,7 +329,7 @@ def _building_summary(report: BuildingReport) -> List:
             if val is not None:
                 profile_kv.append((attr.replace("_", " ").title(), str(val)))
         if profile_kv:
-            pdata = [["Attribute", "Value"]] + profile_kv
+            pdata = [["Attribute", "Value"], *profile_kv]
             ptbl = Table(pdata, colWidths=[8 * cm, PAGE_W - 2 * MARGIN - 8 * cm])
             ptbl.setStyle(_base_table_style(2))
             elems.append(ptbl)
@@ -342,7 +341,7 @@ def _building_summary(report: BuildingReport) -> List:
 # -- 3. Per-floor tables --
 
 
-def _floor_tables(report: BuildingReport) -> List:
+def _floor_tables(report: BuildingReport) -> list:
     elems = []
     elems.append(Paragraph("Per-Floor Room Details", STYLES["SectionHead"]))
     elems.append(HRFlowable(width="100%", thickness=0.5, color=C_BLUE_MID, spaceAfter=8))
@@ -410,7 +409,7 @@ def _floor_tables(report: BuildingReport) -> List:
 # -- 4. Scenario verification --
 
 
-def _scenario_section(scenario_results: Dict[str, ScenarioBatteryResult]) -> List:
+def _scenario_section(scenario_results: dict[str, ScenarioBatteryResult]) -> list:
     elems = []
     elems.append(Paragraph("Scenario Verification", STYLES["SectionHead"]))
     elems.append(HRFlowable(width="100%", thickness=0.5, color=C_BLUE_MID, spaceAfter=8))
@@ -464,7 +463,7 @@ def _scenario_section(scenario_results: Dict[str, ScenarioBatteryResult]) -> Lis
 # -- 5. Duct detector summary --
 
 
-def _duct_section(report: BuildingReport) -> List:
+def _duct_section(report: BuildingReport) -> list:
     elems = []
     elems.append(Paragraph("Duct Detector Summary", STYLES["SectionHead"]))
     elems.append(HRFlowable(width="100%", thickness=0.5, color=C_BLUE_MID, spaceAfter=8))
@@ -499,7 +498,7 @@ def _duct_section(report: BuildingReport) -> List:
 # -- 6. Audit trail --
 
 
-def _audit_section(audit_summary: dict) -> List:
+def _audit_section(audit_summary: dict) -> list:
     elems = []
     elems.append(Paragraph("Audit Trail Summary", STYLES["SectionHead"]))
     elems.append(HRFlowable(width="100%", thickness=0.5, color=C_BLUE_MID, spaceAfter=8))
@@ -551,7 +550,7 @@ _LIMITATIONS = [
 ]
 
 
-def _notes_section() -> List:
+def _notes_section() -> list:
     elems = []
     elems.append(Paragraph("Notes & Limitations", STYLES["SectionHead"]))
     elems.append(HRFlowable(width="100%", thickness=0.5, color=C_BLUE_MID, spaceAfter=8))
@@ -588,8 +587,8 @@ def _notes_section() -> List:
 def generate_building_report(
     report: BuildingReport,
     output_path: str = "fireai_report.pdf",
-    scenario_results: Optional[Dict[str, ScenarioBatteryResult]] = None,
-    audit_summary: Optional[dict] = None,
+    scenario_results: dict[str, ScenarioBatteryResult] | None = None,
+    audit_summary: dict | None = None,
 ) -> str:
     """Generate a professional NFPA 72-2022 compliance PDF report.
 

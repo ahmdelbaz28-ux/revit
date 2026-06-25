@@ -1,4 +1,4 @@
-"""fireai/core/slc_capacitance.py
+"""fireai/core/slc_capacitance.py.
 ================================
 SLC (Signaling Line Circuit) Data Attenuation & Capacitance Auditor.
 
@@ -47,7 +47,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 # ---------------------------------------------------------------------------
 # Provenance — graceful degradation
@@ -74,7 +74,7 @@ logger = logging.getLogger(__name__)
 # ============================================================================
 
 # Cable capacitance per metre (pF/m) per EIA/TIA-568 / NFPA 72
-CABLE_CAPACITANCE_PF_PER_M: Dict[str, float] = {
+CABLE_CAPACITANCE_PF_PER_M: dict[str, float] = {
     "FPLR_Solid": 60.0,
     "FPLR_Unshielded": 60.0,  # V20.2 FIX: Same as FPLR_Solid (same physical cable)
     "FPLP_Shielded": 164.0,
@@ -92,7 +92,7 @@ DEVICE_CAPACITANCE_PF: float = 25.0  # Conservative per-device parasitic (pF)
 ISOLATOR_CAPACITANCE_PF: float = 40.0  # Isolator parasitic is higher (pF)
 
 # Manufacturer SLC protocol maximum total loop capacitance (µF)
-SLC_MAX_CAPACITANCE_UF: Dict[str, float] = {
+SLC_MAX_CAPACITANCE_UF: dict[str, float] = {
     "notifier": 0.50,  # Notifier FlashScan
     "simplex": 0.75,  # Simplex IDNet
     "siemens": 0.50,  # Siemens FDNet
@@ -141,7 +141,7 @@ class SLCCapacitanceResult:
     max_cap_uf: float
     compliant: bool
     margin_uf: float
-    violation_description: Optional[str] = None
+    violation_description: str | None = None
 
 
 class SLCCapacitanceAuditor:
@@ -164,7 +164,7 @@ class SLCCapacitanceAuditor:
     def __init__(
         self,
         manufacturer: str = "generic",
-        max_cap_uf: Optional[float] = None,
+        max_cap_uf: float | None = None,
     ) -> None:
         """Initialise the auditor.
 
@@ -186,7 +186,7 @@ class SLCCapacitanceAuditor:
 
     def audit_slc_loops(
         self,
-        loops: List[Dict[str, Any]],
+        loops: list[dict[str, Any]],
     ) -> Any:
         """Audit multiple SLC loops for capacitance compliance.
 
@@ -203,7 +203,7 @@ class SLCCapacitanceAuditor:
 
         """
         violations: list = []
-        detailed_results: List[SLCCapacitanceResult] = []
+        detailed_results: list[SLCCapacitanceResult] = []
 
         for loop in loops:
             loop_id = loop.get("loop_id", "UNKNOWN")

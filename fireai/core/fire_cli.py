@@ -13,7 +13,7 @@ import json
 import math
 import sys
 from pathlib import Path
-from typing import Any, Dict, Literal
+from typing import Any, Literal
 
 _VERSION = "1.0.0"
 
@@ -23,7 +23,7 @@ _VERSION = "1.0.0"
 # ---------------------------------------------------------------------------
 
 
-def _load_json(path: str) -> Dict[str, Any]:
+def _load_json(path: str) -> dict[str, Any]:
     p = Path(path)
     if not p.exists():
         print(f"[fireai] ERROR: file not found: {path}", file=sys.stderr)
@@ -32,7 +32,7 @@ def _load_json(path: str) -> Dict[str, Any]:
         return json.load(fh)
 
 
-def _detect_input_type(data: Dict[str, Any]) -> str:
+def _detect_input_type(data: dict[str, Any]) -> str:
     """Heuristic: decide whether JSON is a room, floor, or building spec."""
     if "floors" in data or "floor_reports" in data:
         return "building"
@@ -69,7 +69,7 @@ def cmd_analyse(args: argparse.Namespace) -> int:
     return _analyse_building(data)
 
 
-def _analyse_room(data: Dict[str, Any]) -> int:
+def _analyse_room(data: dict[str, Any]) -> int:
     try:
         from fireai.core.geometry_utils import is_rectangular
         from fireai.core.nfpa72_calculations import (
@@ -146,7 +146,7 @@ def _analyse_room(data: Dict[str, Any]) -> int:
         return 2
 
 
-def _analyse_floor(data: Dict[str, Any]) -> int:
+def _analyse_floor(data: dict[str, Any]) -> int:
     try:
         from fireai.core.floor_analyser import FloorAnalyser
         from fireai.core.spatial_engine.density_optimizer import DensityOptimizer
@@ -178,7 +178,7 @@ def _analyse_floor(data: Dict[str, Any]) -> int:
         return 2
 
 
-def _analyse_building(data: Dict[str, Any]) -> int:
+def _analyse_building(data: dict[str, Any]) -> int:
     try:
         from fireai.core.building_engine import BuildingEngine
         from fireai.core.spatial_engine.density_optimizer import DensityOptimizer

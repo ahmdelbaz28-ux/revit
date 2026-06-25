@@ -360,7 +360,7 @@ async def export_report(
             params = report.get("parameters", {})
             content_data = params.get("content", {})
 
-            def _add_data(data, prefix="", depth=0):
+            def _add_data(data, prefix="", depth=0) -> None:
                 """Recursively add data to PDF, limiting depth.
 
                 BUG-M1 FIX: Escape XML entities in values to prevent

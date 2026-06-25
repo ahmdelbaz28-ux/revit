@@ -1,4 +1,4 @@
-"""room_lifecycle.py — FireAI Room Lifecycle State Machine
+"""room_lifecycle.py — FireAI Room Lifecycle State Machine.
 ========================================================
 NFPA 72-2022 compliant state machine that transforms the fire safety
 system from a stateless "calculator" into a proper engineering system
@@ -48,7 +48,7 @@ import logging
 import threading
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from .event_bus import EventBus
 
@@ -96,7 +96,7 @@ class RoomState(enum.Enum):
 # Legal Transition Map
 # ═══════════════════════════════════════════════════════════════════════
 
-LEGAL_TRANSITIONS: Dict[RoomState, set] = {
+LEGAL_TRANSITIONS: dict[RoomState, set] = {
     RoomState.PENDING: {RoomState.ANALYZING, RoomState.FAILED},
     RoomState.ANALYZING: {RoomState.OPTIMIZED, RoomState.FAILED},
     RoomState.OPTIMIZED: {RoomState.VERIFYING, RoomState.FAILED},
@@ -140,9 +140,9 @@ class RoomTransition:
     timestamp: str
     reason: str
     actor: str
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Serialize transition to a plain dictionary."""
         return {
             "from_state": self.from_state.value,
@@ -189,7 +189,7 @@ class RoomLifecycle:
     def __init__(
         self,
         room_id: str,
-        bus: Optional[EventBus] = None,
+        bus: EventBus | None = None,
     ) -> None:
         """Initialize a new room lifecycle in PENDING state.
 
@@ -200,7 +200,7 @@ class RoomLifecycle:
         """
         self._room_id = room_id
         self._state = RoomState.PENDING
-        self._transitions: List[RoomTransition] = []
+        self._transitions: list[RoomTransition] = []
         self._state_entered_at: str = datetime.now(timezone.utc).isoformat()
         # ✅ FIX: Use RLock to prevent deadlock — RoomLifecycle.to_dict()
         # calls methods that also acquire the lock.
@@ -221,7 +221,7 @@ class RoomLifecycle:
             return self._state
 
     @property
-    def history(self) -> List[RoomTransition]:
+    def history(self) -> list[RoomTransition]:
         """Full transition history (returns a copy for thread safety)."""
         with self._lock:
             return list(self._transitions)
@@ -258,7 +258,7 @@ class RoomLifecycle:
         new_state: RoomState,
         reason: str,
         actor: str,
-        metadata: Optional[Dict[str, Any]] = None,
+        metadata: dict[str, Any] | None = None,
     ) -> RoomTransition:
         """Execute a validated state transition and record it.
 
@@ -420,7 +420,7 @@ class RoomLifecycle:
         with self._lock:
             return self._state == RoomState.FAILED
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Serialize the lifecycle state and history to a dictionary.
 
         Returns:
@@ -476,7 +476,7 @@ class RoomLifecycleManager:
 
     """
 
-    def __init__(self, bus: Optional[EventBus] = None) -> None:
+    def __init__(self, bus: EventBus | None = None) -> None:
         """Initialize the lifecycle manager.
 
         Args:
@@ -484,7 +484,7 @@ class RoomLifecycleManager:
                 is used for each room's lifecycle.
 
         """
-        self._rooms: Dict[str, RoomLifecycle] = {}
+        self._rooms: dict[str, RoomLifecycle] = {}
         # ✅ FIX: Use RLock instead of Lock to prevent deadlock.
         # RoomLifecycleManager.to_dict() calls certification_progress()
         # and building_status() while holding the lock. With Lock (non-reentrant),
@@ -524,7 +524,7 @@ class RoomLifecycleManager:
             logger.info("Registered room %s with lifecycle manager", room_id)
             return lifecycle
 
-    def get_room(self, room_id: str) -> Optional[RoomLifecycle]:
+    def get_room(self, room_id: str) -> RoomLifecycle | None:
         """Get the lifecycle for a specific room.
 
         Args:
@@ -550,7 +550,7 @@ class RoomLifecycleManager:
         with self._lock:
             return room_id in self._rooms
 
-    def room_ids(self) -> List[str]:
+    def room_ids(self) -> list[str]:
         """Return a list of all registered room IDs.
 
         Returns:
@@ -567,7 +567,7 @@ class RoomLifecycleManager:
 
     # ── Building-Level Status ─────────────────────────────────────────
 
-    def building_status(self) -> Dict[RoomState, int]:
+    def building_status(self) -> dict[RoomState, int]:
         """Aggregate room states across the entire building.
 
         Returns a count of rooms in each lifecycle state. States with
@@ -590,7 +590,7 @@ class RoomLifecycleManager:
         """
         with self._lock:
             # Initialize all states to zero
-            status: Dict[RoomState, int] = dict.fromkeys(RoomState, 0)
+            status: dict[RoomState, int] = dict.fromkeys(RoomState, 0)
             for lifecycle in self._rooms.values():
                 # Access state directly (we already hold our own lock,
                 # but RoomLifecycle.state also acquires its internal lock)
@@ -676,7 +676,7 @@ class RoomLifecycleManager:
             self._rooms[room_id] = RoomLifecycle(room_id=room_id, bus=self._bus)
         logger.info("Reset lifecycle for room %s", room_id)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Serialize the manager state to a dictionary.
 
         Returns:
@@ -907,7 +907,7 @@ if __name__ == "__main__":
     bus = EventBus()
     received_events = []
 
-    def on_lifecycle_change(event):
+    def on_lifecycle_change(event) -> None:
         received_events.append(event)
 
     bus.subscribe("room.lifecycle.changed", on_lifecycle_change)
@@ -947,7 +947,7 @@ if __name__ == "__main__":
     lc_ts = RoomLifecycle(room_id="R-THREAD")
     errors = []
 
-    def transition_worker(start_state_label, target_state, reason):
+    def transition_worker(start_state_label, target_state, reason) -> None:
         try:
             # Small delay to increase chance of concurrent access
             time.sleep(0.001)

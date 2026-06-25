@@ -1,4 +1,4 @@
-"""backend/routers/qomn.py — QOMN-FIRE Engineering Kernel REST API
+"""backend/routers/qomn.py — QOMN-FIRE Engineering Kernel REST API.
 ================================================================
 REST endpoints for the QOMN-FIRE deterministic engineering kernel.
 
@@ -29,7 +29,7 @@ from __future__ import annotations
 
 import logging
 import threading
-from typing import Any, Dict, List, NoReturn
+from typing import Any, NoReturn
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field, field_validator
@@ -233,7 +233,7 @@ class RoomRequest(BaseModel):
     detector_type:    str   = Field("smoke", description="smoke|heat|duct|beam|aspirating")
     is_sleeping_area: bool  = Field(False, description="True → 177 cd strobes (NFPA 72 §18.5.5.7)")
     slope_degrees:    float = Field(0.0, ge=0, le=45, description="Ceiling slope in degrees")
-    exit_doors:       List[Dict[str, float]] = Field(
+    exit_doors:       list[dict[str, float]] = Field(
         default_factory=list,
         description="Exit doors: [{x_m, y_m, door_width_m}]"
     )
@@ -685,7 +685,7 @@ async def run_golden_tests():
     results = []
     all_pass = True
 
-    def _test(name: str, actual: float, expected: float, tolerance: float, ref: str):
+    def _test(name: str, actual: float, expected: float, tolerance: float, ref: str) -> None:
         nonlocal all_pass
         passed = abs(actual - expected) <= tolerance
         if not passed:

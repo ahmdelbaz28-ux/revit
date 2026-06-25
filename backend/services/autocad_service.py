@@ -1,4 +1,4 @@
-"""backend/services/autocad_service.py — AutoCAD Integration Service
+"""backend/services/autocad_service.py — AutoCAD Integration Service.
 ================================================================
 
 Complete AutoCAD integration service with COM API integration.
@@ -12,13 +12,13 @@ ARCHITECTURE:
 USAGE:
     from backend.services.autocad_service import AutoCADService
     service = AutoCADService()
-    
+
     # Connect to AutoCAD
     success = service.connect()
-    
+
     # Read DWG file
     entities = service.read_dwg("drawing.dwg")
-    
+
     # Create new drawing with entities
     service.write_dwg("new_drawing.dwg", entities)
 """
@@ -49,11 +49,11 @@ else:
 
 class AutoCADService:
     """AutoCAD integration service with COM API.
-    
+
     Handles connecting to AutoCAD, reading/writing DWG files, and drawing operations.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.acad_app = None
         self.acad_doc = None
         self.acad_util = None
@@ -62,7 +62,7 @@ class AutoCADService:
 
     def connect(self) -> bool:
         """Connect to a running AutoCAD instance or launch a new one.
-        
+
         Returns:
             bool: True if connection successful, False otherwise
 
@@ -110,7 +110,7 @@ class AutoCADService:
 
     def disconnect(self) -> bool:
         """Disconnect from AutoCAD application.
-        
+
         Returns:
             bool: True if disconnection successful, False otherwise
 
@@ -138,7 +138,7 @@ class AutoCADService:
 
     def initialize(self) -> bool:
         """Initialize the AutoCAD service by attempting to connect.
-        
+
         Returns:
             bool: True if initialization successful, False otherwise
 
@@ -147,10 +147,10 @@ class AutoCADService:
 
     def _extract_entity_data(self, entity) -> Dict[str, Any]:
         """Extract detailed data from an AutoCAD entity.
-        
+
         Args:
             entity: AutoCAD entity object
-            
+
         Returns:
             Dict containing entity data
 
@@ -277,10 +277,10 @@ class AutoCADService:
 
     def read_dwg(self, filepath: str) -> Dict[str, Any]:
         """Read entities from a DWG file.
-        
+
         Args:
             filepath: Path to the DWG file to read
-            
+
         Returns:
             Dictionary containing entities data and metadata
 
@@ -347,11 +347,11 @@ class AutoCADService:
 
     def write_dwg(self, filepath: str, entities: List[Dict[str, Any]]) -> bool:
         """Write entities to a DWG file.
-        
+
         Args:
             filepath: Path to save the DWG file
             entities: List of entity dictionaries to write
-            
+
         Returns:
             bool: True if write successful, False otherwise
 
@@ -483,13 +483,13 @@ class AutoCADService:
     def draw_line(self, start_point: List[float], end_point: List[float],
                   layer: str = "0", color: int = 0) -> Optional[Any]:
         """Draw a line in the active AutoCAD document.
-        
+
         Args:
             start_point: Starting coordinates [x, y, z]
             end_point: Ending coordinates [x, y, z]
             layer: Layer name for the line
             color: Color index for the line
-            
+
         Returns:
             Created line object or None if failed
 
@@ -516,13 +516,13 @@ class AutoCADService:
     def draw_polyline(self, vertices: List[List[float]],
                       layer: str = "0", color: int = 0, closed: bool = False) -> Optional[Any]:
         """Draw a polyline in the active AutoCAD document.
-        
+
         Args:
             vertices: List of vertex coordinates [[x, y, z], [x, y, z], ...]
             layer: Layer name for the polyline
             color: Color index for the polyline
             closed: Whether the polyline should be closed
-            
+
         Returns:
             Created polyline object or None if failed
 
@@ -556,13 +556,13 @@ class AutoCADService:
     def draw_circle(self, center: List[float], radius: float,
                     layer: str = "0", color: int = 0) -> Optional[Any]:
         """Draw a circle in the active AutoCAD document.
-        
+
         Args:
             center: Center coordinates [x, y, z]
             radius: Circle radius
             layer: Layer name for the circle
             color: Color index for the circle
-            
+
         Returns:
             Created circle object or None if failed
 
@@ -589,14 +589,14 @@ class AutoCADService:
     def draw_text(self, text: str, insertion_point: List[float], height: float = 0.2,
                   layer: str = "0", color: int = 0) -> Optional[Any]:
         """Draw text in the active AutoCAD document.
-        
+
         Args:
             text: Text string to draw
             insertion_point: Insertion point [x, y, z]
             height: Text height
             layer: Layer name for the text
             color: Color index for the text
-            
+
         Returns:
             Created text object or None if failed
 
@@ -622,7 +622,7 @@ class AutoCADService:
 
     def get_document_info(self) -> Dict[str, Any]:
         """Get information about the active AutoCAD document.
-        
+
         Returns:
             Dictionary containing document information
 
@@ -654,10 +654,10 @@ class AutoCADService:
 
     def save(self, filepath: str) -> bool:
         """Save the active document to a file.
-        
+
         Args:
             filepath: Path to save the document
-            
+
         Returns:
             bool: True if save successful, False otherwise
 

@@ -1,4 +1,4 @@
-"""monte_carlo_pipeline.py — Monte Carlo Integration into Main Pipeline
+"""monte_carlo_pipeline.py — Monte Carlo Integration into Main Pipeline.
 ====================================================================
 SURGICAL FIX: Monte Carlo simulation existed in fire-alarm-db/accuracy_engine/
 but was never called from FloorAnalyser, BuildingEngine, or ScenarioEngine.
@@ -19,12 +19,13 @@ What this file does:
 
 from __future__ import annotations
 
+import contextlib
 import math
 import random
 import statistics
 import threading
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 # ---------------------------------------------------------------------------
 # Failure models (was in accuracy_engine/core/monte_carlo/failure_models.py)
@@ -59,7 +60,7 @@ class DetectorReliabilitySimulator:
     def __init__(
         self,
         n_trials: int = 10_000,
-        seed: Optional[int] = None,
+        seed: int | None = None,
         n_workers: int = 1,
     ) -> None:
         self.n_trials = n_trials
@@ -69,13 +70,13 @@ class DetectorReliabilitySimulator:
 
     def simulate_room_reliability(
         self,
-        detectors: List[Tuple[float, float]],
+        detectors: list[tuple[float, float]],
         room_width: float,
         room_length: float,
         coverage_radius: float = 6.37,
-        failure_model: Optional[DetectorFailureModel] = None,
+        failure_model: DetectorFailureModel | None = None,
         time_horizon_yr: float = 1.0,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """SURGICAL FIX: Run N Monte Carlo trials for detector reliability.
 
         Each trial:
@@ -102,7 +103,7 @@ class DetectorReliabilitySimulator:
         p_fail = 1.0 - math.exp(-fm.annual_failure_rate * time_horizon_yr)
         p_blind = 1.0 - math.exp(-fm.p_blind * time_horizon_yr)
 
-        coverage_results: List[float] = []
+        coverage_results: list[float] = []
         n_full_coverage = 0
 
         # Verification grid for coverage check
@@ -158,7 +159,7 @@ class DetectorReliabilitySimulator:
         }
 
     @staticmethod
-    def _empty_result() -> Dict[str, Any]:
+    def _empty_result() -> dict[str, Any]:
         return {
             "n_trials": 0,
             "mean_coverage_pct": 0.0,
@@ -207,7 +208,7 @@ class MCPipelineAdapter:
         self,
         layout: Any,  # DetectorLayout
         room: Any,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Run MC simulation and attach results to layout.
 
         If MC shows reliability < threshold, adds warning.
@@ -248,10 +249,8 @@ class MCPipelineAdapter:
             except AttributeError:
                 pass  # Frozen layout — just warn
 
-        try:
+        with contextlib.suppress(AttributeError):
             layout.warnings = warnings
-        except AttributeError:
-            pass
 
         return mc_result
 
@@ -259,7 +258,7 @@ class MCPipelineAdapter:
         self,
         floor_report: Any,  # FloorReport
         n_trials: int = 1_000,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """SURGICAL FIX: Run MC on all rooms in a floor report.
 
         Was never called from FloorAnalyser. Now can be called

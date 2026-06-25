@@ -1,4 +1,4 @@
-"""fireai/core/elevator_shunt_trip.py
+"""fireai/core/elevator_shunt_trip.py.
 ===================================
 Elevator Shunt-Trip Power Severance Auditor — CRITICAL LIFE-SAFETY MODULE.
 
@@ -49,7 +49,7 @@ from __future__ import annotations
 import logging
 import math
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 # ---------------------------------------------------------------------------
 # Provenance — graceful degradation
@@ -104,7 +104,7 @@ DEFAULT_HD_RTI: float = 100.0
 RTI_RATIO_LIMIT: float = 1.0
 
 # Standard sprinkler temperature ratings (°C) per NFPA 13 Table 6.2.5.1
-STANDARD_SPRINKLER_TEMPS_C: Dict[str, float] = {
+STANDARD_SPRINKLER_TEMPS_C: dict[str, float] = {
     "ordinary": 68.3,  # 155 °F
     "intermediate": 93.3,  # 200 °F
     "high": 140.6,  # 286 °F
@@ -112,7 +112,7 @@ STANDARD_SPRINKLER_TEMPS_C: Dict[str, float] = {
 }
 
 # Standard heat detector temperature ratings (°C) per UL 521
-STANDARD_HD_TEMPS_C: Dict[str, float] = {
+STANDARD_HD_TEMPS_C: dict[str, float] = {
     "135F": 57.2,  # 135 °F — most common for shunt-trip
     "145F": 62.8,  # 145 °F
     "160F": 71.1,  # 160 °F
@@ -134,18 +134,18 @@ class ShuntTripResult:
     sprinkler_id: str
     room_id: str
     has_dedicated_hd: bool
-    hd_device_id: Optional[str] = None
-    hd_distance_m: Optional[float] = None
-    hd_temp_rating_C: Optional[float] = None
-    hd_rti: Optional[float] = None
+    hd_device_id: str | None = None
+    hd_distance_m: float | None = None
+    hd_temp_rating_C: float | None = None
+    hd_rti: float | None = None
     required_hd_temp_C: float = 0.0
     sprinkler_temp_C: float = 0.0
     sprinkler_rti: float = 0.0
     rti_violation: bool = False
     temp_violation: bool = False
     compliant: bool = False
-    violation_description: Optional[str] = None
-    warnings: List[str] = field(default_factory=list)
+    violation_description: str | None = None
+    warnings: list[str] = field(default_factory=list)
 
 
 class ElevatorShuntTripAuditor:
@@ -204,9 +204,9 @@ class ElevatorShuntTripAuditor:
 
     def audit_hoistway_machine_room(
         self,
-        sprinkler_locations: List[Dict[str, Any]],
-        heat_detector_locations: List[Dict[str, Any]],
-        elevator_spaces: List[str],
+        sprinkler_locations: list[dict[str, Any]],
+        heat_detector_locations: list[dict[str, Any]],
+        elevator_spaces: list[str],
     ) -> Any:
         """Audit all sprinklers in elevator spaces for shunt-trip compliance.
 
@@ -220,7 +220,7 @@ class ElevatorShuntTripAuditor:
         """
         violations: list = []
         injections: list = []
-        detailed_results: List[ShuntTripResult] = []
+        detailed_results: list[ShuntTripResult] = []
 
         for sprinkler in sprinkler_locations:
             room_id = sprinkler.get("room_id", "")

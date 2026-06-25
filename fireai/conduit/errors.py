@@ -1,4 +1,4 @@
-"""fireai.conduit.errors — Error Types for Conduit Fitting Engine
+"""fireai.conduit.errors — Error Types for Conduit Fitting Engine.
 ==============================================================
 
 Every error includes:

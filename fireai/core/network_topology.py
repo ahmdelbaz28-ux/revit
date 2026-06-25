@@ -1,4 +1,4 @@
-"""fireai/core/network_topology.py
+"""fireai/core/network_topology.py.
 =================================
 Master Network Backbone Topology & Class X Redundancy Router.
 
@@ -48,7 +48,7 @@ from __future__ import annotations
 import logging
 from collections import deque
 from dataclasses import dataclass
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 # ---------------------------------------------------------------------------
 # Provenance — graceful degradation
@@ -98,7 +98,7 @@ class PanelNode:
 
     panel_id: str
     building_id: str
-    location: Tuple[float, float] = (0.0, 0.0)
+    location: tuple[float, float] = (0.0, 0.0)
     is_master: bool = False
 
 
@@ -148,8 +148,8 @@ class NetworkTopologyAuditor:
 
     def audit_network_topology(
         self,
-        panels: List[Dict[str, Any]],
-        links: List[Dict[str, Any]],
+        panels: list[dict[str, Any]],
+        links: list[dict[str, Any]],
     ) -> Any:
         """Audit the network topology for Class X compliance.
 
@@ -171,7 +171,7 @@ class NetworkTopologyAuditor:
 
         """
         violations: list = []
-        fiber_recommendations: List[Dict[str, Any]] = []
+        fiber_recommendations: list[dict[str, Any]] = []
 
         # Build adjacency graph
         panel_ids = set()
@@ -238,8 +238,8 @@ class NetworkTopologyAuditor:
             logger.warning(desc)
 
         # Build adjacency list (undirected)
-        adj: Dict[str, List[str]] = {pid: [] for pid in panel_ids}
-        link_details: Dict[str, Dict[str, Any]] = {}
+        adj: dict[str, list[str]] = {pid: [] for pid in panel_ids}
+        link_details: dict[str, dict[str, Any]] = {}
 
         for link in links:
             lid = link.get("link_id", "UNKNOWN")
@@ -502,7 +502,7 @@ class NetworkTopologyAuditor:
 
     def _classify_topology(
         self,
-        adj: Dict[str, List[str]],
+        adj: dict[str, list[str]],
         panel_ids: set,
     ) -> str:
         """Classify the network topology type.
@@ -547,7 +547,7 @@ class NetworkTopologyAuditor:
 
     @staticmethod
     def _is_connected(
-        adj: Dict[str, List[str]],
+        adj: dict[str, list[str]],
         panel_ids: set,
     ) -> bool:
         """Check whether the graph is fully connected using BFS.
@@ -572,9 +572,9 @@ class NetworkTopologyAuditor:
 
     @staticmethod
     def _find_bridges(
-        adj: Dict[str, List[str]],
+        adj: dict[str, list[str]],
         panel_ids: set,
-    ) -> List[Tuple[str, str]]:
+    ) -> list[tuple[str, str]]:
         """Find all bridge edges using Tarjan's algorithm.
 
         A bridge is an edge whose removal increases the number of
@@ -593,7 +593,7 @@ class NetworkTopologyAuditor:
         bridges = []
         timer = [0]  # mutable counter
 
-        def dfs(u):
+        def dfs(u) -> None:
             visited.add(u)
             disc[u] = low[u] = timer[0]
             timer[0] += 1

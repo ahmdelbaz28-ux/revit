@@ -114,7 +114,13 @@ class TestGLBConsistency:
     """V134 F-3: GLB must not reference non-existent accessors."""
 
     def test_glb_json_has_no_accessor_references(self):
-        """Mesh primitives must NOT reference accessors that don't exist."""
+        """V139: Mesh primitives now have REAL accessor references (was V134 F-3 fix).
+
+        V134 removed invalid accessor references (empty accessors array).
+        V139 added REAL vertex data with proper accessors. Now we verify
+        that every POSITION accessor referenced in a primitive EXISTS
+        in the accessors array.
+        """
         from fireai.integration.ar_metadata_exporter import (
             ARMetadataExporter,
             ARSceneNode,
@@ -129,30 +135,36 @@ class TestGLBConsistency:
         )
         glb = exporter.export_glb(snapshot)
 
-        # Parse the JSON chunk to verify structure
         import json
         import struct
-        # GLB header: 12 bytes (magic, version, total_length)
-        # JSON chunk: 8 bytes header + json_bytes
         json_length = struct.unpack("<I", glb[12:16])[0]
         json_bytes = glb[20:20 + json_length]
         gltf = json.loads(json_bytes)
 
-        # V134 F-3: buffers array should be empty (no fake byteLength)
-        assert gltf.get("buffers", []) == [] or all(
-            b.get("byteLength", 0) == 0 for b in gltf.get("buffers", [])
-        )
+        # V139: buffers must have non-zero byteLength (real vertex data)
+        buffers = gltf.get("buffers", [])
+        assert len(buffers) > 0, "Must have at least one buffer"
+        for buf in buffers:
+            assert buf.get("byteLength", 0) > 0, "Buffer byteLength must be > 0"
 
-        # V134 F-3: No mesh primitive should reference POSITION accessor
-        # (since we don't generate real vertex data)
+        # V139: Every POSITION accessor referenced in mesh primitives must exist
+        accessors = gltf.get("accessors", [])
         for mesh in gltf.get("meshes", []):
             for prim in mesh.get("primitives", []):
-                assert "attributes" not in prim or "POSITION" not in prim.get("attributes", {}), (
-                    "Mesh primitive references POSITION accessor but accessors array is empty"
-                )
+                if "attributes" in prim and "POSITION" in prim["attributes"]:
+                    accessor_idx = prim["attributes"]["POSITION"]
+                    assert accessor_idx < len(accessors), (
+                        f"POSITION accessor {accessor_idx} referenced but only "
+                        f"{len(accessors)} accessors exist"
+                    )
 
     def test_glb_accessors_array_empty_when_no_geometry(self):
-        """If no real vertex data, accessors must be empty (not fake)."""
+        """V139: Accessors array now has REAL entries (was empty in V134 F-3).
+
+        V134 removed accessors because they were invalid (referenced
+        non-existent data). V139 added real vertex data, so accessors
+        now exist and are valid.
+        """
         from fireai.integration.ar_metadata_exporter import (
             ARMetadataExporter,
             ARSnapshot,
@@ -165,7 +177,8 @@ class TestGLBConsistency:
         import struct
         json_length = struct.unpack("<I", glb[12:16])[0]
         gltf = json.loads(glb[20:20 + json_length])
-        assert gltf.get("accessors", []) == []
+        # V139: Accessors should NOT be empty — we have real vertex data now
+        assert len(gltf.get("accessors", [])) > 0, "Accessors should have real entries (V139)"
 
 
 # ---------------------------------------------------------------------------

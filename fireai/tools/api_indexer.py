@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""FireAI — API Endpoints Index Generator
+"""FireAI — API Endpoints Index Generator.
 
 Scans backend/routers/ and generates a comprehensive API index.
 """
@@ -131,7 +131,7 @@ def generate_markdown(endpoints: dict[str, list[dict[str, object]]]) -> str:
     return md
 
 
-def main():
+def main() -> int:
     root = Path(__file__).parent.parent.parent
     routers_dir = root / "backend" / "routers"
     output_file = root / "backend" / "API_ENDPOINTS_INDEX.md"

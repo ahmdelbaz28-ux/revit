@@ -1,4 +1,4 @@
-"""fireai/core/submittal_integrity_gate.py
+"""fireai/core/submittal_integrity_gate.py.
 =======================================
 Post-draft SHA-256 hash verification for the DXF compilation pipeline.
 
@@ -51,7 +51,7 @@ import hashlib
 import logging
 import time
 from dataclasses import dataclass, field
-from typing import Any, Dict, List
+from typing import Any
 
 # ---------------------------------------------------------------------------
 # Provenance imports — same pattern as other fireai.core modules
@@ -125,7 +125,7 @@ class IntegrityCheckResult:
     pre_hash: str
     post_hash: str
     match: bool
-    violations: List[Dict[str, Any]] = field(default_factory=list)
+    violations: list[dict[str, Any]] = field(default_factory=list)
 
 
 # ============================================================================
@@ -151,7 +151,7 @@ class SubmittalIntegrityGate:
     """
 
     def __init__(self) -> None:
-        self._hash_records: Dict[str, List[HashRecord]] = {}
+        self._hash_records: dict[str, list[HashRecord]] = {}
 
     # ------------------------------------------------------------------
     # Private helpers
@@ -273,7 +273,7 @@ class SubmittalIntegrityGate:
                 source_file,
                 current_hash[:16],
             )
-            violations_list: List[Dict[str, Any]] = []
+            violations_list: list[dict[str, Any]] = []
             result = IntegrityCheckResult(
                 source_file=source_file,
                 pre_hash=pre_calculation_hash,
@@ -328,7 +328,7 @@ class SubmittalIntegrityGate:
         )
         logger.critical("INTEGRITY FAILURE: %s", description)
 
-        violation_dict: Dict[str, Any] = {
+        violation_dict: dict[str, Any] = {
             "severity": "CRITICAL",
             "citation": _CITE_CWE367,
             "description": description,
@@ -390,7 +390,7 @@ class SubmittalIntegrityGate:
             )
         return result
 
-    def get_hash_history(self, file_path: str) -> List[HashRecord]:
+    def get_hash_history(self, file_path: str) -> list[HashRecord]:
         """Return the recorded hash history for a file.
 
         Args:

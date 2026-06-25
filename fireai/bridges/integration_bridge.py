@@ -1,4 +1,4 @@
-"""fireai/bridges/integration_bridge.py
+"""fireai/bridges/integration_bridge.py.
 =====================================
 LIFE-SAFETY CRITICAL: Integration Bridge for the FireAI Fire Alarm
 Engineering Platform.  Wires together four core subsystems into a
@@ -81,7 +81,7 @@ import logging
 import math
 import time
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # SAFE IMPORTS — each subsystem is imported independently so that a
@@ -191,7 +191,7 @@ class FloorData:
     area_sqm: float = 0.0
     ceiling_height_m: float = 3.0
     occupancy_type: str = "business"
-    room_specs: Optional[List[Dict[str, Any]]] = None
+    room_specs: list[dict[str, Any]] | None = None
 
     def __post_init__(self) -> None:
         """Validate floor data. Life-Safety Rule: reject NaN/Inf."""
@@ -234,7 +234,7 @@ class AcousticConfig:
     """
 
     mode: str = "public"
-    ambient_noise_dba: Optional[float] = None
+    ambient_noise_dba: float | None = None
     speaker_rating_dba: float = 95.0
     include_ugld: bool = False
 
@@ -275,13 +275,13 @@ class CableRoutingResult:
 
     """
 
-    routes: List[Any] = field(default_factory=list)
+    routes: list[Any] = field(default_factory=list)
     all_routes_valid: bool = False  # V112: FAIL-SAFE — routes not valid until verified
     all_voltage_drop_compliant: bool = False  # V112: FAIL-SAFE — voltage drop not compliant until verified
     total_cable_length_m: float = 0.0
     circuit_count: int = 0
-    violations: List[str] = field(default_factory=list)
-    warnings: List[str] = field(default_factory=list)
+    violations: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
 
     @property
     def compliant(self) -> bool:
@@ -320,10 +320,10 @@ class IntegrationConfig:
     """
 
     building_id: str
-    floors: List[FloorData] = field(default_factory=list)
-    panel_positions: List[Tuple[float, float, float]] = field(default_factory=list)
-    obstacle_polygons: List[List[Tuple[float, float]]] = field(default_factory=list)
-    acoustic_config: Optional[AcousticConfig] = None
+    floors: list[FloorData] = field(default_factory=list)
+    panel_positions: list[tuple[float, float, float]] = field(default_factory=list)
+    obstacle_polygons: list[list[tuple[float, float]]] = field(default_factory=list)
+    acoustic_config: AcousticConfig | None = None
     nfpa_year: int = 2022
 
     def __post_init__(self) -> None:
@@ -421,12 +421,12 @@ class IntegrationResult:
 
     """
 
-    cable_result: Optional[CableRoutingResult] = None
-    twin_result: Optional[Any] = None  # SyncResult — Any because import may fail
-    acoustic_result: Optional[Any] = None  # AcousticCoverageResult
-    multi_floor_result: Optional[Any] = None  # BuildingAnalysis
-    errors: List[str] = field(default_factory=list)
-    warnings: List[str] = field(default_factory=list)
+    cable_result: CableRoutingResult | None = None
+    twin_result: Any | None = None  # SyncResult — Any because import may fail
+    acoustic_result: Any | None = None  # AcousticCoverageResult
+    multi_floor_result: Any | None = None  # BuildingAnalysis
+    errors: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
     overall_compliant: bool = False
     execution_time_s: float = 0.0
 
@@ -679,7 +679,7 @@ class IntegrationBridge:
     # Subsystem 1: Cable Routing
     # ──────────────────────────────────────────────────────────────────────
 
-    def _run_cable_routing(self) -> Optional[CableRoutingResult]:
+    def _run_cable_routing(self) -> CableRoutingResult | None:
         """Run cable routing for the building.
 
         Creates a :class:`CableRoutingEngine` instance, loads obstacle
@@ -707,7 +707,7 @@ class IntegrationBridge:
         config = self._config
 
         # Build obstacles from polygon data
-        obstacles: List[Any] = []
+        obstacles: list[Any] = []
         if config.obstacle_polygons and CableRoutingEngine is not None:
             # Import the obstacle dataclass locally — it was imported
             # successfully along with CableRoutingEngine
@@ -740,16 +740,16 @@ class IntegrationBridge:
 
         # Route from each panel position
         cable_result = CableRoutingResult()
-        all_routes: List[Any] = []
+        all_routes: list[Any] = []
         total_length = 0.0
         all_valid = True
         all_vd_compliant = True
-        violations: List[str] = []
-        warnings: List[str] = []
+        violations: list[str] = []
+        warnings: list[str] = []
 
         for panel_pos in config.panel_positions:
             # Collect device positions from all floors
-            device_positions: List[Tuple[float, float, float]] = []
+            device_positions: list[tuple[float, float, float]] = []
             for floor in config.floors:
                 if floor.room_specs:
                     for room in floor.room_specs:
@@ -858,7 +858,7 @@ class IntegrationBridge:
     # Subsystem 2: Digital Twin Sync
     # ──────────────────────────────────────────────────────────────────────
 
-    def _run_twin_sync(self) -> Optional[Any]:
+    def _run_twin_sync(self) -> Any | None:
         """Sync the current design to the digital twin.
 
         Creates a :class:`DigitalTwinSync` instance and synchronises
@@ -884,7 +884,7 @@ class IntegrationBridge:
         config = self._config
 
         # Build detector data for twin sync from floor room specs
-        design_detectors: List[Dict[str, Any]] = []
+        design_detectors: list[dict[str, Any]] = []
         for floor in config.floors:
             if floor.room_specs:
                 for room in floor.room_specs:
@@ -945,7 +945,7 @@ class IntegrationBridge:
     # Subsystem 3: Acoustics
     # ──────────────────────────────────────────────────────────────────────
 
-    def _run_acoustics(self) -> Optional[Any]:
+    def _run_acoustics(self) -> Any | None:
         """Check acoustic coverage for the building.
 
         Runs the :class:`AcousticsEngine` to verify NFPA 72-2022 §18.4
@@ -979,7 +979,7 @@ class IntegrationBridge:
 
         # Aggregate acoustic results across all floors
         # We run check_coverage per floor and then combine the results
-        worst_result: Optional[AcousticCoverageResult] = None
+        worst_result: AcousticCoverageResult | None = None
         all_compliant = True
 
         for floor in config.floors:
@@ -1121,7 +1121,7 @@ class IntegrationBridge:
     # Subsystem 4: Multi-Floor Orchestrator
     # ──────────────────────────────────────────────────────────────────────
 
-    def _run_multi_floor(self) -> Optional[Any]:
+    def _run_multi_floor(self) -> Any | None:
         """Orchestrate multi-floor analysis for the building.
 
         Creates a :class:`MultiFloorOrchestrator` instance and runs
@@ -1150,9 +1150,9 @@ class IntegrationBridge:
 
         # Build the floors dict expected by MultiFloorOrchestrator
         # It expects Dict[str, List[Any]] mapping floor_id → room specs
-        floors: Dict[str, List[Any]] = {}
-        floor_elevations: Dict[str, float] = {}
-        floor_areas: Dict[str, float] = {}
+        floors: dict[str, list[Any]] = {}
+        floor_elevations: dict[str, float] = {}
+        floor_areas: dict[str, float] = {}
         building_height_m = 0.0
 
         for floor in config.floors:
@@ -1233,7 +1233,7 @@ class IntegrationBridge:
             compliant, ``False`` otherwise.
 
         """
-        compliance_checks: List[Tuple[str, bool]] = []
+        compliance_checks: list[tuple[str, bool]] = []
 
         # Cable Routing: check our aggregated result
         if result.cable_result is not None:

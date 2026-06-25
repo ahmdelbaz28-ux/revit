@@ -1,4 +1,4 @@
-"""webhook_service.py — Webhook Event Delivery Service
+"""webhook_service.py — Webhook Event Delivery Service.
 ======================================================
 
 MISSION TASK 3.3 — Webhook Event System for External Cloud Subscriptions
@@ -73,6 +73,7 @@ References
 - agent.md Rule 12: Safety-First (HMAC + HTTPS + allowlist)
 - agent.md Rule 17: NO HALF-SOLUTIONS (retry + DLQ + audit)
 - RFC 4918: HMAC-SHA256 for webhook signatures
+
 """
 
 from __future__ import annotations
@@ -88,7 +89,7 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple
+from typing import Any
 from urllib.parse import urlparse
 
 logger = logging.getLogger(__name__)
@@ -157,17 +158,18 @@ class WebhookSubscription:
         status: Subscription status (active/paused/disabled).
         created_at: ISO timestamp.
         metadata: Optional metadata (e.g., owner, description).
+
     """
 
     id: str
     url: str
     secret: str
-    event_types: Tuple[str, ...] = field(default_factory=tuple)
+    event_types: tuple[str, ...] = field(default_factory=tuple)
     status: WebhookStatus = WebhookStatus.ACTIVE
     created_at: str = field(
         default_factory=lambda: datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     )
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def matches_event(self, event_type: str) -> bool:
         """Check if this subscription should receive an event of given type."""
@@ -193,9 +195,9 @@ class WebhookDeliveryAttempt:
     url: str
     attempt_number: int
     status: DeliveryStatus
-    response_status_code: Optional[int] = None
-    response_body_snippet: Optional[str] = None  # first 500 chars
-    error: Optional[str] = None
+    response_status_code: int | None = None
+    response_body_snippet: str | None = None  # first 500 chars
+    error: str | None = None
     timestamp: str = field(
         default_factory=lambda: datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     )
@@ -217,7 +219,7 @@ class DeadLetterEntry:
     event_type: str
     url: str
     final_error: str
-    attempts: List[WebhookDeliveryAttempt]
+    attempts: list[WebhookDeliveryAttempt]
     # V135 F-12: Store original payload for replay
     payload: bytes = b""
     source: str = ""
@@ -240,6 +242,7 @@ def compute_webhook_signature(payload: bytes, secret: str) -> str:
 
     Returns:
         Hex-encoded HMAC-SHA256 signature (64 chars).
+
     """
     return hmac.new(
         secret.encode("utf-8"),
@@ -268,8 +271,8 @@ class WebhookDeliveryService:
         retry_backoff_base: float = DEFAULT_RETRY_BACKOFF_BASE,
         retry_backoff_max: float = DEFAULT_RETRY_BACKOFF_MAX,
         dlq_max_size: int = DEFAULT_DLQ_MAX_SIZE,
-        allow_http: Optional[bool] = None,
-        allowed_hosts: Optional[Set[str]] = None,
+        allow_http: bool | None = None,
+        allowed_hosts: set[str] | None = None,
         history_max_size: int = 1000,
     ) -> None:
         """Initialize the webhook delivery service.
@@ -285,6 +288,7 @@ class WebhookDeliveryService:
             allowed_hosts: Optional set of allowed hostnames. If None,
                 reads from FIREAI_WEBHOOK_ALLOWED_HOSTS env var
                 (comma-separated). Empty set = allow all.
+
         """
         self.timeout_seconds = timeout_seconds
         self.max_retries = max_retries
@@ -312,9 +316,9 @@ class WebhookDeliveryService:
             self.allowed_hosts = allowed_hosts
 
         # State
-        self._subscriptions: Dict[str, WebhookSubscription] = {}
-        self._dlq: List[DeadLetterEntry] = []
-        self._delivery_history: List[WebhookDeliveryAttempt] = []
+        self._subscriptions: dict[str, WebhookSubscription] = {}
+        self._dlq: list[DeadLetterEntry] = []
+        self._delivery_history: list[WebhookDeliveryAttempt] = []
         self._lock = threading.RLock()
 
         # Try to connect to existing EventBus (optional)
@@ -344,6 +348,7 @@ class WebhookDeliveryService:
         Raises:
             ValueError: If URL is invalid, HTTP not allowed, or
                 host not in allowlist.
+
         """
         self._validate_subscription(subscription)
 
@@ -360,6 +365,7 @@ class WebhookDeliveryService:
 
         Returns:
             True if subscription was found and removed, False otherwise.
+
         """
         with self._lock:
             if subscription_id in self._subscriptions:
@@ -368,12 +374,12 @@ class WebhookDeliveryService:
                 return True
             return False
 
-    def list_subscriptions(self) -> List[WebhookSubscription]:
+    def list_subscriptions(self) -> list[WebhookSubscription]:
         """List all registered subscriptions."""
         with self._lock:
             return list(self._subscriptions.values())
 
-    def get_subscription(self, subscription_id: str) -> Optional[WebhookSubscription]:
+    def get_subscription(self, subscription_id: str) -> WebhookSubscription | None:
         """Get a subscription by ID."""
         with self._lock:
             return self._subscriptions.get(subscription_id)
@@ -442,8 +448,8 @@ class WebhookDeliveryService:
         self,
         event_type: str,
         source: str,
-        data: Dict[str, Any],
-        trace_id: Optional[str] = None,
+        data: dict[str, Any],
+        trace_id: str | None = None,
     ) -> str:
         """Publish an event to all matching subscribers.
 
@@ -455,6 +461,7 @@ class WebhookDeliveryService:
 
         Returns:
             Event ID (UUID for correlation).
+
         """
         event_id = str(uuid.uuid4())
         timestamp = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
@@ -490,7 +497,8 @@ class WebhookDeliveryService:
         # timeout. Do NOT use `with` statement (which blocks on exit) —
         # manually shutdown(wait=False) to avoid blocking.
         try:
-            from concurrent.futures import ThreadPoolExecutor, as_completed, TimeoutError as FuturesTimeoutError
+            from concurrent.futures import ThreadPoolExecutor, as_completed
+            from concurrent.futures import TimeoutError as FuturesTimeoutError
 
             max_workers = min(len(matching), 10)
             executor = ThreadPoolExecutor(max_workers=max_workers)
@@ -529,8 +537,14 @@ class WebhookDeliveryService:
                     GLOBAL_DELIVERY_TIMEOUT_S, event_id, cancelled,
                 )
             finally:
-                # V137 F-3: shutdown(wait=False) to avoid blocking on exit
-                executor.shutdown(wait=False)
+                # V138 F-6 FIX: shutdown(wait=False) leaves orphaned threads that
+                # continue mutating _dlq/_delivery_history. Cancel ALL pending futures
+                # before shutdown to prevent orphaned mutations.
+                for f in futures:
+                    if not f.done():
+                        f.cancel()
+                # Give cancelled threads 1 second to clean up, then force shutdown
+                executor.shutdown(wait=False, cancel_futures=True)
         except Exception as exc:
             # Fallback to synchronous if thread pool fails
             logger.warning(
@@ -579,7 +593,7 @@ class WebhookDeliveryService:
         event_id: str,
         event_type: str,
         source: str,
-        data: Dict[str, Any],
+        data: dict[str, Any],
         timestamp: str,
         trace_id: str,
     ) -> None:
@@ -607,7 +621,7 @@ class WebhookDeliveryService:
             "User-Agent": "FireAI-WebhookDelivery/1.0",
         }
 
-        attempts: List[WebhookDeliveryAttempt] = []
+        attempts: list[WebhookDeliveryAttempt] = []
 
         for attempt_num in range(1, self.max_retries + 1):
             attempt = self._deliver_once(
@@ -705,7 +719,7 @@ class WebhookDeliveryService:
                 exc_info=True,
             )
 
-    def _check_ssrf_url(self, url: str) -> Optional[str]:
+    def _check_ssrf_url(self, url: str) -> str | None:
         """V134 F-1: Pre-flight SSRF check — reject internal/reserved IPs.
 
         Per OWASP SSRF Prevention Cheat Sheet: never allow requests to
@@ -726,6 +740,7 @@ class WebhookDeliveryService:
 
         Returns:
             None if URL is safe, error message string if blocked.
+
         """
         import ipaddress
         import socket
@@ -744,7 +759,7 @@ class WebhookDeliveryService:
                 # Can't resolve — let the actual request fail naturally
                 return None
 
-            for family, _, _, _, sockaddr in addr_info:
+            for _family, _, _, _, sockaddr in addr_info:
                 ip_str = sockaddr[0]
                 try:
                     ip = ipaddress.ip_address(ip_str)
@@ -783,7 +798,7 @@ class WebhookDeliveryService:
         event_type: str,
         url: str,
         payload: bytes,
-        headers: Dict[str, str],
+        headers: dict[str, str],
         attempt_num: int,
     ) -> WebhookDeliveryAttempt:
         """Perform a single HTTP POST delivery attempt.
@@ -821,8 +836,8 @@ class WebhookDeliveryService:
             )
 
         try:
-            import urllib.request
             import urllib.error
+            import urllib.request
 
             # V134 F-2: Custom opener that BLOCKS redirects (SSRF mitigation)
             # Per OWASP SSRF Prevention Cheat Sheet: never follow redirects
@@ -830,7 +845,7 @@ class WebhookDeliveryService:
             class _NoRedirectHandler(urllib.request.HTTPRedirectHandler):
                 """Block all HTTP redirects to prevent SSRF via 302."""
 
-                def redirect_request(self, req, fp, code, msg, headers, newurl):
+                def redirect_request(self, req, fp, code, msg, headers, newurl) -> None:
                     # Return None to prevent following the redirect.
                     # The caller will see the 3xx response and treat it as failure.
                     return None
@@ -864,19 +879,18 @@ class WebhookDeliveryService:
                         response_body_snippet=response_body[:500],
                         duration_ms=duration_ms,
                     )
-                else:
-                    return WebhookDeliveryAttempt(
-                        subscription_id=subscription.id,
-                        event_id=event_id,
-                        event_type=event_type,
-                        url=url,
-                        attempt_number=attempt_num,
-                        status=DeliveryStatus.FAILED,
-                        response_status_code=response_status,
-                        response_body_snippet=response_body[:500],
-                        error=f"HTTP {response_status}",
-                        duration_ms=duration_ms,
-                    )
+                return WebhookDeliveryAttempt(
+                    subscription_id=subscription.id,
+                    event_id=event_id,
+                    event_type=event_type,
+                    url=url,
+                    attempt_number=attempt_num,
+                    status=DeliveryStatus.FAILED,
+                    response_status_code=response_status,
+                    response_body_snippet=response_body[:500],
+                    error=f"HTTP {response_status}",
+                    duration_ms=duration_ms,
+                )
 
         except urllib.error.HTTPError as exc:
             duration_ms = (time.perf_counter() - t_start) * 1000.0
@@ -921,8 +935,8 @@ class WebhookDeliveryService:
     # ------------------------------------------------------------------
 
     def get_delivery_history(
-        self, subscription_id: Optional[str] = None, limit: int = 100
-    ) -> List[WebhookDeliveryAttempt]:
+        self, subscription_id: str | None = None, limit: int = 100
+    ) -> list[WebhookDeliveryAttempt]:
         """Get recent delivery attempts (optionally filtered by subscription)."""
         with self._lock:
             history = list(self._delivery_history)
@@ -930,7 +944,7 @@ class WebhookDeliveryService:
             history = [h for h in history if h.subscription_id == subscription_id]
         return history[-limit:]
 
-    def get_dead_letter_queue(self) -> List[DeadLetterEntry]:
+    def get_dead_letter_queue(self) -> list[DeadLetterEntry]:
         """Get all dead-lettered events."""
         with self._lock:
             return list(self._dlq)
@@ -949,6 +963,7 @@ class WebhookDeliveryService:
 
         Returns:
             True if replay succeeded, False if index invalid or delivery failed.
+
         """
         # V138 F-2: Pop entry FIRST (under lock) to prevent TOCTOU
         with self._lock:
@@ -974,7 +989,6 @@ class WebhookDeliveryService:
         )
 
         try:
-            import json
             signature = compute_webhook_signature(entry.payload, sub.secret)
             headers = {
                 "Content-Type": "application/json",
@@ -998,12 +1012,11 @@ class WebhookDeliveryService:
             if attempt.status == DeliveryStatus.SUCCESS:
                 logger.info("DLQ entry %s replayed successfully", entry.event_id)
                 return True
-            else:
-                logger.warning("DLQ entry %s replay failed: %s", entry.event_id, attempt.error)
-                # V138 F-2: Re-queue on failure
-                with self._lock:
-                    self._dlq.insert(min(dlq_index, len(self._dlq)), entry)
-                return False
+            logger.warning("DLQ entry %s replay failed: %s", entry.event_id, attempt.error)
+            # V138 F-2: Re-queue on failure
+            with self._lock:
+                self._dlq.insert(min(dlq_index, len(self._dlq)), entry)
+            return False
 
         except Exception as exc:
             logger.error("DLQ entry %s replay error: %s", entry.event_id, exc, exc_info=True)
@@ -1023,7 +1036,7 @@ class WebhookDeliveryService:
 # Module-level singleton (for convenience)
 # ---------------------------------------------------------------------------
 
-_singleton: Optional[WebhookDeliveryService] = None
+_singleton: WebhookDeliveryService | None = None
 _singleton_lock = threading.Lock()
 
 
@@ -1038,13 +1051,13 @@ def get_webhook_service() -> WebhookDeliveryService:
 
 
 __all__ = [
-    "WebhookDeliveryService",
-    "WebhookSubscription",
-    "WebhookStatus",
+    "WEBHOOK_EVENT_TYPES",
+    "DeadLetterEntry",
     "DeliveryStatus",
     "WebhookDeliveryAttempt",
-    "DeadLetterEntry",
-    "WEBHOOK_EVENT_TYPES",
+    "WebhookDeliveryService",
+    "WebhookStatus",
+    "WebhookSubscription",
     "compute_webhook_signature",
     "get_webhook_service",
 ]

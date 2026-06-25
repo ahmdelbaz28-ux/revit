@@ -25,7 +25,7 @@ from abc import ABC, abstractmethod
 from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Awaitable, Callable, Dict, List, Optional, Set, Tuple
+from typing import Any, Awaitable, Callable
 
 logger = logging.getLogger(__name__)
 
@@ -41,13 +41,13 @@ class Event:
     id: str
     type: str
     source: str
-    data: Dict[str, Any]
+    data: dict[str, Any]
     timestamp: datetime
     trace_id: str
     version: int = 1
     schema_version: str = "1.0"
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "id": self.id,
             "type": self.type,
@@ -60,7 +60,7 @@ class Event:
         }
 
     @classmethod
-    def from_dict(cls, d: Dict[str, Any]) -> Event:
+    def from_dict(cls, d: dict[str, Any]) -> Event:
         return cls(
             id=d["id"],
             type=d["type"],
@@ -80,11 +80,11 @@ class Event:
 class EventSchemaRegistry:
     """Central registry for event type schemas using JSON Schema draft-07."""
 
-    _schemas: Dict[str, Dict[str, Any]] = {}
+    _schemas: dict[str, dict[str, Any]] = {}
     _lock = threading.Lock()
 
     @classmethod
-    def register(cls, event_type: str, schema: Dict[str, Any]) -> None:
+    def register(cls, event_type: str, schema: dict[str, Any]) -> None:
         with cls._lock:
             if event_type in cls._schemas:
                 logger.warning("Overwriting schema for event type: %s", event_type)
@@ -92,11 +92,11 @@ class EventSchemaRegistry:
             logger.info("Registered schema for event type: %s", event_type)
 
     @classmethod
-    def get_schema(cls, event_type: str) -> Optional[Dict[str, Any]]:
+    def get_schema(cls, event_type: str) -> dict[str, Any] | None:
         return cls._schemas.get(event_type)
 
     @classmethod
-    def validate(cls, event: Event) -> Tuple[bool, Optional[str]]:
+    def validate(cls, event: Event) -> tuple[bool, str | None]:
         schema = cls._schemas.get(event.type)
         if schema is None:
             return True, None
@@ -106,9 +106,9 @@ class EventSchemaRegistry:
         return True, None
 
 
-def _validate_against_schema(data: Any, schema: Dict[str, Any], path: str = "$") -> List[str]:
+def _validate_against_schema(data: Any, schema: dict[str, Any], path: str = "$") -> list[str]:
     """Recursive JSON Schema validator — minimal implementation for common types."""
-    errors: List[str] = []
+    errors: list[str] = []
 
     if "type" in schema:
         expected = schema["type"]
@@ -195,7 +195,7 @@ class DeadLetterRecord:
 
     event_id: str
     event_type: str
-    event_payload: Dict[str, Any]
+    event_payload: dict[str, Any]
     error: str
     failed_handler: str
     attempt_count: int
@@ -210,8 +210,8 @@ class DeadLetterQueue:
     Stores failed events and supports replaying them through the event bus.
     """
 
-    def __init__(self, max_records: int = 10000):
-        self._records: List[DeadLetterRecord] = []
+    def __init__(self, max_records: int = 10000) -> None:
+        self._records: list[DeadLetterRecord] = []
         self._max_records = max_records
         self._lock = threading.Lock()
 
@@ -221,15 +221,15 @@ class DeadLetterQueue:
             if len(self._records) > self._max_records:
                 self._records.pop(0)
 
-    def get_all(self) -> List[DeadLetterRecord]:
+    def get_all(self) -> list[DeadLetterRecord]:
         with self._lock:
             return list(self._records)
 
-    def get_unreplayed(self) -> List[DeadLetterRecord]:
+    def get_unreplayed(self) -> list[DeadLetterRecord]:
         with self._lock:
             return [r for r in self._records if not r.replayed]
 
-    def get_by_event_type(self, event_type: str) -> List[DeadLetterRecord]:
+    def get_by_event_type(self, event_type: str) -> list[DeadLetterRecord]:
         with self._lock:
             return [r for r in self._records if r.event_type == event_type]
 
@@ -295,9 +295,9 @@ class InMemoryEventBus(EventBus):
       - Event replay from in-memory store
     """
 
-    def __init__(self, retry_policy: Optional[RetryPolicy] = None, dlq: Optional[DeadLetterQueue] = None):
-        self._subscribers: Dict[str, List[HandlerFunc]] = defaultdict(list)
-        self._event_store: List[Event] = []
+    def __init__(self, retry_policy: RetryPolicy | None = None, dlq: DeadLetterQueue | None = None) -> None:
+        self._subscribers: dict[str, list[HandlerFunc]] = defaultdict(list)
+        self._event_store: list[Event] = []
         self._max_store: int = 10000
         self._retry_policy = retry_policy or RetryPolicy()
         self._dlq = dlq or DeadLetterQueue()
@@ -350,7 +350,7 @@ class InMemoryEventBus(EventBus):
 
     async def _deliver_with_retry(self, event: Event, handler: HandlerFunc) -> None:
         """Deliver event to a single handler with retry and backoff."""
-        last_error: Optional[str] = None
+        last_error: str | None = None
         for attempt in range(1, self._retry_policy.max_retries + 1):
             try:
                 await handler(event)
@@ -378,7 +378,7 @@ class InMemoryEventBus(EventBus):
             f"to handler {handler.__name__}: {last_error}"
         )
 
-    async def replay_events(self, event_type: Optional[str] = None, from_time: Optional[datetime] = None) -> int:
+    async def replay_events(self, event_type: str | None = None, from_time: datetime | None = None) -> int:
         """Replay stored events — at-least-once delivery guarantee.
 
         Returns the number of events replayed.
@@ -416,7 +416,7 @@ class InMemoryEventBus(EventBus):
         self._running = False
         logger.info("InMemoryEventBus stopped")
 
-    def get_stored_events(self, event_type: Optional[str] = None) -> List[Event]:
+    def get_stored_events(self, event_type: str | None = None) -> list[Event]:
         return [e for e in self._event_store if not event_type or e.type == event_type]
 
     @property
@@ -441,13 +441,13 @@ class RedisEventBus(EventBus):
 
     def __init__(
         self,
-        redis_url: Optional[str] = None,
+        redis_url: str | None = None,
         stream_prefix: str = "fireai:events:",
         consumer_group: str = "fireai-bus",
-        consumer_name: Optional[str] = None,
-        retry_policy: Optional[RetryPolicy] = None,
+        consumer_name: str | None = None,
+        retry_policy: RetryPolicy | None = None,
         dlq_max: int = 10000,
-    ):
+    ) -> None:
         self._redis_url = redis_url or os.getenv("REDIS_URL", "redis://localhost:6379/0")
         self._stream_prefix = stream_prefix
         self._consumer_group = consumer_group
@@ -455,8 +455,8 @@ class RedisEventBus(EventBus):
         self._retry_policy = retry_policy or RetryPolicy()
         self._redis = None
         self._running = False
-        self._poll_task: Optional[asyncio.Task] = None
-        self._handlers: Dict[str, List[HandlerFunc]] = defaultdict(list)
+        self._poll_task: asyncio.Task | None = None
+        self._handlers: dict[str, list[HandlerFunc]] = defaultdict(list)
         self._dlq_max = dlq_max
         self._lock = asyncio.Lock()
 
@@ -538,7 +538,7 @@ class RedisEventBus(EventBus):
         wildcard = list(self._handlers.get("*", []))
 
         for handler in handlers + wildcard:
-            last_error: Optional[str] = None
+            last_error: str | None = None
             for attempt in range(1, self._retry_policy.max_retries + 1):
                 try:
                     await handler(event)
@@ -559,7 +559,7 @@ class RedisEventBus(EventBus):
                 await r.ltrim(dlq_key, 0, self._dlq_max - 1)
                 logger.error("Event %s moved to Redis DLQ after failed delivery to %s", event.id, handler.__name__)
 
-    async def replay_events(self, event_type: Optional[str] = None, from_time: Optional[datetime] = None) -> int:
+    async def replay_events(self, event_type: str | None = None, from_time: datetime | None = None) -> int:
         """Replay events from Redis Streams."""
         r = await self._get_redis()
         count = 0
@@ -609,11 +609,11 @@ class KafkaEventBus(EventBus):
 
     def __init__(
         self,
-        bootstrap_servers: Optional[str] = None,
+        bootstrap_servers: str | None = None,
         consumer_group: str = "fireai-bus",
-        retry_policy: Optional[RetryPolicy] = None,
+        retry_policy: RetryPolicy | None = None,
         dlq_topic_suffix: str = ".dlq",
-    ):
+    ) -> None:
         self._bootstrap_servers = bootstrap_servers or os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
         self._consumer_group = consumer_group
         self._retry_policy = retry_policy or RetryPolicy()
@@ -621,7 +621,7 @@ class KafkaEventBus(EventBus):
         self._producer = None
         self._consumer = None
         self._running = False
-        self._handlers: Dict[str, List[HandlerFunc]] = defaultdict(list)
+        self._handlers: dict[str, list[HandlerFunc]] = defaultdict(list)
         self._lock = asyncio.Lock()
         self._topic_prefix = "fireai."
 
@@ -643,7 +643,7 @@ class KafkaEventBus(EventBus):
         if self._consumer is None and self._handlers:
             try:
                 from aiokafka import AIOKafkaConsumer
-                topics = [f"{self._topic_prefix}{et}" for et in self._handlers.keys()]
+                topics = [f"{self._topic_prefix}{et}" for et in self._handlers]
                 self._consumer = AIOKafkaConsumer(
                     *topics,
                     bootstrap_servers=self._bootstrap_servers,
@@ -707,7 +707,7 @@ class KafkaEventBus(EventBus):
         wildcard = list(self._handlers.get("*", []))
 
         for handler in handlers + wildcard:
-            last_error: Optional[str] = None
+            last_error: str | None = None
             for attempt in range(1, self._retry_policy.max_retries + 1):
                 try:
                     await handler(event)
@@ -727,12 +727,12 @@ class KafkaEventBus(EventBus):
                 await producer.send_and_wait(dlq_topic, json.dumps(event.to_dict()).encode("utf-8"))
                 logger.error("Event %s sent to Kafka DLQ topic %s", event.id, dlq_topic)
 
-    async def replay_events(self, event_type: Optional[str] = None, from_time: Optional[datetime] = None) -> int:
+    async def replay_events(self, event_type: str | None = None, from_time: datetime | None = None) -> int:
         """Replay events by seeking to beginning on Kafka topics."""
         if not self._consumer:
             return 0
         count = 0
-        topics = [f"{self._topic_prefix}{et}" for et in self._handlers.keys()]
+        topics = [f"{self._topic_prefix}{et}" for et in self._handlers]
         if event_type:
             topics = [f"{self._topic_prefix}{event_type}"]
 
@@ -758,7 +758,7 @@ class KafkaEventBus(EventBus):
         """Replay events from Kafka DLQ topics."""
         producer = await self._get_producer()
         count = 0
-        for event_type in self._handlers.keys():
+        for event_type in self._handlers:
             dlq_topic = f"{self._topic_prefix}{event_type}{self._dlq_topic_suffix}"
             try:
                 from aiokafka import AIOKafkaConsumer
@@ -795,7 +795,7 @@ class EventBusMiddleware:
     auditing, and analytics pipelines.
     """
 
-    def __init__(self, event_bus: EventBus, app, exclude_paths: Optional[Set[str]] = None):
+    def __init__(self, event_bus: EventBus, app, exclude_paths: set[str] | None = None) -> None:
         self._event_bus = event_bus
         self.app = app
         self._exclude_paths = exclude_paths or {"/health", "/api/health", "/metrics", "/api/monitor/health"}
@@ -832,7 +832,7 @@ class EventBusMiddleware:
 
         await self._event_bus.publish(event)
 
-        async def send_with_event(message):
+        async def send_with_event(message) -> None:
             if message["type"] == "http.response.start":
                 status_code = message.get("status", 200)
                 duration_ms = round((time.time() - start_time) * 1000, 2)

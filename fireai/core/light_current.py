@@ -1,4 +1,4 @@
-"""fireai.core.light_current — QOMN-FIRE Light Current System Design
+"""fireai.core.light_current — QOMN-FIRE Light Current System Design.
 =================================================================
 
 Deterministic engineering calculations for light current systems.
@@ -26,7 +26,7 @@ import hashlib
 import math
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Tuple
+from typing import Any
 
 # ─── Contract Violation (reuse from contracts_validation if available) ────────
 
@@ -34,7 +34,7 @@ from typing import Any, Tuple
 class ContractViolation(Exception):
     """Raised when input data violates the engineering contract."""
 
-    def __init__(self, message: str, code_ref: str = ""):
+    def __init__(self, message: str, code_ref: str = "") -> None:
         super().__init__(message)
         self.code_ref = code_ref
 
@@ -171,7 +171,7 @@ class StructuredCablingResult:
     separation_mm: float
     cable_type: str
     is_compliant: bool
-    violations: Tuple[str, ...] = ()
+    violations: tuple[str, ...] = ()
     standard_ref: str = "TIA-568.2-D"
     computation_hash: str = ""
 
@@ -193,7 +193,7 @@ class FiberOpticResult:
     color_code: str
     is_compliant: bool
     total_attenuation_db: float = 0.0
-    violations: Tuple[str, ...] = ()
+    violations: tuple[str, ...] = ()
     standard_ref: str = "TIA-598 / TIA-568.3-D"
     computation_hash: str = ""
 
@@ -213,7 +213,7 @@ class CCTVResult:
     height_m: float
     overlap_pct: float
     is_compliant: bool
-    violations: Tuple[str, ...] = ()
+    violations: tuple[str, ...] = ()
     standard_ref: str = "Project Specification / IEC 62676"
     computation_hash: str = ""
 
@@ -232,7 +232,7 @@ class AccessControlResult:
     has_door_switch: bool
     has_rte: bool
     is_compliant: bool
-    violations: Tuple[str, ...] = ()
+    violations: tuple[str, ...] = ()
     standard_ref: str = "NFPA 101 §7.2.1.6 / ADA"
     computation_hash: str = ""
 

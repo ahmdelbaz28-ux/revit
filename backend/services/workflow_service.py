@@ -45,7 +45,7 @@ import os
 import time
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Dict, List, Optional, TypedDict
+from typing import Any, TypedDict
 
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from langgraph.graph import END, StateGraph
@@ -114,51 +114,51 @@ class PipelineState(TypedDict, total=False):
     file_type: str                              # "dxf", "dwg", "pdf", "ifc"
 
     # ── Parse Output ─────────────────────────────────────────────────
-    rooms: List[Dict[str, Any]]                 # Extracted rooms
-    parse_warnings: List[str]                   # Parser warnings
+    rooms: list[dict[str, Any]]                 # Extracted rooms
+    parse_warnings: list[str]                   # Parser warnings
     parse_success: bool                         # Parse completed?
 
     # ── Validation Output ────────────────────────────────────────────
-    validation_result: Dict[str, Any]           # Validation findings
+    validation_result: dict[str, Any]           # Validation findings
     validation_passed: bool                     # All gates passed?
-    validation_evidence: List[Dict[str, Any]]   # Evidence per gate
+    validation_evidence: list[dict[str, Any]]   # Evidence per gate
 
     # ── Environmental Context ────────────────────────────────────────
-    latitude: Optional[float]                   # Building latitude
-    longitude: Optional[float]                  # Building longitude
-    environmental_context: Dict[str, Any]       # Weather, region, elevation, etc.
+    latitude: float | None                   # Building latitude
+    longitude: float | None                  # Building longitude
+    environmental_context: dict[str, Any]       # Weather, region, elevation, etc.
 
     # ── NFPA Analysis Output ─────────────────────────────────────────
-    nfpa_results: List[Dict[str, Any]]          # Per-room NFPA compliance
+    nfpa_results: list[dict[str, Any]]          # Per-room NFPA compliance
     total_detectors: int                        # Total detector count
     coverage_pct: float                         # Overall coverage percentage
     nfpa_compliant: bool                        # NFPA 72 compliant?
 
     # ── Conflict Detection Output ────────────────────────────────────
-    conflicts: List[Dict[str, Any]]             # Detected conflicts
+    conflicts: list[dict[str, Any]]             # Detected conflicts
     conflict_count: int                         # Number of conflicts
     has_critical_conflicts: bool                # Any CRITICAL conflicts?
 
     # ── Memory Context (V73: Mem0 Integration) ───────────────────────
-    memory_context: Dict[str, Any]              # Advisory hints from Mem0
+    memory_context: dict[str, Any]              # Advisory hints from Mem0
     memory_enrichment_time_ms: float            # Time spent on memory enrichment
 
     # ── Human Review Gate ────────────────────────────────────────────
     review_required: bool                       # Does this need human review?
-    review_items: List[Dict[str, Any]]          # Items needing review
-    reviewer_decision: Optional[str]            # "approved" | "rejected" | None
-    reviewer_comments: Optional[str]            # Reviewer notes
-    reviewer_timestamp: Optional[str]           # ISO 8601 timestamp (V82: also stored as review_timestamp in audit trail)
+    review_items: list[dict[str, Any]]          # Items needing review
+    reviewer_decision: str | None            # "approved" | "rejected" | None
+    reviewer_comments: str | None            # Reviewer notes
+    reviewer_timestamp: str | None           # ISO 8601 timestamp (V82: also stored as review_timestamp in audit trail)
 
     # ── Report Output ────────────────────────────────────────────────
-    report: Dict[str, Any]                      # Final design report
+    report: dict[str, Any]                      # Final design report
     report_sha256: str                          # Report integrity hash
 
     # ── Stuck Detection (V77) ────────────────────────────────────────
     stuck_detected: bool                        # Was a stuck condition detected?
-    stuck_node: Optional[str]                   # Which node is stuck
-    stuck_duration_seconds: Optional[float]     # How long the node has been stuck
-    node_timings: Dict[str, Any]                # Per-node timing data
+    stuck_node: str | None                   # Which node is stuck
+    stuck_duration_seconds: float | None     # How long the node has been stuck
+    node_timings: dict[str, Any]                # Per-node timing data
 
     # ── Engineer Identity (V85: Dynamic scoping) ──────────────────────
     engineer_id: str                            # Engineer identifier for Mem0 user-scoping
@@ -167,9 +167,9 @@ class PipelineState(TypedDict, total=False):
     workflow_id: str                            # Unique workflow ID
     status: str                                 # WorkflowStatus value
     started_at: str                             # ISO 8601 start time
-    completed_at: Optional[str]                 # ISO 8601 end time
-    transition_log: List[Dict[str, Any]]        # Full audit trail
-    error_message: Optional[str]                # Error details if FAILED
+    completed_at: str | None                 # ISO 8601 end time
+    transition_log: list[dict[str, Any]]        # Full audit trail
+    error_message: str | None                # Error details if FAILED
 
 
 # ── State Transition Logger ──────────────────────────────────────────────────
@@ -303,7 +303,7 @@ def node_parse(state: PipelineState) -> PipelineState:
 
             extractor = GeometryExtractor(file_path)
             walls = extractor.extract_walls()
-            rooms_result, report = extract_rooms_from_walls(walls, pdf_path=file_path)
+            rooms_result, _report = extract_rooms_from_walls(walls, pdf_path=file_path)
 
             rooms = [
                 {
@@ -594,7 +594,7 @@ def node_memory_enrich(state: PipelineState) -> PipelineState:
     )
 
 
-async def _fetch_environmental_data(lat: float, lon: float) -> Dict[str, Any]:
+async def _fetch_environmental_data(lat: float, lon: float) -> dict[str, Any]:
     """Fetch all environmental data in parallel (async).
 
     V84: Extracted from node_environmental_context to enable proper
@@ -1295,7 +1295,7 @@ def should_proceed_after_validation(state: PipelineState) -> str:
 def should_require_review(state: PipelineState) -> str:
     """Route after conflict detection:
     - Critical conflicts → human review gate
-    - No critical issues → generate report directly
+    - No critical issues → generate report directly.
     """
     if state.get("review_required", False):
         return "human_review_gate"
@@ -1306,7 +1306,7 @@ def should_proceed_after_review(state: PipelineState) -> str:
     """Route after human review:
     - Approved → generate report
     - Rejected → END (stop, do not generate)
-    - No decision yet → END (waiting for interrupt)
+    - No decision yet → END (waiting for interrupt).
     """
     decision = state.get("reviewer_decision")
     if decision == "approved":
@@ -1436,8 +1436,8 @@ class WorkflowService:
     a node exceeds its timeout threshold.
     """
 
-    def __init__(self):
-        self._workflows: Dict[str, Dict[str, Any]] = {}
+    def __init__(self) -> None:
+        self._workflows: dict[str, dict[str, Any]] = {}
         # V129 FIX: Expose _langgraph_available and is_initialized so that
         # app.py lifespan can correctly report service status instead of
         # falling through to the "DEGRADED" warning path.
@@ -1508,11 +1508,11 @@ class WorkflowService:
     async def start_workflow(
         self,
         file_path: str,
-        latitude: Optional[float] = None,
-        longitude: Optional[float] = None,
+        latitude: float | None = None,
+        longitude: float | None = None,
         skip_human_review: bool = False,
         engineer_id: str = "engineer_default",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Start a new FireAI analysis workflow.
 
         Args:
@@ -1621,7 +1621,7 @@ class WorkflowService:
         self,
         graph,
         initial_state: PipelineState,
-        config: Dict[str, Any],
+        config: dict[str, Any],
     ) -> PipelineState:
         """Run the workflow graph and return final state.
 
@@ -1723,7 +1723,7 @@ class WorkflowService:
         except Exception as e:
             logger.debug("Langfuse score logging failed (non-blocking): %s", e)
 
-    async def get_workflow_status(self, workflow_id: str) -> Optional[Dict[str, Any]]:
+    async def get_workflow_status(self, workflow_id: str) -> dict[str, Any] | None:
         """Get the current status of a workflow."""
         if workflow_id not in self._workflows:
             return None
@@ -1743,7 +1743,7 @@ class WorkflowService:
             "node_timings": state.get("node_timings", {}),
         }
 
-    async def check_stuck_workflow(self, workflow_id: str) -> Optional[Dict[str, Any]]:
+    async def check_stuck_workflow(self, workflow_id: str) -> dict[str, Any] | None:
         """Check if a specific workflow is stuck (V77).
 
         Uses the StuckDetector to determine if a workflow node has
@@ -1794,7 +1794,7 @@ class WorkflowService:
 
         return result_dict
 
-    async def get_all_stuck_workflows(self) -> List[Dict[str, Any]]:
+    async def get_all_stuck_workflows(self) -> list[dict[str, Any]]:
         """Get all currently stuck workflows (V77).
 
         Used for monitoring dashboards and alerting systems.
@@ -1844,8 +1844,8 @@ class WorkflowService:
     async def approve_workflow(
         self,
         workflow_id: str,
-        reviewer_comments: Optional[str] = None,
-    ) -> Optional[Dict[str, Any]]:
+        reviewer_comments: str | None = None,
+    ) -> dict[str, Any] | None:
         """Approve a workflow at the human review gate.
 
         Resumes the workflow and generates the final report.
@@ -1909,8 +1909,8 @@ class WorkflowService:
     async def reject_workflow(
         self,
         workflow_id: str,
-        reviewer_comments: Optional[str] = None,
-    ) -> Optional[Dict[str, Any]]:
+        reviewer_comments: str | None = None,
+    ) -> dict[str, Any] | None:
         """Reject a workflow at the human review gate.
 
         Marks the workflow as REJECTED and does NOT generate a report.
@@ -1950,7 +1950,7 @@ class WorkflowService:
             "reviewer_comments": reviewer_comments,
         }
 
-    async def get_audit_trail(self, workflow_id: str) -> Optional[List[Dict[str, Any]]]:
+    async def get_audit_trail(self, workflow_id: str) -> list[dict[str, Any]] | None:
         """Get the full audit trail for a workflow."""
         if workflow_id not in self._workflows:
             return None
@@ -1961,7 +1961,7 @@ class WorkflowService:
     async def resume_from_checkpoint(
         self,
         workflow_id: str,
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """Resume a workflow from its last checkpoint after a crash.
 
         V75 ADDITION: This method enables crash recovery by reading the
@@ -2100,7 +2100,7 @@ class WorkflowService:
                 "error": f"Recovery failed: {type(e).__name__}: {e}",
             }
 
-    async def list_recoverable_workflows(self) -> List[Dict[str, Any]]:
+    async def list_recoverable_workflows(self) -> list[dict[str, Any]]:
         """List all workflows that have persisted checkpoints and can be recovered.
 
         This is useful after a server restart to find in-progress workflows
@@ -2124,7 +2124,7 @@ class WorkflowService:
 
 # ── Singleton Management ─────────────────────────────────────────────────────
 
-_workflow_service: Optional[WorkflowService] = None
+_workflow_service: WorkflowService | None = None
 
 
 def get_workflow_service() -> WorkflowService:

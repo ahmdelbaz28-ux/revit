@@ -1,4 +1,4 @@
-"""fireai/core/density_optimizer_v2.py
+"""fireai/core/density_optimizer_v2.py.
 ===================================
 Multiprocessing batch API for DensityOptimizer.
 
@@ -51,7 +51,7 @@ import multiprocessing
 import os
 import time
 from dataclasses import dataclass, field
-from typing import Any, Dict, Tuple
+from typing import Any
 
 from fireai.version import FIREAI_VERSION
 
@@ -119,7 +119,7 @@ class BatchResult:
 
     """
 
-    results: Dict[str, Any] = field(default_factory=dict)
+    results: dict[str, Any] = field(default_factory=dict)
     total_rooms: int = 0
     successful: int = 0
     failed: int = 0
@@ -134,7 +134,7 @@ class BatchResult:
 # ════════════════════════════════════════════════════════════════════════════
 
 
-def _optimize_room_worker(args: Tuple) -> Tuple[str, Any]:
+def _optimize_room_worker(args: tuple) -> tuple[str, Any]:
     """Worker function for multiprocessing batch optimization.
 
     Must be at module level for pickle serialization.
@@ -240,10 +240,10 @@ class DensityOptimizerV2:
 
     def __init__(
         self,
-        n_workers: int = None,
+        n_workers: int | None = None,
         chunk_size: int = 10,
         timeout_per_room_s: float = 60.0,
-    ):
+    ) -> None:
         cpu_count = os.cpu_count() or 4
         if n_workers is None:
             self.n_workers = min(4, cpu_count)
@@ -256,7 +256,7 @@ class DensityOptimizerV2:
         if DensityOptimizer is None:
             log.warning("DensityOptimizer not available — batch optimization will return errors for all rooms")
 
-    def optimize_batch(self, room_specs: Dict[str, Any], detector_type: str = "smoke", **kwargs) -> BatchResult:
+    def optimize_batch(self, room_specs: dict[str, Any], detector_type: str = "smoke", **kwargs) -> BatchResult:
         """Optimize detector placement for a batch of rooms.
 
         Parameters
@@ -328,13 +328,13 @@ class DensityOptimizerV2:
 
     def _optimize_sequential(
         self,
-        room_specs: Dict[str, Any],
+        room_specs: dict[str, Any],
         detector_type: str,
         kwargs: dict,
         t0: float,
     ) -> BatchResult:
         """Sequential optimization (n_workers=1 or <=1 room)."""
-        results: Dict[str, Any] = {}
+        results: dict[str, Any] = {}
         successful = 0
         failed = 0
 
@@ -367,7 +367,7 @@ class DensityOptimizerV2:
 
     def _optimize_parallel(
         self,
-        room_specs: Dict[str, Any],
+        room_specs: dict[str, Any],
         detector_type: str,
         kwargs: dict,
         t0: float,
@@ -376,7 +376,7 @@ class DensityOptimizerV2:
         # Prepare work items
         work_items = [(room_id, spec, detector_type, kwargs) for room_id, spec in room_specs.items()]
 
-        results: Dict[str, Any] = {}
+        results: dict[str, Any] = {}
         successful = 0
         failed = 0
 
@@ -480,7 +480,7 @@ def _self_test():
     passed = 0
     failed = 0
 
-    def check(name, condition, detail=""):
+    def check(name, condition, detail="") -> None:
         nonlocal passed, failed
         if condition:
             print(f"  [PASS] {name}")

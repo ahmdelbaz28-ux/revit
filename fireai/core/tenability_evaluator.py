@@ -1,4 +1,4 @@
-"""fireai.core.tenability_evaluator — Tenability Assessment for Egress
+"""fireai.core.tenability_evaluator — Tenability Assessment for Egress.
 ===================================================================
 
 Implements tenability criteria for occupant egress during fire:

@@ -1,4 +1,4 @@
-"""fireai.core.contracts_validation — Input Contract Validation
+"""fireai.core.contracts_validation — Input Contract Validation.
 =============================================================
 
 Validates room input payloads BEFORE they enter the pipeline.
@@ -21,7 +21,7 @@ This module is the GATEKEEPER. No invalid data enters the pipeline.
 from __future__ import annotations
 
 import math
-from typing import Any, Dict, List
+from typing import Any
 
 
 class ContractViolation(Exception):
@@ -31,7 +31,7 @@ class ContractViolation(Exception):
     invalid data. The caller must fix the input and resubmit.
     """
 
-    def __init__(self, message: str, field: str = "", value: Any = None):
+    def __init__(self, message: str, field: str = "", value: Any = None) -> None:
         super().__init__(message)
         self.field = field
         self.value = value
@@ -79,7 +79,7 @@ _MIN_DERATING_FACTOR = 0.5  # Minimum 50% derating (extreme aging)
 # ─── NaN/Inf Detection ──────────────────────────────────────────────────────
 
 
-def _has_nan_inf(value: Any, path: str = "") -> List[str]:
+def _has_nan_inf(value: Any, path: str = "") -> list[str]:
     """Recursively check for NaN/Inf in any data structure."""
     violations = []
 
@@ -103,7 +103,7 @@ def _has_nan_inf(value: Any, path: str = "") -> List[str]:
 # ─── Polygon Validation ─────────────────────────────────────────────────────
 
 
-def _validate_polygon(polygon: Any) -> List[str]:
+def _validate_polygon(polygon: Any) -> list[str]:
     """Validate room polygon for geometric correctness."""
     warnings = []
 
@@ -132,7 +132,7 @@ def _validate_polygon(polygon: Any) -> List[str]:
 # ─── Area Computation ───────────────────────────────────────────────────────
 
 
-def _compute_area_from_polygon(polygon: List) -> float:
+def _compute_area_from_polygon(polygon: list) -> float:
     """Compute polygon area using the Shoelace formula.
 
     Returns signed area - positive if vertices are counterclockwise.
@@ -154,7 +154,7 @@ def _compute_area_from_polygon(polygon: List) -> float:
 # ─── Main Validation Function ───────────────────────────────────────────────
 
 
-def validate_room_input(payload: Dict[str, Any]) -> Dict[str, Any]:
+def validate_room_input(payload: dict[str, Any]) -> dict[str, Any]:
     """Validate room input payload against the engineering contract.
 
     Args:
@@ -184,7 +184,7 @@ def validate_room_input(payload: Dict[str, Any]) -> Dict[str, Any]:
         )
 
     # Initialize warnings list early for QOMN-FIRE Layer 0 flagging
-    warnings: List[str] = []
+    warnings: list[str] = []
 
     # ── Step 2: Required Field Check ──────────────────────────────────────
     for field_name, (_expected_type, description) in _REQUIRED_FIELDS.items():
@@ -486,7 +486,7 @@ def validate_battery_params(
     alarm_minutes: float = 5.0,
     derating: float = 0.85,
     safety_margin: float = 0.20,
-) -> Dict[str, float]:
+) -> dict[str, float]:
     """Validate all battery calculation parameters against QOMN-FIRE Layer 0 guards.
 
     NFPA 72 §10.6.7 — Battery capacity calculation:

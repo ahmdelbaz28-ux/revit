@@ -1,4 +1,4 @@
-"""fireai.core.security_logging — Security Event Audit Logging & Log Rotation
+"""fireai.core.security_logging — Security Event Audit Logging & Log Rotation.
 ==========================================================================
 
 Centralized security event logging for the FireAI system. Provides:
@@ -46,7 +46,7 @@ import re
 import threading
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -116,7 +116,7 @@ _SENSITIVE_ENV_VARS = frozenset(
 # V105 FIX: The env var cache is refreshed before each mask_sensitive()
 # call to handle runtime key rotation. This is safe because os.getenv()
 # is a C-level call that's extremely fast (~50ns per call for 7 vars).
-_ENV_VALUE_CACHE: Dict[str, str] = {}
+_ENV_VALUE_CACHE: dict[str, str] = {}
 _ENV_CACHE_TIMESTAMP: float = 0.0
 
 
@@ -468,7 +468,7 @@ class SecurityAuditLogger:
 
     def __init__(
         self,
-        log_dir: Optional[Path] = None,
+        log_dir: Path | None = None,
         max_bytes: int = _DEFAULT_MAX_BYTES,
         backup_count: int = _DEFAULT_BACKUP_COUNT,
     ) -> None:
@@ -630,7 +630,7 @@ class SecurityAuditLogger:
 
             return event_id
 
-    def verify_chain(self) -> Dict[str, Any]:
+    def verify_chain(self) -> dict[str, Any]:
         """Verify the integrity of the security audit log chain.
 
         V105 FIX (CRITICAL-1): Now uses _compute_chain_hash() for

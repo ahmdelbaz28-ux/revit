@@ -1,4 +1,4 @@
-"""fireai/integration/ar_vr_visualizer.py
+"""fireai/integration/ar_vr_visualizer.py.
 ========================================
 AR/VR Visualization — Generates 3D scene descriptions for AR/VR rendering.
 
@@ -33,7 +33,7 @@ import struct
 import uuid
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -67,10 +67,10 @@ class Vec3:
     y: float = 0.0
     z: float = 0.0
 
-    def to_list(self) -> List[float]:
+    def to_list(self) -> list[float]:
         return [self.x, self.y, self.z]
 
-    def to_tuple(self) -> Tuple[float, float, float]:
+    def to_tuple(self) -> tuple[float, float, float]:
         return (self.x, self.y, self.z)
 
 
@@ -107,7 +107,7 @@ class Material:
     emissive: str = "#000000"
     side: str = "double"
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "name": self.name,
             "color": self.color,
@@ -128,8 +128,8 @@ class MeshGeometry:
     depth: float = 1.0
     radius: float = 0.5
 
-    def to_dict(self) -> Dict[str, Any]:
-        d: Dict[str, Any] = {"type": self.type}
+    def to_dict(self) -> dict[str, Any]:
+        d: dict[str, Any] = {"type": self.type}
         if self.type in ("box",):
             d.update(width=self.width, height=self.height, depth=self.depth)
         elif self.type in ("sphere", "cylinder"):
@@ -146,9 +146,9 @@ class SceneNode:
     position: Vec3 = field(default_factory=Vec3)
     rotation: Vec3 = field(default_factory=Vec3)
     scale: Vec3 = field(default_factory=lambda: Vec3(1, 1, 1))
-    geometry: Optional[MeshGeometry] = None
-    material: Optional[Material] = None
-    children: List[SceneNode] = field(default_factory=list)
+    geometry: MeshGeometry | None = None
+    material: Material | None = None
+    children: list[SceneNode] = field(default_factory=list)
     is_coverage: bool = False
     is_annotation: bool = False
     annotation_text: str = ""
@@ -156,8 +156,8 @@ class SceneNode:
     lod_min_distance: float = 0.0
     lod_max_distance: float = float("inf")
 
-    def to_dict(self) -> Dict[str, Any]:
-        d: Dict[str, Any] = {
+    def to_dict(self) -> dict[str, Any]:
+        d: dict[str, Any] = {
             "name": self.name,
             "node_id": self.node_id,
             "position": self.position.to_list(),
@@ -192,11 +192,11 @@ class CameraKeyframe:
 @dataclass
 class CameraPath:
     name: str = "guided_tour"
-    keyframes: List[CameraKeyframe] = field(default_factory=list)
+    keyframes: list[CameraKeyframe] = field(default_factory=list)
     loop: bool = True
     autoplay: bool = True
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "name": self.name,
             "loop": self.loop,
@@ -215,14 +215,14 @@ class CameraPath:
 @dataclass
 class Scene:
     name: str = ""
-    nodes: List[SceneNode] = field(default_factory=list)
-    materials: List[Material] = field(default_factory=list)
-    camera_paths: List[CameraPath] = field(default_factory=list)
-    bounding_box: Optional[BoundingBox] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    nodes: list[SceneNode] = field(default_factory=list)
+    materials: list[Material] = field(default_factory=list)
+    camera_paths: list[CameraPath] = field(default_factory=list)
+    bounding_box: BoundingBox | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
-        d: Dict[str, Any] = {
+    def to_dict(self) -> dict[str, Any]:
+        d: dict[str, Any] = {
             "name": self.name,
             "nodes": [n.to_dict() for n in self.nodes],
             "materials": [m.to_dict() for m in self.materials],
@@ -258,7 +258,7 @@ class LODManager:
         self._total_nodes = total_nodes
         self._thresholds = self._compute_thresholds()
 
-    def _compute_thresholds(self) -> List[Tuple[float, float]]:
+    def _compute_thresholds(self) -> list[tuple[float, float]]:
         if self._total_nodes <= 50:
             return [(0.0, float("inf"))]
         if self._total_nodes <= 200:
@@ -302,12 +302,12 @@ class DesignData:
     """
 
     design_id: str = ""
-    rooms: List[Dict[str, Any]] = field(default_factory=list)
-    detectors: List[Dict[str, Any]] = field(default_factory=list)
-    notification_appliances: List[Dict[str, Any]] = field(default_factory=list)
-    panels: List[Dict[str, Any]] = field(default_factory=list)
-    cables: List[Dict[str, Any]] = field(default_factory=list)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    rooms: list[dict[str, Any]] = field(default_factory=list)
+    detectors: list[dict[str, Any]] = field(default_factory=list)
+    notification_appliances: list[dict[str, Any]] = field(default_factory=list)
+    panels: list[dict[str, Any]] = field(default_factory=list)
+    cables: list[dict[str, Any]] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 # ===========================================================================
@@ -319,7 +319,7 @@ class DesignData:
 class CoverageResult:
     is_covered: bool = False
     coverage_percentage: float = 0.0
-    uncovered_areas: List[Tuple[float, float]] = field(default_factory=list)
+    uncovered_areas: list[tuple[float, float]] = field(default_factory=list)
     detectors_in_coverage: int = 0
     coverage_radius_m: float = 0.0
     max_gap_m: float = 0.0
@@ -349,7 +349,7 @@ class ARVRVisualizer:
     """
 
     # Detector type to color mapping
-    DETECTOR_COLORS: Dict[str, str] = {
+    DETECTOR_COLORS: dict[str, str] = {
         "SMOKE": DetectorColor.SMOKE.value,
         "SMOKE_PHOTOELECTRIC": DetectorColor.SMOKE.value,
         "SMOKE_IONIZATION": DetectorColor.SMOKE.value,
@@ -598,7 +598,7 @@ class ARVRVisualizer:
 
     def _compute_bounding_box(self, design: DesignData) -> BoundingBox:
         """Compute the bounding box from room polygons."""
-        all_points: List[Tuple[float, float, float]] = []
+        all_points: list[tuple[float, float, float]] = []
 
         for room in design.rooms:
             poly = room.get("polygon", [])
@@ -941,7 +941,7 @@ class ARVRVisualizer:
                 continue
 
             # Create a series of small cylinders/segments along the route
-            points: List[Tuple[float, float, float]] = []
+            points: list[tuple[float, float, float]] = []
             route_len = len(route)
             if route_len >= 6 and route_len % 3 == 0:
                 for i in range(0, route_len, 3):
@@ -1069,7 +1069,7 @@ class ARVRVisualizer:
         self,
         scene: Scene,
         device_id: str,
-    ) -> Optional[SceneNode]:
+    ) -> SceneNode | None:
         """Recursively find a node by device_id."""
         for node in scene.nodes:
             if node.device_id == device_id:
@@ -1083,7 +1083,7 @@ class ARVRVisualizer:
         self,
         node: SceneNode,
         device_id: str,
-    ) -> Optional[SceneNode]:
+    ) -> SceneNode | None:
         for child in node.children:
             if child.device_id == device_id:
                 return child
@@ -1096,12 +1096,12 @@ class ARVRVisualizer:
 
     def _scene_to_threejs(self, scene: Scene) -> dict:
         """Convert the scene graph to Three.js JSON Object format (v3.1)."""
-        geometries: List[dict] = []
-        materials_list: List[dict] = []
-        nodes_list: List[dict] = []
+        geometries: list[dict] = []
+        materials_list: list[dict] = []
+        nodes_list: list[dict] = []
 
-        geo_map: Dict[str, int] = {}
-        mat_map: Dict[str, int] = {}
+        geo_map: dict[str, int] = {}
+        mat_map: dict[str, int] = {}
 
         def _build_geo_key(geom: MeshGeometry) -> str:
             return json.dumps(geom.to_dict(), sort_keys=True)
@@ -1196,14 +1196,14 @@ class ARVRVisualizer:
         if not scene.nodes:
             return self._make_empty_glb()
 
-        nodes_json: List[dict] = []
-        meshes_json: List[dict] = []
-        accessors_json: List[dict] = []
-        buffer_views: List[dict] = []
-        materials_json: List[dict] = []
-        all_positions: List[float] = []
-        all_indices: List[int] = []
-        mat_refs: List[Optional[int]] = []
+        nodes_json: list[dict] = []
+        meshes_json: list[dict] = []
+        accessors_json: list[dict] = []
+        buffer_views: list[dict] = []
+        materials_json: list[dict] = []
+        all_positions: list[float] = []
+        all_indices: list[int] = []
+        mat_refs: list[int | None] = []
 
         # Collect vertex data for each node
         for _node_idx, node in enumerate(scene.nodes):
@@ -1372,7 +1372,7 @@ class ARVRVisualizer:
     def _generate_primitive_mesh(
         self,
         geom: MeshGeometry,
-    ) -> Tuple[List[float], List[int]]:
+    ) -> tuple[list[float], list[int]]:
         """Generate vertex positions and triangle indices for a primitive mesh.
 
         Returns (positions, indices) where positions is a flat list of
@@ -1391,7 +1391,7 @@ class ARVRVisualizer:
         w: float,
         h: float,
         d: float,
-    ) -> Tuple[List[float], List[int]]:
+    ) -> tuple[list[float], list[int]]:
         hw, hh, hd = w / 2, h / 2, d / 2
         verts = [
             -hw, -hh, -hd,  hw, -hh, -hd,  hw,  hh, -hd, -hw,  hh, -hd,
@@ -1411,9 +1411,9 @@ class ARVRVisualizer:
         self,
         radius: float,
         segments: int = 16,
-    ) -> Tuple[List[float], List[int]]:
-        verts: List[float] = []
-        indices: List[int] = []
+    ) -> tuple[list[float], list[int]]:
+        verts: list[float] = []
+        indices: list[int] = []
 
         for lat in range(segments + 1):
             theta = math.pi * lat / segments
@@ -1440,9 +1440,9 @@ class ARVRVisualizer:
         radius: float,
         height: float,
         segments: int = 16,
-    ) -> Tuple[List[float], List[int]]:
-        verts: List[float] = []
-        indices: List[int] = []
+    ) -> tuple[list[float], list[int]]:
+        verts: list[float] = []
+        indices: list[int] = []
 
         hh = height / 2
 
@@ -1493,7 +1493,7 @@ class ARVRVisualizer:
 
         return verts, indices
 
-    def _hex_to_rgba(self, hex_color: str, alpha: float = 1.0) -> List[float]:
+    def _hex_to_rgba(self, hex_color: str, alpha: float = 1.0) -> list[float]:
         """Convert hex color string to RGBA float list."""
         hex_color = hex_color.lstrip("#")
         if len(hex_color) == 3:
@@ -1507,7 +1507,7 @@ class ARVRVisualizer:
 
     def _scene_to_aframe(self, scene: Scene) -> str:
         """Generate a self-contained A-Frame HTML document."""
-        html_parts: List[str] = []
+        html_parts: list[str] = []
         html_parts.append('<!DOCTYPE html>')
         html_parts.append('<html>')
         html_parts.append('<head>')
@@ -1666,7 +1666,7 @@ class ARVRVisualizer:
 
         return "\n".join(html_parts)
 
-    def _aframe_add_room_group(self, parts: List[str], node: SceneNode) -> None:
+    def _aframe_add_room_group(self, parts: list[str], node: SceneNode) -> None:
         pos = node.position
         parts.append(f'  <a-entity position="{pos.x} {pos.y} {pos.z}">')
         for child in node.children:
@@ -1675,7 +1675,7 @@ class ARVRVisualizer:
 
     def _aframe_add_box(
         self,
-        parts: List[str],
+        parts: list[str],
         node: SceneNode,
         indent: int = 2,
     ) -> None:
@@ -1714,7 +1714,7 @@ class ARVRVisualizer:
                 f'</a-cylinder>'
             )
 
-    def _aframe_add_detector(self, parts: List[str], node: SceneNode) -> None:
+    def _aframe_add_detector(self, parts: list[str], node: SceneNode) -> None:
         self._aframe_add_box(parts, node)
         if node.annotation_text:
             pos = node.position
@@ -1725,16 +1725,16 @@ class ARVRVisualizer:
                 f'</a-text>'
             )
 
-    def _aframe_add_nac(self, parts: List[str], node: SceneNode) -> None:
+    def _aframe_add_nac(self, parts: list[str], node: SceneNode) -> None:
         self._aframe_add_box(parts, node)
 
-    def _aframe_add_panel(self, parts: List[str], node: SceneNode) -> None:
+    def _aframe_add_panel(self, parts: list[str], node: SceneNode) -> None:
         self._aframe_add_box(parts, node)
 
-    def _aframe_add_cable_segment(self, parts: List[str], node: SceneNode) -> None:
+    def _aframe_add_cable_segment(self, parts: list[str], node: SceneNode) -> None:
         self._aframe_add_box(parts, node)
 
-    def _aframe_add_coverage(self, parts: List[str], node: SceneNode) -> None:
+    def _aframe_add_coverage(self, parts: list[str], node: SceneNode) -> None:
         """Add coverage visualization as a wireframe or translucent sphere."""
         mat = node.material or Material(color="#4CAF50", opacity=0.5, transparent=True)
         pos = node.position
@@ -1767,7 +1767,7 @@ class ARVRVisualizer:
         For production use, this USDA text should be written to a file
         and packaged with Apple's usdzip or usdpython tools.
         """
-        lines: List[str] = []
+        lines: list[str] = []
         lines.append("#usda 1.0")
         lines.append('(')
         lines.append('    defaultPrim = "FireAlarmScene"')
@@ -1777,7 +1777,7 @@ class ARVRVisualizer:
         lines.append('')
 
         # Define materials
-        mat_defs: Dict[str, str] = {}
+        mat_defs: dict[str, str] = {}
         for mat in scene.materials:
             mat_name = f"mat_{mat.name.replace(' ', '_')}"
             mat_defs[mat.name] = mat_name
@@ -1835,9 +1835,9 @@ class ARVRVisualizer:
 
     def _usdz_add_node(
         self,
-        lines: List[str],
+        lines: list[str],
         node: SceneNode,
-        mat_defs: Dict[str, str],
+        mat_defs: dict[str, str],
         indent: int = 4,
     ) -> None:
         prefix = " " * indent

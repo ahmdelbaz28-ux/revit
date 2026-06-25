@@ -28,7 +28,6 @@ Falls back to brute-force sampling if Shapely Voronoi unavailable.
 import logging
 import math
 from dataclasses import dataclass
-from typing import List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +46,7 @@ class VoronoiResult:
 
     is_covered: bool
     max_gap_m: float  # Distance from farthest point to nearest detector
-    max_gap_location: Optional[Tuple[float, float]] = None
+    max_gap_location: tuple[float, float] | None = None
     gap_exceeds_radius: bool = False
     voronoi_available: bool = True
     n_voronoi_cells: int = 0
@@ -70,7 +69,7 @@ class VoronoiVerifier:
     sampling along detector midpoints and room critical points.
     """
 
-    def __init__(self, coverage_radius: float, tolerance: float = 0.05):
+    def __init__(self, coverage_radius: float, tolerance: float = 0.05) -> None:
         """Initialize Voronoi verifier.
 
         Args:
@@ -86,7 +85,7 @@ class VoronoiVerifier:
         self,
         width: float,
         length: float,
-        detectors: List[Tuple[float, float]],
+        detectors: list[tuple[float, float]],
     ) -> VoronoiResult:
         """Verify coverage using Voronoi gap analysis.
 
@@ -116,7 +115,7 @@ class VoronoiVerifier:
         self,
         width: float,
         length: float,
-        detectors: List[Tuple[float, float]],
+        detectors: list[tuple[float, float]],
     ) -> VoronoiResult:
         """Voronoi-based verification using Shapely."""
         try:
@@ -204,7 +203,7 @@ class VoronoiVerifier:
         self,
         width: float,
         length: float,
-        detectors: List[Tuple[float, float]],
+        detectors: list[tuple[float, float]],
     ) -> VoronoiResult:
         """Brute-force verification using critical point sampling.
 

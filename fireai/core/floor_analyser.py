@@ -1,4 +1,4 @@
-"""fireai/core/floor_analyser.py  V3.0
+"""fireai/core/floor_analyser.py  V3.0.
 ====================================
 Safe, sequential floor-level fire alarm design analyser.
 
@@ -102,7 +102,7 @@ from __future__ import annotations
 import logging
 import time
 from dataclasses import dataclass, field
-from typing import List, Literal, Optional
+from typing import Literal
 
 from fireai.core.geometry_utils import (
     grid_points_in_polygon,
@@ -188,41 +188,41 @@ class RoomSummary:
     method: str = ""
     compliant: bool = False
     safe_to_submit: bool = False
-    violations: List[str] = field(default_factory=list)
-    warnings: List[str] = field(default_factory=list)
+    violations: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
     theoretical_lower_bound: int = 0
     efficiency_ratio: float = 0.0
     duct_devices: int = 0
     refused: bool = False
-    refusal_reason: Optional[str] = None
+    refusal_reason: str | None = None
     used_mip: bool = False
-    mip_proven_optimal_count: Optional[int] = None
-    mip_solve_time_s: Optional[float] = None
-    mip_status: Optional[str] = None
+    mip_proven_optimal_count: int | None = None
+    mip_solve_time_s: float | None = None
+    mip_status: str | None = None
     analysis_ms: float = 0.0
     # Phase 7: Variable Coverage Radius tracking fields
     coverage_radius_used: float = DETECTOR_RADIUS  # V20.2 FIX: was stale 6.40; correct R=0.7×9.1=6.37 at h≤3.0m
-    ceiling_height: Optional[float] = None
-    radius_warning: Optional[str] = None
+    ceiling_height: float | None = None
+    radius_warning: str | None = None
     nfpa_table_ref: str = "NFPA 72-2022 Table 17.6.3.1.1"
     # V3.0: Scenario verification fields
-    scenario_pass: Optional[bool] = None
+    scenario_pass: bool | None = None
     scenario_fail_count: int = 0
-    scenario_worst_time_s: Optional[float] = None
+    scenario_worst_time_s: float | None = None
     scenario_blind_spots: int = 0
     scenario_battery_ms: float = 0.0
     # V3.1: Duct detector fields
-    duct_results: List = field(default_factory=list)
-    duct_warnings: List[str] = field(default_factory=list)
+    duct_results: list = field(default_factory=list)
+    duct_warnings: list[str] = field(default_factory=list)
     # V4.0: Non-rectangular room support
     shape_type: str = "rectangular"  # "rectangular", "l_shape", "polygon"
-    polygon_coords: Optional[List] = None  # original polygon for non-rectangular rooms
+    polygon_coords: list | None = None  # original polygon for non-rectangular rooms
     # V5.0: Room dimensions for project learning (bounding rectangle)
     width: float = 0.0  # bounding rectangle width (metres)
     length: float = 0.0  # bounding rectangle length (metres)
     # V6.0: Polygon verifier (Greedy Set Cover) — verification only
-    polygon_verifier_count: Optional[int] = None  # detectors from Greedy Set Cover on actual polygon
-    polygon_verifier_method: Optional[str] = None  # "greedy_polygon" or None
+    polygon_verifier_count: int | None = None  # detectors from Greedy Set Cover on actual polygon
+    polygon_verifier_method: str | None = None  # "greedy_polygon" or None
     polygon_verifier_ms: float = 0.0  # verifier runtime in ms
     polygon_optimality_gap: bool = False  # True if greedy polygon proves fewer detectors
 
@@ -246,17 +246,17 @@ class FloorReport:
     """
 
     floor_id: str
-    room_summaries: List[RoomSummary] = field(default_factory=list)
+    room_summaries: list[RoomSummary] = field(default_factory=list)
     total_detectors: int = 0
     total_theoretical_lower_bound: int = 0
     fully_compliant: bool = False
     safe_to_submit: bool = False
-    non_compliant_rooms: List[str] = field(default_factory=list)
-    unsafe_rooms: List[str] = field(default_factory=list)
-    floor_warnings: List[str] = field(default_factory=list)
+    non_compliant_rooms: list[str] = field(default_factory=list)
+    unsafe_rooms: list[str] = field(default_factory=list)
+    floor_warnings: list[str] = field(default_factory=list)
     analysis_time_s: float = 0.0
     # V3.0: Scenario verification aggregation
-    scenario_non_compliant_rooms: List[str] = field(default_factory=list)
+    scenario_non_compliant_rooms: list[str] = field(default_factory=list)
     # V114 FIX: Fail-safe — must be consistent with safe_to_submit=False
     scenario_safe_to_submit: bool = False
     # V3.1: Duct detector aggregation
@@ -331,8 +331,8 @@ class FloorAnalyser:
         self,
         floor_id: str,
         optimizer: DensityOptimizer,
-        audit_trail: Optional[object] = None,
-        audit_store: Optional[object] = None,
+        audit_trail: object | None = None,
+        audit_store: object | None = None,
         use_mip: bool = False,
         mip_candidate_step: float = 1.0,
         mip_time_limit: float = 10.0,
@@ -366,7 +366,7 @@ class FloorAnalyser:
 
     # ─── public ──────────────────────────────────────────────────────
 
-    def analyse(self, rooms: List[dict]) -> FloorReport:
+    def analyse(self, rooms: list[dict]) -> FloorReport:
         """Analyse all rooms on the floor and return a FloorReport.
 
         Processes rooms sequentially (no parallelism) and applies the

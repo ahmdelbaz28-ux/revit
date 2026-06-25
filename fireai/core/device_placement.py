@@ -1,4 +1,4 @@
-"""fireai/core/device_placement.py — NFPA 72 Device Placement Engine
+"""fireai/core/device_placement.py — NFPA 72 Device Placement Engine.
 ===================================================================
 Implements deterministic device placement per NFPA 72-2022:
 
@@ -27,7 +27,7 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from fireai.constants.nfpa72 import (
     NAC_MIN_CD as NFPA72_NAC_MIN_CD,
@@ -136,8 +136,8 @@ class RoomSpec:
     occupancy_type: OccupancyType = OccupancyType.BUSINESS
     is_sleeping_area: bool = False
     slope_degrees: float = 0.0  # for sloped ceilings
-    beams: List[BeamObstruction] = field(default_factory=list)
-    exit_doors: List[ExitDoor] = field(default_factory=list)
+    beams: list[BeamObstruction] = field(default_factory=list)
+    exit_doors: list[ExitDoor] = field(default_factory=list)
     detector_type: DetectorType = DetectorType.SMOKE
 
     @property
@@ -188,7 +188,7 @@ class PlacedDevice:
     radius_m: float
     nfpa_section: str
     formula: str
-    beam_section: Optional[str] = None  # Beam sub-section if applicable
+    beam_section: str | None = None  # Beam sub-section if applicable
 
 
 @dataclass
@@ -221,14 +221,14 @@ class PlacementResult:
     """Complete placement result for a room."""
 
     room_id: str
-    detectors: List[PlacedDevice]
-    pull_stations: List[PlacedPullStation]
-    notification_appliances: List[PlacedNotificationAppliance]
+    detectors: list[PlacedDevice]
+    pull_stations: list[PlacedPullStation]
+    notification_appliances: list[PlacedNotificationAppliance]
     coverage_pct: float
     beam_sections: int  # Number of beam-separated sections
     is_fully_compliant: bool
-    violations: List[str]
-    nfpa_references: List[str]
+    violations: list[str]
+    nfpa_references: list[str]
     computation_hash: str
 
 
@@ -246,7 +246,7 @@ class DetectorPlacementEngine:
     Reference: NFPA 72-2022 §17.7 (smoke), §17.6 (heat)
     """
 
-    def __init__(self, kernel: Optional[QOMNKernel] = None) -> None:
+    def __init__(self, kernel: QOMNKernel | None = None) -> None:
         self._kernel = kernel or QOMNKernel()
 
     def place_detectors(self, room: RoomSpec) -> PlacementResult:
@@ -266,9 +266,9 @@ class DetectorPlacementEngine:
 
         """
         room.validate()
-        violations: List[str] = []
-        nfpa_refs: List[str] = []
-        detectors: List[PlacedDevice] = []
+        violations: list[str] = []
+        nfpa_refs: list[str] = []
+        detectors: list[PlacedDevice] = []
 
         # ── Compute spacing ────────────────────────────────────────────────────
         if room.detector_type in (
@@ -399,7 +399,7 @@ class DetectorPlacementEngine:
         spacing_m: float,
         radius_m: float,
         wall_min_m: float,
-    ) -> List[PlacedDevice]:
+    ) -> list[PlacedDevice]:
         """Place detectors on hexagonal grid within room.
 
         Hexagonal grid provides optimal coverage efficiency.
@@ -408,7 +408,7 @@ class DetectorPlacementEngine:
 
         Source: NFPA 72-2022 §17.7.3 / §17.7.4.2.3.1
         """
-        devices: List[PlacedDevice] = []
+        devices: list[PlacedDevice] = []
         row_height = spacing_m * (math.sqrt(3) / 2.0)  # hex row spacing
         device_num = 1
 
@@ -477,7 +477,7 @@ class DetectorPlacementEngine:
     def _verify_coverage(
         self,
         room: RoomSpec,
-        detectors: List[PlacedDevice],
+        detectors: list[PlacedDevice],
         radius_m: float,
         grid_step: float = 0.0,
     ) -> float:
@@ -518,14 +518,14 @@ class DetectorPlacementEngine:
 
         return round(100.0 * covered / total, 4) if total > 0 else 0.0
 
-    def _place_pull_stations(self, room: RoomSpec) -> List[PlacedPullStation]:
+    def _place_pull_stations(self, room: RoomSpec) -> list[PlacedPullStation]:
         """Place manual pull stations near exit doors.
 
         Rule: Within 1.524m (5 ft) of each exit doorway.
         Height: 1.219m (48") AFF to handle center.
         Source: NFPA 72-2022 §17.15.3, §17.15.7
         """
-        stations: List[PlacedPullStation] = []
+        stations: list[PlacedPullStation] = []
         for i, exit_door in enumerate(room.exit_doors):
             # V76 HIGH-05: Pull station placement uses x + offset (right side).
             # Per ADA and IBC, pull stations should be on the LATCH SIDE of the
@@ -557,14 +557,14 @@ class DetectorPlacementEngine:
             )
         return stations
 
-    def _place_notification_appliances(self, room: RoomSpec) -> List[PlacedNotificationAppliance]:
+    def _place_notification_appliances(self, room: RoomSpec) -> list[PlacedNotificationAppliance]:
         """Place strobes/horns per NFPA 72 Chapter 18.
 
         Candela: 75 cd minimum, 177 cd for sleeping areas.
         Height:  2.032m (80") AFF minimum.
         Source: NFPA 72-2022 §18.5.3.1, §18.5.5.1, §18.5.5.7
         """
-        appliances: List[PlacedNotificationAppliance] = []
+        appliances: list[PlacedNotificationAppliance] = []
         cd = NFPA72_NAC_SLEEPING_MIN_CD if room.is_sleeping_area else NFPA72_NAC_MIN_CD
 
         # Place one appliance per wall facing (minimum)
@@ -610,7 +610,7 @@ class DuctDetectorSpec:
     velocity_m_s: float  # air velocity in duct
 
 
-def place_duct_detector(spec: DuctDetectorSpec) -> Dict[str, Any]:
+def place_duct_detector(spec: DuctDetectorSpec) -> dict[str, Any]:
     """Compute duct detector placement per NFPA 72 §17.7.4.
 
     Rules:

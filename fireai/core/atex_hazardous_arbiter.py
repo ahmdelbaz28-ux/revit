@@ -1,4 +1,4 @@
-"""atex_hazardous_arbiter.py – ATEX Hazardous Area Arbiter
+"""atex_hazardous_arbiter.py – ATEX Hazardous Area Arbiter.
 =========================================================
 Determines required equipment protection level (EPL) and ATEX category
 from physics-derived zone classification. Validates equipment selection.
@@ -23,7 +23,6 @@ import logging
 import math
 from dataclasses import dataclass
 from enum import Enum
-from typing import Dict, List, Optional, Set, Tuple
 
 from fireai.core.international_reg_selector import (
     ATEXZone,
@@ -156,7 +155,7 @@ class InstallationClass(str, Enum):
 # EPL / Zone mapping tables
 # ---------------------------------------------------------------------------
 
-_ZONE_TO_EPL: Dict[ATEXZone, EquipmentProtectionLevel] = {
+_ZONE_TO_EPL: dict[ATEXZone, EquipmentProtectionLevel] = {
     ATEXZone.ZONE_0: EquipmentProtectionLevel.Ga,
     ATEXZone.ZONE_1: EquipmentProtectionLevel.Gb,
     ATEXZone.ZONE_2: EquipmentProtectionLevel.Gc,
@@ -165,7 +164,7 @@ _ZONE_TO_EPL: Dict[ATEXZone, EquipmentProtectionLevel] = {
     ATEXZone.ZONE_22: EquipmentProtectionLevel.Dc,
 }
 
-_ZONE_TO_CATEGORY: Dict[ATEXZone, ATEXCategory] = {
+_ZONE_TO_CATEGORY: dict[ATEXZone, ATEXCategory] = {
     ATEXZone.ZONE_0: ATEXCategory.CAT_1G,
     ATEXZone.ZONE_1: ATEXCategory.CAT_2G,
     ATEXZone.ZONE_2: ATEXCategory.CAT_3G,
@@ -174,7 +173,7 @@ _ZONE_TO_CATEGORY: Dict[ATEXZone, ATEXCategory] = {
     ATEXZone.ZONE_22: ATEXCategory.CAT_3D,
 }
 
-_ZONE_PERMITTED_PROTECTIONS: Dict[ATEXZone, Set[ProtectionType]] = {
+_ZONE_PERMITTED_PROTECTIONS: dict[ATEXZone, set[ProtectionType]] = {
     ATEXZone.ZONE_0: {
         ProtectionType.ia,
         ProtectionType.ma,
@@ -236,28 +235,28 @@ _ZONE_PERMITTED_PROTECTIONS: Dict[ATEXZone, Set[ProtectionType]] = {
 }
 
 # Fix #14: EPL protection hierarchy — higher value = more protection
-_EPL_GAS_HIERARCHY: Dict[EquipmentProtectionLevel, int] = {
+_EPL_GAS_HIERARCHY: dict[EquipmentProtectionLevel, int] = {
     EquipmentProtectionLevel.Gc: 1,
     EquipmentProtectionLevel.Gb: 2,
     EquipmentProtectionLevel.Ga: 3,
 }
-_EPL_DUST_HIERARCHY: Dict[EquipmentProtectionLevel, int] = {
+_EPL_DUST_HIERARCHY: dict[EquipmentProtectionLevel, int] = {
     EquipmentProtectionLevel.Dc: 1,
     EquipmentProtectionLevel.Db: 2,
     EquipmentProtectionLevel.Da: 3,
 }
-_EPL_MINING_HIERARCHY: Dict[EquipmentProtectionLevel, int] = {
+_EPL_MINING_HIERARCHY: dict[EquipmentProtectionLevel, int] = {
     EquipmentProtectionLevel.Mb: 1,
     EquipmentProtectionLevel.Ma: 2,
 }
 
-_EPL_HIERARCHY: Dict[EquipmentProtectionLevel, int] = {}
+_EPL_HIERARCHY: dict[EquipmentProtectionLevel, int] = {}
 _EPL_HIERARCHY.update(_EPL_GAS_HIERARCHY)
 _EPL_HIERARCHY.update(_EPL_DUST_HIERARCHY)
 _EPL_HIERARCHY.update(_EPL_MINING_HIERARCHY)
 
 # Fix #17: Fire detector IS level per zone
-_FIRE_DETECTOR_IS_LEVEL: Dict[ATEXZone, str] = {
+_FIRE_DETECTOR_IS_LEVEL: dict[ATEXZone, str] = {
     ATEXZone.ZONE_0: "ia",
     ATEXZone.ZONE_1: "ib",
     ATEXZone.ZONE_2: "ic",
@@ -267,7 +266,7 @@ _FIRE_DETECTOR_IS_LEVEL: Dict[ATEXZone, str] = {
 }
 
 # V21 ZoneType <-> ATEXZone mapping
-_V21_TO_ATEX_ZONE: Dict[ZoneType, ATEXZone] = {
+_V21_TO_ATEX_ZONE: dict[ZoneType, ATEXZone] = {
     ZoneType.ZONE_0: ATEXZone.ZONE_0,
     ZoneType.ZONE_1: ATEXZone.ZONE_1,
     ZoneType.ZONE_2: ATEXZone.ZONE_2,
@@ -295,7 +294,7 @@ class ATEXValidationResult:
     is_permitted: bool
     is_epl_sufficient: bool
     is_compliant: bool
-    failure_reasons: Tuple[str, ...]
+    failure_reasons: tuple[str, ...]
     recommendation: str
 
 
@@ -307,17 +306,17 @@ class ATEXArbitrationResult:
     equipment_spec: ATEXEquipmentSpec
     hazard_system: HazardSystem
     regulatory_note: str
-    fire_detector_spec: Optional[str] = None
-    hac_warnings: Tuple[str, ...] = ()  # V21.2 Round 4: propagated from HAC
-    warnings: Tuple[str, ...] = ()
-    errors: Tuple[str, ...] = ()
+    fire_detector_spec: str | None = None
+    hac_warnings: tuple[str, ...] = ()  # V21.2 Round 4: propagated from HAC
+    warnings: tuple[str, ...] = ()
+    errors: tuple[str, ...] = ()
 
     @property
     def is_valid(self) -> bool:
         return len(self.errors) == 0
 
     @property
-    def all_warnings(self) -> Tuple[str, ...]:
+    def all_warnings(self) -> tuple[str, ...]:
         """V21.2 Round 4: Combined HAC + arbiter warnings. Fix #16."""
         return self.hac_warnings + self.warnings
 
@@ -326,7 +325,7 @@ class ATEXArbitrationResult:
 # NEC gas group mapping
 # ---------------------------------------------------------------------------
 
-_NEC_TO_IEC_GAS_GROUP: Dict[str, str] = {
+_NEC_TO_IEC_GAS_GROUP: dict[str, str] = {
     "A": "IIC",
     "B": "IIC",
     "C": "IIB",
@@ -340,7 +339,7 @@ _NEC_TO_IEC_GAS_GROUP: Dict[str, str] = {
     "G": "IIIB",
 }
 
-_TEMP_CLASS_MAP: Dict[str, float] = {
+_TEMP_CLASS_MAP: dict[str, float] = {
     "T1": 450.0,
     "T2": 300.0,
     "T2A": 280.0,
@@ -377,11 +376,11 @@ class ATEXHazardousArbiter:
         self,
         zone: ZoneType,
         hazard_type: HazardType,
-        autoignition_c: Optional[float] = None,
+        autoignition_c: float | None = None,
         nec_group: str = "",
         hazard_system: HazardSystem = HazardSystem.ATEX_ZONE,
-        hac_warnings: List[str] = None,
-        hac_critical: List[str] = None,
+        hac_warnings: list[str] | None = None,
+        hac_critical: list[str] | None = None,
         space_id: str = "",
     ) -> ATEXArbitrationResult:
         """V21 arbitrate using Pydantic ATEXEquipmentSpec.
@@ -389,8 +388,8 @@ class ATEXHazardousArbiter:
         """
         hac_warnings = hac_warnings or []
         hac_critical = hac_critical or []
-        warnings: List[str] = list(hac_warnings)
-        errors: List[str] = []
+        warnings: list[str] = list(hac_warnings)
+        errors: list[str] = []
 
         # GAP-05: Cross-validate zone and hazard_type
         _validate_zone_hazard_consistency(zone, hazard_type, errors, warnings)
@@ -602,8 +601,8 @@ class ATEXHazardousArbiter:
         """Legacy arbitrate — accepts HACResultLegacy from hac_classification_engine.
         Prefer arbitrate_v21() for new code.
         """
-        warnings: List[str] = list(hac_result.warnings)
-        errors: List[str] = []
+        warnings: list[str] = list(hac_result.warnings)
+        errors: list[str] = []
 
         zone = hac_result.classified_zone
         substance = hac_result.substance
@@ -763,7 +762,7 @@ class ATEXHazardousArbiter:
         is_epl_sufficient = self._epl_sufficient(proposed_epl, required_epl)
         is_compliant = is_permitted and is_epl_sufficient
 
-        failures: List[str] = []
+        failures: list[str] = []
         if not is_permitted:
             failures.append(
                 f"Protection type {proposed_protection.value!r} not permitted "

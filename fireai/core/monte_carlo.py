@@ -11,7 +11,6 @@ operations for faster Monte Carlo simulations.
 """
 
 import random
-from typing import List, Tuple
 
 from shapely.geometry import Point, Polygon
 from shapely.ops import unary_union
@@ -30,13 +29,13 @@ except ImportError:
 
 
 def run_resilience_check(
-    positions: List[Tuple[float, float]],
+    positions: list[tuple[float, float]],
     poly: Polygon,
     radius: float,
     floor: float = _MC_RESILIENCE_FLOOR,
     iterations: int = _MC_ITERATIONS,
     seed: int = 42,
-) -> Tuple[float, float, bool]:
+) -> tuple[float, float, bool]:
     """Run Monte Carlo resilience check for detector placement.
 
     Args:
@@ -58,13 +57,13 @@ def run_resilience_check(
 
 
 def _run_resilience_check_fast(
-    positions: List[Tuple[float, float]],
+    positions: list[tuple[float, float]],
     poly: Polygon,
     radius: float,
     floor: float = _MC_RESILIENCE_FLOOR,
     iterations: int = _MC_ITERATIONS,
     seed: int = 42,
-) -> Tuple[float, float, bool]:
+) -> tuple[float, float, bool]:
     """Accelerated Monte Carlo using numpy vectorized operations.
 
     Args:
@@ -122,13 +121,13 @@ def _run_resilience_check_fast(
 
 
 def _run_resilience_check_original(
-    positions: List[Tuple[float, float]],
+    positions: list[tuple[float, float]],
     poly: Polygon,
     radius: float,
     floor: float = _MC_RESILIENCE_FLOOR,
     iterations: int = _MC_ITERATIONS,
     seed: int = 42,
-) -> Tuple[float, float, bool]:
+) -> tuple[float, float, bool]:
     """Original Monte Carlo implementation (fallback).
 
     This is the same as the implementation in fire_expert_system.py.

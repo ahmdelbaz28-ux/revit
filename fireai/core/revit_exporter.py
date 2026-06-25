@@ -1,4 +1,4 @@
-"""fireai.core.revit_exporter — IFC & Revit Output Generation
+"""fireai.core.revit_exporter — IFC & Revit Output Generation.
 ===========================================================
 
 Generates output files from cable routing results:
@@ -39,7 +39,7 @@ import io
 import json
 import math
 from dataclasses import dataclass
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 from fireai.core.cable_router import RoutingSchedule
 
@@ -99,8 +99,8 @@ class IFCElement:
     ifc_class: str
     name: str
     description: str
-    start_point: Tuple[float, float, float]
-    end_point: Tuple[float, float, float]
+    start_point: tuple[float, float, float]
+    end_point: tuple[float, float, float]
     length_m: float
     workset: str = "FA-CABLES"
     route_id: str = ""
@@ -134,7 +134,7 @@ class ReportSummary:
     max_voltage_drop_pct: float
     compliance_status: str
     constraint_violations: int
-    code_references: Tuple[str, ...] = (
+    code_references: tuple[str, ...] = (
         "NFPA 72 §10.6.4",
         "NFPA 72 §23.6.2",
         "NEC 760.24",
@@ -181,7 +181,7 @@ class RevitExporter:
         """Public workset name. System req 4: always FA-CABLES."""
         return self._workset
 
-    def __init__(self, workset: str = FA_WORKSET):
+    def __init__(self, workset: str = FA_WORKSET) -> None:
         """Initialize the exporter.
 
         Args:
@@ -195,7 +195,7 @@ class RevitExporter:
     def generate_schedule(
         self,
         schedule: RoutingSchedule,
-    ) -> List[ScheduleRow]:
+    ) -> list[ScheduleRow]:
         """Generate cable schedule from routing results.
 
         Schedule format per specification:
@@ -296,7 +296,7 @@ class RevitExporter:
     def generate_ifc_elements(
         self,
         schedule: RoutingSchedule,
-    ) -> List[IFCElement]:
+    ) -> list[IFCElement]:
         """Generate IFC elements from cable routes.
 
         Output format per specification:
@@ -428,7 +428,7 @@ class RevitExporter:
     def generate_revit_model_lines(
         self,
         schedule: RoutingSchedule,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Generate Revit Model Line definitions.
 
         Model Lines are placed on the dedicated workset "FA-CABLES".

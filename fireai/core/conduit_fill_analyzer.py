@@ -1,4 +1,4 @@
-"""conduit_fill_analyzer.py — NEC Chapter 9 Conduit Fill Analysis
+"""conduit_fill_analyzer.py — NEC Chapter 9 Conduit Fill Analysis.
 ===============================================================
 CRITICAL LIFE-SAFETY MODULE — V18
 
@@ -50,7 +50,7 @@ import logging
 import math
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -108,7 +108,7 @@ class CircuitClass(str, Enum):
 # Outer diameter in mm for common FA cable types
 # Based on NEC Chapter 9 Table 5 and manufacturer data
 # Format: (insulation_type, awg) → outer_diameter_mm
-WIRE_DIAMETERS_MM: Dict[Tuple[str, int], float] = {
+WIRE_DIAMETERS_MM: dict[tuple[str, int], float] = {
     # FPLP — Fire Power Limited Plenum (most common for FA SLC circuits)
     ("FPLP", 18): 2.59,
     ("FPLP", 16): 3.00,
@@ -165,7 +165,7 @@ class ConduitType(str, Enum):
 # Conduit internal dimensions — NEC Chapter 9 Table 4
 # Format: trade_size → {"id_mm": internal_diameter, "area_mm2": 100% internal area}
 # Values from NEC Chapter 9 Table 4 (verified against 2023 edition)
-CONDUIT_SPECS: Dict[Tuple[str, str], Dict[str, float]] = {
+CONDUIT_SPECS: dict[tuple[str, str], dict[str, float]] = {
     # EMT — Electrical Metallic Tubing
     ("EMT", "1/2"): {"id_mm": 15.80, "area_mm2": 196.07},
     ("EMT", "3/4"): {"id_mm": 20.93, "area_mm2": 343.98},
@@ -360,8 +360,8 @@ class ConduitFillResult:
     is_compliant: bool
     derating_factor: float
     plfa_nplfa_separated: bool
-    violations: List[Dict[str, Any]] = field(default_factory=list)
-    warnings: List[str] = field(default_factory=list)
+    violations: list[dict[str, Any]] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
 
 
 # ============================================================================
@@ -407,7 +407,7 @@ class ConduitSizer:
     def analyze_routing_bundle(
         self,
         bundle_id: str,
-        wire_inventory: List[Dict],
+        wire_inventory: list[dict],
         conduit_type: str = "EMT",
         enforce_plfa_separation: bool = True,
     ) -> Any:
@@ -432,8 +432,8 @@ class ConduitSizer:
         conductor_count = 0
         has_plfa = False
         has_nplfa = False
-        violations: List[Any] = []
-        warnings: List[str] = []
+        violations: list[Any] = []
+        warnings: list[str] = []
 
         # Process each wire type in the bundle
         for cable in wire_inventory:
@@ -704,8 +704,8 @@ class ConduitSizer:
     def analyze_with_wire_overrides(
         self,
         bundle_id: str,
-        wire_inventory: List[Dict],
-        wire_size_overrides: Optional[Dict[int, int]] = None,
+        wire_inventory: list[dict],
+        wire_size_overrides: dict[int, int] | None = None,
         conduit_type: str = "EMT",
         enforce_plfa_separation: bool = True,
     ) -> Any:
@@ -747,8 +747,8 @@ class ConduitSizer:
 
         # Build a modified wire inventory with upsized AWG values.
         # Each cable dict is shallow-copied so the caller's data is untouched.
-        modified_inventory: List[Dict] = []
-        overrides_applied: List[Dict[str, int]] = []
+        modified_inventory: list[dict] = []
+        overrides_applied: list[dict[str, int]] = []
 
         for cable in wire_inventory:
             original_awg = cable.get("awg", 16)

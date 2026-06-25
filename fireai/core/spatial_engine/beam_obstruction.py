@@ -1,4 +1,4 @@
-"""beam_obstruction.py — Ceiling Beam Obstruction Logic (NFPA 72 §17.7.3.2.4.2)
+"""beam_obstruction.py — Ceiling Beam Obstruction Logic (NFPA 72 §17.7.3.2.4.2).
 ==============================================================================
 
 MISSION PHASE 4.1 — 3D Geometry Upgrade for Beam-Pocket Detection
@@ -46,6 +46,7 @@ References
 - NFPA 72-2022 §17.6.3.1.3 (Spacing in Beam Pockets)
 - SFPE Handbook of Fire Protection Engineering, 5th Ed., Chapter 17
 - agent.md Rule 17 (Root-Cause Analysis)
+
 """
 
 from __future__ import annotations
@@ -53,7 +54,7 @@ from __future__ import annotations
 import logging
 import math
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -92,11 +93,12 @@ class Beam:
             Per NFPA 72: this is the distance from ceiling to bottom of beam.
         width_m: Beam width (horizontal dimension perpendicular to axis, metres).
             Optional — used for visualization, not for pocket calculation.
+
     """
 
     id: str
-    start: Tuple[float, float]
-    end: Tuple[float, float]
+    start: tuple[float, float]
+    end: tuple[float, float]
     depth_m: float
     width_m: float = 0.2
 
@@ -155,15 +157,16 @@ class BeamPocket:
         area_m2: Pocket area in square metres.
         ceiling_height_m: Effective ceiling height (may be reduced by beam depth).
         created_by_beam_ids: List of beam IDs that form this pocket's boundaries.
+
     """
 
     pocket_id: str
-    polygon: List[Tuple[float, float]]
+    polygon: list[tuple[float, float]]
     area_m2: float
     ceiling_height_m: float
-    created_by_beam_ids: List[str] = field(default_factory=list)
+    created_by_beam_ids: list[str] = field(default_factory=list)
 
-    def to_room_dict(self) -> Dict[str, Any]:
+    def to_room_dict(self) -> dict[str, Any]:
         """Convert to FireAI room dict format (compatible with DensityOptimizer)."""
         # Compute bounding box for width/length
         xs = [p[0] for p in self.polygon]
@@ -196,18 +199,19 @@ class BeamObstructionResult:
         subdivision_applied: True if room was subdivided into multiple pockets.
         warnings: List of warning messages.
         nfpa_reference: NFPA 72 clause reference.
+
     """
 
     original_room_id: str
     ceiling_height_m: float
     beams_analyzed: int
     significant_beams: int
-    pockets: List[BeamPocket] = field(default_factory=list)
+    pockets: list[BeamPocket] = field(default_factory=list)
     subdivision_applied: bool = False
-    warnings: List[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
     nfpa_reference: str = "NFPA 72-2022 §17.7.3.2.4.2"
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "original_room_id": self.original_room_id,
             "ceiling_height_m": self.ceiling_height_m,
@@ -236,9 +240,9 @@ class BeamObstructionResult:
 
 def calculate_beam_obstruction(
     room_id: str,
-    room_polygon: List[Tuple[float, float]],
+    room_polygon: list[tuple[float, float]],
     ceiling_height_m: float,
-    beams: List[Beam],
+    beams: list[Beam],
 ) -> BeamObstructionResult:
     """Analyze ceiling beams and subdivide room into pockets if needed.
 
@@ -257,6 +261,7 @@ def calculate_beam_obstruction(
 
     Raises:
         ValueError: If room_polygon is empty or ceiling_height_m is invalid.
+
     """
     # ── Input Validation (per agent.md V57 NaN/Inf bypass) ──
     if not room_polygon or len(room_polygon) < 3:
@@ -275,7 +280,7 @@ def calculate_beam_obstruction(
                 f"Room {room_id} polygon point {i} has non-finite coordinates: ({x}, {y})"
             )
 
-    warnings: List[str] = []
+    warnings: list[str] = []
 
     # ── Edge Case: No beams ──
     if not beams:
@@ -391,7 +396,7 @@ def calculate_beam_obstruction(
 # ---------------------------------------------------------------------------
 
 
-def _compute_polygon_area(polygon: List[Tuple[float, float]]) -> float:
+def _compute_polygon_area(polygon: list[tuple[float, float]]) -> float:
     """Compute polygon area using the Shoelace formula.
 
     Args:
@@ -399,6 +404,7 @@ def _compute_polygon_area(polygon: List[Tuple[float, float]]) -> float:
 
     Returns:
         Absolute area in square metres.
+
     """
     if len(polygon) < 3:
         return 0.0
@@ -419,10 +425,10 @@ def _compute_polygon_area(polygon: List[Tuple[float, float]]) -> float:
 
 def _subdivide_room_by_beams(
     room_id: str,
-    room_polygon: List[Tuple[float, float]],
+    room_polygon: list[tuple[float, float]],
     ceiling_height_m: float,
-    significant_beams: List[Beam],
-) -> List[BeamPocket]:
+    significant_beams: list[Beam],
+) -> list[BeamPocket]:
     """Subdivide room into pockets using significant beams as cutting lines.
 
     Simplified algorithm: Group beams by orientation (horizontal/vertical),
@@ -453,6 +459,7 @@ def _subdivide_room_by_beams(
 
     Returns:
         List of BeamPocket sub-rooms.
+
     """
     # Determine beam orientation
     horizontal_beams = [b for b in significant_beams if b.is_horizontal]
@@ -497,18 +504,17 @@ def _subdivide_room_by_beams(
         return _subdivide_by_horizontal_beams(
             room_id, room_polygon, ceiling_height_m, horizontal_beams
         )
-    else:
-        return _subdivide_by_vertical_beams(
-            room_id, room_polygon, ceiling_height_m, vertical_beams
-        )
+    return _subdivide_by_vertical_beams(
+        room_id, room_polygon, ceiling_height_m, vertical_beams
+    )
 
 
 def _subdivide_by_horizontal_beams(
     room_id: str,
-    room_polygon: List[Tuple[float, float]],
+    room_polygon: list[tuple[float, float]],
     ceiling_height_m: float,
-    beams: List[Beam],
-) -> List[BeamPocket]:
+    beams: list[Beam],
+) -> list[BeamPocket]:
     """Subdivide room using horizontal beams (running along X-axis).
 
     Each horizontal beam has a Y position (its start[1] == end[1]).
@@ -524,7 +530,7 @@ def _subdivide_by_horizontal_beams(
         )]
 
     # Get Y positions of beams (all horizontal beams have constant Y)
-    y_positions = sorted(set(b.start[1] for b in beams))
+    y_positions = sorted({b.start[1] for b in beams})
 
     # Get room Y bounds
     ys = [p[1] for p in room_polygon]
@@ -550,37 +556,58 @@ def _subdivide_by_horizontal_beams(
     xs = [p[0] for p in room_polygon]
     x_min, x_max = min(xs), max(xs)
 
-    pockets: List[BeamPocket] = []
+    pockets: list[BeamPocket] = []
     for i in range(len(boundaries) - 1):
         y_low = boundaries[i]
         y_high = boundaries[i + 1]
 
-        # V135 F-16 FIX: Construct rectangular pocket polygon with WARNING.
-        # The OLD code silently assumed the room is rectangular. For
-        # non-rectangular rooms (L-shaped, T-shaped), the pocket polygon
-        # may include area OUTSIDE the room — leading to phantom detectors.
-        # Now we check if the room is rectangular; if not, we emit a warning.
-        pocket_polygon = [
-            (x_min, y_low),
-            (x_max, y_low),
-            (x_max, y_high),
-            (x_min, y_high),
+        # V139: Use Shapely for accurate pocket polygon (handles non-rectangular rooms)
+        # V135 F-16 fallback: rectangular approximation with WARNING when Shapely unavailable
+        strip_rect = [
+            (x_min, y_low), (x_max, y_low),
+            (x_max, y_high), (x_min, y_high),
         ]
-        area = _compute_polygon_area(pocket_polygon)
 
-        # V135 F-16: Check if room is approximately rectangular
-        room_area = _compute_polygon_area(room_polygon)
-        bbox_area = (x_max - x_min) * (y_max - y_min)
-        is_rectangular = abs(room_area - bbox_area) < 0.01 * room_area  # 1% tolerance
+        try:
+            from shapely.geometry import Polygon as ShapelyPolygon
+            room_poly = ShapelyPolygon(room_polygon)
+            strip_poly = ShapelyPolygon(strip_rect)
+            intersection = room_poly.intersection(strip_poly)
 
-        # V135 F-17 FIX: Reduce pocket ceiling height by max beam depth.
-        # Per NFPA 72 §17.6.3.1.3: detector spacing in beam pockets is
-        # based on the EFFECTIVE ceiling height (ceiling - beam_depth).
-        # The OLD code used room ceiling height — too wide spacing.
+            if intersection.is_empty:
+                continue  # No room area in this strip
+
+            if intersection.geom_type == "Polygon":
+                pocket_polygon = list(intersection.exterior.coords[:-1])  # Drop closing point
+            else:
+                # Multi-polygon or other — use rectangular fallback
+                pocket_polygon = strip_rect
+                logger.warning(
+                    "Room %s pocket P%d: Shapely intersection is %s (not Polygon). "
+                    "Using rectangular fallback.",
+                    room_id, i + 1, intersection.geom_type,
+                )
+            area = intersection.area
+            is_rectangular = True  # Shapely handled it — no warning needed
+
+        except ImportError:
+            # Shapely unavailable — use rectangular approximation with warning
+            pocket_polygon = strip_rect
+            area = _compute_polygon_area(pocket_polygon)
+            room_area = _compute_polygon_area(room_polygon)
+            bbox_area = (x_max - x_min) * (y_max - y_min)
+            is_rectangular = abs(room_area - bbox_area) < 0.01 * room_area
+            if not is_rectangular:
+                logger.warning(
+                    "Room %s pocket P%d: non-rectangular room, Shapely unavailable. "
+                    "Pocket polygon may include out-of-room space.",
+                    room_id, i + 1,
+                )
+
+        # V135 F-17: Reduce pocket ceiling height by max beam depth
         max_beam_depth = max((b.depth_m for b in beams), default=0.0)
         effective_ceiling_height = max(ceiling_height_m - max_beam_depth, 0.1)
 
-        # Find which beams created this pocket
         creating_beams = [
             b.id for b in beams
             if abs(b.start[1] - y_low) < 0.001 or abs(b.start[1] - y_high) < 0.001
@@ -590,17 +617,9 @@ def _subdivide_by_horizontal_beams(
             pocket_id=f"{room_id}-P{i+1}",
             polygon=pocket_polygon,
             area_m2=area,
-            ceiling_height_m=effective_ceiling_height,  # V135 F-17: reduced by beam depth
+            ceiling_height_m=effective_ceiling_height,
             created_by_beam_ids=creating_beams,
         )
-        if not is_rectangular:
-            # V135 F-16: Warn that pocket area may include out-of-room space
-            logger.warning(
-                "Room %s pocket P%d: room is non-rectangular (room_area=%.2f, "
-                "bbox_area=%.2f). Pocket polygon may include out-of-room space. "
-                "Manual FPE review required per NFPA 72 §17.7.3.2.4.2.",
-                room_id, i + 1, room_area, bbox_area,
-            )
         pockets.append(pocket)
 
     return pockets
@@ -608,10 +627,10 @@ def _subdivide_by_horizontal_beams(
 
 def _subdivide_by_vertical_beams(
     room_id: str,
-    room_polygon: List[Tuple[float, float]],
+    room_polygon: list[tuple[float, float]],
     ceiling_height_m: float,
-    beams: List[Beam],
-) -> List[BeamPocket]:
+    beams: list[Beam],
+) -> list[BeamPocket]:
     """Subdivide room using vertical beams (running along Y-axis)."""
     if not beams:
         area = _compute_polygon_area(room_polygon)
@@ -623,7 +642,7 @@ def _subdivide_by_vertical_beams(
         )]
 
     # Get X positions of beams
-    x_positions = sorted(set(b.start[0] for b in beams))
+    x_positions = sorted({b.start[0] for b in beams})
 
     # Get room X bounds
     xs = [p[0] for p in room_polygon]
@@ -637,7 +656,7 @@ def _subdivide_by_vertical_beams(
     ys = [p[1] for p in room_polygon]
     y_min, y_max = min(ys), max(ys)
 
-    pockets: List[BeamPocket] = []
+    pockets: list[BeamPocket] = []
     for i in range(len(boundaries) - 1):
         x_low = boundaries[i]
         x_high = boundaries[i + 1]
@@ -684,11 +703,11 @@ def _subdivide_by_vertical_beams(
 
 
 __all__ = [
-    "Beam",
-    "BeamPocket",
-    "BeamObstructionResult",
-    "calculate_beam_obstruction",
     "BEAM_DEPTH_THRESHOLD_RATIO",
-    "MIN_CEILING_HEIGHT_FOR_BEAM_LOGIC_M",
     "MAX_POCKETS_PER_ROOM",
+    "MIN_CEILING_HEIGHT_FOR_BEAM_LOGIC_M",
+    "Beam",
+    "BeamObstructionResult",
+    "BeamPocket",
+    "calculate_beam_obstruction",
 ]

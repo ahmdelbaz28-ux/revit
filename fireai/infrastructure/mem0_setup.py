@@ -113,7 +113,7 @@ import json
 import logging
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -272,12 +272,12 @@ def _test_openai_compatible_connectivity(base_url: str, api_key: str) -> bool:
 
 
 # V83: Provider detection cache — avoids 40s+ blocking on repeated calls
-_detect_provider_cache: Optional[Dict[str, Any]] = None
+_detect_provider_cache: dict[str, Any] | None = None
 _detect_provider_cache_time: float = 0.0
 _PROVIDER_CACHE_TTL_SECONDS = 300  # 5 minutes
 
 
-def _detect_provider() -> Dict[str, Any]:
+def _detect_provider() -> dict[str, Any]:
     """Detect the best available LLM/embedding provider.
 
     V83: Added caching with 5-minute TTL to avoid repeated connectivity
@@ -305,7 +305,7 @@ def _detect_provider() -> Dict[str, Any]:
     return result
 
 
-def _detect_provider_uncached() -> Dict[str, Any]:
+def _detect_provider_uncached() -> dict[str, Any]:
     """Detect the best available LLM/embedding provider (uncached version).
 
     Strategy (V81 — 6-Strategy Failover with OpenCode):
@@ -541,7 +541,7 @@ def _detect_provider_uncached() -> Dict[str, Any]:
 # ── Mem0 Configuration ──────────────────────────────────────────────────────
 
 
-def get_mem0_config() -> Dict[str, Any]:
+def get_mem0_config() -> dict[str, Any]:
     """Get the Mem0 configuration for FireAI.
 
     V80: Auto-detects the best available provider (6-strategy failover):
@@ -687,7 +687,7 @@ class FireAIMemory:
     - Memory failures NEVER block calculations
     """
 
-    def __init__(self, mem0_instance=None, engineer_id: str = "engineer_default"):
+    def __init__(self, mem0_instance=None, engineer_id: str = "engineer_default") -> None:
         if mem0_instance is None:
             mem0_instance = create_mem0_instance()
         self.mem0 = mem0_instance
@@ -698,8 +698,8 @@ class FireAIMemory:
         self,
         content: str,
         project_id: str = "general",
-        metadata: Optional[Dict] = None,
-    ) -> Dict:
+        metadata: dict | None = None,
+    ) -> dict:
         """Store engineering context in memory."""
         result = self.mem0.add(
             content,
@@ -714,9 +714,9 @@ class FireAIMemory:
     def search_standards(
         self,
         query: str,
-        project_id: Optional[str] = None,
+        project_id: str | None = None,
         limit: int = 5,
-    ) -> List[Dict]:
+    ) -> list[dict]:
         """Search memory for fire safety standards and engineering context."""
         kwargs = {
             "query": query,
@@ -731,7 +731,7 @@ class FireAIMemory:
 
         return self.mem0.search(**kwargs)
 
-    def get_all_memories(self, project_id: Optional[str] = None) -> List[Dict]:
+    def get_all_memories(self, project_id: str | None = None) -> list[dict]:
         kwargs = {
             "filters": {
                 "user_id": self.engineer_id,
@@ -743,7 +743,7 @@ class FireAIMemory:
 
         return self.mem0.get_all(**kwargs)
 
-    def delete_memory(self, memory_id: str) -> Dict:
+    def delete_memory(self, memory_id: str) -> dict:
         """Delete a specific memory by ID."""
         return self.mem0.delete(memory_id)
 

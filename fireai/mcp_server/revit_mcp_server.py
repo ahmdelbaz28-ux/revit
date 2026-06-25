@@ -1,4 +1,4 @@
-"""revit_mcp_server.py — Main Revit MCP Server Entry Point
+"""revit_mcp_server.py — Main Revit MCP Server Entry Point.
 ========================================================
 LIFE-SAFETY CRITICAL: This module provides the MCP server that bridges
 AI assistants (Claude, GPT) with the Revit BIM model.
@@ -24,7 +24,7 @@ from __future__ import annotations
 
 import logging
 import queue
-from typing import Any, Dict
+from typing import Any
 
 from fireai.mcp_server.sanitized_handler import (
     MCPRequest,
@@ -108,7 +108,7 @@ class RevitMCPServer:
         )
 
     def _handle_update_bim_parameter(
-        self, request: MCPRequest, params: Dict[str, Any]
+        self, request: MCPRequest, params: dict[str, Any]
     ) -> MCPResponse:
         """Handle a BIM parameter update by queuing it for safe Revit execution.
 
@@ -151,7 +151,7 @@ class RevitMCPServer:
         )
 
     def _handle_hydraulic_calculation(
-        self, request: MCPRequest, params: Dict[str, Any]
+        self, request: MCPRequest, params: dict[str, Any]
     ) -> MCPResponse:
         """Handle a hydraulic calculation query (read-only)."""
         try:
@@ -180,7 +180,7 @@ class RevitMCPServer:
             )
 
     def _handle_sprinkler_compliance(
-        self, request: MCPRequest, params: Dict[str, Any]
+        self, request: MCPRequest, params: dict[str, Any]
     ) -> MCPResponse:
         """Handle a sprinkler compliance validation query (read-only)."""
         try:
@@ -209,7 +209,7 @@ class RevitMCPServer:
             )
 
     def _handle_battery_capacity(
-        self, request: MCPRequest, params: Dict[str, Any]
+        self, request: MCPRequest, params: dict[str, Any]
     ) -> MCPResponse:
         """Handle a battery capacity calculation query (read-only)."""
         try:
@@ -250,7 +250,7 @@ class RevitMCPServer:
             )
 
     def _handle_hazard_class_query(
-        self, request: MCPRequest, params: Dict[str, Any]
+        self, request: MCPRequest, params: dict[str, Any]
     ) -> MCPResponse:
         """Handle a hazard class query (read-only)."""
         from fireai.core.hazard_override import MANDATORY_HAZARD_OVERRIDES
@@ -272,7 +272,7 @@ class RevitMCPServer:
         )
 
     def _handle_room_classification(
-        self, request: MCPRequest, params: Dict[str, Any]
+        self, request: MCPRequest, params: dict[str, Any]
     ) -> MCPResponse:
         """Handle a room classification update.
 
@@ -304,7 +304,7 @@ class RevitMCPServer:
                 error=f"Failed to enqueue classification update: {e}",
             )
 
-        result_data: Dict[str, Any] = {
+        result_data: dict[str, Any] = {
             "action_id": action_id,
             "status": "queued",
             "hazard_class": params.get("hazard_class"),

@@ -9,7 +9,6 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import List, Optional
 
 
 class CSDDeviceType(Enum):
@@ -52,7 +51,7 @@ class CSDComplianceReport:
     compliant_devices: int
     non_compliant_devices: int
     compliance_rate: float
-    issues: List[str] = field(default_factory=list)
+    issues: list[str] = field(default_factory=list)
 
 
 class CSDGenerator:
@@ -65,10 +64,9 @@ class CSDGenerator:
         location: str,
         zone: int,
         status: CSDDeviceStatus = CSDDeviceStatus.ACTIVE,
-        device_id: Optional[str] = None
+        device_id: str | None = None
     ) -> CSDDevice:
-        """Generates a new CSDDevice with a unique ID if not provided.
-        """
+        """Generates a new CSDDevice with a unique ID if not provided."""
         if not device_id:
             device_id = f"CSD-{uuid.uuid4().hex[:8].upper()}"
         return CSDDevice(
@@ -80,7 +78,7 @@ class CSDGenerator:
             zone=zone
         )
 
-    def generate_compliance_report(self, devices: List[CSDDevice]) -> CSDComplianceReport:
+    def generate_compliance_report(self, devices: list[CSDDevice]) -> CSDComplianceReport:
         """Generates a compliance report for the provided list of CSD devices.
         A device is non-compliant if it is in FAULT or INACTIVE state.
         """

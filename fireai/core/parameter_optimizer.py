@@ -1,4 +1,4 @@
-"""fireai/core/parameter_optimizer.py  V1.0
+"""fireai/core/parameter_optimizer.py  V1.0.
 =========================================
 Grid-searches verify_step on benchmark rooms.
 Results saved to JSON for manual engineer review.
@@ -32,7 +32,6 @@ import json
 import os
 import time
 from dataclasses import asdict, dataclass
-from typing import List, Optional
 
 import fireai.core.spatial_engine.density_optimizer as _dm
 from fireai.core.spatial_engine.density_optimizer import (
@@ -51,7 +50,7 @@ class ParamConfig:
     avg_count: float
     all_valid: bool
     pareto_score: float  # time_ms * avg_count / 10  (lower = better)
-    per_room: List[dict]  # breakdown per benchmark room
+    per_room: list[dict]  # breakdown per benchmark room
 
 
 @dataclass
@@ -59,9 +58,9 @@ class ParameterOptimizationResult:
     """Complete grid search result with best config identified."""
 
     best_config: ParamConfig
-    all_configs: List[ParamConfig]
+    all_configs: list[ParamConfig]
     recommendation: str
-    saved_to: Optional[str] = None
+    saved_to: str | None = None
 
     def table(self) -> str:
         """Format results as a human-readable table."""
@@ -103,8 +102,8 @@ class ParameterOptimizer:
 
     def optimise(
         self,
-        rooms: List[Room],
-        steps: Optional[List[float]] = None,
+        rooms: list[Room],
+        steps: list[float] | None = None,
     ) -> ParameterOptimizationResult:
         """Run grid search over verify_step values.
 
@@ -118,7 +117,7 @@ class ParameterOptimizer:
         """
         steps = steps or [0.10, 0.15, 0.20, 0.25, 0.30, 0.40]
         old_step = _dm.VERIFY_STEP
-        configs: List[ParamConfig] = []
+        configs: list[ParamConfig] = []
 
         for step in steps:
             _dm.VERIFY_STEP = step

@@ -1,4 +1,4 @@
-"""twin_db.py — SQLite-Backed Twin System of Record
+"""twin_db.py — SQLite-Backed Twin System of Record.
 =================================================
 Adapted from Elite Platform V2 twin_db.py.
 
@@ -25,7 +25,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 
 class TwinSystemOfRecord:
@@ -37,7 +37,7 @@ class TwinSystemOfRecord:
     multiple processes — use WAL mode if needed).
     """
 
-    def __init__(self, db_path: str):
+    def __init__(self, db_path: str) -> None:
         """Initialize the twin database.
 
         Args:
@@ -95,9 +95,9 @@ class TwinSystemOfRecord:
 
     def save_snapshot(
         self,
-        snapshot_payload: Dict[str, Any],
-        analysis_payload: Dict[str, Any],
-        envelope: Dict[str, Any],
+        snapshot_payload: dict[str, Any],
+        analysis_payload: dict[str, Any],
+        envelope: dict[str, Any],
     ) -> None:
         """Save a complete snapshot bundle to the database.
 
@@ -149,7 +149,7 @@ class TwinSystemOfRecord:
         finally:
             conn.close()
 
-    def load_snapshot_bundle(self, snapshot_id: str) -> Dict[str, Any]:
+    def load_snapshot_bundle(self, snapshot_id: str) -> dict[str, Any]:
         """Load a complete snapshot bundle by ID.
 
         Args:
@@ -215,7 +215,7 @@ class TwinSystemOfRecord:
         finally:
             conn.close()
 
-    def latest_connector_revision(self, source_model_id: str) -> Optional[Dict[str, Any]]:
+    def latest_connector_revision(self, source_model_id: str) -> dict[str, Any] | None:
         """Get the latest connector revision for a source model.
 
         Args:
@@ -263,9 +263,9 @@ class TwinSystemOfRecord:
         self,
         old_snapshot_id: str,
         new_snapshot_id: str,
-        movement_threshold_m: Optional[float] = None,
-        polygon_tolerance_m: Optional[float] = None,
-    ) -> List[Dict[str, Any]]:
+        movement_threshold_m: float | None = None,
+        polygon_tolerance_m: float | None = None,
+    ) -> list[dict[str, Any]]:
         """Diff two snapshots to detect drift.
 
         Compares rooms (added, removed, geometry changed) and
@@ -294,7 +294,7 @@ class TwinSystemOfRecord:
         old_results = {item.get("room_id"): item for item in old_bundle["analysis"].get("room_results", [])}
         new_results = {item.get("room_id"): item for item in new_bundle["analysis"].get("room_results", [])}
 
-        drift: List[Dict[str, Any]] = []
+        drift: list[dict[str, Any]] = []
         for room_id in sorted(set(old_rooms.keys()) | set(new_rooms.keys())):
             old_room = old_rooms.get(room_id)
             new_room = new_rooms.get(room_id)
@@ -410,7 +410,7 @@ class TwinSystemOfRecord:
 
         return drift
 
-    def list_snapshot_ids(self) -> List[str]:
+    def list_snapshot_ids(self) -> list[str]:
         """List all snapshot IDs in the database, newest first."""
         conn = self._connect()
         try:

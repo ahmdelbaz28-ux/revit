@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""FireAI — Module Dependency Index Generator
+"""FireAI — Module Dependency Index Generator.
 
 Scans the codebase and generates a dependency graph to identify:
 - Module layers and their dependencies
@@ -109,7 +109,7 @@ def detect_circular_imports(deps: dict) -> list[list[str]]:
     def has_cycle(node: str, visited: set, path: list) -> bool:
         if node in path:
             cycle_start = path.index(node)
-            cycle = path[cycle_start:] + [node]
+            cycle = [*path[cycle_start:], node]
             # Skip self-loops (module importing itself via lazy import)
             if len(cycle) == 2 and cycle[0] == cycle[1]:
                 return False
@@ -253,7 +253,7 @@ Layer 1 (Foundation):     contracts, nfpa72_models, nfpa72_calculations
     return md
 
 
-def main():
+def main() -> int:
     root = Path(__file__).parent.parent.parent
     output_file = root / "fireai" / "DEPENDENCY_INDEX.md"
 

@@ -24,7 +24,6 @@ from __future__ import annotations
 import logging
 import time
 from dataclasses import dataclass
-from typing import Optional
 
 import httpx
 from tenacity import retry, stop_after_attempt, wait_exponential
@@ -71,12 +70,12 @@ class GeocodingService:
 
     NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
 
-    def __init__(self, cache_ttl: float = 86400.0):
+    def __init__(self, cache_ttl: float = 86400.0) -> None:
         self._cache: dict[str, tuple[GeocodingResult, float]] = {}
         self._cache_ttl = cache_ttl
         self._last_request_time: float = 0.0
         self._min_interval: float = 1.1  # Nominatim rate limit
-        self._client: Optional[httpx.AsyncClient] = None
+        self._client: httpx.AsyncClient | None = None
 
     async def _get_client(self) -> httpx.AsyncClient:
         """Lazy-initialize the HTTP client."""
@@ -98,7 +97,7 @@ class GeocodingService:
         """Normalize address for caching."""
         return address.strip().lower()
 
-    def _get_cached(self, address: str) -> Optional[GeocodingResult]:
+    def _get_cached(self, address: str) -> GeocodingResult | None:
         """Get cached result if fresh."""
         key = self._cache_key(address)
         entry = self._cache.get(key)
@@ -167,7 +166,7 @@ class GeocodingService:
         )
         return result
 
-    async def geocode(self, address: str) -> Optional[GeocodingResult]:
+    async def geocode(self, address: str) -> GeocodingResult | None:
         """Geocode an address to coordinates.
 
         Strategy:
@@ -210,7 +209,7 @@ class GeocodingService:
 
     async def reverse_geocode(
         self, latitude: float, longitude: float
-    ) -> Optional[GeocodingResult]:
+    ) -> GeocodingResult | None:
         """Reverse geocode coordinates to address.
 
         Args:
@@ -256,7 +255,7 @@ class GeocodingService:
 
 # ── Singleton ──────────────────────────────────────────────────────────────
 
-_geocoding_service: Optional[GeocodingService] = None
+_geocoding_service: GeocodingService | None = None
 
 
 def get_geocoding_service() -> GeocodingService:

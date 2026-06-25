@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from fireai.core.fault_isolator_injector import (
     verify_isolator_compliance,
@@ -44,7 +44,7 @@ __all__ = [
 # Unit cost table – typical US market 2024
 # ---------------------------------------------------------------------------
 
-UNIT_COSTS: Dict[str, float] = {
+UNIT_COSTS: dict[str, float] = {
     "smoke_detector": 85.0,
     "heat_detector": 65.0,
     "duct_detector": 120.0,
@@ -68,7 +68,7 @@ UNIT_COSTS: Dict[str, float] = {
 }
 
 # Standard VRLA / lead-acid battery sizes commonly available (Ah)
-STANDARD_BATTERY_SIZES: List[float] = [
+STANDARD_BATTERY_SIZES: list[float] = [
     7.0,
     12.0,
     18.0,
@@ -145,7 +145,7 @@ class BatterySpec:
 class BOQResult:
     """Complete Bill of Quantities result for a fire alarm system."""
 
-    items: List[BOQItem]
+    items: list[BOQItem]
     total_items: int
     grand_total_usd: float
     battery_ah: float
@@ -153,7 +153,7 @@ class BOQResult:
     isolator_count: int
     panel_count: int
     cable_meters: float
-    warnings: List[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------
@@ -190,7 +190,7 @@ def standard_battery_size(required_ah: float) -> float:
 def calculate_battery_for_panels(
     panel_count: int,
     spec: BatterySpec,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Calculate battery requirements for one or more fire alarm panels.
 
     Uses :func:`required_battery_capacity_ah` from *nfpa72_calculations*
@@ -238,9 +238,9 @@ def calculate_battery_for_panels(
 
 
 def generate_detector_boq(
-    rooms: List[Dict],
+    rooms: list[dict],
     ceiling_height_m: float = 3.0,
-) -> List[BOQItem]:
+) -> list[BOQItem]:
     """Generate BOQ line items for detectors from a list of rooms.
 
     NFPA 72 §17.6 – spot-type smoke detectors are spaced at 30 ft (9.1 m)
@@ -265,7 +265,7 @@ def generate_detector_boq(
         List of :class:`BOQItem` for detectors.
 
     """
-    items: List[BOQItem] = []
+    items: list[BOQItem] = []
 
     # Height de-rating factor per NFPA 72 §17.6.3.3 – for every 0.3 m (1 ft)
     # above 3.0 m, spacing is reduced ~1 %.  Capped at 50 % reduction.
@@ -276,7 +276,7 @@ def generate_detector_boq(
         derating = 1.0
 
     # Aggregate by detector type
-    type_counts: Dict[str, int] = {}
+    type_counts: dict[str, int] = {}
 
     for room in rooms:
         det_type = room.get("detector_type", "smoke_detector").lower()
@@ -325,7 +325,7 @@ def generate_detector_boq(
 # ---------------------------------------------------------------------------
 
 
-def generate_isolator_boq(loops: List[Dict]) -> List[BOQItem]:
+def generate_isolator_boq(loops: list[dict]) -> list[BOQItem]:
     """Generate BOQ line items for fault isolators using compliance verification.
 
     For each loop, :func:`verify_isolator_compliance` is called to assess
@@ -347,7 +347,7 @@ def generate_isolator_boq(loops: List[Dict]) -> List[BOQItem]:
         List of :class:`BOQItem` for fault isolators.
 
     """
-    items: List[BOQItem] = []
+    items: list[BOQItem] = []
     total_isolators_needed = 0
 
     for loop in loops:
@@ -403,14 +403,14 @@ def generate_isolator_boq(loops: List[Dict]) -> List[BOQItem]:
 
 
 def generate_cable_boq(
-    loops: List[Dict],
+    loops: list[dict],
     cable_type: str = "FPL",
-    survivability_level: Optional[str] = None,
+    survivability_level: str | None = None,
     auto_size_awg: bool = False,
     supply_voltage_v: float = 24.0,
     load_current_a: float = 0.5,
     require_rated_enclosure: bool = False,
-) -> List[BOQItem]:
+) -> list[BOQItem]:
     """Generate BOQ line items for cable and conduit from loop data.
 
     Cable length is taken from each loop's ``cable_length_m`` field.  A
@@ -448,7 +448,7 @@ def generate_cable_boq(
         List of :class:`BOQItem` for cable, conduit, and junction boxes.
 
     """
-    items: List[BOQItem] = []
+    items: list[BOQItem] = []
 
     cable_type_upper = cable_type.upper().strip()
 
@@ -576,10 +576,10 @@ def generate_cable_boq(
 
 
 def generate_full_boq(
-    rooms: List[Dict],
-    loops: List[Dict],
+    rooms: list[dict],
+    loops: list[dict],
     panels: int = 1,
-    battery_spec: Optional[BatterySpec] = None,
+    battery_spec: BatterySpec | None = None,
     include_notification: bool = True,
 ) -> BOQResult:
     """Generate a complete Bill of Quantities for a fire alarm system.
@@ -604,7 +604,7 @@ def generate_full_boq(
         warnings for unusual configurations.
 
     """
-    warnings: List[str] = []
+    warnings: list[str] = []
 
     if battery_spec is None:
         battery_spec = BatterySpec(
@@ -612,7 +612,7 @@ def generate_full_boq(
             alarm_current_ma=1500.0,
         )
 
-    all_items: List[BOQItem] = []
+    all_items: list[BOQItem] = []
 
     # --- Panels ---
     all_items.append(
@@ -792,7 +792,7 @@ def generate_battery_result_for_release_gate(
     standby_hours: float = 24.0,
     alarm_minutes: float = 5.0,
     safety_factor: float = 1.20,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Generate battery sizing result for release_gates.py Gate 8.
 
     This is the output path that calls :func:`required_battery_capacity_ah`

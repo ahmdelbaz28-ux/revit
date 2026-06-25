@@ -1,4 +1,4 @@
-"""fireai/agents/tool_selector.py — Dynamic Tool Routing with Capability Scoring
+"""fireai/agents/tool_selector.py — Dynamic Tool Routing with Capability Scoring.
 ================================================================================
 Scores available tools by capability match, provides context-aware
 orchestration, and adaptive routing based on historical success.
@@ -13,7 +13,7 @@ import time
 import uuid
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +27,7 @@ class Capability:
     version: str = "1.0"
     description: str = ""
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
@@ -35,12 +35,12 @@ class Capability:
 class Task:
     task_id: str = ""
     description: str = ""
-    required_capabilities: List[str] = field(default_factory=list)
+    required_capabilities: list[str] = field(default_factory=list)
     complexity: float = 0.5  # 0.0 (simple) to 1.0 (very complex)
     time_constraint: float = 0.5  # 0.0 (no rush) to 1.0 (urgent)
-    required_standards: List[str] = field(default_factory=list)
+    required_standards: list[str] = field(default_factory=list)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
@@ -48,9 +48,9 @@ class Task:
 class Context:
     design_complexity: float = 0.5
     time_constraints: float = 0.5
-    required_standards: List[str] = field(default_factory=list)
+    required_standards: list[str] = field(default_factory=list)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
@@ -58,11 +58,11 @@ class Context:
 class RoutingLog:
     task_id: str
     selected_tool: str
-    scores: List[Tuple[str, float]]
+    scores: list[tuple[str, float]]
     context: str  # JSON
     timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {"task_id": self.task_id, "selected_tool": self.selected_tool, "scores": self.scores, "context": self.context, "timestamp": self.timestamp}
 
 
@@ -73,7 +73,7 @@ class ToolSelector:
     """Dynamic tool routing with capability scoring:
     - Scores available tools by capability match
     - Context-aware orchestration (picks best tool for job)
-    - Adaptive routing based on historical success
+    - Adaptive routing based on historical success.
     """
 
     DIRECTNESS_WEIGHT = 0.4
@@ -81,10 +81,10 @@ class ToolSelector:
     PERFORMANCE_WEIGHT = 0.2
     AVAILABILITY_WEIGHT = 0.1
 
-    def __init__(self, db_path: str = "fireai_learning.sqlite3"):
+    def __init__(self, db_path: str = "fireai_learning.sqlite3") -> None:
         self.db_path = db_path
-        self._tools: Dict[str, dict] = {}
-        self._score_fns: Dict[str, Callable] = {}
+        self._tools: dict[str, dict] = {}
+        self._score_fns: dict[str, Callable] = {}
         self.conn = sqlite3.connect(db_path, check_same_thread=False)
         self.conn.row_factory = sqlite3.Row
         self._create_tables()
@@ -116,8 +116,8 @@ class ToolSelector:
     def register_tool(
         self,
         name: str,
-        capabilities: List[Capability],
-        score_fn: Optional[Callable] = None,
+        capabilities: list[Capability],
+        score_fn: Callable | None = None,
     ) -> None:
         self._tools[name] = {
             "capabilities": {c.name for c in capabilities},
@@ -134,7 +134,7 @@ class ToolSelector:
             self._score_fns[name] = _default_score
         logger.info("Registered tool '%s' with %d capabilities", name, len(capabilities))
 
-    def select_tool(self, task: Task, context: Context) -> Optional[str]:
+    def select_tool(self, task: Task, context: Context) -> str | None:
         scored = self.score_tools(task, context)
         if not scored:
             return None
@@ -160,11 +160,11 @@ class ToolSelector:
         logger.info("Selected tool '%s' for task '%s' (score=%.4f)", best_tool, task.description, scored[0][1])
         return best_tool
 
-    def score_tools(self, task: Task, context: Context) -> List[Tuple[str, float]]:
+    def score_tools(self, task: Task, context: Context) -> list[tuple[str, float]]:
         if not self._tools:
             return []
 
-        results: List[Tuple[str, float]] = []
+        results: list[tuple[str, float]] = []
         for name, tool_info in self._tools.items():
             score = self._compute_score(name, tool_info, task, context)
             results.append((name, round(score, 4)))
@@ -246,8 +246,8 @@ class ToolSelector:
         self.conn.commit()
         logger.info("Recorded result for tool '%s': success=%s (%.0fms)", tool_name, success, execution_time_ms)
 
-    def get_tool_summary(self) -> Dict[str, Dict[str, Any]]:
-        summary: Dict[str, Dict[str, Any]] = {}
+    def get_tool_summary(self) -> dict[str, dict[str, Any]]:
+        summary: dict[str, dict[str, Any]] = {}
         for name, info in self._tools.items():
             cursor = self.conn.cursor()
             cursor.execute(

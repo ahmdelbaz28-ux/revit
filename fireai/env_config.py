@@ -1,4 +1,4 @@
-"""env_config.py — Environment Configuration with Validation
+"""env_config.py — Environment Configuration with Validation.
 ==========================================================
 Replaces raw .env parsing with validated, fail-fast configuration.
 

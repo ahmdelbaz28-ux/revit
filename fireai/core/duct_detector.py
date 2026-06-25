@@ -1,4 +1,4 @@
-"""duct_detector.py — NFPA 72 §17.7.5 Duct Detector Placement
+"""duct_detector.py — NFPA 72 §17.7.5 Duct Detector Placement.
 ============================================================
 Computes required duct smoke detector positions per NFPA 72-2022 §17.7.5.
 
@@ -29,7 +29,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
-from typing import List, Optional, Tuple
+from typing import Tuple
 
 Point = Tuple[float, float]
 
@@ -81,7 +81,7 @@ class DuctSpec:
     width_m: float
     start_point: Point = (0.0, 0.0)
     end_point: Point = (1.0, 0.0)
-    airflow_cfm: Optional[float] = None
+    airflow_cfm: float | None = None
     duct_type: str = "supply"
     height_m: float = 0.0  # cross-section height (0 = round duct; width_m = diameter)
 
@@ -119,17 +119,16 @@ class DuctSpec:
                 raise ValueError(
                     f"DuctSpec.{name}={val} is invalid. Must be a non-negative finite number. [NFPA 72 §17.7.5.1]"
                 )
-        if self.airflow_cfm is not None:
-            if (
-                not isinstance(self.airflow_cfm, (int, float))
-                or not math.isfinite(self.airflow_cfm)
-                or self.airflow_cfm < 0
-            ):
-                raise ValueError(
-                    f"DuctSpec.airflow_cfm={self.airflow_cfm} is invalid. "
-                    f"Must be a non-negative finite number or None. "
-                    f"[NFPA 72 §17.7.5.1]"
-                )
+        if self.airflow_cfm is not None and (
+            not isinstance(self.airflow_cfm, (int, float))
+            or not math.isfinite(self.airflow_cfm)
+            or self.airflow_cfm < 0
+        ):
+            raise ValueError(
+                f"DuctSpec.airflow_cfm={self.airflow_cfm} is invalid. "
+                f"Must be a non-negative finite number or None. "
+                f"[NFPA 72 §17.7.5.1]"
+            )
 
 
 @dataclass(frozen=True)
@@ -160,12 +159,12 @@ class DuctAnalysisResult:
     duct_id: str
     duct_length_m: float
     duct_width_m: float
-    detectors: List[DuctDetectorPosition] = field(default_factory=list)
+    detectors: list[DuctDetectorPosition] = field(default_factory=list)
     detector_count: int = 0
     spacing_used_m: float = 0.0
     exempt: bool = False
-    exemption_reason: Optional[str] = None
-    warnings: List[str] = field(default_factory=list)
+    exemption_reason: str | None = None
+    warnings: list[str] = field(default_factory=list)
     velocity_fpm: float = 0.0  # computed air velocity in FPM
     velocity_blindness: bool = False  # True if velocity exceeds UL 268A limit
     # V51 FIX: When velocity_blindness=True, placed detectors are non-functional.
@@ -198,7 +197,7 @@ def analyse_duct(duct: DuctSpec) -> DuctAnalysisResult:
         DuctAnalysisResult with detector positions, exemptions, and warnings.
 
     """
-    warnings: List[str] = []
+    warnings: list[str] = []
 
     # V68 FIX: Three-tier exemption logic per NFPA 72 §17.7.5.1:
     # 1. CFM override: When KNOWN CFM >2000 for supply/return/mixed,
@@ -359,7 +358,7 @@ def analyse_duct(duct: DuctSpec) -> DuctAnalysisResult:
     dy = ey - sy
     duct_vec_len = math.hypot(dx, dy)
 
-    positions: List[DuctDetectorPosition] = []
+    positions: list[DuctDetectorPosition] = []
     for i in range(n_detectors):
         dist = spacing_m * (i + 0.5)  # centred within each segment
         if duct_vec_len > 1e-9:
@@ -403,11 +402,11 @@ def analyse_duct(duct: DuctSpec) -> DuctAnalysisResult:
     )
 
 
-def analyse_ducts(ducts: List[DuctSpec]) -> List[DuctAnalysisResult]:
+def analyse_ducts(ducts: list[DuctSpec]) -> list[DuctAnalysisResult]:
     """Analyse a list of ducts. Returns one result per duct."""
     return [analyse_duct(d) for d in ducts]
 
 
-def total_duct_detectors(results: List[DuctAnalysisResult]) -> int:
+def total_duct_detectors(results: list[DuctAnalysisResult]) -> int:
     """Sum detector counts across all duct results."""
     return sum(r.detector_count for r in results)

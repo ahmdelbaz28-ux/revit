@@ -1,4 +1,4 @@
-"""v17_core/dynamic_tenability_evaluator.py — NFPA 101 §9.3 ASET vs RSET
+"""v17_core/dynamic_tenability_evaluator.py — NFPA 101 §9.3 ASET vs RSET.
 ======================================================================
 CRITICAL LIFE-SAFETY MODULE — Part of the V17 Critical Trilogy
 
@@ -50,7 +50,7 @@ Usage:
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 # Import the correct provenance shim (not the consultant's fireai.v8_core path)
 try:
@@ -140,12 +140,12 @@ class TenabilityEvaluator:
         longest_travel_dist_m: float,
         estimated_fill_time_s: float,
         safety_margin: float = 2.0,
-        occupancy_type: Optional[str] = None,
+        occupancy_type: str | None = None,
         room_height_m: float = 3.0,
         is_sprinklered: bool = True,
-        smoke_layer_height_series: Optional[List[Tuple[float, float]]] = None,
-        temperature_series: Optional[List[Tuple[float, float]]] = None,
-        co_ppm_series: Optional[List[Tuple[float, float]]] = None,
+        smoke_layer_height_series: list[tuple[float, float]] | None = None,
+        temperature_series: list[tuple[float, float]] | None = None,
+        co_ppm_series: list[tuple[float, float]] | None = None,
     ) -> Any:
         """Validate ASET vs RSET with DecisionProvenance audit trail.
 
@@ -326,10 +326,10 @@ class TenabilityEvaluator:
         fire_growth_rate: str = "medium",
         fire_load_MJ: float = 500.0,
         is_sprinklered: bool = True,
-        safety_factor_override: Optional[float] = None,
+        safety_factor_override: float | None = None,
         ventilation_opening_m2: float = 2.0,
         ceiling_type: str = "FLAT",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Perform a complete ASET/RSET analysis using physics-based engine.
 
         This is the integration function that connects to semi_cfast_engine

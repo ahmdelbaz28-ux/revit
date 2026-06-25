@@ -31,7 +31,6 @@ import logging
 import os
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional
 
 import httpx
 
@@ -174,8 +173,8 @@ class RegionService:
         "https://restcountries.com/v3.1/alpha"
     )
 
-    def __init__(self):
-        self._client: Optional[httpx.AsyncClient] = None
+    def __init__(self) -> None:
+        self._client: httpx.AsyncClient | None = None
 
     async def _get_client(self) -> httpx.AsyncClient:
         """Lazy-initialize the HTTP client."""
@@ -281,7 +280,7 @@ class RegionService:
             source="default",
         )
 
-    async def _fetch_country_info(self, country_code: str) -> Optional[dict]:
+    async def _fetch_country_info(self, country_code: str) -> dict | None:
         """Fetch country information from REST Countries API."""
         client = await self._get_client()
         response = await client.get(f"{self.REST_COUNTRIES_URL}/{country_code}")
@@ -294,7 +293,7 @@ class RegionService:
 
 # ── Singleton ──────────────────────────────────────────────────────────────
 
-_region_service: Optional[RegionService] = None
+_region_service: RegionService | None = None
 
 
 def get_region_service() -> RegionService:

@@ -55,7 +55,7 @@ import logging
 import os
 import sqlite3
 import threading
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 # Optional ECDSA support - graceful degradation if not installed
 try:
@@ -84,7 +84,7 @@ class SecurityError(Exception):
 
 
 # Module-level dev key (generated once, warned once)
-_DEV_HMAC_KEY: Optional[str] = None
+_DEV_HMAC_KEY: str | None = None
 _DEV_KEY_WARNED = False
 
 
@@ -169,7 +169,7 @@ _db_initialized = False
 
 # Persistent connection for :memory: databases (each sqlite3.connect(":memory:")
 # creates a NEW empty database, so we must reuse the same connection)
-_memory_conn: Optional[sqlite3.Connection] = None
+_memory_conn: sqlite3.Connection | None = None
 _init_lock: threading.Lock = threading.Lock()  # Guards _db_initialized singleton
 
 # V137 F-1: Lock for the hash chain read-modify-write sequence.
@@ -318,7 +318,7 @@ def _get_last_hash() -> str:
 # ============================================================================
 
 # Module-level ECDSA signer (lazy initialization)
-_ecdsa_signing_key: Optional[Any] = None
+_ecdsa_signing_key: Any | None = None
 _ecdsa_initialized = False
 
 
@@ -365,7 +365,7 @@ def _get_ecdsa_signer():
         return None
 
 
-def _compute_ecdsa_signature(current_hash: str) -> Optional[str]:
+def _compute_ecdsa_signature(current_hash: str) -> str | None:
     """Compute ECDSA signature on the hash chain entry.
 
     Signs the current_hash (which already chains to previous_hash),
@@ -387,7 +387,7 @@ def _compute_ecdsa_signature(current_hash: str) -> Optional[str]:
         return None
 
 
-def verify_ecdsa_signature(record: Dict[str, Any], public_key_pem: str) -> bool:
+def verify_ecdsa_signature(record: dict[str, Any], public_key_pem: str) -> bool:
     """Verify ECDSA signature of an audit record using a public key.
 
     This function can be used by third parties (Civil Defense, AHJ,
@@ -454,7 +454,7 @@ def verify_ecdsa_signature(record: Dict[str, Any], public_key_pem: str) -> bool:
 # ============================================================================
 
 
-def add_event(event_type: str, room_id: str, details_dict: Dict[str, Any]) -> str:
+def add_event(event_type: str, room_id: str, details_dict: dict[str, Any]) -> str:
     """Add a new audit event to the chain with optional ECDSA signing.
 
     V11 Enhancement: When ECDSA is enabled (AUDIT_ECDSA_KEY_PEM set),
@@ -523,20 +523,24 @@ def add_event(event_type: str, room_id: str, details_dict: Dict[str, Any]) -> st
     return current_hash
 
 
-def verify_chain() -> Optional[Tuple[bool, Optional[Dict[str, Any]]]]:
+def verify_chain() -> tuple[bool, dict[str, Any] | None] | None:
     """Verify the integrity of the entire hash chain AND HMAC signature.
+
+    V138 F-9 FIX: Added _chain_lock to prevent concurrent read-during-write
+    on the shared :memory: connection. Without this, verify_chain could
+    read a partially-written row while add_event is mid-insert.
 
     Returns:
         (is_valid, error_details) tuple
-        - is_valid: True if chain AND signatures are intact, False if tampered
-        - error_details: Details of the tampered event if any
 
     """
-    conn = _get_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM audit_log ORDER BY id")
-    rows = cursor.fetchall()
-    _release_connection(conn)
+    # V138 F-9: Acquire chain lock to prevent read-during-write race
+    with _chain_lock:
+        conn = _get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM audit_log ORDER BY id")
+        rows = cursor.fetchall()
+        _release_connection(conn)
 
     if not rows:
         return True, None
@@ -590,7 +594,7 @@ def verify_chain() -> Optional[Tuple[bool, Optional[Dict[str, Any]]]]:
     return True, None
 
 
-def get_events() -> List[Dict[str, Any]]:
+def get_events() -> list[dict[str, Any]]:
     """Get all events as a list of dictionaries (read-only).
 
     V11 Enhancement: Includes ecdsa_signature field when available.
@@ -651,7 +655,7 @@ class AuditStore:
     """
 
     @staticmethod
-    def add_event(event_type: str, room_id: str, details_dict: Dict[str, Any]) -> str:
+    def add_event(event_type: str, room_id: str, details_dict: dict[str, Any]) -> str:
         """Add a new audit event to the hash chain."""
         return add_event(event_type, room_id, details_dict)
 
@@ -665,7 +669,7 @@ class AuditStore:
         return result
 
     @staticmethod
-    def get_events() -> List[Dict[str, Any]]:
+    def get_events() -> list[dict[str, Any]]:
         """Return all events as a list of dictionaries (read-only)."""
         return get_events()
 

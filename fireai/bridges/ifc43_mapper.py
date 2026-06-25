@@ -1,4 +1,4 @@
-"""ifc43_mapper.py — IFC 4.3 Schema Mapper for FireAI
+"""ifc43_mapper.py — IFC 4.3 Schema Mapper for FireAI.
 ======================================================
 
 MISSION TASK 1.3 — IFC 4.3 Integration
@@ -35,6 +35,7 @@ References
 - ISO 16739-1:2024 (IFC 4.3)
 - buildingSMART IFC 4.3 ADD2 specification: https://standards.buildingsmart.org/
 - agent.md Rule 6/14: VERIFY BEFORE CHANGING
+
 """
 
 from __future__ import annotations
@@ -42,7 +43,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -114,7 +115,7 @@ class IFC43ElementType(str, Enum):
 
 # Mapping from FireAI internal types to IFC 4.3 element types
 # Per agent.md Rule 6: verified against actual fireai detector type strings
-FIREAI_TO_IFC43_MAP: Dict[str, IFC43ElementType] = {
+FIREAI_TO_IFC43_MAP: dict[str, IFC43ElementType] = {
     # Smoke detectors
     "smoke": IFC43ElementType.SMOKE_DETECTOR,
     "SMOKE": IFC43ElementType.SMOKE_DETECTOR,
@@ -170,7 +171,7 @@ class IFC43Property:
     name: str
     value: Any
     pset_name: str = "Pset_FireAI"  # custom FireAI property set
-    unit: Optional[str] = None
+    unit: str | None = None
     description: str = ""
 
 
@@ -198,12 +199,12 @@ class IFC43MappedElement:
 
     global_id: str  # IFC GlobalId (22-char base64)
     ifc_type: str   # e.g., "IfcFireAlarmInstance"
-    predefined_type: Optional[str]  # e.g., "SMOKE_DETECTOR"
+    predefined_type: str | None  # e.g., "SMOKE_DETECTOR"
     name: str
     description: str = ""
-    location: Optional[Tuple[float, float, float]] = None  # (x, y, z) in metres
-    contained_in: Optional[str] = None  # GlobalId of containing IfcSpace
-    property_sets: Dict[str, Dict[str, Any]] = field(default_factory=dict)
+    location: tuple[float, float, float] | None = None  # (x, y, z) in metres
+    contained_in: str | None = None  # GlobalId of containing IfcSpace
+    property_sets: dict[str, dict[str, Any]] = field(default_factory=dict)
     source_schema: str = "IFC4"  # original schema before mapping
     target_schema: str = IFC43_SCHEMA_VERSION
 
@@ -257,6 +258,7 @@ class IFC43Mapper:
 
         Returns:
             22-character GlobalId string using IFC base64 alphabet.
+
         """
         import hashlib
 
@@ -291,7 +293,7 @@ class IFC43Mapper:
     # Element Mapping
     # ------------------------------------------------------------------
 
-    def map_detector(self, detector: Dict[str, Any]) -> IFC43MappedElement:
+    def map_detector(self, detector: dict[str, Any]) -> IFC43MappedElement:
         """Map a FireAI detector dict to IFC 4.3 representation.
 
         Args:
@@ -310,6 +312,7 @@ class IFC43Mapper:
 
         Returns:
             IFC43MappedElement with all fields populated.
+
         """
         device_id = str(detector.get("device_id", "UNKNOWN"))
         fireai_type = str(detector.get("type", "smoke")).lower()
@@ -354,7 +357,7 @@ class IFC43Mapper:
             )
 
         # Build property sets
-        property_sets: Dict[str, Dict[str, Any]] = {}
+        property_sets: dict[str, dict[str, Any]] = {}
 
         # Pset 1: Common fire alarm properties (IFC 4.3 standard)
         property_sets[PSET_FIREALARM_COMMON] = {
@@ -403,7 +406,7 @@ class IFC43Mapper:
             target_schema=self.target_schema,
         )
 
-    def map_room(self, room: Dict[str, Any]) -> IFC43MappedElement:
+    def map_room(self, room: dict[str, Any]) -> IFC43MappedElement:
         """Map a FireAI room dict to IFC 4.3 IfcSpace.
 
         Args:
@@ -418,11 +421,12 @@ class IFC43Mapper:
 
         Returns:
             IFC43MappedElement representing an IfcSpace.
+
         """
         room_id = str(room.get("room_id", "UNKNOWN"))
         global_id = self._generate_global_id(f"room:{room_id}")
 
-        property_sets: Dict[str, Dict[str, Any]] = {}
+        property_sets: dict[str, dict[str, Any]] = {}
         property_sets["Pset_SpaceCommon"] = {
             "Reference": room_id,
             "Category": "Rooms",
@@ -448,7 +452,7 @@ class IFC43Mapper:
             target_schema=self.target_schema,
         )
 
-    def map_building(self, building: Dict[str, Any]) -> IFC43MappedElement:
+    def map_building(self, building: dict[str, Any]) -> IFC43MappedElement:
         """Map a FireAI building to IFC 4.3 IfcBuilding."""
         building_id = str(building.get("building_id", "BUILDING-001"))
         global_id = self._generate_global_id(f"building:{building_id}")
@@ -481,12 +485,13 @@ class IFC43Mapper:
         organization: str = "FireAI Platform",
         application: str = "FireAI IFC43Mapper v1.0",
         origin_schema: str = "IFC4",
-    ) -> Dict[str, str]:
+    ) -> dict[str, str]:
         """Generate IFC 4.3 file header metadata.
 
         Returns:
             Dict with keys: file_description, file_name, file_schema.
             Suitable for ifcopenshell.file() header setup.
+
         """
         from datetime import datetime, timezone
 
@@ -516,8 +521,8 @@ class IFC43Mapper:
 
     def map_project(
         self,
-        project: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        project: dict[str, Any],
+    ) -> dict[str, Any]:
         """Map an entire FireAI project to IFC 4.3 representation.
 
         Args:
@@ -534,6 +539,7 @@ class IFC43Mapper:
                 - detectors: List[IFC43MappedElement]
                 - schema_version: IFC43_SCHEMA_VERSION
                 - statistics: mapping stats
+
         """
         building = project.get("building", {})
         rooms = project.get("rooms", [])
@@ -571,15 +577,15 @@ class IFC43Mapper:
 
 
 __all__ = [
-    "IFC43_SCHEMA_VERSION",
-    "IFC43_FILE_DESCRIPTION",
-    "IFC43ElementType",
     "FIREAI_TO_IFC43_MAP",
-    "IFC43Property",
+    "IFC43_FILE_DESCRIPTION",
+    "IFC43_SCHEMA_VERSION",
+    "PSET_FIREAI_AUDIT",
+    "PSET_FIREAI_DESIGN",
+    "PSET_FIREAI_SAFETY",
+    "PSET_FIREALARM_COMMON",
+    "IFC43ElementType",
     "IFC43MappedElement",
     "IFC43Mapper",
-    "PSET_FIREALARM_COMMON",
-    "PSET_FIREAI_DESIGN",
-    "PSET_FIREAI_AUDIT",
-    "PSET_FIREAI_SAFETY",
+    "IFC43Property",
 ]

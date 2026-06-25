@@ -1,4 +1,4 @@
-"""darcy_weisbach_solver.py — Darcy-Weisbach Friction Loss for Non-Water Systems
+"""darcy_weisbach_solver.py — Darcy-Weisbach Friction Loss for Non-Water Systems.
 ==============================================================================
 
 MISSION PHASE 4.3 — Hydraulic Logic Upgrade for CO2 and Clean Agent Systems
@@ -74,6 +74,7 @@ References
 - Crane Technical Paper No. 410 (Flow of Fluids)
 - Munson, "Fundamentals of Fluid Mechanics", 8th Ed.
 - agent.md Rule 17 (Root-Cause Analysis)
+
 """
 
 from __future__ import annotations
@@ -82,7 +83,7 @@ import logging
 import math
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -136,7 +137,7 @@ class FluidType(str, Enum):
 
 # Physical properties at typical storage/design temperatures
 # Sources: NFPA 12, NFPA 2001, manufacturer datasheets
-FLUID_PROPERTIES: Dict[FluidType, Dict[str, float]] = {
+FLUID_PROPERTIES: dict[FluidType, dict[str, float]] = {
     FluidType.WATER: {
         "density_kg_m3": 999.7,         # 20°C
         "viscosity_pa_s": 1.002e-3,     # 20°C
@@ -201,6 +202,7 @@ class DarcyWeisbachResult:
         fluid_type: Fluid type used.
         warnings: List of warning messages.
         nfpa_reference: NFPA standard reference.
+
     """
 
     head_loss_m: float
@@ -226,7 +228,7 @@ class DarcyWeisbachResult:
         if self.warnings is None:
             self.warnings = []
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "head_loss_m": round(self.head_loss_m, 6),
             "pressure_loss_pa": round(self.pressure_loss_pa, 2),
@@ -252,9 +254,9 @@ def calculate_darcy_weisbach_friction_loss(
     pipe_diameter_m: float,
     flow_rate_kg_s: float,
     fluid_type: FluidType = FluidType.WATER,
-    pipe_roughness_m: Optional[float] = None,
-    density_kg_m3: Optional[float] = None,
-    viscosity_pa_s: Optional[float] = None,
+    pipe_roughness_m: float | None = None,
+    density_kg_m3: float | None = None,
+    viscosity_pa_s: float | None = None,
 ) -> DarcyWeisbachResult:
     """Calculate friction loss using the Darcy-Weisbach equation.
 
@@ -273,6 +275,7 @@ def calculate_darcy_weisbach_friction_loss(
 
     Raises:
         ValueError: If any input is invalid (NaN, Inf, negative, out of bounds).
+
     """
     # ── Input Validation (per agent.md V57 NaN/Inf bypass) ──
     _validate_input("pipe_length_m", pipe_length_m, min_val=0.0)
@@ -407,30 +410,30 @@ def _compute_friction_factor(
 
     Returns:
         Darcy friction factor (dimensionless).
+
     """
     if flow_regime == "laminar":
         # Laminar flow: f = 64 / Re (exact, Stokes' law)
         # Per Munson §8.3. Laminar is always "converged" (exact formula).
         return 64.0 / reynolds if reynolds > 0 else 0.0, True
 
-    elif flow_regime == "turbulent":
+    if flow_regime == "turbulent":
         # Turbulent flow: Use Colebrook-White equation (implicit)
         # V138 F-5: Returns (f, converged) tuple
         return _solve_colebrook_white(reynolds, roughness, diameter)
 
-    else:
-        # Transitional: linear interpolation between laminar and turbulent
-        f_laminar = 64.0 / reynolds if reynolds > 0 else 0.0
-        f_turbulent, _ = _solve_colebrook_white(reynolds, roughness, diameter)
-        alpha = (reynolds - RE_LAMINAR_MAX) / (RE_TURBULENT_MIN - RE_LAMINAR_MAX)
-        return f_laminar * (1 - alpha) + f_turbulent * alpha, True
+    # Transitional: linear interpolation between laminar and turbulent
+    f_laminar = 64.0 / reynolds if reynolds > 0 else 0.0
+    f_turbulent, _ = _solve_colebrook_white(reynolds, roughness, diameter)
+    alpha = (reynolds - RE_LAMINAR_MAX) / (RE_TURBULENT_MIN - RE_LAMINAR_MAX)
+    return f_laminar * (1 - alpha) + f_turbulent * alpha, True
 
 
 def _solve_colebrook_white(
     reynolds: float,
     roughness: float,
     diameter: float,
-) -> Tuple[float, bool]:
+) -> tuple[float, bool]:
     """Solve the Colebrook-White equation for Darcy friction factor.
 
     V138 F-5: Returns (friction_factor, converged) tuple so callers
@@ -449,6 +452,7 @@ def _solve_colebrook_white(
 
     Returns:
         Darcy friction factor.
+
     """
     if reynolds <= 0:
         return (0.0, False)
@@ -473,7 +477,7 @@ def _solve_colebrook_white(
     #   - NaN propagates to head_loss, pressure_loss (all NaN)
     #   - NaN < 0 is False, so sanity checks don't catch it
     # Now we break early if any intermediate value is non-finite.
-    for iteration in range(COLEBROOK_MAX_ITERATIONS):
+    for _iteration in range(COLEBROOK_MAX_ITERATIONS):
         # V135 F-15: Guard against non-finite f at loop start
         if not math.isfinite(f) or f <= 0:
             break
@@ -495,11 +499,17 @@ def _solve_colebrook_white(
             break
 
         # Derivative: g'(f) = -1/(2×f^(3/2)) + 2 × (-1/ln(10)) × (-2.51/(Re×2×f^(3/2)))
-        #                              / ( (ε/d)/3.7 + 2.51/(Re×√f) )
-        denom = log_arg  # Same as log_arg
+        # V138 F-4 FIX: Corrected derivative sign.
+        # The Colebrook-White function is: g(f) = 1/sqrt(f) + 2*log10(A + B/sqrt(f))
+        # where A = eps/(3.7*d), B = 2.51/Re
+        # The derivative is: g'(f) = -1/(2*f^(3/2)) - 2/(ln(10)) * B/(2*f^(3/2)) / (A + B/sqrt(f))
+        # The OLD code had + instead of - on the second term.
+        denom = log_arg  # Same as log_arg = A + B/sqrt(f)
         if denom <= 0:
             break
-        g_prime = -1.0 / (2.0 * f * sqrt_f) + (2.0 / math.log(10)) * (2.51 / (reynolds * 2.0 * f * sqrt_f)) / denom
+        # V138 F-4: Correct sign — both terms should be NEGATIVE
+        B_over_2f32 = 2.51 / (reynolds * 2.0 * f * sqrt_f)
+        g_prime = -1.0 / (2.0 * f * sqrt_f) - (2.0 / math.log(10)) * B_over_2f32 / denom
 
         # V135 F-15: Guard against non-finite g_prime (Inf or NaN)
         if not math.isfinite(g_prime) or abs(g_prime) < 1e-15:
@@ -556,8 +566,8 @@ def _solve_colebrook_white(
 def _validate_input(
     name: str,
     value: float,
-    min_val: Optional[float] = None,
-    max_val: Optional[float] = None,
+    min_val: float | None = None,
+    max_val: float | None = None,
 ) -> None:
     """Validate a numeric input parameter.
 
@@ -572,6 +582,7 @@ def _validate_input(
 
     Raises:
         ValueError: If value is NaN, Inf, or out of bounds.
+
     """
     if not math.isfinite(value):
         raise ValueError(f"{name} must be finite, got {value}")
@@ -591,7 +602,7 @@ def compare_with_hazen_williams(
     pipe_diameter_m: float,
     flow_rate_kg_s: float,
     c_factor: float = 120.0,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Compare Darcy-Weisbach and Hazen-Williams results for the same pipe.
 
     Useful for validation: for water at room temperature, the two methods
@@ -609,6 +620,7 @@ def compare_with_hazen_williams(
 
     Returns:
         Dict with both results and comparison metrics.
+
     """
     # V135 F-28 FIX: Validate inputs before calculation.
     # The OLD code didn't call _validate_input, so negative pipe_length
@@ -660,12 +672,12 @@ def compare_with_hazen_williams(
 
 
 __all__ = [
-    "FluidType",
     "FLUID_PROPERTIES",
-    "DarcyWeisbachResult",
-    "calculate_darcy_weisbach_friction_loss",
-    "compare_with_hazen_williams",
     "GRAVITY_M_S2",
     "RE_LAMINAR_MAX",
     "RE_TURBULENT_MIN",
+    "DarcyWeisbachResult",
+    "FluidType",
+    "calculate_darcy_weisbach_friction_loss",
+    "compare_with_hazen_williams",
 ]

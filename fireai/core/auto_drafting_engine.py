@@ -1,4 +1,4 @@
-"""auto_drafting_engine.py — A* Wall-Aware Auto-Drafting for Fire Alarm Shop Drawings
+"""auto_drafting_engine.py — A* Wall-Aware Auto-Drafting for Fire Alarm Shop Drawings.
 ===================================================================================
 CRITICAL LIFE-SAFETY MODULE
 
@@ -45,7 +45,7 @@ from __future__ import annotations
 import heapq
 import math
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 try:
     import ezdxf
@@ -69,7 +69,7 @@ A_STAR_GRID_RESOLUTION_M: float = 0.5
 precise routing but increase computation time."""
 
 # Device type to DXF block name mapping
-DEVICE_TYPE_TO_BLOCK: Dict[str, str] = {
+DEVICE_TYPE_TO_BLOCK: dict[str, str] = {
     "SMOKE": "FA_SMOKE",
     "SMOKE_PHOTOELECTRIC": "FA_SMOKE",
     "SMOKE_IONIZATION": "FA_SMOKE",
@@ -89,7 +89,7 @@ DEVICE_TYPE_TO_BLOCK: Dict[str, str] = {
 }
 
 # DXF block definitions — programmatic, no undefined references
-BLOCK_DEFINITIONS: Dict[str, Dict[str, Any]] = {
+BLOCK_DEFINITIONS: dict[str, dict[str, Any]] = {
     "FA_SMOKE": {
         "shape": "circle",
         "radius": 0.15,
@@ -144,7 +144,7 @@ BLOCK_DEFINITIONS: Dict[str, Dict[str, Any]] = {
 }
 
 # CAD Layer definitions
-CAD_LAYERS: Dict[str, Dict[str, Any]] = {
+CAD_LAYERS: dict[str, dict[str, Any]] = {
     "FA-DEVICES": {"color": 3, "linetype": "Continuous", "description": "Fire alarm device symbols"},
     "FA-WIRING-CLASSA": {"color": 1, "linetype": "Continuous", "description": "Class A wiring (outgoing)"},
     "FA-WIRING-CLASSB": {"color": 5, "linetype": "Continuous", "description": "Class B wiring"},
@@ -178,8 +178,8 @@ class _AStarRouter:
 
     def __init__(
         self,
-        walls: List[Dict[str, Any]],
-        bounds: Tuple[float, float, float, float],
+        walls: list[dict[str, Any]],
+        bounds: tuple[float, float, float, float],
         resolution: float = A_STAR_GRID_RESOLUTION_M,
     ) -> None:
         """Initialise the A* router.
@@ -205,8 +205,8 @@ class _AStarRouter:
     def _build_grid(self) -> None:
         """Build occupancy grid from walls."""
         min_x, min_y, max_x, max_y = self._bounds
-        self._grid_width = int(math.ceil((max_x - min_x) / self._resolution))
-        self._grid_height = int(math.ceil((max_y - min_y) / self._resolution))
+        self._grid_width = math.ceil((max_x - min_x) / self._resolution)
+        self._grid_height = math.ceil((max_y - min_y) / self._resolution)
         self._origin = (min_x, min_y)
 
         # Rasterize walls onto grid
@@ -223,9 +223,9 @@ class _AStarRouter:
 
     def _rasterize_line(
         self,
-        start: Tuple[float, float],
-        end: Tuple[float, float],
-    ) -> List[Tuple[int, int]]:
+        start: tuple[float, float],
+        end: tuple[float, float],
+    ) -> list[tuple[int, int]]:
         """Rasterize a line segment onto grid cells."""
         cells = []
         x0, y0 = start
@@ -233,7 +233,7 @@ class _AStarRouter:
         dx = x1 - x0
         dy = y1 - y0
         steps = max(abs(dx), abs(dy)) / self._resolution
-        steps = max(int(math.ceil(steps)), 1)
+        steps = max(math.ceil(steps), 1)
 
         for i in range(steps + 1):
             t = i / steps
@@ -244,13 +244,13 @@ class _AStarRouter:
 
         return cells
 
-    def _world_to_grid(self, x: float, y: float) -> Tuple[int, int]:
+    def _world_to_grid(self, x: float, y: float) -> tuple[int, int]:
         """Convert world coordinates to grid indices."""
         gx = int((x - self._origin[0]) / self._resolution)
         gy = int((y - self._origin[1]) / self._resolution)
         return (gx, gy)
 
-    def _grid_to_world(self, gx: int, gy: int) -> Tuple[float, float]:
+    def _grid_to_world(self, gx: int, gy: int) -> tuple[float, float]:
         """Convert grid indices to world coordinates."""
         x = self._origin[0] + (gx + 0.5) * self._resolution
         y = self._origin[1] + (gy + 0.5) * self._resolution
@@ -258,17 +258,17 @@ class _AStarRouter:
 
     def _heuristic(
         self,
-        a: Tuple[int, int],
-        b: Tuple[int, int],
+        a: tuple[int, int],
+        b: tuple[int, int],
     ) -> float:
         """Euclidean distance heuristic."""
         return math.sqrt((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2)
 
     def find_path(
         self,
-        start: Tuple[float, float],
-        end: Tuple[float, float],
-    ) -> List[Tuple[float, float]]:
+        start: tuple[float, float],
+        end: tuple[float, float],
+    ) -> list[tuple[float, float]]:
         """Find wall-avoiding path from start to end using A*.
 
         Args:
@@ -290,11 +290,11 @@ class _AStarRouter:
             return []
 
         # A* search
-        open_set: List[Tuple[float, int, Tuple[int, int]]] = []
+        open_set: list[tuple[float, int, tuple[int, int]]] = []
         counter = 0
         heapq.heappush(open_set, (0.0, counter, start_g))
-        came_from: Dict[Tuple[int, int], Tuple[int, int]] = {}
-        g_score: Dict[Tuple[int, int], float] = {start_g: 0.0}
+        came_from: dict[tuple[int, int], tuple[int, int]] = {}
+        g_score: dict[tuple[int, int], float] = {start_g: 0.0}
         closed: set = set()
 
         while open_set:
@@ -345,8 +345,8 @@ class _AStarRouter:
 
     def _find_nearest_free(
         self,
-        cell: Tuple[int, int],
-    ) -> Optional[Tuple[int, int]]:
+        cell: tuple[int, int],
+    ) -> tuple[int, int] | None:
         """Find nearest grid cell that is not a wall."""
         if cell not in self._wall_cells:
             return cell
@@ -394,8 +394,8 @@ class WallSegment:
 
     """
 
-    start: Tuple[float, float]
-    end: Tuple[float, float]
+    start: tuple[float, float]
+    end: tuple[float, float]
     fire_rating: int = 0
     wall_type: str = ""
 
@@ -416,7 +416,7 @@ class DraftingDevice:
 
     device_id: str
     device_type: str
-    position: Tuple[float, float]
+    position: tuple[float, float]
     floor_id: str = ""
     zone_id: str = ""
     address: str = ""
@@ -437,7 +437,7 @@ class FirestoppingCallout:
 
     """
 
-    position: Tuple[float, float]
+    position: tuple[float, float]
     wall_fire_rating: int
     cable_type: str = "FPL"
     nfpa_reference: str = "IBC 2021 §714"
@@ -464,9 +464,9 @@ class PlenumZone:
 
     zone_id: str
     floor_id: str = ""
-    bounds: Tuple[float, float, float, float] = (0, 0, 100, 100)
+    bounds: tuple[float, float, float, float] = (0, 0, 100, 100)
     plenum_height_m: float = 0.6
-    collision_zones: Tuple[Tuple[float, float, float, float], ...] = ()
+    collision_zones: tuple[tuple[float, float, float, float], ...] = ()
     requires_fplp: bool = True
 
 
@@ -516,10 +516,10 @@ class DraftingResult:
     output_path: str
     device_count: int
     cable_routes: int
-    firestopping_callouts: Tuple[FirestoppingCallout, ...]
+    firestopping_callouts: tuple[FirestoppingCallout, ...]
     class_a_routes: int
-    warnings: Tuple[str, ...]
-    errors: Tuple[str, ...]
+    warnings: tuple[str, ...]
+    errors: tuple[str, ...]
 
 
 # ============================================================================
@@ -547,18 +547,18 @@ class AutoDraftingEngine:
 
     def __init__(
         self,
-        walls: List[Any],
-        devices: List[Any],
-        project_info: Optional[Dict[str, Any]] = None,
+        walls: list[Any],
+        devices: list[Any],
+        project_info: dict[str, Any] | None = None,
         class_a: bool = False,
     ) -> None:
         self._walls = self._normalise_walls(walls)
         self._devices = self._normalise_devices(devices)
         self._project_info = project_info or {}
         self._class_a = class_a
-        self._router: Optional[_AStarRouter] = None
+        self._router: _AStarRouter | None = None
 
-    def _normalise_walls(self, walls: List[Any]) -> List[Dict[str, Any]]:
+    def _normalise_walls(self, walls: list[Any]) -> list[dict[str, Any]]:
         """Convert wall inputs to uniform dict format."""
         result = []
         for w in walls:
@@ -577,7 +577,7 @@ class AutoDraftingEngine:
                 raise ValueError(f"Invalid wall type: {type(w)}")
         return result
 
-    def _normalise_devices(self, devices: List[Any]) -> List[DraftingDevice]:
+    def _normalise_devices(self, devices: list[Any]) -> list[DraftingDevice]:
         """Convert device inputs to DraftingDevice objects."""
         result = []
         for d in devices:
@@ -632,9 +632,9 @@ class AutoDraftingEngine:
 
     def route_cable(
         self,
-        start: Tuple[float, float],
-        end: Tuple[float, float],
-    ) -> List[Tuple[float, float]]:
+        start: tuple[float, float],
+        end: tuple[float, float],
+    ) -> list[tuple[float, float]]:
         """Route a cable between two points avoiding walls.
 
         Args:
@@ -650,8 +650,8 @@ class AutoDraftingEngine:
 
     def generate_class_a_return_path(
         self,
-        outgoing_path: List[Tuple[float, float]],
-    ) -> List[Tuple[float, float]]:
+        outgoing_path: list[tuple[float, float]],
+    ) -> list[tuple[float, float]]:
         """Generate Class A return path with >=1 m separation.
 
         Per NFPA 72-2022 §12.2.2, the return path must be physically
@@ -703,8 +703,8 @@ class AutoDraftingEngine:
 
     def find_firestopping_points(
         self,
-        path: List[Tuple[float, float]],
-    ) -> List[FirestoppingCallout]:
+        path: list[tuple[float, float]],
+    ) -> list[FirestoppingCallout]:
         """Identify firestopping callout points along a cable path.
 
         Per IBC §714, every cable penetration through a fire-rated wall
@@ -753,9 +753,9 @@ class AutoDraftingEngine:
 
     def check_plenum_collisions(
         self,
-        path: List[Tuple[float, float]],
-        plenum_zones: List[PlenumZone],
-    ) -> List[Dict[str, Any]]:
+        path: list[tuple[float, float]],
+        plenum_zones: list[PlenumZone],
+    ) -> list[dict[str, Any]]:
         """Check if a cable path passes through plenum collision zones.
 
         Plenum spaces contain ducts, sprinkler mains, and structural
@@ -819,10 +819,10 @@ class AutoDraftingEngine:
 
     def apply_survivability_constraints(
         self,
-        path: List[Tuple[float, float]],
+        path: list[tuple[float, float]],
         constraint: SurvivabilityRouteConstraint,
-        plenum_zones: Optional[List[PlenumZone]] = None,
-    ) -> Tuple[List[Tuple[float, float]], List[str]]:
+        plenum_zones: list[PlenumZone] | None = None,
+    ) -> tuple[list[tuple[float, float]], list[str]]:
         """Apply pathway survivability constraints to a cable route.
 
         Modifies the path and generates warnings based on the required
@@ -916,8 +916,8 @@ class AutoDraftingEngine:
                 errors=("ezdxf >= 1.1.0 is required for DXF generation. Install with: pip install ezdxf>=1.1.0",),
             )
 
-        warnings: List[str] = []
-        all_firestopping: List[FirestoppingCallout] = []
+        warnings: list[str] = []
+        all_firestopping: list[FirestoppingCallout] = []
         cable_routes = 0
         class_a_routes = 0
 

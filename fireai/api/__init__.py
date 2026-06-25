@@ -1,4 +1,4 @@
-"""fireai.api — Cloud-Native API Layer (Decoupled from Engineering Kernel)
+"""fireai.api — Cloud-Native API Layer (Decoupled from Engineering Kernel).
 =========================================================================
 
 MISSION TASK 1.1 — Architectural Decoupling: Extract FireAI Kernel
@@ -36,6 +36,7 @@ References
 ----------
 - agent.md Rule 6/14: VERIFY BEFORE CHANGING (read all imports first)
 - agent.md Rule 17: NO HALF-SOLUTIONS (move + shim, not just move)
+
 """
 
 from __future__ import annotations
@@ -62,9 +63,11 @@ from __future__ import annotations
 
 try:
     from fireai.core.fireai_api import (
-        create_app,
-        app,
         __all__ as _fireai_api_all,
+    )
+    from fireai.core.fireai_api import (
+        app,
+        create_app,
     )
 except ImportError as e:
     import logging
@@ -91,13 +94,7 @@ except ImportError:
     get_manager = None  # type: ignore[assignment]
 
 
-__all__ = [
-    "create_app",
-    "app",
-    "run_server",
-    "ConnectionManager",
-    "get_manager",
-] + list(_fireai_api_all)
+__all__ = ["create_app", "app", "run_server", "ConnectionManager", "get_manager", *list(_fireai_api_all)]
 
 
 # Version info for this package

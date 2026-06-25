@@ -1,4 +1,4 @@
-"""fireai/core/routing_engine_v10.py
+"""fireai/core/routing_engine_v10.py.
 =================================
 NEC/NFPA-compliant cable routing engine — V10 Optimized.
 
@@ -46,7 +46,7 @@ import logging
 import math
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any
 
 import numpy as np
 
@@ -136,9 +136,9 @@ class RoutingObstacle:
     y: float
     width: float
     height: float
-    clearance: Optional[float] = None
+    clearance: float | None = None
     passable: bool = False
-    height_above_floor_m: Optional[float] = None
+    height_above_floor_m: float | None = None
 
     def __post_init__(self):
         if isinstance(self.obstacle_type, ObstacleType):
@@ -152,23 +152,23 @@ class RoutingObstacle:
                 )
 
     @property
-    def bounds(self) -> Tuple[float, float, float, float]:
+    def bounds(self) -> tuple[float, float, float, float]:
         """Return (minx, miny, maxx, maxy)."""
         return (self.x, self.y, self.x + self.width, self.y + self.height)
 
-    def expanded_bounds(self, clearance_m: float) -> Tuple[float, float, float, float]:
+    def expanded_bounds(self, clearance_m: float) -> tuple[float, float, float, float]:
         """Return bounds expanded by clearance."""
         minx, miny, maxx, maxy = self.bounds
         return (minx - clearance_m, miny - clearance_m, maxx + clearance_m, maxy + clearance_m)
 
-    def to_shapely(self) -> Optional[ShapelyPolygon]:
+    def to_shapely(self) -> ShapelyPolygon | None:
         """Convert to Shapely polygon."""
         if not SHAPELY_AVAILABLE:
             return None
         minx, miny, maxx, maxy = self.bounds
         return ShapelyPolygon([(minx, miny), (maxx, miny), (maxx, maxy), (minx, maxy)])
 
-    def to_shapely_with_clearance(self, clearance_m: float) -> Optional[ShapelyPolygon]:
+    def to_shapely_with_clearance(self, clearance_m: float) -> ShapelyPolygon | None:
         """Convert to Shapely polygon expanded by clearance."""
         if not SHAPELY_AVAILABLE:
             return None
@@ -260,13 +260,13 @@ class RouteResult:
 
     """
 
-    waypoints: List[Tuple[float, float]] = field(default_factory=list)
+    waypoints: list[tuple[float, float]] = field(default_factory=list)
     total_length_m: float = 0.0
     num_bends: int = 0
     max_segment_m: float = 0.0
     obstacles_avoided: int = 0
     valid: bool = False  # V112: FAIL-SAFE — route not valid until verified
-    violations: List[str] = field(default_factory=list)
+    violations: list[str] = field(default_factory=list)
     solver: str = "lazy_astar_strtree"
     version: str = FIREAI_VERSION
 
@@ -292,37 +292,34 @@ class _ObstacleIndex:
       - New: ~5-10 candidate checks (95-97% reduction)
     """
 
-    def __init__(self, obstacles: List[RoutingObstacle], clearance_m: float):
+    def __init__(self, obstacles: list[RoutingObstacle], clearance_m: float) -> None:
         self._obstacles = obstacles
         self._clearance_m = clearance_m
 
         # Build Shapely polygons with clearance baked in
-        self._polys: List[Optional[ShapelyPolygon]] = []
-        valid_polys: List[ShapelyPolygon] = []
+        self._polys: list[ShapelyPolygon | None] = []
+        valid_polys: list[ShapelyPolygon] = []
 
         for obs in obstacles:
-            if SHAPELY_AVAILABLE:
-                poly = obs.to_shapely_with_clearance(clearance_m)
-            else:
-                poly = None
+            poly = obs.to_shapely_with_clearance(clearance_m) if SHAPELY_AVAILABLE else None
             self._polys.append(poly)
             if poly is not None:
                 valid_polys.append(poly)
 
         # Build STRtree from valid (non-None) polygons
-        self._strtree: Optional[STRtree] = None
+        self._strtree: STRtree | None = None
         if SHAPELY_AVAILABLE and valid_polys:
             self._strtree = STRtree(valid_polys)
             # Map STRtree index back to original obstacle index
             # (valid_polys may be shorter than self._polys if any are None)
-            self._valid_to_original: Dict[int, int] = {}
+            self._valid_to_original: dict[int, int] = {}
             valid_idx = 0
             for i, poly in enumerate(self._polys):
                 if poly is not None:
                     self._valid_to_original[valid_idx] = i
                     valid_idx += 1
 
-    def check_los(self, start: Tuple[float, float], end: Tuple[float, float]) -> bool:
+    def check_los(self, start: tuple[float, float], end: tuple[float, float]) -> bool:
         """Check line-of-sight between two points.
 
         Returns True if the line segment does NOT intersect any
@@ -358,7 +355,7 @@ class _ObstacleIndex:
                 return False
         return True
 
-    def check_los_fallback(self, start: Tuple[float, float], end: Tuple[float, float]) -> bool:
+    def check_los_fallback(self, start: tuple[float, float], end: tuple[float, float]) -> bool:
         """Line-of-sight check without Shapely (AABB-based).
 
         Uses Liang-Barsky algorithm for each obstacle.
@@ -370,7 +367,7 @@ class _ObstacleIndex:
 
     @staticmethod
     def _line_intersects_aabb(
-        p1: Tuple[float, float], p2: Tuple[float, float], aabb: Tuple[float, float, float, float]
+        p1: tuple[float, float], p2: tuple[float, float], aabb: tuple[float, float, float, float]
     ) -> bool:
         """Liang-Barsky line-AABB intersection test."""
         minx, miny, maxx, maxy = aabb
@@ -395,7 +392,7 @@ class _ObstacleIndex:
                     return False
         return True
 
-    def segment_intersects_any(self, p1: Tuple[float, float], p2: Tuple[float, float]) -> bool:
+    def segment_intersects_any(self, p1: tuple[float, float], p2: tuple[float, float]) -> bool:
         """Check if a segment intersects any obstacle (for cost factor)."""
         if SHAPELY_AVAILABLE and self._strtree is not None:
             line = ShapelyLineString([p1, p2])
@@ -407,10 +404,7 @@ class _ObstacleIndex:
                     return True
             return False
         # Fallback
-        for poly in self._polys:
-            if poly and ShapelyLineString([p1, p2]).intersects(poly):
-                return True
-        return False
+        return any(poly and ShapelyLineString([p1, p2]).intersects(poly) for poly in self._polys)
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -440,7 +434,7 @@ class RoutingEngineV10:
     Thread Safety: NOT thread-safe. Create one instance per thread.
     """
 
-    def __init__(self, constraints: RoutingConstraint = None):
+    def __init__(self, constraints: RoutingConstraint = None) -> None:
         """Initialize the router.
 
         Parameters
@@ -450,31 +444,31 @@ class RoutingEngineV10:
 
         """
         self.constraints = constraints or RoutingConstraint.from_production_config()
-        self.obstacles: List[RoutingObstacle] = []
-        self._index: Optional[_ObstacleIndex] = None
+        self.obstacles: list[RoutingObstacle] = []
+        self._index: _ObstacleIndex | None = None
         self._cfg = get_production_config() if HAS_PRODUCTION_CONFIG else None
         # Cached corner nodes (invalidated on obstacle change)
-        self._corner_nodes: Optional[List[Tuple[float, float]]] = None
+        self._corner_nodes: list[tuple[float, float]] | None = None
         self._dirty: bool = True
 
     # ── Obstacle Management ────────────────────────────────────────────────
 
-    def add_obstacle(self, obstacle: RoutingObstacle):
+    def add_obstacle(self, obstacle: RoutingObstacle) -> None:
         """Add an obstacle to the routing space."""
         self.obstacles.append(obstacle)
         self._dirty = True
 
-    def add_obstacles(self, obstacles: List[RoutingObstacle]):
+    def add_obstacles(self, obstacles: list[RoutingObstacle]) -> None:
         """Add multiple obstacles."""
         for obs in obstacles:
             self.add_obstacle(obs)
 
-    def clear_obstacles(self):
+    def clear_obstacles(self) -> None:
         """Remove all obstacles."""
         self.obstacles.clear()
         self._dirty = True
 
-    def _ensure_index(self):
+    def _ensure_index(self) -> None:
         """Rebuild the spatial index if dirty."""
         if self._dirty:
             clearance_m = self.constraints.clearance_mm / 1000.0
@@ -489,7 +483,7 @@ class RoutingEngineV10:
 
         self._ensure_index()
         clearance_m = self.constraints.clearance_mm / 1000.0
-        corner_nodes: List[Tuple[float, float]] = []
+        corner_nodes: list[tuple[float, float]] = []
 
         for obs in self.obstacles:
             minx, miny, maxx, maxy = obs.expanded_bounds(clearance_m)
@@ -509,7 +503,7 @@ class RoutingEngineV10:
 
     # ── Routing API ────────────────────────────────────────────────────────
 
-    def route(self, start: Tuple[float, float], end: Tuple[float, float]) -> RouteResult:
+    def route(self, start: tuple[float, float], end: tuple[float, float]) -> RouteResult:
         """Route a cable from start to end, avoiding obstacles.
 
         Parameters
@@ -565,8 +559,8 @@ class RoutingEngineV10:
         return self._manhattan_route(start, end)
 
     def route_multi(
-        self, points: List[Tuple[float, float]], panel_pos: Tuple[float, float] = None
-    ) -> List[RouteResult]:
+        self, points: list[tuple[float, float]], panel_pos: tuple[float, float] | None = None
+    ) -> list[RouteResult]:
         """Route cables between multiple points using nearest-neighbour ordering.
 
         Parameters
@@ -588,7 +582,7 @@ class RoutingEngineV10:
         self._ensure_index()
         ordered = self._nearest_neighbour_order(points, panel_pos)
 
-        results: List[RouteResult] = []
+        results: list[RouteResult] = []
         prev = panel_pos or ordered[0]
 
         for pt in ordered:
@@ -605,8 +599,8 @@ class RoutingEngineV10:
         return results
 
     def route_batch(
-        self, segments: List[Tuple[Tuple[float, float], Tuple[float, float]]], n_workers: int = 1
-    ) -> List[RouteResult]:
+        self, segments: list[tuple[tuple[float, float], tuple[float, float]]], n_workers: int = 1
+    ) -> list[RouteResult]:
         """Route multiple cable segments.
 
         Parameters
@@ -631,7 +625,7 @@ class RoutingEngineV10:
 
     # ── Line-of-Sight ──────────────────────────────────────────────────────
 
-    def _has_line_of_sight(self, start: Tuple[float, float], end: Tuple[float, float]) -> bool:
+    def _has_line_of_sight(self, start: tuple[float, float], end: tuple[float, float]) -> bool:
         """Check if there is a clear line of sight between two points.
 
         Delegates to _ObstacleIndex which uses STRtree for O(log O)
@@ -653,8 +647,8 @@ class RoutingEngineV10:
     # ── Lazy A* Pathfinding ────────────────────────────────────────────────
 
     def _find_path_lazy_astar(
-        self, start: Tuple[float, float], end: Tuple[float, float]
-    ) -> Optional[List[Tuple[float, float]]]:
+        self, start: tuple[float, float], end: tuple[float, float]
+    ) -> list[tuple[float, float]] | None:
         """Find a path from start to end using Lazy A* on a visibility graph.
 
         Key optimization: The visibility graph is NOT pre-computed.
@@ -674,7 +668,7 @@ class RoutingEngineV10:
           - New (lazy):  O(E_expanded x log O) where E_expanded << V^2
         """
         corner_nodes = self._ensure_corner_nodes()
-        nodes = [start, end] + corner_nodes
+        nodes = [start, end, *corner_nodes]
         n = len(nodes)
 
         # End is always node index 1
@@ -687,13 +681,13 @@ class RoutingEngineV10:
 
         # A* state
         counter = 0
-        open_set: List[Tuple[float, int, int]] = [(heuristic(0), counter, 0)]
-        came_from: Dict[int, int] = {}
-        g_score: Dict[int, float] = {0: 0.0}
-        closed: Set[int] = set()
+        open_set: list[tuple[float, int, int]] = [(heuristic(0), counter, 0)]
+        came_from: dict[int, int] = {}
+        g_score: dict[int, float] = {0: 0.0}
+        closed: set[int] = set()
 
         while open_set:
-            f, _, current = heapq.heappop(open_set)
+            _f, _, current = heapq.heappop(open_set)
 
             if current == END_IDX:
                 # Reconstruct path
@@ -734,7 +728,7 @@ class RoutingEngineV10:
 
         return None  # No path found
 
-    def _segment_cost_factor(self, p1: Tuple[float, float], p2: Tuple[float, float]) -> float:
+    def _segment_cost_factor(self, p1: tuple[float, float], p2: tuple[float, float]) -> float:
         """Compute cost multiplier for a segment based on routing constraints.
 
         V12 Fix preserved: Uses Shapely LineString.intersection() to check
@@ -809,8 +803,8 @@ class RoutingEngineV10:
     # ── Helper Methods ─────────────────────────────────────────────────────
 
     def _compute_approach_angle(
-        self, p1: Tuple[float, float], p2: Tuple[float, float], obs: RoutingObstacle
-    ) -> Optional[float]:
+        self, p1: tuple[float, float], p2: tuple[float, float], obs: RoutingObstacle
+    ) -> float | None:
         """Compute the approach angle of a path segment relative to an obstacle.
 
         Returns angle in degrees between the path direction and the
@@ -840,18 +834,14 @@ class RoutingEngineV10:
         # Angle between path and obstacle axis
         dot = (dx_path / path_len) * dx_obs + (dy_path / path_len) * dy_obs
         dot = max(-1.0, min(1.0, dot))  # Clamp for floating-point
-        angle = math.degrees(math.acos(abs(dot)))
+        return math.degrees(math.acos(abs(dot)))
 
-        return angle
 
-    def _point_in_any_obstacle(self, point: Tuple[float, float]) -> bool:
+    def _point_in_any_obstacle(self, point: tuple[float, float]) -> bool:
         """Check if a point is inside any obstacle (with clearance)."""
         if SHAPELY_AVAILABLE and self._index is not None:
             sp = ShapelyPoint(point)
-            for poly in self._index._polys:
-                if poly and sp.within(poly):
-                    return True
-            return False
+            return any(poly and sp.within(poly) for poly in self._index._polys)
 
         # Fallback
         clearance_m = self.constraints.clearance_mm / 1000.0
@@ -862,14 +852,14 @@ class RoutingEngineV10:
         return False
 
     def _point_near_obstacle(
-        self, point: Tuple[float, float], obs: RoutingObstacle, clearance_m: float, factor: float = 2.0
+        self, point: tuple[float, float], obs: RoutingObstacle, clearance_m: float, factor: float = 2.0
     ) -> bool:
         """Check if a point is near an obstacle (within factor x clearance)."""
         eff_clearance = clearance_m * factor
         minx, miny, maxx, maxy = obs.expanded_bounds(eff_clearance)
         return minx <= point[0] <= maxx and miny <= point[1] <= maxy
 
-    def _direct_route(self, start: Tuple[float, float], end: Tuple[float, float]) -> RouteResult:
+    def _direct_route(self, start: tuple[float, float], end: tuple[float, float]) -> RouteResult:
         """Direct point-to-point route (no obstacles)."""
         dist = math.hypot(end[0] - start[0], end[1] - start[1])
         result = RouteResult(
@@ -881,7 +871,7 @@ class RoutingEngineV10:
         )
         return self._validate_route(result)
 
-    def _manhattan_route(self, start: Tuple[float, float], end: Tuple[float, float]) -> RouteResult:
+    def _manhattan_route(self, start: tuple[float, float], end: tuple[float, float]) -> RouteResult:
         """Manhattan (L-shaped) routing fallback."""
         mid = (end[0], start[1])
         waypoints = [start, mid, end]
@@ -908,7 +898,7 @@ class RoutingEngineV10:
         )
         return self._validate_route(result)
 
-    def _path_to_route_result(self, path: List[Tuple[float, float]]) -> RouteResult:
+    def _path_to_route_result(self, path: list[tuple[float, float]]) -> RouteResult:
         """Convert a path of waypoints to a RouteResult."""
         total = 0.0
         max_seg = 0.0
@@ -935,7 +925,7 @@ class RoutingEngineV10:
           3. Clearance from obstacles per NFPA 72
           4. NaN/Inf waypoint rejection per Life-Safety Rule 2
         """
-        violations: List[str] = []
+        violations: list[str] = []
 
         # Life-Safety Rule 2: NaN/Inf in waypoints
         for i, wp in enumerate(result.waypoints):
@@ -997,14 +987,14 @@ class RoutingEngineV10:
 
     @staticmethod
     def _nearest_neighbour_order(
-        points: List[Tuple[float, float]], start: Tuple[float, float] = None
-    ) -> List[Tuple[float, float]]:
+        points: list[tuple[float, float]], start: tuple[float, float] | None = None
+    ) -> list[tuple[float, float]]:
         """Order points using nearest-neighbour heuristic."""
         if not points:
             return []
 
         remaining = list(points)
-        ordered: List[Tuple[float, float]] = []
+        ordered: list[tuple[float, float]] = []
         current = start or remaining[0]
 
         if start and start in remaining:
@@ -1050,7 +1040,7 @@ EngineeringRouter = RoutingEngineV10  # type: ignore[misc]
 # ════════════════════════════════════════════════════════════════════════════
 
 
-def benchmark_routing(n_obstacles: int = 50, n_routes: int = 100) -> Dict:
+def benchmark_routing(n_obstacles: int = 50, n_routes: int = 100) -> dict:
     """Benchmark the routing engine performance.
 
     Parameters
@@ -1081,7 +1071,7 @@ def benchmark_routing(n_obstacles: int = 50, n_routes: int = 100) -> Dict:
         router.add_obstacle(RoutingObstacle(obstacle_type=obs_type, x=x, y=y, width=w, height=h))
 
     # Benchmark route queries
-    times: List[float] = []
+    times: list[float] = []
     successes = 0
     total_length = 0.0
 
@@ -1125,7 +1115,7 @@ def _self_test():
     passed = 0
     failed = 0
 
-    def check(name, condition, detail=""):
+    def check(name, condition, detail="") -> None:
         nonlocal passed, failed
         if condition:
             print(f"  [PASS] {name}")
@@ -1271,9 +1261,9 @@ class RouteSegment:
 
     """
 
-    path: List[Tuple[float, float]]
+    path: list[tuple[float, float]]
     class_type: str
-    firestop_nodes: List[Tuple[float, float]]
+    firestop_nodes: list[tuple[float, float]]
     length_m: float
 
 
@@ -1288,7 +1278,7 @@ class ArchitecturalWall:
 
     """
 
-    def __init__(self, p1: Tuple[float, float], p2: Tuple[float, float], fire_rated: bool = False):
+    def __init__(self, p1: tuple[float, float], p2: tuple[float, float], fire_rated: bool = False) -> None:
         # Life-Safety Rule 2: Reject NaN/Inf coordinates
         for name, pt in [("p1", p1), ("p2", p2)]:
             for i, coord in enumerate(pt):
@@ -1340,7 +1330,7 @@ class EliteClassARouter:
 
     """
 
-    def __init__(self, width: float, length: float, resolution: float = 0.5):
+    def __init__(self, width: float, length: float, resolution: float = 0.5) -> None:
         # Life-Safety Rule 2: Reject NaN/Inf dimensions
         for name, val in [("width", width), ("length", length), ("resolution", resolution)]:
             if not math.isfinite(val) or val <= 0:
@@ -1354,9 +1344,9 @@ class EliteClassARouter:
         self.cols = int(width / resolution)
         self.rows = int(length / resolution)
         self.base_grid = np.ones((self.rows, self.cols), dtype=np.float32)
-        self.walls: List[ArchitecturalWall] = []
+        self.walls: list[ArchitecturalWall] = []
 
-    def inject_structural_obstructions(self, walls: List[ArchitecturalWall]):
+    def inject_structural_obstructions(self, walls: list[ArchitecturalWall]) -> None:
         """Add wall obstructions to the cost grid.
 
         Fire-rated walls get a cost of 1500.0 (high but traversable —
@@ -1381,8 +1371,8 @@ class EliteClassARouter:
                     self.base_grid[r, c] += cost
 
     def generate_class_a_loop(
-        self, facp_node: Tuple[float, float], loop_devices: List[Tuple[float, float]]
-    ) -> Dict[str, RouteSegment]:
+        self, facp_node: tuple[float, float], loop_devices: list[tuple[float, float]]
+    ) -> dict[str, RouteSegment]:
         """Generate a complete Class A loop with outgoing and return paths.
 
         V14: The outgoing path DAISY-CHAINS through ALL devices in order:
@@ -1415,7 +1405,7 @@ class EliteClassARouter:
 
         # 1. GENERATE OUTGOING LEG — Daisy-chain through ALL devices
         forward_path: list[Any] = []  # type: ignore[name-defined]
-        waypoints = [facp_node] + list(loop_devices)
+        waypoints = [facp_node, *list(loop_devices)]
 
         for i in range(len(waypoints) - 1):
             src = waypoints[i]
@@ -1436,7 +1426,7 @@ class EliteClassARouter:
         # 2. PUNISH FORWARD LEG FOR REVERSE ROUTING (NFPA 72 S12.2.2)
         terminal_buffer_m = 2.0  # 2m exemption zone at each end
         return_grid = np.copy(self.base_grid)
-        penalty_cells = int(math.ceil(1.0 / self.res))
+        penalty_cells = math.ceil(1.0 / self.res)
 
         # Calculate cumulative distance along the outgoing path
         cum_dist = [0.0]
@@ -1480,9 +1470,9 @@ class EliteClassARouter:
             ),
         }
 
-    def _calculate_firestops(self, path: List[Tuple[float, float]]) -> List[Tuple[float, float]]:
+    def _calculate_firestops(self, path: list[tuple[float, float]]) -> list[tuple[float, float]]:
         """Find fire-rated wall penetration points along a cable path."""
-        firestops: list[Tuple[float, float]] = []
+        firestops: list[tuple[float, float]] = []
         if not SHAPELY_AVAILABLE or len(path) < 2:
             return firestops
 
@@ -1498,14 +1488,14 @@ class EliteClassARouter:
                             firestops.append((p.x, p.y))
         return firestops
 
-    def _measure_len(self, path: List[Tuple[float, float]]) -> float:
+    def _measure_len(self, path: list[tuple[float, float]]) -> float:
         """Compute total path length in meters."""
         total = 0.0
         for i in range(1, len(path)):
             total += math.hypot(path[i][0] - path[i - 1][0], path[i][1] - path[i - 1][1])
         return total
 
-    def _astar(self, start: Tuple[float, float], goal: Tuple[float, float], grid) -> List[Tuple[float, float]]:
+    def _astar(self, start: tuple[float, float], goal: tuple[float, float], grid) -> list[tuple[float, float]]:
         """A* pathfinding on a 2D cost grid (orthogonal 4-directional)."""
         import heapq as _heapq
 
@@ -1517,7 +1507,7 @@ class EliteClassARouter:
         g_c = max(0, min(self.cols - 1, g_c))
 
         open_q = [(0.0, (s_r, s_c))]
-        came_from: dict[Tuple[int, int], Tuple[int, int]] = {}
+        came_from: dict[tuple[int, int], tuple[int, int]] = {}
         g_score = {(s_r, s_c): 0.0}
 
         dirs = [(1, 0), (-1, 0), (0, 1), (0, -1)]

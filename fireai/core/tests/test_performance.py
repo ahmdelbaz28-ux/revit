@@ -1,4 +1,4 @@
-"""fireai/core/tests/test_performance.py — Performance Tests for Core Modules
+"""fireai/core/tests/test_performance.py — Performance Tests for Core Modules.
 ===========================================================================
 Task 2.15: Add performance tests for core/
 
@@ -82,7 +82,7 @@ def _make_element(idx: int) -> UniversalElement:
 class TestDatabaseBatchPerformance:
     """Batch operations should be faster than individual operations."""
 
-    def test_batch_add_100_elements(self, in_memory_db):
+    def test_batch_add_100_elements(self, in_memory_db) -> None:
         """add_elements_batch with 100 elements completes in < 2 seconds."""
         elements = [_make_element(i) for i in range(100)]
         t0 = time.perf_counter()
@@ -91,7 +91,7 @@ class TestDatabaseBatchPerformance:
         assert count == 100
         assert elapsed < 2.0, f"Batch add of 100 took {elapsed:.3f}s"
 
-    def test_batch_add_faster_than_individual(self, in_memory_db):
+    def test_batch_add_faster_than_individual(self, in_memory_db) -> None:
         """Batch add should be faster than 100 individual adds."""
         N = 100
         # Individual adds
@@ -116,7 +116,7 @@ class TestDatabaseBatchPerformance:
             f"Batch ({batch_time:.3f}s) not faster than individual ({individual_time:.3f}s)"
         )
 
-    def test_batch_add_500_elements(self, in_memory_db):
+    def test_batch_add_500_elements(self, in_memory_db) -> None:
         """add_elements_batch with 500 elements completes in < 5 seconds."""
         elements = [_make_element(i) for i in range(500)]
         t0 = time.perf_counter()
@@ -134,7 +134,7 @@ class TestDatabaseBatchPerformance:
 class TestDatabaseQueryPerformance:
     """Database queries should complete within acceptable time bounds."""
 
-    def test_get_element_by_id_1000_elements(self, in_memory_db):
+    def test_get_element_by_id_1000_elements(self, in_memory_db) -> None:
         """get_element from 1000-element DB completes in < 10ms."""
         elements = [_make_element(i) for i in range(1000)]
         in_memory_db.add_elements_batch(elements)
@@ -147,7 +147,7 @@ class TestDatabaseQueryPerformance:
         assert result.element_id == "ELEM_000500"
         assert elapsed < 0.01, f"get_element took {elapsed*1000:.1f}ms"
 
-    def test_get_all_elements_1000(self, in_memory_db):
+    def test_get_all_elements_1000(self, in_memory_db) -> None:
         """get_all_elements for 1000 elements completes in < 2 seconds."""
         elements = [_make_element(i) for i in range(1000)]
         in_memory_db.add_elements_batch(elements)
@@ -159,7 +159,7 @@ class TestDatabaseQueryPerformance:
         assert len(all_elems) == 1000
         assert elapsed < 2.0, f"get_all_elements took {elapsed:.3f}s"
 
-    def test_get_all_elements_exclude_deleted(self, in_memory_db):
+    def test_get_all_elements_exclude_deleted(self, in_memory_db) -> None:
         """get_all_elements(include_deleted=False) filters correctly."""
         elements = [_make_element(i) for i in range(50)]
         in_memory_db.add_elements_batch(elements)
@@ -182,7 +182,7 @@ class TestDatabaseQueryPerformance:
 class TestModelCreationPerformance:
     """Model creation should be fast enough for bulk operations."""
 
-    def test_create_10000_point3d(self):
+    def test_create_10000_point3d(self) -> None:
         """Creating 10,000 Point3D objects completes in < 1 second."""
         t0 = time.perf_counter()
         points = [Point3D(x=float(i), y=float(i * 2), z=0.0) for i in range(10000)]
@@ -190,7 +190,7 @@ class TestModelCreationPerformance:
         assert len(points) == 10000
         assert elapsed < 1.0, f"Creating 10k Point3D took {elapsed:.3f}s"
 
-    def test_create_1000_geometry(self):
+    def test_create_1000_geometry(self) -> None:
         """Creating 1,000 Geometry objects with 4 points completes in < 2 seconds."""
         t0 = time.perf_counter()
         geoms = []
@@ -207,7 +207,7 @@ class TestModelCreationPerformance:
         assert all(g.area == 100.0 for g in geoms)
         assert elapsed < 2.0, f"Creating 1k Geometry took {elapsed:.3f}s"
 
-    def test_create_1000_universal_elements(self):
+    def test_create_1000_universal_elements(self) -> None:
         """Creating 1,000 UniversalElement objects completes in < 2 seconds."""
         t0 = time.perf_counter()
         elements = [_make_element(i) for i in range(1000)]
@@ -224,7 +224,7 @@ class TestModelCreationPerformance:
 class TestGeometryCalculationPerformance:
     """Area and perimeter calculations for large polygons."""
 
-    def test_large_polygon_area_100_vertices(self):
+    def test_large_polygon_area_100_vertices(self) -> None:
         """Area calculation for 100-vertex polygon completes in < 100ms."""
         # Create a circular-ish polygon with 100 vertices
         n = 100
@@ -241,7 +241,7 @@ class TestGeometryCalculationPerformance:
         assert geom.perimeter > 0
         assert elapsed < 0.1, f"100-vertex polygon took {elapsed*1000:.1f}ms"
 
-    def test_large_polygon_area_1000_vertices(self):
+    def test_large_polygon_area_1000_vertices(self) -> None:
         """Area calculation for 1000-vertex polygon completes in < 500ms."""
         n = 1000
         pts = tuple(
@@ -257,7 +257,7 @@ class TestGeometryCalculationPerformance:
         assert geom.perimeter > 0
         assert elapsed < 0.5, f"1000-vertex polygon took {elapsed*1000:.1f}ms"
 
-    def test_to_dict_1000_elements(self):
+    def test_to_dict_1000_elements(self) -> None:
         """Serializing 1000 elements to dict completes in < 2 seconds."""
         elements = [_make_element(i) for i in range(1000)]
         t0 = time.perf_counter()
@@ -275,7 +275,7 @@ class TestGeometryCalculationPerformance:
 class TestNFPA72EnginePerformance:
     """NFPA 72 calculations should handle bulk operations efficiently."""
 
-    def test_detector_spacing_1000_calculations(self):
+    def test_detector_spacing_1000_calculations(self) -> None:
         """1000 detector spacing calculations complete in < 1 second."""
         from fireai.core.nfpa72_engine import get_detector_spacing
 
@@ -289,7 +289,7 @@ class TestNFPA72EnginePerformance:
         assert len(results) == 1000
         assert elapsed < 1.0, f"1000 spacing calcs took {elapsed:.3f}s"
 
-    def test_battery_calculation_1000_iterations(self):
+    def test_battery_calculation_1000_iterations(self) -> None:
         """1000 battery calculations complete in < 1 second."""
         from fireai.core.nfpa72_engine import calculate_battery
 
@@ -304,7 +304,7 @@ class TestNFPA72EnginePerformance:
         assert len(results) == 1000
         assert elapsed < 1.0, f"1000 battery calcs took {elapsed:.3f}s"
 
-    def test_voltage_drop_1000_iterations(self):
+    def test_voltage_drop_1000_iterations(self) -> None:
         """1000 voltage drop calculations complete in < 1 second."""
         from fireai.core.nfpa72_engine import calculate_voltage_drop
 
@@ -328,7 +328,7 @@ class TestNFPA72EnginePerformance:
 class TestDatabaseCRUDPerformance:
     """Full CRUD cycle performance for database operations."""
 
-    def test_update_element_100_iterations(self, in_memory_db):
+    def test_update_element_100_iterations(self, in_memory_db) -> None:
         """100 update_element calls complete in < 2 seconds."""
         elements = [_make_element(i) for i in range(100)]
         in_memory_db.add_elements_batch(elements)
@@ -347,7 +347,7 @@ class TestDatabaseCRUDPerformance:
         elapsed = time.perf_counter() - t0
         assert elapsed < 2.0, f"100 updates took {elapsed:.3f}s"
 
-    def test_delete_element_100_iterations(self, in_memory_db):
+    def test_delete_element_100_iterations(self, in_memory_db) -> None:
         """100 delete_element calls complete in < 1 second."""
         elements = [_make_element(i) for i in range(100)]
         in_memory_db.add_elements_batch(elements)
@@ -358,7 +358,7 @@ class TestDatabaseCRUDPerformance:
         elapsed = time.perf_counter() - t0
         assert elapsed < 1.0, f"100 deletes took {elapsed:.3f}s"
 
-    def test_context_manager_performance(self):
+    def test_context_manager_performance(self) -> None:
         """Context manager open/close cycle completes quickly."""
         t0 = time.perf_counter()
         for _ in range(50):

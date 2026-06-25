@@ -1,4 +1,4 @@
-"""safety_audit_engine.py – FireAI V21.2 Automated Safety Audit Engine
+"""safety_audit_engine.py – FireAI V21.2 Automated Safety Audit Engine.
 ====================================================================
 Post-calculation compliance validation engine. Runs as the final step
 after all 5 layers complete. Validates design outputs against IEC/NFPA
@@ -28,7 +28,6 @@ Standards:
 from __future__ import annotations
 
 import math
-from typing import Dict, List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -118,12 +117,12 @@ class AuditInput(BaseModel):
     jurisdiction: Jurisdiction = Field(
         default=Jurisdiction.GLOBAL_IEC, description="Regulatory jurisdiction for audit rules"
     )
-    hazard_type: Optional[HazardType] = Field(
+    hazard_type: HazardType | None = Field(
         default=None,
         description="Hazard type for zone mapping validation (GAS, DUST, HYBRID). "
         "If not provided, inferred from zone classification.",
     )
-    region: Optional[RegionProfile] = Field(
+    region: RegionProfile | None = Field(
         default=None,
         description="Environmental region preset for MENA advisory checks. "
         "If not provided, inferred from jurisdiction.",
@@ -155,7 +154,7 @@ class AuditResult(BaseModel):
             raise ValueError(f"Invalid status '{v}'. Must be 'PASS' or 'FAIL'.")
         return v
 
-    violations: List[AuditViolation] = Field(default_factory=list)
+    violations: list[AuditViolation] = Field(default_factory=list)
     total_checks: int = Field(ge=0, description="Total number of audit checks performed")
     passed_checks: int = Field(ge=0, description="Number of checks that passed")
 
@@ -217,7 +216,7 @@ def elevation_tier_from_detector_z(z_position: float, ceiling_height_m: float = 
 # Source: HCIS SAF Directive 2021, Section 4.3
 # Applies to "critical process installations" — defined as installations
 # where a fire could cause cascade failure of process equipment.
-_HCIS_MIN_REDUNDANCY: Dict[ZoneType, int] = {
+_HCIS_MIN_REDUNDANCY: dict[ZoneType, int] = {
     ZoneType.ZONE_0: 3,  # 2oo3 (same as IEC)
     ZoneType.ZONE_1: 2,  # 1oo2 (same as IEC)
     ZoneType.ZONE_2: 2,  # 1oo2 MINIMUM (stricter than IEC which allows 1)
@@ -309,12 +308,12 @@ class SafetyAuditEngine:
         zone=None,
         hazard_type=None,
         min_redundancy: int = 0,
-        min_transmittance: Optional[float] = None,
-        env_context: Optional[EnvironmentalContext] = None,
-        substance: Optional[SubstanceProperties] = None,
-        detector_z_positions: Optional[List[float]] = None,
+        min_transmittance: float | None = None,
+        env_context: EnvironmentalContext | None = None,
+        substance: SubstanceProperties | None = None,
+        detector_z_positions: list[float] | None = None,
         ceiling_height_m: float = 6.0,
-        audit_input: Optional[AuditInput] = None,
+        audit_input: AuditInput | None = None,
     ) -> AuditResult:
         """Run all audit gates and return combined AuditResult.
 
@@ -337,7 +336,7 @@ class SafetyAuditEngine:
             return self._run_audit_from_input(audit_input)
 
         env_context = env_context or EnvironmentalContext()
-        violations: List[AuditViolation] = []
+        violations: list[AuditViolation] = []
         total_checks = 0
         passed_checks = 0
 
@@ -470,7 +469,7 @@ class SafetyAuditEngine:
           Gate 4: Elevation Mismatch (via vapor_density_tier)
           Gate 5: MENA Region
         """
-        violations: List[AuditViolation] = []
+        violations: list[AuditViolation] = []
         total_checks = 0
         passed_checks = 0
 
@@ -589,7 +588,7 @@ class SafetyAuditEngine:
             Tuple of (violations, total_checks, passed_checks)
 
         """
-        violations: List[AuditViolation] = []
+        violations: list[AuditViolation] = []
         total_checks = 1
         passed_checks = 0
 
@@ -643,7 +642,7 @@ class SafetyAuditEngine:
         env_context: EnvironmentalContext,
     ) -> tuple:
         """Check zone-based minimum detector redundancy."""
-        violations: List[AuditViolation] = []
+        violations: list[AuditViolation] = []
         total_checks = 1
         passed_checks = 0
 
@@ -683,11 +682,11 @@ class SafetyAuditEngine:
 
     def _check_fouling(
         self,
-        min_transmittance: Optional[float],
+        min_transmittance: float | None,
         env_context: EnvironmentalContext,
     ) -> tuple:
         """Check optical transmittance degradation from fouling."""
-        violations: List[AuditViolation] = []
+        violations: list[AuditViolation] = []
         total_checks = 0
         passed_checks = 0
 
@@ -877,7 +876,7 @@ class SafetyAuditEngine:
         hazard_type: HazardType,
     ) -> tuple:
         """Check zone/hazard_type consistency per IEC 60079-10-1 §1.3."""
-        violations: List[AuditViolation] = []
+        violations: list[AuditViolation] = []
         total_checks = 1
         passed_checks = 0
 
@@ -978,8 +977,8 @@ class SafetyAuditEngine:
 
     def _check_z_axis(
         self,
-        substance: Optional[SubstanceProperties],
-        detector_z_positions: Optional[List[float]],
+        substance: SubstanceProperties | None,
+        detector_z_positions: list[float] | None,
         ceiling_height_m: float,
     ) -> tuple:
         """Check detector elevation against gas buoyancy behavior.
@@ -1004,7 +1003,7 @@ class SafetyAuditEngine:
           - The engineer must explicitly document and justify any
             intentional deviation from the recommended elevation
         """
-        violations: List[AuditViolation] = []
+        violations: list[AuditViolation] = []
         total_checks = 0
         passed_checks = 0
 
@@ -1146,7 +1145,7 @@ class SafetyAuditEngine:
         always has the final say. The audit merely highlights conditions
         that may need attention in MENA environments.
         """
-        violations: List[AuditViolation] = []
+        violations: list[AuditViolation] = []
         total_checks = 0
         passed_checks = 0
 

@@ -4,8 +4,6 @@ Validates RoomSpec before analysis to prevent crashes and ensure data integrity.
 
 from __future__ import annotations
 
-from typing import Set
-
 from .nfpa72_models import RoomSpec
 
 # Known occupancy types per NFPA 72
@@ -14,7 +12,7 @@ from .nfpa72_models import RoomSpec
 # created an inconsistency: room_validator accepted them but RoomSpec
 # construction would reject them. Kitchen requires heat detectors (not smoke)
 # per NFPA 72 §17.6.4. Assembly requires special occupant load calculations.
-VALID_OCCUPANCY_TYPES: Set[str] = {
+VALID_OCCUPANCY_TYPES: set[str] = {
     "business",
     "educational",
     "factory",

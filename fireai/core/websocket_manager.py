@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
-"""WebSocket connection manager for FastAPI with API key verification.
-"""
+"""WebSocket connection manager for FastAPI with API key verification."""
 
 from __future__ import annotations
 
 import logging
 import os
 import secrets
-from typing import Dict, List, Optional
 
 from fastapi import HTTPException, WebSocket
 from fastapi.security import APIKeyHeader
@@ -40,7 +38,7 @@ def _init_api_keys() -> None:
 _init_api_keys()
 
 
-def verify_api_key_ws(api_key: Optional[str] = None) -> str:
+def verify_api_key_ws(api_key: str | None = None) -> str:
     if not api_key:
         raise HTTPException(status_code=401, detail="API key required. Pass X-API-Key header.")
     if not any(secrets.compare_digest(api_key, valid_key) for valid_key in _EFFECTIVE_API_KEYS):
@@ -49,11 +47,11 @@ def verify_api_key_ws(api_key: Optional[str] = None) -> str:
 
 
 class ConnectionManager:
-    def __init__(self):
-        self._active_connections: Dict[str, WebSocket] = {}
-        self._connection_keys: Dict[WebSocket, str] = {}
+    def __init__(self) -> None:
+        self._active_connections: dict[str, WebSocket] = {}
+        self._connection_keys: dict[WebSocket, str] = {}
 
-    async def connect(self, websocket: WebSocket, client_id: str, api_key: Optional[str] = None) -> None:
+    async def connect(self, websocket: WebSocket, client_id: str, api_key: str | None = None) -> None:
         verify_api_key_ws(api_key)
         await websocket.accept()
         self._active_connections[client_id] = websocket
@@ -88,7 +86,7 @@ class ConnectionManager:
                 self.disconnect(websocket)
         return sent_count
 
-    def get_active_connections(self) -> List[str]:
+    def get_active_connections(self) -> list[str]:
         return list(self._active_connections.keys())
 
     def is_connected(self, client_id: str) -> bool:

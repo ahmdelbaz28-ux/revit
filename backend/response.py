@@ -7,10 +7,10 @@ The frontend expects: {success, data?, error?, message?, timestamp}
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from typing import Any, Dict
+from typing import Any
 
 
-def success(data: Any = None, message: str = "") -> Dict[str, Any]:
+def success(data: Any = None, message: str = "") -> dict[str, Any]:
     """Return a successful API response."""
     return {
         "success": True,
@@ -20,7 +20,7 @@ def success(data: Any = None, message: str = "") -> Dict[str, Any]:
     }
 
 
-def error(message: str, data: Any = None) -> Dict[str, Any]:
+def error(message: str, data: Any = None) -> dict[str, Any]:
     """Return an error API response."""
     return {
         "success": False,
@@ -30,7 +30,7 @@ def error(message: str, data: Any = None) -> Dict[str, Any]:
     }
 
 
-def paginated(data: list, total: int, page: int, page_size: int, total_pages: int) -> Dict[str, Any]:
+def paginated(data: list, total: int, page: int, page_size: int, total_pages: int) -> dict[str, Any]:
     """Return a paginated response."""
     return success({
         "items": data,

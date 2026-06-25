@@ -1,4 +1,4 @@
-"""Tests for fireai.core.routing_engine_v10
+"""Tests for fireai.core.routing_engine_v10.
 ========================================
 Comprehensive tests covering:
   - ObstacleType enum
@@ -135,7 +135,7 @@ def sample_obstacles() -> list[RoutingObstacle]:
 class TestObstacleType:
     """Tests for the ObstacleType enum."""
 
-    def test_all_enum_values(self):
+    def test_all_enum_values(self) -> None:
         """Every expected obstacle type is defined."""
         expected = [
             "wall", "hvac", "sprinkler", "stairwell", "beam",
@@ -145,16 +145,16 @@ class TestObstacleType:
         actual = [t.value for t in ObstacleType]
         assert sorted(actual) == sorted(expected)
 
-    def test_enum_is_str_subclass(self):
+    def test_enum_is_str_subclass(self) -> None:
         """ObstacleType values are strings (enables direct comparison)."""
         assert isinstance(ObstacleType.WALL, str)
         assert ObstacleType.WALL == "wall"
 
-    def test_enum_member_count(self):
+    def test_enum_member_count(self) -> None:
         """There are exactly 12 obstacle types."""
         assert len(ObstacleType) == 12
 
-    def test_specific_values(self):
+    def test_specific_values(self) -> None:
         """Spot-check individual enum members."""
         assert ObstacleType.HVAC.value == "hvac"
         assert ObstacleType.SPRINKLER.value == "sprinkler"
@@ -177,7 +177,7 @@ class TestObstacleType:
 class TestRoutingObstacle:
     """Tests for the RoutingObstacle dataclass."""
 
-    def test_creation_with_string_type(self):
+    def test_creation_with_string_type(self) -> None:
         """Create an obstacle with a string obstacle_type."""
         obs = RoutingObstacle(obstacle_type="wall", x=1.0, y=2.0, width=3.0, height=4.0)
         assert obs.obstacle_type == "wall"
@@ -186,20 +186,20 @@ class TestRoutingObstacle:
         assert obs.width == 3.0
         assert obs.height == 4.0
 
-    def test_creation_with_enum_type(self):
+    def test_creation_with_enum_type(self) -> None:
         """Enum obstacle_type is converted to its string value."""
         obs = RoutingObstacle(obstacle_type=ObstacleType.WALL, x=0, y=0, width=1, height=1)
         assert obs.obstacle_type == "wall"
         assert isinstance(obs.obstacle_type, str)
 
-    def test_default_optional_fields(self):
+    def test_default_optional_fields(self) -> None:
         """Optional fields have correct defaults."""
         obs = RoutingObstacle(obstacle_type="wall", x=0, y=0, width=1, height=1)
         assert obs.clearance is None
         assert obs.passable is False
         assert obs.height_above_floor_m is None
 
-    def test_custom_optional_fields(self):
+    def test_custom_optional_fields(self) -> None:
         """Optional fields can be set."""
         obs = RoutingObstacle(
             obstacle_type="sprinkler", x=1, y=2, width=0.5, height=0.5,
@@ -209,59 +209,59 @@ class TestRoutingObstacle:
         assert obs.passable is True
         assert obs.height_above_floor_m == 3.5
 
-    def test_nan_x_raises_value_error(self):
+    def test_nan_x_raises_value_error(self) -> None:
         """NaN in x coordinate raises ValueError (Life-Safety Rule 2)."""
         with pytest.raises(ValueError, match="NaN/Inf"):
             RoutingObstacle(obstacle_type="wall", x=float("nan"), y=0, width=1, height=1)
 
-    def test_nan_y_raises_value_error(self):
+    def test_nan_y_raises_value_error(self) -> None:
         """NaN in y coordinate raises ValueError."""
         with pytest.raises(ValueError, match="NaN/Inf"):
             RoutingObstacle(obstacle_type="wall", x=0, y=float("nan"), width=1, height=1)
 
-    def test_nan_width_raises_value_error(self):
+    def test_nan_width_raises_value_error(self) -> None:
         """NaN in width raises ValueError."""
         with pytest.raises(ValueError, match="NaN/Inf"):
             RoutingObstacle(obstacle_type="wall", x=0, y=0, width=float("nan"), height=1)
 
-    def test_nan_height_raises_value_error(self):
+    def test_nan_height_raises_value_error(self) -> None:
         """NaN in height raises ValueError."""
         with pytest.raises(ValueError, match="NaN/Inf"):
             RoutingObstacle(obstacle_type="wall", x=0, y=0, width=1, height=float("nan"))
 
-    def test_inf_x_raises_value_error(self):
+    def test_inf_x_raises_value_error(self) -> None:
         """Infinity in x raises ValueError."""
         with pytest.raises(ValueError, match="NaN/Inf"):
             RoutingObstacle(obstacle_type="wall", x=float("inf"), y=0, width=1, height=1)
 
-    def test_neg_inf_y_raises_value_error(self):
+    def test_neg_inf_y_raises_value_error(self) -> None:
         """Negative infinity in y raises ValueError."""
         with pytest.raises(ValueError, match="NaN/Inf"):
             RoutingObstacle(obstacle_type="wall", x=0, y=float("-inf"), width=1, height=1)
 
-    def test_bounds_property(self):
+    def test_bounds_property(self) -> None:
         """Bounds returns (minx, miny, maxx, maxy)."""
         obs = RoutingObstacle(obstacle_type="wall", x=1.0, y=2.0, width=3.0, height=4.0)
         assert obs.bounds == (1.0, 2.0, 4.0, 6.0)
 
-    def test_bounds_zero_size(self):
+    def test_bounds_zero_size(self) -> None:
         """Bounds for a zero-size obstacle."""
         obs = RoutingObstacle(obstacle_type="wall", x=5.0, y=5.0, width=0.0, height=0.0)
         assert obs.bounds == (5.0, 5.0, 5.0, 5.0)
 
-    def test_expanded_bounds(self):
+    def test_expanded_bounds(self) -> None:
         """expanded_bounds adds clearance on all sides."""
         obs = RoutingObstacle(obstacle_type="wall", x=1.0, y=2.0, width=3.0, height=4.0)
         eb = obs.expanded_bounds(0.5)
         assert eb == (0.5, 1.5, 4.5, 6.5)
 
-    def test_expanded_bounds_zero_clearance(self):
+    def test_expanded_bounds_zero_clearance(self) -> None:
         """expanded_bounds with zero clearance equals bounds."""
         obs = RoutingObstacle(obstacle_type="wall", x=1.0, y=2.0, width=3.0, height=4.0)
         assert obs.expanded_bounds(0.0) == obs.bounds
 
     @pytest.mark.skipif(not HAS_SHAPELY, reason="Shapely not available")
-    def test_to_shapely(self):
+    def test_to_shapely(self) -> None:
         """to_shapely returns a Shapely Polygon."""
         obs = RoutingObstacle(obstacle_type="wall", x=1.0, y=2.0, width=3.0, height=4.0)
         poly = obs.to_shapely()
@@ -269,14 +269,14 @@ class TestRoutingObstacle:
         assert poly.bounds == (1.0, 2.0, 4.0, 6.0)
 
     @pytest.mark.skipif(not HAS_SHAPELY, reason="Shapely not available")
-    def test_to_shapely_with_clearance(self):
+    def test_to_shapely_with_clearance(self) -> None:
         """to_shapely_with_clearance returns expanded polygon."""
         obs = RoutingObstacle(obstacle_type="wall", x=1.0, y=2.0, width=3.0, height=4.0)
         poly = obs.to_shapely_with_clearance(0.5)
         assert poly is not None
         assert poly.bounds == (0.5, 1.5, 4.5, 6.5)
 
-    def test_to_shapely_without_shapely(self):
+    def test_to_shapely_without_shapely(self) -> None:
         """to_shapely returns None when Shapely is unavailable."""
         obs = RoutingObstacle(obstacle_type="wall", x=1.0, y=2.0, width=3.0, height=4.0)
         with patch("fireai.core.routing_engine_v10.SHAPELY_AVAILABLE", False):
@@ -292,7 +292,7 @@ class TestRoutingObstacle:
 class TestRoutingConstraint:
     """Tests for the RoutingConstraint dataclass."""
 
-    def test_default_values(self, default_constraints):
+    def test_default_values(self, default_constraints) -> None:
         """Default constraint values match NEC/NFPA standards."""
         assert default_constraints.bend_radius_mm == 300.0
         assert default_constraints.max_cable_length_m == 300.0
@@ -302,7 +302,7 @@ class TestRoutingConstraint:
         assert default_constraints.cross_corridor_penalty == 2.0
         assert default_constraints.seismic_joint_orthogonal_bonus == 0.5
 
-    def test_custom_values(self, custom_constraints):
+    def test_custom_values(self, custom_constraints) -> None:
         """Custom constraints override defaults."""
         assert custom_constraints.bend_radius_mm == 200.0
         assert custom_constraints.max_cable_length_m == 50.0
@@ -312,12 +312,12 @@ class TestRoutingConstraint:
         assert custom_constraints.cross_corridor_penalty == 3.0
         assert custom_constraints.seismic_joint_orthogonal_bonus == 0.3
 
-    def test_frozen(self, default_constraints):
+    def test_frozen(self, default_constraints) -> None:
         """RoutingConstraint is immutable (frozen dataclass)."""
         with pytest.raises(AttributeError):
             default_constraints.bend_radius_mm = 999.0
 
-    def test_from_production_config_without_config(self):
+    def test_from_production_config_without_config(self) -> None:
         """from_production_config returns defaults when ProductionConfig unavailable."""
         # production_config module doesn't exist in this repo, so it always
         # falls back to the default constructor.
@@ -326,7 +326,7 @@ class TestRoutingConstraint:
         assert constraint.bend_radius_mm == 300.0
         assert constraint.max_cable_length_m == 300.0
 
-    def test_from_production_config_with_mock(self):
+    def test_from_production_config_with_mock(self) -> None:
         """from_production_config uses ProductionConfig when available."""
         import fireai.core.routing_engine_v10 as mod
         mock_cfg = type("Cfg", (), {
@@ -365,7 +365,7 @@ class TestRoutingConstraint:
 class TestRouteResult:
     """Tests for the RouteResult dataclass."""
 
-    def test_default_values(self):
+    def test_default_values(self) -> None:
         """Default RouteResult is invalid with empty waypoints (fail-safe)."""
         result = RouteResult()
         assert result.waypoints == []
@@ -378,7 +378,7 @@ class TestRouteResult:
         assert result.solver == "lazy_astar_strtree"
         assert result.version == FIREAI_VERSION
 
-    def test_custom_values(self):
+    def test_custom_values(self) -> None:
         """RouteResult can be created with specific values."""
         result = RouteResult(
             waypoints=[(0.0, 0.0), (5.0, 0.0)],
@@ -395,7 +395,7 @@ class TestRouteResult:
         assert result.valid is True
         assert result.solver == "direct"
 
-    def test_version_matches_fireai(self):
+    def test_version_matches_fireai(self) -> None:
         """RouteResult version always matches FIREAI_VERSION."""
         result = RouteResult()
         assert result.version == FIREAI_VERSION
@@ -409,19 +409,19 @@ class TestRouteResult:
 class TestObstacleIndex:
     """Tests for the internal _ObstacleIndex spatial index."""
 
-    def test_empty_obstacles_los(self):
+    def test_empty_obstacles_los(self) -> None:
         """No obstacles means line of sight is always clear."""
         idx = _ObstacleIndex([], 0.05)
         assert idx.check_los((0, 0), (10, 10)) is True
 
-    def test_los_clear_around_obstacle(self):
+    def test_los_clear_around_obstacle(self) -> None:
         """LOS is clear when the segment doesn't cross the obstacle."""
         obs = RoutingObstacle(obstacle_type="wall", x=5.0, y=5.0, width=1.0, height=1.0)
         idx = _ObstacleIndex([obs], 0.05)
         # Segment far from obstacle
         assert idx.check_los((0, 0), (3, 0)) is True
 
-    def test_los_blocked_through_obstacle(self):
+    def test_los_blocked_through_obstacle(self) -> None:
         """LOS is blocked when segment crosses the obstacle."""
         obs = RoutingObstacle(
             obstacle_type="wall", x=4.5, y=-1.0, width=0.2, height=12.0
@@ -429,13 +429,13 @@ class TestObstacleIndex:
         idx = _ObstacleIndex([obs], 0.05)
         assert idx.check_los((0, 5), (10, 5)) is False
 
-    def test_los_fallback_clear(self):
+    def test_los_fallback_clear(self) -> None:
         """AABB fallback LOS returns True for clear segment."""
         obs = RoutingObstacle(obstacle_type="wall", x=5.0, y=5.0, width=1.0, height=1.0)
         idx = _ObstacleIndex([obs], 0.05)
         assert idx.check_los_fallback((0, 0), (3, 0)) is True
 
-    def test_los_fallback_blocked(self):
+    def test_los_fallback_blocked(self) -> None:
         """AABB fallback LOS returns False for blocked segment."""
         obs = RoutingObstacle(
             obstacle_type="wall", x=4.5, y=-1.0, width=0.2, height=12.0
@@ -443,31 +443,31 @@ class TestObstacleIndex:
         idx = _ObstacleIndex([obs], 0.05)
         assert idx.check_los_fallback((0, 5), (10, 5)) is False
 
-    def test_line_intersects_aabb_crossing(self):
+    def test_line_intersects_aabb_crossing(self) -> None:
         """Liang-Barsky detects a crossing segment."""
         assert _ObstacleIndex._line_intersects_aabb(
             (0, 5), (10, 5), (4.0, -1.0, 5.0, 12.0)
         ) is True
 
-    def test_line_intersects_aabb_miss(self):
+    def test_line_intersects_aabb_miss(self) -> None:
         """Liang-Barsky returns False for non-crossing segment."""
         assert _ObstacleIndex._line_intersects_aabb(
             (0, 0), (3, 0), (5.0, 5.0, 6.0, 6.0)
         ) is False
 
-    def test_line_intersects_aabb_diagonal(self):
+    def test_line_intersects_aabb_diagonal(self) -> None:
         """Liang-Barsky detects diagonal crossing."""
         assert _ObstacleIndex._line_intersects_aabb(
             (0, 0), (10, 10), (4.0, 4.0, 6.0, 6.0)
         ) is True
 
-    def test_segment_intersects_any_clear(self):
+    def test_segment_intersects_any_clear(self) -> None:
         """segment_intersects_any returns False for clear segment."""
         obs = RoutingObstacle(obstacle_type="wall", x=5.0, y=5.0, width=1.0, height=1.0)
         idx = _ObstacleIndex([obs], 0.05)
         assert idx.segment_intersects_any((0, 0), (3, 0)) is False
 
-    def test_segment_intersects_any_blocked(self):
+    def test_segment_intersects_any_blocked(self) -> None:
         """segment_intersects_any returns True for intersecting segment."""
         obs = RoutingObstacle(
             obstacle_type="wall", x=4.5, y=-1.0, width=0.2, height=12.0
@@ -475,7 +475,7 @@ class TestObstacleIndex:
         idx = _ObstacleIndex([obs], 0.05)
         assert idx.segment_intersects_any((0, 5), (10, 5)) is True
 
-    def test_multiple_obstacles_index(self):
+    def test_multiple_obstacles_index(self) -> None:
         """Index works correctly with multiple obstacles."""
         obstacles = [
             RoutingObstacle(obstacle_type="wall", x=2.0, y=0, width=0.2, height=10),
@@ -486,7 +486,7 @@ class TestObstacleIndex:
         assert idx.check_los((0, 5), (1.5, 5)) is True
 
     @pytest.mark.skipif(not HAS_SHAPELY, reason="Shapely not available")
-    def test_strtree_built(self):
+    def test_strtree_built(self) -> None:
         """STRtree is built when Shapely is available and obstacles exist."""
         obs = RoutingObstacle(obstacle_type="wall", x=5, y=0, width=0.2, height=10)
         idx = _ObstacleIndex([obs], 0.05)
@@ -501,21 +501,21 @@ class TestObstacleIndex:
 class TestRoutingEngineV10Init:
     """Tests for RoutingEngineV10 initialization."""
 
-    def test_default_initialization(self, engine):
+    def test_default_initialization(self, engine) -> None:
         """Engine initializes with default constraints."""
         assert isinstance(engine.constraints, RoutingConstraint)
         assert engine.obstacles == []
         assert engine._index is None
         assert engine._dirty is True
 
-    def test_custom_constraints(self, custom_constraints):
+    def test_custom_constraints(self, custom_constraints) -> None:
         """Engine accepts custom constraints."""
         engine = RoutingEngineV10(constraints=custom_constraints)
         assert engine.constraints is custom_constraints
         assert engine.constraints.max_cable_length_m == 50.0
         assert engine.constraints.conduit_type == "RMC"
 
-    def test_none_constraints_uses_defaults(self):
+    def test_none_constraints_uses_defaults(self) -> None:
         """Passing None constraints uses defaults (same as no argument)."""
         engine = RoutingEngineV10(constraints=None)
         assert isinstance(engine.constraints, RoutingConstraint)
@@ -530,26 +530,26 @@ class TestRoutingEngineV10Init:
 class TestRoutingEngineV10Obstacles:
     """Tests for add_obstacle, add_obstacles, and clear_obstacles."""
 
-    def test_add_obstacle(self, engine):
+    def test_add_obstacle(self, engine) -> None:
         """add_obstacle appends to the obstacles list."""
         obs = RoutingObstacle(obstacle_type="wall", x=1, y=2, width=3, height=4)
         engine.add_obstacle(obs)
         assert len(engine.obstacles) == 1
         assert engine.obstacles[0] is obs
 
-    def test_add_obstacle_marks_dirty(self, engine):
+    def test_add_obstacle_marks_dirty(self, engine) -> None:
         """Adding an obstacle marks the index as dirty."""
         engine._dirty = False
         obs = RoutingObstacle(obstacle_type="wall", x=1, y=2, width=3, height=4)
         engine.add_obstacle(obs)
         assert engine._dirty is True
 
-    def test_add_obstacles(self, engine, sample_obstacles):
+    def test_add_obstacles(self, engine, sample_obstacles) -> None:
         """add_obstacles adds multiple obstacles."""
         engine.add_obstacles(sample_obstacles)
         assert len(engine.obstacles) == 3
 
-    def test_add_obstacles_marks_dirty(self, engine):
+    def test_add_obstacles_marks_dirty(self, engine) -> None:
         """add_obstacles marks the index as dirty."""
         engine._dirty = False
         engine.add_obstacles([
@@ -558,24 +558,24 @@ class TestRoutingEngineV10Obstacles:
         ])
         assert engine._dirty is True
 
-    def test_clear_obstacles(self, engine_with_wall):
+    def test_clear_obstacles(self, engine_with_wall) -> None:
         """clear_obstacles removes all obstacles."""
         assert len(engine_with_wall.obstacles) == 1
         engine_with_wall.clear_obstacles()
         assert engine_with_wall.obstacles == []
 
-    def test_clear_obstacles_marks_dirty(self, engine_with_wall):
+    def test_clear_obstacles_marks_dirty(self, engine_with_wall) -> None:
         """clear_obstacles marks the index as dirty."""
         engine_with_wall._dirty = False
         engine_with_wall.clear_obstacles()
         assert engine_with_wall._dirty is True
 
-    def test_clear_obstacles_empty_engine(self, engine):
+    def test_clear_obstacles_empty_engine(self, engine) -> None:
         """clear_obstacles on empty engine is a no-op (no error)."""
         engine.clear_obstacles()
         assert engine.obstacles == []
 
-    def test_add_then_clear_then_add(self, engine):
+    def test_add_then_clear_then_add(self, engine) -> None:
         """Add, clear, add cycle works correctly."""
         obs1 = RoutingObstacle(obstacle_type="wall", x=1, y=1, width=1, height=1)
         obs2 = RoutingObstacle(obstacle_type="hvac", x=5, y=5, width=2, height=2)
@@ -596,7 +596,7 @@ class TestRoutingEngineV10Obstacles:
 class TestRoutingEngineV10RouteNoObstacles:
     """Tests for route() without obstacles (direct routing)."""
 
-    def test_straight_line(self, engine):
+    def test_straight_line(self, engine) -> None:
         """Direct horizontal route with no obstacles."""
         result = engine.route(start=(0.0, 0.0), end=(10.0, 0.0))
         assert result.valid is True
@@ -605,20 +605,20 @@ class TestRoutingEngineV10RouteNoObstacles:
         assert result.num_bends == 0
         assert result.solver == "direct"
 
-    def test_diagonal_route(self, engine):
+    def test_diagonal_route(self, engine) -> None:
         """Direct diagonal route."""
         result = engine.route(start=(0.0, 0.0), end=(10.0, 5.0))
         assert result.valid is True
         expected = math.hypot(10.0, 5.0)
         assert abs(result.total_length_m - expected) < 0.01
 
-    def test_zero_distance(self, engine):
+    def test_zero_distance(self, engine) -> None:
         """Start == end gives zero-length route."""
         result = engine.route(start=(3.0, 4.0), end=(3.0, 4.0))
         assert result.valid is True
         assert result.total_length_m == 0.0
 
-    def test_waypoints_start_end(self, engine):
+    def test_waypoints_start_end(self, engine) -> None:
         """Route waypoints begin at start and end at end."""
         start = (1.0, 2.0)
         end = (8.0, 7.0)
@@ -626,7 +626,7 @@ class TestRoutingEngineV10RouteNoObstacles:
         assert result.waypoints[0] == start
         assert result.waypoints[-1] == end
 
-    def test_vertical_route(self, engine):
+    def test_vertical_route(self, engine) -> None:
         """Direct vertical route."""
         result = engine.route(start=(5.0, 0.0), end=(5.0, 10.0))
         assert result.valid is True
@@ -641,51 +641,51 @@ class TestRoutingEngineV10RouteNoObstacles:
 class TestRoutingEngineV10RouteWithObstacles:
     """Tests for route() with obstacles (A* and fallback routing)."""
 
-    def test_route_around_wall(self, engine_with_wall):
+    def test_route_around_wall(self, engine_with_wall) -> None:
         """Route avoids a vertical wall obstacle."""
         result = engine_with_wall.route(start=(0.0, 5.0), end=(10.0, 5.0))
         assert len(result.waypoints) >= 2
         # Route should exist (may go around the wall)
         assert result.total_length_m > 0
 
-    def test_los_blocked_by_wall(self, engine_with_wall):
+    def test_los_blocked_by_wall(self, engine_with_wall) -> None:
         """Line of sight is blocked through the wall."""
         engine_with_wall._ensure_index()
         assert engine_with_wall._has_line_of_sight((0.0, 5.0), (10.0, 5.0)) is False
 
-    def test_los_clear_before_wall(self, engine_with_wall):
+    def test_los_clear_before_wall(self, engine_with_wall) -> None:
         """Line of sight is clear before the wall."""
         engine_with_wall._ensure_index()
         assert engine_with_wall._has_line_of_sight((0.0, 5.0), (3.0, 5.0)) is True
 
-    def test_v14_line_inside_obstacle(self, engine_with_elevator):
+    def test_v14_line_inside_obstacle(self, engine_with_elevator) -> None:
         """V14 fix: LOS blocked when both points are inside obstacle clearance."""
         engine_with_elevator._ensure_index()
         # Both points inside the elevator clearance zone
         los = engine_with_elevator._has_line_of_sight((4.5, 4.5), (5.5, 5.5))
         assert los is False
 
-    def test_route_clear_of_obstacle(self, engine_with_wall):
+    def test_route_clear_of_obstacle(self, engine_with_wall) -> None:
         """Route between points on the same side of wall is direct."""
         result = engine_with_wall.route(start=(0.0, 5.0), end=(3.0, 5.0))
         assert result.valid is True
         assert len(result.waypoints) >= 2
 
-    def test_obstacles_avoided_count(self, engine_with_wall):
+    def test_obstacles_avoided_count(self, engine_with_wall) -> None:
         """obstacles_avoided is populated for A*-routed paths."""
         result = engine_with_wall.route(start=(0.0, 5.0), end=(10.0, 5.0))
         # If A* was used, obstacles_avoided should be > 0
         if result.solver == "lazy_astar_strtree":
             assert result.obstacles_avoided > 0
 
-    def test_multiple_obstacles(self, engine, sample_obstacles):
+    def test_multiple_obstacles(self, engine, sample_obstacles) -> None:
         """Routing works with multiple obstacles."""
         engine.add_obstacles(sample_obstacles)
         result = engine.route(start=(0.5, 0.5), end=(9.0, 9.0))
         assert len(result.waypoints) >= 2
         assert result.total_length_m > 0
 
-    def test_passable_obstacle(self, engine):
+    def test_passable_obstacle(self, engine) -> None:
         """Passable obstacles don't block routing but may affect cost."""
         obs = RoutingObstacle(
             obstacle_type="door", x=4.0, y=0.0, width=1.0, height=10.0, passable=True
@@ -703,30 +703,30 @@ class TestRoutingEngineV10RouteWithObstacles:
 class TestRoutingEngineV10NaNInfRejection:
     """Tests for Life-Safety Rule 2: NaN/Inf input rejection."""
 
-    def test_nan_in_start(self, engine):
+    def test_nan_in_start(self, engine) -> None:
         """NaN in start point produces invalid route."""
         result = engine.route(start=(float("nan"), 0.0), end=(10.0, 0.0))
         assert result.valid is False
         assert len(result.violations) > 0
         assert "NaN/Inf" in result.violations[0]
 
-    def test_nan_in_end(self, engine):
+    def test_nan_in_end(self, engine) -> None:
         """NaN in end point produces invalid route."""
         result = engine.route(start=(0.0, 0.0), end=(10.0, float("nan")))
         assert result.valid is False
         assert len(result.violations) > 0
 
-    def test_inf_in_start(self, engine):
+    def test_inf_in_start(self, engine) -> None:
         """Infinity in start point produces invalid route."""
         result = engine.route(start=(float("inf"), 0.0), end=(10.0, 0.0))
         assert result.valid is False
 
-    def test_neg_inf_in_end(self, engine):
+    def test_neg_inf_in_end(self, engine) -> None:
         """Negative infinity in end point produces invalid route."""
         result = engine.route(start=(0.0, 0.0), end=(float("-inf"), 5.0))
         assert result.valid is False
 
-    def test_nan_start_preserves_waypoints(self, engine):
+    def test_nan_start_preserves_waypoints(self, engine) -> None:
         """Even with NaN, waypoints list is still returned (start, end)."""
         result = engine.route(start=(float("nan"), 0.0), end=(10.0, 0.0))
         assert len(result.waypoints) == 2
@@ -740,20 +740,20 @@ class TestRoutingEngineV10NaNInfRejection:
 class TestRoutingEngineV10Validation:
     """Tests for route validation against constraints."""
 
-    def test_max_cable_length_violation(self):
+    def test_max_cable_length_violation(self) -> None:
         """Route exceeding max cable length is flagged as invalid."""
         engine = RoutingEngineV10(constraints=RoutingConstraint(max_cable_length_m=5.0))
         result = engine.route(start=(0.0, 0.0), end=(20.0, 0.0))
         assert result.valid is False
         assert any("exceeds max" in v for v in result.violations)
 
-    def test_within_max_cable_length(self):
+    def test_within_max_cable_length(self) -> None:
         """Route within max cable length is valid (no other violations)."""
         engine = RoutingEngineV10(constraints=RoutingConstraint(max_cable_length_m=100.0))
         result = engine.route(start=(0.0, 0.0), end=(10.0, 0.0))
         assert result.valid is True
 
-    def test_route_result_version(self, engine):
+    def test_route_result_version(self, engine) -> None:
         """Route result includes FIREAI_VERSION."""
         result = engine.route(start=(0.0, 0.0), end=(5.0, 0.0))
         assert result.version == FIREAI_VERSION
@@ -767,18 +767,18 @@ class TestRoutingEngineV10Validation:
 class TestRoutingEngineV10RouteMulti:
     """Tests for route_multi() method."""
 
-    def test_empty_points(self, engine):
+    def test_empty_points(self, engine) -> None:
         """Empty points list returns empty results."""
         results = engine.route_multi(points=[])
         assert results == []
 
-    def test_single_point_no_panel(self, engine):
+    def test_single_point_no_panel(self, engine) -> None:
         """Single point without panel_pos returns no segments."""
         results = engine.route_multi(points=[(5.0, 5.0)])
         # With no panel_pos, prev == first point, so first point is skipped
         assert len(results) == 0
 
-    def test_multiple_points_no_panel(self, engine):
+    def test_multiple_points_no_panel(self, engine) -> None:
         """Multiple points without panel routes between them."""
         points = [(0.0, 0.0), (5.0, 0.0), (10.0, 5.0)]
         results = engine.route_multi(points=points)
@@ -786,7 +786,7 @@ class TestRoutingEngineV10RouteMulti:
         for r in results:
             assert isinstance(r, RouteResult)
 
-    def test_multiple_points_with_panel(self, engine):
+    def test_multiple_points_with_panel(self, engine) -> None:
         """With panel_pos, routes start and end at panel."""
         points = [(2.0, 2.0), (8.0, 2.0), (5.0, 8.0)]
         results = engine.route_multi(points=points, panel_pos=(0.0, 0.0))
@@ -796,7 +796,7 @@ class TestRoutingEngineV10RouteMulti:
         # Last segment ends at panel
         assert results[-1].waypoints[-1] == (0.0, 0.0)
 
-    def test_route_multi_with_obstacles(self, engine_with_wall):
+    def test_route_multi_with_obstacles(self, engine_with_wall) -> None:
         """route_multi works with obstacles present."""
         points = [(0.0, 2.0), (8.0, 8.0)]
         results = engine_with_wall.route_multi(points=points)
@@ -813,24 +813,24 @@ class TestRoutingEngineV10RouteMulti:
 class TestRoutingEngineV10RouteBatch:
     """Tests for route_batch() method."""
 
-    def test_empty_segments(self, engine):
+    def test_empty_segments(self, engine) -> None:
         """Empty segments list returns empty results."""
         results = engine.route_batch(segments=[])
         assert results == []
 
-    def test_single_segment(self, engine):
+    def test_single_segment(self, engine) -> None:
         """Single segment batch returns one result."""
         results = engine.route_batch(segments=[((0, 0), (10, 0))])
         assert len(results) == 1
         assert results[0].valid is True
 
-    def test_multiple_segments(self, engine):
+    def test_multiple_segments(self, engine) -> None:
         """Multiple segments batch returns one result per segment."""
         segments = [((0, 0), (10, 0)), ((5, 5), (15, 15))]
         results = engine.route_batch(segments=segments)
         assert len(results) == 2
 
-    def test_parallel_workers_warning(self, engine, caplog):
+    def test_parallel_workers_warning(self, engine, caplog) -> None:
         """n_workers > 1 logs a warning and runs sequentially."""
         import logging
         with caplog.at_level(logging.WARNING, logger="fireai.core.routing_engine_v10"):
@@ -839,7 +839,7 @@ class TestRoutingEngineV10RouteBatch:
         # The warning may or may not be captured depending on logger propagation
         # but the result should be correct regardless
 
-    def test_batch_with_obstacles(self, engine_with_wall):
+    def test_batch_with_obstacles(self, engine_with_wall) -> None:
         """Batch routing works with obstacles."""
         segments = [((0, 5), (10, 5)), ((0, 0), (0, 10))]
         results = engine_with_wall.route_batch(segments=segments)
@@ -854,45 +854,45 @@ class TestRoutingEngineV10RouteBatch:
 class TestRoutingEngineV10Helpers:
     """Tests for internal helper methods."""
 
-    def test_compute_turn_angle_straight(self):
+    def test_compute_turn_angle_straight(self) -> None:
         """180-degree straight line gives 180 degree turn angle."""
         angle = RoutingEngineV10._compute_turn_angle((0, 0), (5, 0), (10, 0))
         assert abs(angle - 180.0) < 1.0
 
-    def test_compute_turn_angle_right_angle(self):
+    def test_compute_turn_angle_right_angle(self) -> None:
         """Right-angle turn gives 90 degree turn angle."""
         angle = RoutingEngineV10._compute_turn_angle((0, 0), (5, 0), (5, 5))
         assert abs(angle - 90.0) < 1.0
 
-    def test_compute_turn_angle_obtuse(self):
+    def test_compute_turn_angle_obtuse(self) -> None:
         """Obtuse turn angle (135 degrees for a 45-degree deviation)."""
         angle = RoutingEngineV10._compute_turn_angle((0, 0), (5, 0), (10, 5))
         # v1=(-5,0), v2=(5,5): dot=-25, cross=|-25|=25 → atan2(25,-25)=135°
         assert abs(angle - 135.0) < 1.0
 
-    def test_nearest_neighbour_order_empty(self):
+    def test_nearest_neighbour_order_empty(self) -> None:
         """Empty input returns empty list."""
         assert RoutingEngineV10._nearest_neighbour_order([]) == []
 
-    def test_nearest_neighbour_order_single(self):
+    def test_nearest_neighbour_order_single(self) -> None:
         """Single point returns that point."""
         result = RoutingEngineV10._nearest_neighbour_order([(5.0, 5.0)])
         assert result == [(5.0, 5.0)]
 
-    def test_nearest_neighbour_order_multiple(self):
+    def test_nearest_neighbour_order_multiple(self) -> None:
         """Points are ordered by nearest neighbour."""
         points = [(0.0, 0.0), (1.0, 0.0), (10.0, 10.0)]
         result = RoutingEngineV10._nearest_neighbour_order(points, start=(0.5, 0.0))
         assert len(result) == 3
 
-    def test_ensure_index(self, engine):
+    def test_ensure_index(self, engine) -> None:
         """_ensure_index builds the spatial index."""
         assert engine._index is None
         engine._ensure_index()
         assert engine._index is not None
         assert engine._dirty is False
 
-    def test_ensure_index_rebuild_on_dirty(self, engine):
+    def test_ensure_index_rebuild_on_dirty(self, engine) -> None:
         """Index is rebuilt when dirty flag is set."""
         engine._ensure_index()
         old_index = engine._index
@@ -900,7 +900,7 @@ class TestRoutingEngineV10Helpers:
         engine._ensure_index()
         assert engine._index is not old_index
 
-    def test_get_clearance_m_default(self, engine):
+    def test_get_clearance_m_default(self, engine) -> None:
         """Default clearance values by obstacle type."""
         assert engine._get_clearance_m(
             RoutingObstacle(obstacle_type="wall", x=0, y=0, width=1, height=1)
@@ -924,19 +924,19 @@ class TestRoutingEngineV10Helpers:
             RoutingObstacle(obstacle_type="beam", x=0, y=0, width=1, height=1)
         ) == 100.0
 
-    def test_get_clearance_m_override(self, engine):
+    def test_get_clearance_m_override(self, engine) -> None:
         """Obstacle-specific clearance override takes priority."""
         obs = RoutingObstacle(
             obstacle_type="wall", x=0, y=0, width=1, height=1, clearance=200.0
         )
         assert engine._get_clearance_m(obs) == 200.0
 
-    def test_get_clearance_m_unknown_type(self, engine):
+    def test_get_clearance_m_unknown_type(self, engine) -> None:
         """Unknown obstacle type uses conservative default (50.0)."""
         obs = RoutingObstacle(obstacle_type="custom", x=0, y=0, width=1, height=1)
         assert engine._get_clearance_m(obs) == 50.0
 
-    def test_compute_approach_angle_horizontal_path_vertical_joint(self, engine):
+    def test_compute_approach_angle_horizontal_path_vertical_joint(self, engine) -> None:
         """Horizontal path vs vertical joint gives 90 degrees (orthogonal crossing)."""
         joint = RoutingObstacle(
             obstacle_type="seismic_joint", x=5.0, y=0.0, width=0.1, height=10.0
@@ -946,7 +946,7 @@ class TestRoutingEngineV10Helpers:
         assert angle is not None
         assert abs(angle - 90.0) < 1.0
 
-    def test_compute_approach_angle_vertical_path_vertical_joint(self, engine):
+    def test_compute_approach_angle_vertical_path_vertical_joint(self, engine) -> None:
         """Vertical path vs vertical joint gives 0 degrees (parallel)."""
         joint = RoutingObstacle(
             obstacle_type="seismic_joint", x=5.0, y=0.0, width=0.1, height=10.0
@@ -956,39 +956,39 @@ class TestRoutingEngineV10Helpers:
         assert angle is not None
         assert abs(angle - 0.0) < 1.0
 
-    def test_compute_approach_angle_zero_size_obstacle(self, engine):
+    def test_compute_approach_angle_zero_size_obstacle(self, engine) -> None:
         """Zero-size obstacle returns None."""
         obs = RoutingObstacle(obstacle_type="wall", x=0, y=0, width=0, height=0)
         angle = engine._compute_approach_angle((0, 0), (10, 10), obs)
         assert angle is None
 
-    def test_compute_approach_angle_zero_length_path(self, engine):
+    def test_compute_approach_angle_zero_length_path(self, engine) -> None:
         """Zero-length path returns None."""
         obs = RoutingObstacle(obstacle_type="wall", x=0, y=0, width=1, height=1)
         angle = engine._compute_approach_angle((5, 5), (5, 5), obs)
         assert angle is None
 
-    def test_manhattan_route(self, engine):
+    def test_manhattan_route(self, engine) -> None:
         """Manhattan fallback produces L-shaped path."""
         result = engine._manhattan_route((0, 0), (10, 5))
         assert len(result.waypoints) >= 2
         assert result.total_length_m > 0
         assert result.solver == "manhattan_fallback"
 
-    def test_manhattan_route_collinear(self, engine):
+    def test_manhattan_route_collinear(self, engine) -> None:
         """Manhattan route for nearly-collinear points simplifies."""
         result = engine._manhattan_route((0, 0), (10, 0))
         # Should simplify to direct for horizontal/vertical
         assert len(result.waypoints) >= 2
 
-    def test_direct_route(self, engine):
+    def test_direct_route(self, engine) -> None:
         """Direct route produces two waypoints."""
         result = engine._direct_route((0, 0), (5, 0))
         assert result.waypoints == [(0, 0), (5, 0)]
         assert abs(result.total_length_m - 5.0) < 0.01
         assert result.solver == "direct"
 
-    def test_point_in_any_obstacle_inside(self, engine_with_elevator):
+    def test_point_in_any_obstacle_inside(self, engine_with_elevator) -> None:
         """Point inside obstacle returns True."""
         engine_with_elevator._ensure_index()
         result = engine_with_elevator._point_in_any_obstacle((4.5, 4.5))
@@ -996,12 +996,12 @@ class TestRoutingEngineV10Helpers:
         # depending on clearance_m. Let's use a point well inside.
         assert isinstance(result, bool)
 
-    def test_point_in_any_obstacle_outside(self, engine):
+    def test_point_in_any_obstacle_outside(self, engine) -> None:
         """Point far from obstacles returns False."""
         result = engine._point_in_any_obstacle((50, 50))
         assert result is False
 
-    def test_point_near_obstacle(self, engine):
+    def test_point_near_obstacle(self, engine) -> None:
         """_point_near_obstacle detects nearby points."""
         obs = RoutingObstacle(obstacle_type="wall", x=5, y=5, width=1, height=1)
         # Point inside the expanded bounds
@@ -1018,12 +1018,12 @@ class TestRoutingEngineV10Helpers:
 class TestRoutingEngineV10SegmentCost:
     """Tests for _segment_cost_factor."""
 
-    def test_no_obstacles_cost_is_1(self, engine):
+    def test_no_obstacles_cost_is_1(self, engine) -> None:
         """No obstacles means cost factor is 1.0."""
         cost = engine._segment_cost_factor((0, 0), (10, 0))
         assert cost == 1.0
 
-    def test_elevator_penalty(self):
+    def test_elevator_penalty(self) -> None:
         """Elevator obstacle incurs vertical_penalty cost."""
         engine = RoutingEngineV10()
         elevator = RoutingObstacle(
@@ -1034,7 +1034,7 @@ class TestRoutingEngineV10SegmentCost:
         cost = engine._segment_cost_factor((0, 5), (10, 5))
         assert cost >= engine.constraints.vertical_penalty
 
-    def test_hvac_penalty(self):
+    def test_hvac_penalty(self) -> None:
         """HVAC obstacle incurs 1.2x cost."""
         engine = RoutingEngineV10()
         hvac = RoutingObstacle(
@@ -1044,7 +1044,7 @@ class TestRoutingEngineV10SegmentCost:
         cost = engine._segment_cost_factor((0, 5), (10, 5))
         assert cost >= 1.2
 
-    def test_stairwell_penalty(self):
+    def test_stairwell_penalty(self) -> None:
         """Stairwell obstacle incurs vertical_penalty."""
         engine = RoutingEngineV10()
         stair = RoutingObstacle(
@@ -1054,7 +1054,7 @@ class TestRoutingEngineV10SegmentCost:
         cost = engine._segment_cost_factor((0, 5), (10, 5))
         assert cost >= engine.constraints.vertical_penalty
 
-    def test_shaft_penalty(self):
+    def test_shaft_penalty(self) -> None:
         """Shaft obstacle incurs vertical_penalty."""
         engine = RoutingEngineV10()
         shaft = RoutingObstacle(
@@ -1073,35 +1073,35 @@ class TestRoutingEngineV10SegmentCost:
 class TestArchitecturalWall:
     """Tests for the ArchitecturalWall class."""
 
-    def test_creation(self):
+    def test_creation(self) -> None:
         """Basic wall creation."""
         wall = ArchitecturalWall(p1=(0, 0), p2=(10, 0))
         assert wall.p1 == (0, 0)
         assert wall.p2 == (10, 0)
         assert wall.fire_rated is False
 
-    def test_fire_rated(self):
+    def test_fire_rated(self) -> None:
         """Fire-rated wall creation."""
         wall = ArchitecturalWall(p1=(0, 0), p2=(10, 0), fire_rated=True)
         assert wall.fire_rated is True
 
-    def test_nan_p1_raises(self):
+    def test_nan_p1_raises(self) -> None:
         """NaN in p1 raises ValueError."""
         with pytest.raises(ValueError, match="NaN/Inf"):
             ArchitecturalWall(p1=(float("nan"), 0), p2=(10, 0))
 
-    def test_nan_p2_raises(self):
+    def test_nan_p2_raises(self) -> None:
         """NaN in p2 raises ValueError."""
         with pytest.raises(ValueError, match="NaN/Inf"):
             ArchitecturalWall(p1=(0, 0), p2=(float("nan"), 0))
 
-    def test_inf_raises(self):
+    def test_inf_raises(self) -> None:
         """Infinity in coordinates raises ValueError."""
         with pytest.raises(ValueError, match="NaN/Inf"):
             ArchitecturalWall(p1=(float("inf"), 0), p2=(10, 0))
 
     @pytest.mark.skipif(not HAS_SHAPELY, reason="Shapely not available")
-    def test_geometry_attribute(self):
+    def test_geometry_attribute(self) -> None:
         """Wall has a Shapely geometry when Shapely is available."""
         wall = ArchitecturalWall(p1=(0, 0), p2=(10, 0))
         assert wall.geometry is not None
@@ -1115,7 +1115,7 @@ class TestArchitecturalWall:
 class TestEliteClassARouter:
     """Tests for the EliteClassARouter class."""
 
-    def test_initialization(self):
+    def test_initialization(self) -> None:
         """Router initializes with correct grid dimensions."""
         router = EliteClassARouter(width=20.0, length=30.0, resolution=0.5)
         assert router.width == 20.0
@@ -1126,43 +1126,43 @@ class TestEliteClassARouter:
         assert router.base_grid.shape == (60, 40)
         assert np.all(router.base_grid == 1.0)
 
-    def test_initialization_different_resolution(self):
+    def test_initialization_different_resolution(self) -> None:
         """Resolution affects grid dimensions."""
         router = EliteClassARouter(width=10.0, length=10.0, resolution=1.0)
         assert router.cols == 10
         assert router.rows == 10
 
-    def test_nan_width_raises(self):
+    def test_nan_width_raises(self) -> None:
         """NaN width raises ValueError."""
         with pytest.raises(ValueError, match="invalid"):
             EliteClassARouter(width=float("nan"), length=10.0)
 
-    def test_nan_length_raises(self):
+    def test_nan_length_raises(self) -> None:
         """NaN length raises ValueError."""
         with pytest.raises(ValueError, match="invalid"):
             EliteClassARouter(width=10.0, length=float("nan"))
 
-    def test_nan_resolution_raises(self):
+    def test_nan_resolution_raises(self) -> None:
         """NaN resolution raises ValueError."""
         with pytest.raises(ValueError, match="invalid"):
             EliteClassARouter(width=10.0, length=10.0, resolution=float("nan"))
 
-    def test_negative_width_raises(self):
+    def test_negative_width_raises(self) -> None:
         """Negative width raises ValueError."""
         with pytest.raises(ValueError, match="invalid"):
             EliteClassARouter(width=-10.0, length=10.0)
 
-    def test_zero_length_raises(self):
+    def test_zero_length_raises(self) -> None:
         """Zero length raises ValueError."""
         with pytest.raises(ValueError, match="invalid"):
             EliteClassARouter(width=10.0, length=0.0)
 
-    def test_inf_resolution_raises(self):
+    def test_inf_resolution_raises(self) -> None:
         """Infinity resolution raises ValueError."""
         with pytest.raises(ValueError, match="invalid"):
             EliteClassARouter(width=10.0, length=10.0, resolution=float("inf"))
 
-    def test_inject_structural_obstructions_non_fire_rated(self):
+    def test_inject_structural_obstructions_non_fire_rated(self) -> None:
         """Non-fire-rated walls add 100.0 to grid cells."""
         router = EliteClassARouter(width=10.0, length=10.0, resolution=1.0)
         wall = ArchitecturalWall(p1=(3, 3), p2=(3, 7), fire_rated=False)
@@ -1172,7 +1172,7 @@ class TestEliteClassARouter:
         # Non-wall cells should remain at 1.0
         assert router.base_grid[0, 0] == 1.0
 
-    def test_inject_structural_obstructions_fire_rated(self):
+    def test_inject_structural_obstructions_fire_rated(self) -> None:
         """Fire-rated walls add 1500.0 to grid cells."""
         router = EliteClassARouter(width=10.0, length=10.0, resolution=1.0)
         wall = ArchitecturalWall(p1=(3, 3), p2=(3, 7), fire_rated=True)
@@ -1180,14 +1180,14 @@ class TestEliteClassARouter:
         # Fire-rated wall cells should have cost >= 1501.0
         assert router.base_grid[3, 3] >= 1501.0
 
-    def test_inject_structural_obstructions_stores_walls(self):
+    def test_inject_structural_obstructions_stores_walls(self) -> None:
         """Walls are stored on the router object."""
         router = EliteClassARouter(width=10.0, length=10.0)
         walls = [ArchitecturalWall(p1=(0, 0), p2=(5, 0))]
         router.inject_structural_obstructions(walls)
         assert router.walls == walls
 
-    def test_generate_class_a_loop_empty_devices(self):
+    def test_generate_class_a_loop_empty_devices(self) -> None:
         """Empty device list returns empty dict."""
         router = EliteClassARouter(width=10.0, length=10.0)
         result = router.generate_class_a_loop(
@@ -1195,7 +1195,7 @@ class TestEliteClassARouter:
         )
         assert result == {}
 
-    def test_generate_class_a_loop_single_device(self):
+    def test_generate_class_a_loop_single_device(self) -> None:
         """Single device produces outgoing and return paths."""
         router = EliteClassARouter(width=20.0, length=20.0, resolution=1.0)
         result = router.generate_class_a_loop(
@@ -1214,7 +1214,7 @@ class TestEliteClassARouter:
         assert out.length_m > 0
         assert ret.length_m > 0
 
-    def test_generate_class_a_loop_multiple_devices(self):
+    def test_generate_class_a_loop_multiple_devices(self) -> None:
         """Multiple devices produce daisy-chained outgoing path."""
         router = EliteClassARouter(width=30.0, length=30.0, resolution=1.0)
         result = router.generate_class_a_loop(
@@ -1229,7 +1229,7 @@ class TestEliteClassARouter:
         # Outgoing path should be long enough for daisy chain
         assert len(out.path) >= 2
 
-    def test_generate_class_a_loop_with_fire_rated_walls(self):
+    def test_generate_class_a_loop_with_fire_rated_walls(self) -> None:
         """Fire-rated walls are tracked for firestopping."""
         router = EliteClassARouter(width=20.0, length=20.0, resolution=1.0)
         wall = ArchitecturalWall(p1=(10, 0), p2=(10, 20), fire_rated=True)
@@ -1239,7 +1239,7 @@ class TestEliteClassARouter:
         )
         assert "outgoing_class_a" in result
 
-    def test_astar_returns_path(self):
+    def test_astar_returns_path(self) -> None:
         """_astar finds a path between two points on the grid."""
         router = EliteClassARouter(width=10.0, length=10.0, resolution=1.0)
         path = router._astar((1.0, 1.0), (8.0, 8.0), router.base_grid)
@@ -1247,7 +1247,7 @@ class TestEliteClassARouter:
         # Path should start near the start point
         assert path[0] == (1.0, 1.0)
 
-    def test_astar_blocked_by_wall(self):
+    def test_astar_blocked_by_wall(self) -> None:
         """_astar returns empty list when no path exists (extremely high cost)."""
         router = EliteClassARouter(width=10.0, length=10.0, resolution=1.0)
         # Fill entire grid with extremely high cost (effectively blocking)
@@ -1260,14 +1260,14 @@ class TestEliteClassARouter:
         path = router._astar((0.5, 0.5), (9.5, 9.5), router.base_grid)
         assert isinstance(path, list)
 
-    def test_measure_len(self):
+    def test_measure_len(self) -> None:
         """_measure_len computes correct path length."""
         router = EliteClassARouter(width=10.0, length=10.0)
         path = [(0, 0), (3, 0), (3, 4)]
         expected = 3.0 + 4.0  # 3 + 4 = 7
         assert abs(router._measure_len(path) - expected) < 0.01
 
-    def test_measure_len_empty(self):
+    def test_measure_len_empty(self) -> None:
         """_measure_len on single-point path returns 0."""
         router = EliteClassARouter(width=10.0, length=10.0)
         assert router._measure_len([(5, 5)]) == 0.0
@@ -1281,7 +1281,7 @@ class TestEliteClassARouter:
 class TestRouteSegment:
     """Tests for the RouteSegment dataclass."""
 
-    def test_creation(self):
+    def test_creation(self) -> None:
         """Basic RouteSegment creation."""
         seg = RouteSegment(
             path=[(0, 0), (5, 0), (5, 5)],
@@ -1303,7 +1303,7 @@ class TestRouteSegment:
 class TestBenchmarkRouting:
     """Tests for the benchmark_routing function."""
 
-    def test_returns_dict(self):
+    def test_returns_dict(self) -> None:
         """benchmark_routing returns a dict with expected keys."""
         result = benchmark_routing(n_obstacles=5, n_routes=5)
         assert isinstance(result, dict)
@@ -1316,7 +1316,7 @@ class TestBenchmarkRouting:
         assert "engine" in result
         assert "version" in result
 
-    def test_benchmark_values(self):
+    def test_benchmark_values(self) -> None:
         """Benchmark returns plausible values."""
         result = benchmark_routing(n_obstacles=5, n_routes=5)
         assert result["n_obstacles"] == 5
@@ -1326,12 +1326,12 @@ class TestBenchmarkRouting:
         assert result["p95_ms"] >= 0
         assert result["version"] == FIREAI_VERSION
 
-    def test_benchmark_engine_name(self):
+    def test_benchmark_engine_name(self) -> None:
         """Benchmark includes correct engine name."""
         result = benchmark_routing(n_obstacles=3, n_routes=3)
         assert "RoutingEngineV10" in result["engine"]
 
-    def test_benchmark_reproducible(self):
+    def test_benchmark_reproducible(self) -> None:
         """Benchmark is deterministic with seed 42."""
         result1 = benchmark_routing(n_obstacles=5, n_routes=5)
         result2 = benchmark_routing(n_obstacles=5, n_routes=5)
@@ -1348,16 +1348,16 @@ class TestBenchmarkRouting:
 class TestEngineeringRouterAlias:
     """Tests for the backward-compatible EngineeringRouter alias."""
 
-    def test_alias_is_same_class(self):
+    def test_alias_is_same_class(self) -> None:
         """EngineeringRouter is an alias for RoutingEngineV10."""
         assert EngineeringRouter is RoutingEngineV10
 
-    def test_alias_creates_instance(self):
+    def test_alias_creates_instance(self) -> None:
         """EngineeringRouter() creates a RoutingEngineV10 instance."""
         router = EngineeringRouter()
         assert isinstance(router, RoutingEngineV10)
 
-    def test_alias_route_works(self):
+    def test_alias_route_works(self) -> None:
         """EngineeringRouter.route() works identically."""
         router = EngineeringRouter()
         result = router.route(start=(0, 0), end=(5, 5))
@@ -1373,7 +1373,7 @@ class TestEngineeringRouterAlias:
 class TestIntegration:
     """Integration tests combining multiple features."""
 
-    def test_add_obstacles_route_clear_re_route(self):
+    def test_add_obstacles_route_clear_re_route(self) -> None:
         """Add obstacles, route, clear, and re-route."""
         engine = RoutingEngineV10()
         engine.add_obstacle(RoutingObstacle(
@@ -1387,7 +1387,7 @@ class TestIntegration:
         assert result2.valid is True
         assert result2.solver == "direct"
 
-    def test_route_multi_then_batch(self):
+    def test_route_multi_then_batch(self) -> None:
         """route_multi and route_batch work on the same engine."""
         engine = RoutingEngineV10()
         points = [(2, 2), (8, 2)]
@@ -1398,7 +1398,7 @@ class TestIntegration:
         batch_results = engine.route_batch(segments)
         assert len(batch_results) == 1
 
-    def test_many_obstacles_still_routes(self):
+    def test_many_obstacles_still_routes(self) -> None:
         """Engine handles many obstacles gracefully."""
         engine = RoutingEngineV10()
         for i in range(20):
@@ -1409,7 +1409,7 @@ class TestIntegration:
         # Should find a path (may be Manhattan fallback)
         assert len(result.waypoints) >= 2
 
-    def test_seismic_joint_orthogonal_crossing(self):
+    def test_seismic_joint_orthogonal_crossing(self) -> None:
         """Seismic joint with orthogonal crossing gets bonus."""
         engine = RoutingEngineV10()
         joint = RoutingObstacle(
@@ -1420,7 +1420,7 @@ class TestIntegration:
         result = engine.route(start=(5, 0), end=(5, 10))
         assert len(result.waypoints) >= 2
 
-    def test_custom_clearance_obstacle(self):
+    def test_custom_clearance_obstacle(self) -> None:
         """Obstacle with custom clearance value."""
         engine = RoutingEngineV10()
         obs = RoutingObstacle(
@@ -1429,7 +1429,7 @@ class TestIntegration:
         engine.add_obstacle(obs)
         assert engine._get_clearance_m(obs) == 500.0
 
-    def test_route_preserves_start_end(self):
+    def test_route_preserves_start_end(self) -> None:
         """Route waypoints always start and end at specified points."""
         engine = RoutingEngineV10()
         engine.add_obstacle(RoutingObstacle(
@@ -1441,7 +1441,7 @@ class TestIntegration:
         assert result.waypoints[0] == start
         assert result.waypoints[-1] == end
 
-    def test_corner_node_generation(self):
+    def test_corner_node_generation(self) -> None:
         """Corner nodes are generated for obstacles."""
         engine = RoutingEngineV10()
         engine.add_obstacle(RoutingObstacle(
@@ -1450,7 +1450,7 @@ class TestIntegration:
         corners = engine._ensure_corner_nodes()
         assert len(corners) > 0
 
-    def test_corner_node_excludes_inside_obstacle(self):
+    def test_corner_node_excludes_inside_obstacle(self) -> None:
         """Corner nodes that fall inside obstacles are excluded."""
         engine = RoutingEngineV10()
         # Two overlapping obstacles — some corners may be inside others
