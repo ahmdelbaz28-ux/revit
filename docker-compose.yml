@@ -65,10 +65,73 @@ services:
           memory: 256M
           cpus: '0.5'
 
+  # ── V141: Qdrant — Vector Database for AI Semantic Memory ──────────────
+  # Provides RAG capabilities for 24+ AI agents. Without this, every
+  # question is treated as if heard for the first time.
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: fireai-qdrant
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant-storage:/qdrant/storage
+    environment:
+      - QDRANT__LOG_LEVEL=INFO
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    restart: unless-stopped
+    networks:
+      - fireai-net
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+
+  # ── V141: Neo4j — Graph Database for Network Topology ──────────────────
+  # Provides topology awareness for electrical networks.
+  # "If I trip this breaker, which loads are affected?" — answered in <10ms.
+  neo4j:
+    image: neo4j:5-community
+    container_name: fireai-neo4j
+    environment:
+      - NEO4J_AUTH=neo4j/etap_password
+      - NEO4J_PLUGINS=["apoc"]
+      - NEO4J_dbms_memory_heap_max__size=512M
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    volumes:
+      - neo4j-data:/data
+      - neo4j-logs:/logs
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    restart: unless-stopped
+    networks:
+      - fireai-net
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+
 volumes:
   fireai-data:
     driver: local
   fireai-logs:
     driver: local
   redis-data:
+    driver: local
+  qdrant-storage:
+    driver: local
+  neo4j-data:
+    driver: local
+  neo4j-logs:
     driver: local
