@@ -484,6 +484,7 @@ class AnalysisPipeline:
                     width=room.width,
                     length=room.length,
                     detectors=layout.detectors,
+                    ceiling_height=ceiling_height, # V131 FIX: Pass height for derating
                     grid_proof_valid=layout.proof_valid,
                     grid_coverage_pct=layout.coverage_pct,
                 )

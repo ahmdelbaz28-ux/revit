@@ -116,23 +116,29 @@ class ConsensusEngine:
         width: float,
         length: float,
         detectors: List[tuple],
+        ceiling_height: float = 3.0,
         grid_proof_valid: Optional[bool] = None,
         grid_coverage_pct: Optional[float] = None,
     ) -> ConsensusResult:
         """Run all verification engines and produce consensus.
-
-        Args:
-            width: Room width in meters.
-            length: Room length in meters.
-            detectors: List of (x, y) detector positions.
-            grid_proof_valid: Result from grid-based engine (DensityOptimizer).
-                If None, the grid engine result is not included.
-            grid_coverage_pct: Coverage percentage from grid engine.
-
-        Returns:
-            ConsensusResult with combined verdict.
-
+        
+        V131 SAFETY FIX: Now takes ceiling_height into account to 
+        calculate the correct NFPA 72 derated radius for verification.
         """
+        # Re-initialize verifiers with derated radius if necessary
+        from fireai.core.spatial_engine.density_optimizer import DensityOptimizer
+        
+        # Get the same derated radius used in placement
+        temp_opt = DensityOptimizer(coverage_radius=self.R)
+        actual_R = temp_opt._get_derated_radius(ceiling_height)
+        
+        if actual_R != self.R:
+            import logging
+            logging.getLogger(__name__).info("Verification Engine: Using derated radius %.2fm for height %.2fm", 
+                                             actual_R, ceiling_height)
+            self._analytical.R = actual_R
+            self._voronoi.R = actual_R
+
         verdicts: List[EngineVerdict] = []
 
         # Engine 1: Analytical
