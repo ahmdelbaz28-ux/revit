@@ -377,21 +377,20 @@ class TopologyGraphService:
             with self._driver.session() as session:
                 # Find all Load nodes downstream of the breaker
                 # Traversal: Breaker → FEEDS/CONNECTED_TO → * → Load
-                result = session.run(
-                    """
-                    MATCH (b:Breaker {element_id: $breaker_id})
-                    MATCH path = (b)-[:FEEDS|CONNECTED_TO*1..$depth]->(target)
-                    WHERE target:Load OR target:Bus
-                    WITH DISTINCT target, path
-                    WHERE NOT target.element_id = $breaker_id
-                    RETURN
-                        collect(DISTINCT CASE WHEN target:Load THEN target.element_id END) AS affected_loads,
-                        collect(DISTINCT CASE WHEN target:Bus THEN target.element_id END) AS affected_buses,
-                        count(path) AS path_count
-                    """,
-                    breaker_id=breaker_id,
-                    depth=max_depth,
+                # V141 FIX: Neo4j Cypher doesn't allow parameterized depth in relationship patterns.
+                # Use string interpolation for depth (safe — max_depth is an int we control).
+                cypher_query = (
+                    "MATCH (b:Breaker {element_id: $breaker_id}) "
+                    f"MATCH path = (b)-[:FEEDS|CONNECTED_TO*1..{max_depth}]->(target) "
+                    "WHERE target:Load OR target:Bus "
+                    "WITH DISTINCT target, path "
+                    "WHERE NOT target.element_id = $breaker_id "
+                    "RETURN "
+                    "  collect(DISTINCT CASE WHEN target:Load THEN target.element_id END) AS affected_loads, "
+                    "  collect(DISTINCT CASE WHEN target:Bus THEN target.element_id END) AS affected_buses, "
+                    "  count(path) AS path_count"
                 )
+                result = session.run(cypher_query, breaker_id=breaker_id)
 
                 record = result.single()
                 elapsed_ms = (time.perf_counter() - t_start) * 1000.0
