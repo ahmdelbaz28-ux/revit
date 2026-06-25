@@ -162,13 +162,22 @@ class Room:
     ceiling_height: float = 3.0
 
     def __post_init__(self):
-        """Validate room dimensions — life-safety data MUST be valid."""
-        if not isinstance(self.width, (int, float)) or self.width <= 0 or not math.isfinite(self.width):
-            raise ValueError(f"Room width must be positive finite, got {self.width}")
-        if not isinstance(self.length, (int, float)) or self.length <= 0 or not math.isfinite(self.length):
-            raise ValueError(f"Room length must be positive finite, got {self.length}")
-        if not isinstance(self.ceiling_height, (int, float)) or self.ceiling_height <= 0 or not math.isfinite(self.ceiling_height):
-            raise ValueError(f"Room ceiling_height must be positive finite, got {self.ceiling_height}")
+        """Validate room dimensions — life-safety data MUST be valid.
+        
+        V131 SECURITY FIX: Numerical Fuzzing Protection.
+        - Rejects zero, negative, infinite, or NaN values.
+        - Enforces a maximum scale limit to prevent memory-exhaustion (DoS) 
+          via massive grid generation.
+        """
+        for field_name, value in [("width", self.width), ("length", self.length), ("ceiling_height", self.ceiling_height)]:
+            if not isinstance(value, (int, float)):
+                raise ValueError(f"Room {field_name} must be numeric, got {type(value).__name__}")
+            if not math.isfinite(value):
+                raise ValueError(f"Room {field_name} must be a finite number")
+            if value <= 0:
+                raise ValueError(f"Room {field_name} must be positive, got {value}")
+            if value > 10000: # 10km limit
+                raise ValueError(f"Room {field_name} exceeds maximum allowed size (10,000m)")
 
 
 @dataclass

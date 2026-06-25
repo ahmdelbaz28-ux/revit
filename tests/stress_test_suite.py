@@ -40,7 +40,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 # Project root on sys.path
-PROJECT_ROOT = "/home/z/my-project/revit"
+PROJECT_ROOT = "/home/user/revit"
 sys.path.insert(0, PROJECT_ROOT)
 
 # Isolate test artifacts
@@ -1150,7 +1150,7 @@ def main() -> int:
             print(f"  {status}: {by_status[status]}")
     print(f"  TOTAL: {len(RESULTS)}")
 
-    out_path = "/home/z/my-project/download/stress_test_results.json"
+    out_path = "/home/user/revit/download/stress_test_results.json"
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     with open(out_path, "w") as f:
         json.dump(
