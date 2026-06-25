@@ -527,13 +527,14 @@ class GenerativeLayoutAgent:
 
         # V135 F-8: First pass — compute costs for all variants to determine
         # the reference_cost (median) used in the additive scoring formula.
-        # The OLD formula didn't need this because it used multiplicative
-        # denominator, but the new additive formula normalizes cost against
-        # the median to keep the penalty in a reasonable range.
+        # V138 F-1 FIX: Also store generation_ms and error per variant to
+        # avoid using stale loop variable `r` in the second loop.
         variant_costs: Dict[LayoutVariant, float] = {}
         variant_layouts: Dict[LayoutVariant, DetectorLayout] = {}
         variant_overlaps: Dict[LayoutVariant, float] = {}
         variant_compliance: Dict[LayoutVariant, bool] = {}
+        variant_gen_ms: Dict[LayoutVariant, float] = {}  # V138 F-1
+        variant_errors: Dict[LayoutVariant, Optional[str]] = {}  # V138 F-1
 
         for r in results:
             variant = LayoutVariant(r["variant"])
@@ -542,6 +543,8 @@ class GenerativeLayoutAgent:
             variant_costs[variant] = self._compute_cost(layout, detector_type)
             variant_overlaps[variant] = self._compute_overlap_pct(layout)
             variant_compliance[variant] = layout.nfpa_valid and layout.proof_valid
+            variant_gen_ms[variant] = r["generation_ms"]  # V138 F-1
+            variant_errors[variant] = r.get("error")  # V138 F-1
 
         # V135 F-8: Compute reference_cost = median of all variant costs
         # Falls back to 1000.0 if all costs are 0 (degenerate case)
@@ -573,7 +576,7 @@ class GenerativeLayoutAgent:
                 score=score,
                 is_compliant=is_compliant,
                 warnings=list(layout.warnings),
-                generation_ms=r["generation_ms"],
+                generation_ms=variant_gen_ms[variant],  # V138 F-1: was stale r[]
             )
 
             # Record audit event (per agent.md Rule 12 + NFPA 72 §7.5)

@@ -190,71 +190,76 @@ def _init_database() -> None:
     if _db_initialized:
         return
     with _init_lock:
-        # Double-checked locking pattern: re-check inside the lock
+        # V138 F-15 FIX: Double-checked locking — ALL init code MUST be
+        # inside the lock block. The OLD code released the lock before
+        # doing the actual DB creation, allowing two threads to both
+        # pass the double-check and create separate DBs.
         if _db_initialized:
-            return
-    # Ensure parent directory exists (skip for :memory:)
-    if DATABASE_PATH != ":memory:":
-        db_dir = os.path.dirname(DATABASE_PATH)
-        if db_dir and not os.path.isdir(db_dir):
-            os.makedirs(db_dir, exist_ok=True)
-    # V137 F-1: Use check_same_thread=False for thread safety.
-    # Our _chain_lock serializes access, so cross-thread usage is safe.
-    conn = sqlite3.connect(DATABASE_PATH, check_same_thread=False)
-    if DATABASE_PATH == ":memory:":
-        _memory_conn = conn  # Keep this connection alive
-    cursor = conn.cursor()
+                return
+        # Ensure parent directory exists (skip for :memory:)
+        if DATABASE_PATH != ":memory:":
+            db_dir = os.path.dirname(DATABASE_PATH)
+            if db_dir and not os.path.isdir(db_dir):
+                os.makedirs(db_dir, exist_ok=True)
+        # V137 F-1: Use check_same_thread=False for thread safety.
+        # Our _chain_lock serializes access, so cross-thread usage is safe.
+        conn = sqlite3.connect(DATABASE_PATH, check_same_thread=False)
+        if DATABASE_PATH == ":memory:":
+            _memory_conn = conn  # Keep this connection alive
+        cursor = conn.cursor()
 
-    # Create table with ECDSA signature column (V11)
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS audit_log (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            timestamp TEXT NOT NULL,
-            event_type TEXT NOT NULL,
-            room_id TEXT,
-            details TEXT NOT NULL,
-            previous_hash TEXT NOT NULL,
-            current_hash TEXT NOT NULL,
-            signature TEXT,
-            ecdsa_signature TEXT
-        )
-    """)
+        # Create table with ECDSA signature column (V11)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS audit_log (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp TEXT NOT NULL,
+                event_type TEXT NOT NULL,
+                room_id TEXT,
+                details TEXT NOT NULL,
+                previous_hash TEXT NOT NULL,
+                current_hash TEXT NOT NULL,
+                signature TEXT,
+                ecdsa_signature TEXT
+            )
+        """)
 
-    # Migrate: add ecdsa_signature column if it doesn't exist (V10 -> V11)
-    try:
-        cursor.execute("SELECT ecdsa_signature FROM audit_log LIMIT 1")
-    except sqlite3.OperationalError:
+        # Migrate: add ecdsa_signature column if it doesn't exist (V10 -> V11)
         try:
-            cursor.execute("ALTER TABLE audit_log ADD COLUMN ecdsa_signature TEXT")
-            logger.info("Migrated audit_log: added ecdsa_signature column")
-        except Exception:
-            pass  # Column may already exist from a concurrent migration
+            cursor.execute("SELECT ecdsa_signature FROM audit_log LIMIT 1")
+        except sqlite3.OperationalError:
+            try:
+                cursor.execute("ALTER TABLE audit_log ADD COLUMN ecdsa_signature TEXT")
+                logger.info("Migrated audit_log: added ecdsa_signature column")
+            except Exception:
+                pass  # Column may already exist from a concurrent migration
 
-    # Create trigger to prevent UPDATE
-    cursor.execute("""
-        CREATE TRIGGER IF NOT EXISTS prevent_update
-        BEFORE UPDATE ON audit_log
-        FOR EACH ROW
-        BEGIN
-            SELECT RAISE(ABORT, 'UPDATE operations are forbidden on audit log');
-        END
-    """)
+        # Create trigger to prevent UPDATE
+        cursor.execute("""
+            CREATE TRIGGER IF NOT EXISTS prevent_update
+            BEFORE UPDATE ON audit_log
+            FOR EACH ROW
+            BEGIN
+                SELECT RAISE(ABORT, 'UPDATE operations are forbidden on audit log');
+            END
+        """)
 
-    # Create trigger to prevent DELETE
-    cursor.execute("""
-        CREATE TRIGGER IF NOT EXISTS prevent_delete
-        BEFORE DELETE ON audit_log
-        FOR EACH ROW
-        BEGIN
-            SELECT RAISE(ABORT, 'DELETE operations are forbidden on audit log');
-        END
-    """)
+        # Create trigger to prevent DELETE
+        cursor.execute("""
+            CREATE TRIGGER IF NOT EXISTS prevent_delete
+            BEFORE DELETE ON audit_log
+            FOR EACH ROW
+            BEGIN
+                SELECT RAISE(ABORT, 'DELETE operations are forbidden on audit log');
+            END
+        """)
 
-    conn.commit()
-    # For :memory: databases, keep the connection alive — closing it destroys the data
-    if DATABASE_PATH != ":memory:":
-        conn.close()
-    _db_initialized = True
+        conn.commit()
+        # For :memory: databases, keep the connection alive — closing it destroys the data
+        if DATABASE_PATH != ":memory:":
+            conn.close()
+        # V138 F-15: Set _db_initialized INSIDE the lock block
+        _db_initialized = True
+    # End of with _init_lock block — all init code was inside the lock
 
 
 def _get_connection() -> sqlite3.Connection:

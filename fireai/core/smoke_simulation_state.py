@@ -569,15 +569,19 @@ class SmokeSimulationState:
         Per VERIFY-TASK4 SAFETY-R2: placeholder data MUST NEVER be
         persisted to AuditStore (would taint legal chain).
 
-        If state is placeholder, returns a minimal dict with only
-        the placeholder flag (no measurement data).
+        V137 F-11 FIX: Expanded to reject ALL non-VALIDATED states
+        (PLACEHOLDER, PENDING, FAILED, EXPIRED). The OLD code only
+        rejected PLACEHOLDER — FAILED/EXPIRED/PENDING states could
+        persist full measurement data, violating SAFETY-R2's spirit.
         """
-        if self.is_placeholder:
+        # V137 F-11: Only VALIDATED data can be fully persisted
+        if self.status != SimulationStatus.VALIDATED:
             return {
                 "room_id": self.room_id,
                 "status": self.status.value,
-                "placeholder": True,
-                "note": "Placeholder data not persisted per SAFETY-R2",
+                "placeholder": self.is_placeholder,
+                "note": f"Status '{self.status.value}' data not persisted per SAFETY-R2 "
+                        f"(only VALIDATED states are audit-safe)",
             }
 
         # Validated data can be fully persisted

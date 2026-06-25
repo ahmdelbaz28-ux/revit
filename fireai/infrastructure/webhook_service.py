@@ -765,9 +765,16 @@ class WebhookDeliveryService:
             return None  # All resolved IPs are public
 
         except Exception as exc:
-            # On any error, fail-open (return None) but log — don't block legitimate webhooks
-            logger.debug("SSRF check error for %s: %s", url, exc)
-            return None
+            # V138 F-12 FIX: FAIL CLOSED (was fail-open).
+            # The OLD code returned None (safe = allow request) on any
+            # exception. For SSRF protection, failing open means an
+            # attacker can craft a URL that triggers an exception in
+            # the SSRF check, bypassing protection. Now we BLOCK.
+            logger.warning(
+                "SSRF check error for %s: %s — BLOCKING request (fail-closed)",
+                url, exc,
+            )
+            return f"SSRF check failed: {exc}"
 
     def _deliver_once(
         self,
@@ -931,41 +938,42 @@ class WebhookDeliveryService:
     def replay_dead_letter(self, dlq_index: int) -> bool:
         """Replay a dead-lettered event.
 
-        V135 F-12 FIX: The OLD method was a NO-OP — it logged and returned
-        True without actually replaying. Now it uses the stored payload
-        (added in V135 F-12) to re-attempt delivery via _deliver_with_retry.
+        V138 F-2 FIX: The OLD code had a TOCTOU race — it read the entry
+        under lock, released the lock for delivery, then popped by INDEX
+        later. LRU eviction could shift indices between read and pop,
+        causing the WRONG entry to be removed. Now we pop FIRST (under
+        lock), then attempt delivery on the popped entry.
 
         Args:
             dlq_index: Index in DLQ list.
 
         Returns:
-            True if replay was initiated, False if index invalid or
-            subscription no longer active.
+            True if replay succeeded, False if index invalid or delivery failed.
         """
+        # V138 F-2: Pop entry FIRST (under lock) to prevent TOCTOU
         with self._lock:
             if dlq_index < 0 or dlq_index >= len(self._dlq):
                 return False
-            entry = self._dlq[dlq_index]
+            entry = self._dlq.pop(dlq_index)  # Remove immediately
 
         # Find subscription
         sub = self.get_subscription(entry.subscription_id)
         if sub is None or sub.status != WebhookStatus.ACTIVE:
             logger.warning(
-                "Cannot replay DLQ entry %d: subscription %s not active",
-                dlq_index, entry.subscription_id,
+                "Cannot replay DLQ entry %s: subscription %s not active — re-queuing",
+                entry.event_id, entry.subscription_id,
             )
+            # V138 F-2: Re-queue the entry since we popped it
+            with self._lock:
+                self._dlq.insert(dlq_index, entry)
             return False
 
-        # V135 F-12: Actually replay by re-attempting delivery with stored payload
         logger.info(
-            "Replaying DLQ entry %d for subscription %s (event_type=%s)",
-            dlq_index, entry.subscription_id, entry.event_type,
+            "Replaying DLQ entry %s for subscription %s (event_type=%s)",
+            entry.event_id, entry.subscription_id, entry.event_type,
         )
 
-        # Re-attempt delivery using the stored payload
-        # This goes through the full retry cycle again
         try:
-            # Reconstruct headers for the replay
             import json
             signature = compute_webhook_signature(entry.payload, sub.secret)
             headers = {
@@ -977,7 +985,6 @@ class WebhookDeliveryService:
                 "User-Agent": "FireAI-WebhookDelivery/1.0-replay",
             }
 
-            # Attempt single delivery (no retry — just one shot)
             attempt = self._deliver_once(
                 subscription=sub,
                 event_id=entry.event_id,
@@ -989,27 +996,19 @@ class WebhookDeliveryService:
             )
 
             if attempt.status == DeliveryStatus.SUCCESS:
-                logger.info(
-                    "DLQ entry %d replayed successfully",
-                    dlq_index,
-                )
-                # Remove from DLQ on successful replay
-                with self._lock:
-                    if dlq_index < len(self._dlq):
-                        self._dlq.pop(dlq_index)
+                logger.info("DLQ entry %s replayed successfully", entry.event_id)
                 return True
             else:
-                logger.warning(
-                    "DLQ entry %d replay failed: %s",
-                    dlq_index, attempt.error,
-                )
+                logger.warning("DLQ entry %s replay failed: %s", entry.event_id, attempt.error)
+                # V138 F-2: Re-queue on failure
+                with self._lock:
+                    self._dlq.insert(min(dlq_index, len(self._dlq)), entry)
                 return False
 
         except Exception as exc:
-            logger.error(
-                "DLQ entry %d replay error: %s",
-                dlq_index, exc, exc_info=True,
-            )
+            logger.error("DLQ entry %s replay error: %s", entry.event_id, exc, exc_info=True)
+            with self._lock:
+                self._dlq.insert(min(dlq_index, len(self._dlq)), entry)
             return False
 
     def clear_dead_letter_queue(self) -> int:

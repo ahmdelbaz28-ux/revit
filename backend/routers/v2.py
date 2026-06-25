@@ -56,14 +56,17 @@ router = APIRouter()
 
 
 class GenerativeDesignRequest(BaseModel):
-    """Request body for /api/v2/generative/design."""
+    """Request body for /api/v2/generative/design.
 
-    room_width: float = Field(..., gt=0, description="Room width in metres")
-    room_length: float = Field(..., gt=0, description="Room length in metres")
-    room_height: float = Field(3.0, gt=0, description="Ceiling height in metres")
-    room_name: str = Field("API_Room", description="Room identifier")
-    occupancy_type: str = Field("office", description="NFPA 101 occupancy")
-    detector_type: str = Field("smoke", description="Detector type")
+    V138 F-13: Added upper bounds to prevent DoS via huge dimensions.
+    """
+
+    room_width: float = Field(..., gt=0, le=1000.0, description="Room width in metres (max 1000m)")
+    room_length: float = Field(..., gt=0, le=1000.0, description="Room length in metres (max 1000m)")
+    room_height: float = Field(3.0, gt=0, le=30.0, description="Ceiling height in metres (max 30m)")
+    room_name: str = Field("API_Room", max_length=200, description="Room identifier")
+    occupancy_type: str = Field("office", max_length=100, description="NFPA 101 occupancy")
+    detector_type: str = Field("smoke", max_length=50, description="Detector type")
     use_multiprocessing: bool = Field(True, description="Use parallel variant generation")
 
 
@@ -121,11 +124,26 @@ class WebhookPublishRequest(BaseModel):
     trace_id: Optional[str] = None
 
 
-class SmokeSimulationStateRequest(BaseModel):
-    """Request body for /api/v2/smoke-simulation/state."""
+class SmokeDensityPointRequest(BaseModel):
+    """V138 F-14: Pydantic model for smoke density point (was unvalidated Dict)."""
 
-    room_id: str
-    smoke_density_points: List[Dict[str, Any]] = Field(default_factory=list)
+    x: float = Field(..., ge=-10000, le=10000)
+    y: float = Field(..., ge=-10000, le=10000)
+    z: float = Field(..., ge=-100, le=100)
+    density_kg_m3: float = Field(..., ge=0, le=100)
+
+
+class SmokeSimulationStateRequest(BaseModel):
+    """Request body for /api/v2/smoke-simulation/state.
+
+    V138 F-13: Added max_length to prevent DoS.
+    V138 F-14: Use Pydantic model for smoke_density_points (was unvalidated Dict).
+    """
+
+    room_id: str = Field(..., max_length=200)
+    smoke_density_points: List[SmokeDensityPointRequest] = Field(
+        default_factory=list, max_length=10000
+    )
     visibility_at_height: Dict[float, float] = Field(default_factory=dict)
     fds_run_id: Optional[str] = None
 
@@ -195,26 +213,35 @@ async def extract_rooms(req: BIMExtractRoomsRequest) -> Dict[str, Any]:
     """
     from fireai.bridges.bim_provider import get_provider
 
-    # V137 F-5: Validate source path if provided
+    # V137 F-5 / V138 F-7: Validate source path if provided
     if req.source:
         import os
         from pathlib import Path
         try:
             source_path = Path(req.source).resolve()
-            # Check for path traversal (..)
-            if not str(source_path).startswith(str(Path.cwd().resolve())):
-                # Allow /tmp and uploads directories
-                allowed_prefixes = [
-                    str(Path.cwd().resolve()),
-                    "/tmp",
-                    "/var/tmp",
-                    os.environ.get("FIREAI_UPLOAD_DIR", str(Path.cwd() / "uploads")),
-                ]
-                if not any(str(source_path).startswith(p) for p in allowed_prefixes):
-                    raise HTTPException(
-                        status_code=400,
-                        detail="Source path is outside allowed directories.",
-                    )
+            # V138 F-7 FIX: Use Path.is_relative_to() or proper boundary check
+            # instead of str.startswith() which matches "/tmp_evil" against "/tmp"
+            cwd = Path.cwd().resolve()
+            allowed_roots = [
+                cwd,
+                Path("/tmp"),
+                Path("/var/tmp"),
+                Path(os.environ.get("FIREAI_UPLOAD_DIR", str(cwd / "uploads"))),
+            ]
+            # V138 F-7: Check if source_path is within any allowed root
+            # using proper path containment (not string prefix)
+            def _is_within(path: Path, root: Path) -> bool:
+                try:
+                    path.relative_to(root)
+                    return True
+                except ValueError:
+                    return False
+
+            if not any(_is_within(source_path, root) for root in allowed_roots):
+                raise HTTPException(
+                    status_code=400,
+                    detail="Source path is outside allowed directories.",
+                )
             # Check for null byte injection
             if "\x00" in req.source:
                 raise HTTPException(
@@ -494,10 +521,11 @@ async def create_smoke_state(req: SmokeSimulationStateRequest) -> Dict[str, Any]
             )
 
         # Create validated state from FDS results
+        # V138 F-14: Use Pydantic-validated points (was unvalidated Dict)
         points = [
             SmokeDensityPoint(
-                x=p["x"], y=p["y"], z=p["z"],
-                density_kg_m3=p["density_kg_m3"],
+                x=p.x, y=p.y, z=p.z,
+                density_kg_m3=p.density_kg_m3,
             )
             for p in req.smoke_density_points
         ]

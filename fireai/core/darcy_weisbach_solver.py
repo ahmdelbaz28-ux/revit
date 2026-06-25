@@ -345,7 +345,8 @@ def calculate_darcy_weisbach_friction_loss(
         )
 
     # ── Compute friction factor ──
-    friction_factor = _compute_friction_factor(reynolds, roughness, pipe_diameter_m, flow_regime)
+    # V138 F-5: Unpack converged flag from _compute_friction_factor
+    friction_factor, _converged = _compute_friction_factor(reynolds, roughness, pipe_diameter_m, flow_regime)
 
     # ── Compute head loss (Darcy-Weisbach) ──
     # h_f = f × (L / d) × (v² / (2 × g))
@@ -381,6 +382,7 @@ def calculate_darcy_weisbach_friction_loss(
         flow_regime=flow_regime,
         fluid_type=fluid_type.value,
         warnings=warnings,
+        converged=_converged,  # V138 F-5: was always True
     )
 
 
@@ -408,33 +410,34 @@ def _compute_friction_factor(
     """
     if flow_regime == "laminar":
         # Laminar flow: f = 64 / Re (exact, Stokes' law)
-        # Per Munson §8.3
-        return 64.0 / reynolds if reynolds > 0 else 0.0
+        # Per Munson §8.3. Laminar is always "converged" (exact formula).
+        return 64.0 / reynolds if reynolds > 0 else 0.0, True
 
     elif flow_regime == "turbulent":
         # Turbulent flow: Use Colebrook-White equation (implicit)
-        # Solved iteratively via Newton-Raphson
+        # V138 F-5: Returns (f, converged) tuple
         return _solve_colebrook_white(reynolds, roughness, diameter)
 
     else:
         # Transitional: linear interpolation between laminar and turbulent
-        # This is a simplification — transitional flow is not well-defined
         f_laminar = 64.0 / reynolds if reynolds > 0 else 0.0
-        f_turbulent = _solve_colebrook_white(reynolds, roughness, diameter)
-        # Interpolate based on where Re falls in [2300, 4000]
+        f_turbulent, _ = _solve_colebrook_white(reynolds, roughness, diameter)
         alpha = (reynolds - RE_LAMINAR_MAX) / (RE_TURBULENT_MIN - RE_LAMINAR_MAX)
-        return f_laminar * (1 - alpha) + f_turbulent * alpha
+        return f_laminar * (1 - alpha) + f_turbulent * alpha, True
 
 
 def _solve_colebrook_white(
     reynolds: float,
     roughness: float,
     diameter: float,
-) -> float:
+) -> Tuple[float, bool]:
     """Solve the Colebrook-White equation for Darcy friction factor.
 
+    V138 F-5: Returns (friction_factor, converged) tuple so callers
+    can set the converged field on DarcyWeisbachResult.
+
     The Colebrook-White equation:
-        1/√f = -2 × log10( (ε/d)/3.7 + 2.51/(Re × √f) )
+        1/sqrt(f) = -2 * log10( (eps/d)/3.7 + 2.51/(Re * sqrt(f)) )
 
     This is implicit (f appears on both sides). We solve iteratively using
     Newton-Raphson with the Haaland approximation as the initial guess.
@@ -448,7 +451,7 @@ def _solve_colebrook_white(
         Darcy friction factor.
     """
     if reynolds <= 0:
-        return 0.0
+        return (0.0, False)
 
     relative_roughness = roughness / diameter if diameter > 0 else 0.0
 
@@ -515,7 +518,7 @@ def _solve_colebrook_white(
 
         # Check convergence
         if abs(f_new - f) < COLEBROOK_CONVERGENCE_TOLERANCE:
-            return f_new
+            return (f_new, True)
 
         f = f_new
 
@@ -531,15 +534,18 @@ def _solve_colebrook_white(
             haaland_rhs = -1.8 * math.log10(
                 ((relative_roughness / 3.7) ** 1.11) + (6.9 / reynolds)
             )
-            return (1.0 / haaland_rhs) ** 2 if haaland_rhs != 0 else 0.02
-        return 0.02
+            return ((1.0 / haaland_rhs) ** 2 if haaland_rhs != 0 else 0.02, False)
+        return (0.02, False)
 
-    # Return last computed value (may not have converged)
-    logger.debug(
+    # V138 F-5 FIX: Return converged=False when iteration didn't converge.
+    # The OLD code always returned converged=True (field was never set False).
+    logger.warning(
         "Colebrook-White iteration did not fully converge: Re=%f, ε/d=%f, f=%f",
         reynolds, relative_roughness, f,
     )
-    return f
+    # Store non-convergence flag — caller checks result.converged
+    pass  # V138 F-5: converged=False returned via tuple
+    return (f, False)
 
 
 # ---------------------------------------------------------------------------

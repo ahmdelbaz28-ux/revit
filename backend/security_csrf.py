@@ -74,16 +74,9 @@ CSRF_COOKIE_NAME = "__Host-fireai_csrf_token"
 CSRF_HEADER_NAME = "x-csrf-token"
 CSRF_TOKEN_LENGTH = 32  # bytes → 43 chars in urlsafe base64
 
-# Cookie attributes — SameSite=Strict is critical for CSRF protection
-CSRF_COOKIE_ATTRIBUTES = (
-    f"{CSRF_COOKIE_NAME}={{token}}; "
-    "Path=/; "
-    "SameSite=Strict; "
-    "Secure; "  # HTTPS only (browser will drop on HTTP — fine for dev with HTTP_EXCEPTIONS)
-    "Max-Age=86400; "  # 24 hours
-    # NOTE: HttpOnly=false — the frontend JS MUST be able to read the cookie
-    # to extract the token and send it in the X-CSRF-Token header.
-)
+# V138 F-16 FIX: Removed dead CSRF_COOKIE_ATTRIBUTES constant.
+# It was defined but NEVER USED. The actual cookie is built by
+# build_csrf_cookie_header() which has its own inline format.
 
 # Safe HTTP methods that do NOT require CSRF protection (RFC 7231 §4.2.1)
 SAFE_METHODS = frozenset({"GET", "HEAD", "OPTIONS"})
