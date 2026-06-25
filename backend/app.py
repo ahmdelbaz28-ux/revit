@@ -522,15 +522,61 @@ app.include_router(monitor_router_module.router, prefix="/api/v1", tags=["Monito
 # alias — both required by backend/tests/test_routers.py.
 app.include_router(health_router_module.router, prefix="/api", tags=["Health"])
 
+# ── V132 (MISSION TASK 3.1): API v2 with Deprecation Headers ─────────────
+# Per RFC 7234: v1 endpoints receive Deprecation + Sunset + Link headers
+# pointing to their v2 successors. This enables smooth migration to the
+# new cloud-native API surface (Generative Design, BIM Provider abstraction,
+# IFC 4.3, AR Export, Webhooks, Smoke Simulation state).
+# The v2 router exposes the new capabilities under /api/v2/ prefix.
+def _register_v2_router() -> None:
+    """Mount the v2 router with all new cloud-native endpoints."""
+    try:
+        from backend.routers.v2 import router as v2_router
+        app.include_router(v2_router, prefix="/api/v2", tags=["v2"])
+        logger.info("V2 API router mounted at /api/v2/")
+    except ImportError as e:
+        logger.warning("V2 router skipped (optional dependency missing): %s", e)
+    except Exception as e:
+        logger.warning("V2 router registration failed: %s", e)
+
+_register_v2_router()
+
+
+# Deprecation middleware: add Deprecation/Sunset/Link headers to v1 responses.
+# Per RFC 7234 (HTTP Caching) and the HTTP Deprecation header draft.
+@app.middleware("http")
+async def add_deprecation_headers(request, call_next):
+    """Add Deprecation: true, Sunset, and Link headers to /api/v1/ responses.
+
+    Per MISSION TASK 3.1: v1 endpoints are deprecated with a 1-year sunset
+    window, pointing clients to their v2 successors.
+    """
+    response = await call_next(request)
+
+    # Only add to /api/v1/ paths (not /api/v2/ or /api/health)
+    if "/api/v1/" in request.url.path:
+        response.headers["Deprecation"] = "true"
+        # Sunset date: 1 year from V132 release (2026-06-25)
+        response.headers["Sunset"] = "Wed, 25 Jun 2027 00:00:00 GMT"
+        # Link to v2 successor (replace /api/v1/ with /api/v2/)
+        v2_url = request.url.path.replace("/api/v1/", "/api/v2/", 1)
+        response.headers["Link"] = f'<{v2_url}>; rel="successor-version"'
+
+    return response
+
+
 # Health endpoints (no version prefix - always available)
 @app.get("/api/v1/health", tags=["Health-v1"])
 async def health_check_v1():
-    """Health check endpoint for API v1."""
+    """Health check endpoint for API v1 (DEPRECATED — use /api/v2/health)."""
     return {
         "status": "healthy",
         "service": "CAD/BIM Integration Platform",
         "version": "1.0.0",
-        "api_version": "v1"
+        "api_version": "v1",
+        "deprecated": True,
+        "successor": "/api/v2/health",
+        "sunset_date": "2027-06-25",
     }
 
 @app.get("/api/v2/health", tags=["Health-v2"])
@@ -541,7 +587,12 @@ async def health_check_v2():
         "service": "CAD/BIM Integration Platform",
         "version": "1.0.0",
         "api_version": "v2",
-        "features": ["rate_limiting", "enhanced_caching", "streaming"]
+        "features": [
+            "rate_limiting", "enhanced_caching", "streaming",
+            "generative_design", "bim_provider_abstraction",
+            "ifc43_mapping", "ar_metadata_export",
+            "webhook_delivery", "smoke_simulation_state",
+        ],
     }
 
 # Legacy health endpoint (deprecated)
