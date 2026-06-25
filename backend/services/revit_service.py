@@ -1,3 +1,4 @@
+import re
 """backend/services/revit_service.py — Revit Integration Service
 =============================================================
 
@@ -1358,7 +1359,6 @@ class RevitService(BIMProvider):
         V131 SECURITY HARDENING:
         - Rejects commands containing shell meta-characters or path traversal patterns.
         """
-        import re
         dangerous_patterns = [
             r"\.\./", r"\.\\",  # Path traversal
             r"[;&|`]",          # Shell chaining
@@ -1651,7 +1651,6 @@ class RevitService(BIMProvider):
 
     def _extract_level(self, command: str) -> Optional[str]:
         """Extract level name from command."""
-        import re
         patterns = [r"level\s+(\d+)", r"level\s+(\w+)"]
         for pattern in patterns:
             match = re.search(pattern, command, re.IGNORECASE)
@@ -1669,7 +1668,6 @@ class RevitService(BIMProvider):
 
     def _extract_element_id(self, command: str, selected: List[Dict]) -> Optional[str]:
         """Extract element ID from command."""
-        import re
         id_match = re.search(r"id[:\s]*(\d+)", command, re.IGNORECASE)
         if id_match:
             return id_match.group(1)
