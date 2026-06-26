@@ -157,12 +157,24 @@ class WebSocketTransport(TransportLayer):
         # In a real implementation, this would connect to the target WebSocket endpoint
         import asyncio
 
-        async def send_to_target():
-            if not target_node:
-                target_node = f"ws://{self.host}:{self.port}"
+        # V138 FIX (HIGH-2 from adversarial audit):
+        # The original code assigned to `target_node` inside the nested
+        # coroutine `send_to_target()`, which made Python treat `target_node`
+        # as a LOCAL of that coroutine. Line 161 (`if not target_node:`) then
+        # read it BEFORE assignment → `UnboundLocalError` on every call where
+        # `target_node` was None (the default).
+        #
+        # Root cause: Python's scoping rule — any assignment to a name inside a
+        # function makes that name local to the entire function, even at lines
+        # before the assignment.
+        #
+        # Fix: use a separate local variable `node` for the resolved URL.
+        # This is the audit's recommended fix and is the minimal change.
+        node = target_node or f"ws://{self.host}:{self.port}"
 
+        async def send_to_target():
             try:
-                async with websockets.connect(target_node) as websocket:
+                async with websockets.connect(node) as websocket:
                     await websocket.send(json.dumps(request_data))
                     response = await websocket.recv()
                     return json.loads(response)

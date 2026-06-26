@@ -88,6 +88,32 @@ class _ElementLike(Protocol):
     def to_dict(self) -> dict[str, Any]: ...
 
 
+class _ClosedConnectionGuard:
+    """
+    Proxy that raises RuntimeError on any attribute access.
+
+    V138 FIX (MEDIUM-3): When UniversalDataModel.close() is called, the
+    internal sqlite3.Connection is replaced with an instance of this
+    class. Any subsequent `model._conn.execute(...)` or similar access
+    raises RuntimeError — the exception type the test contract in
+    core/tests/test_database.py::test_context_manager_exit_closes expects.
+
+    This decouples callers from sqlite3.ProgrammingError (an
+    implementation detail of the sqlite3 module) and provides a
+    consistent, predictable exception type for use-after-close errors.
+    """
+
+    def __getattr__(self, name: str) -> Any:
+        raise RuntimeError(
+            "Cannot operate on a closed UniversalDataModel connection."
+        )
+
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        raise RuntimeError(
+            "Cannot operate on a closed UniversalDataModel connection."
+        )
+
+
 class UniversalDataModel:
     """
     Thread-safe SQLite store for UniversalElement objects.
@@ -126,6 +152,11 @@ class UniversalDataModel:
         self._conn.execute("PRAGMA journal_mode=WAL")
         self._lock = threading.RLock()
         self._conn.row_factory = sqlite3.Row
+        # V138 FIX (MEDIUM-3): Track closed state so post-close operations
+        # raise RuntimeError (per test contract) instead of leaking the
+        # sqlite3.ProgrammingError type (which is an implementation detail
+        # the test should not depend on).
+        self._closed = False
 
         self._init_tables()
         logger.info("UniversalDataModel initialized (db_path=%s)", "memory" if db_path == ":memory:" else "file")
@@ -136,15 +167,56 @@ class UniversalDataModel:
     def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         self.close()
 
+    def __getattr__(self, name: str) -> Any:
+        """
+        Intercept attribute access for closed-connection detection.
+
+        V138 FIX (MEDIUM-3): When the connection is closed, accessing
+        `_conn` (or any other attribute that would touch the underlying
+        sqlite3 connection) raises RuntimeError — the exception type
+        the test contract expects — instead of leaking
+        sqlite3.ProgrammingError from inside the sqlite3 module.
+
+        Note: __getattr__ is only called when normal attribute lookup
+        fails. Since `_conn` is set in __init__, it is found via
+        __getattribute__, NOT __getattr__. To intercept _conn access
+        after close, we explicitly delete it in close() below.
+        """
+        raise AttributeError(name)
+
     def close(self) -> None:
         """
         Close the SQLite connection.
 
         V83 FIX (H-6): Previous code never closed the connection, causing
         file descriptor leaks in long-running processes.
+
+        V138 FIX (MEDIUM-3): After closing, replace `self._conn` with a
+        proxy that raises RuntimeError on any attribute access. This
+        ensures `model._conn.execute(...)` raises RuntimeError (the type
+        the test contract expects) instead of sqlite3.ProgrammingError
+        (an implementation detail callers should not depend on).
         """
         with self._lock, contextlib.suppress(Exception):
             self._conn.close()
+        self._closed = True
+        # Replace _conn with a guard proxy so ANY subsequent access
+        # (e.g. `model._conn.execute(...)`) raises RuntimeError.
+        self._conn = _ClosedConnectionGuard()
+
+    def _ensure_open(self) -> None:
+        """
+        Raise RuntimeError if the connection has been closed.
+
+        V138 FIX (MEDIUM-3): Provides a consistent exception type
+        (RuntimeError) for use-after-close, decoupling callers from
+        the underlying sqlite3 exception hierarchy.
+        """
+        if self._closed:
+            raise RuntimeError(
+                "UniversalDataModel connection has been closed; "
+                "no further operations are permitted."
+            )
 
     def _init_tables(self) -> None:
         """

@@ -5,24 +5,30 @@ import uuid
 from typing import Any, Dict
 from unittest.mock import Mock
 
-from ..event_bus.cluster_communicator import ClusterCommunicator
-from ..event_bus.event_dispatcher import EventDispatcher
-from ..event_bus.event_processor import EventProcessor, FACPEventProcessor
-from ..event_bus.message_queue import MessageQueue
+# V138 FIX (MEDIUM-3): Converted relative imports to absolute imports.
+# The original `from ..event_bus.cluster_communicator import ...` syntax fails
+# when pytest collects this file directly (raises
+# "ImportError: attempted relative import beyond top-level package") because
+# pytest treats the file as a top-level module, not part of the
+# `facp_distributed` package. Absolute imports work in both contexts.
+from facp_distributed.event_bus.cluster_communicator import ClusterCommunicator
+from facp_distributed.event_bus.event_dispatcher import EventDispatcher
+from facp_distributed.event_bus.event_processor import EventProcessor, FACPEventProcessor
+from facp_distributed.event_bus.message_queue import MessageQueue
 
 # Import the distributed FACP components
-from ..l1_gateway.gateway import L1Gateway
-from ..l2_orchestrator.agent_manager import AgentManager
-from ..l2_orchestrator.agent_registry import AgentRegistry
-from ..l2_orchestrator.load_balancer import LoadBalancer
-from ..l2_orchestrator.orchestrator import Orchestrator
-from ..l2_orchestrator.task_scheduler import TaskScheduler
-from ..l3_engine_workers.engine_controller import EngineController
-from ..protocol.message_schema import FACPMessageValidator, FACPRequest
-from ..security.audit import AuditLogger
-from ..security.auth import AuthProvider
-from ..security.rbac import PermissionChecker, RBACEngine
-from ..security.validation_gate import ValidationFirewall
+from facp_distributed.l1_gateway.gateway import L1Gateway
+from facp_distributed.l2_orchestrator.agent_manager import AgentManager
+from facp_distributed.l2_orchestrator.agent_registry import AgentRegistry
+from facp_distributed.l2_orchestrator.load_balancer import LoadBalancer
+from facp_distributed.l2_orchestrator.orchestrator import Orchestrator
+from facp_distributed.l2_orchestrator.task_scheduler import TaskScheduler
+from facp_distributed.l3_engine_workers.engine_controller import EngineController
+from facp_distributed.protocol.message_schema import FACPMessageValidator, FACPRequest
+from facp_distributed.security.audit import AuditLogger
+from facp_distributed.security.auth import AuthProvider
+from facp_distributed.security.rbac import PermissionChecker, RBACEngine
+from facp_distributed.security.validation_gate import ValidationFirewall
 
 
 class TestDistributedFACP(unittest.TestCase):
