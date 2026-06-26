@@ -32,11 +32,13 @@ class _RateLimiter:
     """Simple sliding-window rate limiter per user."""
 
     def __init__(self, max_requests: int = 60, window_seconds: int = 60) -> None:
+        """Configure the rate limiter with request and window limits."""
         self._max = max_requests
         self._window = window_seconds
         self._buckets: dict[str, list[float]] = {}
 
     def allow(self, user_id: str) -> bool:
+        """Check whether the user is within the rate limit, returning True if allowed."""
         now = time.monotonic()
         cutoff = now - self._window
         bucket = self._buckets.setdefault(user_id, [])
@@ -87,6 +89,7 @@ class MobileCredentials:
     platform: str = ""  # "ios", "android"
 
     def __post_init__(self) -> None:
+        """Validate that username, password_hash, and device_id are non-empty."""
         if not self.username.strip():
             raise ValueError("username is required")
         if not self.password_hash.strip():
@@ -105,6 +108,7 @@ class AuthToken:
 
     @property
     def is_expired(self) -> bool:
+        """Return True if the token has passed its expiry time."""
         return datetime.now(timezone.utc) >= self.expires_at
 
 
@@ -180,6 +184,7 @@ class MobileAPI:
     """
 
     def __init__(self, event_bus: EventBus | None = None) -> None:
+        """Initialise the MobileAPI with an optional event bus."""
         self._event_bus = event_bus or EventBus.instance()
         self._rate_limiter = _RateLimiter()
         self._tokens: dict[str, AuthToken] = {}
@@ -191,6 +196,7 @@ class MobileAPI:
     # ── Authentication ──────────────────────────────────────────────────
 
     def authenticate(self, credentials: MobileCredentials) -> AuthToken:
+        """Authenticate a mobile user and return a new bearer token."""
         if not self._rate_limiter.allow(credentials.username):
             raise PermissionError(
                 f"Rate limit exceeded for user {credentials.username}"
@@ -230,6 +236,7 @@ class MobileAPI:
         return auth_token
 
     def refresh_token(self, refresh_token: str) -> AuthToken:
+        """Exchange a valid refresh token for a new bearer token pair."""
         for token_id, stored in list(self._tokens.items()):
             if stored.refresh_token == refresh_token:
                 new_token = self._generate_token()
@@ -250,6 +257,7 @@ class MobileAPI:
         raise PermissionError("Invalid refresh token")
 
     def validate_token(self, token: str) -> AuthToken | None:
+        """Return the AuthToken if valid and not expired, otherwise None."""
         auth_token = self._tokens.get(token)
         if auth_token is None:
             return None
@@ -261,14 +269,17 @@ class MobileAPI:
     # ── Projects ────────────────────────────────────────────────────────
 
     def get_projects(self, user_id: str) -> list[ProjectSummary]:
+        """Return all projects accessible to the given user."""
         return list(self._projects.values())
 
     def add_project(self, project: ProjectSummary) -> None:
+        """Register a new project in the API."""
         self._projects[project.project_id] = project
 
     # ── Field Tasks ─────────────────────────────────────────────────────
 
     def get_field_tasks(self, user_id: str) -> list[FieldTask]:
+        """Return field tasks assigned to the given user."""
         return [
             task
             for task in self._tasks.values()
@@ -276,11 +287,13 @@ class MobileAPI:
         ]
 
     def assign_task(self, task: FieldTask) -> None:
+        """Add or replace a field task."""
         self._tasks[task.task_id] = task
 
     def update_task_status(
         self, task_id: str, status: TaskStatus
     ) -> bool:
+        """Update the status of an existing task; returns False if not found."""
         if task_id not in self._tasks:
             return False
         task = self._tasks[task_id]
@@ -302,6 +315,7 @@ class MobileAPI:
     # ── Field Reports ───────────────────────────────────────────────────
 
     def submit_field_report(self, report: FieldReport) -> ReportResult:
+        """Submit a field inspection report, rejecting duplicates."""
         if report.report_id in self._reports:
             return ReportResult(
                 report_id=report.report_id,
@@ -343,6 +357,7 @@ class MobileAPI:
     def get_offline_sync(
         self, user_id: str, since: datetime
     ) -> SyncPackage:
+        """Generate an offline sync package with projects, tasks, and reference data."""
         try:
             user_tasks = self.get_field_tasks(user_id)
             updated_tasks = list(user_tasks)
@@ -392,6 +407,7 @@ class MobileAPI:
         password: str,
         scope: list[str] | None = None,
     ) -> None:
+        """Register a new user with hashed password and optional scope."""
         if username in self._users:
             raise ValueError(f"User {username} already exists")
         self._users[username] = {
@@ -403,10 +419,12 @@ class MobileAPI:
 
     @staticmethod
     def _generate_token() -> str:
+        """Generate a cryptographically secure URL-safe token."""
         return secrets.token_urlsafe(48)
 
     @staticmethod
     def _hash_password(password: str) -> str:
+        """Return the SHA-256 hex digest of the given password."""
         return hashlib.sha256(password.encode("utf-8")).hexdigest()
 
 

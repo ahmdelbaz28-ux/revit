@@ -80,6 +80,7 @@ class QACheck:
     reference: str = ""
 
     def __post_init__(self) -> None:
+        """Validate that check_id and name are non-empty."""
         if not self.check_id.strip():
             raise ValueError("check_id is required")
         if not self.name.strip():
@@ -98,12 +99,14 @@ class QAReport:
 
     @property
     def pass_rate(self) -> float:
+        """Return the fraction of checks that passed (1.0 when no checks exist)."""
         if self.total_checks == 0:
             return 1.0
         return self.passed / self.total_checks
 
     @property
     def is_passing(self) -> bool:
+        """Return True if no checks failed."""
         return self.failed == 0
 
 
@@ -118,6 +121,7 @@ class RegressionReport:
 
     @property
     def has_regression(self) -> bool:
+        """Return True if there are breaking changes or new issues."""
         return len(self.breaking_changes) > 0 or len(self.new_issues) > 0
 
 
@@ -196,6 +200,7 @@ class QAEngine:
     NFPA_HEAT_MAX_SPACING_M = 6.1
 
     def __init__(self, event_bus: EventBus | None = None) -> None:
+        """Initialise the QA engine with an optional event bus."""
         self._event_bus = event_bus or EventBus.instance()
 
     # ── Design Validation ──────────────────────────────────────────────
@@ -396,6 +401,7 @@ class QAEngine:
     def _get_all_checks(
         self,
     ) -> list[Callable[[DesignData], QACheck]]:
+        """Return the ordered list of all QA check functions."""
         return [
             self._check_detector_count_reasonableness,
             self._check_coverage_threshold,
@@ -429,6 +435,7 @@ class QAEngine:
     def _check_detector_count_reasonableness(
         self, design: DesignData
     ) -> QACheck:
+        """Verify detector density is within reasonable bounds per room area."""
         detectors = design.detectors
         rooms = design.rooms
 
@@ -484,6 +491,7 @@ class QAEngine:
     def _check_coverage_threshold(
         self, design: DesignData
     ) -> QACheck:
+        """Check all detectors meet the NFPA minimum coverage percentage."""
         coverages = [
             d.get("coverage_pct", 100.0) for d in design.detectors
         ]
@@ -526,6 +534,7 @@ class QAEngine:
     def _check_wall_distance_compliance(
         self, design: DesignData
     ) -> QACheck:
+        """Ensure detectors maintain minimum wall distance per NFPA 72 §17.6.3.1.1."""
         violations = []
         for det in design.detectors:
             dist = det.get("wall_distance_m", 999)
@@ -559,6 +568,7 @@ class QAEngine:
     def _check_hvac_clearance(
         self, design: DesignData
     ) -> QACheck:
+        """Verify detectors maintain clearance from HVAC diffusers."""
         violations = []
         for det in design.detectors:
             hvac_dist = det.get("hvac_distance_m", 999)
@@ -593,6 +603,7 @@ class QAEngine:
     def _check_beam_compensation(
         self, design: DesignData
     ) -> QACheck:
+        """Check beam construction spacing reduction per NFPA 72 §17.7.3.2.4.2."""
         violations = []
         for det in design.detectors:
             beam_depth = det.get("beam_depth_m", 0)
@@ -640,6 +651,7 @@ class QAEngine:
     def _check_spacing_consistency(
         self, design: DesignData
     ) -> QACheck:
+        """Verify actual spacing does not exceed the detector's listed spacing."""
         violations = []
         for det in design.detectors:
             listed = det.get("listed_spacing_m")
@@ -676,6 +688,7 @@ class QAEngine:
     def _check_smoke_spacing(
         self, design: DesignData
     ) -> QACheck:
+        """Check smoke detector spacing against NFPA 72 §17.6.3.1.2 limits."""
         violations = []
         for det in design.detectors:
             if det.get("detector_type", "").startswith("SMOKE"):
@@ -711,6 +724,7 @@ class QAEngine:
     def _check_heat_spacing(
         self, design: DesignData
     ) -> QACheck:
+        """Check heat detector spacing against NFPA 72 limits."""
         violations = []
         for det in design.detectors:
             if det.get("detector_type", "").startswith("HEAT"):
@@ -746,6 +760,7 @@ class QAEngine:
     def _check_nac_coverage(
         self, design: DesignData
     ) -> QACheck:
+        """Verify notification appliances meet minimum SPL per NFPA 72 §18.4."""
         nacs = design.notification_appliances
         if not nacs:
             return QACheck(
@@ -785,6 +800,7 @@ class QAEngine:
     def _check_panel_capacity(
         self, design: DesignData
     ) -> QACheck:
+        """Warn if any panel exceeds 90% utilisation."""
         violations = []
         for panel in design.panels:
             used = panel.get("used_capacity", 0)
@@ -815,6 +831,7 @@ class QAEngine:
     def _check_loop_device_limit(
         self, design: DesignData
     ) -> QACheck:
+        """Ensure no SLC loop exceeds the 250-device limit per NFPA 72 §21.2.2."""
         violations = []
         for panel in design.panels:
             for loop in panel.get("loops", []):
@@ -846,6 +863,7 @@ class QAEngine:
     def _check_cable_type_compliance(
         self, design: DesignData
     ) -> QACheck:
+        """Verify plenum pathways use FPLP-rated cables per NEC 760."""
         violations = []
         for cable in design.cables:
             cable_type = cable.get("cable_type", "")
@@ -876,6 +894,7 @@ class QAEngine:
     def _check_voltage_drop(
         self, design: DesignData
     ) -> QACheck:
+        """Flag cables exceeding 10% voltage drop per NFPA 72 §10.14."""
         violations = []
         for cable in design.cables:
             vd = cable.get("voltage_drop_pct", 0)
@@ -905,6 +924,7 @@ class QAEngine:
     def _check_required_fields(
         self, design: DesignData
     ) -> QACheck:
+        """Validate that all required fields are present on design entities."""
         required_fields = {
             "detectors": [
                 "detector_id", "detector_type", "spacing_m",
@@ -945,6 +965,7 @@ class QAEngine:
     def _check_naming_conventions_check(
         self, design: DesignData
     ) -> QACheck:
+        """Verify detector and panel IDs follow alphanumeric-underscore conventions."""
         violations = []
         valid_id_pattern = re.compile(r"^[A-Z0-9_-]+$", re.IGNORECASE)
 
@@ -984,6 +1005,7 @@ class QAEngine:
     def _check_cross_reference_integrity(
         self, design: DesignData
     ) -> QACheck:
+        """Ensure all detector and NAC panel references point to existing panels."""
         panel_ids = {p.get("panel_id") for p in design.panels}
         orphan_detectors = 0
         orphan_nacs = 0
@@ -1022,6 +1044,7 @@ class QAEngine:
     def _check_duplicate_detectors(
         self, design: DesignData
     ) -> QACheck:
+        """Detect duplicate detector IDs in the design."""
         ids = [d.get("detector_id") for d in design.detectors if d.get("detector_id")]
         duplicates = set()
         seen = set()
@@ -1050,6 +1073,7 @@ class QAEngine:
     def _check_ceiling_height_reasonable(
         self, design: DesignData
     ) -> QACheck:
+        """Validate room ceiling heights are positive and within 30m limit."""
         violations = []
         for room in design.rooms:
             h = room.get("ceiling_height_m", 0)
@@ -1083,6 +1107,7 @@ class QAEngine:
     def _check_room_dimensions_reasonable(
         self, design: DesignData
     ) -> QACheck:
+        """Validate room areas are positive and within sensible limits."""
         violations = []
         for room in design.rooms:
             area = room.get("area_sqm", 0)
@@ -1116,6 +1141,7 @@ class QAEngine:
     def _check_detector_type_valid(
         self, design: DesignData
     ) -> QACheck:
+        """Verify all detector types are from the known valid set."""
         valid_types = {
             "SMOKE_PHOTOELECTRIC", "SMOKE_IONIZATION",
             "SMOKE_MULTI_CRITERIA", "HEAT_FIXED",
@@ -1150,6 +1176,7 @@ class QAEngine:
     def _check_environment_rating(
         self, design: DesignData
     ) -> QACheck:
+        """Validate detector environment ratings against the allowed list."""
         violations = []
         for det in design.detectors:
             env = det.get("environment_rating", "")
@@ -1181,6 +1208,7 @@ class QAEngine:
     def _check_installation_date(
         self, design: DesignData
     ) -> QACheck:
+        """Verify installation dates are valid ISO-8601 strings."""
         violations = []
         for det in design.detectors:
             install = det.get("installation_date", "")
@@ -1212,6 +1240,7 @@ class QAEngine:
     def _check_manufacturer_specified(
         self, design: DesignData
     ) -> QACheck:
+        """Warn if any detector is missing manufacturer information."""
         missing = [
             d.get("detector_id", "?")
             for d in design.detectors
@@ -1237,6 +1266,7 @@ class QAEngine:
     def _check_model_number_specified(
         self, design: DesignData
     ) -> QACheck:
+        """Warn if any detector is missing a model number."""
         missing = [
             d.get("detector_id", "?")
             for d in design.detectors
@@ -1262,6 +1292,7 @@ class QAEngine:
     def _check_location_specified(
         self, design: DesignData
     ) -> QACheck:
+        """Warn if any detector is missing a location description."""
         missing = [
             d.get("detector_id", "?")
             for d in design.detectors
@@ -1289,6 +1320,7 @@ class QAEngine:
     def _check_design_patterns(
         self, design: DesignData
     ) -> list[PatternCheck]:
+        """Return pattern-check results for singleton, layered, and strategy usage."""
         return [
             PatternCheck(
                 pattern_id="DP-001",
@@ -1316,6 +1348,7 @@ class QAEngine:
     def _check_naming_conventions(
         self, design: DesignData
     ) -> list[NamingCheck]:
+        """Check PascalCase types, snake_case fields, and UPPER_CASE enums."""
         violations: list[str] = []
         for det in design.detectors:
             for key in det:
@@ -1349,6 +1382,7 @@ class QAEngine:
     def _check_architectural_rules(
         self, design: DesignData
     ) -> list[RuleCheck]:
+        """Validate acyclic imports, layer isolation, and event-bus communication."""
         return [
             RuleCheck(
                 rule_id="AR-001",

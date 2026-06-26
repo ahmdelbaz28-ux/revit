@@ -1,54 +1,30 @@
-FROM python:3.12-slim AS builder
-
-WORKDIR /build
-
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc \
-    libpq-dev \
-    && rm -rf /var/lib/apt/lists/*
-
-COPY requirements.txt .
-RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
+# file-processor-service — Celery Worker Docker Image
+# Processes IFC/DWG/PDF files asynchronously via Celery + Redis
 
 FROM python:3.12-slim
 
-LABEL maintainer="FireAI Engineering Team" \
-      description="FireAI Background Worker — Async Task Processing" \
-      version="1.0.0" \
-      security.fireai.compliance="nfpa72-2022"
-
-RUN groupadd -r fireai && \
-    useradd -r -g fireai -d /app -s /sbin/nologin -c "FireAI Worker" fireai
-
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    libpq5 \
-    && rm -rf /var/lib/apt/lists/*
-
 WORKDIR /app
 
-COPY --from=builder /install /usr/local
+# System dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    tesseract-ocr \
+    tesseract-ocr-ara \
+    poppler-utils \
+    && rm -rf /var/lib/apt/lists/*
 
-COPY --chown=fireai:fireai backend/ ./backend/
-COPY --chown=fireai:fireai fireai/ ./fireai/
-COPY --chown=fireai:fireai facp/ ./facp/
-COPY --chown=fireai:fireai core/ ./core/
-COPY --chown=fireai:fireai parsers/ ./parsers/
-COPY --chown=fireai:fireai pyproject.toml setup.py ./
-COPY deploy/docker/entrypoint-worker.sh /entrypoint-worker.sh
+# Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-RUN mkdir -p /app/data /app/logs /app/tmp && \
-    chown -R fireai:fireai /app/data /app/logs /app/tmp && \
-    chmod +x /entrypoint-worker.sh
+# Application code
+COPY . .
 
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    FIREAI_ENV=production \
-    LOG_LEVEL=WARNING \
-    PYTHONPATH=/app
+# Celery worker entrypoint
+ENV FIREAI_REDIS_URL=redis://redis:6379/0
+ENV FIREAI_CELERY_BROKER=redis://redis:6379/0
+ENV FIREAI_CELERY_BACKEND=redis://redis:6379/0
 
-USER fireai
-
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD python -c "import os,sys; sys.exit(0 if os.path.exists('/app/data/worker_heartbeat') else 1)"
-
-ENTRYPOINT ["/entrypoint-worker.sh"]
+CMD ["celery", "-A", "backend.worker.celery_app:celery_app", "worker", \
+     "--loglevel=info", "--concurrency=2", \
+     "--queues=analysis,default", \
+     "--hostname=fireai-worker@%h"]

@@ -17,6 +17,7 @@ _SENSITIVE_PATTERNS: list[re.Pattern] = [
 
 
 def mask_sensitive(value: str) -> str:
+    """Redact API keys, tokens, credit-card and SSN patterns from a string."""
     for pattern in _SENSITIVE_PATTERNS:
         value = pattern.sub(lambda m: m.group(1) + '="***"' if m.lastindex and m.lastindex >= 2 else '***', value)
     return value
@@ -24,10 +25,12 @@ def mask_sensitive(value: str) -> str:
 
 class JSONFormatter(logging.Formatter):
     def __init__(self, service_name: str = 'fireai') -> None:
+        """Initialise the formatter with the given service name."""
         super().__init__()
         self.service_name = service_name
 
     def format(self, record: logging.LogRecord) -> str:
+        """Format a log record as a JSON string with trace context and sensitive-data masking."""
         log_entry: dict[str, Any] = {
             'timestamp': self.formatTime(record, datefmt='%Y-%m-%dT%H:%M:%S.%fZ'),
             'level': record.levelname,
@@ -52,6 +55,7 @@ class JSONFormatter(logging.Formatter):
 
 class AsyncLogHandler(logging.handlers.RotatingFileHandler):
     def emit(self, record: logging.LogRecord) -> None:
+        """Write a formatted log record to the rotating log file."""
         try:
             msg = self.format(record)
             with open(self.baseFilename, 'a') as f:
@@ -65,6 +69,7 @@ def setup_logging(
     level: str = 'INFO',
     log_dir: str | None = None,
 ) -> logging.Logger:
+    """Configure structured JSON logging with file rotation and console output."""
     if log_dir is None:
         log_dir = os.path.join(
             os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
@@ -93,8 +98,10 @@ def setup_logging(
 
 
 def add_trace_to_record(logger: logging.Logger, trace_id: str, span_id: str) -> None:
+    """Attach trace_id and span_id to every log record emitted by *logger*."""
     class TraceFilter(logging.Filter):
         def filter(self, record: logging.LogRecord) -> bool:
+            """Inject trace identifiers into the log record."""
             record.trace_id = trace_id
             record.span_id = span_id
             return True

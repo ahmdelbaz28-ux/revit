@@ -86,11 +86,13 @@ class LangWatchClient:
     _initialized: bool = False
 
     def __new__(cls) -> LangWatchClient:
+        """Return the singleton instance, creating it on first call."""
         if cls._instance is None:
             cls._instance = super().__new__(cls)
         return cls._instance
 
     def __init__(self) -> None:
+        """Initialise the singleton client on first access."""
         if not self._initialized:
             self._initialize()
             self._initialized = True
@@ -167,15 +169,19 @@ class _NoOpTraceContext:
     """No-op context manager for when LangWatch is unavailable."""
 
     def __enter__(self) -> _NoOpTraceContext:
+        """Return self as the context manager."""
         return self
 
     def __exit__(self, *args: Any) -> None:
+        """No-op exit handler."""
         pass
 
     def update(self, **kwargs: Any) -> None:
+        """No-op trace context update."""
         pass
 
     def span(self, name: str, **kwargs: Any) -> _NoOpTraceContext:
+        """Return self as a no-op child span."""
         return self
 
 
@@ -214,8 +220,10 @@ def trace_llm_call(operation_name: str) -> Callable:
     """
 
     def decorator(func: Callable) -> Callable:
+        """Return the wrapped function with LangWatch tracing."""
         @functools.wraps(func)
         async def async_wrapper(*args, **kwargs):
+            """Async wrapper that traces the call and records duration."""
             client = get_langwatch()
             if not client.is_available:
                 return await func(*args, **kwargs)
@@ -265,6 +273,7 @@ def trace_llm_call(operation_name: str) -> Callable:
 
         @functools.wraps(func)
         def sync_wrapper(*args, **kwargs):
+            """Sync wrapper that traces the call and records duration."""
             client = get_langwatch()
             if not client.is_available:
                 return func(*args, **kwargs)

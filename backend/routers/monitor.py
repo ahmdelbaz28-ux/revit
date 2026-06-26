@@ -46,6 +46,7 @@ class MonitorState:
     _lock = threading.Lock()
 
     def __new__(cls) -> MonitorState:
+        """Return the singleton instance, creating it on first call."""
         if cls._instance is None:
             with cls._lock:
                 if cls._instance is None:
@@ -54,6 +55,7 @@ class MonitorState:
         return cls._instance
 
     def __init__(self) -> None:
+        """Initialize engine statuses, activity logs, alert rules, and uptime tracking (singleton-safe)."""
         if self._initialized:
             return
         self._lock = threading.Lock()
@@ -177,6 +179,7 @@ class MonitorState:
     # ── Engine management ───────────────────────────────────────────────────
 
     def get_engines(self) -> list[dict[str, Any]]:
+        """Return a list of all registered engine status dicts."""
         with self._lock:
             return [
                 dict(e.items())
@@ -184,11 +187,13 @@ class MonitorState:
             ]
 
     def get_engine(self, engine_id: str) -> dict[str, Any] | None:
+        """Return the status dict for a specific engine, or None if not found."""
         with self._lock:
             e = self._engines.get(engine_id)
             return dict(e) if e else None
 
     def update_engine(self, engine_id: str, updates: dict[str, Any]) -> bool:
+        """Apply field updates to an engine and refresh its heartbeat; returns False if engine not found."""
         with self._lock:
             if engine_id not in self._engines:
                 return False
@@ -197,6 +202,7 @@ class MonitorState:
             return True
 
     def set_engine_status(self, engine_id: str, status: str) -> bool:
+        """Set an engine's status string and refresh its heartbeat; returns False if engine not found."""
         with self._lock:
             if engine_id not in self._engines:
                 return False
@@ -207,6 +213,7 @@ class MonitorState:
     # ── Agent activity ──────────────────────────────────────────────────────
 
     def add_agent_activity(self, activity: dict[str, Any]) -> None:
+        """Append an agent activity entry to the ring buffer, auto-timestamping if missing."""
         with self._lock:
             if "timestamp" not in activity:
                 activity["timestamp"] = datetime.now(timezone.utc).isoformat()
@@ -216,6 +223,7 @@ class MonitorState:
         self, limit: int = 50, agent_id: str | None = None,
         activity_type: str | None = None,
     ) -> list[dict[str, Any]]:
+        """Return recent agent activity entries, optionally filtered by agent_id and activity type."""
         with self._lock:
             results = list(self._agent_activity)
         if agent_id:
@@ -227,6 +235,7 @@ class MonitorState:
     # ── Security alerts ─────────────────────────────────────────────────────
 
     def add_security_alert(self, alert: dict[str, Any]) -> None:
+        """Append a security alert, auto-generating timestamp and alert_id if missing."""
         with self._lock:
             if "timestamp" not in alert:
                 alert["timestamp"] = datetime.now(timezone.utc).isoformat()
@@ -242,6 +251,7 @@ class MonitorState:
         self, limit: int = 50, severity: str | None = None,
         resolved: bool | None = None,
     ) -> list[dict[str, Any]]:
+        """Return security alerts, optionally filtered by severity and resolved state."""
         with self._lock:
             results = list(self._security_alerts)
         if severity:
@@ -253,10 +263,12 @@ class MonitorState:
     # ── Alert rules ─────────────────────────────────────────────────────────
 
     def get_alert_rules(self) -> list[dict[str, Any]]:
+        """Return all configured alert rule definitions."""
         with self._lock:
             return list(self._alert_rules)
 
     def get_active_alerts(self) -> list[dict[str, Any]]:
+        """Return the list of currently firing alerts."""
         with self._lock:
             return list(self._active_alerts)
 
@@ -397,6 +409,7 @@ class MonitorState:
 
     @staticmethod
     def _format_uptime(seconds: float) -> str:
+        """Format an uptime duration in seconds into a human-readable string (e.g. '2d 3h 15m 42s')."""
         days = int(seconds // 86400)
         hours = int((seconds % 86400) // 3600)
         minutes = int((seconds % 3600) // 60)
@@ -497,6 +510,7 @@ class DashboardRateLimiter:
     """
 
     def __init__(self, max_requests: int = 60, window_seconds: int = 60) -> None:
+        """Configure the rate limiter with a request cap and sliding time window."""
         self._max_requests = max_requests
         self._window_seconds = window_seconds
         self._clients: defaultdict[str, deque[float]] = defaultdict(lambda: deque(maxlen=max_requests))

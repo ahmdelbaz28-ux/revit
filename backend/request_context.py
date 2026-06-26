@@ -29,9 +29,11 @@ class CorrelationIdMiddleware:
     """
 
     def __init__(self, app: ASGIApp) -> None:
+        """Initialize middleware with the ASGI application."""
         self.app = app
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        """Process request, add correlation ID header, and log timing."""
         if scope["type"] not in ("http", "websocket"):
             await self.app(scope, receive, send)
             return

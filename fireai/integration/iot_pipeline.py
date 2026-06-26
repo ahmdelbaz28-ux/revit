@@ -95,6 +95,7 @@ class SensorReading:
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
+        """Validate sensor_id, value, quality, and timestamp timezone awareness."""
         if not self.sensor_id.strip():
             raise ValueError("sensor_id is required")
         if math.isnan(self.value) or math.isinf(self.value):
@@ -159,6 +160,7 @@ class IoTPipeline:
     """
 
     def __init__(self, event_bus: EventBus | None = None) -> None:
+        """Initialise the IoT pipeline with an optional event bus."""
         self._event_bus = event_bus or EventBus.instance()
         self._sensor_configs: dict[str, SensorConfig] = {}
         self._last_readings: dict[str, SensorReading] = {}
@@ -188,12 +190,15 @@ class IoTPipeline:
     # ── Configuration ──────────────────────────────────────────────────
 
     def register_sensor(self, config: SensorConfig) -> None:
+        """Register a sensor configuration for validation and event processing."""
         self._sensor_configs[config.sensor_id] = config
 
     def get_sensor_config(self, sensor_id: str) -> SensorConfig | None:
+        """Return the config for a sensor, or None if unregistered."""
         return self._sensor_configs.get(sensor_id)
 
     def unregister_sensor(self, sensor_id: str) -> None:
+        """Remove a sensor and clean up its reading and heartbeat state."""
         self._sensor_configs.pop(sensor_id, None)
         self._last_readings.pop(sensor_id, None)
         self._rate_buffers.pop(sensor_id, None)
@@ -546,6 +551,7 @@ class IoTPipeline:
             self._comm_loss_timer.cancel()
 
         async def _monitor() -> None:
+            """Periodically check for communication loss across all sensors."""
             while self._running:
                 try:
                     self._check_communication_loss()
@@ -569,6 +575,7 @@ class IoTPipeline:
             self._comm_loss_timer = None
 
     def _check_communication_loss(self) -> None:
+        """Detect sensors that have exceeded their communication loss timeout."""
         now = time.monotonic()
         for sensor_id, config in self._sensor_configs.items():
             last_hb = self._last_heartbeat.get(sensor_id)
@@ -630,6 +637,7 @@ class IoTPipeline:
         username: str = "",
         password: str = "",
     ) -> bool:
+        """Connect to a real MQTT broker using asyncio-mqtt."""
         import asyncio_mqtt as mqtt
 
         try:
@@ -650,6 +658,7 @@ class IoTPipeline:
     async def _connect_mqtt_simulated(
         self, broker: str, port: int, topic: str
     ) -> bool:
+        """Simulate an MQTT connection for testing without a broker."""
         logger.info(
             "Simulated MQTT connected to %s:%s topic=%s",
             broker,
@@ -666,6 +675,7 @@ class IoTPipeline:
         username: str = "",
         password: str = "",
     ) -> bool:
+        """Connect to a real OPC-UA server using opcua-asyncio."""
         try:
             from opcua import Client as OPCUAClient
 
@@ -683,6 +693,7 @@ class IoTPipeline:
     async def _connect_opcua_simulated(
         self, endpoint: str
     ) -> bool:
+        """Simulate an OPC-UA connection for testing without a server."""
         logger.info(
             "Simulated OPC-UA connected to %s", endpoint
         )
@@ -690,6 +701,7 @@ class IoTPipeline:
 
     @staticmethod
     def _generate_event_id() -> str:
+        """Generate a unique IoT event identifier."""
         import uuid
 
         return f"IOT-{uuid.uuid4().hex[:12].upper()}"
@@ -704,6 +716,7 @@ if __name__ == "__main__":
     from datetime import timezone
 
     async def test() -> None:
+        """Self-test: register a sensor, connect, and ingest sample readings."""
         pipeline = IoTPipeline()
 
         pipeline.register_sensor(

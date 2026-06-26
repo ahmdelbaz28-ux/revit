@@ -1,239 +1,71 @@
-name: fireai
+# FireAI Microservices — Docker Compose
+# Phase P6: Gradual microservices extraction
+#
+# Services:
+#   - api:        FastAPI main server
+#   - worker:     Celery background task processor
+#   - redis:      Message broker + result backend
+#   - frontend:   Next.js/Vite development server
 
-x-logging: &default-logging
-  driver: "json-file"
-  options:
-    max-size: "10m"
-    max-file: "3"
-
-x-security: &default-security
-  security_opt:
-    - no-new-privileges:true
-  read_only: true
-  tmpfs:
-    - /tmp:size=100M
-    - /app/tmp:size=50M
-  cap_drop:
-    - ALL
+version: "3.9"
 
 services:
+  # ── Redis — Message Broker ──
   redis:
-    image: redis:7.4-alpine
-    container_name: fireai-redis
-    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:?REDIS_PASSWORD required}
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
     volumes:
-      - redis-data:/data
-    logging: *default-logging
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    cap_add:
-      - SETGID
-      - SETUID
-    read_only: true
-    tmpfs:
-      - /tmp:size=10M
+      - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
-      interval: 15s
-      timeout: 5s
-      retries: 3
-    restart: unless-stopped
-    networks:
-      - fireai-net
-    deploy:
-      resources:
-        limits:
-          cpus: "0.5"
-          memory: 256M
-        reservations:
-          cpus: "0.1"
-          memory: 64M
-
-  db:
-    image: postgres:16-alpine
-    container_name: fireai-db
-    environment:
-      POSTGRES_USER: ${DB_USER:-fireai}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD required}
-      POSTGRES_DB: ${DB_NAME:-fireai}
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
-    logging: *default-logging
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    cap_add:
-      - CHOWN
-      - DAC_OVERRIDE
-      - SETGID
-      - SETUID
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-fireai} -d ${DB_NAME:-fireai}"]
-      interval: 15s
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 30s
-    restart: unless-stopped
-    networks:
-      - fireai-net
-    deploy:
-      resources:
-        limits:
-          cpus: "1.0"
-          memory: 512M
-        reservations:
-          cpus: "0.25"
-          memory: 256M
 
+  # ── FastAPI — Main API Server ──
   api:
     build:
       context: ../..
       dockerfile: deploy/docker/Dockerfile.api
-    image: fireai/api:${FIREAI_VERSION:-latest}
-    container_name: fireai-api
+    ports:
+      - "8000:8000"
     environment:
-      FIREAI_ENV: production
-      FIREAI_API_KEY: ${FIREAI_API_KEY:?FIREAI_API_KEY required}
-      FIREAI_EVIDENCE_HMAC_KEY: ${FIREAI_EVIDENCE_HMAC_KEY:?HMAC_KEY required}
-      DATABASE_URL: postgresql+asyncpg://${DB_USER:-fireai}:${DB_PASSWORD:?DB_PASSWORD required}@db:5432/${DB_NAME:-fireai}
-      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
-      LOG_LEVEL: ${LOG_LEVEL:-WARNING}
-      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
-      FIREAI_MEMORY_LLM_PROVIDER: ${FIREAI_MEMORY_LLM_PROVIDER:-gemini}
-      FIREAI_MEMORY_LLM_MODEL: ${FIREAI_MEMORY_LLM_MODEL:-gemini-2.0-flash}
-    volumes:
-      - fireai-data:/app/data
-      - fireai-logs:/app/logs
-    <<: *default-security
-    logging: *default-logging
-    healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-    restart: unless-stopped
+      - FIREAI_REDIS_URL=redis://redis:6379/0
+      - FIREAI_CELERY_BROKER=redis://redis:6379/0
+      - FIREAI_ENV=production
     depends_on:
       redis:
         condition: service_healthy
-      db:
-        condition: service_healthy
-    networks:
-      - fireai-net
-    deploy:
-      mode: replicated
-      replicas: 2
-      resources:
-        limits:
-          cpus: "2.0"
-          memory: 1G
-        reservations:
-          cpus: "0.5"
-          memory: 256M
-      update_config:
-        parallelism: 1
-        delay: 30s
-        order: start-first
-      restart_policy:
-        condition: any
-        delay: 5s
-        window: 120s
+    volumes:
+      - upload_data:/app/uploads
 
+  # ── Celery Worker — Background Processing ──
   worker:
     build:
       context: ../..
       dockerfile: deploy/docker/Dockerfile.worker
-    image: fireai/worker:${FIREAI_VERSION:-latest}
-    container_name: fireai-worker
     environment:
-      FIREAI_ENV: production
-      FIREAI_API_KEY: ${FIREAI_API_KEY:?FIREAI_API_KEY required}
-      DATABASE_URL: postgresql+asyncpg://${DB_USER:-fireai}:${DB_PASSWORD:?DB_PASSWORD required}@db:5432/${DB_NAME:-fireai}
-      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
-      LOG_LEVEL: ${LOG_LEVEL:-WARNING}
-      WORKER_MODE: ${WORKER_MODE:-default}
-    volumes:
-      - fireai-data:/app/data
-      - fireai-logs:/app/logs
-    <<: *default-security
-    logging: *default-logging
-    healthcheck:
-      test: ["CMD", "python", "-c", "import os; sys.exit(0 if os.path.exists('/app/data/worker_heartbeat') else 1)"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-    restart: unless-stopped
+      - FIREAI_REDIS_URL=redis://redis:6379/0
+      - FIREAI_CELERY_BROKER=redis://redis:6379/0
+      - FIREAI_CELERY_BACKEND=redis://redis:6379/0
+      - FIREAI_ENV=production
     depends_on:
       redis:
         condition: service_healthy
-      db:
-        condition: service_healthy
-    networks:
-      - fireai-net
-    deploy:
-      mode: replicated
-      replicas: 1
-      resources:
-        limits:
-          cpus: "1.0"
-          memory: 512M
-        reservations:
-          cpus: "0.25"
-          memory: 128M
-      update_config:
-        parallelism: 1
-        delay: 30s
-        order: start-first
+    volumes:
+      - upload_data:/app/uploads
 
-  nginx:
+  # ── Frontend — Vite Dev Server ──
+  frontend:
     build:
-      context: ../..
-      dockerfile: deploy/docker/Dockerfile.nginx
-    image: fireai/nginx:${FIREAI_VERSION:-latest}
-    container_name: fireai-nginx
+      context: ../../frontend
+      dockerfile: Dockerfile
     ports:
-      - "80:8080"
-      - "443:8080"
-    <<: *default-security
-    logging: *default-logging
-    healthcheck:
-      test: ["CMD", "curl", "-sf", "http://localhost:8080/health"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 10s
-    restart: unless-stopped
-    depends_on:
-      api:
-        condition: service_healthy
-    networks:
-      - fireai-net
-    deploy:
-      resources:
-        limits:
-          cpus: "0.5"
-          memory: 128M
-        reservations:
-          cpus: "0.1"
-          memory: 64M
+      - "3000:3000"
+    environment:
+      - VITE_API_URL=http://api:8000
 
 volumes:
-  redis-data:
-    driver: local
-  postgres-data:
-    driver: local
-  fireai-data:
-    driver: local
-  fireai-logs:
-    driver: local
-
-networks:
-  fireai-net:
-    driver: bridge
-    ipam:
-      config:
-        - subnet: 172.20.0.0/16
+  redis_data:
+  upload_data:

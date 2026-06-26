@@ -86,6 +86,7 @@
     "tailwind-merge": "^2.2.0",
     "three": "^0.160.0",
     "vaul": "^1.1.2",
+    "web-ifc": "^0.0.61",
     "zod": "^3.22.0"
   },
   "devDependencies": {

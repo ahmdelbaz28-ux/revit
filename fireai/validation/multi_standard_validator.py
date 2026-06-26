@@ -102,6 +102,7 @@ class DesignData:
     data: dict[str, Any] = field(default_factory=dict)
 
     def get(self, key: str, default: Any = None) -> Any:
+        """Return an attribute value, falling back to the data dict."""
         return getattr(self, key, self.data.get(key, default))
 
 
@@ -191,6 +192,7 @@ class StandardValidator(ABC):
     """Abstract base for all standard-specific validators."""
 
     def __init__(self, standard: ValidationStandard) -> None:
+        """Initialise the validator with the given standard and empty rule list."""
         self._standard = standard
         self._rules: list[dict[str, Any]] = []
         self._define_rules()
@@ -278,6 +280,7 @@ class StandardValidator(ABC):
         details: str = "",
         remediation: str = "",
     ) -> None:
+        """Append a compliance rule to the validator's rule list."""
         self._rules.append({
             "rule_id": rule_id,
             "section": section,
@@ -290,10 +293,12 @@ class StandardValidator(ABC):
 
     @property
     def standard(self) -> ValidationStandard:
+        """Return the validation standard this validator covers."""
         return self._standard
 
     @property
     def rules(self) -> list[dict[str, Any]]:
+        """Return a copy of the rule list."""
         return list(self._rules)
 
 
@@ -305,11 +310,12 @@ class NFPA72Validator(StandardValidator):
     """NFPA 72-2022: National Fire Alarm and Signaling Code."""
 
     def __init__(self) -> None:
+        """Initialise the NFPA 72 validator with compliance rules."""
         super().__init__(ValidationStandard.NFPA_72_2022)
 
     def _define_rules(self) -> None:
+        """Define NFPA 72 compliance rules."""
         self._add_rule(
-            "NFPA72:17.6.3.1.2",
             "17.6.3.1.2",
             "Detector spacing must not exceed maximum spacing for ceiling height",
             lambda d: d.spacing_m <= d.max_spacing_for_height * 1.001,
@@ -378,11 +384,13 @@ class NFPA101Validator(StandardValidator):
     """NFPA 101-2021: Life Safety Code."""
 
     def __init__(self) -> None:
+        """Initialise the NFPA 101 validator with compliance rules."""
         super().__init__(ValidationStandard.NFPA_101_2021)
 
     def _define_rules(self) -> None:
+        """Define NFPA 101 compliance rules."""
         self._add_rule(
-            "NFPA101:7.2.3.9",
+            "7.2.3.9",
             "7.2.3.9",
             "Stairwell > 75ft (22.86m) requires pressurization",
             lambda d: not d.pressurization_required or d.building_height_m > 22.86,
@@ -435,9 +443,11 @@ class NECValidator(StandardValidator):
     """NEC 2023: National Electrical Code."""
 
     def __init__(self) -> None:
+        """Initialise the NEC validator with compliance rules."""
         super().__init__(ValidationStandard.NEC_2023)
 
     def _define_rules(self) -> None:
+        """Define NEC compliance rules."""
         self._add_rule(
             "NEC:210.19(A)(1)",
             "210.19(A)(1)",
@@ -492,9 +502,11 @@ class IBCValidator(StandardValidator):
     """IBC 2021: International Building Code."""
 
     def __init__(self) -> None:
+        """Initialise the IBC validator with compliance rules."""
         super().__init__(ValidationStandard.IBC_2021)
 
     def _define_rules(self) -> None:
+        """Define IBC compliance rules."""
         self._add_rule(
             "IBC:903.2",
             "903.2",
@@ -549,9 +561,11 @@ class ASMEA17_1Validator(StandardValidator):
     """ASME A17.1: Elevator Safety Code."""
 
     def __init__(self) -> None:
+        """Initialise the ASME validator and register compliance rules."""
         super().__init__(ValidationStandard.ASME_A17_1)
 
     def _define_rules(self) -> None:
+        """Define ASME compliance rules."""
         self._add_rule(
             "ASME:2.1.1.1",
             "2.1.1.1",
@@ -598,9 +612,11 @@ class UL864Validator(StandardValidator):
     """UL 864: Fire Alarm Control Units."""
 
     def __init__(self) -> None:
+        """Initialise the UL 864 validator and register compliance rules."""
         super().__init__(ValidationStandard.UL_864)
 
     def _define_rules(self) -> None:
+        """Define UL 864 compliance rules."""
         self._add_rule(
             "UL864:4.1",
             "4.1",
@@ -655,9 +671,11 @@ class ISO7240Validator(StandardValidator):
     """ISO 7240: Fire Detection and Alarm Systems."""
 
     def __init__(self) -> None:
+        """Initialise the ISO 7240 validator and register compliance rules."""
         super().__init__(ValidationStandard.ISO_7240)
 
     def _define_rules(self) -> None:
+        """Define ISO 7240 compliance rules."""
         self._add_rule(
             "ISO7240:4.2",
             "4.2",
@@ -704,9 +722,11 @@ class EN54Validator(StandardValidator):
     """EN 54: Fire Detection and Fire Alarm Systems (European Standard)."""
 
     def __init__(self) -> None:
+        """Initialise the EN 54 validator and register compliance rules."""
         super().__init__(ValidationStandard.EN_54)
 
     def _define_rules(self) -> None:
+        """Define EN 54 compliance rules."""
         self._add_rule(
             "EN54:2.1",
             "2.1",
@@ -805,6 +825,7 @@ class MultiStandardValidator:
     """
 
     def __init__(self) -> None:
+        """Initialise the multi-standard validator with an empty validator cache."""
         self._validators: dict[ValidationStandard, StandardValidator] = {}
 
     def validate(
@@ -868,6 +889,7 @@ class MultiStandardValidator:
         return self._detect_cross_system_conflicts(design, all_standards)
 
     def _get_or_create_validator(self, standard: ValidationStandard) -> StandardValidator:
+        """Return a cached validator or create one for the standard."""
         if standard not in self._validators:
             self._validators[standard] = get_validator(standard)
         return self._validators[standard]
@@ -1044,6 +1066,7 @@ class MultiStandardValidator:
 
     @staticmethod
     def _build_summary(report: ValidationReport) -> str:
+        """Build a human-readable summary string from a ValidationReport."""
         lines = [
             "Multi-Standard Validation Summary",
             f"Design: {report.design_name or report.design_id}",

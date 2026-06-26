@@ -89,6 +89,7 @@ class BentleyAsset:
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
+        """Validate that asset_id and name are non-empty."""
         if not self.asset_id.strip():
             raise ValueError("asset_id is required")
         if not self.name.strip():
@@ -154,6 +155,7 @@ class BentleyBridge:
     }
 
     def __init__(self, event_bus: EventBus | None = None) -> None:
+        """Initialise the Bentley bridge with an optional event bus."""
         self._event_bus = event_bus or EventBus.instance()
         self._assets_cache: dict[str, list[BentleyAsset]] = {}
         self._sync_history: dict[str, SyncStatus] = {}

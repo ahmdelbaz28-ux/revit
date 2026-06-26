@@ -144,6 +144,7 @@ class _DXFTextParser:
     """
 
     def __init__(self) -> None:
+        """Initialise the text parser with empty state."""
         self._layers: dict[str, list[dict[str, Any]]] = {}
         self._current_section: str = ""
         self._current_entity: dict[str, Any] | None = None
@@ -151,6 +152,7 @@ class _DXFTextParser:
         self._header: dict[str, Any] = {}
 
     def parse(self, content: str) -> dict[str, Any]:
+        """Parse a DXF string into a dict of layers and header metadata."""
         self._layers = {}
         self._current_section = ""
         self._current_entity = None
@@ -225,6 +227,7 @@ class _DXFTextParser:
         }
 
     def _add_coord(self, code: int, value: str, axis: str) -> None:
+        """Append a coordinate component to the current entity."""
         if self._current_entity is None:
             return
         coord_idx = (code % 10) - 10 if code >= 20 else code - 10
@@ -245,6 +248,7 @@ class _DXFTextParser:
             coords[coord_idx][2] = val
 
     def _finalize_entity(self) -> None:
+        """Move the current entity into its layer bucket."""
         if self._current_entity is not None:
             layer_name = self._current_entity.get("layer", "0").lower()
             self._layers.setdefault(layer_name, []).append(
@@ -295,6 +299,7 @@ class AutoCADBridge:
     }
 
     def __init__(self, event_bus: EventBus | None = None) -> None:
+        """Initialise the AutoCAD bridge with an optional event bus."""
         self._event_bus = event_bus or EventBus.instance()
         self._has_ezdxf: bool = self._check_ezdxf()
         self._last_design: DesignData | None = None
@@ -569,6 +574,7 @@ class AutoCADBridge:
     def get_fire_layers(
         self, design: DesignData
     ) -> list[LayerData]:
+        """Return layers classified as fire-protection layers."""
         return [
             l
             for l in design.layers
@@ -578,6 +584,7 @@ class AutoCADBridge:
     def get_arch_layers(
         self, design: DesignData
     ) -> list[LayerData]:
+        """Return layers classified as architectural layers."""
         return [
             l
             for l in design.layers
@@ -587,6 +594,7 @@ class AutoCADBridge:
     # ── Internal: DXF Parsing ───────────────────────────────────────────
 
     def _check_ezdxf(self) -> bool:
+        """Return True if the ezdxf library is importable."""
         try:
             import ezdxf  # noqa: F401
             return True
@@ -598,6 +606,7 @@ class AutoCADBridge:
             return False
 
     def _parse_dxf_ezdxf(self, content: str) -> dict[str, list[dict[str, Any]]]:
+        """Parse DXF content using the ezdxf library, returning entities per layer."""
         import io
 
         import ezdxf
@@ -651,6 +660,7 @@ class AutoCADBridge:
     def _extract_ezdxf_coords(
         self, entity: Any
     ) -> list[list[float]]:
+        """Extract coordinate pairs from an ezdxf entity."""
         coords: list[list[float]] = []
         dxf_type = entity.dxftype()
 
@@ -682,6 +692,7 @@ class AutoCADBridge:
     def _parse_dxf_text(
         self, content: str
     ) -> dict[str, list[dict[str, Any]]]:
+        """Parse DXF content using the fallback text parser."""
         parser = _DXFTextParser()
         return parser.parse(content)["layers"]
 
@@ -689,6 +700,7 @@ class AutoCADBridge:
         self,
         raw_layers: dict[str, list[dict[str, Any]]],
     ) -> list[LayerData]:
+        """Map raw layer names to LayerCategory values and build LayerData objects."""
         classified: list[LayerData] = []
 
         for raw_name, entities in sorted(raw_layers.items()):

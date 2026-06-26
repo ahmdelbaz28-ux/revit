@@ -14,10 +14,19 @@ Extracted data:
 - Spaces (rooms) with dimensions
 - Fire suppression devices
 - Building structure
+
+DEPRECATION NOTICE (V143 Phase 0-B):
+  For native .ifc files, use parsers.ifc_dispatcher.dispatch_ifc_parse()
+  instead of this module directly. The dispatcher routes .ifc files to
+  ifcopenshell (native parser) and .ifc.json files to this legacy parser.
+  This module remains the CANONICAL parser for .ifc.json exports.
+
+Reference: ISO 16739-1:2024 (IFC 4.3 ADD2)
 """
 
 import json
 import logging
+import warnings
 from dataclasses import dataclass
 from typing import Dict, List, Optional
 
@@ -155,6 +164,18 @@ class IFCParser:
                 including security validation failures (V125 hardening).
 
         """
+        # V143 Phase 0-B: Deprecation warning for direct use on .ifc files.
+        # Use parsers.ifc_dispatcher.dispatch_ifc_parse() instead.
+        if str(self.ifc_path).lower().endswith('.ifc'):
+            warnings.warn(
+                "Direct use of IFCParser for .ifc files is deprecated since V143. "
+                "Use parsers.ifc_dispatcher.dispatch_ifc_parse() which routes "
+                ".ifc files to ifcopenshell (native parser). "
+                "IFCParser remains the canonical parser for .ifc.json files.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+
         # V125/V126 SECURITY (Rule #23): validate self.ifc_path BEFORE opening.
         # The path was supplied at __init__ time; this is the last gate
         # before file I/O. Closes path traversal, null bytes, argument

@@ -46,6 +46,7 @@ def require_permission(permission: Permission):
     """
 
     def checker(request: Request) -> Role:
+        """Verify the current user's role has the required permission, raising 403 if not."""
         role = get_current_role(request)
         if not has_permission(role, permission):
             raise HTTPException(

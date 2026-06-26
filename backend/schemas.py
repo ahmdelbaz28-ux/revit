@@ -38,6 +38,7 @@ def _validate_json_size_and_depth(
 
     # Check nesting depth
     def _get_depth(obj: Any, current: int = 0) -> int:
+        """Recursively compute the maximum nesting depth of a JSON-like object."""
         if isinstance(obj, dict):
             if not obj:
                 return current

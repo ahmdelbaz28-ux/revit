@@ -176,8 +176,10 @@ def audit_db_write(
     """
 
     def decorator(func: Callable) -> Callable:
+        """Return a wrapped version of func with audit logging attached."""
         @functools.wraps(func)
         async def async_wrapper(*args, **kwargs):
+            """Async wrapper that audits the wrapped coroutine on success or failure."""
             # Extract record ID
             record_id = _extract_record_id(func, args, kwargs, record_id_arg)
 
@@ -206,6 +208,7 @@ def audit_db_write(
 
         @functools.wraps(func)
         def sync_wrapper(*args, **kwargs):
+            """Sync wrapper that audits the wrapped function on success or failure."""
             record_id = _extract_record_id(func, args, kwargs, record_id_arg)
             try:
                 result = func(*args, **kwargs)

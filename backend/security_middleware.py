@@ -188,6 +188,7 @@ class SecurityHeadersMiddleware:
     """
 
     def __init__(self, app: ASGIApp) -> None:
+        """Store the wrapped ASGI application."""
         self.app = app
 
     async def __call__(
@@ -355,6 +356,7 @@ class ApiKeyMiddleware:
     """
 
     def __init__(self, app: ASGIApp) -> None:
+        """Store the wrapped ASGI application."""
         self.app = app
 
     async def __call__(
@@ -363,6 +365,7 @@ class ApiKeyMiddleware:
         receive: Receive,
         send: Send,
     ) -> None:
+        """Validate the X-API-Key header and set the user role on the request scope."""
         if scope["type"] != "http":
             await self.app(scope, receive, send)
             return

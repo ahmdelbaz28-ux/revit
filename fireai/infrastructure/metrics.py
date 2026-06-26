@@ -41,9 +41,12 @@ METRIC_QUEUE_DEPTH = Gauge(
 
 
 def track_engine_run(engine: str):
+    """Decorator factory that records engine run counts, errors, and computation time."""
     def decorator(fn: Callable):
+        """Wrap *fn* with Prometheus metric instrumentation."""
         @functools.wraps(fn)
         def wrapper(*args, **kwargs):
+            """Execute the wrapped function, recording success/failure and latency metrics."""
             start = time.monotonic()
             try:
                 result = fn(*args, **kwargs)
@@ -61,5 +64,6 @@ def track_engine_run(engine: str):
 
 
 def metrics_endpoint():
+    """Return a Prometheus-format metrics scrape response."""
     data = generate_latest()
     return data, 200, {'Content-Type': CONTENT_TYPE_LATEST}

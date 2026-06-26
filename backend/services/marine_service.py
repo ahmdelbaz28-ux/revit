@@ -183,6 +183,7 @@ _marine_service: MarineService | None = None
 
 
 def get_marine_service() -> MarineService:
+    """Return the singleton MarineService instance, creating it on first call."""
     global _marine_service
     if _marine_service is None:
         _marine_service = MarineService()

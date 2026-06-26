@@ -69,9 +69,11 @@ class Vec3:
     z: float = 0.0
 
     def to_list(self) -> list[float]:
+        """Return the vector as a [x, y, z] list."""
         return [self.x, self.y, self.z]
 
     def to_tuple(self) -> tuple[float, float, float]:
+        """Return the vector as an (x, y, z) tuple."""
         return (self.x, self.y, self.z)
 
 
@@ -82,6 +84,7 @@ class BoundingBox:
 
     @property
     def center(self) -> Vec3:
+        """Return the centre point of the bounding box."""
         return Vec3(
             x=(self.min.x + self.max.x) / 2,
             y=(self.min.y + self.max.y) / 2,
@@ -90,6 +93,7 @@ class BoundingBox:
 
     @property
     def size(self) -> Vec3:
+        """Return the width, height, depth of the bounding box."""
         return Vec3(
             x=self.max.x - self.min.x,
             y=self.max.y - self.min.y,
@@ -109,6 +113,7 @@ class Material:
     side: str = "double"
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialise the material to a plain dict."""
         return {
             "name": self.name,
             "color": self.color,
@@ -130,6 +135,7 @@ class MeshGeometry:
     radius: float = 0.5
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialise the geometry to a plain dict."""
         d: dict[str, Any] = {"type": self.type}
         if self.type in ("box",):
             d.update(width=self.width, height=self.height, depth=self.depth)
@@ -158,6 +164,7 @@ class SceneNode:
     lod_max_distance: float = float("inf")
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialise the scene node and its children to a plain dict."""
         d: dict[str, Any] = {
             "name": self.name,
             "node_id": self.node_id,
@@ -198,6 +205,7 @@ class CameraPath:
     autoplay: bool = True
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialise the camera path to a plain dict."""
         return {
             "name": self.name,
             "loop": self.loop,
@@ -223,6 +231,7 @@ class Scene:
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialise the scene and its children to a plain dict."""
         d: dict[str, Any] = {
             "name": self.name,
             "nodes": [n.to_dict() for n in self.nodes],
@@ -257,10 +266,12 @@ class LODManager:
     DETAIL_CULL = 150.0
 
     def __init__(self, total_nodes: int) -> None:
+        """Initialise the LOD manager with the expected node count."""
         self._total_nodes = total_nodes
         self._thresholds = self._compute_thresholds()
 
     def _compute_thresholds(self) -> list[tuple[float, float]]:
+        """Return LOD distance thresholds based on scene complexity."""
         if self._total_nodes <= 50:
             return [(0.0, float("inf"))]
         if self._total_nodes <= 200:
@@ -279,6 +290,7 @@ class LODManager:
         node: SceneNode,
         distance_from_center: float,
     ) -> SceneNode:
+        """Assign level-of-detail distances to a scene node based on its position."""
         for min_dist, max_dist in self._thresholds:
             if min_dist <= distance_from_center < max_dist:
                 node.lod_min_distance = min_dist
@@ -1070,6 +1082,7 @@ class ARVRVisualizer:
         scene.camera_paths.append(path)
 
     def _distance(self, a: Vec3, b: Vec3) -> float:
+        """Return the Euclidean distance between two 3D points."""
         dx = a.x - b.x
         dy = a.y - b.y
         dz = a.z - b.z
@@ -1094,6 +1107,7 @@ class ARVRVisualizer:
         node: SceneNode,
         device_id: str,
     ) -> SceneNode | None:
+        """Recursively search children for a node matching device_id."""
         for child in node.children:
             if child.device_id == device_id:
                 return child
@@ -1114,9 +1128,11 @@ class ARVRVisualizer:
         mat_map: dict[str, int] = {}
 
         def _build_geo_key(geom: MeshGeometry) -> str:
+            """Return a deterministic JSON key for geometry deduplication."""
             return json.dumps(geom.to_dict(), sort_keys=True)
 
         def _ensure_geo(geom: MeshGeometry) -> int:
+            """Return the index of geom in geometries, adding it if new."""
             key = _build_geo_key(geom)
             if key in geo_map:
                 return geo_map[key]
@@ -1133,6 +1149,7 @@ class ARVRVisualizer:
             return idx
 
         def _ensure_mat(mat: Material) -> int:
+            """Return the index of mat in materials_list, adding it if new."""
             key = f"{mat.name}_{mat.color}_{mat.opacity}"
             if key in mat_map:
                 return mat_map[key]
@@ -1142,6 +1159,7 @@ class ARVRVisualizer:
             return idx
 
         def _serialize_node(node: SceneNode) -> dict:
+            """Convert a SceneNode to a Three.js-compatible dict."""
             node_dict: dict = {
                 "name": node.name,
             }
@@ -1404,6 +1422,7 @@ class ARVRVisualizer:
         h: float,
         d: float,
     ) -> tuple[list[float], list[int]]:
+        """Generate vertex positions and triangle indices for a box."""
         hw, hh, hd = w / 2, h / 2, d / 2
         verts = [
             -hw, -hh, -hd,  hw, -hh, -hd,  hw,  hh, -hd, -hw,  hh, -hd,
@@ -1424,6 +1443,7 @@ class ARVRVisualizer:
         radius: float,
         segments: int = 16,
     ) -> tuple[list[float], list[int]]:
+        """Generate vertex positions and triangle indices for a UV sphere."""
         verts: list[float] = []
         indices: list[int] = []
 
@@ -1453,6 +1473,7 @@ class ARVRVisualizer:
         height: float,
         segments: int = 16,
     ) -> tuple[list[float], list[int]]:
+        """Generate vertex positions and triangle indices for a cylinder."""
         verts: list[float] = []
         indices: list[int] = []
 
@@ -1679,6 +1700,7 @@ class ARVRVisualizer:
         return "\n".join(html_parts)
 
     def _aframe_add_room_group(self, parts: list[str], node: SceneNode) -> None:
+        """Emit an A-Frame entity group for a room and its child geometry."""
         pos = node.position
         parts.append(f'  <a-entity position="{pos.x} {pos.y} {pos.z}">')
         for child in node.children:
@@ -1691,6 +1713,7 @@ class ARVRVisualizer:
         node: SceneNode,
         indent: int = 2,
     ) -> None:
+        """Emit an A-Frame primitive element for a scene node."""
         prefix = " " * indent
         pos = node.position
         geom = node.geometry
@@ -1727,6 +1750,7 @@ class ARVRVisualizer:
             )
 
     def _aframe_add_detector(self, parts: list[str], node: SceneNode) -> None:
+        """Emit A-Frame markup for a detector with an optional label."""
         self._aframe_add_box(parts, node)
         if node.annotation_text:
             pos = node.position
@@ -1738,12 +1762,15 @@ class ARVRVisualizer:
             )
 
     def _aframe_add_nac(self, parts: list[str], node: SceneNode) -> None:
+        """Emit A-Frame markup for a notification appliance."""
         self._aframe_add_box(parts, node)
 
     def _aframe_add_panel(self, parts: list[str], node: SceneNode) -> None:
+        """Emit A-Frame markup for a fire alarm panel."""
         self._aframe_add_box(parts, node)
 
     def _aframe_add_cable_segment(self, parts: list[str], node: SceneNode) -> None:
+        """Emit A-Frame markup for a cable segment."""
         self._aframe_add_box(parts, node)
 
     def _aframe_add_coverage(self, parts: list[str], node: SceneNode) -> None:
@@ -1853,6 +1880,7 @@ class ARVRVisualizer:
         mat_defs: dict[str, str],
         indent: int = 4,
     ) -> None:
+        """Recursively emit USDA Xform/Mesh definitions for a scene node."""
         prefix = " " * indent
         node_name = node.name.replace(" ", "_").replace("-", "_")
         geom = node.geometry

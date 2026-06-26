@@ -64,6 +64,7 @@ class Finding:
     photo_urls: list[str] = field(default_factory=list)
 
     def __post_init__(self) -> None:
+        """Validate that description and location are non-empty."""
         if not self.description.strip():
             raise ValueError("Finding description must not be empty")
         if not self.location.strip():
@@ -83,6 +84,7 @@ class FieldInspection:
     notes: str = ""
 
     def __post_init__(self) -> None:
+        """Validate required fields and ensure the timestamp is not in the future."""
         if not self.inspection_id.strip():
             raise ValueError("inspection_id must not be empty")
         if not self.inspector_id.strip():
@@ -157,6 +159,7 @@ class FieldDataService:
     """
 
     def __init__(self, event_bus: EventBus | None = None) -> None:
+        """Initialise the service with an optional event bus."""
         self._event_bus = event_bus or EventBus.instance()
         self._inspections: dict[str, FieldInspection] = {}
         self._field_updates: list[FieldUpdate] = []
@@ -168,6 +171,7 @@ class FieldDataService:
     def submit_inspection(
         self, inspection: FieldInspection
     ) -> InspectionResult:
+        """Submit a field inspection, emitting events for critical findings."""
         self._validate_inspection(inspection)
 
         critical = [
@@ -233,6 +237,7 @@ class FieldDataService:
     def get_field_updates(
         self, since: datetime
     ) -> list[FieldUpdate]:
+        """Return field updates recorded after the given timestamp."""
         if not isinstance(since, datetime):
             raise TypeError("since must be a datetime object")
 
@@ -243,6 +248,7 @@ class FieldDataService:
         ]
 
     def record_field_update(self, update: FieldUpdate) -> None:
+        """Record a field update and publish an event."""
         self._field_updates.append(update)
         self._event_bus.publish(
             "field.update.recorded",
@@ -262,6 +268,7 @@ class FieldDataService:
         asset: AssetData,
         remote_version: int | None = None,
     ) -> SyncResult:
+        """Synchronise an asset with the local store, detecting version conflicts."""
         asset_id = asset.asset_id
         local_version = self._asset_versions.get(asset_id, 0)
         remote_ver = remote_version or 0
@@ -306,6 +313,7 @@ class FieldDataService:
     def get_outstanding_inspections(
         self, building_id: str
     ) -> list[InspectionTask]:
+        """Return pending and in-progress inspection tasks for a building."""
         if not building_id.strip():
             raise ValueError("building_id must not be empty")
 
@@ -318,6 +326,7 @@ class FieldDataService:
         ]
 
     def assign_inspection_task(self, task: InspectionTask) -> None:
+        """Register an inspection task, warning if overwriting an existing one."""
         if task.task_id in self._tasks:
             logger.warning(
                 "Task %s already exists, overwriting", task.task_id
@@ -327,6 +336,7 @@ class FieldDataService:
     def update_task_status(
         self, task_id: str, status: InspectionStatus
     ) -> bool:
+        """Update task status; returns False if the task does not exist."""
         if task_id not in self._tasks:
             return False
         task = self._tasks[task_id]
@@ -347,6 +357,7 @@ class FieldDataService:
     def _validate_inspection(
         self, inspection: FieldInspection
     ) -> None:
+        """Raise ValueError if required inspection fields are missing or invalid."""
         if not inspection.inspection_id.strip():
             raise ValueError("inspection_id is required")
         if not inspection.inspector_id.strip():

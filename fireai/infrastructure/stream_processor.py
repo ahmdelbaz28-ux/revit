@@ -40,6 +40,7 @@ class WindowSpec:
 
     @classmethod
     def one_minute(cls) -> WindowSpec:
+        """Create a 1-minute window with 30-second slide."""
         return cls(
             duration=timedelta(minutes=1),
             slide=timedelta(seconds=30),
@@ -48,6 +49,7 @@ class WindowSpec:
 
     @classmethod
     def five_minutes(cls) -> WindowSpec:
+        """Create a 5-minute window with 1-minute slide."""
         return cls(
             duration=timedelta(minutes=5),
             slide=timedelta(minutes=1),
@@ -56,6 +58,7 @@ class WindowSpec:
 
     @classmethod
     def one_hour(cls) -> WindowSpec:
+        """Create a 1-hour window with 15-minute slide."""
         return cls(
             duration=timedelta(hours=1),
             slide=timedelta(minutes=15),
@@ -72,45 +75,53 @@ class WindowedAggregation:
     """
 
     def __init__(self, window_spec: WindowSpec) -> None:
+        """Initialise the aggregator with the given window specification."""
         self._window_spec = window_spec
         self._windows: dict[str, list[tuple[datetime, float]]] = defaultdict(list)
         self._lock = threading.Lock()
 
     def add(self, key: str, value: float, timestamp: datetime | None = None) -> None:
+        """Add a value to the sliding window under the given key."""
         ts = timestamp or datetime.now(timezone.utc)
         with self._lock:
             self._windows[key].append((ts, value))
             self._prune(key)
 
     def _prune(self, key: str) -> None:
+        """Remove entries older than the window duration."""
         cutoff = datetime.now(timezone.utc) - self._window_spec.duration
         self._windows[key] = [
             (ts, v) for ts, v in self._windows[key] if ts >= cutoff
         ]
 
     def count(self, key: str) -> int:
+        """Return the number of events in the window for a key."""
         with self._lock:
             self._prune(key)
             return len(self._windows[key])
 
     def sum(self, key: str) -> float:
+        """Return the sum of values in the window for a key."""
         with self._lock:
             self._prune(key)
             return sum(v for _, v in self._windows[key])
 
     def avg(self, key: str) -> float:
+        """Return the average of values in the window for a key."""
         with self._lock:
             self._prune(key)
             values = [v for _, v in self._windows[key]]
             return sum(values) / len(values) if values else 0.0
 
     def min(self, key: str) -> float:
+        """Return the minimum value in the window for a key."""
         with self._lock:
             self._prune(key)
             values = [v for _, v in self._windows[key]]
             return min(values) if values else 0.0
 
     def max(self, key: str) -> float:
+        """Return the maximum value in the window for a key."""
         with self._lock:
             self._prune(key)
             values = [v for _, v in self._windows[key]]
@@ -130,15 +141,18 @@ class WindowedAggregation:
         }
 
     def all_keys(self) -> list[str]:
+        """Return all keys that have data in the window."""
         with self._lock:
             return list(self._windows.keys())
 
     def clear(self) -> None:
+        """Remove all stored window data."""
         with self._lock:
             self._windows.clear()
 
     @property
     def window_spec(self) -> WindowSpec:
+        """Return the window specification."""
         return self._window_spec
 
 
@@ -155,6 +169,7 @@ class ThrottledOutput:
     """
 
     def __init__(self) -> None:
+        """Initialise the throttled output with empty emission state."""
         self._last_emitted: dict[str, dict[str, float]] = defaultdict(dict)
         self._lock = threading.Lock()
 
@@ -170,6 +185,7 @@ class ThrottledOutput:
 
     @staticmethod
     def _window_duration_seconds(window_name: str) -> float:
+        """Return the throttle duration in seconds for a window name."""
         mapping = {
             "1min": 60.0,
             "5min": 300.0,
@@ -178,6 +194,7 @@ class ThrottledOutput:
         return mapping.get(window_name, 60.0)
 
     def clear(self) -> None:
+        """Reset the throttle state."""
         with self._lock:
             self._last_emitted.clear()
 
@@ -199,6 +216,7 @@ class StreamProcessor:
     """
 
     def __init__(self, name: str = "default") -> None:
+        """Initialise the stream processor with an optional name."""
         self._name = name
         self._transforms: list[tuple[str, Callable[[Event], Event | None]]] = []
         self._filters: list[tuple[str, Callable[[Event], bool]]] = []
@@ -438,4 +456,5 @@ class StreamProcessor:
 
     @property
     def name(self) -> str:
+        """Return the processor name."""
         return self._name

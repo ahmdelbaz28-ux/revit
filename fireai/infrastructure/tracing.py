@@ -44,6 +44,7 @@ def setup_tracing(
     endpoint: str = os.environ.get('TEMPO_ENDPOINT', 'http://tempo:4318/v1/traces'),
     sample_rate: float = 1.0,
 ) -> TracerProvider | None:
+    """Initialise OpenTelemetry tracing with an OTLP exporter and W3C context propagation."""
     if not _OPENTELEMETRY_AVAILABLE:
         # Tracing is optional; return None when the library is missing.
         logger = logging.getLogger(__name__)
@@ -60,7 +61,9 @@ def setup_tracing(
 
 
 def traced(name: str | None = None):
+    """Decorator factory that wraps a function in an OpenTelemetry span."""
     def decorator(fn: t.Callable) -> t.Callable:
+        """Return *fn* wrapped with span creation and error recording."""
         if not _OPENTELEMETRY_AVAILABLE:
             # Tracing disabled – return original function unchanged
             return fn
@@ -68,6 +71,7 @@ def traced(name: str | None = None):
 
         @functools.wraps(fn)
         def wrapper(*args, **kwargs):
+            """Execute the function inside a traced span, recording exceptions on failure."""
             span_name = name or fn.__qualname__
             with tracer.start_as_current_span(span_name) as span:
                 span.set_attribute('function', fn.__qualname__)
@@ -83,10 +87,12 @@ def traced(name: str | None = None):
 
 
 def get_current_span() -> t.Any | None:
+    """Return the currently active OpenTelemetry span, or None."""
     return _current_span.get()
 
 
 def extract_traceparent(headers: dict[str, str]) -> dict[str, str] | None:
+    """Extract the W3C traceparent header from incoming request headers."""
     if _propagator is None:
         return None
     _propagator.extract(headers)
@@ -97,6 +103,7 @@ def extract_traceparent(headers: dict[str, str]) -> dict[str, str] | None:
 
 
 def inject_traceparent(headers: dict[str, str] | None = None) -> dict[str, str]:
+    """Inject the current trace context into outgoing request headers."""
     if headers is None:
         headers = {}
     if not _OPENTELEMETRY_AVAILABLE or trace is None:
@@ -109,6 +116,7 @@ def inject_traceparent(headers: dict[str, str] | None = None) -> dict[str, str]:
 
 class TraceContext:
     def __init__(self, app, tracer: t.Any | None = None) -> None:
+        """Wrap an ASGI application with per-request tracing middleware."""
         self.app = app
         if not _OPENTELEMETRY_AVAILABLE or trace is None:
             self.tracer = None
@@ -116,6 +124,7 @@ class TraceContext:
             self.tracer = tracer or trace.get_tracer(__name__)
 
     async def __call__(self, scope, receive, send):
+        """ASGI middleware entry point that creates a span for each HTTP request."""
         # If tracing is disabled, just forward the request.
         if not _OPENTELEMETRY_AVAILABLE or self.tracer is None:
             await self.app(scope, receive, send)
@@ -139,6 +148,7 @@ class TraceContext:
             span.set_attribute('http.host', headers.get('host', ''))
 
             async def wrapped_send(message) -> None:
+                """Capture the HTTP status code from the response start message."""
                 if message['type'] == 'http.response.start':
                     span.set_attribute('http.status_code', message.get('status', 0))
                 await send(message)
