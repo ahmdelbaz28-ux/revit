@@ -120,7 +120,8 @@ try:
         _NON_VERSIONED_API_PATHS = {"/api/health", "/api/reports/statistics"}
 
     def _rewrite_legacy_url(url: str) -> str:
-        """Rewrite /api/* → /api/v1/* for legacy test URLs.
+        """
+        Rewrite /api/* → /api/v1/* for legacy test URLs.
 
         V139 FIX: Skip rewriting for paths that exist at /api/ (health,
         reports/statistics). These are mounted at /api/ via
@@ -135,7 +136,7 @@ try:
             return url
         # Check if the URL (or its prefix) matches a known /api/ route
         # Strip query string for matching
-        path_only = url.split("?")[0]
+        path_only = url.split("?", maxsplit=1)[0]
         for prefix in _NON_VERSIONED_API_PATHS:
             if path_only == prefix or path_only.startswith(prefix + "/"):
                 return url  # Don't rewrite — route exists at /api/

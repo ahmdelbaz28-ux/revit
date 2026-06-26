@@ -651,7 +651,8 @@ app.include_router(health_router_module.router, prefix="/api/v1", tags=["Health-
 # compatibility with stress tests and deployment probes that hit /health.
 @app.get("/health", tags=["Health"])
 async def health_check_legacy_alias():
-    """Legacy /health alias — delegates to the real health check.
+    """
+    Legacy /health alias — delegates to the real health check.
 
     Returns the same database-aware response as /api/health.
     """
