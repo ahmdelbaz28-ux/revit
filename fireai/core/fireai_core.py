@@ -172,7 +172,7 @@ class FireAISystem:
     _expert: Any | None = field(default=None, init=False)
     learning: LearningStore | None = field(default=None, init=False)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Initialize internal components."""
         import fireai.core.audit_store as audit_store
 

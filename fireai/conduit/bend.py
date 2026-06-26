@@ -175,7 +175,7 @@ def verify_bend_radius(
 
     min_r_result = _min_bend_radius_in(conduit_type, trade_size)
     if min_r_result.is_err():
-        return Result.err(min_r_result.error)  # type: ignore[arg-type]
+        return Result.err(min_r_result.error)
     min_r = min_r_result.value
 
     # ── Compute developed length ──────────────────────────────────────────────

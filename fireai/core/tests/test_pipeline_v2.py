@@ -205,7 +205,7 @@ class TestRunStage:
         assert any("RuntimeError" in e for e in sr.errors)
 
     def test_passes_args_kwargs(self) -> None:
-        def fn(a, b=0):
+        def fn(a, b: int=0):
             return {"sum": a + b}
 
         sr = _run_stage("test", fn, 3, b=7)

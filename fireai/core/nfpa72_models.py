@@ -642,7 +642,7 @@ class DetectorPlacement:
     ceiling_height_m: float = 3.0  # ✅ FIXED: Added explicit parameter
     coverage_radius_m: float | None = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """
         Initialize coverage radius with type-appropriate fallback.
         V20.2 FIX: Use detector-type-appropriate default radius.

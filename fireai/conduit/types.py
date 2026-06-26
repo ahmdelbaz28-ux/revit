@@ -78,7 +78,7 @@ class Result(Generic[T, E]):
                 "Attempted to access .value on an error Result. "
                 "Always check is_ok() before accessing .value."
             )
-        return self._value  # type: ignore[return-value]
+        return self._value
 
     @property
     def error(self) -> E:
@@ -88,7 +88,7 @@ class Result(Generic[T, E]):
                 "Attempted to access .error on a success Result. "
                 "Always check is_err() before accessing .error."
             )
-        return self._error  # type: ignore[return-value]
+        return self._error
 
     def __repr__(self) -> str:
         if self._ok:

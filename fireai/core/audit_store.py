@@ -59,7 +59,7 @@ from typing import Any
 
 # Optional ECDSA support - graceful degradation if not installed
 try:
-    from ecdsa import BadSignatureError, SigningKey, VerifyingKey  # type: ignore[import-not-found]
+    from ecdsa import BadSignatureError, SigningKey, VerifyingKey
 
     HAS_ECDSA = True
 except ImportError:
@@ -362,7 +362,7 @@ def _get_ecdsa_signer():
         return None
 
     try:
-        _ecdsa_signing_key = SigningKey.from_pem(key_pem)  # type: ignore[possibly-unbound]
+        _ecdsa_signing_key = SigningKey.from_pem(key_pem)
         logger.info("ECDSA signing enabled (NIST P-256 curve)")
         return _ecdsa_signing_key
     except Exception as e:
@@ -422,7 +422,7 @@ def verify_ecdsa_signature(record: dict[str, Any], public_key_pem: str) -> bool:
         raise ImportError("ecdsa library required for ECDSA verification. Install with: pip install ecdsa")
 
     try:
-        vk = VerifyingKey.from_pem(public_key_pem)  # type: ignore[possibly-unbound]
+        vk = VerifyingKey.from_pem(public_key_pem)
     except Exception as e:
         logger.error("Invalid ECDSA public key: %s", e)
         return False
@@ -448,7 +448,7 @@ def verify_ecdsa_signature(record: dict[str, Any], public_key_pem: str) -> bool:
     try:
         vk.verify(bytes.fromhex(ecdsa_sig), record["current_hash"].encode("utf-8"))
         return True
-    except BadSignatureError:  # type: ignore[possibly-unbound]
+    except BadSignatureError:
         logger.warning("ECDSA signature verification FAILED - record may be forged")
         return False
     except Exception as e:

@@ -154,7 +154,7 @@ class CableRoute:
     computation_hash: str = ""
     decision_log: tuple[tuple[str, str], ...] = ()
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.computation_hash == "":
             # V61 FIX: Include ALL route fields in hash for true
             # deterministic verification. Previous hash only covered
@@ -205,7 +205,7 @@ class RoutingSchedule:
     compliance_summary: str
     computation_hash: str = ""
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.computation_hash == "":
             # V61 FIX: Include individual route hashes for true verification.
             route_hashes = "|".join(r.computation_hash for r in self.routes)

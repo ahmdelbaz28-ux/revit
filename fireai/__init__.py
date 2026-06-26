@@ -86,7 +86,7 @@ _PUBLIC_NAMES = [
 ]
 
 
-def __getattr__(name):
+def __getattr__(name: str):
     """Lazy import: only load sub-modules when actually accessed."""
     if name in _PUBLIC_NAMES:
         # V17 Critical Trilogy — import from v17_core package

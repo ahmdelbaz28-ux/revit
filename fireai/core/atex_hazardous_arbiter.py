@@ -803,7 +803,7 @@ class ATEXHazardousArbiter:
     # ── Private helpers ─────────────────────────────────────────────────────
 
     @staticmethod
-    def _epl_sufficient(proposed, required) -> bool:
+    def _epl_sufficient(proposed, required: bool) -> bool:
         """Fix #14: EPL hierarchy — higher protection satisfies lower."""
         proposed_level = _EPL_HIERARCHY.get(proposed, 0)
         required_level = _EPL_HIERARCHY.get(required, 0)

@@ -35,7 +35,7 @@ from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import (
-    Any,
+    Optional, Type, Any,
     AsyncGenerator,
     AsyncIterator,
     Callable,
@@ -45,6 +45,7 @@ from typing import (
 
 import numpy as np
 from numpy.typing import NDArray
+from types import TracebackType
 
 logger = logging.getLogger(__name__)
 
@@ -824,7 +825,7 @@ class SafetyLedger:
     def __enter__(self) -> SafetyLedger:
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+    def __exit__(self, exc_type: Optional[Type[BaseException]], exc_val: Optional[BaseException], exc_tb: Optional[TracebackType]) -> None:
         self.close()
 
 

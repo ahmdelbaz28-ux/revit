@@ -287,7 +287,7 @@ class FireAIPluginAPI:
                 indexed_results[idx] = result
 
         # Guarantee: every slot filled (analyse_room never returns None)
-        return list(indexed_results)  # type: ignore[arg-type]
+        return list(indexed_results)
 
     def analyse_building(
         self,

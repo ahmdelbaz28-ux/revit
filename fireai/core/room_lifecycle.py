@@ -972,7 +972,7 @@ if __name__ == "__main__":
     lc_ts = RoomLifecycle(room_id="R-THREAD")
     errors = []
 
-    def transition_worker(start_state_label, target_state, reason) -> None:
+    def transition_worker(start_state_label: str, target_state, reason: str) -> None:
         try:
             # Small delay to increase chance of concurrent access
             time.sleep(0.001)

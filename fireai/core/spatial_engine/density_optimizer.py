@@ -493,7 +493,7 @@ class DensityOptimizer:
             room=room, detectors=pts, method=f"hexG_{'x' if along_x else 'y'}", coverage_radius=self.R
         )
 
-    def _row_xs_guarded(self, W, wm, S, offset, R):
+    def _row_xs_guarded(self, W, wm, S, offset: int, R):
         xs = []
         x = wm + offset
         while x <= W - wm + 1e-9:

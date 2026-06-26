@@ -43,7 +43,7 @@ class AuditEntry:
     notes: list[str] = field(default_factory=list)
     entry_hash: str = field(default="", init=False)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         object.__setattr__(self, "entry_hash", self._compute_hash())
 
     def _compute_hash(self) -> str:

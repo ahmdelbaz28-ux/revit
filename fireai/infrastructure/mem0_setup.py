@@ -596,7 +596,7 @@ def get_mem0_config() -> dict[str, Any]:
 
     # Add base_url for proxy/OpenRouter/OpenQuotta mode
     if provider_info.get("base_url"):
-        llm_config["config"]["openai_base_url"] = provider_info["base_url"]  # type: ignore[index]
+        llm_config["config"]["openai_base_url"] = provider_info["base_url"]
         # Only add base_url to embedder if it uses OpenAI provider (not local)
         if provider_info["embedder_provider"] != "local":
             embedder_config["config"]["openai_base_url"] = provider_info["base_url"]  # type: ignore[index]
@@ -748,7 +748,7 @@ class FireAIMemory:
             },
         }
         if project_id:
-            kwargs["filters"]["run_id"] = project_id  # type: ignore[index]
+            kwargs["filters"]["run_id"] = project_id
 
         return self.mem0.get_all(**kwargs)
 

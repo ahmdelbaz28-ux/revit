@@ -249,7 +249,7 @@ class RevitService:
             def get_attr(obj: Any, name: str, default: Any = None) -> Any:
                 val = getattr(obj, name, default)
                 if hasattr(val, 'ToString'):
-                    return val.ToString()  # type: ignore
+                    return val.ToString()
                 return val if val is not None else default
 
             element_data = {
@@ -1548,7 +1548,7 @@ class RevitService:
     def _extract_element_data(self, element) -> Dict[str, Any]:
         """Extract data from a Revit element."""
         try:
-            def get_attr(obj, name, default=None):
+            def get_attr(obj, name: str, default=None):
                 val = getattr(obj, name, default)
                 if hasattr(val, 'ToString'):
                     return val.ToString()

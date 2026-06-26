@@ -78,7 +78,7 @@ MARGIN = 2 * cm
 def _build_styles():
     base = getSampleStyleSheet()
 
-    def add(name, parent="Normal", **kw):
+    def add(name: str, parent: str="Normal", **kw):
         if name not in base:
             base.add(ParagraphStyle(name=name, parent=base[parent], **kw))
         return base[name]

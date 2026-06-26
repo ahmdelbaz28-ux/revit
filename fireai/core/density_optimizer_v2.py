@@ -64,10 +64,10 @@ try:
 except ImportError:
     try:
         from core.spatial_engine.density_optimizer import (  # type: ignore[no-redef]
-            DensityOptimizer,  # type: ignore[no-redef,import-untyped]
+            DensityOptimizer,
         )
     except ImportError:
-        DensityOptimizer = None  # type: ignore[assignment,no-redef, misc]
+        DensityOptimizer = None  # type: ignore[misc]
 
 # ── Import models with fallback ────────────────────────────────────────────
 # V112: fireai.core.models does NOT exist. RoomSpec is in nfpa72_models.
@@ -80,14 +80,14 @@ except ImportError:
     try:
         from core.nfpa72_models import RoomSpec  # type: ignore[no-redef]
     except ImportError:
-        RoomSpec = None  # type: ignore[assignment,no-redef, misc]
+        RoomSpec = None  # type: ignore[misc]
 
 # Geometry and Point3D are NOT available in the codebase.
 # These were referenced from a non-existent fireai.core.models module.
 # Setting to None with a clear warning so that any code attempting to use
 # them will fail visibly rather than silently producing wrong results.
-Geometry = None  # type: ignore[assignment,misc]  # NOT IMPLEMENTED
-Point3D = None  # type: ignore[assignment,misc]  # NOT IMPLEMENTED
+Geometry = None    # NOT IMPLEMENTED
+Point3D = None    # NOT IMPLEMENTED
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -486,7 +486,7 @@ def _self_test():
     passed = 0
     failed = 0
 
-    def check(name, condition, detail="") -> None:
+    def check(name: str, condition, detail: str="") -> None:
         nonlocal passed, failed
         if condition:
             print(f"  [PASS] {name}")

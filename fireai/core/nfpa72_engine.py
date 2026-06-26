@@ -788,7 +788,7 @@ def get_ambient_derating_factor(
     # Find the nearest temperature entry at or below the requested temp
     # V62 FIX: Added 60 degC column support. Previously, 60 degC rated
     # conductors incorrectly used the 75 degC column, overstating ampacity.
-    col_idx = {60: 0, 75: 1, 90: 2}[int(conductor_temp_rating_c)]  # type: ignore[index]
+    col_idx = {60: 0, 75: 1, 90: 2}[int(conductor_temp_rating_c)]
 
     sorted_temps = sorted(AMBIENT_TEMP_CORRECTION_FACTORS.keys())
 

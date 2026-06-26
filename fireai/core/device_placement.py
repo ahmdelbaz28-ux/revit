@@ -45,7 +45,7 @@ from fireai.constants.nfpa72 import (
 from fireai.constants.nfpa72 import (
     PULL_STATION_HEIGHT_M as NFPA72_PULL_STATION_HEIGHT_M,
 )
-from fireai.core.qomn_kernel import (  # type: ignore[attr-defined]
+from fireai.core.qomn_kernel import (
     PhysicsGuardError,
     QOMNKernel,
     compute_heat_detector_spacing,

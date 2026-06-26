@@ -33,7 +33,7 @@ try:
     _HAS_LIMITER = True
 except ImportError:
     _HAS_LIMITER = False
-    limiter = None  # type: ignore[assignment]
+    limiter = None
 
 logger = logging.getLogger(__name__)
 

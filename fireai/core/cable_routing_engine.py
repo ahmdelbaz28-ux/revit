@@ -37,7 +37,7 @@ import logging
 import math
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any
+from typing import Iterator, Any
 
 # Voltage drop module
 from fireai.core.voltage_drop import (
@@ -125,17 +125,17 @@ class _WireGaugeMeta(type):
     _ALL_GAUGES: tuple[_WireGaugeInstance, ...]
     VALID_GAUGES: tuple[str, ...]
 
-    def __iter__(cls):
-        return iter(cls._ALL_GAUGES)  # type: ignore[attr-defined]
+    def __iter__(cls) -> Iterator:
+        return iter(cls._ALL_GAUGES)
 
     def __len__(cls) -> int:
-        return len(cls._ALL_GAUGES)  # type: ignore[attr-defined]
+        return len(cls._ALL_GAUGES)
 
     def __contains__(cls, item) -> bool:
         if isinstance(item, _WireGaugeInstance):
-            return item in cls._ALL_GAUGES  # type: ignore[attr-defined]
+            return item in cls._ALL_GAUGES
         if isinstance(item, str):
-            return item in cls.VALID_GAUGES  # type: ignore[attr-defined]
+            return item in cls.VALID_GAUGES
         return False
 
 

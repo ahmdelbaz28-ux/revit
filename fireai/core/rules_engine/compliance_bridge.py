@@ -641,7 +641,7 @@ class DualComplianceResult:
     clause_engine_violations: list[str] = field(default_factory=list)
     combined_violations: list[str] = field(default_factory=list)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Ensure is_safe is the AND of both engines AND agreement."""
         if not self.engines_agree:
             # Divergence = REJECT regardless of individual results

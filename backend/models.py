@@ -278,7 +278,7 @@ class GenerateReportInput(BaseModel):
                 f"maximum (10240 bytes)"
             )
 
-        def _get_depth(obj, current=0):
+        def _get_depth(obj, current: int=0):
             if isinstance(obj, dict):
                 if not obj:
                     return current

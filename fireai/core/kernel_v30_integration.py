@@ -31,7 +31,8 @@ import tempfile
 import threading
 import time
 from dataclasses import dataclass, field
-from typing import Any, Callable
+from typing import Optional, Type, Any, Callable
+from types import TracebackType
 
 logger = logging.getLogger(__name__)
 
@@ -421,7 +422,7 @@ class MmapResultCache:
     def __enter__(self):
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type: Optional[Type[BaseException]], exc_val: Optional[BaseException], exc_tb: Optional[TracebackType]) -> bool:
         self.close()
         return False
 

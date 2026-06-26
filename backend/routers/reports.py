@@ -363,7 +363,7 @@ async def export_report(
             params = report.get("parameters", {})
             content_data = params.get("content", {})
 
-            def _add_data(data, prefix="", depth=0) -> None:
+            def _add_data(data, prefix: str="", depth: int=0) -> None:
                 """
                 Recursively add data to PDF, limiting depth.
 

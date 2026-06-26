@@ -58,7 +58,7 @@ try:
 
     _HAS_CABLE_ROUTING = True
 except ImportError:
-    CableRoutingEngine = None  # type: ignore[assignment,misc]
+    CableRoutingEngine = None  # type: ignore[misc]
     _HAS_CABLE_ROUTING = False
 
 # ── Graceful import: Elevator shunt-trip auditor ─────────────────────────
@@ -70,8 +70,8 @@ try:
 
     _HAS_SHUNT_TRIP = True
 except ImportError:
-    ElevatorShuntTripAuditor = None  # type: ignore[assignment,misc]
-    ShuntTripResult = None  # type: ignore[assignment,misc]
+    ElevatorShuntTripAuditor = None  # type: ignore[misc]
+    ShuntTripResult = None  # type: ignore[misc]
     _HAS_SHUNT_TRIP = False
 
 # ── Graceful import: Stairwell smoke control ─────────────────────────────
@@ -84,8 +84,8 @@ try:
 
     _HAS_STAIRWELL = True
 except ImportError:
-    StairwellSmokeControlIntegrator = None  # type: ignore[assignment,misc]
-    StairwellZone = None  # type: ignore[assignment,misc]
+    StairwellSmokeControlIntegrator = None  # type: ignore[misc]
+    StairwellZone = None  # type: ignore[misc]
     MIN_HEIGHT_FOR_PRESSURIZATION_M = 22.86
     _HAS_STAIRWELL = False
 
@@ -95,9 +95,9 @@ try:
 
     _HAS_DUCT_DETECTOR = True
 except ImportError:
-    analyse_duct = None  # type: ignore[assignment,misc]
-    DuctSpec = None  # type: ignore[assignment,misc]
-    DuctAnalysisResult = None  # type: ignore[assignment,misc]
+    analyse_duct = None
+    DuctSpec = None  # type: ignore[misc]
+    DuctAnalysisResult = None  # type: ignore[misc]
     _HAS_DUCT_DETECTOR = False
 
 logger = logging.getLogger(__name__)

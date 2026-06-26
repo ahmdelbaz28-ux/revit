@@ -47,7 +47,7 @@ except ImportError:
     # Standard xml.etree.ElementTree is vulnerable to XML attacks
     # (billion laughs, XXE). In a safety-critical system, we must
     # not silently fall back to an insecure parser.
-    ET = None  # type: ignore[assignment]
+    ET = None
 from dataclasses import dataclass
 
 import httpx

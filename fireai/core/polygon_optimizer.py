@@ -69,7 +69,7 @@ class PolygonRoom:
     ducts: list[dict] = field(default_factory=list)
     name: str = ""
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if not self.name:
             self.name = self.room_id
 
@@ -503,7 +503,7 @@ class PolygonDensityOptimizer:
             return
 
         # Convert dicts to DuctSpec if needed
-        duct_specs: list[DuctSpec] = []  # type: ignore[arg-type]
+        duct_specs: list[DuctSpec] = []
         for d in room.ducts:
             if isinstance(d, DuctSpec):
                 duct_specs.append(d)
@@ -518,7 +518,7 @@ class PolygonDensityOptimizer:
         if not duct_specs:
             return
 
-        results = analyse_ducts(duct_specs)  # type: ignore[arg-type]
+        results = analyse_ducts(duct_specs)
         all_warnings = [w for r in results for w in r.warnings]
 
         summary.duct_devices = results

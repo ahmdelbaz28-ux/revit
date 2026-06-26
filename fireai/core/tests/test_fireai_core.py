@@ -624,7 +624,7 @@ class TestAnalyseRoom:
 class TestConfidenceLevelBranches:
     """Tests for different confidence level branches in analyse_room."""
 
-    def _make_mock_analysis(self, passed, coverage_pct, proof_valid=True, wall_violations=0):
+    def _make_mock_analysis(self, passed, coverage_pct, proof_valid: bool=True, wall_violations: int=0):
         """Helper to create a mock analysis result."""
         mock = MagicMock()
         mock.layout.detectors = [(1.0, 2.0), (3.0, 4.0)]
@@ -725,7 +725,7 @@ class TestResilienceFallback:
             import builtins
             real_import = builtins.__import__
 
-            def mock_import(name, *args, **kwargs):
+            def mock_import(name: str, *args, **kwargs):
                 if name == "fireai.core.monte_carlo_pipeline":
                     raise ImportError("MC not available")
                 return real_import(name, *args, **kwargs)

@@ -13,13 +13,13 @@ try:
     )
     _OPENTELEMETRY_AVAILABLE = True
 except ImportError:
-    trace = None  # type: ignore[assignment]
-    TracerProvider = None  # type: ignore[assignment]
+    trace = None
+    TracerProvider = None
     BatchSpanProcessor = None
     InMemorySpanExporter = None
     OTLPSpanExporter = None
-    TraceContextTextMapPropagator = None  # type: ignore[misc]
-    CompositeHTTPPropagator = None  # type: ignore[misc]
+    TraceContextTextMapPropagator = None
+    CompositeHTTPPropagator = None
     set_global_textmap = None
     _OPENTELEMETRY_AVAILABLE = False
 
@@ -115,7 +115,7 @@ class TraceContext:
         else:
             self.tracer = tracer or trace.get_tracer(__name__)
 
-    async def __call__(self, scope, receive, send):
+    async def __call__(self, scope, receive, send) -> None:
         # If tracing is disabled, just forward the request.
         if not _OPENTELEMETRY_AVAILABLE or self.tracer is None:
             await self.app(scope, receive, send)
@@ -146,4 +146,4 @@ class TraceContext:
             await self.app(scope, receive, wrapped_send)
 
         if token:
-            trace.detach(token)  # type: ignore[union-attr, attr-defined]
+            trace.detach(token)

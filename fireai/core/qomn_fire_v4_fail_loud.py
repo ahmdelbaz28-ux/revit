@@ -187,7 +187,7 @@ class AsyncAuditLogger:
         with cls._init_lock:
             if cls._instance is None:
                 cls._instance = super().__new__(cls)
-                cls._instance._initialized = False  # type: ignore[as-type, has-type]
+                cls._instance._initialized = False  # type: ignore[has-type]
             return cls._instance
 
     def __init__(self, filepath: str | None = None) -> None:

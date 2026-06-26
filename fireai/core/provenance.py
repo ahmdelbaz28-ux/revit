@@ -233,7 +233,7 @@ class DecisionProvenance:
         )
         return hashlib.sha256(canonical.encode()).hexdigest()[:32]
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if not self.computation_hash and self.decision_id:
             object.__setattr__(self, "computation_hash", self.compute_hash())
 

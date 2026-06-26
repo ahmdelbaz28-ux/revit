@@ -406,7 +406,7 @@ class TestSyncWSValidation:
                 client = None
                 class headers:
                     @staticmethod
-                    def get(key, default=""):
+                    def get(key, default: str=""):
                         return default
             result = _validate_ws_origin(MockWS())
             assert result is True  # Dev mode allows

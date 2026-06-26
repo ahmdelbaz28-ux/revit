@@ -326,7 +326,7 @@ class BIMProviderRegistry:
         cache_key = f"{name}:{kwargs_str}"
         if cache_key not in cls._instances:
             try:
-                cls._instances[cache_key] = cls._providers[name](**kwargs)  # type: ignore[call-arg]
+                cls._instances[cache_key] = cls._providers[name](**kwargs)
             except Exception as exc:
                 logger.error(
                     "Failed to instantiate BIM provider '%s': %s",
@@ -353,7 +353,7 @@ class BIMProviderRegistry:
         cls._instances.clear()
 
     # V135 F-32: Keep backward-compat alias (deprecated)
-    clear = _clear_for_testing  # type: ignore[assignment]
+    clear = _clear_for_testing
 
 
 # Convenience function for callers
@@ -424,7 +424,7 @@ class LocalRevitProvider:
 
         """
         try:
-            rooms = self._bridge.extract_rooms(source_path=source, **kwargs)  # type: ignore[arg-type]
+            rooms = self._bridge.extract_rooms(source_path=source, **kwargs)
             # Safety invariant: every room MUST have source set
             for room in rooms:
                 if not room.source:
@@ -475,7 +475,7 @@ class LocalRevitProvider:
     def health_check(self) -> dict[str, Any]:
         """Check if the underlying bridge is operational."""
         try:
-            mode = self._bridge._mode  # type: ignore[attr-defined]
+            mode = self._bridge._mode
             return {
                 "healthy": True,
                 "latency_ms": 0.0,

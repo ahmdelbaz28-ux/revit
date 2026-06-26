@@ -88,9 +88,9 @@ def check_redis(host: str = 'localhost', port: int = 6379, password: str | None 
         info = r.info()
         return {
             'ok': True,
-            'connected_slaves': info.get('connected_slaves', 0),  # type: ignore[union-attr]
-            'used_memory_human': info.get('used_memory_human', ''),  # type: ignore[union-attr]
-            'uptime_in_seconds': info.get('uptime_in_seconds', 0),  # type: ignore[union-attr]
+            'connected_slaves': info.get('connected_slaves', 0),
+            'used_memory_human': info.get('used_memory_human', ''),
+            'uptime_in_seconds': info.get('uptime_in_seconds', 0),
         }
     except ImportError:
         return {'ok': False, 'error': 'redis package not installed'}

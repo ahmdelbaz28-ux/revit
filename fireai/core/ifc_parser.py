@@ -50,7 +50,7 @@ def _get_ifcopenshell():
     global _ifcopenshell
     if _ifcopenshell is None:
         try:
-            import ifcopenshell as _ifs  # type: ignore[import-untyped]
+            import ifcopenshell as _ifs
 
             _ifcopenshell = _ifs
         except ImportError:
@@ -216,7 +216,7 @@ class BuildingModel:
     grid_data: bytes = b""
     computation_hash: str = ""
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.computation_hash == "" and self.grid_data:
             # V64 FIX: Hash all data together, not concatenate two hashes
             # then truncate. Previous code did:

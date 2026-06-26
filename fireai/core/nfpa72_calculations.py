@@ -1206,7 +1206,7 @@ def calculate_inrush_current(
             f"manufacturer datasheet. Incorrect current assumptions can cause "
             f"devices to fail during alarm (NFPA 72 §10.14.1)."
         )
-        return {  # type: ignore[dict-item]
+        return {
             "steady_total_a": 0.25 * quantity,
             "inrush_total_a": 0.63 * quantity,
             "inrush_factor": 2.5,
@@ -1216,7 +1216,7 @@ def calculate_inrush_current(
 
     steady = spec["steady_a"] * quantity
     inrush = spec["inrush_a"] * quantity
-    return {  # type: ignore[dict-item]
+    return {
         "steady_total_a": round(steady, 4),
         "inrush_total_a": round(inrush, 4),
         "inrush_factor": spec["inrush_factor"],

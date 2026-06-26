@@ -67,11 +67,11 @@ try:
         Violation,
     )
 except ImportError:
-    DecisionProvenance = None  # type: ignore[misc,assignment]
-    RuleApplied = None  # type: ignore[misc,assignment]
-    Violation = None  # type: ignore[misc,assignment]
-    ConfidenceScore = None  # type: ignore[misc,assignment]
-    ConfidenceLevel = None  # type: ignore[misc,assignment]
+    DecisionProvenance = None  # type: ignore[misc]
+    RuleApplied = None  # type: ignore[misc]
+    Violation = None  # type: ignore[misc]
+    ConfidenceScore = None  # type: ignore[misc]
+    ConfidenceLevel = None  # type: ignore[misc]
 
 
 # ============================================================================
@@ -307,7 +307,7 @@ class WireSpec:
     outer_diameter_mm: float = 0.0
     circuit_class: CircuitClass = CircuitClass.PLFA
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         # If no diameter provided, look up from table
         if self.outer_diameter_mm <= 0:
             key = (self.insulation.value, self.awg)
@@ -551,7 +551,7 @@ class ConduitSizer:
                 if fill_pct <= fill_limit * 100:
                     optimal_size = trade_size
                     actual_fill_pct = fill_pct
-                    c_type = ct  # type: ignore[assignment]
+                    c_type = ct
                     break
 
             if optimal_size:

@@ -61,7 +61,7 @@ from .event_bus import EventBus, Events
 try:
     from .audit_store import AuditStore
 except ImportError:
-    AuditStore = None  # type: ignore[assignment,misc]
+    AuditStore = None  # type: ignore[misc]
 
 logger = logging.getLogger(__name__)
 

@@ -469,7 +469,7 @@ class RedisEventBus(EventBus):
         if self._redis is None:
             try:
                 import redis.asyncio as aioredis
-                self._redis = aioredis.from_url(self._redis_url, decode_responses=True)  # type: ignore[assignment]
+                self._redis = aioredis.from_url(self._redis_url, decode_responses=True)
                 logger.info("Connected to Redis at %s", self._redis_url)
             except ImportError:
                 raise RuntimeError("redis-py is required for RedisEventBus: pip install redis")
@@ -807,7 +807,7 @@ class EventBusMiddleware:
         self.app = app
         self._exclude_paths = exclude_paths or {"/health", "/api/health", "/metrics", "/api/monitor/health"}
 
-    async def __call__(self, scope, receive, send):
+    async def __call__(self, scope, receive, send) -> None:
         if scope["type"] != "http":
             await self.app(scope, receive, send)
             return

@@ -108,7 +108,7 @@ class LangWatchClient:
 
         try:
             # LangWatch SDK import (optional dependency)
-            import langwatch  # type: ignore[import-untyped]
+            import langwatch
 
             # LangWatch uses environment variable for API key
             os.environ["LANGWATCH_API_KEY"] = api_key

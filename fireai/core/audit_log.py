@@ -531,7 +531,7 @@ class AuditLog:
         with self._lock:
             if self._conn is not None:
                 self._conn.close()
-                self._conn = None  # type: ignore[assignment]
+                self._conn = None
 
     # -- Internal helpers --------------------------------------------------
 

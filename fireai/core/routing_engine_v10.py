@@ -1049,7 +1049,7 @@ class RoutingEngineV10:
 # ════════════════════════════════════════════════════════════════════════════
 
 # Allow existing code that imports EngineeringRouter to use the new engine
-EngineeringRouter = RoutingEngineV10  # type: ignore[misc]
+EngineeringRouter = RoutingEngineV10
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -1133,7 +1133,7 @@ def _self_test():
     passed = 0
     failed = 0
 
-    def check(name, condition, detail="") -> None:
+    def check(name: str, condition, detail: str="") -> None:
         nonlocal passed, failed
         if condition:
             print(f"  [PASS] {name}")
@@ -1207,7 +1207,7 @@ def _self_test():
 
     # ── 10. Batch routing ──
     router6 = RoutingEngineV10()
-    segments = [((0, 0), (10, 10)), ((5, 5), (15, 15))]  # type: ignore[arg-type]
+    segments = [((0, 0), (10, 10)), ((5, 5), (15, 15))]
     batch = router6.route_batch(segments)  # type: ignore[arg-type]
     check("Batch routing", len(batch) == 2, f"results={len(batch)}")
 
@@ -1427,7 +1427,7 @@ class EliteClassARouter:
             return {}
 
         # 1. GENERATE OUTGOING LEG — Daisy-chain through ALL devices
-        forward_path: list[Any] = []  # type: ignore[name-defined]
+        forward_path: list[Any] = []
         waypoints = [facp_node, *list(loop_devices)]
 
         for i in range(len(waypoints) - 1):

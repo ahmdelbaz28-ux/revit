@@ -705,7 +705,7 @@ class EngineeringEvidencePackage:
     created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     algorithm_version: str = "V20.2"
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """
         V60 FIX (P1-3): Auto-compute integrity hash on construction.
 

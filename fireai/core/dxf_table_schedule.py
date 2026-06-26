@@ -25,7 +25,7 @@ try:
 except ImportError:
     try:
         from ezdxf.addons import (  # type: ignore[attr-defined, no-redef]
-            Table,  # type: ignore[attr-defined,no-redef,import-untyped] # Older ezdxf versions
+            Table,   # Older ezdxf versions
         )
     except ImportError:
         Table = None  # type: ignore[misc]

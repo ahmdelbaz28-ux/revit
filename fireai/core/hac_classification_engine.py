@@ -1314,7 +1314,7 @@ class HACClassificationEngine:
         return zone
 
     @staticmethod
-    def _compute_extent(zone, sources, ventilation, room_volume_m3, is_indoor=True, substance=None):
+    def _compute_extent(zone, sources, ventilation, room_volume_m3, is_indoor: bool=True, substance=None):
         base_r = _BASE_RADII_M.get(zone, 3.0)
         max_rate = max((s.release_rate_kg_s for s in sources), default=0.0)
         rate_factor = 1.0 + math.log1p(max_rate)

@@ -71,7 +71,7 @@ try:
     from starlette.testclient import TestClient as _StarletteTestClient
     _original_testclient_init = _StarletteTestClient.__init__
 
-    def _patched_testclient_init(self, *args, **kwargs):
+    def _patched_testclient_init(self, *args, **kwargs) -> None:
         """Inject X-API-Key header by default into every TestClient."""
         caller_headers = kwargs.pop("headers", None) or {}
         # setdefault so a test can still override with its own X-API-Key
@@ -146,7 +146,7 @@ try:
     for _method_name in _HTTP_METHODS:
         _original_method = getattr(_StarletteTestClient, _method_name)
 
-        def _make_patched_method(orig, name):
+        def _make_patched_method(orig, name: str):
             def _patched_method(self, url, *args, **kwargs):
                 return orig(self, _rewrite_legacy_url(url), *args, **kwargs)
             _patched_method.__name__ = name
@@ -179,7 +179,7 @@ try:
         class _AuthenticatingWSSession:
             """Proxy performing the SPA auth handshake on context entry."""
 
-            def __init__(self, session):
+            def __init__(self, session) -> None:
                 self._session = session
 
             def __enter__(self):
@@ -219,7 +219,7 @@ import pytest  # noqa: E402
 
 
 @pytest.fixture(autouse=True)
-def _enforce_test_api_key(monkeypatch):
+def _enforce_test_api_key(monkeypatch) -> None:
     """
     Ensure FIREAI_API_KEY is set to the test value before every test.
 
@@ -238,7 +238,7 @@ def _enforce_test_api_key(monkeypatch):
 
 
 # ─── Optional: skip slow integration tests unless --run-slow ─────────────────
-def pytest_addoption(parser):
+def pytest_addoption(parser) -> None:
     parser.addoption(
         "--run-slow",
         action="store_true",
@@ -247,7 +247,7 @@ def pytest_addoption(parser):
     )
 
 
-def pytest_collection_modifyitems(config, items):
+def pytest_collection_modifyitems(config, items) -> None:
     if config.getoption("--run-slow"):
         return
     skip_slow = pytest.mark.skip(reason="Needs --run-slow option to run")

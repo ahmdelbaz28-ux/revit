@@ -52,7 +52,7 @@ try:
     _CABLE_ROUTER_AVAILABLE = True
 except ImportError:
     _CABLE_ROUTER_AVAILABLE = False
-    WireGauge = None  # type: ignore[assignment,misc]
+    WireGauge = None  # type: ignore[misc]
 
 try:
     from fireai.core.constraint_engine import ConstraintEngine
@@ -418,7 +418,7 @@ def _stage2_placement(
         class _RoomSpec:
             """Minimal room spec compatible with DensityOptimizer."""
 
-            def __init__(self, payload, radius) -> None:
+            def __init__(self, payload, radius: float) -> None:
                 self.room_id = payload["room_id"]
                 self.polygon = polygon
                 self.area_m2 = area_m2
@@ -433,8 +433,8 @@ def _stage2_placement(
 
         return {
             "method": "DensityOptimizer",
-            "detector_positions": list(layout.detectors),  # type: ignore[union-attr]
-            "detector_count": len(layout.detectors),  # type: ignore[union-attr]
+            "detector_positions": list(layout.detectors),
+            "detector_count": len(layout.detectors),
             "coverage_pct": float(layout.coverage_pct),
             "proof_valid": bool(getattr(layout, "proof_valid", False)),
             "fallback_used": False,

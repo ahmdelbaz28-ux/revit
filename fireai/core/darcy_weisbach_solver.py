@@ -225,7 +225,7 @@ class DarcyWeisbachResult:
     # a DEBUG log — callers had no way to know.
     converged: bool = True
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         # V135 F-37: Keep __post_init__ for backward compat (in case
         # someone passes warnings=None explicitly)
         if self.warnings is None:

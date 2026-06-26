@@ -1012,7 +1012,7 @@ class TestAnalyzeBuilding:
         """Non-critical exceptions in one room don't stop others."""
         call_count = 0
 
-        def side_effect(room, room_id="", ceiling_height=3.0):
+        def side_effect(room, room_id: str="", ceiling_height: float=3.0):
             nonlocal call_count
             call_count += 1
             if call_count == 1:

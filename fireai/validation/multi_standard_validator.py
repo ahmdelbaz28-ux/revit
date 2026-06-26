@@ -1079,7 +1079,7 @@ class MultiStandardValidator:
                 "total_failed": report.total_failed,
                 "summary": report.summary,
             },
-            "standard_reports": {},  # type: ignore[index]
+            "standard_reports": {},
             "cross_system": None,
         }
 

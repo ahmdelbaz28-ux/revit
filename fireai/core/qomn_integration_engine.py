@@ -76,7 +76,7 @@ class Point3D:
     y: float
     z: float
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         # Force strict coordinate precision rounding on initialization
         object.__setattr__(self, 'x', round(float(self.x), 4))
         object.__setattr__(self, 'y', round(float(self.y), 4))

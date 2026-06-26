@@ -224,7 +224,7 @@ def calculate_fill(
 
     area_result = get_internal_area(conduit_type, trade_size)
     if area_result.is_err():
-        return Result.err(area_result.error)  # type: ignore[arg-type]
+        return Result.err(area_result.error)
     conduit_area = area_result.value
 
     if conduit_area <= 0.0:

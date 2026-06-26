@@ -729,7 +729,7 @@ class LruCache:
     def stats(self) -> dict[str, int]:
         """V53 FIX (BUG 10): Return cache statistics for operational monitoring."""
         with self.lock:
-            return {  # type: ignore[dict-item]
+            return {
                 "size": len(self.cache),
                 "maxsize": self.maxsize,
                 "hits": self._hits,
