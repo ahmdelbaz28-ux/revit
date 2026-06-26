@@ -489,7 +489,11 @@ class AHJSubmittalGenerator:
         if hasattr(result, "cable_requirements"):
             lines.append("\nCable Requirements:")
             for req in result.cable_requirements:
-                enclosure = f" in {req.enclosure_rating_hr:.0f}hr rated enclosure" if req.in_rated_enclosure else ""
+                enclosure = (
+                    f" in {req.enclosure_rating_hr:.0f}hr rated enclosure"
+                    if req.in_rated_enclosure
+                    else ""
+                )
                 lines.append(f"  • {req.route_type}: {req.cable_type.value} cable{enclosure}")
         return "\n".join(lines)
 

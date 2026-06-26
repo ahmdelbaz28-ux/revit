@@ -87,7 +87,7 @@ class DuctSpec:
     duct_type: str = "supply"
     height_m: float = 0.0  # cross-section height (0 = round duct; width_m = diameter)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         # V25 FIX: Validate duct_type against NFPA 72 §17.7.5.1 recognized types.
         # A misspelled duct_type (e.g., "suply") would bypass the CFM override
         # in analyse_duct(), potentially leaving a 5000+ CFM air handler without
@@ -220,7 +220,9 @@ def analyse_duct(duct: DuctSpec) -> DuctAnalysisResult:
     # When CFM is KNOWN and >2000 for supply/return/mixed ducts, detectors
     # are REQUIRED regardless of dimensions. This overrides ALL exemptions.
     cfm_override = (
-        duct.airflow_cfm is not None and duct.airflow_cfm > NFPA_DUCT_CFM_THRESHOLD and _is_supply_return_mixed
+        duct.airflow_cfm is not None
+        and duct.airflow_cfm > NFPA_DUCT_CFM_THRESHOLD
+        and _is_supply_return_mixed
     )
 
     # ── CFM unknown block (V68 FIX — life-safety conservative) ────────────
@@ -403,7 +405,11 @@ def analyse_duct(duct: DuctSpec) -> DuctAnalysisResult:
             duct.duct_type.lower() in ("supply", "return", "mixed")
             and (duct.airflow_cfm is None or duct.airflow_cfm > NFPA_DUCT_CFM_THRESHOLD)
         ),
-        hvac_shutdown_ref=("NFPA 72-2022 §21.7.1" if duct.duct_type.lower() in ("supply", "return", "mixed") else ""),
+        hvac_shutdown_ref=(
+            "NFPA 72-2022 §21.7.1"
+            if duct.duct_type.lower() in ("supply", "return", "mixed")
+            else ""
+        ),
     )
 
 

@@ -336,7 +336,9 @@ class RulesEngine:
                 self._retract_fact_internal(fact.fact_id, trigger_tms=True)
 
             self._facts[fact.fact_id] = fact
-            logger.debug("Fact asserted: %s id=%s source=%s", fact.fact_type, fact.fact_id, fact.source)
+            logger.debug(
+                "Fact asserted: %s id=%s source=%s", fact.fact_type, fact.fact_id, fact.source
+            )
             return fact.fact_id
 
     def retract_fact(self, fact_id: str) -> bool:
@@ -513,7 +515,9 @@ class RulesEngine:
                         result.session_id = self.session_id
                         for new_fact in result.asserted_facts:
                             # Record dependency: new_fact depends on matched_facts
-                            self._derived_from[new_fact.fact_id] = [f.fact_id for f in matched_facts]
+                            self._derived_from[new_fact.fact_id] = [
+                                f.fact_id for f in matched_facts
+                            ]
                             for source in matched_facts:
                                 if source.fact_id not in self._supports:
                                     self._supports[source.fact_id] = []
@@ -575,7 +579,9 @@ class RulesEngine:
 
         return results
 
-    def _evaluate_joins(self, alpha_candidates: list[tuple[Rule, list[Fact]]]) -> list[tuple[Rule, list[Fact]]]:
+    def _evaluate_joins(
+        self, alpha_candidates: list[tuple[Rule, list[Fact]]]
+    ) -> list[tuple[Rule, list[Fact]]]:
         """
         Evaluate beta network join conditions.
 

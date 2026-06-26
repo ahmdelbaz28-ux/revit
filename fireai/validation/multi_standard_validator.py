@@ -34,6 +34,7 @@ logger = logging.getLogger(__name__)
 # Data Types
 # ════════════════════════════════════════════════════════════════════════════
 
+
 class ValidationStandard(Enum):
     NFPA_72_2022 = "NFPA 72-2022"
     NFPA_101_2021 = "NFPA 101-2021"
@@ -119,9 +120,7 @@ class RuleApplication:
     remediation: str = ""
     value_found: Any | None = None
     value_expected: Any | None = None
-    timestamp: str = field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat()
-    )
+    timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 
 @dataclass
@@ -169,9 +168,7 @@ class ValidationReport:
 
     design_id: str = ""
     design_name: str = ""
-    timestamp: str = field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat()
-    )
+    timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     standards_validated: list[ValidationStandard] = field(default_factory=list)
     standard_reports: dict[str, StandardReport] = field(default_factory=dict)
     cross_system: CrossSystemReport | None = None
@@ -186,6 +183,7 @@ class ValidationReport:
 # ════════════════════════════════════════════════════════════════════════════
 # Standard Validator — Abstract Base (Composite Leaf)
 # ════════════════════════════════════════════════════════════════════════════
+
 
 class StandardValidator(ABC):
     """Abstract base for all standard-specific validators."""
@@ -230,15 +228,14 @@ class StandardValidator(ABC):
             compliance_percent=compliance,
             rule_applications=applications,
             summary=(
-                f"{self._standard.value}: {passed}/{total} rules passed "
-                f"({compliance}% compliance)"
+                f"{self._standard.value}: {passed}/{total} rules passed ({compliance}% compliance)"
             ),
         )
 
     def _apply_rule(self, rule: dict[str, Any], design: DesignData) -> RuleApplication:
         """Apply a single rule to the design data."""
         try:
-            context = asdict(design) if hasattr(design, '__dataclass_fields__') else {}
+            context = asdict(design) if hasattr(design, "__dataclass_fields__") else {}
             context.update(design.data)
             passed = rule["validator"](design)
             return RuleApplication(
@@ -254,9 +251,7 @@ class StandardValidator(ABC):
                 value_expected=rule.get("value_expected"),
             )
         except Exception as e:
-            logger.error(
-                f"Error applying rule {rule['rule_id']} for {self._standard.value}: {e}"
-            )
+            logger.error(f"Error applying rule {rule['rule_id']} for {self._standard.value}: {e}")
             return RuleApplication(
                 rule_id=rule["rule_id"],
                 section=rule["section"],
@@ -278,15 +273,17 @@ class StandardValidator(ABC):
         details: str = "",
         remediation: str = "",
     ) -> None:
-        self._rules.append({
-            "rule_id": rule_id,
-            "section": section,
-            "description": description,
-            "validator": validator,
-            "severity": severity,
-            "details": details,
-            "remediation": remediation,
-        })
+        self._rules.append(
+            {
+                "rule_id": rule_id,
+                "section": section,
+                "description": description,
+                "validator": validator,
+                "severity": severity,
+                "details": details,
+                "remediation": remediation,
+            }
+        )
 
     @property
     def standard(self) -> ValidationStandard:
@@ -300,6 +297,7 @@ class StandardValidator(ABC):
 # ════════════════════════════════════════════════════════════════════════════
 # Concrete Standard Validators
 # ════════════════════════════════════════════════════════════════════════════
+
 
 class NFPA72Validator(StandardValidator):
     """NFPA 72-2022: National Fire Alarm and Signaling Code."""
@@ -507,7 +505,10 @@ class IBCValidator(StandardValidator):
             "IBC:907.2",
             "907.2",
             "Fire alarm required in Group A, E, I, R occupancies",
-            lambda d: d.occupancy_type not in ("assembly", "educational", "healthcare", "residential") or d.has_fire_alarm,
+            lambda d: (
+                d.occupancy_type not in ("assembly", "educational", "healthcare", "residential")
+                or d.has_fire_alarm
+            ),
             SeverityLevel.CRITICAL,
             remediation="Install fire alarm per IBC 907.2",
         )
@@ -793,6 +794,7 @@ def get_validator(standard: ValidationStandard) -> StandardValidator:
 # Multi-Standard Validator (Composite)
 # ════════════════════════════════════════════════════════════════════════════
 
+
 class MultiStandardValidator:
     """
     Composite validator that runs validation against multiple standards.
@@ -807,9 +809,7 @@ class MultiStandardValidator:
     def __init__(self) -> None:
         self._validators: dict[ValidationStandard, StandardValidator] = {}
 
-    def validate(
-        self, design: DesignData, standards: list[ValidationStandard]
-    ) -> ValidationReport:
+    def validate(self, design: DesignData, standards: list[ValidationStandard]) -> ValidationReport:
         """
         Validate a design against the specified set of standards.
 
@@ -850,9 +850,7 @@ class MultiStandardValidator:
         )
 
         # Cross-system validation
-        report.cross_system = self._detect_cross_system_conflicts(
-            design, standards
-        )
+        report.cross_system = self._detect_cross_system_conflicts(design, standards)
 
         report.summary = self._build_summary(report)
         return report
@@ -880,7 +878,10 @@ class MultiStandardValidator:
         conflict_id = 0
 
         # NFPA 72 vs IBC: detector spacing requirements
-        if ValidationStandard.NFPA_72_2022 in standards and ValidationStandard.IBC_2021 in standards:
+        if (
+            ValidationStandard.NFPA_72_2022 in standards
+            and ValidationStandard.IBC_2021 in standards
+        ):
             nfpa_report = self.validate(design, [ValidationStandard.NFPA_72_2022])
             ibc_report = self.validate(design, [ValidationStandard.IBC_2021])
 
@@ -892,140 +893,160 @@ class MultiStandardValidator:
                     for ir in ibc_rules.rule_applications:
                         if not nr.passed and not ir.passed:
                             conflict_id += 1
-                            conflicts.append(CrossSystemConflict(
-                                conflict_id=f"cross-conflict-{conflict_id}",
-                                standard_a=ValidationStandard.NFPA_72_2022,
-                                standard_b=ValidationStandard.IBC_2021,
-                                rule_a=nr.rule_id,
-                                rule_b=ir.rule_id,
-                                section_a=nr.section,
-                                section_b=ir.section,
-                                description=(
-                                    f"Both NFPA 72 ({nr.description}) and "
-                                    f"IBC ({ir.description}) requirements are not met"
-                                ),
-                                severity=SeverityLevel.HIGH,
-                                resolution_guidance=(
-                                    "Address both NFPA 72 and IBC requirements. "
-                                    "IBC may reference NFPA standards by adoption."
-                                ),
-                            ))
+                            conflicts.append(
+                                CrossSystemConflict(
+                                    conflict_id=f"cross-conflict-{conflict_id}",
+                                    standard_a=ValidationStandard.NFPA_72_2022,
+                                    standard_b=ValidationStandard.IBC_2021,
+                                    rule_a=nr.rule_id,
+                                    rule_b=ir.rule_id,
+                                    section_a=nr.section,
+                                    section_b=ir.section,
+                                    description=(
+                                        f"Both NFPA 72 ({nr.description}) and "
+                                        f"IBC ({ir.description}) requirements are not met"
+                                    ),
+                                    severity=SeverityLevel.HIGH,
+                                    resolution_guidance=(
+                                        "Address both NFPA 72 and IBC requirements. "
+                                        "IBC may reference NFPA standards by adoption."
+                                    ),
+                                )
+                            )
 
         # NFPA 72 vs ASME A17.1: elevator shunt trip
-        if ValidationStandard.NFPA_72_2022 in standards and ValidationStandard.ASME_A17_1 in standards:
+        if (
+            ValidationStandard.NFPA_72_2022 in standards
+            and ValidationStandard.ASME_A17_1 in standards
+        ):
             if design.has_unguarded_sprinkler:
                 conflict_id += 1
-                conflicts.append(CrossSystemConflict(
-                    conflict_id=f"cross-conflict-{conflict_id}",
-                    standard_a=ValidationStandard.NFPA_72_2022,
-                    standard_b=ValidationStandard.ASME_A17_1,
-                    rule_a="NFPA72:21.4.2",
-                    rule_b="ASME:2.1.2.1",
-                    section_a="21.4.2",
-                    section_b="2.1.2.1",
-                    description=(
-                        "Unguarded sprinkler within 0.6m of hoistway: "
-                        "NFPA 72 requires dedicated heat detector, "
-                        "ASME requires shunt trip"
-                    ),
-                    severity=SeverityLevel.CRITICAL,
-                    resolution_guidance=(
-                        "Install both: (1) dedicated heat detector per NFPA 72 21.4.2, "
-                        "(2) shunt trip breaker per ASME A17.1 2.1.2.1"
-                    ),
-                ))
+                conflicts.append(
+                    CrossSystemConflict(
+                        conflict_id=f"cross-conflict-{conflict_id}",
+                        standard_a=ValidationStandard.NFPA_72_2022,
+                        standard_b=ValidationStandard.ASME_A17_1,
+                        rule_a="NFPA72:21.4.2",
+                        rule_b="ASME:2.1.2.1",
+                        section_a="21.4.2",
+                        section_b="2.1.2.1",
+                        description=(
+                            "Unguarded sprinkler within 0.6m of hoistway: "
+                            "NFPA 72 requires dedicated heat detector, "
+                            "ASME requires shunt trip"
+                        ),
+                        severity=SeverityLevel.CRITICAL,
+                        resolution_guidance=(
+                            "Install both: (1) dedicated heat detector per NFPA 72 21.4.2, "
+                            "(2) shunt trip breaker per ASME A17.1 2.1.2.1"
+                        ),
+                    )
+                )
 
         # NEC vs NFPA 72: voltage drop requirements
-        if ValidationStandard.NEC_2023 in standards and ValidationStandard.NFPA_72_2022 in standards:
+        if (
+            ValidationStandard.NEC_2023 in standards
+            and ValidationStandard.NFPA_72_2022 in standards
+        ):
             if design.v_drop_percent > 3.0:
                 conflict_id += 1
-                conflicts.append(CrossSystemConflict(
-                    conflict_id=f"cross-conflict-{conflict_id}",
-                    standard_a=ValidationStandard.NEC_2023,
-                    standard_b=ValidationStandard.NFPA_72_2022,
-                    rule_a="NEC:210.19(A)(1)",
-                    rule_b="NFPA72:10.14",
-                    section_a="210.19(A)(1)",
-                    section_b="10.14",
-                    description=(
-                        "Voltage drop > 3% violates NEC branch circuit limits "
-                        "which may impact NFPA 72 terminal voltage requirements"
-                    ),
-                    severity=SeverityLevel.HIGH,
-                    resolution_guidance=(
-                        "Increase conductor size to meet NEC 210.19(A)(1) "
-                        "while maintaining NFPA 72 10.14 terminal voltage >= 16VDC"
-                    ),
-                ))
+                conflicts.append(
+                    CrossSystemConflict(
+                        conflict_id=f"cross-conflict-{conflict_id}",
+                        standard_a=ValidationStandard.NEC_2023,
+                        standard_b=ValidationStandard.NFPA_72_2022,
+                        rule_a="NEC:210.19(A)(1)",
+                        rule_b="NFPA72:10.14",
+                        section_a="210.19(A)(1)",
+                        section_b="10.14",
+                        description=(
+                            "Voltage drop > 3% violates NEC branch circuit limits "
+                            "which may impact NFPA 72 terminal voltage requirements"
+                        ),
+                        severity=SeverityLevel.HIGH,
+                        resolution_guidance=(
+                            "Increase conductor size to meet NEC 210.19(A)(1) "
+                            "while maintaining NFPA 72 10.14 terminal voltage >= 16VDC"
+                        ),
+                    )
+                )
 
         # NFPA 101 vs IBC: occupancy classification
-        if ValidationStandard.NFPA_101_2021 in standards and ValidationStandard.IBC_2021 in standards:
+        if (
+            ValidationStandard.NFPA_101_2021 in standards
+            and ValidationStandard.IBC_2021 in standards
+        ):
             if not design.has_sprinkler and design.building_height_m > 22.86:
                 conflict_id += 1
-                conflicts.append(CrossSystemConflict(
-                    conflict_id=f"cross-conflict-{conflict_id}",
-                    standard_a=ValidationStandard.NFPA_101_2021,
-                    standard_b=ValidationStandard.IBC_2021,
-                    rule_a="NFPA101:15.3.4.2.1",
-                    rule_b="IBC:903.2",
-                    section_a="15.3.4.2.1",
-                    section_b="903.2",
-                    description=(
-                        "High-rise building without sprinklers fails "
-                        "both NFPA 101 and IBC requirements"
-                    ),
-                    severity=SeverityLevel.CRITICAL,
-                    resolution_guidance=(
-                        "Install sprinkler system to satisfy both "
-                        "NFPA 101 15.3.4.2.1 and IBC 903.2"
-                    ),
-                ))
+                conflicts.append(
+                    CrossSystemConflict(
+                        conflict_id=f"cross-conflict-{conflict_id}",
+                        standard_a=ValidationStandard.NFPA_101_2021,
+                        standard_b=ValidationStandard.IBC_2021,
+                        rule_a="NFPA101:15.3.4.2.1",
+                        rule_b="IBC:903.2",
+                        section_a="15.3.4.2.1",
+                        section_b="903.2",
+                        description=(
+                            "High-rise building without sprinklers fails "
+                            "both NFPA 101 and IBC requirements"
+                        ),
+                        severity=SeverityLevel.CRITICAL,
+                        resolution_guidance=(
+                            "Install sprinkler system to satisfy both "
+                            "NFPA 101 15.3.4.2.1 and IBC 903.2"
+                        ),
+                    )
+                )
 
         # UL 864 vs NFPA 72: battery standby
         if ValidationStandard.UL_864 in standards and ValidationStandard.NFPA_72_2022 in standards:
             if design.battery_standby_hours < 24:
                 conflict_id += 1
-                conflicts.append(CrossSystemConflict(
-                    conflict_id=f"cross-conflict-{conflict_id}",
-                    standard_a=ValidationStandard.NFPA_72_2022,
-                    standard_b=ValidationStandard.UL_864,
-                    rule_a="NFPA72:23.8.5.2",
-                    rule_b="UL864:6.1",
-                    section_a="23.8.5.2",
-                    section_b="6.1",
-                    description=(
-                        "Battery standby capacity < 24 hours fails "
-                        "both NFPA 72 and UL 864 requirements"
-                    ),
-                    severity=SeverityLevel.CRITICAL,
-                    resolution_guidance=(
-                        "Increase battery capacity to minimum 24 hours "
-                        "per NFPA 72 23.8.5.2 and UL 864 6.1"
-                    ),
-                ))
+                conflicts.append(
+                    CrossSystemConflict(
+                        conflict_id=f"cross-conflict-{conflict_id}",
+                        standard_a=ValidationStandard.NFPA_72_2022,
+                        standard_b=ValidationStandard.UL_864,
+                        rule_a="NFPA72:23.8.5.2",
+                        rule_b="UL864:6.1",
+                        section_a="23.8.5.2",
+                        section_b="6.1",
+                        description=(
+                            "Battery standby capacity < 24 hours fails "
+                            "both NFPA 72 and UL 864 requirements"
+                        ),
+                        severity=SeverityLevel.CRITICAL,
+                        resolution_guidance=(
+                            "Increase battery capacity to minimum 24 hours "
+                            "per NFPA 72 23.8.5.2 and UL 864 6.1"
+                        ),
+                    )
+                )
 
         # ISO 7240 vs EN 54: detector spacing (European vs International)
         if ValidationStandard.ISO_7240 in standards and ValidationStandard.EN_54 in standards:
             if design.spacing_m > 10.0:
                 conflict_id += 1
-                conflicts.append(CrossSystemConflict(
-                    conflict_id=f"cross-conflict-{conflict_id}",
-                    standard_a=ValidationStandard.ISO_7240,
-                    standard_b=ValidationStandard.EN_54,
-                    rule_a="ISO7240:8.2",
-                    rule_b="EN54:7.1",
-                    section_a="8.2",
-                    section_b="7.1",
-                    description=(
-                        "Detector spacing exceeds typical limits for "
-                        "both ISO 7240 and EN 54"
-                    ),
-                    severity=SeverityLevel.HIGH,
-                    resolution_guidance=(
-                        "Refer to local adoption: EN 54 is harmonized in EU, "
-                        "ISO 7240 is used internationally. Apply stricter requirement."
-                    ),
-                ))
+                conflicts.append(
+                    CrossSystemConflict(
+                        conflict_id=f"cross-conflict-{conflict_id}",
+                        standard_a=ValidationStandard.ISO_7240,
+                        standard_b=ValidationStandard.EN_54,
+                        rule_a="ISO7240:8.2",
+                        rule_b="EN54:7.1",
+                        section_a="8.2",
+                        section_b="7.1",
+                        description=(
+                            "Detector spacing exceeds typical limits for both ISO 7240 and EN 54"
+                        ),
+                        severity=SeverityLevel.HIGH,
+                        resolution_guidance=(
+                            "Refer to local adoption: EN 54 is harmonized in EU, "
+                            "ISO 7240 is used internationally. Apply stricter requirement."
+                        ),
+                    )
+                )
 
         report = CrossSystemReport(
             total_conflicts=len(conflicts),
@@ -1055,9 +1076,7 @@ class MultiStandardValidator:
             f"Overall compliance: {report.overall_compliance_percent}%",
         ]
         if report.cross_system and report.cross_system.total_conflicts > 0:
-            lines.append(
-                f"Cross-system conflicts: {report.cross_system.total_conflicts}"
-            )
+            lines.append(f"Cross-system conflicts: {report.cross_system.total_conflicts}")
         return "\n".join(lines)
 
     # ══════════════════════════════════════════════════════════════════════════
@@ -1079,7 +1098,7 @@ class MultiStandardValidator:
                 "total_failed": report.total_failed,
                 "summary": report.summary,
             },
-            "standard_reports": {},  # type: ignore[index]
+            "standard_reports": {},
             "cross_system": None,
         }
 
@@ -1142,7 +1161,9 @@ class MultiStandardValidator:
         lines.append("")
         lines.append(f"**Design:** {report.design_name or report.design_id}")
         lines.append(f"**Timestamp:** {report.timestamp}")
-        lines.append(f"**Standards Validated:** {', '.join(s.value for s in report.standards_validated)}")
+        lines.append(
+            f"**Standards Validated:** {', '.join(s.value for s in report.standards_validated)}"
+        )
         lines.append("")
 
         # Overall summary
@@ -1168,8 +1189,12 @@ class MultiStandardValidator:
             lines.append("")
 
             if std_report.rule_applications:
-                lines.append("| Rule ID | Section | Description | Status | Severity | Remediation |")
-                lines.append("|---------|---------|-------------|--------|----------|-------------|")
+                lines.append(
+                    "| Rule ID | Section | Description | Status | Severity | Remediation |"
+                )
+                lines.append(
+                    "|---------|---------|-------------|--------|----------|-------------|"
+                )
                 for r in std_report.rule_applications:
                     status = "✅" if r.passed else "❌"
                     lines.append(
@@ -1184,9 +1209,9 @@ class MultiStandardValidator:
             lines.append(f"**Total Conflicts:** {report.cross_system.total_conflicts}")
             lines.append("")
             for c in report.cross_system.conflicts:
-                severity_icon = {
-                    "info": "ℹ️", "warning": "⚠️", "high": "🔴", "critical": "🚨"
-                }.get(c.severity.value, "⚠️")
+                severity_icon = {"info": "ℹ️", "warning": "⚠️", "high": "🔴", "critical": "🚨"}.get(
+                    c.severity.value, "⚠️"
+                )
                 lines.append(f"### {severity_icon} Conflict: {c.conflict_id}")
                 lines.append("")
                 lines.append(f"- **Standard A:** {c.standard_a.value}")

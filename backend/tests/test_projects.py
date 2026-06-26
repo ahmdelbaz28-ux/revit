@@ -13,10 +13,12 @@ from fastapi.testclient import TestClient
 def client():
     """Create a test client for the FastAPI app."""
     import os
+
     os.environ.setdefault("FIREAI_ENV", "development")
     os.environ.setdefault("FIREAI_API_KEY", "")
 
     from backend.app import app
+
     with TestClient(app) as c:
         yield c
 
@@ -59,7 +61,9 @@ class TestProjectsCreate:
             "/api/projects",
             json={"name": "E2E Test Project", "description": "Created by test"},
         )
-        assert response.status_code == 201, f"Expected 201, got {response.status_code}: {response.text}"
+        assert response.status_code == 201, (
+            f"Expected 201, got {response.status_code}: {response.text}"
+        )
 
     def test_create_project_returns_id(self, client) -> None:
         """Created project must have an ID."""
@@ -105,7 +109,9 @@ class TestProjectsUpdate:
             f"/api/projects/{pid}",
             json={"name": "Updated Project Name"},
         )
-        assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"
+        assert response.status_code == 200, (
+            f"Expected 200, got {response.status_code}: {response.text}"
+        )
 
 
 class TestProjectsDelete:

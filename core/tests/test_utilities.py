@@ -664,9 +664,7 @@ class TestUniversalElement:
 
     def test_to_dict_with_relationships(self) -> None:
         """Test to_dict includes serialized relationships."""
-        rels = (
-            Relationship(from_element_id="a", to_element_id="b", relationship_type="adj"),
-        )
+        rels = (Relationship(from_element_id="a", to_element_id="b", relationship_type="adj"),)
         elem = UniversalElement(element_id="rel-001", relationships=rels)
         d = elem.to_dict()
         assert len(d["relationships"]) == 1
@@ -728,7 +726,16 @@ class TestElementType:
 
     def test_all_values(self) -> None:
         """Test all ElementType enum values exist."""
-        expected = {"wall", "door", "window", "room", "equipment", "mechanical", "electrical", "unknown"}
+        expected = {
+            "wall",
+            "door",
+            "window",
+            "room",
+            "equipment",
+            "mechanical",
+            "electrical",
+            "unknown",
+        }
         actual = {e.value for e in ElementType}
         assert actual == expected
 
@@ -763,7 +770,12 @@ class TestConflictType:
 
     def test_all_values(self) -> None:
         """Test all ConflictType enum values exist."""
-        expected = {"geometry_mismatch", "property_conflict", "deletion_conflict", "timing_conflict"}
+        expected = {
+            "geometry_mismatch",
+            "property_conflict",
+            "deletion_conflict",
+            "timing_conflict",
+        }
         actual = {e.value for e in ConflictType}
         assert actual == expected
 
@@ -787,50 +799,60 @@ class TestModuleReExports:
     def test_import_point3d(self) -> None:
         """Test that Point3D is importable from core."""
         from core import Point3D as P
+
         assert P is Point3D
 
     def test_import_geometry(self) -> None:
         """Test that Geometry is importable from core."""
         from core import Geometry as G
+
         assert G is Geometry
 
     def test_import_universal_element(self) -> None:
         """Test that UniversalElement is importable from core."""
         from core import UniversalElement as UE
+
         assert UE is UniversalElement
 
     def test_import_semantic_properties(self) -> None:
         """Test that SemanticProperties is importable from core."""
         from core import SemanticProperties as SP
+
         assert SP is SemanticProperties
 
     def test_import_relationship(self) -> None:
         """Test that Relationship is importable from core."""
         from core import Relationship as R
+
         assert R is Relationship
 
     def test_import_conflict(self) -> None:
         """Test that Conflict is importable from core."""
         from core import Conflict as C
+
         assert C is Conflict
 
     def test_import_element_type(self) -> None:
         """Test that ElementType is importable from core."""
         from core import ElementType as ET
+
         assert ET is ElementType
 
     def test_import_change_source(self) -> None:
         """Test that ChangeSource is importable from core."""
         from core import ChangeSource as CS
+
         assert CS is ChangeSource
 
     def test_import_conflict_type(self) -> None:
         """Test that ConflictType is importable from core."""
         from core import ConflictType as CT
+
         assert CT is ConflictType
 
     def test_import_universal_data_model(self) -> None:
         """Test that UniversalDataModel is importable from core."""
         from core import UniversalDataModel as UDM
         from core.database import UniversalDataModel
+
         assert UDM is UniversalDataModel

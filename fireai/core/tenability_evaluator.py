@@ -137,7 +137,9 @@ def evaluate_tenability(
 
     # Check temperature
     if temperature_c > max_temp:
-        violations.append(f"Temperature {temperature_c:.1f}°C exceeds tenable limit {max_temp:.1f}°C (SFPE/NFPA 101)")
+        violations.append(
+            f"Temperature {temperature_c:.1f}°C exceeds tenable limit {max_temp:.1f}°C (SFPE/NFPA 101)"
+        )
     references.append("SFPE/NFPA 101 §7")
 
     # Check visibility
@@ -154,7 +156,9 @@ def evaluate_tenability(
 
     # Check CO2
     if co2_ppm > max_co2:
-        violations.append(f"CO2 {co2_ppm:.0f} ppm exceeds tenable limit {max_co2:.0f} ppm (ISO 13571)")
+        violations.append(
+            f"CO2 {co2_ppm:.0f} ppm exceeds tenable limit {max_co2:.0f} ppm (ISO 13571)"
+        )
     references.append("ISO 13571")
 
     # Check radiant heat flux

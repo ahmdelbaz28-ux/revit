@@ -160,8 +160,13 @@ class TestSensitiveDataFilter:
     def test_filter_masks_string_msg(self) -> None:
         f = SensitiveDataFilter()
         record = logging.LogRecord(
-            name="test", level=logging.INFO, pathname="", lineno=0,
-            msg='api_key="sk-secret12345678"', args=None, exc_info=None,
+            name="test",
+            level=logging.INFO,
+            pathname="",
+            lineno=0,
+            msg='api_key="sk-secret12345678"',
+            args=None,
+            exc_info=None,
         )
         result = f.filter(record)
         assert result is True  # Filter always returns True (allows record)
@@ -171,8 +176,13 @@ class TestSensitiveDataFilter:
     def test_filter_with_dict_args(self) -> None:
         f = SensitiveDataFilter()
         record = logging.LogRecord(
-            name="test", level=logging.INFO, pathname="", lineno=0,
-            msg="Key: %(key)s", args=None, exc_info=None,
+            name="test",
+            level=logging.INFO,
+            pathname="",
+            lineno=0,
+            msg="Key: %(key)s",
+            args=None,
+            exc_info=None,
         )
         # Simulate dict args (logging uses %(key)s format for dict args)
         record.args = {"key": 'token="secretvalue12"'}
@@ -182,8 +192,13 @@ class TestSensitiveDataFilter:
     def test_filter_with_tuple_args(self) -> None:
         f = SensitiveDataFilter()
         record = logging.LogRecord(
-            name="test", level=logging.INFO, pathname="", lineno=0,
-            msg="Key: %s", args=('api_key="mykey12345678"',), exc_info=None,
+            name="test",
+            level=logging.INFO,
+            pathname="",
+            lineno=0,
+            msg="Key: %s",
+            args=('api_key="mykey12345678"',),
+            exc_info=None,
         )
         f.filter(record)
         assert "mykey12345678" not in str(record.args)
@@ -191,8 +206,13 @@ class TestSensitiveDataFilter:
     def test_filter_non_string_msg_passes(self) -> None:
         f = SensitiveDataFilter()
         record = logging.LogRecord(
-            name="test", level=logging.INFO, pathname="", lineno=0,
-            msg=42, args=None, exc_info=None,
+            name="test",
+            level=logging.INFO,
+            pathname="",
+            lineno=0,
+            msg=42,
+            args=None,
+            exc_info=None,
         )
         result = f.filter(record)
         assert result is True
@@ -200,8 +220,13 @@ class TestSensitiveDataFilter:
     def test_filter_none_args_passes(self) -> None:
         f = SensitiveDataFilter()
         record = logging.LogRecord(
-            name="test", level=logging.INFO, pathname="", lineno=0,
-            msg="normal message", args=None, exc_info=None,
+            name="test",
+            level=logging.INFO,
+            pathname="",
+            lineno=0,
+            msg="normal message",
+            args=None,
+            exc_info=None,
         )
         result = f.filter(record)
         assert result is True

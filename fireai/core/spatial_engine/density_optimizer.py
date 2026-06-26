@@ -163,14 +163,28 @@ class Room:
     length: float
     ceiling_height: float = 3.0
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Validate room dimensions — life-safety data MUST be valid."""
-        if not isinstance(self.width, (int, float)) or self.width <= 0 or not math.isfinite(self.width):
+        if (
+            not isinstance(self.width, (int, float))
+            or self.width <= 0
+            or not math.isfinite(self.width)
+        ):
             raise ValueError(f"Room width must be positive finite, got {self.width}")
-        if not isinstance(self.length, (int, float)) or self.length <= 0 or not math.isfinite(self.length):
+        if (
+            not isinstance(self.length, (int, float))
+            or self.length <= 0
+            or not math.isfinite(self.length)
+        ):
             raise ValueError(f"Room length must be positive finite, got {self.length}")
-        if not isinstance(self.ceiling_height, (int, float)) or self.ceiling_height <= 0 or not math.isfinite(self.ceiling_height):
-            raise ValueError(f"Room ceiling_height must be positive finite, got {self.ceiling_height}")
+        if (
+            not isinstance(self.ceiling_height, (int, float))
+            or self.ceiling_height <= 0
+            or not math.isfinite(self.ceiling_height)
+        ):
+            raise ValueError(
+                f"Room ceiling_height must be positive finite, got {self.ceiling_height}"
+            )
 
 
 @dataclass
@@ -490,10 +504,13 @@ class DensityOptimizer:
             pts = [(b, a) for a, b in pts]
         assert self.R is not None
         return DetectorLayout(
-            room=room, detectors=pts, method=f"hexG_{'x' if along_x else 'y'}", coverage_radius=self.R
+            room=room,
+            detectors=pts,
+            method=f"hexG_{'x' if along_x else 'y'}",
+            coverage_radius=self.R,
         )
 
-    def _row_xs_guarded(self, W, wm, S, offset, R):
+    def _row_xs_guarded(self, W, wm, S, offset: int, R):
         xs = []
         x = wm + offset
         while x <= W - wm + 1e-9:
@@ -554,7 +571,10 @@ class DensityOptimizer:
             pts = [(b, a) for a, b in pts]
         assert self.R is not None
         return DetectorLayout(
-            room=room, detectors=pts, method=f"hexA_{'x' if along_x else 'y'}", coverage_radius=self.R
+            room=room,
+            detectors=pts,
+            method=f"hexA_{'x' if along_x else 'y'}",
+            coverage_radius=self.R,
         )
 
     # ── C: Rect-Best ──────────────────────────────────────────────────────────────
@@ -575,7 +595,9 @@ class DensityOptimizer:
                 ys = self._place(L, Ny)
                 Sx = (xs[-1] - xs[0]) / (Nx - 1) if Nx > 1 else 0.0
                 Sy = (ys[-1] - ys[0]) / (Ny - 1) if Ny > 1 else 0.0
-                if math.sqrt((Sx / 2) ** 2 + (Sy / 2) ** 2) <= self.R_place + 1e-9:  # V7.4: use R_place
+                if (
+                    math.sqrt((Sx / 2) ** 2 + (Sy / 2) ** 2) <= self.R_place + 1e-9
+                ):  # V7.4: use R_place
                     best_nx, best_ny, best_t = Nx, Ny, t
         if best_nx is None:
             return None
@@ -988,7 +1010,9 @@ class DensityOptimizer:
         covered_area = n_coarse_covered * coarse_step**2 + n_fine_covered * step**2
         total_area = W * L
         # Clip to 100% (can exceed due to grid boundary effects)
-        layout.coverage_pct = min(round(100.0 * covered_area / total_area, 4) if total_area else 0.0, 100.0)
+        layout.coverage_pct = min(
+            round(100.0 * covered_area / total_area, 4) if total_area else 0.0, 100.0
+        )
 
         # proof_valid: ALL cells must be covered
         # NOTE: Uncovered coarse cells are replaced by fine subcells, so we
@@ -1269,7 +1293,9 @@ class DensityOptimizer:
         if merged[0][0] > 1e-9:
             violations.append(f"{wall_name} wall uncovered at start: gap [0, {merged[0][0]:.3f}]")
         if merged[-1][1] < wall_length - 1e-9:
-            violations.append(f"{wall_name} wall uncovered at end: gap [{merged[-1][1]:.3f}, {wall_length:.3f}]")
+            violations.append(
+                f"{wall_name} wall uncovered at end: gap [{merged[-1][1]:.3f}, {wall_length:.3f}]"
+            )
 
         # Check for gaps between merged intervals
         for i in range(len(merged) - 1):

@@ -283,7 +283,10 @@ class FireZoneEngine:
 
         # Validate constraints
         for z in report.zones:
-            if self.constraints.max_area_sqm > 0 and z.total_area_sqm > self.constraints.max_area_sqm:
+            if (
+                self.constraints.max_area_sqm > 0
+                and z.total_area_sqm > self.constraints.max_area_sqm
+            ):
                 report.warnings.append(
                     f"Zone {z.zone_id} area {z.total_area_sqm:.0f} sqm exceeds "
                     f"limit {self.constraints.max_area_sqm} sqm. "
@@ -430,7 +433,11 @@ class FireZoneEngine:
                     current.occupancy_types = occupancy_types.copy()
                     zones.append(current)
                 zone_counter += 1
-                _zid = f"{floor_id}-Z{zone_counter + 1:02d}" if floor_id else f"Z-{zone_counter + 1:03d}"
+                _zid = (
+                    f"{floor_id}-Z{zone_counter + 1:02d}"
+                    if floor_id
+                    else f"Z-{zone_counter + 1:03d}"
+                )
                 current = FireZone(
                     zone_id=_zid,
                     floor_id=floor_id,

@@ -38,7 +38,9 @@ class FireExpertSystem:
 
     # ── public API ──────────────────────────────────────────────────────────────
 
-    def analyse_room(self, name: str, width: float, length: float, ceiling_height: float = 3.0) -> AnalysisResult:
+    def analyse_room(
+        self, name: str, width: float, length: float, ceiling_height: float = 3.0
+    ) -> AnalysisResult:
         """
         Perform full NFPA-72 analysis for a rectangular room.
 

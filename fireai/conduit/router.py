@@ -52,7 +52,7 @@ from fireai.conduit.types import (
 #  - labour cost of bending / elbow installation
 #  - future wire pull difficulty
 # NEC 358.26 limits total bends — fewer bends = more capacity for future
-_BEND_PENALTY_M: float = 0.50        # 500mm per bend direction change
+_BEND_PENALTY_M: float = 0.50  # 500mm per bend direction change
 
 # Extra cost per metre of elevation gain (metres cost per metre rise)
 # Penalises upward routing because:
@@ -61,7 +61,7 @@ _BEND_PENALTY_M: float = 0.50        # 500mm per bend direction change
 _ELEVATION_PENALTY_M_PER_M: float = 2.0
 
 # Obstacle clearance radius (metres) — NEC 300.4 physical protection
-_OBSTACLE_CLEARANCE_M: float = 0.025   # 25mm
+_OBSTACLE_CLEARANCE_M: float = 0.025  # 25mm
 
 # Electrical conduit separation (metres) — NEC 760.24 / project spec
 _ELECTRICAL_CLEARANCE_M: float = 0.300  # 300mm
@@ -73,6 +73,7 @@ _MAX_ITERATIONS: int = 500_000
 # ─────────────────────────────────────────────────────────────────────────────
 # Grid-aligned obstacle model (axis-aligned bounding box)
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 @dataclass(frozen=True)
 class BoundingBox:
@@ -115,9 +116,14 @@ class BoundingBox:
         """Return box expanded by clearance_m on all sides."""
         c = self.clearance_m
         return BoundingBox(
-            x_min=self.x_min - c, y_min=self.y_min - c, z_min=self.z_min - c,
-            x_max=self.x_max + c, y_max=self.y_max + c, z_max=self.z_max + c,
-            is_electrical=self.is_electrical, label=self.label,
+            x_min=self.x_min - c,
+            y_min=self.y_min - c,
+            z_min=self.z_min - c,
+            x_max=self.x_max + c,
+            y_max=self.y_max + c,
+            z_max=self.z_max + c,
+            is_electrical=self.is_electrical,
+            label=self.label,
         )
 
     def contains(self, p: Point3D) -> bool:
@@ -141,16 +147,17 @@ class BoundingBox:
 # A* node
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 @dataclass(order=False)
 class _AStarNode:
     """Priority queue node for A* search."""
 
-    f_cost: float         # g + h
-    g_cost: float         # cost from start
-    point: Point3D        # current grid position
+    f_cost: float  # g + h
+    g_cost: float  # cost from start
+    point: Point3D  # current grid position
     parent: _AStarNode | None
     direction: tuple[int, int, int] | None  # last move direction
-    bend_count: int       # bends accumulated from start
+    bend_count: int  # bends accumulated from start
 
     def __lt__(self, other: _AStarNode) -> bool:
         return self.f_cost < other.f_cost
@@ -162,6 +169,7 @@ class _AStarNode:
 # ─────────────────────────────────────────────────────────────────────────────
 # Public router
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 class ConduitRouter:
     """
@@ -236,9 +244,12 @@ class ConduitRouter:
 
     # Six orthogonal directions: ±X, ±Y, ±Z
     _DIRECTIONS: list[tuple[int, int, int]] = [
-        (1, 0, 0), (-1, 0, 0),
-        (0, 1, 0), (0, -1, 0),
-        (0, 0, 1), (0, 0, -1),
+        (1, 0, 0),
+        (-1, 0, 0),
+        (0, 1, 0),
+        (0, -1, 0),
+        (0, 0, 1),
+        (0, 0, -1),
     ]
 
     def route(
@@ -274,10 +285,12 @@ class ConduitRouter:
         for name, pt in (("start", start), ("end", end)):
             for ax, v in (("x", pt.x), ("y", pt.y), ("z", pt.z)):
                 if not math.isfinite(v):
-                    return Result.err(PhysicsError(
-                        message=f"{name}.{ax}={v} is not finite.",
-                        remediation="All coordinates must be finite numbers.",
-                    ))
+                    return Result.err(
+                        PhysicsError(
+                            message=f"{name}.{ax}={v} is not finite.",
+                            remediation="All coordinates must be finite numbers.",
+                        )
+                    )
 
         # ── Snap start/end to grid ────────────────────────────────────────────
 
@@ -286,29 +299,37 @@ class ConduitRouter:
 
         if self._point_key(s) == self._point_key(e):
             # Zero-length path — start == end after snapping
-            return Result.ok(RoutePath(
-                waypoints=(s, e),
-                total_length_m=0.0,
-                bend_count=0,
-                elevation_change_m=abs(e.z - s.z),
-            ))
+            return Result.ok(
+                RoutePath(
+                    waypoints=(s, e),
+                    total_length_m=0.0,
+                    bend_count=0,
+                    elevation_change_m=abs(e.z - s.z),
+                )
+            )
 
         if self._is_blocked(s):
-            return Result.err(RoutingError(
-                start=repr(start), end=repr(end),
-                reason=(
-                    f"Start point {start!r} is inside an obstacle clearance zone. "
-                    "Move the conduit start point outside all obstacles."
-                ),
-            ))
+            return Result.err(
+                RoutingError(
+                    start=repr(start),
+                    end=repr(end),
+                    reason=(
+                        f"Start point {start!r} is inside an obstacle clearance zone. "
+                        "Move the conduit start point outside all obstacles."
+                    ),
+                )
+            )
         if self._is_blocked(e):
-            return Result.err(RoutingError(
-                start=repr(start), end=repr(end),
-                reason=(
-                    f"End point {end!r} is inside an obstacle clearance zone. "
-                    "Move the conduit end point outside all obstacles."
-                ),
-            ))
+            return Result.err(
+                RoutingError(
+                    start=repr(start),
+                    end=repr(end),
+                    reason=(
+                        f"End point {end!r} is inside an obstacle clearance zone. "
+                        "Move the conduit end point outside all obstacles."
+                    ),
+                )
+            )
 
         # ── A* search ────────────────────────────────────────────────────────
 
@@ -361,10 +382,7 @@ class ConduitRouter:
                 step_cost = self._res
 
                 # Bend penalty: direction changed from last move
-                is_bend = (
-                    current.direction is not None
-                    and step_dir != current.direction
-                )
+                is_bend = current.direction is not None and step_dir != current.direction
                 if is_bend:
                     step_cost += _BEND_PENALTY_M
 
@@ -397,14 +415,17 @@ class ConduitRouter:
                     heapq.heappush(open_heap, node)
 
         if found is None:
-            return Result.err(RoutingError(
-                start=repr(start), end=repr(end),
-                reason=(
-                    f"No valid path found after {iterations} iterations. "
-                    "The obstacle layout may completely block the route, "
-                    "or the grid resolution may be too coarse."
-                ),
-            ))
+            return Result.err(
+                RoutingError(
+                    start=repr(start),
+                    end=repr(end),
+                    reason=(
+                        f"No valid path found after {iterations} iterations. "
+                        "The obstacle layout may completely block the route, "
+                        "or the grid resolution may be too coarse."
+                    ),
+                )
+            )
 
         # ── Reconstruct path ─────────────────────────────────────────────────
 
@@ -419,18 +440,19 @@ class ConduitRouter:
         simplified = _simplify_waypoints(waypoints)
 
         total_length = sum(
-            simplified[i].distance_to(simplified[i + 1])
-            for i in range(len(simplified) - 1)
+            simplified[i].distance_to(simplified[i + 1]) for i in range(len(simplified) - 1)
         )
         bends = max(0, len(simplified) - 2)  # direction changes = waypoints - 2
         elevation_change = abs(simplified[-1].z - simplified[0].z)
 
-        return Result.ok(RoutePath(
-            waypoints=tuple(simplified),
-            total_length_m=total_length,
-            bend_count=bends,
-            elevation_change_m=elevation_change,
-        ))
+        return Result.ok(
+            RoutePath(
+                waypoints=tuple(simplified),
+                total_length_m=total_length,
+                bend_count=bends,
+                elevation_change_m=elevation_change,
+            )
+        )
 
 
 def _simplify_waypoints(waypoints: list[Point3D]) -> list[Point3D]:
@@ -486,6 +508,7 @@ def _sign(x: float) -> int:
 # ─────────────────────────────────────────────────────────────────────────────
 # Module-level convenience function matching the spec API
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 def orthogonal_astar(
     start: Point3D,

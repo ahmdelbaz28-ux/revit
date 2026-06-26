@@ -42,6 +42,7 @@ logger = logging.getLogger(__name__)
 # CONSTANTS AND ENUMS
 # ============================================================================
 
+
 class ConnectionMethod(Enum):
     """Revit connection methods."""
 
@@ -103,6 +104,7 @@ IS_WINDOWS = platform.system() == "Windows"
 if IS_WINDOWS:
     try:
         import clr
+
         clr.AddReference("System.Windows.Forms")
         clr.AddReference("System.Drawing")
         HAS_PYTHONNET = True
@@ -116,6 +118,7 @@ HAS_REVIT_API = False
 if IS_WINDOWS and HAS_PYTHONNET:
     try:
         import clr
+
         clr.AddReference("RevitAPI")
         clr.AddReference("RevitAPIUI")
         HAS_REVIT_API = True
@@ -125,6 +128,7 @@ if IS_WINDOWS and HAS_PYTHONNET:
 # ============================================================================
 # REVIT SERVICE CLASS
 # ============================================================================
+
 
 class RevitService:
     """
@@ -145,10 +149,10 @@ class RevitService:
         # Connection state
         self._connected = False
         self._connection_method: Optional[ConnectionMethod] = None
-        self._revit_app = None
-        self._revit_doc = None
-        self._uiapp = None
-        self._uidoc = None
+        self._revit_app: Any = None
+        self._revit_doc: Any = None
+        self._uiapp: Any = None
+        self._uidoc: Any = None
 
         # RevitAPIDocGen data
         self._api_data_cache: List[Dict[str, Any]] = []
@@ -168,18 +172,18 @@ class RevitService:
     # CONNECTION METHODS
     # =========================================================================
 
-    def connect(self, method: str = 'auto') -> bool:
+    def connect(self, method: str = "auto") -> bool:
         """Connect to Revit. Methods: 'api', 'macro', 'simulation', 'auto'."""
         method = method.lower()
-        if method == 'auto':
-            method = 'api' if HAS_REVIT_API else 'simulation'
+        if method == "auto":
+            method = "api" if HAS_REVIT_API else "simulation"
 
         try:
-            if method == 'api':
+            if method == "api":
                 return self._connect_via_api()
-            if method == 'macro':
+            if method == "macro":
                 return self._connect_via_macro()
-            if method == 'simulation':
+            if method == "simulation":
                 return self._connect_simulation()
             logger.error("Unknown method: %s", method)
             return False
@@ -231,7 +235,7 @@ class RevitService:
             logger.error("Disconnect error: %s", e)
             return False
 
-    def _extract_element_data(self, element) -> Dict[str, Any]:
+    def _extract_element_data(self, element: Any) -> Dict[str, Any]:
         """
         Extract detailed data from a Revit element.
         In a real implementation, this would extract actual element properties.
@@ -248,84 +252,97 @@ class RevitService:
             # Helper to safely get attribute value
             def get_attr(obj: Any, name: str, default: Any = None) -> Any:
                 val = getattr(obj, name, default)
-                if hasattr(val, 'ToString'):
-                    return val.ToString()  # type: ignore
+                if hasattr(val, "ToString"):
+                    return val.ToString()
                 return val if val is not None else default
 
             element_data = {
-                "id": get_attr(element, 'Id', 'unknown'),
-                "name": get_attr(element, 'Name', 'unnamed'),
-                "category": get_attr(element, 'Category', {}).Name if hasattr(element, 'Category') else 'unknown',
-                "level": get_attr(element, 'Level', {}).Name if hasattr(element, 'Level') else 'Level 1',
-                "workset": get_attr(element, 'WorksetId', 'default'),
-                "element_type": getattr(element, 'GetType', lambda: 'Element')(),
+                "id": get_attr(element, "Id", "unknown"),
+                "name": get_attr(element, "Name", "unnamed"),
+                "category": get_attr(element, "Category", {}).Name
+                if hasattr(element, "Category")
+                else "unknown",
+                "level": get_attr(element, "Level", {}).Name
+                if hasattr(element, "Level")
+                else "Level 1",
+                "workset": get_attr(element, "WorksetId", "default"),
+                "element_type": getattr(element, "GetType", lambda: "Element")(),
             }
 
             # Simulate extracting properties based on element type
             # This is where the actual Revit API calls would happen
-            if 'Wall' in element_data.get('element_type', ''):
-                element_data.update({
-                    "length": 10000.0,  # in millimeters
-                    "height": 3000.0,
-                    "width": 200.0,
-                    "location_curve": [[0, 0, 0], [10000, 0, 0]]
-                })
-            elif 'Floor' in element_data.get('element_type', ''):
-                element_data.update({
-                    "area": 50.0,  # in square meters
-                    "boundary": [[0, 0, 0], [10000, 0, 0], [10000, 10000, 0], [0, 10000, 0]]
-                })
-            elif 'Door' in element_data.get('element_type', ''):
-                element_data.update({
-                    "width": 900.0,
-                    "height": 2100.0,
-                    "location_point": [5000, 0, 0]
-                })
-            elif 'Window' in element_data.get('element_type', ''):
-                element_data.update({
-                    "width": 1200.0,
-                    "height": 1500.0,
-                    "location_point": [2000, 1500, 0]
-                })
-            elif 'Roof' in element_data.get('element_type', ''):
-                element_data.update({
-                    "area": 30.0,
-                    "slope": 0.25,
-                    "boundary": [[0, 0, 3000], [10000, 0, 3000], [10000, 10000, 3000], [0, 10000, 3000]]
-                })
-            elif 'Column' in element_data.get('element_type', ''):
-                element_data.update({
-                    "height": 3000.0,
-                    "location_point": [2500, 2500, 0],
-                    "shape": "rectangular",
-                    "width": 400.0,
-                    "depth": 400.0
-                })
-            elif 'Beam' in element_data.get('element_type', ''):
-                element_data.update({
-                    "length": 6000.0,
-                    "location_curve": [[0, 2500, 3000], [6000, 2500, 3000]],
-                    "width": 300.0,
-                    "height": 600.0
-                })
+            if "Wall" in element_data.get("element_type", ""):
+                element_data.update(
+                    {
+                        "length": 10000.0,  # in millimeters
+                        "height": 3000.0,
+                        "width": 200.0,
+                        "location_curve": [[0, 0, 0], [10000, 0, 0]],
+                    }
+                )
+            elif "Floor" in element_data.get("element_type", ""):
+                element_data.update(
+                    {
+                        "area": 50.0,  # in square meters
+                        "boundary": [[0, 0, 0], [10000, 0, 0], [10000, 10000, 0], [0, 10000, 0]],
+                    }
+                )
+            elif "Door" in element_data.get("element_type", ""):
+                element_data.update(
+                    {"width": 900.0, "height": 2100.0, "location_point": [5000, 0, 0]}
+                )
+            elif "Window" in element_data.get("element_type", ""):
+                element_data.update(
+                    {"width": 1200.0, "height": 1500.0, "location_point": [2000, 1500, 0]}
+                )
+            elif "Roof" in element_data.get("element_type", ""):
+                element_data.update(
+                    {
+                        "area": 30.0,
+                        "slope": 0.25,
+                        "boundary": [
+                            [0, 0, 3000],
+                            [10000, 0, 3000],
+                            [10000, 10000, 3000],
+                            [0, 10000, 3000],
+                        ],
+                    }
+                )
+            elif "Column" in element_data.get("element_type", ""):
+                element_data.update(
+                    {
+                        "height": 3000.0,
+                        "location_point": [2500, 2500, 0],
+                        "shape": "rectangular",
+                        "width": 400.0,
+                        "depth": 400.0,
+                    }
+                )
+            elif "Beam" in element_data.get("element_type", ""):
+                element_data.update(
+                    {
+                        "length": 6000.0,
+                        "location_curve": [[0, 2500, 3000], [6000, 2500, 3000]],
+                        "width": 300.0,
+                        "height": 600.0,
+                    }
+                )
 
             # Add common parameters
             element_data["parameters"] = {
-                "mark": getattr(element, 'Mark', '') if hasattr(element, 'Mark') else '',
-                "comments": getattr(element, 'Comments', '') if hasattr(element, 'Comments') else '',
-                "phase_created": get_attr(element, 'PhaseCreated', ''),
-                "phase_demolished": get_attr(element, 'PhaseDemolished', ''),
+                "mark": getattr(element, "Mark", "") if hasattr(element, "Mark") else "",
+                "comments": getattr(element, "Comments", "")
+                if hasattr(element, "Comments")
+                else "",
+                "phase_created": get_attr(element, "PhaseCreated", ""),
+                "phase_demolished": get_attr(element, "PhaseDemolished", ""),
             }
 
             return element_data
 
         except Exception as e:
             logger.error("Error extracting element data: %s", e)
-            return {
-                "id": "unknown",
-                "name": "error_extraction",
-                "error": str(e)
-            }
+            return {"id": "unknown", "name": "error_extraction", "error": str(e)}
 
     def read_rvt(self, filepath: str) -> Dict[str, Any]:
         """
@@ -357,7 +374,7 @@ class RevitService:
                     "height": 3000.0,
                     "width": 200.0,
                     "location_curve": [[0, 0, 0], [5000, 0, 0]],
-                    "parameters": {"mark": "W1"}
+                    "parameters": {"mark": "W1"},
                 },
                 {
                     "id": "12346",
@@ -366,7 +383,7 @@ class RevitService:
                     "level": "Level 1",
                     "area": 25.0,
                     "boundary": [[0, 0, 0], [5000, 0, 0], [5000, 5000, 0], [0, 5000, 0]],
-                    "parameters": {"mark": "F1"}
+                    "parameters": {"mark": "F1"},
                 },
                 {
                     "id": "12347",
@@ -376,8 +393,8 @@ class RevitService:
                     "width": 900.0,
                     "height": 2100.0,
                     "location_point": [2500, 0, 0],
-                    "parameters": {"mark": "D1"}
-                }
+                    "parameters": {"mark": "D1"},
+                },
             ]
 
             logger.info("Simulated reading %s elements from %s", len(elements), filepath)
@@ -388,7 +405,7 @@ class RevitService:
                 "count": len(elements),
                 "source_file": filepath,
                 "file_size": file_size,
-                "timestamp": datetime.now(timezone.utc).isoformat()
+                "timestamp": datetime.now(timezone.utc).isoformat(),
             }
 
         except FileNotFoundError:
@@ -397,16 +414,11 @@ class RevitService:
                 "success": False,
                 "error": f"RVT file not found: {filepath}",
                 "elements": [],
-                "count": 0
+                "count": 0,
             }
         except Exception as e:
             logger.error("Error reading RVT file %s: %s", filepath, e)
-            return {
-                "success": False,
-                "error": str(e),
-                "elements": [],
-                "count": 0
-            }
+            return {"success": False, "error": str(e), "elements": [], "count": 0}
 
     def write_rvt(self, filepath: str, elements: List[Dict[str, Any]]) -> bool:
         """
@@ -435,7 +447,7 @@ class RevitService:
 
             # Create a basic RVT-like file structure (this is just a simulation)
             # In reality, this would require Revit API calls to create actual elements
-            with open(filepath, 'w') as f:
+            with open(filepath, "w") as f:
                 f.write("# Revit Model File\n")
                 f.write("# Generated by CAD/BIM Integration System\n")
                 f.write(f"# Elements Count: {len(elements)}\n")
@@ -449,7 +461,7 @@ class RevitService:
                     f.write(f"  Level: {element.get('level', 'Level 1')}\n")
                     # Add other properties as needed
                     for key, value in element.items():
-                        if key not in ['category', 'name', 'id', 'level']:
+                        if key not in ["category", "name", "id", "level"]:
                             f.write(f"  {key}: {value}\n")
                     f.write("\n")
 
@@ -460,8 +472,13 @@ class RevitService:
             logger.error("Error writing RVT file %s: %s", filepath, e)
             return False
 
-    def create_wall(self, start_point: List[float], end_point: List[float],
-                   height: float = 3000.0, level: str = "Level 1") -> Optional[str]:
+    def create_wall(
+        self,
+        start_point: List[float],
+        end_point: List[float],
+        height: float = 3000.0,
+        level: str = "Level 1",
+    ) -> Optional[str]:
         """
         Create a wall in the active Revit document.
 
@@ -482,9 +499,12 @@ class RevitService:
             # In a real implementation, this would create an actual wall using Revit API
             # For now, we'll simulate the creation
             import uuid
+
             wall_id = str(uuid.uuid4())
 
-            logger.info("Simulated creating wall from %s to %s on %s", start_point, end_point, level)
+            logger.info(
+                "Simulated creating wall from %s to %s on %s", start_point, end_point, level
+            )
             return wall_id
 
         except Exception as e:
@@ -510,6 +530,7 @@ class RevitService:
             # In a real implementation, this would create an actual floor using Revit API
             # For now, we'll simulate the creation
             import uuid
+
             floor_id = str(uuid.uuid4())
 
             logger.info("Simulated creating floor with boundary on %s", level)
@@ -519,8 +540,9 @@ class RevitService:
             logger.error("Error creating floor: %s", e)
             return None
 
-    def create_column(self, location: List[float], height: float = 3000.0,
-                     level: str = "Level 1") -> Optional[str]:
+    def create_column(
+        self, location: List[float], height: float = 3000.0, level: str = "Level 1"
+    ) -> Optional[str]:
         """
         Create a column in the active Revit document.
 
@@ -540,6 +562,7 @@ class RevitService:
             # In a real implementation, this would create an actual column using Revit API
             # For now, we'll simulate the creation
             import uuid
+
             column_id = str(uuid.uuid4())
 
             logger.info("Simulated creating column at %s on %s", location, level)
@@ -571,11 +594,11 @@ class RevitService:
                     "name": "Simulation Project",
                     "number": "SIM-001",
                     "address": "Simulation Address",
-                    "client_name": "Simulation Client"
+                    "client_name": "Simulation Client",
                 },
                 "active_view": "Architecture",
                 "current_phase": "Design Phase",
-                "units": "millimeters"
+                "units": "millimeters",
             }
         except Exception as e:
             logger.error("Error getting document info: %s", e)
@@ -603,7 +626,7 @@ class RevitService:
 
             # In a real implementation, this would save the actual Revit document
             # For now, we'll just touch the file to simulate
-            with open(filepath, 'a'):
+            with open(filepath, "a"):
                 os.utime(filepath, None)
 
             logger.info("Simulated saving document to %s", filepath)
@@ -668,18 +691,18 @@ class RevitService:
             logger.error("Close failed: %s", e)
             return False
 
-    def save(self, filepath: str) -> bool:  # noqa: F811  (legacy duplicate kept for backward-compat)
+    def save(self, filepath: str) -> bool:  # type: ignore[no-redef]  # noqa: F811  (legacy duplicate)
         """Legacy save method."""
         return self.save_document(filepath)
 
-    def get_document_info(self) -> Dict[str, Any]:  # noqa: F811  (legacy duplicate kept for backward-compat)
+    def get_document_info(self) -> Dict[str, Any]:  # type: ignore[no-redef]  # noqa: F811  (legacy duplicate)
         """Get document info."""
         if self._connection_method == ConnectionMethod.SIMULATION:
             return {
                 "title": "Simulated Revit Document",
                 "path": "N/A",
                 "workshared": False,
-                "units": "millimeters"
+                "units": "millimeters",
             }
         return {}
 
@@ -688,9 +711,7 @@ class RevitService:
     # =========================================================================
 
     def get_elements(
-        self,
-        category: Optional[str] = None,
-        element_class: Optional[str] = None
+        self, category: Optional[str] = None, element_class: Optional[str] = None
     ) -> List[Dict[str, Any]]:
         """Get elements using FilteredElementCollector pattern."""
         if not self._connected:
@@ -734,6 +755,7 @@ class RevitService:
         try:
             if self._connection_method == ConnectionMethod.API and self._revit_doc:
                 from Autodesk.Revit.DB import ElementId
+
                 elem = self._revit_doc.GetElement(ElementId(int(element_id)))
                 if elem:
                     return self._extract_element_data(elem)
@@ -794,13 +816,13 @@ class RevitService:
     # ELEMENT OPERATIONS - CREATE
     # =========================================================================
 
-    def create_wall(  # noqa: F811  (legacy duplicate kept for backward-compat)
+    def create_wall(  # type: ignore[no-redef]  # noqa: F811  (legacy duplicate)
         self,
         start_point: List[float],
         end_point: List[float],
         height: float = 3000.0,
         level: str = "Level 1",
-        wall_type: str = "Basic Wall"
+        wall_type: str = "Basic Wall",
     ) -> Optional[str]:
         """Create a wall."""
         if not self._connected:
@@ -839,11 +861,8 @@ class RevitService:
 
         return None
 
-    def create_floor(  # noqa: F811  (legacy duplicate kept for backward-compat)
-        self,
-        boundary_points: List[List[float]],
-        level: str = "Level 1",
-        floor_type: str = "Floor"
+    def create_floor(  # type: ignore[no-redef]  # noqa: F811  (legacy duplicate)
+        self, boundary_points: List[List[float]], level: str = "Level 1", floor_type: str = "Floor"
     ) -> Optional[str]:
         """Create a floor."""
         if not self._connected:
@@ -870,12 +889,14 @@ class RevitService:
                     p2 = XYZ(
                         boundary_points[(i + 1) % len(boundary_points)][0],
                         boundary_points[(i + 1) % len(boundary_points)][1],
-                        boundary_points[(i + 1) % len(boundary_points)][2]
+                        boundary_points[(i + 1) % len(boundary_points)][2],
                     )
                     curve_loop.Append(Line.CreateBound(p1, p2))
 
                 floor_type_id = self._get_floor_type_id(floor_type)
-                new_floor = Floor.Create(self._revit_doc, [curve_loop], floor_type_id, level_elem.Id)
+                new_floor = Floor.Create(
+                    self._revit_doc, [curve_loop], floor_type_id, level_elem.Id
+                )
                 t.Commit()
 
                 return str(new_floor.Id)
@@ -890,7 +911,7 @@ class RevitService:
         host_wall_id: str,
         location_point: List[float],
         family_type: str = "M_Single-Flush",
-        level: str = "Level 1"
+        level: str = "Level 1",
     ) -> Optional[str]:
         """Create a door in a wall."""
         if not self._connected:
@@ -934,17 +955,17 @@ class RevitService:
         host_wall_id: str,
         location_point: List[float],
         family_type: str = "M_Single-Flush",
-        level: str = "Level 1"
+        level: str = "Level 1",
     ) -> Optional[str]:
         """Create a window in a wall."""
         return self.create_door(host_wall_id, location_point, family_type, level)
 
-    def create_column(  # noqa: F811  (legacy duplicate kept for backward-compat)
+    def create_column(  # type: ignore[no-redef]  # noqa: F811  (legacy duplicate)
         self,
         location_point: List[float],
         height: float = 3000.0,
         level: str = "Level 1",
-        column_type: str = "M_Columns"
+        column_type: str = "M_Columns",
     ) -> Optional[str]:
         """Create a structural column."""
         if not self._connected:
@@ -987,7 +1008,7 @@ class RevitService:
         start_point: List[float],
         end_point: List[float],
         level: str = "Level 1",
-        beam_type: str = "W-Wide Flange"
+        beam_type: str = "W-Wide Flange",
     ) -> Optional[str]:
         """Create a structural beam."""
         if not self._connected:
@@ -1004,7 +1025,7 @@ class RevitService:
         category: str,
         location_point: List[float],
         level: Optional[str] = None,
-        parameters: Optional[Dict[str, Any]] = None
+        parameters: Optional[Dict[str, Any]] = None,
     ) -> Optional[str]:
         """Create a generic family instance."""
         if not self._connected:
@@ -1117,12 +1138,14 @@ class RevitService:
                 {"id": "v1", "name": "Level 1 Floor Plan", "type": "Floor Plan"},
                 {"id": "v2", "name": "Level 2 Floor Plan", "type": "Floor Plan"},
                 {"id": "v3", "name": "Section 1", "type": "Section"},
-                {"id": "v4", "name": "3D View", "type": "3D View"}
+                {"id": "v4", "name": "3D View", "type": "3D View"},
             ]
 
         return self.get_elements(category="Views")
 
-    def create_view(self, view_name: str, view_type: str = "Floor Plan", level: str = "Level 1") -> Optional[str]:
+    def create_view(
+        self, view_name: str, view_type: str = "Floor Plan", level: str = "Level 1"
+    ) -> Optional[str]:
         """Create a new view."""
         if not self._connected:
             return None
@@ -1135,7 +1158,7 @@ class RevitService:
             return [
                 {"id": "l1", "name": "Level 1", "elevation": 0.0},
                 {"id": "l2", "name": "Level 2", "elevation": 3000.0},
-                {"id": "l3", "name": "Level 3", "elevation": 6000.0}
+                {"id": "l3", "name": "Level 3", "elevation": 6000.0},
             ]
 
         return self.get_elements(category="Levels")
@@ -1156,7 +1179,7 @@ class RevitService:
         if not self._connected:
             return [
                 {"id": "w1", "name": "Workset 1", "owner": "User1"},
-                {"id": "w2", "name": "Workset 2", "owner": "User2"}
+                {"id": "w2", "name": "Workset 2", "owner": "User2"},
             ]
 
         return []
@@ -1169,8 +1192,16 @@ class RevitService:
         """Get all family symbols for a category."""
         if not self._connected:
             return [
-                {"name": "M_Single-Flush 36\" x 84\"", "category": category, "family": "M_Single-Flush"},
-                {"name": "M_Double-Flush 72\" x 84\"", "category": category, "family": "M_Double-Flush"}
+                {
+                    "name": 'M_Single-Flush 36" x 84"',
+                    "category": category,
+                    "family": "M_Single-Flush",
+                },
+                {
+                    "name": 'M_Double-Flush 72" x 84"',
+                    "category": category,
+                    "family": "M_Double-Flush",
+                },
             ]
 
         try:
@@ -1183,12 +1214,14 @@ class RevitService:
                 symbols = []
                 for symbol in collector:
                     if symbol.Category and symbol.Category.Name == category:
-                        symbols.append({
-                            "name": symbol.Name,
-                            "family": symbol.FamilyName,
-                            "category": category,
-                            "id": str(symbol.Id)
-                        })
+                        symbols.append(
+                            {
+                                "name": symbol.Name,
+                                "family": symbol.FamilyName,
+                                "category": category,
+                                "id": str(symbol.Id),
+                            }
+                        )
 
                 return symbols
 
@@ -1216,7 +1249,7 @@ class RevitService:
                 result = self._revit_doc.LoadFamily(family_path, family)
 
                 t.Commit()
-                return result
+                return bool(result)
 
         except Exception as e:
             logger.error("Failed to load family: %s", e)
@@ -1234,7 +1267,7 @@ class RevitService:
                 logger.error("File not found: %s", json_path)
                 return False
 
-            with open(json_path, encoding='utf-8') as f:
+            with open(json_path, encoding="utf-8") as f:
                 self._api_data_cache = json.load(f)
 
             self._api_data_loaded = True
@@ -1250,7 +1283,7 @@ class RevitService:
         keyword: Optional[str] = None,
         api_name: Optional[str] = None,
         namespace: Optional[str] = None,
-        api_type: Optional[str] = None
+        api_type: Optional[str] = None,
     ) -> List[RevitAPIInfo]:
         """Search loaded API data locally."""
         if not self._api_data_loaded:
@@ -1263,9 +1296,11 @@ class RevitService:
 
             if keyword:
                 kw = keyword.lower()
-                if not (kw in entry.get("Keywords", "").lower() or
-                        kw in entry.get("Title", "").lower() or
-                        kw in entry.get("Description", "").lower()):
+                if not (
+                    kw in entry.get("Keywords", "").lower()
+                    or kw in entry.get("Title", "").lower()
+                    or kw in entry.get("Description", "").lower()
+                ):
                     match = False
 
             if api_name and match:
@@ -1280,15 +1315,17 @@ class RevitService:
                 match = False
 
             if match:
-                results.append(RevitAPIInfo(
-                    title=entry.get("Title", ""),
-                    keywords=entry.get("Keywords", ""),
-                    api_name=entry.get("APIName", ""),
-                    description=entry.get("Description", ""),
-                    namespace=entry.get("Namespace", ""),
-                    guid=entry.get("Guid", ""),
-                    type=entry.get("Type", "")
-                ))
+                results.append(
+                    RevitAPIInfo(
+                        title=entry.get("Title", ""),
+                        keywords=entry.get("Keywords", ""),
+                        api_name=entry.get("APIName", ""),
+                        description=entry.get("Description", ""),
+                        namespace=entry.get("Namespace", ""),
+                        guid=entry.get("Guid", ""),
+                        type=entry.get("Type", ""),
+                    )
+                )
 
         return results
 
@@ -1298,7 +1335,9 @@ class RevitService:
             return ""
         return f"https://www.revitapidocs.com/{revit_version}/{api_info.guid}.htm"
 
-    async def search_revit_api(self, query: str, engine: str = "revitapidocs") -> List[SearchResult]:
+    async def search_revit_api(
+        self, query: str, engine: str = "revitapidocs"
+    ) -> List[SearchResult]:
         """Search Revit API documentation online."""
         results = []
 
@@ -1307,10 +1346,10 @@ class RevitService:
 
             if engine == "revitapidocs":
                 base_url = "https://ac.cnstrc.com/autocomplete"
-                params = {
+                params: dict[str, Any] = {
                     "autocomplete_key": "key_yyAC1mb0cTgZTwSo",
                     "query": query,
-                    "num_results": 30
+                    "num_results": 30,
                 }
 
                 async with httpx.AsyncClient() as client:
@@ -1322,11 +1361,13 @@ class RevitService:
                         products = sections.get("Products", [])
 
                         for item in products:
-                            results.append(SearchResult(
-                                related_key=item.get("value", ""),
-                                description=item.get("data", {}).get("description", ""),
-                                url=item.get("data", {}).get("url", "")
-                            ))
+                            results.append(
+                                SearchResult(
+                                    related_key=item.get("value", ""),
+                                    description=item.get("data", {}).get("description", ""),
+                                    url=item.get("data", {}).get("url", ""),
+                                )
+                            )
 
         except Exception as e:
             logger.error("Search failed: %s", e)
@@ -1337,7 +1378,9 @@ class RevitService:
     # AI COMMAND EXECUTION
     # =========================================================================
 
-    def execute_ai_command(self, command: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def execute_ai_command(
+        self, command: str, context: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
         """Execute a natural language command from AI agent."""
         command = command.lower()
 
@@ -1360,7 +1403,7 @@ class RevitService:
                 result = {
                     "success": element_id is not None,
                     "message": f"Wall created: {element_id}",
-                    "element_id": element_id
+                    "element_id": element_id,
                 }
 
             elif "create door" in command or "add door" in command:
@@ -1377,7 +1420,7 @@ class RevitService:
                     result = {
                         "success": element_id is not None,
                         "message": f"Door created: {element_id}",
-                        "element_id": element_id
+                        "element_id": element_id,
                     }
 
             elif "get elements" in command or "list elements" in command:
@@ -1387,7 +1430,7 @@ class RevitService:
                 result = {
                     "success": True,
                     "message": f"Found {len(elements)} elements",
-                    "elements": elements
+                    "elements": elements,
                 }
 
             elif "delete" in command or "remove" in command:
@@ -1396,7 +1439,7 @@ class RevitService:
                     success = self.delete_element(element_id)
                     result = {
                         "success": success,
-                        "message": f"Element {element_id} deleted" if success else "Delete failed"
+                        "message": f"Element {element_id} deleted" if success else "Delete failed",
                     }
 
             elif "search api" in command or "lookup api" in command:
@@ -1411,17 +1454,17 @@ class RevitService:
                             "name": r.title,
                             "api_name": r.api_name,
                             "type": r.type,
-                            "url": self.get_api_url(r)
+                            "url": self.get_api_url(r),
                         }
                         for r in api_results[:10]
-                    ]
+                    ],
                 }
 
             else:
                 result = {
                     "success": False,
                     "message": f"Unknown command: {command}",
-                    "suggestion": "Try: create wall, create door, get elements, delete, search api"
+                    "suggestion": "Try: create wall, create door, get elements, delete, search api",
                 }
 
         except Exception as e:
@@ -1434,7 +1477,7 @@ class RevitService:
     # HELPER METHODS
     # =========================================================================
 
-    def _get_level_by_name(self, name: str):
+    def _get_level_by_name(self, name: str) -> Any:
         """Get Level element by name."""
         if not self._revit_doc:
             return None
@@ -1453,7 +1496,7 @@ class RevitService:
 
         return None
 
-    def _get_wall_type_id(self, wall_type_name: str):
+    def _get_wall_type_id(self, wall_type_name: str) -> Any:
         """Get WallType ID by name."""
         if not self._revit_doc:
             return None
@@ -1472,7 +1515,7 @@ class RevitService:
 
         return None
 
-    def _get_floor_type_id(self, floor_type_name: str):
+    def _get_floor_type_id(self, floor_type_name: str) -> Any:
         """Get FloorType ID by name."""
         if not self._revit_doc:
             return None
@@ -1491,7 +1534,7 @@ class RevitService:
 
         return None
 
-    def _get_family_symbol(self, category: str, symbol_name: str):
+    def _get_family_symbol(self, category: str, symbol_name: str) -> Any:
         """Get FamilySymbol - similar to RevitJumper pattern."""
         if not self._revit_doc:
             return None
@@ -1522,7 +1565,7 @@ class RevitService:
             logger.error("Failed to get family symbol: %s", e)
             return None
 
-    def _get_builtin_category(self, category_name: str):
+    def _get_builtin_category(self, category_name: str) -> Any:
         """Map category name to BuiltInCategory."""
         try:
             from Autodesk.Revit.DB import BuiltInCategory
@@ -1545,26 +1588,27 @@ class RevitService:
         except Exception:
             return None
 
-    def _extract_element_data(self, element) -> Dict[str, Any]:
+    def _extract_element_data(self, element: Any) -> Dict[str, Any]:  # type: ignore[no-redef]
         """Extract data from a Revit element."""
         try:
-            def get_attr(obj, name, default=None):
+
+            def get_attr(obj: Any, name: str, default: Any = None) -> Any:
                 val = getattr(obj, name, default)
-                if hasattr(val, 'ToString'):
+                if hasattr(val, "ToString"):
                     return val.ToString()
                 return val if val is not None else default
 
             return {
-                "id": str(getattr(element, 'Id', 'unknown')),
-                "name": get_attr(element, 'Name', 'unnamed'),
-                "category": get_attr(getattr(element, 'Category', None), 'Name', 'unknown'),
+                "id": str(getattr(element, "Id", "unknown")),
+                "name": get_attr(element, "Name", "unnamed"),
+                "category": get_attr(getattr(element, "Category", None), "Name", "unknown"),
                 "class_name": element.GetType().Name,
             }
 
         except Exception as e:
             return {"id": "unknown", "name": "error", "error": str(e)}
 
-    def _get_param_value(self, param):
+    def _get_param_value(self, param: Any) -> Any:
         """Get parameter value as Python type."""
         try:
             from Autodesk.Revit.DB import StorageType
@@ -1581,7 +1625,7 @@ class RevitService:
         except Exception:
             return None
 
-    def _set_element_parameter(self, element, param_name: str, value: Any) -> bool:
+    def _set_element_parameter(self, element: Any, param_name: str, value: Any) -> bool:
         """Set parameter value on element."""
         try:
             from Autodesk.Revit.DB import StorageType
@@ -1596,6 +1640,7 @@ class RevitService:
                         param.Set(float(value))
                     elif param.StorageType == StorageType.ElementId:
                         from Autodesk.Revit.DB import ElementId
+
                         param.Set(ElementId(int(value)))
                     return True
             return False
@@ -1620,6 +1665,7 @@ class RevitService:
     def _extract_level(self, command: str) -> Optional[str]:
         """Extract level name from command."""
         import re
+
         patterns = [r"level\s+(\d+)", r"level\s+(\w+)"]
         for pattern in patterns:
             match = re.search(pattern, command, re.IGNORECASE)
@@ -1638,11 +1684,13 @@ class RevitService:
     def _extract_element_id(self, command: str, selected: List[Dict]) -> Optional[str]:
         """Extract element ID from command."""
         import re
+
         id_match = re.search(r"id[:\s]*(\d+)", command, re.IGNORECASE)
         if id_match:
             return id_match.group(1)
         if selected:
-            return selected[0].get("id")
+            val = selected[0].get("id")
+            return str(val) if val is not None else None
         return None
 
     def _find_element_of_type(self, elements: List[Dict], element_type: str) -> Optional[Dict]:
@@ -1668,6 +1716,7 @@ class RevitService:
 # ============================================================================
 
 _revit_service_instance: Optional[RevitService] = None
+
 
 def get_revit_service() -> RevitService:
     """Get singleton RevitService instance."""

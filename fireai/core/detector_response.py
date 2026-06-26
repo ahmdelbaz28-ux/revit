@@ -148,7 +148,9 @@ def calculate_heat_detector_response(
     if not math.isfinite(ceiling_height_m) or ceiling_height_m <= 0:
         raise ValueError(f"ceiling_height_m must be positive finite, got {ceiling_height_m}")
     if not math.isfinite(distance_to_fire_m) or distance_to_fire_m < 0:
-        raise ValueError(f"distance_to_fire_m must be non-negative finite, got {distance_to_fire_m}")
+        raise ValueError(
+            f"distance_to_fire_m must be non-negative finite, got {distance_to_fire_m}"
+        )
     if not math.isfinite(rti) or rti <= 0:
         raise ValueError(f"rti must be positive finite, got {rti}")
     if not math.isfinite(activation_temp_c):

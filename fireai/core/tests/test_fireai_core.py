@@ -510,7 +510,9 @@ class TestAnalyseRoom:
         result = fireai_system.analyse_room(sample_room_spec)
         assert result.confidence_score >= 0.0
 
-    def test_compliant_room_has_high_or_medium_confidence(self, fireai_system, sample_room_spec) -> None:
+    def test_compliant_room_has_high_or_medium_confidence(
+        self, fireai_system, sample_room_spec
+    ) -> None:
         """A compliant room should have HIGH or MEDIUM confidence."""
         result = fireai_system.analyse_room(sample_room_spec)
         if result.compliant:
@@ -561,9 +563,7 @@ class TestAnalyseRoom:
 
     def test_resilience_disabled(self, fireai_system, sample_room_spec) -> None:
         """Resilience should be None when run_resilience=False."""
-        result = fireai_system.analyse_room(
-            sample_room_spec, run_resilience=False
-        )
+        result = fireai_system.analyse_room(sample_room_spec, run_resilience=False)
         assert result.resilience is None
 
     def test_resilience_result_structure(self, fireai_system, sample_room_spec) -> None:
@@ -576,9 +576,7 @@ class TestAnalyseRoom:
 
     def test_analysis_engine_error_returns_unsafe(self, fireai_system, sample_room_spec) -> None:
         """If the analysis engine fails, result should have UNSAFE confidence."""
-        with patch.object(
-            fireai_system, "_get_expert"
-        ) as mock_get_expert:
+        with patch.object(fireai_system, "_get_expert") as mock_get_expert:
             mock_expert = MagicMock()
             mock_expert.analyse_room.side_effect = RuntimeError("Engine crashed")
             mock_get_expert.return_value = mock_expert
@@ -624,7 +622,9 @@ class TestAnalyseRoom:
 class TestConfidenceLevelBranches:
     """Tests for different confidence level branches in analyse_room."""
 
-    def _make_mock_analysis(self, passed, coverage_pct, proof_valid=True, wall_violations=0):
+    def _make_mock_analysis(
+        self, passed, coverage_pct, proof_valid: bool = True, wall_violations: int = 0
+    ):
         """Helper to create a mock analysis result."""
         mock = MagicMock()
         mock.layout.detectors = [(1.0, 2.0), (3.0, 4.0)]
@@ -634,7 +634,9 @@ class TestConfidenceLevelBranches:
         mock.wall_violations = wall_violations
         return mock
 
-    def test_high_confidence_compliant_99plus_coverage(self, fireai_system, sample_room_spec) -> None:
+    def test_high_confidence_compliant_99plus_coverage(
+        self, fireai_system, sample_room_spec
+    ) -> None:
         """Compliant room with >=99% coverage should get HIGH confidence."""
         mock_analysis = self._make_mock_analysis(passed=True, coverage_pct=99.5)
 
@@ -660,7 +662,9 @@ class TestConfidenceLevelBranches:
             assert result.confidence == ConfidenceLevel.MEDIUM
             assert result.compliant is True
 
-    def test_low_confidence_noncompliant_90plus_coverage(self, fireai_system, sample_room_spec) -> None:
+    def test_low_confidence_noncompliant_90plus_coverage(
+        self, fireai_system, sample_room_spec
+    ) -> None:
         """Non-compliant room with >=90% coverage should get LOW confidence."""
         mock_analysis = self._make_mock_analysis(passed=False, coverage_pct=92.0)
 
@@ -673,7 +677,9 @@ class TestConfidenceLevelBranches:
             assert result.confidence == ConfidenceLevel.LOW
             assert result.compliant is False
 
-    def test_unsafe_confidence_noncompliant_low_coverage(self, fireai_system, sample_room_spec) -> None:
+    def test_unsafe_confidence_noncompliant_low_coverage(
+        self, fireai_system, sample_room_spec
+    ) -> None:
         """Non-compliant room with <90% coverage should get UNSAFE confidence."""
         mock_analysis = self._make_mock_analysis(passed=False, coverage_pct=50.0)
 
@@ -723,9 +729,10 @@ class TestResilienceFallback:
 
             # Force the MC import inside analyse_room to fail
             import builtins
+
             real_import = builtins.__import__
 
-            def mock_import(name, *args, **kwargs):
+            def mock_import(name: str, *args, **kwargs):
                 if name == "fireai.core.monte_carlo_pipeline":
                     raise ImportError("MC not available")
                 return real_import(name, *args, **kwargs)
@@ -949,7 +956,10 @@ class TestRunIntegration:
         """run_integration should return a result dict with building_id."""
         mock_bridge_result = self._make_mock_integration_result()
 
-        with patch("fireai.bridges.integration_bridge.IntegrationBridge.run", return_value=mock_bridge_result):
+        with patch(
+            "fireai.bridges.integration_bridge.IntegrationBridge.run",
+            return_value=mock_bridge_result,
+        ):
             result = fireai_system.run_integration(
                 building_id="BLDG-001",
                 floors=[],
@@ -968,7 +978,10 @@ class TestRunIntegration:
         """run_integration should handle floor data dicts."""
         mock_bridge_result = self._make_mock_integration_result()
 
-        with patch("fireai.bridges.integration_bridge.IntegrationBridge.run", return_value=mock_bridge_result):
+        with patch(
+            "fireai.bridges.integration_bridge.IntegrationBridge.run",
+            return_value=mock_bridge_result,
+        ):
             floor_data = {
                 "floor_id": "F1",
                 "elevation_m": 0.0,
@@ -992,7 +1005,10 @@ class TestRunIntegration:
         """run_integration should handle acoustic_config dict."""
         mock_bridge_result = self._make_mock_integration_result()
 
-        with patch("fireai.bridges.integration_bridge.IntegrationBridge.run", return_value=mock_bridge_result):
+        with patch(
+            "fireai.bridges.integration_bridge.IntegrationBridge.run",
+            return_value=mock_bridge_result,
+        ):
             result = fireai_system.run_integration(
                 building_id="BLDG-003",
                 acoustic_config={
@@ -1014,7 +1030,10 @@ class TestRunIntegration:
         """run_integration should respect enable flags."""
         mock_bridge_result = self._make_mock_integration_result()
 
-        with patch("fireai.bridges.integration_bridge.IntegrationBridge.run", return_value=mock_bridge_result):
+        with patch(
+            "fireai.bridges.integration_bridge.IntegrationBridge.run",
+            return_value=mock_bridge_result,
+        ):
             result = fireai_system.run_integration(
                 building_id="BLDG-004",
                 enable_kernel_v30=False,
@@ -1034,7 +1053,10 @@ class TestRunIntegration:
         """run_integration should log an integration_pipeline_run audit event."""
         mock_bridge_result = self._make_mock_integration_result()
 
-        with patch("fireai.bridges.integration_bridge.IntegrationBridge.run", return_value=mock_bridge_result):
+        with patch(
+            "fireai.bridges.integration_bridge.IntegrationBridge.run",
+            return_value=mock_bridge_result,
+        ):
             fireai_system.run_integration(
                 building_id="BLDG-005",
                 enable_kernel_v30=False,
@@ -1048,7 +1070,8 @@ class TestRunIntegration:
             call_args_list = mock_audit.call_args_list
             # Find the integration_pipeline_run call — uses kwargs
             integration_calls = [
-                c for c in call_args_list
+                c
+                for c in call_args_list
                 if c.kwargs.get("event_type") == "integration_pipeline_run"
             ]
             assert len(integration_calls) >= 1
@@ -1058,7 +1081,10 @@ class TestRunIntegration:
         """run_integration should accept custom nfpa_year."""
         mock_bridge_result = self._make_mock_integration_result()
 
-        with patch("fireai.bridges.integration_bridge.IntegrationBridge.run", return_value=mock_bridge_result):
+        with patch(
+            "fireai.bridges.integration_bridge.IntegrationBridge.run",
+            return_value=mock_bridge_result,
+        ):
             result = fireai_system.run_integration(
                 building_id="BLDG-006",
                 nfpa_year=2019,
@@ -1075,7 +1101,10 @@ class TestRunIntegration:
         """run_integration result should have expected top-level keys."""
         mock_bridge_result = self._make_mock_integration_result()
 
-        with patch("fireai.bridges.integration_bridge.IntegrationBridge.run", return_value=mock_bridge_result):
+        with patch(
+            "fireai.bridges.integration_bridge.IntegrationBridge.run",
+            return_value=mock_bridge_result,
+        ):
             result = fireai_system.run_integration(
                 building_id="BLDG-007",
                 enable_kernel_v30=False,
@@ -1098,7 +1127,10 @@ class TestRunIntegration:
         """run_integration core_subsystems should have expected keys."""
         mock_bridge_result = self._make_mock_integration_result()
 
-        with patch("fireai.bridges.integration_bridge.IntegrationBridge.run", return_value=mock_bridge_result):
+        with patch(
+            "fireai.bridges.integration_bridge.IntegrationBridge.run",
+            return_value=mock_bridge_result,
+        ):
             result = fireai_system.run_integration(
                 building_id="BLDG-008",
                 enable_kernel_v30=False,
@@ -1143,7 +1175,9 @@ class TestEndToEnd:
         assert "room_analysis" in event_types
         assert "floor_analysis" in event_types
 
-    def test_multiple_analyses_independent(self, fireai_system, sample_room_spec, large_room_spec) -> None:
+    def test_multiple_analyses_independent(
+        self, fireai_system, sample_room_spec, large_room_spec
+    ) -> None:
         """Multiple analyses should produce independent results."""
         result1 = fireai_system.analyse_room(sample_room_spec)
         result2 = fireai_system.analyse_room(large_room_spec)
@@ -1258,7 +1292,9 @@ class TestEdgeCases:
             assert len(result.wall_violations) == 2
             assert result.compliant is False
 
-    def test_confidence_level_from_coverage_fraction_edge(self, fireai_system, sample_room_spec) -> None:
+    def test_confidence_level_from_coverage_fraction_edge(
+        self, fireai_system, sample_room_spec
+    ) -> None:
         """Test edge case: coverage_fraction exactly at 0.90 threshold."""
         mock_analysis = MagicMock()
         mock_analysis.layout.detectors = [(5.0, 4.0)]
@@ -1308,7 +1344,9 @@ class TestEdgeCases:
         result = _resolve_db_path(None)
         assert result.endswith("fireai_audit.db")
 
-    def test_enhanced_result_coverage_fraction_already_fraction(self, fireai_system, sample_room_spec) -> None:
+    def test_enhanced_result_coverage_fraction_already_fraction(
+        self, fireai_system, sample_room_spec
+    ) -> None:
         """When coverage is already a fraction (<1), it should be used as-is."""
         mock_analysis = MagicMock()
         mock_analysis.layout.detectors = [(5.0, 4.0)]
@@ -1382,7 +1420,9 @@ class TestHashChainAudit:
         assert call_kwargs[1]["event_type"] == "room_analysis"
         assert call_kwargs[1]["actor"] == "system"
 
-    def test_hash_chain_audit_creates_store_on_first_use(self, fireai_system, sample_room_spec) -> None:
+    def test_hash_chain_audit_creates_store_on_first_use(
+        self, fireai_system, sample_room_spec
+    ) -> None:
         """First call to analyse_room should create _hash_chain if importable."""
         # Ensure _hash_chain doesn't exist yet
         if hasattr(fireai_system, "_hash_chain"):
@@ -1455,9 +1495,12 @@ class TestRunIntegrationAdvancedSubsystems:
         """run_integration should run kernel V30 when enabled."""
         mock_bridge_result = self._make_mock_integration_result()
 
-        with patch("fireai.bridges.integration_bridge.IntegrationBridge.run", return_value=mock_bridge_result), \
-             patch("fireai.core.kernel_v30_integration.KernelV30Dispatcher") as MockDispatcher, \
-             patch("fireai.core.kernel_v30_integration.MPSCWorkerPool") as MockPool:
+        with patch(
+            "fireai.bridges.integration_bridge.IntegrationBridge.run",
+            return_value=mock_bridge_result,
+        ), patch("fireai.core.kernel_v30_integration.KernelV30Dispatcher") as MockDispatcher, patch(
+            "fireai.core.kernel_v30_integration.MPSCWorkerPool"
+        ) as MockPool:
             mock_dispatcher = MagicMock()
             mock_dispatcher._simd_mode = "SIMD"
             mock_dispatcher._cache = None
@@ -1481,9 +1524,13 @@ class TestRunIntegrationAdvancedSubsystems:
         """run_integration should handle kernel V30 failure gracefully."""
         mock_bridge_result = self._make_mock_integration_result()
 
-        with patch("fireai.bridges.integration_bridge.IntegrationBridge.run", return_value=mock_bridge_result), \
-             patch("fireai.core.kernel_v30_integration.KernelV30Dispatcher", side_effect=ImportError("No SIMD")):
-
+        with patch(
+            "fireai.bridges.integration_bridge.IntegrationBridge.run",
+            return_value=mock_bridge_result,
+        ), patch(
+            "fireai.core.kernel_v30_integration.KernelV30Dispatcher",
+            side_effect=ImportError("No SIMD"),
+        ):
             result = fireai_system.run_integration(
                 building_id="BLDG-KV30FAIL",
                 enable_kernel_v30=True,
@@ -1499,8 +1546,10 @@ class TestRunIntegrationAdvancedSubsystems:
         """run_integration should run hash chain audit when enabled."""
         mock_bridge_result = self._make_mock_integration_result()
 
-        with patch("fireai.bridges.integration_bridge.IntegrationBridge.run", return_value=mock_bridge_result), \
-             patch("fireai.core.audit_blockchain_bridge.HashChainAuditStore") as MockHCStore:
+        with patch(
+            "fireai.bridges.integration_bridge.IntegrationBridge.run",
+            return_value=mock_bridge_result,
+        ), patch("fireai.core.audit_blockchain_bridge.HashChainAuditStore") as MockHCStore:
             mock_hc = MagicMock()
             mock_hc.log = MagicMock()
             mock_hc.verify_chain.return_value = (True, [])
@@ -1523,9 +1572,13 @@ class TestRunIntegrationAdvancedSubsystems:
         """run_integration should handle hash chain audit failure gracefully."""
         mock_bridge_result = self._make_mock_integration_result()
 
-        with patch("fireai.bridges.integration_bridge.IntegrationBridge.run", return_value=mock_bridge_result), \
-             patch("fireai.core.audit_blockchain_bridge.HashChainAuditStore", side_effect=ImportError("No bridge")):
-
+        with patch(
+            "fireai.bridges.integration_bridge.IntegrationBridge.run",
+            return_value=mock_bridge_result,
+        ), patch(
+            "fireai.core.audit_blockchain_bridge.HashChainAuditStore",
+            side_effect=ImportError("No bridge"),
+        ):
             result = fireai_system.run_integration(
                 building_id="BLDG-HCFAIL",
                 enable_kernel_v30=False,
@@ -1541,8 +1594,10 @@ class TestRunIntegrationAdvancedSubsystems:
         """run_integration should run Monte Carlo when enabled."""
         mock_bridge_result = self._make_mock_integration_result()
 
-        with patch("fireai.bridges.integration_bridge.IntegrationBridge.run", return_value=mock_bridge_result), \
-             patch("fireai.core.monte_carlo_pipeline.MCPipelineAdapter") as MockMC:
+        with patch(
+            "fireai.bridges.integration_bridge.IntegrationBridge.run",
+            return_value=mock_bridge_result,
+        ), patch("fireai.core.monte_carlo_pipeline.MCPipelineAdapter") as MockMC:
             mock_mc = MagicMock()
             mock_sim = MagicMock()
             mock_sim.simulate_room_reliability.return_value = {
@@ -1590,9 +1645,12 @@ class TestRunIntegrationAdvancedSubsystems:
         """run_integration should handle Monte Carlo failure gracefully."""
         mock_bridge_result = self._make_mock_integration_result()
 
-        with patch("fireai.bridges.integration_bridge.IntegrationBridge.run", return_value=mock_bridge_result), \
-             patch("fireai.core.monte_carlo_pipeline.MCPipelineAdapter", side_effect=ImportError("No MC")):
-
+        with patch(
+            "fireai.bridges.integration_bridge.IntegrationBridge.run",
+            return_value=mock_bridge_result,
+        ), patch(
+            "fireai.core.monte_carlo_pipeline.MCPipelineAdapter", side_effect=ImportError("No MC")
+        ):
             result = fireai_system.run_integration(
                 building_id="BLDG-MCFAIL",
                 enable_kernel_v30=False,
@@ -1608,8 +1666,10 @@ class TestRunIntegrationAdvancedSubsystems:
         """run_integration should run BIM sync when enabled."""
         mock_bridge_result = self._make_mock_integration_result()
 
-        with patch("fireai.bridges.integration_bridge.IntegrationBridge.run", return_value=mock_bridge_result), \
-             patch("fireai.bridges.revit_bim_sync.BIMSyncOrchestrator") as MockBIM:
+        with patch(
+            "fireai.bridges.integration_bridge.IntegrationBridge.run",
+            return_value=mock_bridge_result,
+        ), patch("fireai.bridges.revit_bim_sync.BIMSyncOrchestrator") as MockBIM:
             mock_bim = MagicMock()
             mock_bim._bridge.mode = "mock"
             mock_bim._bridge.is_live = False
@@ -1631,9 +1691,12 @@ class TestRunIntegrationAdvancedSubsystems:
         """run_integration should handle BIM sync failure gracefully."""
         mock_bridge_result = self._make_mock_integration_result()
 
-        with patch("fireai.bridges.integration_bridge.IntegrationBridge.run", return_value=mock_bridge_result), \
-             patch("fireai.bridges.revit_bim_sync.BIMSyncOrchestrator", side_effect=ImportError("No BIM")):
-
+        with patch(
+            "fireai.bridges.integration_bridge.IntegrationBridge.run",
+            return_value=mock_bridge_result,
+        ), patch(
+            "fireai.bridges.revit_bim_sync.BIMSyncOrchestrator", side_effect=ImportError("No BIM")
+        ):
             result = fireai_system.run_integration(
                 building_id="BLDG-BIMFAIL",
                 enable_kernel_v30=False,
@@ -1649,12 +1712,16 @@ class TestRunIntegrationAdvancedSubsystems:
         """run_integration should work with all subsystems enabled."""
         mock_bridge_result = self._make_mock_integration_result()
 
-        with patch("fireai.bridges.integration_bridge.IntegrationBridge.run", return_value=mock_bridge_result), \
-             patch("fireai.core.kernel_v30_integration.KernelV30Dispatcher") as MockDispatcher, \
-             patch("fireai.core.kernel_v30_integration.MPSCWorkerPool") as MockPool, \
-             patch("fireai.core.audit_blockchain_bridge.HashChainAuditStore") as MockHC, \
-             patch("fireai.core.monte_carlo_pipeline.MCPipelineAdapter") as MockMC, \
-             patch("fireai.bridges.revit_bim_sync.BIMSyncOrchestrator") as MockBIM:
+        with patch(
+            "fireai.bridges.integration_bridge.IntegrationBridge.run",
+            return_value=mock_bridge_result,
+        ), patch("fireai.core.kernel_v30_integration.KernelV30Dispatcher") as MockDispatcher, patch(
+            "fireai.core.kernel_v30_integration.MPSCWorkerPool"
+        ) as MockPool, patch(
+            "fireai.core.audit_blockchain_bridge.HashChainAuditStore"
+        ) as MockHC, patch("fireai.core.monte_carlo_pipeline.MCPipelineAdapter") as MockMC, patch(
+            "fireai.bridges.revit_bim_sync.BIMSyncOrchestrator"
+        ) as MockBIM:
             # Setup mocks
             mock_d = MagicMock()
             mock_d._simd_mode = "SIMD"
@@ -1694,9 +1761,12 @@ class TestRunIntegrationAdvancedSubsystems:
         """run_integration should handle floor data with room_specs containing dicts."""
         mock_bridge_result = self._make_mock_integration_result()
 
-        with patch("fireai.bridges.integration_bridge.IntegrationBridge.run", return_value=mock_bridge_result), \
-             patch("fireai.core.kernel_v30_integration.KernelV30Dispatcher") as MockDispatcher, \
-             patch("fireai.core.kernel_v30_integration.MPSCWorkerPool") as MockPool:
+        with patch(
+            "fireai.bridges.integration_bridge.IntegrationBridge.run",
+            return_value=mock_bridge_result,
+        ), patch("fireai.core.kernel_v30_integration.KernelV30Dispatcher") as MockDispatcher, patch(
+            "fireai.core.kernel_v30_integration.MPSCWorkerPool"
+        ) as MockPool:
             mock_d = MagicMock()
             mock_d._simd_mode = "SIMD"
             mock_d._cache = None

@@ -35,7 +35,7 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -266,7 +266,6 @@ class VectorMemoryService:
 
         # Fallback: hash-based pseudo-embedding (deterministic but not semantic)
         import hashlib
-        import struct
 
         hash_bytes = hashlib.sha256(text.encode("utf-8")).digest()
         # Repeat hash to fill EMBEDDING_DIMENSIONS
@@ -328,7 +327,9 @@ class VectorMemoryService:
 
             logger.info(
                 "Stored memory: type=%s id=%s collection=%s",
-                memory_type.value, entry_id, collection,
+                memory_type.value,
+                entry_id,
+                collection,
             )
             return entry_id
 
@@ -395,16 +396,18 @@ class VectorMemoryService:
 
             entries: List[MemoryEntry] = []
             # query_points returns QueryResponse with .points attribute
-            points = results.points if hasattr(results, 'points') else results
+            points = results.points if hasattr(results, "points") else results
             for hit in points:
                 payload = hit.payload or {}
-                entries.append(MemoryEntry(
-                    id=str(hit.id),
-                    content=payload.get("content", ""),
-                    memory_type=memory_type,
-                    metadata=payload.get("metadata", {}),
-                    score=hit.score or 0.0,
-                ))
+                entries.append(
+                    MemoryEntry(
+                        id=str(hit.id),
+                        content=payload.get("content", ""),
+                        memory_type=memory_type,
+                        metadata=payload.get("metadata", {}),
+                        score=hit.score or 0.0,
+                    )
+                )
 
             return SearchResult(
                 query=query,

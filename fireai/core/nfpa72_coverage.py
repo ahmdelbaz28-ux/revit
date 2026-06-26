@@ -77,9 +77,7 @@ from .nfpa72_models import (
 # ============================================================================
 # V9: WALL DISTANCE VALIDATION
 # ============================================================================
-NFPA_MIN_WALL_DISTANCE_M = (
-    0.1016  # CRITICAL FIX (C2): 4 inches = 101.6mm per NFPA 72 §17.6.3.1.1 (was 0.10m = 100mm, 1.6mm too lenient)
-)
+NFPA_MIN_WALL_DISTANCE_M = 0.1016  # CRITICAL FIX (C2): 4 inches = 101.6mm per NFPA 72 §17.6.3.1.1 (was 0.10m = 100mm, 1.6mm too lenient)
 
 
 def validate_wall_distances(
@@ -173,9 +171,7 @@ def validate_wall_distances(
 # ============================================================================
 # V15: HVAC SUPPLY AIR DIFFUSER EXCLUSION ZONES
 # ============================================================================
-NFPA_HVAC_EXCLUSION_RADIUS_M = (
-    0.9144  # CRITICAL FIX (C3): 3 ft = 0.9144m per NFPA 72 §17.7.4.1 (was 0.914m, 0.4mm too lenient)
-)
+NFPA_HVAC_EXCLUSION_RADIUS_M = 0.9144  # CRITICAL FIX (C3): 3 ft = 0.9144m per NFPA 72 §17.7.4.1 (was 0.914m, 0.4mm too lenient)
 
 
 def validate_hvac_exclusion_zones(
@@ -281,7 +277,9 @@ def suggest_duct_detectors(room: RoomSpec, detector_type: str = "smoke") -> list
         if not duct.centerline:
             continue
         cx, cy = duct.centerline[0][:2]
-        devices.append(DuctDevice(device_id=f"DUCT_{i + 1}", x=cx, y=cy, detector_type=detector_type))
+        devices.append(
+            DuctDevice(device_id=f"DUCT_{i + 1}", x=cx, y=cy, detector_type=detector_type)
+        )
     return devices
 
 
@@ -307,7 +305,14 @@ def create_room_polygon(room_spec: RoomSpec) -> Polygon:
         # RoomSpec.__post_init__ already constructed polygon with holes
         return room_spec.polygon
     # Default rectangular room
-    return Polygon([(0, 0), (room_spec.width_m, 0), (room_spec.width_m, room_spec.depth_m), (0, room_spec.depth_m)])
+    return Polygon(
+        [
+            (0, 0),
+            (room_spec.width_m, 0),
+            (room_spec.width_m, room_spec.depth_m),
+            (0, room_spec.depth_m),
+        ]
+    )
 
 
 def is_point_in_room(point: tuple[float, float], room_polygon: Polygon) -> bool:
@@ -386,7 +391,9 @@ def check_coverage_polygon(
         # spacing varies with ceiling height per NFPA 72 Table 17.6.3.1.1.
         # Now uses calculate_coverage_radius_from_height() which returns the
         # height-adjusted spacing for heat detectors.
-        heat_spec = calculate_coverage_radius_from_height(ceiling_spec.height_m, detector_type="heat")
+        heat_spec = calculate_coverage_radius_from_height(
+            ceiling_spec.height_m, detector_type="heat"
+        )
         radius = heat_spec.spacing_max / 2.0  # Half of height-adjusted spacing
     else:
         # Default fallback for other detector types
@@ -420,7 +427,9 @@ def check_coverage_polygon(
                 # ✅ HEAT: Use Chebyshev distance (square coverage)
                 # Check if point is within square bounds of any detector
                 # CRITICAL FIX: Use height-adjusted heat spacing from NFPA table
-                heat_spec = calculate_coverage_radius_from_height(ceiling_spec.height_m, detector_type="heat")
+                heat_spec = calculate_coverage_radius_from_height(
+                    ceiling_spec.height_m, detector_type="heat"
+                )
                 half_spacing = heat_spec.spacing_max / 2.0
                 for dx, dy in detector_positions:
                     # Chebyshev distance: max(|dx|, |dy|)
@@ -461,7 +470,9 @@ def check_coverage_polygon(
         coverage_polys = []
         if detector_type == DetectorType.HEAT:
             # HEAT: Square coverage (Chebyshev)
-            heat_spec = calculate_coverage_radius_from_height(ceiling_spec.height_m, detector_type="heat")
+            heat_spec = calculate_coverage_radius_from_height(
+                ceiling_spec.height_m, detector_type="heat"
+            )
             half_s = heat_spec.spacing_max / 2.0
             for dx, dy in detector_positions:
                 sq = box(dx - half_s, dy - half_s, dx + half_s, dy + half_s)
@@ -470,7 +481,9 @@ def check_coverage_polygon(
             # SMOKE: Circular coverage (Euclidean)
             for dx, dy in detector_positions:
                 pt = Point(dx, dy)
-                buf = pt.buffer(radius, quad_segs=16)  # V111: Explicit quad_segs for deterministic NFPA compliance
+                buf = pt.buffer(
+                    radius, quad_segs=16
+                )  # V111: Explicit quad_segs for deterministic NFPA compliance
                 coverage_polys.append(buf)
 
         if coverage_polys:
@@ -503,7 +516,9 @@ def check_coverage_polygon(
         # (e.g., invalid geometry, degenerate polygon)
         import logging as _logging
 
-        _logging.getLogger(__name__).warning(f"Area-based coverage failed, falling back to point-based: {area_err}")
+        _logging.getLogger(__name__).warning(
+            f"Area-based coverage failed, falling back to point-based: {area_err}"
+        )
         primary_pct = covered_count / total_points * 100 if total_points > 0 else 0
         is_covered = primary_pct >= 99.9  # V20.2 FIX: Must match primary threshold (was 99%)
 
@@ -518,7 +533,9 @@ def check_coverage_polygon(
 # ============================================================================
 # VORONOI COVERAGE (Advanced)
 # ============================================================================
-def calculate_voronoi_coverage(detector_positions: list[tuple[float, float]], room_polygon: Polygon) -> list[Polygon]:
+def calculate_voronoi_coverage(
+    detector_positions: list[tuple[float, float]], room_polygon: Polygon
+) -> list[Polygon]:
     """
     Calculate Voronoi regions for detector coverage areas.
 
@@ -641,7 +658,9 @@ def check_ridge_zone_compliance(
     if standard_spacing is None:
         standard_spacing = 6.1 if detector_type == DetectorType.HEAT else 9.1
 
-    result = NFPAComplianceResult(is_compliant=False)  # V78 FIX: Fail-closed — assume non-compliant until proven
+    result = NFPAComplianceResult(
+        is_compliant=False
+    )  # V78 FIX: Fail-closed — assume non-compliant until proven
     if not requires_ridge_zone_detector(ceiling_spec):
         # Flat ceiling or ceiling not requiring ridge zone detector — compliant by default
         result.is_compliant = True
@@ -683,10 +702,17 @@ def check_ridge_zone_compliance(
         dy = y2 - y1
         ridge_len_sq = dx * dx + dy * dy
         if ridge_len_sq > 0:
-            sorted_dets = sorted(ridge_detectors, key=lambda p: ((p[0] - x1) * dx + (p[1] - y1) * dy) / ridge_len_sq)
+            sorted_dets = sorted(
+                ridge_detectors, key=lambda p: ((p[0] - x1) * dx + (p[1] - y1) * dy) / ridge_len_sq
+            )
             for i in range(len(sorted_dets) - 1):
-                gap = math.hypot(sorted_dets[i + 1][0] - sorted_dets[i][0], sorted_dets[i + 1][1] - sorted_dets[i][1])
-                if gap > standard_spacing:  # V65 FIX: Removed 1% tolerance — NFPA 72 uses "shall not exceed" (mandatory language, no tolerance)
+                gap = math.hypot(
+                    sorted_dets[i + 1][0] - sorted_dets[i][0],
+                    sorted_dets[i + 1][1] - sorted_dets[i][1],
+                )
+                if (
+                    gap > standard_spacing
+                ):  # V65 FIX: Removed 1% tolerance — NFPA 72 uses "shall not exceed" (mandatory language, no tolerance)
                     result.add_violation(
                         f"Ridge detector gap {gap:.1f}m exceeds spacing limit {standard_spacing}m (NFPA 72 §17.6.3.4)."
                     )
@@ -763,7 +789,9 @@ def check_l_shaped_coverage(
         else:
             for dx, dy in detector_positions:
                 pt = Point(dx, dy)
-                buf = pt.buffer(radius, quad_segs=16)  # V111: Explicit quad_segs for deterministic NFPA compliance
+                buf = pt.buffer(
+                    radius, quad_segs=16
+                )  # V111: Explicit quad_segs for deterministic NFPA compliance
                 coverage_polys.append(buf)
 
         if coverage_polys:
@@ -780,7 +808,8 @@ def check_l_shaped_coverage(
         import logging
 
         logging.getLogger(__name__).error(
-            "V60: Area-based coverage calculation failed. Falling back to is_covered=False. Error: %s", e
+            "V60: Area-based coverage calculation failed. Falling back to is_covered=False. Error: %s",
+            e,
         )
         area_pct = 0.0
         is_covered = False
@@ -805,9 +834,14 @@ def check_l_shaped_coverage(
             total_sampled += 1
             # V20.2 FIX: Use correct geometry per detector type
             if detector_type == DetectorType.HEAT:
-                covered = any(max(abs(x - dx), abs(y - dy)) <= half_spacing for dx, dy in detector_positions)
+                covered = any(
+                    max(abs(x - dx), abs(y - dy)) <= half_spacing for dx, dy in detector_positions
+                )
             else:
-                covered = any(math.sqrt((x - dx) ** 2 + (y - dy) ** 2) <= radius for dx, dy in detector_positions)
+                covered = any(
+                    math.sqrt((x - dx) ** 2 + (y - dy) ** 2) <= radius
+                    for dx, dy in detector_positions
+                )
             if not covered:
                 uncovered.append((x, y))
             y += step_y
@@ -855,12 +889,16 @@ def check_nfpa72_compliance(
         NFPAComplianceResult
 
     """
-    result = NFPAComplianceResult(is_compliant=False)  # V78 FIX: Fail-closed — assume non-compliant until proven
+    result = NFPAComplianceResult(
+        is_compliant=False
+    )  # V78 FIX: Fail-closed — assume non-compliant until proven
     result.detector_count = len(detector_positions)
     # Check coverage
     coverage = check_coverage_polygon(detector_positions, room_spec, ceiling_spec, detector_type)
     if not coverage.is_covered:
-        result.add_violation(f"Coverage is {coverage.coverage_percentage:.1f}%, below 99.9% required")
+        result.add_violation(
+            f"Coverage is {coverage.coverage_percentage:.1f}%, below 99.9% required"
+        )
     # Check ridge zone
     if ridge_line and requires_ridge_zone_detector(ceiling_spec):
         ridge_result = check_ridge_zone_compliance(detector_positions, ceiling_spec, ridge_line)
@@ -962,7 +1000,9 @@ def verify_full_coverage(
         else:
             for dx, dy in detector_positions:
                 pt = Point(dx, dy)
-                buf = pt.buffer(radius, quad_segs=16)  # V111: Explicit quad_segs for deterministic NFPA compliance
+                buf = pt.buffer(
+                    radius, quad_segs=16
+                )  # V111: Explicit quad_segs for deterministic NFPA compliance
                 coverage_polys.append(buf)
 
         if coverage_polys:
@@ -977,7 +1017,10 @@ def verify_full_coverage(
         area_status = "PASS" if area_coverage_pct >= 99.9 else "FAIL"
 
     except Exception as area_err:
-        logger.warning("Area-based coverage failed in verify_full_coverage, falling back to point-based: %s", area_err)
+        logger.warning(
+            "Area-based coverage failed in verify_full_coverage, falling back to point-based: %s",
+            area_err,
+        )
         area_coverage_pct = None
         area_status = None
 

@@ -31,15 +31,19 @@ def error(message: str, data: Any = None) -> dict[str, Any]:
     }
 
 
-def paginated(data: list, total: int, page: int, page_size: int, total_pages: int) -> dict[str, Any]:
+def paginated(
+    data: list, total: int, page: int, page_size: int, total_pages: int
+) -> dict[str, Any]:
     """Return a paginated response."""
-    return success({
-        "items": data,
-        "total": total,
-        "page": page,
-        "page_size": page_size,
-        "total_pages": total_pages,
-    })
+    return success(
+        {
+            "items": data,
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+            "total_pages": total_pages,
+        }
+    )
 
 
 def safe_filename(name: str) -> str:
@@ -51,7 +55,14 @@ def safe_filename(name: str) -> str:
     This is a security-critical function — project names are user-controlled input.
     """
     from urllib.parse import quote
+
     # Remove characters that could break Content-Disposition headers
-    safe = name.replace('"', "'").replace(';', '').replace('\n', '').replace('\r', '').replace('\\', '')
+    safe = (
+        name.replace('"', "'")
+        .replace(";", "")
+        .replace("\n", "")
+        .replace("\r", "")
+        .replace("\\", "")
+    )
     # URL-encode any remaining special characters for extra safety
-    return quote(safe, safe='-_.~')
+    return quote(safe, safe="-_.~")

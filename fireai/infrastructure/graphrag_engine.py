@@ -117,10 +117,10 @@ class GraphRAGEngine:
         self._embedding_model = embedding_model
         self._embedding_dimensions = embedding_dimensions
 
-        self._graph = None        # Neo4jGraph connection
+        self._graph = None  # Neo4jGraph connection
         self._vector_store = None  # Neo4jVector store
-        self._transformer = None   # LLMGraphTransformer
-        self._qa_chain = None      # GraphCypherQAChain
+        self._transformer = None  # LLMGraphTransformer
+        self._qa_chain = None  # GraphCypherQAChain
         self._initialized = False
 
     def _initialize(self) -> None:
@@ -175,7 +175,8 @@ class GraphRAGEngine:
                 logger.warning(
                     "GraphRAG: Embeddings via %s failed (%s). "
                     "Vector store disabled — graph + QA still work.",
-                    self._openai_base_url or "OpenAI", emb_err,
+                    self._openai_base_url or "OpenAI",
+                    emb_err,
                 )
                 embeddings = None
 
@@ -311,7 +312,8 @@ class GraphRAGEngine:
             n_rels = sum(len(gd.relationships) for gd in graph_documents) if graph_documents else 0
             logger.info(
                 "GraphRAG: Added knowledge (%d entities, %d relationships)",
-                n_nodes, n_rels,
+                n_nodes,
+                n_rels,
             )
             return True
 
@@ -373,10 +375,7 @@ class GraphRAGEngine:
 
         try:
             docs = self._vector_store.similarity_search_with_score(query, k=limit)
-            return [
-                {"text": doc.page_content, "score": round(score, 4)}
-                for doc, score in docs
-            ]
+            return [{"text": doc.page_content, "score": round(score, 4)} for doc, score in docs]
         except Exception as exc:
             logger.error("GraphRAG: Search failed: %s", exc)
             return []

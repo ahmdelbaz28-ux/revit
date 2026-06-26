@@ -29,6 +29,7 @@ _src_modules: dict = {}
 
 try:
     from fireai.dxf_importer import DXFImporter as _DXFImporter
+
     _src_modules["dxf_importer"] = _DXFImporter
 except ImportError:
     pass
@@ -62,10 +63,18 @@ def cli() -> None:
 
 
 @cli.command()
-@click.option("--file", "-f", "dxf_file", required=True, type=click.Path(exists=True), help="ملف DXF للمبنى")
+@click.option(
+    "--file", "-f", "dxf_file", required=True, type=click.Path(exists=True), help="ملف DXF للمبنى"
+)
 @click.option("--calibrate", "-c", default=None, help="معايرة: distance,x1,y1,x2,y2")
 @click.option("--output", "-o", default="output", help="مجلد الإخراج")
-@click.option("--standard", "-s", default="NFPA72", type=click.Choice(["NFPA72", "BS5839"]), help="المعيار الهندسي")
+@click.option(
+    "--standard",
+    "-s",
+    default="NFPA72",
+    type=click.Choice(["NFPA72", "BS5839"]),
+    help="المعيار الهندسي",
+)
 @click.option("--panel", "-p", default="0,0", help="موقع اللوحة: x,y")
 def build(dxf_file, calibrate, output, standard, panel) -> None:
     """تشغيل كامل: استيراد ← توزيع ← توجيه ← إنتاج."""

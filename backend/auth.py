@@ -10,6 +10,7 @@ from __future__ import annotations
 from fastapi import HTTPException, Request, status
 
 from backend.rbac import Permission, Role, has_permission
+from typing import Callable
 
 
 def get_current_role(request: Request) -> Role:
@@ -33,7 +34,7 @@ def get_current_role(request: Request) -> Role:
     return Role.VIEWER
 
 
-def require_permission(permission: Permission):
+def require_permission(permission: Permission) -> Callable:
     """
     FastAPI dependency factory that requires a specific permission.
 
@@ -50,10 +51,7 @@ def require_permission(permission: Permission):
         if not has_permission(role, permission):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=(
-                    f"Permission denied: {permission.value} required. "
-                    f"Your role: {role.value}"
-                ),
+                detail=(f"Permission denied: {permission.value} required. Your role: {role.value}"),
             )
         return role
 

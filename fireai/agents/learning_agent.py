@@ -66,9 +66,9 @@ def _extract_features_from_config(config_json: str) -> dict[str, float]:
         "width": float(config.get("width", 0)),
         "length": float(config.get("length", 0)),
         "obstruction_count": float(config.get("obstruction_count", 0)),
-        "ceiling_type": 1.0 if config.get("ceiling_type") in ("flat", "FLAT") else (
-            2.0 if config.get("ceiling_type") in ("sloped", "SLOPED", "beam", "BEAM") else 3.0
-        ),
+        "ceiling_type": 1.0
+        if config.get("ceiling_type") in ("flat", "FLAT")
+        else (2.0 if config.get("ceiling_type") in ("sloped", "SLOPED", "beam", "BEAM") else 3.0),
     }
 
 
@@ -264,7 +264,12 @@ class LearningAgent:
             ),
         )
         self.conn.commit()
-        logger.info("Registered pattern %s (type=%s, score=%.3f)", pid, pattern.room_type, pattern.effectiveness_score)
+        logger.info(
+            "Registered pattern %s (type=%s, score=%.3f)",
+            pid,
+            pattern.room_type,
+            pattern.effectiveness_score,
+        )
         return pid
 
     def suggest_patterns(self, design: Any) -> list[DesignPattern]:
@@ -278,12 +283,20 @@ class LearningAgent:
 
         scored: list[tuple] = []
         for row in rows:
-            constraints = json.loads(row["constraints"]) if isinstance(row["constraints"], str) else row["constraints"]
+            constraints = (
+                json.loads(row["constraints"])
+                if isinstance(row["constraints"], str)
+                else row["constraints"]
+            )
             pat_features = {
                 "room_area": float(constraints.get("max_area", constraints.get("min_area", 0))),
-                "ceiling_height": float(constraints.get("max_ceiling", constraints.get("min_ceiling", 0))),
+                "ceiling_height": float(
+                    constraints.get("max_ceiling", constraints.get("min_ceiling", 0))
+                ),
                 "obstruction_count": float(constraints.get("max_obstructions", 100)),
-                "ceiling_type": 2.0 if constraints.get("ceiling_type") in ("sloped", "SLOPED", "beam", "BEAM") else 1.0,
+                "ceiling_type": 2.0
+                if constraints.get("ceiling_type") in ("sloped", "SLOPED", "beam", "BEAM")
+                else 1.0,
                 "width": 0.0,
                 "length": 0.0,
             }

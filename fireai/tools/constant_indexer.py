@@ -92,7 +92,7 @@ def find_constant_definitions(root_path: Path) -> dict[str, list[dict]]:
     definitions = defaultdict(list)
 
     # Pattern to find constant definitions like: CONSTANT_NAME = value
-    pattern = re.compile(r'^([A-Z][A-Z0-9_]*)\s*=\s*(.+)', re.MULTILINE)
+    pattern = re.compile(r"^([A-Z][A-Z0-9_]*)\s*=\s*(.+)", re.MULTILINE)
 
     for py_file in root_path.rglob("*.py"):
         if "__pycache__" in str(py_file) or "test_" in py_file.name:
@@ -106,11 +106,13 @@ def find_constant_definitions(root_path: Path) -> dict[str, list[dict]]:
 
                 # Check if this looks like a numeric constant
                 if any(c.isdigit() for c in const_value[:10]):
-                    definitions[const_name].append({
-                        "file": str(py_file.relative_to(root_path)),
-                        "line": content[:match.start()].count('\n') + 1,
-                        "value": const_value[:50],  # Truncate for readability
-                    })
+                    definitions[const_name].append(
+                        {
+                            "file": str(py_file.relative_to(root_path)),
+                            "line": content[: match.start()].count("\n") + 1,
+                            "value": const_value[:50],  # Truncate for readability
+                        }
+                    )
         except Exception as e:
             logger.warning("Error scanning %s for constant definitions: %s", py_file, e)
 
@@ -123,10 +125,10 @@ def find_constant_usages(root_path: Path, constants: list[str]) -> dict[str, lis
     seen_positions: set[tuple[str, int]] = set()  # (file, line) — O(1) duplicate check
 
     # Pattern to find imports
-    import_pattern = re.compile(r'from\s+[\w.]+\s+import\s+.*?\b(' + '|'.join(constants) + r')\b')
+    import_pattern = re.compile(r"from\s+[\w.]+\s+import\s+.*?\b(" + "|".join(constants) + r")\b")
 
     # Pattern to find usage (after import)
-    use_pattern = re.compile(r'\b(' + '|'.join(constants) + r')\b')
+    use_pattern = re.compile(r"\b(" + "|".join(constants) + r")\b")
 
     for py_file in root_path.rglob("*.py"):
         if "__pycache__" in str(py_file) or "test_" in py_file.name:
@@ -134,11 +136,11 @@ def find_constant_usages(root_path: Path, constants: list[str]) -> dict[str, lis
 
         try:
             content = py_file.read_text()
-            lines = content.split('\n')
+            lines = content.split("\n")
 
             for i, line in enumerate(lines, 1):
                 # Skip comments
-                if line.strip().startswith('#'):
+                if line.strip().startswith("#"):
                     continue
 
                 rel_path = str(py_file.relative_to(root_path))
@@ -148,24 +150,28 @@ def find_constant_usages(root_path: Path, constants: list[str]) -> dict[str, lis
                     const_name = match.group(1)
                     if pos not in seen_positions:
                         seen_positions.add(pos)
-                        usages[const_name].append({
-                            "file": rel_path,
-                            "line": i,
-                            "type": "import",
-                            "context": line.strip()[:80],
-                        })
+                        usages[const_name].append(
+                            {
+                                "file": rel_path,
+                                "line": i,
+                                "type": "import",
+                                "context": line.strip()[:80],
+                            }
+                        )
 
                 for match in use_pattern.finditer(line):
                     const_name = match.group(1)
                     # Avoid counting the same line twice (import already counted)
                     if pos not in seen_positions:
                         seen_positions.add(pos)
-                        usages[const_name].append({
-                            "file": rel_path,
-                            "line": i,
-                            "type": "usage",
-                            "context": line.strip()[:80],
-                        })
+                        usages[const_name].append(
+                            {
+                                "file": rel_path,
+                                "line": i,
+                                "type": "usage",
+                                "context": line.strip()[:80],
+                            }
+                        )
         except Exception as e:
             logger.warning("Error scanning %s for constant usages: %s", py_file, e)
 
@@ -187,18 +193,20 @@ def check_constant_consistency(root_path: Path) -> list[dict]:
             value_str = def_info["value"]
             try:
                 # Try to extract number
-                match = re.search(r'[\d.]+', value_str)
+                match = re.search(r"[\d.]+", value_str)
                 if match:
                     defined_value = float(match.group())
                     if abs(defined_value - canonical_value) > 0.0001:
-                        drift_issues.append({
-                            "constant": const_name,
-                            "canonical_value": canonical_value,
-                            "defined_value": defined_value,
-                            "file": def_info["file"],
-                            "line": def_info["line"],
-                            "issue": f"Value {defined_value} differs from canonical {canonical_value}",
-                        })
+                        drift_issues.append(
+                            {
+                                "constant": const_name,
+                                "canonical_value": canonical_value,
+                                "defined_value": defined_value,
+                                "file": def_info["file"],
+                                "line": def_info["line"],
+                                "issue": f"Value {defined_value} differs from canonical {canonical_value}",
+                            }
+                        )
             except (ValueError, AttributeError) as e:
                 logger.debug("Cannot extract numeric value for drift check: %s", e)
 
@@ -213,7 +221,7 @@ def generate_report(root_path: Path) -> dict[str, Any]:
     drift_issues = check_constant_consistency(root_path)
 
     return {
-        "generated_at": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "canonicals": CANONICAL_CONSTANTS,
         "definitions": definitions,
         "usages": usages,
@@ -225,7 +233,6 @@ def generate_report(root_path: Path) -> dict[str, Any]:
             "drift_count": len(drift_issues),
         },
     }
-
 
 
 def main() -> int:
@@ -242,9 +249,9 @@ def main() -> int:
     print(f"Total usages found:        {report['summary']['total_usages']}")
     print(f"⚠️  Drift issues detected:  {report['summary']['drift_count']}")
 
-    if report['drift_issues']:
+    if report["drift_issues"]:
         print("\n🚨 DRIFT ISSUES (MUST FIX):")
-        for issue in report['drift_issues']:
+        for issue in report["drift_issues"]:
             print(f"  - {issue['constant']}: {issue['issue']}")
             print(f"    File: {issue['file']}:{issue['line']}")
 
@@ -254,7 +261,7 @@ def main() -> int:
 
     # Write Markdown summary
     md_file = root / "fireai" / "CONSTANTS_USAGE_REPORT.md"
-    with open(md_file, 'w') as f:
+    with open(md_file, "w") as f:
         f.write("# FireAI Constants Usage Report\n\n")
         f.write(f"Generated: {report['generated_at']}\n\n")
         f.write("## Summary\n\n")
@@ -263,9 +270,9 @@ def main() -> int:
         f.write(f"- Usages found: {report['summary']['total_usages']}\n")
         f.write(f"- Drift issues: {report['summary']['drift_count']}\n\n")
 
-        if report['drift_issues']:
+        if report["drift_issues"]:
             f.write("## 🚨 Drift Issues (MUST FIX)\n\n")
-            for issue in report['drift_issues']:
+            for issue in report["drift_issues"]:
                 f.write(f"### {issue['constant']}\n")
                 f.write(f"- Canonical value: `{issue['canonical_value']}`\n")
                 f.write(f"- Defined value: `{issue['defined_value']}`\n")
@@ -276,7 +283,7 @@ def main() -> int:
 
     print(f"✅ Markdown report saved to: {md_file}")
 
-    return 0 if report['summary']['drift_count'] == 0 else 1
+    return 0 if report["summary"]["drift_count"] == 0 else 1
 
 
 if __name__ == "__main__":

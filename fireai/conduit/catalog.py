@@ -44,9 +44,7 @@ from fireai.conduit.types import ConduitType, FittingType, Result, TradeSize
 # Format: [E|P|R][90|45|C|S]-[size code]
 # E=EMT, P=PVC/UPVC, R=RGD; 90=90° elbow, 45=45°, C=compression coupling, S=set-screw
 # ─────────────────────────────────────────────────────────────────────────────
-_CATALOG_NUMBER_PATTERN = re.compile(
-    r"^[EPR][A-Z0-9]{1,3}-[0-9]{3}$"
-)
+_CATALOG_NUMBER_PATTERN = re.compile(r"^[EPR][A-Z0-9]{1,3}-[0-9]{3}$")
 
 
 @dataclass(frozen=True)
@@ -80,17 +78,17 @@ class Fitting:
 
     """
 
-    fitting_type:        FittingType
-    conduit_type:        ConduitType
-    trade_size:          TradeSize
-    od_in:               float
-    bend_radius_in:      float
+    fitting_type: FittingType
+    conduit_type: ConduitType
+    trade_size: TradeSize
+    od_in: float
+    bend_radius_in: float
     developed_length_in: float
-    body_length_in:      float
-    angle_deg:           float
-    catalog_number:      str
-    weight_kg:           float
-    nec_reference:       str
+    body_length_in: float
+    angle_deg: float
+    catalog_number: str
+    weight_kg: float
+    nec_reference: str
 
     def __post_init__(self) -> None:
         # Validate positive dimensions
@@ -106,8 +104,7 @@ class Fitting:
         # Bend radius ≥ 0 (0 = straight fitting)
         if self.bend_radius_in < 0.0:
             raise ValueError(
-                f"Fitting {self.catalog_number}: bend_radius_in={self.bend_radius_in} "
-                "must be ≥ 0."
+                f"Fitting {self.catalog_number}: bend_radius_in={self.bend_radius_in} must be ≥ 0."
             )
         # Validate catalog number format
         if not _CATALOG_NUMBER_PATTERN.match(self.catalog_number):
@@ -160,277 +157,422 @@ def _reg(f: Fitting) -> None:
 # ══════════════════════════════════════════════════════════════════════════════
 
 # EMT ELBOW 90° ½"  — OD=0.706", R=4.0", L=π×4.0/2=6.2832"
-_reg(Fitting(
-    fitting_type=FittingType.ELBOW_90, conduit_type=ConduitType.EMT,
-    trade_size=TradeSize.HALF,
-    od_in=0.706, bend_radius_in=4.000,
-    developed_length_in=round(math.pi * 4.000 / 2, 3),  # 6.283
-    body_length_in=0.0, angle_deg=90.0,
-    catalog_number="E90-050", weight_kg=0.045,
-    nec_reference="NEC 358.24",
-))
+_reg(
+    Fitting(
+        fitting_type=FittingType.ELBOW_90,
+        conduit_type=ConduitType.EMT,
+        trade_size=TradeSize.HALF,
+        od_in=0.706,
+        bend_radius_in=4.000,
+        developed_length_in=round(math.pi * 4.000 / 2, 3),  # 6.283
+        body_length_in=0.0,
+        angle_deg=90.0,
+        catalog_number="E90-050",
+        weight_kg=0.045,
+        nec_reference="NEC 358.24",
+    )
+)
 
 # EMT ELBOW 90° ¾"  — OD=0.922", R=4.5", L=π×4.5/2=7.0686"
-_reg(Fitting(
-    fitting_type=FittingType.ELBOW_90, conduit_type=ConduitType.EMT,
-    trade_size=TradeSize.THREE_QTR,
-    od_in=0.922, bend_radius_in=4.500,
-    developed_length_in=round(math.pi * 4.500 / 2, 3),  # 7.069
-    body_length_in=0.0, angle_deg=90.0,
-    catalog_number="E90-075", weight_kg=0.068,
-    nec_reference="NEC 358.24",
-))
+_reg(
+    Fitting(
+        fitting_type=FittingType.ELBOW_90,
+        conduit_type=ConduitType.EMT,
+        trade_size=TradeSize.THREE_QTR,
+        od_in=0.922,
+        bend_radius_in=4.500,
+        developed_length_in=round(math.pi * 4.500 / 2, 3),  # 7.069
+        body_length_in=0.0,
+        angle_deg=90.0,
+        catalog_number="E90-075",
+        weight_kg=0.068,
+        nec_reference="NEC 358.24",
+    )
+)
 
 # EMT ELBOW 90° 1"  — OD=1.163", R=5.75", L=π×5.75/2=9.0321"
-_reg(Fitting(
-    fitting_type=FittingType.ELBOW_90, conduit_type=ConduitType.EMT,
-    trade_size=TradeSize.ONE,
-    od_in=1.163, bend_radius_in=5.750,
-    developed_length_in=round(math.pi * 5.750 / 2, 3),  # 9.032
-    body_length_in=0.0, angle_deg=90.0,
-    catalog_number="E90-100", weight_kg=0.113,
-    nec_reference="NEC 358.24",
-))
+_reg(
+    Fitting(
+        fitting_type=FittingType.ELBOW_90,
+        conduit_type=ConduitType.EMT,
+        trade_size=TradeSize.ONE,
+        od_in=1.163,
+        bend_radius_in=5.750,
+        developed_length_in=round(math.pi * 5.750 / 2, 3),  # 9.032
+        body_length_in=0.0,
+        angle_deg=90.0,
+        catalog_number="E90-100",
+        weight_kg=0.113,
+        nec_reference="NEC 358.24",
+    )
+)
 
 # EMT ELBOW 90° 1¼" — OD=1.510", R=7.25", L=π×7.25/2=11.3883"
-_reg(Fitting(
-    fitting_type=FittingType.ELBOW_90, conduit_type=ConduitType.EMT,
-    trade_size=TradeSize.ONE_QTR,
-    od_in=1.510, bend_radius_in=7.250,
-    developed_length_in=round(math.pi * 7.250 / 2, 3),  # 11.388
-    body_length_in=0.0, angle_deg=90.0,
-    catalog_number="E90-125", weight_kg=0.181,
-    nec_reference="NEC 358.24",
-))
+_reg(
+    Fitting(
+        fitting_type=FittingType.ELBOW_90,
+        conduit_type=ConduitType.EMT,
+        trade_size=TradeSize.ONE_QTR,
+        od_in=1.510,
+        bend_radius_in=7.250,
+        developed_length_in=round(math.pi * 7.250 / 2, 3),  # 11.388
+        body_length_in=0.0,
+        angle_deg=90.0,
+        catalog_number="E90-125",
+        weight_kg=0.181,
+        nec_reference="NEC 358.24",
+    )
+)
 
 # EMT ELBOW 90° 1½" — OD=1.740", R=8.25", L=π×8.25/2=12.9591"
-_reg(Fitting(
-    fitting_type=FittingType.ELBOW_90, conduit_type=ConduitType.EMT,
-    trade_size=TradeSize.ONE_HALF,
-    od_in=1.740, bend_radius_in=8.250,
-    developed_length_in=round(math.pi * 8.250 / 2, 3),  # 12.959
-    body_length_in=0.0, angle_deg=90.0,
-    catalog_number="E90-150", weight_kg=0.249,
-    nec_reference="NEC 358.24",
-))
+_reg(
+    Fitting(
+        fitting_type=FittingType.ELBOW_90,
+        conduit_type=ConduitType.EMT,
+        trade_size=TradeSize.ONE_HALF,
+        od_in=1.740,
+        bend_radius_in=8.250,
+        developed_length_in=round(math.pi * 8.250 / 2, 3),  # 12.959
+        body_length_in=0.0,
+        angle_deg=90.0,
+        catalog_number="E90-150",
+        weight_kg=0.249,
+        nec_reference="NEC 358.24",
+    )
+)
 
 # EMT ELBOW 90° 2"  — OD=2.197", R=9.5", L=π×9.5/2=14.9226"
-_reg(Fitting(
-    fitting_type=FittingType.ELBOW_90, conduit_type=ConduitType.EMT,
-    trade_size=TradeSize.TWO,
-    od_in=2.197, bend_radius_in=9.500,
-    developed_length_in=round(math.pi * 9.500 / 2, 3),  # 14.923
-    body_length_in=0.0, angle_deg=90.0,
-    catalog_number="E90-200", weight_kg=0.408,
-    nec_reference="NEC 358.24",
-))
+_reg(
+    Fitting(
+        fitting_type=FittingType.ELBOW_90,
+        conduit_type=ConduitType.EMT,
+        trade_size=TradeSize.TWO,
+        od_in=2.197,
+        bend_radius_in=9.500,
+        developed_length_in=round(math.pi * 9.500 / 2, 3),  # 14.923
+        body_length_in=0.0,
+        angle_deg=90.0,
+        catalog_number="E90-200",
+        weight_kg=0.408,
+        nec_reference="NEC 358.24",
+    )
+)
 
 # ══════════════════════════════════════════════════════════════════════════════
 # UPVC SCH 40 90° ELBOWS — NEC 352.24
 # ══════════════════════════════════════════════════════════════════════════════
 
-_reg(Fitting(
-    fitting_type=FittingType.ELBOW_90, conduit_type=ConduitType.UPVC_SCH40,
-    trade_size=TradeSize.HALF,
-    od_in=0.840, bend_radius_in=4.500,
-    developed_length_in=round(math.pi * 4.500 / 2, 3),  # 7.069
-    body_length_in=0.0, angle_deg=90.0,
-    catalog_number="P90-050", weight_kg=0.038,
-    nec_reference="NEC 352.24",
-))
+_reg(
+    Fitting(
+        fitting_type=FittingType.ELBOW_90,
+        conduit_type=ConduitType.UPVC_SCH40,
+        trade_size=TradeSize.HALF,
+        od_in=0.840,
+        bend_radius_in=4.500,
+        developed_length_in=round(math.pi * 4.500 / 2, 3),  # 7.069
+        body_length_in=0.0,
+        angle_deg=90.0,
+        catalog_number="P90-050",
+        weight_kg=0.038,
+        nec_reference="NEC 352.24",
+    )
+)
 
-_reg(Fitting(
-    fitting_type=FittingType.ELBOW_90, conduit_type=ConduitType.UPVC_SCH40,
-    trade_size=TradeSize.THREE_QTR,
-    od_in=1.050, bend_radius_in=5.250,
-    developed_length_in=round(math.pi * 5.250 / 2, 3),  # 8.246
-    body_length_in=0.0, angle_deg=90.0,
-    catalog_number="P90-075", weight_kg=0.059,
-    nec_reference="NEC 352.24",
-))
+_reg(
+    Fitting(
+        fitting_type=FittingType.ELBOW_90,
+        conduit_type=ConduitType.UPVC_SCH40,
+        trade_size=TradeSize.THREE_QTR,
+        od_in=1.050,
+        bend_radius_in=5.250,
+        developed_length_in=round(math.pi * 5.250 / 2, 3),  # 8.246
+        body_length_in=0.0,
+        angle_deg=90.0,
+        catalog_number="P90-075",
+        weight_kg=0.059,
+        nec_reference="NEC 352.24",
+    )
+)
 
-_reg(Fitting(
-    fitting_type=FittingType.ELBOW_90, conduit_type=ConduitType.UPVC_SCH40,
-    trade_size=TradeSize.ONE,
-    od_in=1.315, bend_radius_in=6.500,
-    developed_length_in=round(math.pi * 6.500 / 2, 3),  # 10.210
-    body_length_in=0.0, angle_deg=90.0,
-    catalog_number="P90-100", weight_kg=0.091,
-    nec_reference="NEC 352.24",
-))
+_reg(
+    Fitting(
+        fitting_type=FittingType.ELBOW_90,
+        conduit_type=ConduitType.UPVC_SCH40,
+        trade_size=TradeSize.ONE,
+        od_in=1.315,
+        bend_radius_in=6.500,
+        developed_length_in=round(math.pi * 6.500 / 2, 3),  # 10.210
+        body_length_in=0.0,
+        angle_deg=90.0,
+        catalog_number="P90-100",
+        weight_kg=0.091,
+        nec_reference="NEC 352.24",
+    )
+)
 
-_reg(Fitting(
-    fitting_type=FittingType.ELBOW_90, conduit_type=ConduitType.UPVC_SCH40,
-    trade_size=TradeSize.ONE_QTR,
-    od_in=1.660, bend_radius_in=8.000,
-    developed_length_in=round(math.pi * 8.000 / 2, 3),  # 12.566
-    body_length_in=0.0, angle_deg=90.0,
-    catalog_number="P90-125", weight_kg=0.145,
-    nec_reference="NEC 352.24",
-))
+_reg(
+    Fitting(
+        fitting_type=FittingType.ELBOW_90,
+        conduit_type=ConduitType.UPVC_SCH40,
+        trade_size=TradeSize.ONE_QTR,
+        od_in=1.660,
+        bend_radius_in=8.000,
+        developed_length_in=round(math.pi * 8.000 / 2, 3),  # 12.566
+        body_length_in=0.0,
+        angle_deg=90.0,
+        catalog_number="P90-125",
+        weight_kg=0.145,
+        nec_reference="NEC 352.24",
+    )
+)
 
-_reg(Fitting(
-    fitting_type=FittingType.ELBOW_90, conduit_type=ConduitType.UPVC_SCH40,
-    trade_size=TradeSize.ONE_HALF,
-    od_in=1.900, bend_radius_in=9.000,
-    developed_length_in=round(math.pi * 9.000 / 2, 3),  # 14.137
-    body_length_in=0.0, angle_deg=90.0,
-    catalog_number="P90-150", weight_kg=0.190,
-    nec_reference="NEC 352.24",
-))
+_reg(
+    Fitting(
+        fitting_type=FittingType.ELBOW_90,
+        conduit_type=ConduitType.UPVC_SCH40,
+        trade_size=TradeSize.ONE_HALF,
+        od_in=1.900,
+        bend_radius_in=9.000,
+        developed_length_in=round(math.pi * 9.000 / 2, 3),  # 14.137
+        body_length_in=0.0,
+        angle_deg=90.0,
+        catalog_number="P90-150",
+        weight_kg=0.190,
+        nec_reference="NEC 352.24",
+    )
+)
 
-_reg(Fitting(
-    fitting_type=FittingType.ELBOW_90, conduit_type=ConduitType.UPVC_SCH40,
-    trade_size=TradeSize.TWO,
-    od_in=2.375, bend_radius_in=11.000,
-    developed_length_in=round(math.pi * 11.000 / 2, 3),  # 17.279
-    body_length_in=0.0, angle_deg=90.0,
-    catalog_number="P90-200", weight_kg=0.318,
-    nec_reference="NEC 352.24",
-))
+_reg(
+    Fitting(
+        fitting_type=FittingType.ELBOW_90,
+        conduit_type=ConduitType.UPVC_SCH40,
+        trade_size=TradeSize.TWO,
+        od_in=2.375,
+        bend_radius_in=11.000,
+        developed_length_in=round(math.pi * 11.000 / 2, 3),  # 17.279
+        body_length_in=0.0,
+        angle_deg=90.0,
+        catalog_number="P90-200",
+        weight_kg=0.318,
+        nec_reference="NEC 352.24",
+    )
+)
 
 # ══════════════════════════════════════════════════════════════════════════════
 # RGD (RMC) 90° ELBOWS — NEC 344.24
 # Same OD as UPVC Sch 40 (both use IPS OD standard) but steel construction
 # ══════════════════════════════════════════════════════════════════════════════
 
-_reg(Fitting(
-    fitting_type=FittingType.ELBOW_90, conduit_type=ConduitType.RGD,
-    trade_size=TradeSize.HALF,
-    od_in=0.840, bend_radius_in=4.500,
-    developed_length_in=round(math.pi * 4.500 / 2, 3),
-    body_length_in=0.0, angle_deg=90.0,
-    catalog_number="R90-050", weight_kg=0.136,
-    nec_reference="NEC 344.24",
-))
+_reg(
+    Fitting(
+        fitting_type=FittingType.ELBOW_90,
+        conduit_type=ConduitType.RGD,
+        trade_size=TradeSize.HALF,
+        od_in=0.840,
+        bend_radius_in=4.500,
+        developed_length_in=round(math.pi * 4.500 / 2, 3),
+        body_length_in=0.0,
+        angle_deg=90.0,
+        catalog_number="R90-050",
+        weight_kg=0.136,
+        nec_reference="NEC 344.24",
+    )
+)
 
-_reg(Fitting(
-    fitting_type=FittingType.ELBOW_90, conduit_type=ConduitType.RGD,
-    trade_size=TradeSize.THREE_QTR,
-    od_in=1.050, bend_radius_in=5.250,
-    developed_length_in=round(math.pi * 5.250 / 2, 3),
-    body_length_in=0.0, angle_deg=90.0,
-    catalog_number="R90-075", weight_kg=0.204,
-    nec_reference="NEC 344.24",
-))
+_reg(
+    Fitting(
+        fitting_type=FittingType.ELBOW_90,
+        conduit_type=ConduitType.RGD,
+        trade_size=TradeSize.THREE_QTR,
+        od_in=1.050,
+        bend_radius_in=5.250,
+        developed_length_in=round(math.pi * 5.250 / 2, 3),
+        body_length_in=0.0,
+        angle_deg=90.0,
+        catalog_number="R90-075",
+        weight_kg=0.204,
+        nec_reference="NEC 344.24",
+    )
+)
 
-_reg(Fitting(
-    fitting_type=FittingType.ELBOW_90, conduit_type=ConduitType.RGD,
-    trade_size=TradeSize.ONE,
-    od_in=1.315, bend_radius_in=6.500,
-    developed_length_in=round(math.pi * 6.500 / 2, 3),
-    body_length_in=0.0, angle_deg=90.0,
-    catalog_number="R90-100", weight_kg=0.340,
-    nec_reference="NEC 344.24",
-))
+_reg(
+    Fitting(
+        fitting_type=FittingType.ELBOW_90,
+        conduit_type=ConduitType.RGD,
+        trade_size=TradeSize.ONE,
+        od_in=1.315,
+        bend_radius_in=6.500,
+        developed_length_in=round(math.pi * 6.500 / 2, 3),
+        body_length_in=0.0,
+        angle_deg=90.0,
+        catalog_number="R90-100",
+        weight_kg=0.340,
+        nec_reference="NEC 344.24",
+    )
+)
 
-_reg(Fitting(
-    fitting_type=FittingType.ELBOW_90, conduit_type=ConduitType.RGD,
-    trade_size=TradeSize.ONE_QTR,
-    od_in=1.660, bend_radius_in=8.000,
-    developed_length_in=round(math.pi * 8.000 / 2, 3),
-    body_length_in=0.0, angle_deg=90.0,
-    catalog_number="R90-125", weight_kg=0.544,
-    nec_reference="NEC 344.24",
-))
+_reg(
+    Fitting(
+        fitting_type=FittingType.ELBOW_90,
+        conduit_type=ConduitType.RGD,
+        trade_size=TradeSize.ONE_QTR,
+        od_in=1.660,
+        bend_radius_in=8.000,
+        developed_length_in=round(math.pi * 8.000 / 2, 3),
+        body_length_in=0.0,
+        angle_deg=90.0,
+        catalog_number="R90-125",
+        weight_kg=0.544,
+        nec_reference="NEC 344.24",
+    )
+)
 
-_reg(Fitting(
-    fitting_type=FittingType.ELBOW_90, conduit_type=ConduitType.RGD,
-    trade_size=TradeSize.ONE_HALF,
-    od_in=1.900, bend_radius_in=9.000,
-    developed_length_in=round(math.pi * 9.000 / 2, 3),
-    body_length_in=0.0, angle_deg=90.0,
-    catalog_number="R90-150", weight_kg=0.725,
-    nec_reference="NEC 344.24",
-))
+_reg(
+    Fitting(
+        fitting_type=FittingType.ELBOW_90,
+        conduit_type=ConduitType.RGD,
+        trade_size=TradeSize.ONE_HALF,
+        od_in=1.900,
+        bend_radius_in=9.000,
+        developed_length_in=round(math.pi * 9.000 / 2, 3),
+        body_length_in=0.0,
+        angle_deg=90.0,
+        catalog_number="R90-150",
+        weight_kg=0.725,
+        nec_reference="NEC 344.24",
+    )
+)
 
-_reg(Fitting(
-    fitting_type=FittingType.ELBOW_90, conduit_type=ConduitType.RGD,
-    trade_size=TradeSize.TWO,
-    od_in=2.375, bend_radius_in=11.000,
-    developed_length_in=round(math.pi * 11.000 / 2, 3),
-    body_length_in=0.0, angle_deg=90.0,
-    catalog_number="R90-200", weight_kg=1.134,
-    nec_reference="NEC 344.24",
-))
+_reg(
+    Fitting(
+        fitting_type=FittingType.ELBOW_90,
+        conduit_type=ConduitType.RGD,
+        trade_size=TradeSize.TWO,
+        od_in=2.375,
+        bend_radius_in=11.000,
+        developed_length_in=round(math.pi * 11.000 / 2, 3),
+        body_length_in=0.0,
+        angle_deg=90.0,
+        catalog_number="R90-200",
+        weight_kg=1.134,
+        nec_reference="NEC 344.24",
+    )
+)
 
 # ══════════════════════════════════════════════════════════════════════════════
 # EMT COUPLINGS — Compression (EC) and Set-Screw (ES) types
 # ══════════════════════════════════════════════════════════════════════════════
 
 # EMT Compression Couplings
-_reg(Fitting(
-    fitting_type=FittingType.COUPLING, conduit_type=ConduitType.EMT,
-    trade_size=TradeSize.HALF,
-    od_in=0.706, bend_radius_in=0.0,
-    developed_length_in=0.0,
-    body_length_in=1.500, angle_deg=0.0,
-    catalog_number="EC-050", weight_kg=0.023,
-    nec_reference="NEC 358.42",
-))
+_reg(
+    Fitting(
+        fitting_type=FittingType.COUPLING,
+        conduit_type=ConduitType.EMT,
+        trade_size=TradeSize.HALF,
+        od_in=0.706,
+        bend_radius_in=0.0,
+        developed_length_in=0.0,
+        body_length_in=1.500,
+        angle_deg=0.0,
+        catalog_number="EC-050",
+        weight_kg=0.023,
+        nec_reference="NEC 358.42",
+    )
+)
 
-_reg(Fitting(
-    fitting_type=FittingType.COUPLING, conduit_type=ConduitType.EMT,
-    trade_size=TradeSize.THREE_QTR,
-    od_in=0.922, bend_radius_in=0.0,
-    developed_length_in=0.0,
-    body_length_in=1.750, angle_deg=0.0,
-    catalog_number="EC-075", weight_kg=0.036,
-    nec_reference="NEC 358.42",
-))
+_reg(
+    Fitting(
+        fitting_type=FittingType.COUPLING,
+        conduit_type=ConduitType.EMT,
+        trade_size=TradeSize.THREE_QTR,
+        od_in=0.922,
+        bend_radius_in=0.0,
+        developed_length_in=0.0,
+        body_length_in=1.750,
+        angle_deg=0.0,
+        catalog_number="EC-075",
+        weight_kg=0.036,
+        nec_reference="NEC 358.42",
+    )
+)
 
 # ══════════════════════════════════════════════════════════════════════════════
 # UPVC COUPLINGS
 # ══════════════════════════════════════════════════════════════════════════════
 
-_reg(Fitting(
-    fitting_type=FittingType.COUPLING, conduit_type=ConduitType.UPVC_SCH40,
-    trade_size=TradeSize.HALF,
-    od_in=0.840, bend_radius_in=0.0,
-    developed_length_in=0.0,
-    body_length_in=2.000, angle_deg=0.0,
-    catalog_number="PC-050", weight_kg=0.018,
-    nec_reference="NEC 352.48",
-))
+_reg(
+    Fitting(
+        fitting_type=FittingType.COUPLING,
+        conduit_type=ConduitType.UPVC_SCH40,
+        trade_size=TradeSize.HALF,
+        od_in=0.840,
+        bend_radius_in=0.0,
+        developed_length_in=0.0,
+        body_length_in=2.000,
+        angle_deg=0.0,
+        catalog_number="PC-050",
+        weight_kg=0.018,
+        nec_reference="NEC 352.48",
+    )
+)
 
-_reg(Fitting(
-    fitting_type=FittingType.COUPLING, conduit_type=ConduitType.UPVC_SCH40,
-    trade_size=TradeSize.THREE_QTR,
-    od_in=1.050, bend_radius_in=0.0,
-    developed_length_in=0.0,
-    body_length_in=2.250, angle_deg=0.0,
-    catalog_number="PC-075", weight_kg=0.027,
-    nec_reference="NEC 352.48",
-))
+_reg(
+    Fitting(
+        fitting_type=FittingType.COUPLING,
+        conduit_type=ConduitType.UPVC_SCH40,
+        trade_size=TradeSize.THREE_QTR,
+        od_in=1.050,
+        bend_radius_in=0.0,
+        developed_length_in=0.0,
+        body_length_in=2.250,
+        angle_deg=0.0,
+        catalog_number="PC-075",
+        weight_kg=0.027,
+        nec_reference="NEC 352.48",
+    )
+)
 
 # ══════════════════════════════════════════════════════════════════════════════
 # RGD COUPLINGS
 # ══════════════════════════════════════════════════════════════════════════════
 
-_reg(Fitting(
-    fitting_type=FittingType.COUPLING, conduit_type=ConduitType.RGD,
-    trade_size=TradeSize.HALF,
-    od_in=0.840, bend_radius_in=0.0,
-    developed_length_in=0.0,
-    body_length_in=1.750, angle_deg=0.0,
-    catalog_number="RC-050", weight_kg=0.068,
-    nec_reference="NEC 344.42",
-))
+_reg(
+    Fitting(
+        fitting_type=FittingType.COUPLING,
+        conduit_type=ConduitType.RGD,
+        trade_size=TradeSize.HALF,
+        od_in=0.840,
+        bend_radius_in=0.0,
+        developed_length_in=0.0,
+        body_length_in=1.750,
+        angle_deg=0.0,
+        catalog_number="RC-050",
+        weight_kg=0.068,
+        nec_reference="NEC 344.42",
+    )
+)
 
-_reg(Fitting(
-    fitting_type=FittingType.COUPLING, conduit_type=ConduitType.RGD,
-    trade_size=TradeSize.THREE_QTR,
-    od_in=1.050, bend_radius_in=0.0,
-    developed_length_in=0.0,
-    body_length_in=2.000, angle_deg=0.0,
-    catalog_number="RC-075", weight_kg=0.113,
-    nec_reference="NEC 344.42",
-))
+_reg(
+    Fitting(
+        fitting_type=FittingType.COUPLING,
+        conduit_type=ConduitType.RGD,
+        trade_size=TradeSize.THREE_QTR,
+        od_in=1.050,
+        bend_radius_in=0.0,
+        developed_length_in=0.0,
+        body_length_in=2.000,
+        angle_deg=0.0,
+        catalog_number="RC-075",
+        weight_kg=0.113,
+        nec_reference="NEC 344.42",
+    )
+)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Public API
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 def get_fitting(
     conduit_type: ConduitType,
@@ -459,11 +601,13 @@ def get_fitting(
     key: _CatalogKey = (conduit_type, trade_size, fitting_type)
     fitting = _CATALOG.get(key)
     if fitting is None:
-        return Result.err(CatalogError(
-            conduit_type=conduit_type.value,
-            trade_size=trade_size.value,
-            fitting_type=fitting_type.name,
-        ))
+        return Result.err(
+            CatalogError(
+                conduit_type=conduit_type.value,
+                trade_size=trade_size.value,
+                fitting_type=fitting_type.name,
+            )
+        )
     return Result.ok(fitting)
 
 

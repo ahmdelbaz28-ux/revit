@@ -117,8 +117,8 @@ class EvaluationReport:
 # safe: they only cover ML model serialization libraries, not os/subprocess/etc.
 _SAFE_MODULE_PREFIXES = (
     "fireai.analytics.ml_pipeline.",  # this module's fallback models
-    "sklearn.",                       # scikit-learn models
-    "numpy.",                         # numpy arrays used by sklearn
+    "sklearn.",  # scikit-learn models
+    "numpy.",  # numpy arrays used by sklearn
 )
 
 
@@ -140,8 +140,18 @@ class _SafeUnpickler(pickle.Unpickler):
             return super().find_class(module, name)
         # Allow builtins (int, float, str, list, dict, etc.)
         if module == "builtins" and name in (
-            "int", "float", "str", "list", "dict", "tuple", "set",
-            "frozenset", "bytes", "bool", "NoneType", "complex",
+            "int",
+            "float",
+            "str",
+            "list",
+            "dict",
+            "tuple",
+            "set",
+            "frozenset",
+            "bytes",
+            "bool",
+            "NoneType",
+            "complex",
         ):
             return super().find_class(module, name)
         full_name = f"{module}.{name}"
@@ -219,7 +229,9 @@ class _RandomForestClassifier:
                 right_y = [y[i] for i in range(len(X)) if X[i][feat] > val]
                 if not left_y or not right_y:
                     continue
-                gini = self._gini(left_y) * len(left_y) / len(y) + self._gini(right_y) * len(right_y) / len(y)
+                gini = self._gini(left_y) * len(left_y) / len(y) + self._gini(right_y) * len(
+                    right_y
+                ) / len(y)
                 if gini < best_gini:
                     best_gini = gini
                     best_feat = feat
@@ -242,7 +254,7 @@ class _RandomForestClassifier:
         if not y:
             return 0.0
         p = sum(y) / len(y)
-        return 1.0 - p ** 2 - (1 - p) ** 2
+        return 1.0 - p**2 - (1 - p) ** 2
 
     def predict(self, X: list[list[float]]) -> list[float]:
         results: list[float] = []
@@ -293,7 +305,9 @@ class _RandomForestRegressor:
                 right_y = [y[i] for i in range(len(X)) if X[i][feat] > val]
                 if not left_y or not right_y:
                     continue
-                mse = self._mse(left_y) * len(left_y) / len(y) + self._mse(right_y) * len(right_y) / len(y)
+                mse = self._mse(left_y) * len(left_y) / len(y) + self._mse(right_y) * len(
+                    right_y
+                ) / len(y)
                 if mse < best_mse:
                     best_mse = mse
                     best_feat = feat
@@ -342,12 +356,40 @@ def _get_sklearn_model(model_type: str, hyperparameters: dict[str, Any]) -> Any:
         from sklearn.linear_model import LinearRegression
 
         if model_type == "linear_regression":
-            return LinearRegression(**{k: v for k, v in hyperparameters.items() if k in ("fit_intercept", "normalize", "copy_X")})
+            return LinearRegression(
+                **{
+                    k: v
+                    for k, v in hyperparameters.items()
+                    if k in ("fit_intercept", "normalize", "copy_X")
+                }
+            )
         if model_type == "random_forest_classifier":
-            params = {k: v for k, v in hyperparameters.items() if k in ("n_estimators", "max_depth", "random_state", "min_samples_split", "min_samples_leaf")}
+            params = {
+                k: v
+                for k, v in hyperparameters.items()
+                if k
+                in (
+                    "n_estimators",
+                    "max_depth",
+                    "random_state",
+                    "min_samples_split",
+                    "min_samples_leaf",
+                )
+            }
             return RandomForestClassifier(**params, n_jobs=1)
         if model_type == "random_forest_regressor":
-            params = {k: v for k, v in hyperparameters.items() if k in ("n_estimators", "max_depth", "random_state", "min_samples_split", "min_samples_leaf")}
+            params = {
+                k: v
+                for k, v in hyperparameters.items()
+                if k
+                in (
+                    "n_estimators",
+                    "max_depth",
+                    "random_state",
+                    "min_samples_split",
+                    "min_samples_leaf",
+                )
+            }
             return RandomForestRegressor(**params, n_jobs=1)
     except ImportError:
         return None
@@ -384,7 +426,11 @@ class MLPipeline:
     - Evaluation framework with metrics.
     """
 
-    def __init__(self, registry_path: str = "fireai_ml_registry.sqlite3", artifacts_dir: str = "/tmp/fireai_models") -> None:
+    def __init__(
+        self,
+        registry_path: str = "fireai_ml_registry.sqlite3",
+        artifacts_dir: str = "/tmp/fireai_models",
+    ) -> None:
         self.registry_path = registry_path
         self.artifacts_dir = artifacts_dir
         os.makedirs(artifacts_dir, exist_ok=True)
@@ -459,7 +505,7 @@ class MLPipeline:
         indices = list(range(n))
         random.shuffle(indices)
         train_idx = indices[:-n_test] if n_test < n else indices
-        test_idx = indices[-n_test:] if n_test < n else indices[:max(1, n // 5)]
+        test_idx = indices[-n_test:] if n_test < n else indices[: max(1, n // 5)]
 
         X_train = [X[i] for i in train_idx]
         y_train = [y[i] for i in train_idx]
@@ -493,7 +539,9 @@ class MLPipeline:
                 fold_model.fit(X_ft, y_ft)
                 fold_pred = fold_model.predict(X_fv) if hasattr(fold_model, "predict") else []
                 if fold_pred and target == "coverage_pct":
-                    mae = sum(abs(a - b) for a, b in zip(y_fv, fold_pred, strict=False)) / max(len(fold_pred), 1)
+                    mae = sum(abs(a - b) for a, b in zip(y_fv, fold_pred, strict=False)) / max(
+                        len(fold_pred), 1
+                    )
                     cv_scores.append(mae)
             if cv_scores:
                 eval_report.mae = sum(cv_scores) / len(cv_scores)
@@ -541,25 +589,50 @@ class MLPipeline:
         logger.info("Trained model %s (type=%s, target=%s)", version_id, model_type, target)
         return ModelArtifact(metadata=metadata, model_data=model_data)
 
-    def _evaluate_model(self, model_obj: Any, model_type: str, X_test: list[list[float]], y_test: list[float]) -> EvaluationReport:
+    def _evaluate_model(
+        self, model_obj: Any, model_type: str, X_test: list[list[float]], y_test: list[float]
+    ) -> EvaluationReport:
         y_pred = model_obj.predict(X_test) if hasattr(model_obj, "predict") else []
         if not y_pred:
             return EvaluationReport()
         report = EvaluationReport()
-        errors = [abs(a - b) for a, b in zip(y_test, y_pred, strict=False)] if len(y_test) == len(y_pred) else []
+        errors = (
+            [abs(a - b) for a, b in zip(y_test, y_pred, strict=False)]
+            if len(y_test) == len(y_pred)
+            else []
+        )
         if errors:
             report.mae = round(sum(errors) / max(len(errors), 1), 6)
             sq_errors = [(a - b) ** 2 for a, b in zip(y_test, y_pred, strict=False)]
             report.rmse = round(math.sqrt(sum(sq_errors) / max(len(sq_errors), 1)), 6)
         if model_type in ("random_forest_classifier",):
-            correct = sum(1 for a, b in zip(y_test, y_pred, strict=False) if abs(a - b) < 0.5) if len(y_test) == len(y_pred) else 0
+            correct = (
+                sum(1 for a, b in zip(y_test, y_pred, strict=False) if abs(a - b) < 0.5)
+                if len(y_test) == len(y_pred)
+                else 0
+            )
             report.accuracy = round(correct / max(len(y_test), 1), 6)
-            tp = sum(1 for a, b in zip(y_test, y_pred, strict=False) if a > 0.5 and b > 0.5) if len(y_test) == len(y_pred) else 0
-            fp = sum(1 for a, b in zip(y_test, y_pred, strict=False) if a < 0.5 < b) if len(y_test) == len(y_pred) else 0
-            fn = sum(1 for a, b in zip(y_test, y_pred, strict=False) if a > 0.5 > b) if len(y_test) == len(y_pred) else 0
+            tp = (
+                sum(1 for a, b in zip(y_test, y_pred, strict=False) if a > 0.5 and b > 0.5)
+                if len(y_test) == len(y_pred)
+                else 0
+            )
+            fp = (
+                sum(1 for a, b in zip(y_test, y_pred, strict=False) if a < 0.5 < b)
+                if len(y_test) == len(y_pred)
+                else 0
+            )
+            fn = (
+                sum(1 for a, b in zip(y_test, y_pred, strict=False) if a > 0.5 > b)
+                if len(y_test) == len(y_pred)
+                else 0
+            )
             report.precision = round(tp / max(tp + fp, 1), 6)
             report.recall = round(tp / max(tp + fn, 1), 6)
-            report.f1 = round(2 * report.precision * report.recall / max(report.precision + report.recall, 1e-9), 6)
+            report.f1 = round(
+                2 * report.precision * report.recall / max(report.precision + report.recall, 1e-9),
+                6,
+            )
         else:
             if y_test and y_pred:
                 ss_res = sum((a - b) ** 2 for a, b in zip(y_test, y_pred, strict=False))

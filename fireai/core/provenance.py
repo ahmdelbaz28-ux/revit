@@ -80,7 +80,7 @@ class ConfidenceScore:
     geometry_certainty: float = 0.5
     overall: ConfidenceLevel = ConfidenceLevel.MEDIUM
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if not (0.0 <= self.value <= 1.0):
             raise ValueError(f"Confidence value must be 0.0-1.0, got {self.value}")
 
@@ -113,7 +113,7 @@ class RuleApplied:
     constant_id: str = ""
     citation: str = ""
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.result not in ("PASS", "FAIL", "WARNING", "N/A", ""):
             raise ValueError(f"Invalid rule result: {self.result}")
 
@@ -142,7 +142,7 @@ class Violation:
     citation: str = ""
     location: str = ""
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.severity not in ("CRITICAL", "HIGH", "MEDIUM", "LOW"):
             raise ValueError(f"Invalid severity: {self.severity}")
 
@@ -233,7 +233,7 @@ class DecisionProvenance:
         )
         return hashlib.sha256(canonical.encode()).hexdigest()[:32]
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if not self.computation_hash and self.decision_id:
             object.__setattr__(self, "computation_hash", self.compute_hash())
 

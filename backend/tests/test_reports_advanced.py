@@ -23,6 +23,7 @@ from fastapi.testclient import TestClient
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
+
 @pytest.fixture(scope="module", autouse=True)
 def _setup_env() -> None:
     """Set development environment for testing."""
@@ -34,6 +35,7 @@ def _setup_env() -> None:
 def client():
     """Create a test client for the FastAPI app."""
     from backend.app import app
+
     with TestClient(app) as c:
         yield c
 
@@ -56,8 +58,11 @@ def project_with_alarm_devices(client):
             "name": "Smoke Detector SD-01",
             "type": "FA_SMOKE",
             "category": "FIRE_ALARM",
-            "x": 10.0, "y": 20.0,
-            "voltage": 24.0, "current": 0.05, "load": 0.05,
+            "x": 10.0,
+            "y": 20.0,
+            "voltage": 24.0,
+            "current": 0.05,
+            "load": 0.05,
         },
     )
 
@@ -68,8 +73,11 @@ def project_with_alarm_devices(client):
             "name": "Horn Strobe HS-01",
             "type": "FA_SOUND_STROBE",
             "category": "FIRE_ALARM",
-            "x": 30.0, "y": 40.0,
-            "voltage": 24.0, "current": 0.5, "load": 0.5,
+            "x": 30.0,
+            "y": 40.0,
+            "voltage": 24.0,
+            "current": 0.5,
+            "load": 0.5,
         },
     )
 
@@ -92,8 +100,11 @@ def project_with_connected_devices(client):
             "name": "Panel P-01",
             "type": "FA_PANEL",
             "category": "FIRE_ALARM",
-            "x": 0.0, "y": 0.0,
-            "voltage": 24.0, "current": 2.0, "load": 2.0,
+            "x": 0.0,
+            "y": 0.0,
+            "voltage": 24.0,
+            "current": 2.0,
+            "load": 2.0,
         },
     )
     dev1 = dev1_resp.json().get("data", dev1_resp.json())
@@ -104,8 +115,11 @@ def project_with_connected_devices(client):
             "name": "Detector SD-01",
             "type": "FA_SMOKE",
             "category": "FIRE_ALARM",
-            "x": 50.0, "y": 50.0,
-            "voltage": 22.8, "current": 0.1, "load": 0.1,
+            "x": 50.0,
+            "y": 50.0,
+            "voltage": 22.8,
+            "current": 0.1,
+            "load": 0.1,
         },
     )
     dev2 = dev2_resp.json().get("data", dev2_resp.json())
@@ -135,7 +149,9 @@ def project_with_connected_devices(client):
 class TestReportGeneration:
     """Tests for report generation with various types."""
 
-    def test_generate_nfpa72_battery_with_alarm_devices(self, client, project_with_alarm_devices) -> None:
+    def test_generate_nfpa72_battery_with_alarm_devices(
+        self, client, project_with_alarm_devices
+    ) -> None:
         """NFPA 72 battery report must classify alarm vs standby devices correctly."""
         pid = project_with_alarm_devices
         resp = client.post(
@@ -153,7 +169,9 @@ class TestReportGeneration:
             if content:
                 assert "standbyLoadA" in content or "requiredAh" in content
 
-    def test_generate_voltage_drop_with_connections(self, client, project_with_connected_devices) -> None:
+    def test_generate_voltage_drop_with_connections(
+        self, client, project_with_connected_devices
+    ) -> None:
         """Voltage drop report must include circuit data from connections."""
         pid = project_with_connected_devices
         resp = client.post(

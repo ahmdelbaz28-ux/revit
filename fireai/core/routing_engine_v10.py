@@ -142,7 +142,7 @@ class RoutingObstacle:
     passable: bool = False
     height_above_floor_m: float | None = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if isinstance(self.obstacle_type, ObstacleType):
             self.obstacle_type = self.obstacle_type.value
         # Life-Safety Rule 2: Reject NaN/Inf
@@ -536,7 +536,9 @@ class RoutingEngineV10:
                     return RouteResult(
                         waypoints=[start, end],
                         valid=False,
-                        violations=[f"{name}[{i}]={coord} is NaN/Inf — routing rejected per Life-Safety Rule 2"],
+                        violations=[
+                            f"{name}[{i}]={coord} is NaN/Inf — routing rejected per Life-Safety Rule 2"
+                        ],
                         solver="lazy_astar_strtree",
                     )
 
@@ -729,7 +731,9 @@ class RoutingEngineV10:
                     continue
 
                 # Compute edge cost
-                dist = math.hypot(nodes[neighbor][0] - nodes[current][0], nodes[neighbor][1] - nodes[current][1])
+                dist = math.hypot(
+                    nodes[neighbor][0] - nodes[current][0], nodes[neighbor][1] - nodes[current][1]
+                )
                 cost = dist * self._segment_cost_factor(nodes[current], nodes[neighbor])
 
                 tentative_g = g_score[current] + cost
@@ -852,7 +856,6 @@ class RoutingEngineV10:
         dot = max(-1.0, min(1.0, dot))  # Clamp for floating-point
         return math.degrees(math.acos(abs(dot)))
 
-
     def _point_in_any_obstacle(self, point: tuple[float, float]) -> bool:
         """Check if a point is inside any obstacle (with clearance)."""
         if SHAPELY_AVAILABLE and self._index is not None:
@@ -868,7 +871,11 @@ class RoutingEngineV10:
         return False
 
     def _point_near_obstacle(
-        self, point: tuple[float, float], obs: RoutingObstacle, clearance_m: float, factor: float = 2.0
+        self,
+        point: tuple[float, float],
+        obs: RoutingObstacle,
+        clearance_m: float,
+        factor: float = 2.0,
     ) -> bool:
         """Check if a point is near an obstacle (within factor x clearance)."""
         eff_clearance = clearance_m * factor
@@ -962,7 +969,9 @@ class RoutingEngineV10:
 
         # Bend radius
         for i in range(1, len(result.waypoints) - 1):
-            angle = self._compute_turn_angle(result.waypoints[i - 1], result.waypoints[i], result.waypoints[i + 1])
+            angle = self._compute_turn_angle(
+                result.waypoints[i - 1], result.waypoints[i], result.waypoints[i + 1]
+            )
             if angle < 90:
                 violations.append(
                     f"Sharp turn ({angle:.0f}deg) at waypoint {i} — "
@@ -981,7 +990,9 @@ class RoutingEngineV10:
                 # required clearance, producing FALSE PASS on routes that violate the actual
                 # NEC 760.24 clearance requirement.
                 aabb = obs.expanded_bounds(clearance_m)
-                if _ObstacleIndex._line_intersects_aabb(result.waypoints[i], result.waypoints[i + 1], aabb):
+                if _ObstacleIndex._line_intersects_aabb(
+                    result.waypoints[i], result.waypoints[i + 1], aabb
+                ):
                     violations.append(
                         f"Route segment {i} too close to {obs.obstacle_type} "
                         f"obstacle (clearance {self.constraints.clearance_mm}mm "
@@ -1049,7 +1060,7 @@ class RoutingEngineV10:
 # ════════════════════════════════════════════════════════════════════════════
 
 # Allow existing code that imports EngineeringRouter to use the new engine
-EngineeringRouter = RoutingEngineV10  # type: ignore[misc]
+EngineeringRouter = RoutingEngineV10
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -1133,7 +1144,7 @@ def _self_test():
     passed = 0
     failed = 0
 
-    def check(name, condition, detail="") -> None:
+    def check(name: str, condition, detail: str = "") -> None:
         nonlocal passed, failed
         if condition:
             print(f"  [PASS] {name}")
@@ -1153,7 +1164,11 @@ def _self_test():
 
     # ── 2. Direct line ──
     result2 = router.route(start=(0.0, 0.0), end=(10.0, 0.0))
-    check("Straight line", abs(result2.total_length_m - 10.0) < 0.01, f"length={result2.total_length_m}")
+    check(
+        "Straight line",
+        abs(result2.total_length_m - 10.0) < 0.01,
+        f"length={result2.total_length_m}",
+    )
 
     # ── 3. Routing with obstacles ──
     router2 = RoutingEngineV10()
@@ -1182,7 +1197,11 @@ def _self_test():
 
     # ── 6. NaN/Inf rejection ──
     result_nan = router.route(start=(0.0, 0.0), end=(float("nan"), 5.0))
-    check("NaN rejection", not result_nan.valid, f"valid={result_nan.valid}, violations={result_nan.violations}")
+    check(
+        "NaN rejection",
+        not result_nan.valid,
+        f"valid={result_nan.valid}, violations={result_nan.violations}",
+    )
 
     result_inf = router.route(start=(0.0, 0.0), end=(float("inf"), 5.0))
     check("Inf rejection", not result_inf.valid, f"valid={result_inf.valid}")
@@ -1207,7 +1226,7 @@ def _self_test():
 
     # ── 10. Batch routing ──
     router6 = RoutingEngineV10()
-    segments = [((0, 0), (10, 10)), ((5, 5), (15, 15))]  # type: ignore[arg-type]
+    segments = [((0, 0), (10, 10)), ((5, 5), (15, 15))]
     batch = router6.route_batch(segments)  # type: ignore[arg-type]
     check("Batch routing", len(batch) == 2, f"results={len(batch)}")
 
@@ -1217,7 +1236,9 @@ def _self_test():
     # ── 12. STRtree index builds correctly ──
     router7 = RoutingEngineV10()
     for i in range(20):
-        router7.add_obstacle(RoutingObstacle(obstacle_type="wall", x=i * 2.5, y=0, width=0.2, height=10))
+        router7.add_obstacle(
+            RoutingObstacle(obstacle_type="wall", x=i * 2.5, y=0, width=0.2, height=10)
+        )
     router7._ensure_index()
     check(
         "STRtree index",
@@ -1235,7 +1256,11 @@ def _self_test():
     )
 
     angle2 = router7._compute_approach_angle((5, 0), (5, 10), joint)
-    check("Seismic joint orthogonal crossing", angle2 is not None and abs(angle2 - 90.0) < 1.0, f"angle={angle2}")
+    check(
+        "Seismic joint orthogonal crossing",
+        angle2 is not None and abs(angle2 - 90.0) < 1.0,
+        f"angle={angle2}",
+    )
 
     # ── 14. Performance benchmark ──
     bench = benchmark_routing(n_obstacles=30, n_routes=50)
@@ -1298,7 +1323,9 @@ class ArchitecturalWall:
 
     """
 
-    def __init__(self, p1: tuple[float, float], p2: tuple[float, float], fire_rated: bool = False) -> None:
+    def __init__(
+        self, p1: tuple[float, float], p2: tuple[float, float], fire_rated: bool = False
+    ) -> None:
         # Life-Safety Rule 2: Reject NaN/Inf coordinates
         for name, pt in [("p1", p1), ("p2", p2)]:
             for i, coord in enumerate(pt):
@@ -1427,7 +1454,7 @@ class EliteClassARouter:
             return {}
 
         # 1. GENERATE OUTGOING LEG — Daisy-chain through ALL devices
-        forward_path: list[Any] = []  # type: ignore[name-defined]
+        forward_path: list[Any] = []
         waypoints = [facp_node, *list(loop_devices)]
 
         for i in range(len(waypoints) - 1):
@@ -1455,7 +1482,8 @@ class EliteClassARouter:
         cum_dist = [0.0]
         for i in range(1, len(forward_path)):
             seg_len = math.hypot(
-                forward_path[i][0] - forward_path[i - 1][0], forward_path[i][1] - forward_path[i - 1][1]
+                forward_path[i][0] - forward_path[i - 1][0],
+                forward_path[i][1] - forward_path[i - 1][1],
             )
             cum_dist.append(cum_dist[-1] + seg_len)
         total_len = cum_dist[-1] if cum_dist else 0.0
@@ -1467,8 +1495,12 @@ class EliteClassARouter:
                 continue  # Terminal connection zone — exemption applies
 
             r_center, c_center = int(py / self.res), int(px / self.res)
-            for rr in range(max(0, r_center - penalty_cells), min(self.rows, r_center + penalty_cells + 1)):
-                for cc in range(max(0, c_center - penalty_cells), min(self.cols, c_center + penalty_cells + 1)):
+            for rr in range(
+                max(0, r_center - penalty_cells), min(self.rows, r_center + penalty_cells + 1)
+            ):
+                for cc in range(
+                    max(0, c_center - penalty_cells), min(self.cols, c_center + penalty_cells + 1)
+                ):
                     dist = math.hypot(rr - r_center, cc - c_center) * self.res
                     if dist <= 1.0:
                         return_grid[rr, cc] += 50000.0  # DEAD ZONE FOR REVERSE
@@ -1487,7 +1519,9 @@ class EliteClassARouter:
         r_firestops = self._calculate_firestops(reverse_path)
 
         return {
-            "outgoing_class_a": RouteSegment(forward_path, "CLASS_A_OUT", f_firestops, self._measure_len(forward_path)),
+            "outgoing_class_a": RouteSegment(
+                forward_path, "CLASS_A_OUT", f_firestops, self._measure_len(forward_path)
+            ),
             "return_class_a": RouteSegment(
                 reverse_path, "CLASS_A_RETURN", r_firestops, self._measure_len(reverse_path)
             ),
@@ -1518,7 +1552,9 @@ class EliteClassARouter:
             total += math.hypot(path[i][0] - path[i - 1][0], path[i][1] - path[i - 1][1])
         return total
 
-    def _astar(self, start: tuple[float, float], goal: tuple[float, float], grid) -> list[tuple[float, float]]:
+    def _astar(
+        self, start: tuple[float, float], goal: tuple[float, float], grid
+    ) -> list[tuple[float, float]]:
         """A* pathfinding on a 2D cost grid (orthogonal 4-directional)."""
         import heapq as _heapq
 

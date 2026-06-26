@@ -229,7 +229,9 @@ class EvidenceChain:
             "signer_id": self._signer_id,
             "snapshot_hash": _sha256_payload(snapshot_payload),
             "analysis_hash": _sha256_payload(analysis_payload),
-            "previous_envelope_hash": (previous_envelope["envelope_hash"] if previous_envelope else None),
+            "previous_envelope_hash": (
+                previous_envelope["envelope_hash"] if previous_envelope else None
+            ),
         }
         envelope_hash = _sha256_payload(body)
         envelope = dict(body)

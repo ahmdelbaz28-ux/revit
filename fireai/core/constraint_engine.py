@@ -292,7 +292,9 @@ class ConstraintEngine:
             limit_value=max_length,
             unit="m",
             severity="CRITICAL",
-            remediation=(f"Reduce circuit length to ≤{max_length}m or upgrade to larger wire gauge per NFPA 72 §23.6.2")
+            remediation=(
+                f"Reduce circuit length to ≤{max_length}m or upgrade to larger wire gauge per NFPA 72 §23.6.2"
+            )
             if not is_satisfied
             else "",
             formula=(
@@ -572,7 +574,9 @@ class ConstraintEngine:
             limit_value=self._min_conduit_inches,
             unit="inches",
             severity="HIGH",
-            remediation=('Use minimum ¾" red painted EMT per project specification') if not is_satisfied else "",
+            remediation=('Use minimum ¾" red painted EMT per project specification')
+            if not is_satisfied
+            else "",
             formula=(
                 f'Ø_conduit = {conduit_inches}" {"≥" if is_satisfied else "<"} Ø_min = {self._min_conduit_inches}"'
             ),
@@ -719,7 +723,9 @@ class ConstraintEngine:
             )
             if not is_satisfied
             else "",
-            formula=(f"d_min = {min_distance:.2f}m {'≥' if is_satisfied else '<'} d_required = {min_separation_m}m"),
+            formula=(
+                f"d_min = {min_distance:.2f}m {'≥' if is_satisfied else '<'} d_required = {min_separation_m}m"
+            ),
         )
 
     def check_ampacity_compliance(
@@ -1081,7 +1087,9 @@ class ConstraintEngine:
 
         # 5. Conduit size — V65 FIX: Use actual conduit size if provided
         # Previously, always called with default (0.75), making it a no-op
-        actual_conduit = conduit_size_inches if conduit_size_inches is not None else MIN_CONDUIT_INCHES
+        actual_conduit = (
+            conduit_size_inches if conduit_size_inches is not None else MIN_CONDUIT_INCHES
+        )
         results.append(self.check_conduit_size(conduit_inches=actual_conduit))
 
         # 6. Cable fastening

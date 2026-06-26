@@ -418,7 +418,9 @@ class DigitalTwinInterface:
                     old_value={"room_count": old_version.room_count},
                     new_value={"room_count": new_version.room_count},
                     author="system",
-                    reason=(f"Room count changed from {old_version.room_count} to {new_version.room_count}"),
+                    reason=(
+                        f"Room count changed from {old_version.room_count} to {new_version.room_count}"
+                    ),
                 )
             )
 
@@ -503,7 +505,9 @@ class DigitalTwinInterface:
                             or abs(old_det.get("y", 0) - new_det.get("y", 0)) > 1e-6
                             or abs(old_det.get("z", 0) - new_det.get("z", 0)) > 1e-6
                         )
-                        radius_changed = abs(old_det.get("radius", 0) - new_det.get("radius", 0)) > 1e-6
+                        radius_changed = (
+                            abs(old_det.get("radius", 0) - new_det.get("radius", 0)) > 1e-6
+                        )
 
                         if position_changed:
                             changes.append(
@@ -1261,7 +1265,9 @@ if __name__ == "__main__":
     assert "IFCBUILDINGSTOREY" in entity_types
     assert "IFCSPACE" in entity_types
     assert "IFCFLOWSENSOR" in entity_types
-    print(f"   ✓ IFC4 payload: {len(ifc['entities'])} entities, {len(ifc['property_sets'])} property sets")
+    print(
+        f"   ✓ IFC4 payload: {len(ifc['entities'])} entities, {len(ifc['property_sets'])} property sets"
+    )
     print(f"   ✓ Entity types: {sorted(set(entity_types))}")
 
     # ── Test 9: gBXML Export ──────────────────────────────────────────

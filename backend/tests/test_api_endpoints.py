@@ -20,6 +20,7 @@ from fastapi.testclient import TestClient
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
+
 @pytest.fixture(scope="module", autouse=True)
 def _setup_env() -> None:
     """Set development environment for testing."""
@@ -31,6 +32,7 @@ def _setup_env() -> None:
 def client():
     """Create a test client for the FastAPI app."""
     from backend.app import app
+
     with TestClient(app) as c:
         yield c
 
@@ -41,7 +43,11 @@ def full_project(client):
     # Create project
     proj_resp = client.post(
         "/api/projects",
-        json={"name": "Full Workflow Project", "description": "Integration test", "author": "pytest"},
+        json={
+            "name": "Full Workflow Project",
+            "description": "Integration test",
+            "author": "pytest",
+        },
     )
     proj_data = proj_resp.json().get("data", proj_resp.json())
     pid = proj_data.get("id") or proj_data.get("project_id")
@@ -72,6 +78,7 @@ def full_project(client):
 # ══════════════════════════════════════════════════════════════════════════════
 # INPUT VALIDATION TESTS
 # ══════════════════════════════════════════════════════════════════════════════
+
 
 class TestInputValidation:
     """Tests for input validation across all routers."""
@@ -106,8 +113,12 @@ class TestInputValidation:
         response = client.post(
             f"/api/projects/{pid}/devices",
             json={
-                "name": "Bad Voltage", "type": "test", "category": "test",
-                "x": 0.0, "y": 0.0, "voltage": -24.0,
+                "name": "Bad Voltage",
+                "type": "test",
+                "category": "test",
+                "x": 0.0,
+                "y": 0.0,
+                "voltage": -24.0,
             },
         )
         assert response.status_code == 422
@@ -118,8 +129,12 @@ class TestInputValidation:
         response = client.post(
             f"/api/projects/{pid}/devices",
             json={
-                "name": "Bad Load", "type": "test", "category": "test",
-                "x": 0.0, "y": 0.0, "load": -1.0,
+                "name": "Bad Load",
+                "type": "test",
+                "category": "test",
+                "x": 0.0,
+                "y": 0.0,
+                "load": -1.0,
             },
         )
         assert response.status_code == 422
@@ -166,6 +181,7 @@ class TestInputValidation:
 # CROSS-ROUTER WORKFLOW TESTS
 # ══════════════════════════════════════════════════════════════════════════════
 
+
 class TestCrossRouterWorkflows:
     """End-to-end workflow tests spanning multiple routers."""
 
@@ -192,9 +208,15 @@ class TestCrossRouterWorkflows:
         dev1_resp = client.post(
             f"/api/projects/{pid}/devices",
             json={
-                "name": "Panel-01", "type": "FA_PANEL", "category": "FIRE_ALARM",
-                "x": 0.0, "y": 0.0, "z": 1.5,
-                "voltage": 24.0, "current": 1.0, "load": 1.0,
+                "name": "Panel-01",
+                "type": "FA_PANEL",
+                "category": "FIRE_ALARM",
+                "x": 0.0,
+                "y": 0.0,
+                "z": 1.5,
+                "voltage": 24.0,
+                "current": 1.0,
+                "load": 1.0,
             },
         )
         assert dev1_resp.status_code == 201
@@ -204,9 +226,15 @@ class TestCrossRouterWorkflows:
         dev2_resp = client.post(
             f"/api/projects/{pid}/devices",
             json={
-                "name": "Smoke-01", "type": "FA_SMOKE", "category": "FIRE_ALARM",
-                "x": 15.0, "y": 20.0, "z": 3.0,
-                "voltage": 24.0, "current": 0.05, "load": 0.05,
+                "name": "Smoke-01",
+                "type": "FA_SMOKE",
+                "category": "FIRE_ALARM",
+                "x": 15.0,
+                "y": 20.0,
+                "z": 3.0,
+                "voltage": 24.0,
+                "current": 0.05,
+                "load": 0.05,
             },
         )
         assert dev2_resp.status_code == 201
@@ -328,6 +356,7 @@ class TestCrossRouterWorkflows:
 # PAGINATION TESTS
 # ══════════════════════════════════════════════════════════════════════════════
 
+
 class TestPagination:
     """Tests for pagination parameters across list endpoints."""
 
@@ -365,6 +394,7 @@ class TestPagination:
 # ══════════════════════════════════════════════════════════════════════════════
 # SECURITY EDGE CASE TESTS
 # ══════════════════════════════════════════════════════════════════════════════
+
 
 class TestSecurityEdgeCases:
     """Tests for security-related edge cases."""
@@ -462,6 +492,7 @@ class TestSecurityEdgeCases:
 # API CONTRACT CONFORMANCE TESTS
 # ══════════════════════════════════════════════════════════════════════════════
 
+
 class TestAPIContractConformance:
     """Tests that API responses conform to the expected contract."""
 
@@ -487,7 +518,13 @@ class TestAPIContractConformance:
 
         dev_resp = client.post(
             f"/api/projects/{pid}/devices",
-            json={"name": "Contract Device", "type": "test_type", "category": "test_cat", "x": 1.0, "y": 2.0},
+            json={
+                "name": "Contract Device",
+                "type": "test_type",
+                "category": "test_cat",
+                "x": 1.0,
+                "y": 2.0,
+            },
         )
         data = dev_resp.json().get("data", dev_resp.json())
         assert "id" in data or "device_id" in data
@@ -542,6 +579,7 @@ class TestAPIContractConformance:
 # NFPA 72 SAFETY-CRITICAL CALCULATION TESTS
 # ══════════════════════════════════════════════════════════════════════════════
 
+
 class TestNFPA72Calculations:
     """Tests for NFPA 72 safety-critical calculation endpoints."""
 
@@ -559,8 +597,14 @@ class TestNFPA72Calculations:
         client.post(
             f"/api/projects/{pid}/devices",
             json={
-                "name": "Smoke Det", "type": "FA_SMOKE", "category": "FIRE_ALARM",
-                "x": 0, "y": 0, "voltage": 24, "current": 0.05, "load": 0.05,
+                "name": "Smoke Det",
+                "type": "FA_SMOKE",
+                "category": "FIRE_ALARM",
+                "x": 0,
+                "y": 0,
+                "voltage": 24,
+                "current": 0.05,
+                "load": 0.05,
             },
         )
 
@@ -568,8 +612,14 @@ class TestNFPA72Calculations:
         client.post(
             f"/api/projects/{pid}/devices",
             json={
-                "name": "Horn Strobe", "type": "FA_SOUND_STROBE", "category": "FIRE_ALARM",
-                "x": 10, "y": 10, "voltage": 24, "current": 0.5, "load": 0.5,
+                "name": "Horn Strobe",
+                "type": "FA_SOUND_STROBE",
+                "category": "FIRE_ALARM",
+                "x": 10,
+                "y": 10,
+                "voltage": 24,
+                "current": 0.5,
+                "load": 0.5,
             },
         )
 
@@ -604,8 +654,14 @@ class TestNFPA72Calculations:
         dev1 = client.post(
             f"/api/projects/{pid}/devices",
             json={
-                "name": "Panel", "type": "FA_PANEL", "category": "FIRE_ALARM",
-                "x": 0, "y": 0, "voltage": 24, "current": 0, "load": 0,
+                "name": "Panel",
+                "type": "FA_PANEL",
+                "category": "FIRE_ALARM",
+                "x": 0,
+                "y": 0,
+                "voltage": 24,
+                "current": 0,
+                "load": 0,
             },
         )
         dev1_data = dev1.json().get("data", dev1.json())
@@ -614,8 +670,14 @@ class TestNFPA72Calculations:
         dev2 = client.post(
             f"/api/projects/{pid}/devices",
             json={
-                "name": "Detector", "type": "FA_SMOKE", "category": "FIRE_ALARM",
-                "x": 50, "y": 50, "voltage": 24, "current": 0.05, "load": 0.05,
+                "name": "Detector",
+                "type": "FA_SMOKE",
+                "category": "FIRE_ALARM",
+                "x": 50,
+                "y": 50,
+                "voltage": 24,
+                "current": 0.05,
+                "load": 0.05,
             },
         )
         dev2_data = dev2.json().get("data", dev2.json())
@@ -647,8 +709,14 @@ class TestNFPA72Calculations:
         dev_resp = client.post(
             f"/api/projects/{pid}/devices",
             json={
-                "name": "mA Device", "type": "FA_SMOKE", "category": "FIRE_ALARM",
-                "x": 0, "y": 0, "voltage": 24, "load": 500, "load_unit": "mA",
+                "name": "mA Device",
+                "type": "FA_SMOKE",
+                "category": "FIRE_ALARM",
+                "x": 0,
+                "y": 0,
+                "voltage": 24,
+                "load": 500,
+                "load_unit": "mA",
             },
         )
         assert dev_resp.status_code == 201
@@ -662,6 +730,7 @@ class TestNFPA72Calculations:
 # ══════════════════════════════════════════════════════════════════════════════
 # MONITOR & SYSTEM ENDPOINT TESTS
 # ══════════════════════════════════════════════════════════════════════════════
+
 
 class TestMonitorEndpoints:
     """Tests for backend/routers/monitor.py — 6 endpoints."""

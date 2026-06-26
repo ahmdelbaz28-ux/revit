@@ -170,7 +170,11 @@ class RevitAPIBridge:
             doc = uiapp.ActiveUIDocument.Document
 
             collector = DB.FilteredElementCollector(doc)
-            rooms = collector.OfCategory(DB.BuiltInCategory.OST_Rooms).WhereElementIsNotElementType().ToElements()
+            rooms = (
+                collector.OfCategory(DB.BuiltInCategory.OST_Rooms)
+                .WhereElementIsNotElementType()
+                .ToElements()
+            )
 
             result: list[BIMRoom] = []
             for room in rooms:
@@ -322,7 +326,9 @@ class RevitAPIBridge:
                     # V78 FIX: Use actual area_m2 if provided; don't fabricate from width×length
                     # defaults (10×8=80m² phantom area). A 4m² closet gets 80m² protection.
                     area_m2=float(rd.get("area_m2", 0.0)),
-                    ceiling_height_m=float(rd.get("ceiling_height", rd.get("ceiling_height_m", 3.0))),
+                    ceiling_height_m=float(
+                        rd.get("ceiling_height", rd.get("ceiling_height_m", 3.0))
+                    ),
                     polygon=[(float(p[0]), float(p[1])) for p in polygon],
                     occupancy_type=str(rd.get("occupancy_type", "office")),
                     source="json",
@@ -490,7 +496,9 @@ class BIMSyncOrchestrator:
             "revit_api": (
                 "Revit API detected. Live sync available.\nRun fireai from within Revit using pyRevit or Dynamo."
             ),
-            "pyrevit": ("pyRevit detected. Live sync available.\nUse the FireAI pyRevit extension."),
+            "pyrevit": (
+                "pyRevit detected. Live sync available.\nUse the FireAI pyRevit extension."
+            ),
             "ifcopenshell": (
                 "ifcopenshell available. IFC file sync available.\n"
                 "Export IFC from Revit: File -> Export -> IFC -> IFC 2x3\n"

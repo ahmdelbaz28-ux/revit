@@ -109,7 +109,7 @@ from .event_bus import EventBus, Events
 try:
     from .audit_store import AuditStore
 except ImportError:
-    AuditStore = None  # type: ignore[assignment,misc]
+    AuditStore = None  # type: ignore[misc]
 
 logger = logging.getLogger(__name__)
 
@@ -243,11 +243,21 @@ class DriftReport:
         self.high_count = sum(1 for d in self.drift_records if d.severity == "high")
         self.medium_count = sum(1 for d in self.drift_records if d.severity == "medium")
         self.low_count = sum(1 for d in self.drift_records if d.severity == "low")
-        self.position_drift_count = sum(1 for d in self.drift_records if d.drift_type == DriftType.POSITION_DRIFT)
-        self.status_drift_count = sum(1 for d in self.drift_records if d.drift_type == DriftType.STATUS_DRIFT)
-        self.missing_detector_count = sum(1 for d in self.drift_records if d.drift_type == DriftType.MISSING_DETECTOR)
-        self.extra_detector_count = sum(1 for d in self.drift_records if d.drift_type == DriftType.EXTRA_DETECTOR)
-        self.type_mismatch_count = sum(1 for d in self.drift_records if d.drift_type == DriftType.TYPE_MISMATCH)
+        self.position_drift_count = sum(
+            1 for d in self.drift_records if d.drift_type == DriftType.POSITION_DRIFT
+        )
+        self.status_drift_count = sum(
+            1 for d in self.drift_records if d.drift_type == DriftType.STATUS_DRIFT
+        )
+        self.missing_detector_count = sum(
+            1 for d in self.drift_records if d.drift_type == DriftType.MISSING_DETECTOR
+        )
+        self.extra_detector_count = sum(
+            1 for d in self.drift_records if d.drift_type == DriftType.EXTRA_DETECTOR
+        )
+        self.type_mismatch_count = sum(
+            1 for d in self.drift_records if d.drift_type == DriftType.TYPE_MISMATCH
+        )
 
     @property
     def has_critical_drift(self) -> bool:
@@ -436,7 +446,9 @@ class SyncReport:
             "design_sync": self.design_sync.to_dict() if self.design_sync else None,
             "as_built_sync": self.as_built_sync.to_dict() if self.as_built_sync else None,
             "drift_report": self.drift_report.to_dict() if self.drift_report else None,
-            "coverage_validation": (self.coverage_validation.to_dict() if self.coverage_validation else None),
+            "coverage_validation": (
+                self.coverage_validation.to_dict() if self.coverage_validation else None
+            ),
             "health_score": self.health_score,
             "overall_status": self.overall_status,
             "timestamp": self.timestamp,
@@ -590,7 +602,9 @@ class DigitalTwinSync:
         """
         # ── Input validation ──
         if not isinstance(design_detectors, list):
-            raise TypeError(f"design_detectors must be a list, got {type(design_detectors).__name__}")
+            raise TypeError(
+                f"design_detectors must be a list, got {type(design_detectors).__name__}"
+            )
         if detector_type not in self.VALID_DETECTOR_TYPES:
             raise ValueError(
                 f"Invalid detector_type '{detector_type}'. Must be one of: {sorted(self.VALID_DETECTOR_TYPES)}"
@@ -801,7 +815,9 @@ class DigitalTwinSync:
         """
         # ── Input validation ──
         if not isinstance(as_built_detectors, list):
-            raise TypeError(f"as_built_detectors must be a list, got {type(as_built_detectors).__name__}")
+            raise TypeError(
+                f"as_built_detectors must be a list, got {type(as_built_detectors).__name__}"
+            )
 
         correlation_id = str(uuid.uuid4())
         synced = 0
@@ -1431,7 +1447,9 @@ class DigitalTwinSync:
 
         # Compute drift from design position
         drift_m = (
-            (new_x - detector.design_x) ** 2 + (new_y - detector.design_y) ** 2 + (new_z - detector.design_z) ** 2
+            (new_x - detector.design_x) ** 2
+            + (new_y - detector.design_y) ** 2
+            + (new_z - detector.design_z) ** 2
         ) ** 0.5
 
         if drift_m >= TwinDriftAnalyzer.POSITION_TOLERANCE_M:

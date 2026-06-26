@@ -42,10 +42,25 @@ from backend.rbac import Permission
 # fireai/core/qomn_kernel.py:NEC_TABLE8_RESISTANCE_OHM_PER_KM keys.
 # Module-level (NOT class-attr) so Pydantic V2 doesn't treat it as a
 # private model attribute (leading underscore convention).
-_NEC_TABLE8_VALID_AWG: frozenset = frozenset({
-    "18", "16", "14", "12", "10", "8", "6", "4", "3", "2", "1",
-    "1/0", "2/0", "3/0", "4/0",
-})
+_NEC_TABLE8_VALID_AWG: frozenset = frozenset(
+    {
+        "18",
+        "16",
+        "14",
+        "12",
+        "10",
+        "8",
+        "6",
+        "4",
+        "3",
+        "2",
+        "1",
+        "1/0",
+        "2/0",
+        "3/0",
+        "4/0",
+    }
+)
 
 
 def _normalize_awg_gauge(v: Any) -> str:
@@ -69,6 +84,7 @@ def _normalize_awg_gauge(v: Any) -> str:
             f"{sorted(_NEC_TABLE8_VALID_AWG, key=lambda s: (len(s), s))}"
         )
     return normalized
+
 
 logger = logging.getLogger(__name__)
 
@@ -95,6 +111,7 @@ try:
     from fireai.core.qomn_kernel import ComputationError as _CE
     from fireai.core.qomn_kernel import PhysicsGuardError as _PGE
     from fireai.core.qomn_kernel import ValidationError as _VE
+
     _PhysicsGuardError = _PGE
     _ComputationError = _CE
     _ValidationError = _VE
@@ -126,6 +143,7 @@ def _get_kernel():
             if _kernel is None:  # double-checked locking
                 try:
                     from fireai.core.qomn_kernel import QOMNKernel
+
                     _kernel = QOMNKernel()
                 except ImportError as e:
                     logger.error(
@@ -154,41 +172,43 @@ def _get_kernel():
 
 # ── Request Models ────────────────────────────────────────────────────────────
 
+
 class SmokeSpacingRequest(BaseModel):
     """Input for smoke detector spacing calculation."""
 
     ceiling_height_m: float = Field(
-        ..., gt=0, le=18.288,
-        description="Ceiling height in meters [0+, ≤18.288m per NFPA 72 §17.7.3.2.4]"
+        ...,
+        gt=0,
+        le=18.288,
+        description="Ceiling height in meters [0+, ≤18.288m per NFPA 72 §17.7.3.2.4]",
     )
 
 
 class HeatSpacingRequest(BaseModel):
     """Input for heat detector spacing calculation."""
 
-    ceiling_height_m:      float = Field(..., gt=0, le=18.288)
-    area_per_detector_m2:  float = Field(
-        ..., gt=0,
-        description="Coverage area per detector in m² [NFPA 72 §17.6.3.1]"
+    ceiling_height_m: float = Field(..., gt=0, le=18.288)
+    area_per_detector_m2: float = Field(
+        ..., gt=0, description="Coverage area per detector in m² [NFPA 72 §17.6.3.1]"
     )
 
 
 class BatteryRequest(BaseModel):
     """Input for battery capacity calculation per NFPA 72 §10.6.7.2.1."""
 
-    standby_load_a:  float = Field(..., ge=0, description="Standby current in Amperes")
-    alarm_load_a:    float = Field(..., ge=0, description="Alarm current in Amperes")
-    standby_hours:   float = Field(24.0, gt=0, le=96, description="Standby hours (default 24h)")
-    alarm_minutes:   float = Field(5.0,  gt=0, le=60, description="Alarm minutes (default 5min)")
-    safety_factor:   float = Field(1.25, ge=1.0, description="Safety factor (default 1.25 = 25%)")
-    efficiency:      float = Field(0.80, gt=0, le=1.0, description="Discharge efficiency")
+    standby_load_a: float = Field(..., ge=0, description="Standby current in Amperes")
+    alarm_load_a: float = Field(..., ge=0, description="Alarm current in Amperes")
+    standby_hours: float = Field(24.0, gt=0, le=96, description="Standby hours (default 24h)")
+    alarm_minutes: float = Field(5.0, gt=0, le=60, description="Alarm minutes (default 5min)")
+    safety_factor: float = Field(1.25, ge=1.0, description="Safety factor (default 1.25 = 25%)")
+    efficiency: float = Field(0.80, gt=0, le=1.0, description="Discharge efficiency")
 
 
 class VoltageDropRequest(BaseModel):
     """Input for voltage drop calculation per NEC Chapter 9, Table 8."""
 
-    current_a:        float = Field(..., gt=0, description="Circuit current in Amperes")
-    length_m:         float = Field(..., gt=0, description="One-way circuit length in meters")
+    current_a: float = Field(..., gt=0, description="Circuit current in Amperes")
+    length_m: float = Field(..., gt=0, description="One-way circuit length in meters")
     # V65 FIX: Validate AWG gauge against NEC Table 8 valid sizes.
     # An invalid gauge could produce incorrect voltage drop — in a fire alarm
     # system, underestimated voltage drop means devices may not operate.
@@ -208,7 +228,7 @@ class VoltageDropRequest(BaseModel):
     # This eliminates the previous mismatch where router rejected "AWG14"
     # but kernel accepted it. Single source of truth: NEC_TABLE8_RESISTANCE
     # keys in fireai/core/qomn_kernel.py.
-    awg_gauge:        str   = Field(
+    awg_gauge: str = Field(
         "14",
         description=(
             "Wire gauge per NEC Table 8 (NEC 2023 Chapter 9). "
@@ -217,7 +237,7 @@ class VoltageDropRequest(BaseModel):
         ),
     )
     supply_voltage_v: float = Field(24.0, gt=0, description="Supply voltage (default 24VDC)")
-    max_drop_pct:     float = Field(10.0, gt=0, le=50, description="Max allowable drop %")
+    max_drop_pct: float = Field(10.0, gt=0, le=50, description="Max allowable drop %")
 
     # V118: Field validator delegates to module-level _normalize_awg_gauge
     # to keep the kernel/router AWG validation in lockstep.
@@ -227,36 +247,37 @@ class VoltageDropRequest(BaseModel):
 class RoomRequest(BaseModel):
     """Room specification for detector placement."""
 
-    room_id:          str   = Field(..., description="Unique room identifier")
-    width_m:          float = Field(..., gt=0, description="Room width in meters")
-    length_m:         float = Field(..., gt=0, description="Room length in meters")
+    room_id: str = Field(..., description="Unique room identifier")
+    width_m: float = Field(..., gt=0, description="Room width in meters")
+    length_m: float = Field(..., gt=0, description="Room length in meters")
     ceiling_height_m: float = Field(..., gt=0, le=18.288, description="Ceiling height in meters")
-    ceiling_type:     str   = Field("flat", description="flat|sloped|peaked|beam|coffered")
-    occupancy_type:   str   = Field("business", description="NFPA 101 occupancy type")
-    detector_type:    str   = Field("smoke", description="smoke|heat|duct|beam|aspirating")
-    is_sleeping_area: bool  = Field(False, description="True → 177 cd strobes (NFPA 72 §18.5.5.7)")
-    slope_degrees:    float = Field(0.0, ge=0, le=45, description="Ceiling slope in degrees")
-    exit_doors:       list[dict[str, float]] = Field(
-        default_factory=list,
-        description="Exit doors: [{x_m, y_m, door_width_m}]"
+    ceiling_type: str = Field("flat", description="flat|sloped|peaked|beam|coffered")
+    occupancy_type: str = Field("business", description="NFPA 101 occupancy type")
+    detector_type: str = Field("smoke", description="smoke|heat|duct|beam|aspirating")
+    is_sleeping_area: bool = Field(False, description="True → 177 cd strobes (NFPA 72 §18.5.5.7)")
+    slope_degrees: float = Field(0.0, ge=0, le=45, description="Ceiling slope in degrees")
+    exit_doors: list[dict[str, float]] = Field(
+        default_factory=list, description="Exit doors: [{x_m, y_m, door_width_m}]"
     )
 
 
 class DuctDetectorRequest(BaseModel):
     """Duct detector placement request."""
 
-    duct_id:        str   = Field(..., description="Duct identifier")
-    width_m:        float = Field(..., gt=0, description="Duct width in meters")
-    height_m:       float = Field(..., gt=0, description="Duct height in meters")
-    velocity_m_s:   float = Field(
-        ..., gt=0,
-        description="Air velocity in m/s [0.305–15.24 per NFPA 72 §17.7.4.2.2]"
+    duct_id: str = Field(..., description="Duct identifier")
+    width_m: float = Field(..., gt=0, description="Duct width in meters")
+    height_m: float = Field(..., gt=0, description="Duct height in meters")
+    velocity_m_s: float = Field(
+        ..., gt=0, description="Air velocity in m/s [0.305–15.24 per NFPA 72 §17.7.4.2.2]"
     )
 
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
 
-@router.post("/qomn/smoke-spacing", dependencies=[Depends(require_permission(Permission.QOMN_EXECUTE))])
+
+@router.post(
+    "/qomn/smoke-spacing", dependencies=[Depends(require_permission(Permission.QOMN_EXECUTE))]
+)
 async def compute_smoke_spacing(req: SmokeSpacingRequest):
     """
     Compute smoke detector spacing per NFPA 72 Table 17.6.3.1.
@@ -279,7 +300,9 @@ async def compute_smoke_spacing(req: SmokeSpacingRequest):
         _handle_error(exc)
 
 
-@router.post("/qomn/heat-spacing", dependencies=[Depends(require_permission(Permission.QOMN_EXECUTE))])
+@router.post(
+    "/qomn/heat-spacing", dependencies=[Depends(require_permission(Permission.QOMN_EXECUTE))]
+)
 async def compute_heat_spacing(req: HeatSpacingRequest):
     """
     Compute heat detector spacing per NFPA 72 §17.6.3.1.
@@ -311,17 +334,19 @@ async def compute_battery(req: BatteryRequest):
         result = kernel.battery_capacity(
             req.standby_load_a,
             req.alarm_load_a,
-            standby_hours    = req.standby_hours,
-            alarm_minutes    = req.alarm_minutes,
-            safety_factor    = req.safety_factor,
-            discharge_efficiency = req.efficiency,
+            standby_hours=req.standby_hours,
+            alarm_minutes=req.alarm_minutes,
+            safety_factor=req.safety_factor,
+            discharge_efficiency=req.efficiency,
         )
         return {"success": True, "data": result}
     except Exception as exc:
         _handle_error(exc)
 
 
-@router.post("/qomn/voltage-drop", dependencies=[Depends(require_permission(Permission.QOMN_EXECUTE))])
+@router.post(
+    "/qomn/voltage-drop", dependencies=[Depends(require_permission(Permission.QOMN_EXECUTE))]
+)
 async def compute_voltage_drop(req: VoltageDropRequest):
     """
     Compute circuit voltage drop per NEC Chapter 9, Table 8.
@@ -332,15 +357,20 @@ async def compute_voltage_drop(req: VoltageDropRequest):
     try:
         kernel = _get_kernel()
         result = kernel.voltage_drop(
-            req.current_a, req.length_m, req.awg_gauge,
-            req.supply_voltage_v, req.max_drop_pct,
+            req.current_a,
+            req.length_m,
+            req.awg_gauge,
+            req.supply_voltage_v,
+            req.max_drop_pct,
         )
         return {"success": True, "data": result}
     except Exception as exc:
         _handle_error(exc)
 
 
-@router.post("/qomn/place-detectors", dependencies=[Depends(require_permission(Permission.QOMN_EXECUTE))])
+@router.post(
+    "/qomn/place-detectors", dependencies=[Depends(require_permission(Permission.QOMN_EXECUTE))]
+)
 async def place_detectors(req: RoomRequest):
     """
     Place fire alarm detectors in a room per NFPA 72-2022.
@@ -381,20 +411,30 @@ async def place_detectors(req: RoomRequest):
 
         # Map string enums to Python enums
         ceiling_map = {
-            "flat": CeilingType.FLAT, "sloped": CeilingType.SLOPED,
-            "peaked": CeilingType.PEAKED, "beam": CeilingType.BEAM,
-            "coffered": CeilingType.COFFERED, "open_joist": CeilingType.OPEN_JOIST,
+            "flat": CeilingType.FLAT,
+            "sloped": CeilingType.SLOPED,
+            "peaked": CeilingType.PEAKED,
+            "beam": CeilingType.BEAM,
+            "coffered": CeilingType.COFFERED,
+            "open_joist": CeilingType.OPEN_JOIST,
         }
         det_map = {
-            "smoke": DetectorType.SMOKE, "heat": DetectorType.HEAT,
-            "duct": DetectorType.DUCT, "beam": DetectorType.BEAM,
-            "aspirating": DetectorType.ASPIRATING, "multi": DetectorType.MULTI,
+            "smoke": DetectorType.SMOKE,
+            "heat": DetectorType.HEAT,
+            "duct": DetectorType.DUCT,
+            "beam": DetectorType.BEAM,
+            "aspirating": DetectorType.ASPIRATING,
+            "multi": DetectorType.MULTI,
         }
         occ_map = {
-            "assembly": OccupancyType.ASSEMBLY, "business": OccupancyType.BUSINESS,
-            "educational": OccupancyType.EDUCATIONAL, "health_care": OccupancyType.HEALTH_CARE,
-            "residential": OccupancyType.RESIDENTIAL, "mercantile": OccupancyType.MERCANTILE,
-            "industrial": OccupancyType.INDUSTRIAL, "storage": OccupancyType.STORAGE,
+            "assembly": OccupancyType.ASSEMBLY,
+            "business": OccupancyType.BUSINESS,
+            "educational": OccupancyType.EDUCATIONAL,
+            "health_care": OccupancyType.HEALTH_CARE,
+            "residential": OccupancyType.RESIDENTIAL,
+            "mercantile": OccupancyType.MERCANTILE,
+            "industrial": OccupancyType.INDUSTRIAL,
+            "storage": OccupancyType.STORAGE,
             "high_hazard": OccupancyType.HIGH_HAZARD,
         }
 
@@ -408,16 +448,16 @@ async def place_detectors(req: RoomRequest):
         ]
 
         room = RoomSpec(
-            room_id          = req.room_id,
-            width_m          = req.width_m,
-            length_m         = req.length_m,
-            ceiling_height_m = req.ceiling_height_m,
-            ceiling_type     = ceiling_map.get(req.ceiling_type, CeilingType.FLAT),
-            occupancy_type   = occ_map.get(req.occupancy_type, OccupancyType.BUSINESS),
-            detector_type    = det_map.get(req.detector_type, DetectorType.SMOKE),
-            is_sleeping_area = req.is_sleeping_area,
-            slope_degrees    = req.slope_degrees,
-            exit_doors       = exit_doors,
+            room_id=req.room_id,
+            width_m=req.width_m,
+            length_m=req.length_m,
+            ceiling_height_m=req.ceiling_height_m,
+            ceiling_type=ceiling_map.get(req.ceiling_type, CeilingType.FLAT),
+            occupancy_type=occ_map.get(req.occupancy_type, OccupancyType.BUSINESS),
+            detector_type=det_map.get(req.detector_type, DetectorType.SMOKE),
+            is_sleeping_area=req.is_sleeping_area,
+            slope_degrees=req.slope_degrees,
+            exit_doors=exit_doors,
         )
 
         engine = DetectorPlacementEngine(_get_kernel())
@@ -428,32 +468,34 @@ async def place_detectors(req: RoomRequest):
             "success": True,
             "data": {
                 "room_id": result.room_id,
-                "detector_count":     len(result.detectors),
+                "detector_count": len(result.detectors),
                 "pull_station_count": len(result.pull_stations),
                 "notification_count": len(result.notification_appliances),
-                "coverage_pct":       result.coverage_pct,
-                "beam_sections":      result.beam_sections,
+                "coverage_pct": result.coverage_pct,
+                "beam_sections": result.beam_sections,
                 "is_fully_compliant": result.is_fully_compliant,
-                "violations":         result.violations,
-                "nfpa_references":    result.nfpa_references,
-                "computation_hash":   result.computation_hash,
+                "violations": result.violations,
+                "nfpa_references": result.nfpa_references,
+                "computation_hash": result.computation_hash,
                 "detectors": [
                     {
-                        "device_id":      d.device_id,
-                        "device_type":    d.device_type,
-                        "x_m":            d.x_m,
-                        "y_m":            d.y_m,
-                        "z_m":            d.z_m,
-                        "spacing_m":      d.spacing_used_m,
-                        "radius_m":       d.radius_m,
-                        "nfpa_section":   d.nfpa_section,
+                        "device_id": d.device_id,
+                        "device_type": d.device_type,
+                        "x_m": d.x_m,
+                        "y_m": d.y_m,
+                        "z_m": d.z_m,
+                        "spacing_m": d.spacing_used_m,
+                        "radius_m": d.radius_m,
+                        "nfpa_section": d.nfpa_section,
                     }
                     for d in result.detectors
                 ],
                 "pull_stations": [
                     {
                         "device_id": p.device_id,
-                        "x_m": p.x_m, "y_m": p.y_m, "z_m": p.z_m,
+                        "x_m": p.x_m,
+                        "y_m": p.y_m,
+                        "z_m": p.z_m,
                         "nfpa_section": p.nfpa_section,
                     }
                     for p in result.pull_stations
@@ -461,19 +503,24 @@ async def place_detectors(req: RoomRequest):
                 "notification_appliances": [
                     {
                         "device_id": n.device_id,
-                        "x_m": n.x_m, "y_m": n.y_m, "z_m": n.z_m,
-                        "candela": n.candela, "is_combo": n.is_combo,
+                        "x_m": n.x_m,
+                        "y_m": n.y_m,
+                        "z_m": n.z_m,
+                        "candela": n.candela,
+                        "is_combo": n.is_combo,
                         "nfpa_section": n.nfpa_section,
                     }
                     for n in result.notification_appliances
                 ],
-            }
+            },
         }
     except Exception as exc:
         _handle_error(exc)
 
 
-@router.post("/qomn/place-duct", dependencies=[Depends(require_permission(Permission.QOMN_EXECUTE))])
+@router.post(
+    "/qomn/place-duct", dependencies=[Depends(require_permission(Permission.QOMN_EXECUTE))]
+)
 async def place_duct_detector(req: DuctDetectorRequest):
     """
     Compute duct detector placement per NFPA 72 §17.7.4.
@@ -501,10 +548,10 @@ async def place_duct_detector(req: DuctDetectorRequest):
                 },
             )
         spec = DuctDetectorSpec(
-            duct_id      = req.duct_id,
-            width_m      = req.width_m,
-            height_m     = req.height_m,
-            velocity_m_s = req.velocity_m_s,
+            duct_id=req.duct_id,
+            width_m=req.width_m,
+            height_m=req.height_m,
+            velocity_m_s=req.velocity_m_s,
         )
         result = place_duct_detector(spec)
         return {"success": True, "data": result}
@@ -525,16 +572,18 @@ async def get_audit_log():
       - chain_hash for tamper detection
     """
     kernel = _get_kernel()
-    audit  = kernel.get_audit_log()
+    audit = kernel.get_audit_log()
     is_valid = kernel.verify_audit_integrity()
     return {
-        "success":         True,
-        "chain_valid":     is_valid,
-        "data":            audit,
+        "success": True,
+        "chain_valid": is_valid,
+        "data": audit,
     }
 
 
-@router.get("/qomn/physics-guards", dependencies=[Depends(require_permission(Permission.QOMN_READ))])
+@router.get(
+    "/qomn/physics-guards", dependencies=[Depends(require_permission(Permission.QOMN_READ))]
+)
 async def get_physics_guards():
     """
     Return all physics guard limits with code references.
@@ -563,23 +612,29 @@ async def get_physics_guards():
         "success": True,
         "data": {
             "area_per_detector": {
-                "max_m2": 232.26, "max_ft2": 2500,
+                "max_m2": 232.26,
+                "max_ft2": 2500,
                 "code_ref": "NFPA 72-2022 §17.7.3.2.1",
             },
             "ceiling_height": {
-                "min_m": 0.001, "max_m": 18.288, "max_ft": 60,
+                "min_m": 0.001,
+                "max_m": 18.288,
+                "max_ft": 60,
                 "code_ref": "NFPA 72-2022 §17.7.3.2.4",
             },
             "smoke_max_spacing": {
-                "max_m": NFPA72_SMOKE_MAX_SPACING_M, "max_ft": 30,
+                "max_m": NFPA72_SMOKE_MAX_SPACING_M,
+                "max_ft": 30,
                 "code_ref": "NFPA 72-2022 §17.7.3.2.1",
             },
             "heat_max_spacing": {
-                "max_m": NFPA72_HEAT_MAX_SPACING_M, "max_ft": 50,
+                "max_m": NFPA72_HEAT_MAX_SPACING_M,
+                "max_ft": 50,
                 "code_ref": "NFPA 72-2022 §17.6.3.1",
             },
             "pull_station_height": {
-                "height_m": NFPA72_PULL_STATION_HEIGHT_M, "height_in": 48,
+                "height_m": NFPA72_PULL_STATION_HEIGHT_M,
+                "height_in": 48,
                 "code_ref": "NFPA 72-2022 §17.15.7",
             },
             "nac_min_cd": {
@@ -591,18 +646,21 @@ async def get_physics_guards():
                 "code_ref": "NFPA 72-2022 §18.5.5.7",
             },
             "efficiency_max": {
-                "max": 1.0, "code_ref": "Physics (conservation of energy)",
+                "max": 1.0,
+                "code_ref": "Physics (conservation of energy)",
             },
             "wire_current": {
                 "standard": "NEC 2023 §310.16",
                 "note": "Never exceed ampacity for selected AWG gauge",
             },
             "duct_velocity": {
-                "min_m_s": 0.305, "max_m_s": 15.24,
-                "min_fpm": 60,    "max_fpm": 3000,
+                "min_m_s": 0.305,
+                "max_m_s": 15.24,
+                "min_fpm": 60,
+                "max_fpm": 3000,
                 "code_ref": "NFPA 72-2022 §17.7.4.2.2",
             },
-        }
+        },
     }
 
 
@@ -667,7 +725,9 @@ async def get_qomn_constants():
     }
 
 
-@router.post("/qomn/golden-tests", dependencies=[Depends(require_permission(Permission.QOMN_EXECUTE))])
+@router.post(
+    "/qomn/golden-tests", dependencies=[Depends(require_permission(Permission.QOMN_EXECUTE))]
+)
 async def run_golden_tests():
     """
     Run QOMN golden test suite per QOMN Specification §9.
@@ -703,49 +763,49 @@ async def run_golden_tests():
         passed = abs(actual - expected) <= tolerance
         if not passed:
             all_pass = False
-        results.append({
-            "test":     name,
-            "actual":   actual,
-            "expected": expected,
-            "tolerance": tolerance,
-            "passed":   passed,
-            "ref":      ref,
-        })
+        results.append(
+            {
+                "test": name,
+                "actual": actual,
+                "expected": expected,
+                "tolerance": tolerance,
+                "passed": passed,
+                "ref": ref,
+            }
+        )
 
     # Golden Test 1: V130 — Smoke spacing at h=3.048m (10 ft) → 9.10m flat
     # Per NFPA 72-2022 §17.7.3.2.3 (verbatim): "9.1 m" (NOT 9.144m conversion).
     r1 = compute_smoke_detector_spacing(3.048)
     _test(
         "NFPA72_smoke_h10ft",
-        r1["listed_spacing_m"], 9.10, 0.001,
-        "NFPA 72-2022 §17.7.3.2.3 (flat 9.1m, NO height reduction)"
+        r1["listed_spacing_m"],
+        9.10,
+        0.001,
+        "NFPA 72-2022 §17.7.3.2.3 (flat 9.1m, NO height reduction)",
     )
 
     # Golden Test 2: Coverage radius = 0.7 × 9.10 = 6.37
     _test(
         "NFPA72_coverage_radius_factor",
-        r1["coverage_radius_m"], 0.7 * 9.10, 1e-9,
-        "NFPA 72-2022 §17.7.4.2.3.1"
+        r1["coverage_radius_m"],
+        0.7 * 9.10,
+        1e-9,
+        "NFPA 72-2022 §17.7.4.2.3.1",
     )
 
     # Golden Test 3: Heat spacing S = 0.7 × √A for A = 50 m²
     r3 = compute_heat_detector_spacing(3.0, 50.0)
-    expected_heat = min(0.7 * (50.0 ** 0.5), 15.24)
+    expected_heat = min(0.7 * (50.0**0.5), 15.24)
     _test(
-        "NFPA72_heat_spacing_50m2",
-        r3["spacing_m"], expected_heat, 1e-6,
-        "NFPA 72-2022 §17.6.3.1"
+        "NFPA72_heat_spacing_50m2", r3["spacing_m"], expected_heat, 1e-6, "NFPA 72-2022 §17.6.3.1"
     )
 
     # Golden Test 4: Battery — 0.5A standby 24h + 3.0A alarm 5min → check formula
     # V130: tolerance relaxed to 1e-2 to handle round() in kernel output.
     r4 = compute_battery_capacity_ah(0.5, 3.0)
-    ah_manual = ((0.5 * 24 + 3.0 * (5/60)) / 0.80) * 1.25
-    _test(
-        "NFPA72_battery_capacity",
-        r4["required_ah"], ah_manual, 1e-2,
-        "NFPA 72-2022 §10.6.7.2.1"
-    )
+    ah_manual = ((0.5 * 24 + 3.0 * (5 / 60)) / 0.80) * 1.25
+    _test("NFPA72_battery_capacity", r4["required_ah"], ah_manual, 1e-2, "NFPA 72-2022 §10.6.7.2.1")
 
     # Golden Test 5: Voltage drop 2.5A, 100m, AWG14, 24V
     # V130: kernel uses stranded copper @ 20°C (R_20=4.263 ohm/km) + temp
@@ -758,24 +818,29 @@ async def run_golden_tests():
     expected_vd = 2.0 * 2.5 * 100 * (r_eff / 1000.0)
     _test(
         "NEC_voltage_drop_AWG14_100m",
-        r5["voltage_drop_v"], expected_vd, 1e-3,
-        "NEC 2023 Chapter 9, Table 8 (stranded @ 20°C + 75°C correction)"
+        r5["voltage_drop_v"],
+        expected_vd,
+        1e-3,
+        "NEC 2023 Chapter 9, Table 8 (stranded @ 20°C + 75°C correction)",
     )
 
     # Golden Test 6: Physics guard — negative area MUST raise
     guard_raised = False
     try:
         from fireai.core.qomn_kernel import guard_area_m2
+
         guard_area_m2(-1.0)
     except Exception:
         guard_raised = True
-    results.append({
-        "test":    "physics_guard_negative_area",
-        "actual":  "raised" if guard_raised else "NOT_RAISED",
-        "expected": "raised",
-        "passed":  guard_raised,
-        "ref":     "QOMN Specification §3 Layer 0",
-    })
+    results.append(
+        {
+            "test": "physics_guard_negative_area",
+            "actual": "raised" if guard_raised else "NOT_RAISED",
+            "expected": "raised",
+            "passed": guard_raised,
+            "ref": "QOMN Specification §3 Layer 0",
+        }
+    )
     if not guard_raised:
         all_pass = False
 
@@ -783,30 +848,34 @@ async def run_golden_tests():
     eff_raised = False
     try:
         from fireai.core.qomn_kernel import guard_efficiency
+
         guard_efficiency(1.01)
     except Exception:
         eff_raised = True
-    results.append({
-        "test":    "physics_guard_efficiency_over_100pct",
-        "actual":  "raised" if eff_raised else "NOT_RAISED",
-        "expected": "raised",
-        "passed":  eff_raised,
-        "ref":     "QOMN Specification §3 Layer 0 / Physics",
-    })
+    results.append(
+        {
+            "test": "physics_guard_efficiency_over_100pct",
+            "actual": "raised" if eff_raised else "NOT_RAISED",
+            "expected": "raised",
+            "passed": eff_raised,
+            "ref": "QOMN Specification §3 Layer 0 / Physics",
+        }
+    )
     if not eff_raised:
         all_pass = False
 
     passed_count = sum(1 for r in results if r["passed"])
     return {
-        "success":       all_pass,
-        "all_passed":    all_pass,
-        "passed_count":  passed_count,
-        "total_count":   len(results),
-        "results":       results,
+        "success": all_pass,
+        "all_passed": all_pass,
+        "passed_count": passed_count,
+        "total_count": len(results),
+        "results": results,
     }
 
 
 # ── Error Handler ─────────────────────────────────────────────────────────────
+
 
 def _handle_error(exc: Exception) -> NoReturn:
     """
@@ -834,13 +903,13 @@ def _handle_error(exc: Exception) -> NoReturn:
         raise HTTPException(
             status_code=422,
             detail={
-                "error":     "PHYSICS_GUARD_REJECTION",
-                "field":     exc.field,
-                "value":     str(exc.value),
-                "reason":    exc.reason,
-                "code_ref":  exc.code_ref,
-                "action":    "Review input values. Consult licensed FPE if limits are unclear.",
-            }
+                "error": "PHYSICS_GUARD_REJECTION",
+                "field": exc.field,
+                "value": str(exc.value),
+                "reason": exc.reason,
+                "code_ref": exc.code_ref,
+                "action": "Review input values. Consult licensed FPE if limits are unclear.",
+            },
         )
     if _ComputationError is not None and isinstance(exc, _ComputationError):
         # H-3 FIX: Log the full error server-side, return generic message to client
@@ -848,10 +917,10 @@ def _handle_error(exc: Exception) -> NoReturn:
         raise HTTPException(
             status_code=500,
             detail={
-                "error":  "COMPUTATION_FAILURE",
+                "error": "COMPUTATION_FAILURE",
                 "detail": "An internal computation error occurred. Check input values or contact the engineering team.",
                 "action": "Report this to the engineering team with input values.",
-            }
+            },
         )
     if _ValidationError is not None and isinstance(exc, _ValidationError):
         # H-3 FIX: Log the full error server-side, return generic message to client
@@ -859,10 +928,10 @@ def _handle_error(exc: Exception) -> NoReturn:
         raise HTTPException(
             status_code=500,
             detail={
-                "error":  "VALIDATION_FAILURE",
+                "error": "VALIDATION_FAILURE",
                 "detail": "An internal validation error occurred. Check input values or contact the engineering team.",
                 "action": "Report this to the engineering team with input values.",
-            }
+            },
         )
     if isinstance(exc, ValueError):
         # M-2 FIX: Sanitize ValueError messages — Shapely/geometry errors
@@ -873,7 +942,7 @@ def _handle_error(exc: Exception) -> NoReturn:
             detail={
                 "error": "INVALID_INPUT",
                 "detail": "Input values are invalid. Please check all parameters and try again.",
-            }
+            },
         )
     if isinstance(exc, HTTPException):
         # Re-raise already-formed HTTP exceptions (e.g., from _get_kernel 503)
@@ -885,5 +954,5 @@ def _handle_error(exc: Exception) -> NoReturn:
         detail={
             "error": "INTERNAL_ERROR",
             "detail": "An unexpected error occurred. The engineering team has been notified.",
-        }
+        },
     )

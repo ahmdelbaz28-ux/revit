@@ -120,11 +120,21 @@ SAFETY_MAXIMIZED_SPACING_FACTOR: float = 0.85
 
 # Occupancy types where Cost-Minimized is FORBIDDEN as recommended
 # (high-hazard / life-critical occupancies per NFPA 101)
-HIGH_HAZARD_OCCUPANCIES = frozenset({
-    "healthcare", "hospital", "ambulatory", "assembly",
-    "detention", "correctional", "daycare", "educational",
-    "high_hazard", "extra_hazard", "ordinary_hazard_2",
-})
+HIGH_HAZARD_OCCUPANCIES = frozenset(
+    {
+        "healthcare",
+        "hospital",
+        "ambulatory",
+        "assembly",
+        "detention",
+        "correctional",
+        "daycare",
+        "educational",
+        "high_hazard",
+        "extra_hazard",
+        "ordinary_hazard_2",
+    }
+)
 
 # Multiprocessing context — fork is required per V37 (threads forbidden)
 _MP_CONTEXT = "fork"
@@ -220,9 +230,7 @@ class GenerativeResult:
                 "ceiling_height": self.room.ceiling_height,
                 "area_m2": self.room.width * self.room.length,
             },
-            "variants": {
-                v.value: vr.to_dict() for v, vr in self.variants.items()
-            },
+            "variants": {v.value: vr.to_dict() for v, vr in self.variants.items()},
             "recommended_variant": self.recommended_variant.value,
             "total_generation_ms": round(self.total_generation_ms, 2),
             "run_id": self.run_id,
@@ -335,13 +343,14 @@ def _generate_variant_worker(args: tuple[str, dict[str, Any]]) -> dict[str, Any]
 
     except Exception as exc:
         generation_ms = (time.perf_counter() - t_start) * 1000.0
-        logger.error(
-            "Variant %s generation failed: %s", variant.value, exc, exc_info=True
-        )
+        logger.error("Variant %s generation failed: %s", variant.value, exc, exc_info=True)
         # Return a failed-layout result (never crash the whole batch)
         failed_layout = DetectorLayout(
-            room=room, detectors=[], coverage_pct=0.0,
-            proof_valid=False, nfpa_valid=False,
+            room=room,
+            detectors=[],
+            coverage_pct=0.0,
+            proof_valid=False,
+            nfpa_valid=False,
             method=f"FAILED_{variant.value}",
             violations=[f"Generation error: {exc!r}"],
         )
@@ -487,13 +496,21 @@ class GenerativeLayoutAgent:
         # Deterministic run_id (per agent.md V85 Bug #28)
         import hashlib
         import json
+
         if audit_run_id is None:
-            content = json.dumps({
-                "room": {"name": room.name, "width": room.width,
-                         "length": room.length, "height": room.ceiling_height},
-                "occupancy": occupancy_type,
-                "detector": detector_type,
-            }, sort_keys=True)
+            content = json.dumps(
+                {
+                    "room": {
+                        "name": room.name,
+                        "width": room.width,
+                        "length": room.length,
+                        "height": room.ceiling_height,
+                    },
+                    "occupancy": occupancy_type,
+                    "detector": detector_type,
+                },
+                sort_keys=True,
+            )
             h = hashlib.sha256(content.encode()).hexdigest()
             run_id = f"{h[:8]}-{h[8:12]}-{h[12:16]}-{h[16:20]}-{h[20:32]}"
         else:
@@ -633,9 +650,7 @@ class GenerativeLayoutAgent:
         detector_cost = detector_count * unit_cost
 
         # Cable cost (estimate: average cable run per detector = room diagonal / 2)
-        room_diagonal = math.sqrt(
-            layout.room.width ** 2 + layout.room.length ** 2
-        )
+        room_diagonal = math.sqrt(layout.room.width**2 + layout.room.length**2)
         avg_cable_per_detector = room_diagonal / 2
         total_cable_m = detector_count * avg_cable_per_detector
         cable_cost = total_cable_m * UNIT_COSTS["cable_fpl_per_m"]
@@ -684,21 +699,18 @@ class GenerativeLayoutAgent:
                     continue
                 if dist == 0:
                     # Complete overlap
-                    overlap = math.pi * radius ** 2
+                    overlap = math.pi * radius**2
                 else:
                     # Partial overlap (circle-circle intersection)
                     r = radius
                     d = dist
-                    overlap = (
-                        2 * r ** 2 * math.acos(d / (2 * r))
-                        - d / 2 * math.sqrt(4 * r ** 2 - d ** 2)
-                    )
+                    overlap = 2 * r**2 * math.acos(d / (2 * r)) - d / 2 * math.sqrt(4 * r**2 - d**2)
 
                 total_overlap_area += overlap
                 # V138 F-10 FIX: Use TOTAL coverage area (all detectors) as denominator
                 # not just overlapping pairs. The OLD code only counted pairs that overlap
                 # in the denominator, inflating overlap_pct for sparse layouts.
-                total_possible_area += math.pi * radius ** 2
+                total_possible_area += math.pi * radius**2
 
         if total_possible_area == 0:
             return 0.0
@@ -741,10 +753,12 @@ class GenerativeLayoutAgent:
         import math
 
         # Validate inputs (per agent.md V57 NaN/Inf bypass)
-        for _name, val in (("coverage_pct", coverage_pct),
-                          ("overlap_pct", overlap_pct),
-                          ("total_cost", total_cost),
-                          ("reference_cost", reference_cost)):
+        for _name, val in (
+            ("coverage_pct", coverage_pct),
+            ("overlap_pct", overlap_pct),
+            ("total_cost", total_cost),
+            ("reference_cost", reference_cost),
+        ):
             if not math.isfinite(val):
                 return 0.0  # Fail-safe: NaN/Inf → score 0
 
@@ -812,10 +826,18 @@ class GenerativeLayoutAgent:
 
         # V135 F-9: Low-hazard occupancy → COST_MINIMIZED allowed if score is competitive
         # Low-hazard = storage, parking, utility, mercantile (per NFPA 101)
-        LOW_HAZARD_OCCUPANCIES = frozenset({
-            "storage", "parking", "utility", "mercantile", "business",
-            "office", "industrial_light", "warehouse",
-        })
+        LOW_HAZARD_OCCUPANCIES = frozenset(
+            {
+                "storage",
+                "parking",
+                "utility",
+                "mercantile",
+                "business",
+                "office",
+                "industrial_light",
+                "warehouse",
+            }
+        )
         is_low_hazard = any(h in occ_lower for h in LOW_HAZARD_OCCUPANCIES)
 
         if is_low_hazard and LayoutVariant.COST_MINIMIZED in compliant:
@@ -863,9 +885,7 @@ class GenerativeLayoutAgent:
             return [self._generate_sequential(t) for t in tasks]
 
     @staticmethod
-    def _generate_sequential(
-        task: tuple[str, dict[str, Any], dict[str, Any]]
-    ) -> dict[str, Any]:
+    def _generate_sequential(task: tuple[str, dict[str, Any], dict[str, Any]]) -> dict[str, Any]:
         """Generate a single variant sequentially (fallback)."""
         return _generate_variant_worker(task)
 
@@ -926,9 +946,11 @@ class GenerativeLayoutAgent:
         except Exception as exc:
             # Per fail-safe principle: audit failure MUST NOT block generation
             logger.error(
-                "Failed to record GENERATIVE_ATTEMPT audit event for "
-                "run_id=%s variant=%s: %s",
-                run_id, variant.value, exc, exc_info=True,
+                "Failed to record GENERATIVE_ATTEMPT audit event for run_id=%s variant=%s: %s",
+                run_id,
+                variant.value,
+                exc,
+                exc_info=True,
             )
             return None
 

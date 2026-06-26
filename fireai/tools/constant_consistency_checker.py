@@ -36,7 +36,11 @@ CANONICAL_CONSTANTS: dict[str, tuple[float, str, str]] = {
     # models_v21.py — molecular weight of dry air (CRC Handbook, 97th Ed.)
     "_MW_AIR": (28.96, "models_v21", "CRC Handbook — dry air MW"),
     # semi_cfast_engine.py — aligned to 28.96 (CRC Handbook, same as _MW_AIR)
-    "AIR_MOLAR_MASS_G_MOL": (28.96, "semi_cfast_engine", "CRC Handbook — dry air MW (aligned with _MW_AIR)"),
+    "AIR_MOLAR_MASS_G_MOL": (
+        28.96,
+        "semi_cfast_engine",
+        "CRC Handbook — dry air MW (aligned with _MW_AIR)",
+    ),
     # Gravity
     "GRAVITY": (9.81, "", "SI standard (local approx)"),
     "GRAVITY_M_S2": (9.81, "", "SI standard (local approx)"),
@@ -380,7 +384,9 @@ def _check_cross_module_consistency(
         for name in names:
             if name in registry:
                 for occ in registry[name]:
-                    values[round(occ.value, 4)].append(f"{occ.file.name}:{occ.line} ({name}={occ.value})")
+                    values[round(occ.value, 4)].append(
+                        f"{occ.file.name}:{occ.line} ({name}={occ.value})"
+                    )
         if len(values) > 1:
             details = " | ".join(f"{v}: {locs}" for v, locs in sorted(values.items()))
             issues.append(
@@ -467,7 +473,9 @@ def _print_report(report: ConsistencyReport, root: Path) -> int:
 
     # Dict constant mismatches (e.g., PHYSICAL_CONSTANTS dict values)
     if report.dict_constant_issues:
-        print(f"\n[CRITICAL] Dict-literal constant mismatches ({len(report.dict_constant_issues)}):")
+        print(
+            f"\n[CRITICAL] Dict-literal constant mismatches ({len(report.dict_constant_issues)}):"
+        )
         for msg in report.dict_constant_issues:
             print(f"  X {msg}")
     else:
@@ -475,7 +483,9 @@ def _print_report(report: ConsistencyReport, root: Path) -> int:
 
     # Cross-module consistency group issues
     if report.cross_module_issues:
-        print(f"\n[CRITICAL] Cross-module consistency group violations ({len(report.cross_module_issues)}):")
+        print(
+            f"\n[CRITICAL] Cross-module consistency group violations ({len(report.cross_module_issues)}):"
+        )
         for msg in report.cross_module_issues:
             print(f"  X {msg}")
     else:
@@ -513,11 +523,16 @@ def _print_report(report: ConsistencyReport, root: Path) -> int:
 
     # Consistent
     if report.consistent:
-        print(f"\n[PASS] Consistent constants ({len(report.consistent)}): {', '.join(report.consistent)}")
+        print(
+            f"\n[PASS] Consistent constants ({len(report.consistent)}): {', '.join(report.consistent)}"
+        )
 
     print(f"\n{sep}")
     has_issues = bool(
-        canonical_issues or report.inconsistent or report.cross_module_issues or report.dict_constant_issues
+        canonical_issues
+        or report.inconsistent
+        or report.cross_module_issues
+        or report.dict_constant_issues
     )
     status = "FAIL" if has_issues else ("WARN" if report.suspicious else "PASS")
     print(f"Status: {status}")

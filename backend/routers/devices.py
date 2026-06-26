@@ -68,12 +68,16 @@ async def list_devices(
     """List all devices in a project with pagination."""
     _verify_project(project_id)
     db = get_db()
-    result = db.list_devices(project_id, page=page, limit=limit, sort=_normalize_sort(sort), order=order)
+    result = db.list_devices(
+        project_id, page=page, limit=limit, sort=_normalize_sort(sort), order=order
+    )
     validate_paginated(result, item_validator=validate_device)
     return success(result)
 
 
-@router.post("", status_code=201, dependencies=[Depends(require_permission(Permission.DEVICE_CREATE))])
+@router.post(
+    "", status_code=201, dependencies=[Depends(require_permission(Permission.DEVICE_CREATE))]
+)
 async def create_device(project_id: str, input_data: CreateDeviceInput):
     """
     Create a new device in a project.
@@ -100,7 +104,7 @@ async def create_device(project_id: str, input_data: CreateDeviceInput):
             raise HTTPException(
                 status_code=400,
                 detail="Cannot convert Watts to Amperes: voltage must be > 0. "
-                       "Provide voltage in Volts or specify load_unit as 'A'.",
+                "Provide voltage in Volts or specify load_unit as 'A'.",
             )
         load_amperes = raw_load / voltage
 
@@ -129,6 +133,7 @@ async def create_device(project_id: str, input_data: CreateDeviceInput):
 
     # Sync device to UDM for conflict detection
     from backend.project_bridge import sync_device_to_udm
+
     sync_device_to_udm(project_id, device_data)
 
     return success(device)
@@ -147,9 +152,7 @@ async def get_device(project_id: str, device_id: str):
 
 
 @router.put("/{device_id}", dependencies=[Depends(require_permission(Permission.DEVICE_UPDATE))])
-async def update_device(
-    project_id: str, device_id: str, input_data: UpdateDeviceInput
-):
+async def update_device(project_id: str, device_id: str, input_data: UpdateDeviceInput):
     """
     Update an existing device.
 
@@ -183,7 +186,7 @@ async def update_device(
                     raise HTTPException(
                         status_code=400,
                         detail="Cannot convert Watts to Amperes: voltage must be > 0. "
-                               "Provide voltage in Volts or specify load_unit as 'A'.",
+                        "Provide voltage in Volts or specify load_unit as 'A'.",
                     )
                 updates["load"] = raw_load / voltage
 
@@ -204,6 +207,7 @@ async def update_device(
 
     # Sync device update to UDM for conflict detection
     from backend.project_bridge import sync_device_update_to_udm
+
     sync_device_update_to_udm(project_id, device_id, updates)
 
     return success(device)
@@ -228,7 +232,8 @@ async def delete_device(project_id: str, device_id: str):
         "SAFETY-CRITICAL: Device DELETED — project=%s device_id=%s "
         "device_type=%s name=%s — NFPA 72 requires traceability for all "
         "fire alarm device changes. Deletion affects coverage calculations.",
-        project_id, device_id,
+        project_id,
+        device_id,
         device.get("type", "unknown"),
         device.get("name", "unknown"),
     )
@@ -236,6 +241,7 @@ async def delete_device(project_id: str, device_id: str):
 
     # Sync device deletion to UDM (soft-delete for audit trail)
     from backend.project_bridge import sync_device_delete_to_udm
+
     sync_device_delete_to_udm(project_id, device_id)
 
     return success(None, "Device deleted")

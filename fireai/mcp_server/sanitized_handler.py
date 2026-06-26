@@ -63,31 +63,32 @@ logger = logging.getLogger(__name__)
 # and logged as a potential security attack.
 
 _FORBIDDEN_CODE_PATTERNS = [
-    re.compile(r'\beval\s*\(', re.IGNORECASE),
-    re.compile(r'\bexec\s*\(', re.IGNORECASE),
-    re.compile(r'\bsubprocess\b', re.IGNORECASE),
-    re.compile(r'\bos\.system\b', re.IGNORECASE),
-    re.compile(r'\bos\.popen\b', re.IGNORECASE),
-    re.compile(r'\b__import__\s*\(', re.IGNORECASE),
-    re.compile(r'\bgetattr\s*\(', re.IGNORECASE),
-    re.compile(r'\bsetattr\s*\(', re.IGNORECASE),
-    re.compile(r'\bglobals\s*\(', re.IGNORECASE),
-    re.compile(r'\blocals\s*\(', re.IGNORECASE),
-    re.compile(r'\bcompile\s*\(', re.IGNORECASE),
-    re.compile(r'\bopen\s*\(', re.IGNORECASE),
-    re.compile(r'\bwrite\s*\(', re.IGNORECASE),
+    re.compile(r"\beval\s*\(", re.IGNORECASE),
+    re.compile(r"\bexec\s*\(", re.IGNORECASE),
+    re.compile(r"\bsubprocess\b", re.IGNORECASE),
+    re.compile(r"\bos\.system\b", re.IGNORECASE),
+    re.compile(r"\bos\.popen\b", re.IGNORECASE),
+    re.compile(r"\b__import__\s*\(", re.IGNORECASE),
+    re.compile(r"\bgetattr\s*\(", re.IGNORECASE),
+    re.compile(r"\bsetattr\s*\(", re.IGNORECASE),
+    re.compile(r"\bglobals\s*\(", re.IGNORECASE),
+    re.compile(r"\blocals\s*\(", re.IGNORECASE),
+    re.compile(r"\bcompile\s*\(", re.IGNORECASE),
+    re.compile(r"\bopen\s*\(", re.IGNORECASE),
+    re.compile(r"\bwrite\s*\(", re.IGNORECASE),
     # Additional dangerous Python builtins
-    re.compile(r'\bpickle\b', re.IGNORECASE),
-    re.compile(r'\bmarshal\b', re.IGNORECASE),
-    re.compile(r'\bshutil\b', re.IGNORECASE),
-    re.compile(r'\bctypes\b', re.IGNORECASE),
-    re.compile(r'\bsocket\b', re.IGNORECASE),
+    re.compile(r"\bpickle\b", re.IGNORECASE),
+    re.compile(r"\bmarshal\b", re.IGNORECASE),
+    re.compile(r"\bshutil\b", re.IGNORECASE),
+    re.compile(r"\bctypes\b", re.IGNORECASE),
+    re.compile(r"\bsocket\b", re.IGNORECASE),
 ]
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # REQUEST / RESPONSE DATA STRUCTURES
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 @dataclass
 class MCPRequest:
@@ -137,6 +138,7 @@ class MCPResponse:
 # SANITIZED MCP HANDLER
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class SanitizedMCPHandler:
     """
     Input-sanitized handler for MCP tool requests.
@@ -185,15 +187,35 @@ class SanitizedMCPHandler:
         },
         "query_hydraulic_calculation": {
             "flow_rate_gpm": {"type": "float", "min": 0.0, "max": 50000.0, "required": True},
-            "friction_factor_c": {"type": "float", "min": MIN_C_FACTOR, "max": MAX_C_FACTOR, "required": True},
-            "internal_diameter_inches": {"type": "float", "min": MIN_PIPE_DIAMETER_INCHES, "max": 36.0, "required": True},
+            "friction_factor_c": {
+                "type": "float",
+                "min": MIN_C_FACTOR,
+                "max": MAX_C_FACTOR,
+                "required": True,
+            },
+            "internal_diameter_inches": {
+                "type": "float",
+                "min": MIN_PIPE_DIAMETER_INCHES,
+                "max": 36.0,
+                "required": True,
+            },
             "pipe_length_feet": {"type": "float", "min": 0.0, "max": 5000.0, "required": True},
         },
         # calculate_friction_loss uses same params as query_hydraulic_calculation
         "calculate_friction_loss": {
             "flow_rate_gpm": {"type": "float", "min": 0.0, "max": 50000.0, "required": True},
-            "friction_factor_c": {"type": "float", "min": MIN_C_FACTOR, "max": MAX_C_FACTOR, "required": True},
-            "internal_diameter_inches": {"type": "float", "min": MIN_PIPE_DIAMETER_INCHES, "max": 36.0, "required": True},
+            "friction_factor_c": {
+                "type": "float",
+                "min": MIN_C_FACTOR,
+                "max": MAX_C_FACTOR,
+                "required": True,
+            },
+            "internal_diameter_inches": {
+                "type": "float",
+                "min": MIN_PIPE_DIAMETER_INCHES,
+                "max": 36.0,
+                "required": True,
+            },
             "pipe_length_feet": {"type": "float", "min": 0.0, "max": 5000.0, "required": True},
         },
         "validate_sprinkler_compliance": {
@@ -292,9 +314,7 @@ class SanitizedMCPHandler:
 
             # Check required
             if rule.get("required") and raw_value is None:
-                violations.append(
-                    f"Required parameter '{param_name}' is missing."
-                )
+                violations.append(f"Required parameter '{param_name}' is missing.")
                 continue
 
             if raw_value is None:
@@ -313,18 +333,14 @@ class SanitizedMCPHandler:
                     else:
                         sanitized_params[param_name] = sanitize_bim_parameter(raw_value)
                 except ValueError as e:
-                    violations.append(
-                        f"Sanitization rejected parameter '{param_name}': {e}"
-                    )
+                    violations.append(f"Sanitization rejected parameter '{param_name}': {e}")
                     continue
 
             # Validate numerics
             elif rule.get("type") == "float" and isinstance(raw_value, (int, float)):
                 num_val = float(raw_value)
                 if not math.isfinite(num_val):
-                    violations.append(
-                        f"Parameter '{param_name}' is not finite: {num_val}"
-                    )
+                    violations.append(f"Parameter '{param_name}' is not finite: {num_val}")
                     continue
                 min_val = rule.get("min")
                 max_val = rule.get("max")
@@ -349,15 +365,11 @@ class SanitizedMCPHandler:
                     try:
                         sanitized_params[param_name] = sanitize_bim_parameter(raw_value)
                     except ValueError as e:
-                        violations.append(
-                            f"Sanitization rejected parameter '{param_name}': {e}"
-                        )
+                        violations.append(f"Sanitization rejected parameter '{param_name}': {e}")
                         continue
                 elif isinstance(raw_value, (int, float)):
                     if not math.isfinite(float(raw_value)):
-                        violations.append(
-                            f"Parameter '{param_name}' is not finite: {raw_value}"
-                        )
+                        violations.append(f"Parameter '{param_name}' is not finite: {raw_value}")
                         continue
                     sanitized_params[param_name] = raw_value
                 else:
@@ -393,14 +405,16 @@ class SanitizedMCPHandler:
                 )
 
         # Log successful request
-        self._request_log.append({
-            "request_id": request.request_id,
-            "tool_name": request.tool_name,
-            "source": request.source,
-            "timestamp": request.timestamp,
-            "param_count": len(sanitized_params),
-            "violations": len(violations),
-        })
+        self._request_log.append(
+            {
+                "request_id": request.request_id,
+                "tool_name": request.tool_name,
+                "source": request.source,
+                "timestamp": request.timestamp,
+                "param_count": len(sanitized_params),
+                "violations": len(violations),
+            }
+        )
 
         return MCPResponse(
             request_id=request.request_id,

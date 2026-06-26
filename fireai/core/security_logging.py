@@ -197,7 +197,9 @@ def mask_sensitive(text: str, mask: str = "***REDACTED***") -> str:
     # Apply regex patterns
     for pattern in _SENSITIVE_PATTERNS:
         result = pattern.sub(
-            lambda m: m.group(0).replace(m.group(m.lastindex or 0), mask) if m.lastindex else m.group(0),
+            lambda m: (
+                m.group(0).replace(m.group(m.lastindex or 0), mask) if m.lastindex else m.group(0)
+            ),
             result,
         )
 
@@ -219,9 +221,14 @@ class SensitiveDataFilter(logging.Filter):
         if isinstance(record.msg, str):
             record.msg = mask_sensitive(record.msg)
         if record.args and isinstance(record.args, dict):
-            record.args = {k: mask_sensitive(str(v)) if isinstance(v, str) else v for k, v in record.args.items()}
+            record.args = {
+                k: mask_sensitive(str(v)) if isinstance(v, str) else v
+                for k, v in record.args.items()
+            }
         elif record.args and isinstance(record.args, tuple):
-            record.args = tuple(mask_sensitive(str(a)) if isinstance(a, str) else a for a in record.args)
+            record.args = tuple(
+                mask_sensitive(str(a)) if isinstance(a, str) else a for a in record.args
+            )
         return True
 
 
@@ -376,7 +383,9 @@ def configure_timed_rotation(
                     masked_msg = mask_sensitive(msg)
                     _loguru_logger.opt(depth=0).info(masked_msg)
                 except Exception as exc:
-                    logger.error("LoguruBridgeTimed.emit failed — security log message dropped: %s", exc)
+                    logger.error(
+                        "LoguruBridgeTimed.emit failed — security log message dropped: %s", exc
+                    )
 
         bridge = _LoguruBridgeTimed()
         bridge.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s"))
@@ -600,7 +609,9 @@ class SecurityAuditLogger:
             timestamp = datetime.now(timezone.utc).isoformat()
 
             # Generate event ID
-            event_id = hashlib.sha256(f"{timestamp}:{event_type}:{self._chain_hash}".encode()).hexdigest()[:16]
+            event_id = hashlib.sha256(
+                f"{timestamp}:{event_type}:{self._chain_hash}".encode()
+            ).hexdigest()[:16]
 
             # Build the event record — mask sensitive details BEFORE computing
             # the chain hash, so that the hash covers the actual stored value.

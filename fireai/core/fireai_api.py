@@ -34,7 +34,9 @@ from .fire_expert_system import FireExpertSystem as ExpertSystem
 from .floor_orchestrator import FloorOrchestrator
 from .nfpa72_models import CeilingSpec, CeilingType, DetectorType, RoomSpec
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(name)s | %(levelname)s | %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s | %(name)s | %(levelname)s | %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 MAX_FILE_SIZE_MB: int = 50
@@ -53,7 +55,9 @@ def create_app() -> FastAPI:
         redoc_url="/redoc",
     )
     # Security Fix (VULN-006): Read allowed CORS origins from environment variable
-    _cors_origins = os.getenv("FIREAI_CORS_ORIGINS", os.getenv("CORS_ORIGINS", "http://localhost:3000")).split(",")
+    _cors_origins = os.getenv(
+        "FIREAI_CORS_ORIGINS", os.getenv("CORS_ORIGINS", "http://localhost:3000")
+    ).split(",")
     # V114 FIX: Reject wildcard CORS origins — safety-critical system must not
     # allow any website to modify fire protection designs via cross-origin requests
     if "*" in _cors_origins:
@@ -131,7 +135,9 @@ async def verify_api_key(x_api_key: str = Header(...)) -> str:
     raw = os.getenv("FIREAI_API_KEYS", "")
     valid_keys = {k.strip() for k in raw.split(",") if k.strip()}
     if not valid_keys:
-        raise HTTPException(status_code=503, detail="Service not configured: FIREAI_API_KEYS not set")
+        raise HTTPException(
+            status_code=503, detail="Service not configured: FIREAI_API_KEYS not set"
+        )
     # Security Fix (VULN-017): Timing-safe comparison to prevent timing attacks
     if not any(secrets.compare_digest(x_api_key, k) for k in valid_keys):
         raise HTTPException(status_code=401, detail="Invalid API key")
@@ -207,7 +213,9 @@ def _room_result_to_out(result) -> RoomResultOut:
         else str(result.detector_type),
         detector_count=len(result.detector_positions),
         detector_positions=[{"x": p[0], "y": p[1]} for p in result.detector_positions],
-        coverage_result={"coverage_pct": result.coverage_result.coverage_pct} if result.coverage_result else None,
+        coverage_result={"coverage_pct": result.coverage_result.coverage_pct}
+        if result.coverage_result
+        else None,
         coverage_pct=result.coverage_result.coverage_pct if result.coverage_result else 0.0,
         errors=result.errors,
         refused=result.refused,
@@ -297,19 +305,28 @@ async def get_audit_trail() -> dict[str, Any]:
 async def upload_file(request: Request, file: UploadFile = File(...)) -> dict[str, Any]:
     content = await file.read()
     if len(content) > MAX_FILE_SIZE_BYTES:
-        raise HTTPException(status_code=413, detail=f"File too large. Maximum allowed size is {MAX_FILE_SIZE_MB} MB.")
+        raise HTTPException(
+            status_code=413,
+            detail=f"File too large. Maximum allowed size is {MAX_FILE_SIZE_MB} MB.",
+        )
     allowed_extensions = {".dwg", ".rvt", ".json", ".ifc"}
     filename = file.filename or ""
     ext = "." + filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
     if ext not in allowed_extensions:
         raise HTTPException(
-            status_code=422, detail=f"Unsupported file type '{ext}'. Allowed: {sorted(allowed_extensions)}"
+            status_code=422,
+            detail=f"Unsupported file type '{ext}'. Allowed: {sorted(allowed_extensions)}",
         )
     logger.info("upload_file: accepted '%s' (%d bytes)", filename, len(content))
     return {"filename": filename, "size_bytes": len(content), "status": "accepted"}
 
 
-@app.post("/analyse/room", response_model=RoomResultOut, tags=["Design"], dependencies=[Depends(verify_api_key)])
+@app.post(
+    "/analyse/room",
+    response_model=RoomResultOut,
+    tags=["Design"],
+    dependencies=[Depends(verify_api_key)],
+)
 @limiter.limit("30/minute")
 async def analyse_room(request: Request, body: AnalyseRoomRequest) -> RoomResultOut:
     try:
@@ -317,16 +334,23 @@ async def analyse_room(request: Request, body: AnalyseRoomRequest) -> RoomResult
     except ValueError as e:
         # Log rejection before returning error
         _audit_trail.log_rejection(room_id=body.room.room_id, reason=str(e))
-        raise HTTPException(status_code=422, detail="Invalid room specification. Check room parameters and try again.")
+        raise HTTPException(
+            status_code=422,
+            detail="Invalid room specification. Check room parameters and try again.",
+        )
 
     forced_type: DetectorType | None = None
     if body.forced_detector_type:
         try:
             forced_type = DetectorType(body.forced_detector_type)
         except ValueError:
-            raise HTTPException(status_code=422, detail=f"Unknown detector type: {body.forced_detector_type}")
+            raise HTTPException(
+                status_code=422, detail=f"Unknown detector type: {body.forced_detector_type}"
+            )
     result = _expert_system.analyse_room(  # type: ignore[call-arg]
-        room_spec=room_spec, forced_detector_type=forced_type, required_coverage_pct=body.required_coverage_pct
+        room_spec=room_spec,
+        forced_detector_type=forced_type,
+        required_coverage_pct=body.required_coverage_pct,
     )
     _audit_trail.log_placement(
         room_id=result.room_id,
@@ -338,7 +362,12 @@ async def analyse_room(request: Request, body: AnalyseRoomRequest) -> RoomResult
     return _room_result_to_out(result)
 
 
-@app.post("/analyse/floor", response_model=FloorResultOut, tags=["Design"], dependencies=[Depends(verify_api_key)])
+@app.post(
+    "/analyse/floor",
+    response_model=FloorResultOut,
+    tags=["Design"],
+    dependencies=[Depends(verify_api_key)],
+)
 @limiter.limit("10/minute")
 async def analyse_floor(request: Request, body: AnalyseFloorRequest) -> FloorResultOut:
     # Build and validate each room - log any rejections
@@ -351,8 +380,12 @@ async def analyse_floor(request: Request, body: AnalyseFloorRequest) -> FloorRes
             raise HTTPException(status_code=422, detail=f"Room '{r.room_id}': {e}")
 
     orchestrator = FloorOrchestrator(audit_trail=_audit_trail)
-    floor_result = orchestrator.process(room_specs=room_specs, project_name=body.floor_id, source_dxf="")
-    fully_compliant = floor_result.rooms_passed == floor_result.total_rooms and floor_result.rooms_errored == 0
+    floor_result = orchestrator.process(
+        room_specs=room_specs, project_name=body.floor_id, source_dxf=""
+    )
+    fully_compliant = (
+        floor_result.rooms_passed == floor_result.total_rooms and floor_result.rooms_errored == 0
+    )
 
     return FloorResultOut(
         floor_id=floor_result.project_name,
@@ -400,7 +433,12 @@ def _get_fireai_system():
     return _fireai_system
 
 
-@app.post("/analyse/room/v10", response_model=RoomResultOut, tags=["Design"], dependencies=[Depends(verify_api_key)])
+@app.post(
+    "/analyse/room/v10",
+    response_model=RoomResultOut,
+    tags=["Design"],
+    dependencies=[Depends(verify_api_key)],
+)
 @limiter.limit("30/minute")
 async def analyse_room_v10(request: Request, body: AnalyseRoomRequest) -> RoomResultOut:
     """Analyze room using V10 Enhanced with resilience and audit trail."""
@@ -408,7 +446,10 @@ async def analyse_room_v10(request: Request, body: AnalyseRoomRequest) -> RoomRe
         room_spec = _build_room_spec(body.room)
     except ValueError as e:
         logger.warning("Room spec validation failed: %s", e)
-        raise HTTPException(status_code=422, detail="Invalid room specification. Check room parameters and try again.")
+        raise HTTPException(
+            status_code=422,
+            detail="Invalid room specification. Check room parameters and try again.",
+        )
 
     system = _get_fireai_system()
     result = system.analyse_room(
@@ -430,7 +471,10 @@ async def analyse_floor_v10(request: Request, body: AnalyseFloorRequestV10):
             room_specs.append(_build_room_spec(r))
         except ValueError as e:
             logger.warning("Room spec validation failed: %s", e)
-            raise HTTPException(status_code=422, detail="Invalid room specification in batch. Check room parameters.")
+            raise HTTPException(
+                status_code=422,
+                detail="Invalid room specification in batch. Check room parameters.",
+            )
 
     system = _get_fireai_system()
     results = system.analyse_floor(
@@ -460,7 +504,10 @@ async def verify_audit_v10():
     """Verify audit trail integrity."""
     system = _get_fireai_system()
     is_valid = system.verify_audit_integrity()
-    return {"valid": is_valid, "message": "Audit chain is valid" if is_valid else "Audit chain may be tampered"}
+    return {
+        "valid": is_valid,
+        "message": "Audit chain is valid" if is_valid else "Audit chain may be tampered",
+    }
 
 
 @app.post("/analyse/floor/async", tags=["Design"], dependencies=[Depends(verify_api_key)])

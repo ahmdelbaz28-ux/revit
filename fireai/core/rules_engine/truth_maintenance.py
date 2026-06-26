@@ -164,7 +164,9 @@ class TruthMaintenanceSystem:
 
             # Log the retraction
             dep = self._dependencies.get(affected_id)
-            reason = f"Supporting fact {retracted_fact_id} retracted" if dep else "Unknown dependency"
+            reason = (
+                f"Supporting fact {retracted_fact_id} retracted" if dep else "Unknown dependency"
+            )
             self._retraction_log.append(
                 {
                     "fact_id": affected_id,

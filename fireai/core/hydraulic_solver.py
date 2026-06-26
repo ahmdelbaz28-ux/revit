@@ -71,14 +71,14 @@ DIAMETER_EXPONENT = 4.87
 
 # Valid C-factor ranges by pipe material (NFPA 13 Table)
 C_FACTOR_RANGES: dict[str, tuple[float, float]] = {
-    "wet_steel":          (100.0, 140.0),   # Typical: 120
-    "dry_steel":          (80.0,  120.0),   # Typical: 100
-    "wet_copper":         (130.0, 150.0),   # Typical: 140
-    "cpvc":               (140.0, 160.0),   # Typical: 150
-    "concrete":           (80.0,  120.0),   # Typical: 100
-    "cast_iron":          (80.0,  130.0),   # Typical: 100
-    "ductile_iron":       (100.0, 140.0),   # Typical: 120
-    "plastic_pvc":        (140.0, 160.0),   # Typical: 150
+    "wet_steel": (100.0, 140.0),  # Typical: 120
+    "dry_steel": (80.0, 120.0),  # Typical: 100
+    "wet_copper": (130.0, 150.0),  # Typical: 140
+    "cpvc": (140.0, 160.0),  # Typical: 150
+    "concrete": (80.0, 120.0),  # Typical: 100
+    "cast_iron": (80.0, 130.0),  # Typical: 100
+    "ductile_iron": (100.0, 140.0),  # Typical: 120
+    "plastic_pvc": (140.0, 160.0),  # Typical: 150
 }
 
 # Minimum internal pipe diameter (inches) — pipes below this are invalid
@@ -92,35 +92,36 @@ MIN_C_FACTOR = 1.0
 
 # Standard sprinkler K-factors (NFPA 13)
 STANDARD_K_FACTORS: dict[str, float] = {
-    "standard_spray":     5.6,
-    "residential":        4.2,
-    "early_suppression":  14.0,
-    "extended_coverage":  11.2,
-    "cmsa":               8.0,
-    "large_drop":         11.2,
+    "standard_spray": 5.6,
+    "residential": 4.2,
+    "early_suppression": 14.0,
+    "extended_coverage": 11.2,
+    "cmsa": 8.0,
+    "large_drop": 11.2,
 }
 
 # Schedule 40 internal diameters (inches) — most commonly used in fire protection
 SCHEDULE_40_INTERNAL_DIAMETERS: dict[str, float] = {
-    "1/2":   0.622,
-    "3/4":   0.824,
-    "1":     1.049,
+    "1/2": 0.622,
+    "3/4": 0.824,
+    "1": 1.049,
     "1-1/4": 1.380,
     "1-1/2": 1.610,
-    "2":     2.067,
+    "2": 2.067,
     "2-1/2": 2.469,
-    "3":     3.068,
-    "4":     4.026,
-    "6":     6.065,
-    "8":     7.981,
-    "10":    10.020,
-    "12":    11.938,
+    "3": 3.068,
+    "4": 4.026,
+    "6": 6.065,
+    "8": 7.981,
+    "10": 10.020,
+    "12": 11.938,
 }
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # HAZEN-WILLIAMS FRICTION LOSS CALCULATION
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 def calculate_friction_loss(
     flow_rate_gpm: float,
@@ -205,17 +206,16 @@ def calculate_friction_loss(
     if internal_diameter_inches < MIN_PIPE_DIAMETER_INCHES:
         raise ValueError(
             f"internal_diameter_inches={internal_diameter_inches} is below minimum "
-            f"{MIN_PIPE_DIAMETER_INCHES}\". Pipe diameter must be positive. "
+            f'{MIN_PIPE_DIAMETER_INCHES}". Pipe diameter must be positive. '
             "Check that you are using ACTUAL INTERNAL diameter, not nominal. "
-            "e.g., 2\" Schedule 40 pipe has 2.067\" actual internal diameter. "
+            'e.g., 2" Schedule 40 pipe has 2.067" actual internal diameter. '
             "[NFPA 13-2022 Chapter 23]"
         )
 
     # Pipe length: cannot be negative
     if pipe_length_feet < 0:
         raise ValueError(
-            f"pipe_length_feet={pipe_length_feet} must be >= 0. "
-            "Pipe length cannot be negative."
+            f"pipe_length_feet={pipe_length_feet} must be >= 0. Pipe length cannot be negative."
         )
 
     # Zero flow = zero friction loss
@@ -224,9 +224,8 @@ def calculate_friction_loss(
 
     # Hazen-Williams calculation using double precision
     numerator = HW_COEFFICIENT * math.pow(flow_rate_gpm, HW_EXPONENT)
-    denominator = (
-        math.pow(friction_factor_c, HW_EXPONENT)
-        * math.pow(internal_diameter_inches, DIAMETER_EXPONENT)
+    denominator = math.pow(friction_factor_c, HW_EXPONENT) * math.pow(
+        internal_diameter_inches, DIAMETER_EXPONENT
     )
 
     # Safety: check for computational overflow/underflow
@@ -248,7 +247,7 @@ def calculate_friction_loss(
     # Log calculation for audit trail
     logger.debug(
         f"Hazen-Williams: Q={flow_rate_gpm} gpm, C={friction_factor_c}, "
-        f"d={internal_diameter_inches}\", L={pipe_length_feet} ft → "
+        f'd={internal_diameter_inches}", L={pipe_length_feet} ft → '
         f"p={friction_loss_per_foot:.6f} psi/ft, total={total_loss:.4f} psi"
     )
 
@@ -258,6 +257,7 @@ def calculate_friction_loss(
 # ═══════════════════════════════════════════════════════════════════════════════
 # SPRINKLER DISCHARGE CALCULATION
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 def calculate_sprinkler_discharge(
     k_factor: float,
@@ -302,8 +302,7 @@ def calculate_sprinkler_discharge(
 
     if pressure_psi < 0:
         raise ValueError(
-            f"pressure_psi={pressure_psi} must be >= 0. "
-            "Negative pressure is physically impossible."
+            f"pressure_psi={pressure_psi} must be >= 0. Negative pressure is physically impossible."
         )
 
     # NFPA 13-2022 §23.4.4: Minimum 7.0 psi operating pressure
@@ -471,6 +470,7 @@ def validate_sprinkler_compliance(
 # ═══════════════════════════════════════════════════════════════════════════════
 # C-FACTOR VALIDATION
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 def validate_roughness_factor(
     material: str,

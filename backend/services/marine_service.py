@@ -87,7 +87,9 @@ class MarineService:
         # 1. Zone division
         if zones is None:
             zones = divide_into_main_vertical_zones(
-                ship.length_overall_m, ship, deck_count=1,
+                ship.length_overall_m,
+                ship,
+                deck_count=1,
             )
 
         mvz_result = validate_main_vertical_zones(zones, ship)
@@ -100,6 +102,7 @@ class MarineService:
             sel = select_detector_type(zone, ship)
             for dt_str in sel.details.get("selected_types", []):
                 from marine.core.types import DetectorType
+
                 dt = DetectorType(dt_str)
                 placements = place_detectors_grid(zone, dt)
                 all_detectors.extend(placements)

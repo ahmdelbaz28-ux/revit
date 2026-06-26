@@ -44,9 +44,9 @@ logger = logging.getLogger(__name__)
 class MaterialGroup(str, Enum):
     """IEC 60079-0 gas/dust groups for equipment selection."""
 
-    IIA = "IIA"    # Propane group (least restrictive)
-    IIB = "IIB"    # Ethylene group
-    IIC = "IIC"    # Hydrogen/acetylene (most restrictive)
+    IIA = "IIA"  # Propane group (least restrictive)
+    IIB = "IIB"  # Ethylene group
+    IIC = "IIC"  # Hydrogen/acetylene (most restrictive)
     IIIC = "IIIC"  # Combustible dusts
     IIIB = "IIIB"  # Non-conductive combustible dusts
     IIIA = "IIIA"  # Combustible flyings
@@ -56,18 +56,18 @@ class MaterialGroup(str, Enum):
 class TemperatureClass(str, Enum):
     """IEC 60079-0 temperature classes based on auto-ignition temperature."""
 
-    T1 = "T1"    # > 450°C
-    T2 = "T2"    # > 300°C
-    T3 = "T3"    # > 200°C
-    T4 = "T4"    # > 135°C
-    T5 = "T5"    # > 100°C
-    T6 = "T6"    # > 85°C
+    T1 = "T1"  # > 450°C
+    T2 = "T2"  # > 300°C
+    T3 = "T3"  # > 200°C
+    T4 = "T4"  # > 135°C
+    T5 = "T5"  # > 100°C
+    T6 = "T6"  # > 85°C
     UNKNOWN = "unknown"
 
 
 # Conservative defaults for unknown materials
-DEFAULT_LFL_VOL_PCT = 0.5    # Very low LFL = large zone = conservative
-DEFAULT_UFL_VOL_PCT = 15.0   # Standard upper limit
+DEFAULT_LFL_VOL_PCT = 0.5  # Very low LFL = large zone = conservative
+DEFAULT_UFL_VOL_PCT = 15.0  # Standard upper limit
 DEFAULT_FLASH_POINT_C = -20.0  # Low flash point = flammable at low temp = conservative
 DEFAULT_AUTO_IGNITION_C = 200.0  # Low AIT = T3 = more restrictive equipment
 
@@ -140,64 +140,124 @@ def auto_ignition_to_temp_class(ait_c: float) -> TemperatureClass:
 # Based on IEC 60079-10-1 Table B.1 and NFPA 497
 _INTERNAL_HAZMAT_DB: dict[str, dict] = {
     "methane": {
-        "cas": "74-82-8", "lfl": 5.0, "ufl": 15.0,
-        "flash_point": -187.8, "ait": 537.0,
-        "group": MaterialGroup.IIA, "mw": 16.04, "vd": 0.55,
+        "cas": "74-82-8",
+        "lfl": 5.0,
+        "ufl": 15.0,
+        "flash_point": -187.8,
+        "ait": 537.0,
+        "group": MaterialGroup.IIA,
+        "mw": 16.04,
+        "vd": 0.55,
     },
     "propane": {
-        "cas": "74-98-6", "lfl": 2.1, "ufl": 9.5,
-        "flash_point": -104.0, "ait": 450.0,
-        "group": MaterialGroup.IIA, "mw": 44.10, "vd": 1.56,
+        "cas": "74-98-6",
+        "lfl": 2.1,
+        "ufl": 9.5,
+        "flash_point": -104.0,
+        "ait": 450.0,
+        "group": MaterialGroup.IIA,
+        "mw": 44.10,
+        "vd": 1.56,
     },
     "hydrogen": {
-        "cas": "1333-74-0", "lfl": 4.0, "ufl": 75.0,
-        "flash_point": None, "ait": 500.0,
-        "group": MaterialGroup.IIC, "mw": 2.02, "vd": 0.07,
+        "cas": "1333-74-0",
+        "lfl": 4.0,
+        "ufl": 75.0,
+        "flash_point": None,
+        "ait": 500.0,
+        "group": MaterialGroup.IIC,
+        "mw": 2.02,
+        "vd": 0.07,
     },
     "ethylene": {
-        "cas": "74-85-1", "lfl": 2.7, "ufl": 36.0,
-        "flash_point": -136.0, "ait": 425.0,
-        "group": MaterialGroup.IIB, "mw": 28.05, "vd": 0.97,
+        "cas": "74-85-1",
+        "lfl": 2.7,
+        "ufl": 36.0,
+        "flash_point": -136.0,
+        "ait": 425.0,
+        "group": MaterialGroup.IIB,
+        "mw": 28.05,
+        "vd": 0.97,
     },
     "acetylene": {
-        "cas": "74-86-2", "lfl": 2.5, "ufl": 100.0,
-        "flash_point": None, "ait": 305.0,
-        "group": MaterialGroup.IIC, "mw": 26.04, "vd": 0.91,
+        "cas": "74-86-2",
+        "lfl": 2.5,
+        "ufl": 100.0,
+        "flash_point": None,
+        "ait": 305.0,
+        "group": MaterialGroup.IIC,
+        "mw": 26.04,
+        "vd": 0.91,
     },
     "gasoline": {
-        "cas": "8006-61-9", "lfl": 1.4, "ufl": 7.6,
-        "flash_point": -43.0, "ait": 280.0,
-        "group": MaterialGroup.IIA, "mw": 100.0, "vd": 3.0,
+        "cas": "8006-61-9",
+        "lfl": 1.4,
+        "ufl": 7.6,
+        "flash_point": -43.0,
+        "ait": 280.0,
+        "group": MaterialGroup.IIA,
+        "mw": 100.0,
+        "vd": 3.0,
     },
     "diesel": {
-        "cas": "68476-34-6", "lfl": 0.6, "ufl": 5.6,
-        "flash_point": 52.0, "ait": 210.0,
-        "group": MaterialGroup.IIA, "mw": 170.0, "vd": 6.0,
+        "cas": "68476-34-6",
+        "lfl": 0.6,
+        "ufl": 5.6,
+        "flash_point": 52.0,
+        "ait": 210.0,
+        "group": MaterialGroup.IIA,
+        "mw": 170.0,
+        "vd": 6.0,
     },
     "ethanol": {
-        "cas": "64-17-5", "lfl": 3.3, "ufl": 19.0,
-        "flash_point": 12.8, "ait": 363.0,
-        "group": MaterialGroup.IIA, "mw": 46.07, "vd": 1.59,
+        "cas": "64-17-5",
+        "lfl": 3.3,
+        "ufl": 19.0,
+        "flash_point": 12.8,
+        "ait": 363.0,
+        "group": MaterialGroup.IIA,
+        "mw": 46.07,
+        "vd": 1.59,
     },
     "methanol": {
-        "cas": "67-56-1", "lfl": 6.7, "ufl": 36.0,
-        "flash_point": 11.1, "ait": 464.0,
-        "group": MaterialGroup.IIA, "mw": 32.04, "vd": 1.10,
+        "cas": "67-56-1",
+        "lfl": 6.7,
+        "ufl": 36.0,
+        "flash_point": 11.1,
+        "ait": 464.0,
+        "group": MaterialGroup.IIA,
+        "mw": 32.04,
+        "vd": 1.10,
     },
     "ammonia": {
-        "cas": "7664-41-7", "lfl": 15.0, "ufl": 28.0,
-        "flash_point": None, "ait": 651.0,
-        "group": MaterialGroup.IIA, "mw": 17.03, "vd": 0.59,
+        "cas": "7664-41-7",
+        "lfl": 15.0,
+        "ufl": 28.0,
+        "flash_point": None,
+        "ait": 651.0,
+        "group": MaterialGroup.IIA,
+        "mw": 17.03,
+        "vd": 0.59,
     },
     "carbon_monoxide": {
-        "cas": "630-08-0", "lfl": 12.5, "ufl": 74.0,
-        "flash_point": None, "ait": 609.0,
-        "group": MaterialGroup.IIA, "mw": 28.01, "vd": 0.97,
+        "cas": "630-08-0",
+        "lfl": 12.5,
+        "ufl": 74.0,
+        "flash_point": None,
+        "ait": 609.0,
+        "group": MaterialGroup.IIA,
+        "mw": 28.01,
+        "vd": 0.97,
     },
     "hydrogen_sulfide": {
-        "cas": "7783-06-4", "lfl": 4.3, "ufl": 46.0,
-        "flash_point": None, "ait": 260.0,
-        "group": MaterialGroup.IIB, "mw": 34.08, "vd": 1.19,
+        "cas": "7783-06-4",
+        "lfl": 4.3,
+        "ufl": 46.0,
+        "flash_point": None,
+        "ait": 260.0,
+        "group": MaterialGroup.IIB,
+        "mw": 34.08,
+        "vd": 1.19,
     },
 }
 
@@ -298,7 +358,9 @@ class HazmatService:
             cas_number=entry.get("cas", ""),
             lfl_vol_pct=entry.get("lfl", DEFAULT_LFL_VOL_PCT),
             ufl_vol_pct=entry.get("ufl", DEFAULT_UFL_VOL_PCT),
-            flash_point_c=entry.get("flash_point", DEFAULT_FLASH_POINT_C) if entry.get("flash_point") is not None else DEFAULT_FLASH_POINT_C,
+            flash_point_c=entry.get("flash_point", DEFAULT_FLASH_POINT_C)
+            if entry.get("flash_point") is not None
+            else DEFAULT_FLASH_POINT_C,
             auto_ignition_c=ait,
             material_group=entry.get("group", MaterialGroup.UNKNOWN),
             temperature_class=auto_ignition_to_temp_class(ait),
@@ -325,10 +387,10 @@ class HazmatService:
         client = await self._get_client()
         # FIX: URL-encode user-supplied material_name to prevent URL injection
         from urllib.parse import quote
-        safe_name = quote(material_name.strip(), safe='')
+
+        safe_name = quote(material_name.strip(), safe="")
         response = await client.get(
-            f"{self.PUBCHEM_URL}/name/{safe_name}/property/"
-            "MolecularWeight,InChI/JSON",
+            f"{self.PUBCHEM_URL}/name/{safe_name}/property/MolecularWeight,InChI/JSON",
         )
         response.raise_for_status()
         body = response.json()

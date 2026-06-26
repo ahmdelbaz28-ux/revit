@@ -497,7 +497,11 @@ class RiserDiagramGenerator:
         # Draw fault isolator symbols along the branch
         if loop.isolator_count > 0:
             for i in range(min(loop.isolator_count, 5)):  # max 5 symbols
-                ix = panel_x + self.PANEL_WIDTH / 2 + (i + 1) * self.LOOP_BRANCH_LEN / (loop.isolator_count + 1)
+                ix = (
+                    panel_x
+                    + self.PANEL_WIDTH / 2
+                    + (i + 1) * self.LOOP_BRANCH_LEN / (loop.isolator_count + 1)
+                )
                 msp.add_text(
                     "FI",
                     dxfattribs={

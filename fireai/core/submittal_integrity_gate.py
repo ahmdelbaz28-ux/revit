@@ -66,11 +66,11 @@ try:
         Violation,
     )
 except ImportError:
-    DecisionProvenance = None  # type: ignore[misc,assignment]
-    RuleApplied = None  # type: ignore[misc,assignment]
-    Violation = None  # type: ignore[misc,assignment]
-    ConfidenceScore = None  # type: ignore[misc,assignment]
-    ConfidenceLevel = None  # type: ignore[misc,assignment]
+    DecisionProvenance = None  # type: ignore[misc]
+    RuleApplied = None  # type: ignore[misc]
+    Violation = None  # type: ignore[misc]
+    ConfidenceScore = None  # type: ignore[misc]
+    ConfidenceLevel = None  # type: ignore[misc]
 
 logger = logging.getLogger(__name__)
 
@@ -294,7 +294,7 @@ class SubmittalIntegrityGate:
                     input_quality_score=1.0,
                     rule_coverage=1.0,
                     geometry_certainty=1.0,
-                    overall=ConfidenceLevel.HIGH,  # type: ignore[union-attr]
+                    overall=ConfidenceLevel.HIGH,
                 )
                 return DecisionProvenance.new(
                     decision_type="submittal_integrity_gate",
@@ -305,7 +305,7 @@ class SubmittalIntegrityGate:
                         "post_draft_hash": current_hash,
                     },
                     rules_applied=[
-                        RuleApplied(  # type: ignore[misc]
+                        RuleApplied(
                             citation=_CITE_NFPA72_INTEGRITY,
                             constant_id="submittal_integrity.sha256_match",
                             value_used=1.0,
@@ -358,10 +358,10 @@ class SubmittalIntegrityGate:
                 input_quality_score=0.0,
                 rule_coverage=0.0,
                 geometry_certainty=0.0,
-                overall=ConfidenceLevel.LOW,  # type: ignore[union-attr]
+                overall=ConfidenceLevel.LOW,
             )
 
-            provenance_violation = Violation(  # type: ignore[misc]
+            provenance_violation = Violation(
                 severity="CRITICAL",
                 citation=_CITE_CWE367,
                 description=description,
@@ -377,7 +377,7 @@ class SubmittalIntegrityGate:
                     "post_draft_hash": current_hash,
                 },
                 rules_applied=[
-                    RuleApplied(  # type: ignore[misc]
+                    RuleApplied(
                         citation=_CITE_CWE367,
                         constant_id="submittal_integrity.toctou_violation",
                         value_used=0.0,

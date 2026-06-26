@@ -203,7 +203,9 @@ class RoomSummary:
     mip_status: str | None = None
     analysis_ms: float = 0.0
     # Phase 7: Variable Coverage Radius tracking fields
-    coverage_radius_used: float = DETECTOR_RADIUS  # V20.2 FIX: was stale 6.40; correct R=0.7×9.1=6.37 at h≤3.0m
+    coverage_radius_used: float = (
+        DETECTOR_RADIUS  # V20.2 FIX: was stale 6.40; correct R=0.7×9.1=6.37 at h≤3.0m
+    )
     ceiling_height: float | None = None
     radius_warning: str | None = None
     nfpa_table_ref: str = "NFPA 72-2022 Table 17.6.3.1.1"
@@ -489,7 +491,9 @@ class FloorAnalyser:
 
             # ─── V4.0: Non-rectangular room detection ─────────────────────────
             polygon_coords = room_dict.get("polygon_coords", [])
-            is_non_rect = polygon_coords and len(polygon_coords) >= 3 and not is_rectangular(polygon_coords)
+            is_non_rect = (
+                polygon_coords and len(polygon_coords) >= 3 and not is_rectangular(polygon_coords)
+            )
             shape_type = "rectangular"
             if is_non_rect:
                 # Classify shape by vertex count for user-friendly labelling
@@ -507,7 +511,9 @@ class FloorAnalyser:
             # Fix 6: detector_type with safe default
             det_type_str = room_dict.get("detector_type", "smoke_photoelectric")
             # Map FloorAnalyser detector types to CoverageSpec types
-            cov_det_type: Literal["smoke", "heat"] = "heat" if "heat" in det_type_str.lower() else "smoke"
+            cov_det_type: Literal["smoke", "heat"] = (
+                "heat" if "heat" in det_type_str.lower() else "smoke"
+            )
             spec = calculate_coverage_radius_from_height(ceiling_h, cov_det_type)
             radius = spec.radius
 
@@ -616,7 +622,9 @@ class FloorAnalyser:
                 for rec in sensor_advisory.recommendations:
                     room_warnings.append(rec)
                     logger.log(
-                        logging.WARNING if sensor_advisory.severity == "WARNING" else logging.CRITICAL,
+                        logging.WARNING
+                        if sensor_advisory.severity == "WARNING"
+                        else logging.CRITICAL,
                         "Room %s: %s",
                         room.name,
                         rec,
@@ -800,14 +808,18 @@ class FloorAnalyser:
         # Floor-level aggregation
         report.non_compliant_rooms = [s.room_id for s in report.room_summaries if not s.compliant]
         report.unsafe_rooms = [
-            s.room_id for s in report.room_summaries if not s.proof_valid or not s.nfpa_valid or s.fallback_used
+            s.room_id
+            for s in report.room_summaries
+            if not s.proof_valid or not s.nfpa_valid or s.fallback_used
         ]
         report.fully_compliant = len(report.non_compliant_rooms) == 0
         report.safe_to_submit = len(report.unsafe_rooms) == 0
 
         # V3.0: Scenario verification aggregation
         if self.use_scenarios:
-            report.scenario_non_compliant_rooms = [s.room_id for s in report.room_summaries if s.scenario_pass is False]
+            report.scenario_non_compliant_rooms = [
+                s.room_id for s in report.room_summaries if s.scenario_pass is False
+            ]
             report.scenario_safe_to_submit = len(report.scenario_non_compliant_rooms) == 0
 
         report.analysis_time_s = round(time.time() - t0, 3)
@@ -962,7 +974,9 @@ class FloorAnalyser:
 
         # Filter detectors that are inside the actual polygon
         filtered_dets = [
-            (x, y) for (x, y) in layout.detectors if point_in_polygon((x, y), polygon_coords, include_boundary=True)
+            (x, y)
+            for (x, y) in layout.detectors
+            if point_in_polygon((x, y), polygon_coords, include_boundary=True)
         ]
         removed = original_count - len(filtered_dets)
 
@@ -974,7 +988,9 @@ class FloorAnalyser:
         if targets and filtered_dets:
             R2 = radius * radius + 1e-9
             covered = sum(
-                1 for (tx, ty) in targets if any((tx - dx) ** 2 + (ty - dy) ** 2 <= R2 for (dx, dy) in filtered_dets)
+                1
+                for (tx, ty) in targets
+                if any((tx - dx) ** 2 + (ty - dy) ** 2 <= R2 for (dx, dy) in filtered_dets)
             )
             layout.coverage_pct = round(100.0 * covered / len(targets), 4)
             layout.proof_valid = covered >= len(targets) * 0.9999
@@ -1113,7 +1129,12 @@ class FloorAnalyser:
         # - "ducts" (simple key used by FloorAnalyser room dicts)
         # - "hvac_ducts" (used by nfpa72_models.RoomSpec.hvac_ducts property)
         # - "hvac_duct_list" (used by nfpa72_models.RoomSpec.hvac_duct_list field)
-        raw_ducts = room_dict.get("ducts") or room_dict.get("hvac_ducts") or room_dict.get("hvac_duct_list") or []
+        raw_ducts = (
+            room_dict.get("ducts")
+            or room_dict.get("hvac_ducts")
+            or room_dict.get("hvac_duct_list")
+            or []
+        )
         if not raw_ducts:
             return
 

@@ -25,6 +25,7 @@ from fastapi.testclient import TestClient
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
+
 @pytest.fixture(scope="module", autouse=True)
 def _setup_env() -> None:
     """Set development environment for testing."""
@@ -36,6 +37,7 @@ def _setup_env() -> None:
 def client():
     """Create a test client for the FastAPI app."""
     from backend.app import app
+
     with TestClient(app) as c:
         yield c
 
@@ -45,7 +47,11 @@ def test_project(client):
     """Create a fresh project for device tests and return its ID."""
     resp = client.post(
         "/api/projects",
-        json={"name": "Advanced Device Test Project", "description": "For device tests", "author": "pytest"},
+        json={
+            "name": "Advanced Device Test Project",
+            "description": "For device tests",
+            "author": "pytest",
+        },
     )
     data = resp.json().get("data", resp.json())
     return data.get("id") or data.get("project_id")
@@ -93,7 +99,8 @@ class TestDeviceLoadUnitConversion:
                 "name": "mA Device",
                 "type": "FA_SMOKE",
                 "category": "FIRE_ALARM",
-                "x": 5.0, "y": 10.0,
+                "x": 5.0,
+                "y": 10.0,
                 "voltage": 24.0,
                 "load": 500.0,
                 "load_unit": "mA",
@@ -104,7 +111,9 @@ class TestDeviceLoadUnitConversion:
         # 500mA = 0.5A
         assert abs(data.get("load", 0) - 0.5) < 0.01
 
-    def test_create_device_ma_stores_original_unit_in_properties(self, client, test_project) -> None:
+    def test_create_device_ma_stores_original_unit_in_properties(
+        self, client, test_project
+    ) -> None:
         """Device with load_unit='mA' must store traceability info in properties."""
         pid = test_project
         resp = client.post(
@@ -113,7 +122,8 @@ class TestDeviceLoadUnitConversion:
                 "name": "mA Traceability Device",
                 "type": "FA_SMOKE",
                 "category": "FIRE_ALARM",
-                "x": 5.0, "y": 10.0,
+                "x": 5.0,
+                "y": 10.0,
                 "voltage": 24.0,
                 "load": 300.0,
                 "load_unit": "mA",
@@ -134,7 +144,8 @@ class TestDeviceLoadUnitConversion:
                 "name": "Watts Device",
                 "type": "FA_HORN",
                 "category": "FIRE_ALARM",
-                "x": 15.0, "y": 25.0,
+                "x": 15.0,
+                "y": 25.0,
                 "voltage": 24.0,
                 "load": 12.0,
                 "load_unit": "W",
@@ -154,7 +165,8 @@ class TestDeviceLoadUnitConversion:
                 "name": "Watts Trace Device",
                 "type": "FA_STROBE",
                 "category": "FIRE_ALARM",
-                "x": 20.0, "y": 30.0,
+                "x": 20.0,
+                "y": 30.0,
                 "voltage": 24.0,
                 "load": 24.0,
                 "load_unit": "W",
@@ -175,7 +187,8 @@ class TestDeviceLoadUnitConversion:
                 "name": "Bad Watts Device",
                 "type": "FA_HORN",
                 "category": "FIRE_ALARM",
-                "x": 0.0, "y": 0.0,
+                "x": 0.0,
+                "y": 0.0,
                 "voltage": 0.0,
                 "load": 12.0,
                 "load_unit": "W",
@@ -192,7 +205,8 @@ class TestDeviceLoadUnitConversion:
                 "name": "Neg Voltage Device",
                 "type": "FA_HORN",
                 "category": "FIRE_ALARM",
-                "x": 0.0, "y": 0.0,
+                "x": 0.0,
+                "y": 0.0,
                 "voltage": -12.0,
                 "load": 12.0,
                 "load_unit": "W",
@@ -209,7 +223,8 @@ class TestDeviceLoadUnitConversion:
                 "name": "Amps Device",
                 "type": "FA_SMOKE",
                 "category": "FIRE_ALARM",
-                "x": 5.0, "y": 10.0,
+                "x": 5.0,
+                "y": 10.0,
                 "load": 0.3,
             },
         )
@@ -226,7 +241,8 @@ class TestDeviceLoadUnitConversion:
                 "name": "Zero Load Device",
                 "type": "FA_MODULE",
                 "category": "FIRE_ALARM",
-                "x": 0.0, "y": 0.0,
+                "x": 0.0,
+                "y": 0.0,
                 "load": 0.0,
                 "load_unit": "mA",
             },
@@ -258,7 +274,9 @@ class TestDeviceUpdateLoadUnit:
         # 24W / 24V = 1.0A
         assert abs(data.get("load", 0) - 1.0) < 0.01
 
-    def test_update_device_watts_with_zero_existing_voltage_fails(self, client, test_project) -> None:
+    def test_update_device_watts_with_zero_existing_voltage_fails(
+        self, client, test_project
+    ) -> None:
         """Updating device with load_unit='W' when device voltage is 0 must fail."""
         pid = test_project
         # Create device with voltage=0
@@ -268,7 +286,8 @@ class TestDeviceUpdateLoadUnit:
                 "name": "Zero Volt Device",
                 "type": "FA_MODULE",
                 "category": "FIRE_ALARM",
-                "x": 0.0, "y": 0.0,
+                "x": 0.0,
+                "y": 0.0,
                 "voltage": 0.0,
                 "load": 0.0,
             },
@@ -304,7 +323,8 @@ class TestDeviceUpdateLoadUnit:
                 "name": "Dual Update Device",
                 "type": "FA_MODULE",
                 "category": "FIRE_ALARM",
-                "x": 0.0, "y": 0.0,
+                "x": 0.0,
+                "y": 0.0,
                 "voltage": 0.0,
                 "load": 0.0,
             },
@@ -361,7 +381,13 @@ class TestDeviceDeletion:
         pid = test_project
         create_resp = client.post(
             f"/api/projects/{pid}/devices",
-            json={"name": "To Delete", "type": "FA_MODULE", "category": "FIRE_ALARM", "x": 1.0, "y": 2.0},
+            json={
+                "name": "To Delete",
+                "type": "FA_MODULE",
+                "category": "FIRE_ALARM",
+                "x": 1.0,
+                "y": 2.0,
+            },
         )
         dev_data = create_resp.json().get("data", create_resp.json())
         dev_id = dev_data.get("id") or dev_data.get("device_id")
@@ -378,7 +404,13 @@ class TestDeviceDeletion:
         pid = test_project
         create_resp = client.post(
             f"/api/projects/{pid}/devices",
-            json={"name": "Double Delete", "type": "FA_MODULE", "category": "FIRE_ALARM", "x": 1.0, "y": 2.0},
+            json={
+                "name": "Double Delete",
+                "type": "FA_MODULE",
+                "category": "FIRE_ALARM",
+                "x": 1.0,
+                "y": 2.0,
+            },
         )
         dev_data = create_resp.json().get("data", create_resp.json())
         dev_id = dev_data.get("id") or dev_data.get("device_id")
@@ -394,7 +426,13 @@ class TestDeviceDeletion:
         pid = test_project
         create_resp = client.post(
             f"/api/projects/{pid}/devices",
-            json={"name": "Get After Delete", "type": "FA_MODULE", "category": "FIRE_ALARM", "x": 1.0, "y": 2.0},
+            json={
+                "name": "Get After Delete",
+                "type": "FA_MODULE",
+                "category": "FIRE_ALARM",
+                "x": 1.0,
+                "y": 2.0,
+            },
         )
         dev_data = create_resp.json().get("data", create_resp.json())
         dev_id = dev_data.get("id") or dev_data.get("device_id")
@@ -447,11 +485,23 @@ class TestDeviceListSortAndPagination:
         # Create at least 2 devices
         client.post(
             f"/api/projects/{pid}/devices",
-            json={"name": "Device A", "type": "FA_SMOKE", "category": "FIRE_ALARM", "x": 1.0, "y": 1.0},
+            json={
+                "name": "Device A",
+                "type": "FA_SMOKE",
+                "category": "FIRE_ALARM",
+                "x": 1.0,
+                "y": 1.0,
+            },
         )
         client.post(
             f"/api/projects/{pid}/devices",
-            json={"name": "Device B", "type": "FA_HORN", "category": "FIRE_ALARM", "x": 2.0, "y": 2.0},
+            json={
+                "name": "Device B",
+                "type": "FA_HORN",
+                "category": "FIRE_ALARM",
+                "x": 2.0,
+                "y": 2.0,
+            },
         )
         resp = client.get(f"/api/projects/{pid}/devices?page=2&limit=1")
         assert resp.status_code == 200
@@ -501,7 +551,8 @@ class TestDeviceCreationFullFields:
                 "name": "Props Device",
                 "type": "FA_SMOKE",
                 "category": "FIRE_ALARM",
-                "x": 5.0, "y": 5.0,
+                "x": 5.0,
+                "y": 5.0,
                 "properties": {
                     "sensitivity": "%0.5",
                     "test_frequency": "annual",

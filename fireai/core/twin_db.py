@@ -299,8 +299,12 @@ class TwinSystemOfRecord:
 
         old_rooms = {room.get("room_id"): room for room in old_bundle["snapshot"].get("rooms", [])}
         new_rooms = {room.get("room_id"): room for room in new_bundle["snapshot"].get("rooms", [])}
-        old_results = {item.get("room_id"): item for item in old_bundle["analysis"].get("room_results", [])}
-        new_results = {item.get("room_id"): item for item in new_bundle["analysis"].get("room_results", [])}
+        old_results = {
+            item.get("room_id"): item for item in old_bundle["analysis"].get("room_results", [])
+        }
+        new_results = {
+            item.get("room_id"): item for item in new_bundle["analysis"].get("room_results", [])
+        }
 
         drift: list[dict[str, Any]] = []
         for room_id in sorted(set(old_rooms.keys()) | set(new_rooms.keys())):
@@ -318,7 +322,9 @@ class TwinSystemOfRecord:
             old_polygon = old_room.get("polygon", [])
             new_polygon = new_room.get("polygon", [])
             if not self._polygons_approx_equal(
-                old_polygon, new_polygon, tolerance_m=polygon_tolerance_m or self.POLYGON_TOLERANCE_M
+                old_polygon,
+                new_polygon,
+                tolerance_m=polygon_tolerance_m or self.POLYGON_TOLERANCE_M,
             ):
                 drift.append(
                     {
@@ -376,8 +382,12 @@ class TwinSystemOfRecord:
                 )
 
             # Detector changes
-            old_detectors = {d.get("detector_id"): d for d in old_results.get(room_id, {}).get("detectors", [])}
-            new_detectors = {d.get("detector_id"): d for d in new_results.get(room_id, {}).get("detectors", [])}
+            old_detectors = {
+                d.get("detector_id"): d for d in old_results.get(room_id, {}).get("detectors", [])
+            }
+            new_detectors = {
+                d.get("detector_id"): d for d in new_results.get(room_id, {}).get("detectors", [])
+            }
             for det_id in sorted(set(old_detectors.keys()) | set(new_detectors.keys())):
                 old_det = old_detectors.get(det_id)
                 new_det = new_detectors.get(det_id)
@@ -422,7 +432,9 @@ class TwinSystemOfRecord:
         """List all snapshot IDs in the database, newest first."""
         conn = self._connect()
         try:
-            rows = conn.execute("SELECT snapshot_id FROM snapshots ORDER BY created_at DESC").fetchall()
+            rows = conn.execute(
+                "SELECT snapshot_id FROM snapshots ORDER BY created_at DESC"
+            ).fetchall()
             return [row[0] for row in rows]
         finally:
             conn.close()

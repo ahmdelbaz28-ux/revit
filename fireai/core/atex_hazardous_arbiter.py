@@ -122,29 +122,29 @@ class ProtectionType(str, Enum):
     """IEC 60079 protection concepts."""
 
     # Gas protection concepts (IEC 60079-0/-1/-2/.../-18)
-    d = "d"       # Flameproof enclosure (EPL Gb — gas only)
-    e = "e"       # Increased safety (EPL Gb — gas only)
-    ia = "ia"     # Intrinsic safety, category a (EPL Ga)
-    ib = "ib"     # Intrinsic safety, category b (EPL Gb)
-    ic = "ic"     # Intrinsic safety, category c (EPL Gc)
-    ma = "ma"     # Encapsulation, category a (EPL Ga)
-    mb = "mb"     # Encapsulation, category b (EPL Gb)
-    nA = "nA"     # Non-sparking (EPL Gc — gas only)
-    nC = "nC"     # Spark-protected (EPL Gc — gas only)
-    nR = "nR"     # Restricted breathing (EPL Gc — gas only)
-    o = "o"       # Oil immersion (EPL Gb — gas only)
-    p = "p"       # Pressurization (gas variant, EPL Gb/Gc)
-    q = "q"       # Powder filling (EPL Gb — gas only)
-    s = "s"       # Special protection (EPL Ga/Gb)
+    d = "d"  # Flameproof enclosure (EPL Gb — gas only)
+    e = "e"  # Increased safety (EPL Gb — gas only)
+    ia = "ia"  # Intrinsic safety, category a (EPL Ga)
+    ib = "ib"  # Intrinsic safety, category b (EPL Gb)
+    ic = "ic"  # Intrinsic safety, category c (EPL Gc)
+    ma = "ma"  # Encapsulation, category a (EPL Ga)
+    mb = "mb"  # Encapsulation, category b (EPL Gb)
+    nA = "nA"  # Non-sparking (EPL Gc — gas only)
+    nC = "nC"  # Spark-protected (EPL Gc — gas only)
+    nR = "nR"  # Restricted breathing (EPL Gc — gas only)
+    o = "o"  # Oil immersion (EPL Gb — gas only)
+    p = "p"  # Pressurization (gas variant, EPL Gb/Gc)
+    q = "q"  # Powder filling (EPL Gb — gas only)
+    s = "s"  # Special protection (EPL Ga/Gb)
     # V76 CRIT-06 FIX: Added dust-specific protection concepts per IEC 60079-31.
     # Previously missing — gas-only types (d, p, nA) were incorrectly allowed
     # in dust zones. Dust entering a flameproof enclosure accumulates on hot
     # surfaces and ignites — direct violation of IEC 60079-31:2022 §6.
-    tD = "tD"     # Dust enclosure (legacy, EPL Da/Db)
-    ta = "ta"     # Dust enclosure, category a (EPL Da — Zone 20) per IEC 60079-31
-    tb = "tb"     # Dust enclosure, category b (EPL Db — Zone 21) per IEC 60079-31
-    tc = "tc"     # Dust enclosure, category c (EPL Dc — Zone 22) per IEC 60079-31
-    mc = "mc"     # Encapsulation, category c (EPL Dc — dust) per IEC 60079-18
+    tD = "tD"  # Dust enclosure (legacy, EPL Da/Db)
+    ta = "ta"  # Dust enclosure, category a (EPL Da — Zone 20) per IEC 60079-31
+    tb = "tb"  # Dust enclosure, category b (EPL Db — Zone 21) per IEC 60079-31
+    tc = "tc"  # Dust enclosure, category c (EPL Dc — Zone 22) per IEC 60079-31
+    mc = "mc"  # Encapsulation, category c (EPL Dc — dust) per IEC 60079-18
 
 
 class InstallationClass(str, Enum):
@@ -413,8 +413,8 @@ class ATEXHazardousArbiter:
                 space_id=space_id,
                 equipment_spec=ATEXEquipmentSpec(
                     zone=zone,
-                    epl_required="Ga",     # Most protective (Zone 0 rated)
-                    atex_category="1G",    # ATEX Category 1
+                    epl_required="Ga",  # Most protective (Zone 0 rated)
+                    atex_category="1G",  # ATEX Category 1
                     temp_class=TemperatureClass.T6,  # Most conservative (85°C max)
                     protection_modes=["ia"],
                 ),
@@ -501,7 +501,9 @@ class ATEXHazardousArbiter:
             ATEXCategory.CAT_1D,
             ATEXCategory.CAT_2D,
         )
-        reg_note = self._build_regulatory_note(atex_zone, atex_category_legacy, hazard_system, notified_body)
+        reg_note = self._build_regulatory_note(
+            atex_zone, atex_category_legacy, hazard_system, notified_body
+        )
 
         # Zone warnings
         if atex_zone in (ATEXZone.ZONE_0, ATEXZone.ZONE_20):
@@ -665,7 +667,9 @@ class ATEXHazardousArbiter:
                 # only requires max_temp < autoignition, which provides zero margin.
                 # For Zone 0/1/20/21, IEC requires 5% thermal margin.
                 try:
-                    margin_result = _select_temp_class_with_margin(substance.autoignition_c, v21_zone)
+                    margin_result = _select_temp_class_with_margin(
+                        substance.autoignition_c, v21_zone
+                    )
                     temp_class = margin_result.value
                 except Exception:
                     # Fallback: use bare method but warn
@@ -679,10 +683,11 @@ class ATEXHazardousArbiter:
         marking_prefix = "AEx" if hazard_system == HazardSystem.NEC_DIVISION else "Ex"
         self._recommend_protection(zone)
 
-
         # Fix #17
         is_level = _FIRE_DETECTOR_IS_LEVEL.get(zone, "ib")
-        fire_det_marking = f"{marking_prefix} {is_level} {iec_group} {temp_class} {required_epl.value}"
+        fire_det_marking = (
+            f"{marking_prefix} {is_level} {iec_group} {temp_class} {required_epl.value}"
+        )
 
         reg_note = self._build_regulatory_note(zone, atex_category, hazard_system, notified_body)
 
@@ -803,7 +808,7 @@ class ATEXHazardousArbiter:
     # ── Private helpers ─────────────────────────────────────────────────────
 
     @staticmethod
-    def _epl_sufficient(proposed, required) -> bool:
+    def _epl_sufficient(proposed, required: bool) -> bool:
         """Fix #14: EPL hierarchy — higher protection satisfies lower."""
         proposed_level = _EPL_HIERARCHY.get(proposed, 0)
         required_level = _EPL_HIERARCHY.get(required, 0)
@@ -871,7 +876,9 @@ class ATEXHazardousArbiter:
             epl_required="Gc",
             atex_category="3G",
             temp_class=TemperatureClass.T6,  # V79 FIX: was T4 — T6 is most conservative
-            protection_modes=["ic"],  # V79 FIX: was "n" — invalid ProtectionType enum. "ic" (EPL Gc) valid for safe areas
+            protection_modes=[
+                "ic"
+            ],  # V79 FIX: was "n" — invalid ProtectionType enum. "ic" (EPL Gc) valid for safe areas
             hac_warnings=hac_warnings,
         )
         return ATEXArbitrationResult(
@@ -891,7 +898,9 @@ class ATEXHazardousArbiter:
             epl_required="Gc",
             atex_category="3G",
             temp_class=TemperatureClass.T6,  # V79 FIX: was T4 — T6 is most conservative
-            protection_modes=["ic"],  # V79 FIX: was "n" — invalid ProtectionType enum. "ic" (EPL Gc) valid for safe areas
+            protection_modes=[
+                "ic"
+            ],  # V79 FIX: was "n" — invalid ProtectionType enum. "ic" (EPL Gc) valid for safe areas
             hac_warnings=list(hac_result.warnings),
         )
         return ATEXArbitrationResult(

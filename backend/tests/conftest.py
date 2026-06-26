@@ -69,9 +69,10 @@ os.environ["FIREAI_API_KEY"] = TEST_API_KEY
 # regardless of when it's constructed.
 try:
     from starlette.testclient import TestClient as _StarletteTestClient
+
     _original_testclient_init = _StarletteTestClient.__init__
 
-    def _patched_testclient_init(self, *args, **kwargs):
+    def _patched_testclient_init(self, *args, **kwargs) -> None:
         """Inject X-API-Key header by default into every TestClient."""
         caller_headers = kwargs.pop("headers", None) or {}
         # setdefault so a test can still override with its own X-API-Key
@@ -104,14 +105,21 @@ try:
     _NON_VERSIONED_API_PATHS: set[str] = set()
     try:
         import os as _os
+
         _os.environ.setdefault("FIREAI_API_KEY", TEST_API_KEY)
         import logging as _logging
+
         _logging.disable(_logging.CRITICAL)
         from backend.app import app as _app
+
         _schema = _app.openapi()
         for _path in _schema.get("paths", {}):
             # Collect /api/* paths that are NOT under /api/v1/ or /api/v2/
-            if _path.startswith("/api/") and not _path.startswith("/api/v1/") and not _path.startswith("/api/v2/"):
+            if (
+                _path.startswith("/api/")
+                and not _path.startswith("/api/v1/")
+                and not _path.startswith("/api/v2/")
+            ):
                 # Strip path params ({project_id} etc.) for prefix matching
                 _NON_VERSIONED_API_PATHS.add(_path.split("/{")[0])
         _logging.disable(_logging.NOTSET)
@@ -120,7 +128,8 @@ try:
         _NON_VERSIONED_API_PATHS = {"/api/health", "/api/reports/statistics"}
 
     def _rewrite_legacy_url(url: str) -> str:
-        """Rewrite /api/* → /api/v1/* for legacy test URLs.
+        """
+        Rewrite /api/* → /api/v1/* for legacy test URLs.
 
         V139 FIX: Skip rewriting for paths that exist at /api/ (health,
         reports/statistics). These are mounted at /api/ via
@@ -135,30 +144,80 @@ try:
             return url
         # Check if the URL (or its prefix) matches a known /api/ route
         # Strip query string for matching
-        path_only = url.split("?")[0]
+        path_only = url.split("?", maxsplit=1)[0]
         for prefix in _NON_VERSIONED_API_PATHS:
             if path_only == prefix or path_only.startswith(prefix + "/"):
                 return url  # Don't rewrite — route exists at /api/
         # Default: rewrite to /api/v1/
-        return "/api/v1/" + url[len("/api/"):]
+        return "/api/v1/" + url[len("/api/") :]
 
     for _method_name in _HTTP_METHODS:
         _original_method = getattr(_StarletteTestClient, _method_name)
 
-        def _make_patched_method(orig, name):
+        def _make_patched_method(orig, name: str):
             def _patched_method(self, url, *args, **kwargs):
                 return orig(self, _rewrite_legacy_url(url), *args, **kwargs)
+
             _patched_method.__name__ = name
             return _patched_method
 
-        setattr(_StarletteTestClient, _method_name, _make_patched_method(_original_method, _method_name))
+        setattr(
+            _StarletteTestClient, _method_name, _make_patched_method(_original_method, _method_name)
+        )
 
     # Also patch `request` (lower-level method used by some tests)
     if hasattr(_StarletteTestClient, "request"):
         _original_request = _StarletteTestClient.request
+
         def _patched_request(self, method, url, *args, **kwargs):
             return _original_request(self, method, _rewrite_legacy_url(url), *args, **kwargs)
+
         _StarletteTestClient.request = _patched_request
+
+    # ── WebSocket handshake helper (test-only) ───────────────────────────────
+    # The /ws endpoint (backend/routers/sync.py) enforces the SAME security a
+    # real browser SPA faces in production when FIREAI_API_KEY is configured:
+    #   1. Origin check — the handshake must carry a same-origin Origin header.
+    #   2. Message-based auth — the first frame must be
+    #      {"action": "auth", "apiKey": "<key>"}, acknowledged with an
+    #      auth_success frame, before any application messages flow.
+    # Starlette's TestClient sends neither by default. Rather than weaken the
+    # endpoint or modify the tests, we make the test client behave like the real
+    # SPA: inject a same-origin Origin header and transparently perform the auth
+    # handshake (consuming the auth_success frame) on context entry. Tests then
+    # see the connection exactly as if they had authenticated themselves.
+    if hasattr(_StarletteTestClient, "websocket_connect"):
+        _original_ws_connect = _StarletteTestClient.websocket_connect
+
+        class _AuthenticatingWSSession:
+            """Proxy performing the SPA auth handshake on context entry."""
+
+            def __init__(self, session) -> None:
+                self._session = session
+
+            def __enter__(self):
+                sess = self._session.__enter__()
+                env_key = os.getenv("FIREAI_API_KEY")
+                if env_key:
+                    sess.send_json({"action": "auth", "apiKey": env_key})
+                    # Consume the auth acknowledgement so the test's first
+                    # receive_json() observes its own response, not the handshake.
+                    sess.receive_json()
+                return sess
+
+            def __exit__(self, *args):
+                return self._session.__exit__(*args)
+
+        def _patched_ws_connect(self, url, *args, **kwargs):
+            headers = kwargs.pop("headers", None) or {}
+            # Same-origin header so the endpoint's origin check passes, mirroring
+            # a browser connecting to the SPA it was served from.
+            headers.setdefault("origin", "http://testserver")
+            kwargs["headers"] = headers
+            session = _original_ws_connect(self, url, *args, **kwargs)
+            return _AuthenticatingWSSession(session)
+
+        _StarletteTestClient.websocket_connect = _patched_ws_connect
 
 except ImportError:
     # starlette not installed — tests that need it will skip on their own
@@ -173,7 +232,7 @@ import pytest  # noqa: E402
 
 
 @pytest.fixture(autouse=True)
-def _enforce_test_api_key(monkeypatch):
+def _enforce_test_api_key(monkeypatch) -> None:
     """
     Ensure FIREAI_API_KEY is set to the test value before every test.
 
@@ -192,7 +251,7 @@ def _enforce_test_api_key(monkeypatch):
 
 
 # ─── Optional: skip slow integration tests unless --run-slow ─────────────────
-def pytest_addoption(parser):
+def pytest_addoption(parser) -> None:
     parser.addoption(
         "--run-slow",
         action="store_true",
@@ -201,7 +260,7 @@ def pytest_addoption(parser):
     )
 
 
-def pytest_collection_modifyitems(config, items):
+def pytest_collection_modifyitems(config, items) -> None:
     if config.getoption("--run-slow"):
         return
     skip_slow = pytest.mark.skip(reason="Needs --run-slow option to run")

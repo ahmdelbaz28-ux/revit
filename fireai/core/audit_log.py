@@ -277,7 +277,9 @@ class AuditLog:
                 if entry.entry_hash == "" or chain_fixed:
                     object.__setattr__(entry, "entry_hash", recomputed)
                 else:
-                    raise ValueError(f"Entry hash mismatch: expected {recomputed}, got {entry.entry_hash}")
+                    raise ValueError(
+                        f"Entry hash mismatch: expected {recomputed}, got {entry.entry_hash}"
+                    )
 
             # --- HMAC signature ---
             hmac_sig: str | None = None
@@ -333,7 +335,9 @@ class AuditLog:
         """Internal: verify chain (caller must hold self._lock)."""
         errors: list[str] = []
 
-        cur = self._conn.execute("SELECT entry_id, prev_entry_hash, entry_hash FROM audit_entries ORDER BY rowid ASC;")
+        cur = self._conn.execute(
+            "SELECT entry_id, prev_entry_hash, entry_hash FROM audit_entries ORDER BY rowid ASC;"
+        )
         rows = cur.fetchall()
 
         if not rows:
@@ -342,18 +346,25 @@ class AuditLog:
         # First entry must link to genesis
         first_id, first_prev, first_hash = rows[0]
         if first_prev != GENESIS_PREV_HASH:
-            errors.append(f"Entry {first_id}: prev_entry_hash is {first_prev}, expected genesis {GENESIS_PREV_HASH}")
+            errors.append(
+                f"Entry {first_id}: prev_entry_hash is {first_prev}, expected genesis {GENESIS_PREV_HASH}"
+            )
 
         # Verify each subsequent link
         prev_hash = first_hash
         for entry_id, prev_entry_hash, entry_hash in rows[1:]:
             if prev_entry_hash != prev_hash:
-                errors.append(f"Entry {entry_id}: prev_entry_hash is {prev_entry_hash}, expected {prev_hash}")
+                errors.append(
+                    f"Entry {entry_id}: prev_entry_hash is {prev_entry_hash}, expected {prev_hash}"
+                )
             prev_hash = entry_hash
 
         # Additionally verify each entry's self-hash
         all_rows = self._conn.execute("SELECT * FROM audit_entries ORDER BY rowid ASC;").fetchall()
-        col_names = [desc[0] for desc in self._conn.execute("SELECT * FROM audit_entries LIMIT 0;").description]
+        col_names = [
+            desc[0]
+            for desc in self._conn.execute("SELECT * FROM audit_entries LIMIT 0;").description
+        ]
 
         for row in all_rows:
             row_dict = dict(zip(col_names, row, strict=False))
@@ -365,7 +376,9 @@ class AuditLog:
 
             recomputed = compute_entry_hash(entry)
             if recomputed != entry.entry_hash:
-                errors.append(f"Entry {entry.entry_id}: entry_hash is {entry.entry_hash}, recomputed {recomputed}")
+                errors.append(
+                    f"Entry {entry.entry_id}: entry_hash is {entry.entry_hash}, recomputed {recomputed}"
+                )
 
             # Verify HMAC if present and key available
             if entry.hmac_signature is not None and self._hmac_key is not None:
@@ -414,7 +427,10 @@ class AuditLog:
                 (analysis_id,),
             )
             col_names = [desc[0] for desc in cur.description]
-            return [self._row_to_entry(dict(zip(col_names, row, strict=False))) for row in cur.fetchall()]
+            return [
+                self._row_to_entry(dict(zip(col_names, row, strict=False)))
+                for row in cur.fetchall()
+            ]
 
     def export_json(self, analysis_id: str) -> str:
         """
@@ -531,7 +547,7 @@ class AuditLog:
         with self._lock:
             if self._conn is not None:
                 self._conn.close()
-                self._conn = None  # type: ignore[assignment]
+                self._conn = None
 
     # -- Internal helpers --------------------------------------------------
 

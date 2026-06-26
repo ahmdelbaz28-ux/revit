@@ -11,6 +11,7 @@ _logger = _logging.getLogger(__name__)
 def _lazy_import(name: str):
     """Lazily import a router module -- fails silently if unavailable."""
     import importlib as _importlib
+
     try:
         return _importlib.import_module(f"backend.routers.{name}")
     except ImportError:

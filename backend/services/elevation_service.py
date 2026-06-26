@@ -168,9 +168,7 @@ class ElevationService:
         wait=wait_exponential(min=1, max=10),
         reraise=True,
     )
-    async def _fetch_open_topo_data(
-        self, latitude: float, longitude: float
-    ) -> ElevationData:
+    async def _fetch_open_topo_data(self, latitude: float, longitude: float) -> ElevationData:
         """
         Fetch elevation from Open Topo Data API.
 
@@ -191,7 +189,9 @@ class ElevationService:
 
         results = body.get("results", [])
         if not results:
-            raise ValueError(f"Open Topo Data returned no results for lat={latitude}, lon={longitude}")
+            raise ValueError(
+                f"Open Topo Data returned no results for lat={latitude}, lon={longitude}"
+            )
 
         elevation = results[0].get("elevation")
         if elevation is None:
@@ -259,9 +259,7 @@ class ElevationService:
 
         """
         if not (-90 <= latitude <= 90 and -180 <= longitude <= 180):
-            logger.warning(
-                f"Invalid coordinates: lat={latitude}, lon={longitude}. Using defaults."
-            )
+            logger.warning(f"Invalid coordinates: lat={latitude}, lon={longitude}. Using defaults.")
             return self._get_default(latitude, longitude)
 
         # Check cache

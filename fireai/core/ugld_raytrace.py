@@ -662,7 +662,9 @@ def trace_acoustic_ray(
                     f"({threshold:.1f} dB). Deficit: {abs(margin_threshold):.1f} dB."
                 )
             if not snr_met:
-                reasons.append(f"SNR ({snr:.1f} dB) below minimum 6 dB. Deficit: {abs(margin_snr):.1f} dB.")
+                reasons.append(
+                    f"SNR ({snr:.1f} dB) below minimum 6 dB. Deficit: {abs(margin_snr):.1f} dB."
+                )
             fail_reason = " | ".join(reasons)
 
         trigger_result = UGLDTriggerResult(

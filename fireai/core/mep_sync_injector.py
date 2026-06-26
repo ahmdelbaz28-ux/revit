@@ -306,7 +306,9 @@ def validate_mep_elements(elements: list[MEPElement]) -> list[str]:
 
         # 1b. NaN / Inf check on capacity
         if not math.isfinite(elem.capacity_cfm):
-            errors.append(f"Element '{elem.element_id}': capacity_cfm={elem.capacity_cfm} is NaN or Inf")
+            errors.append(
+                f"Element '{elem.element_id}': capacity_cfm={elem.capacity_cfm} is NaN or Inf"
+            )
 
         # 2. Duplicate ID check
         if elem.element_id in seen_ids:

@@ -31,6 +31,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
+from typing import Any
 
 from fastapi import APIRouter, Depends, Query
 
@@ -53,14 +54,18 @@ from backend.services.weather_service import get_weather_service
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/environment", tags=["environment"],
-                dependencies=[Depends(require_permission(Permission.QOMN_READ))])
+router = APIRouter(
+    prefix="/environment",
+    tags=["environment"],
+    dependencies=[Depends(require_permission(Permission.QOMN_READ))],
+)
 
 
 # ── Phase 1 Endpoints ───────────────────────────────────────────────────────
 
+
 @router.get("/countries")
-async def get_countries():
+async def get_countries() -> dict[str, Any]:
     """
     List supported countries and their regulatory frameworks.
 
@@ -70,13 +75,16 @@ async def get_countries():
     from backend.services.region_service import (
         _COUNTRY_FRAMEWORK_MAP,
     )
+
     countries = []
     for code, (framework, electrical) in sorted(_COUNTRY_FRAMEWORK_MAP.items()):
-        countries.append({
-            "country_code": code,
-            "regulatory_framework": framework.value,
-            "electrical_code": electrical.value,
-        })
+        countries.append(
+            {
+                "country_code": code,
+                "regulatory_framework": framework.value,
+                "electrical_code": electrical.value,
+            }
+        )
     return {
         "success": True,
         "data": {
@@ -90,7 +98,7 @@ async def get_countries():
 async def get_weather(
     lat: float = Query(..., ge=-90, le=90, description="Latitude"),
     lon: float = Query(..., ge=-180, le=180, description="Longitude"),
-):
+) -> dict[str, Any]:
     """
     Get current weather data for engineering calculations.
 
@@ -116,9 +124,7 @@ async def get_weather(
             "source": weather.source,
             "is_default": weather.is_default,
             "is_stale": weather.is_stale,
-            "fetched_at": time.strftime(
-                "%Y-%m-%dT%H:%M:%SZ", time.gmtime(weather.fetched_at)
-            ),
+            "fetched_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(weather.fetched_at)),
             "location": {
                 "latitude": weather.latitude,
                 "longitude": weather.longitude,
@@ -130,10 +136,9 @@ async def get_weather(
 @router.get("/geocode")
 async def geocode_address(
     address: str = Query(
-        ..., min_length=2, max_length=500,
-        description="Address to geocode (e.g., 'Cairo, Egypt')"
+        ..., min_length=2, max_length=500, description="Address to geocode (e.g., 'Cairo, Egypt')"
     ),
-):
+) -> dict[str, Any]:
     """
     Geocode an address to coordinates.
 
@@ -165,10 +170,12 @@ async def geocode_address(
 @router.get("/region")
 async def get_region(
     country_code: str = Query(
-        ..., min_length=2, max_length=2,
-        description="ISO 3166-1 alpha-2 country code (e.g., 'US', 'EG', 'SA')"
+        ...,
+        min_length=2,
+        max_length=2,
+        description="ISO 3166-1 alpha-2 country code (e.g., 'US', 'EG', 'SA')",
     ),
-):
+) -> dict[str, Any]:
     """
     Get regulatory region context for a country.
 
@@ -195,11 +202,12 @@ async def get_region(
 
 # ── Phase 2 Endpoints ───────────────────────────────────────────────────────
 
+
 @router.get("/elevation")
 async def get_elevation(
     lat: float = Query(..., ge=-90, le=90, description="Latitude"),
     lon: float = Query(..., ge=-180, le=180, description="Longitude"),
-):
+) -> dict[str, Any]:
     """
     Get terrain elevation and atmospheric pressure for engineering calculations.
 
@@ -245,7 +253,7 @@ async def get_elevation(
 async def get_air_quality(
     lat: float = Query(..., ge=-90, le=90, description="Latitude"),
     lon: float = Query(..., ge=-180, le=180, description="Longitude"),
-):
+) -> dict[str, Any]:
     """
     Get air quality data for engineering calculations.
 
@@ -282,8 +290,7 @@ async def get_air_quality(
                     f"{'UNHEALTHY baseline — increase tenability margins' if data.is_unhealthy_baseline else 'Acceptable baseline for tenability calculations'}."
                 ),
                 "detection": (
-                    f"PM2.5={data.pm25_ug_m3}µg/m³ affects "
-                    f"smoke detector response time estimation."
+                    f"PM2.5={data.pm25_ug_m3}µg/m³ affects smoke detector response time estimation."
                 ),
             },
         },
@@ -361,7 +368,7 @@ def _build_coverage_note(coverage_area: str, source: str) -> str:
 async def get_severe_weather(
     lat: float = Query(..., ge=-90, le=90, description="Latitude"),
     lon: float = Query(..., ge=-180, le=180, description="Longitude"),
-):
+) -> dict[str, Any]:
     """
     Get active severe weather alerts for engineering calculations.
 
@@ -386,19 +393,19 @@ async def get_severe_weather(
 
     alerts_list = []
     for alert in data.active_alerts:
-        alerts_list.append({
-            "event": alert.event,
-            "severity": alert.severity,
-            "headline": alert.headline,
-            "effective": alert.effective,
-            "expires": alert.expires,
-            "is_critical": alert.is_critical,
-            "affects_fire_safety": alert.affects_fire_safety,
-        })
+        alerts_list.append(
+            {
+                "event": alert.event,
+                "severity": alert.severity,
+                "headline": alert.headline,
+                "effective": alert.effective,
+                "expires": alert.expires,
+                "is_critical": alert.is_critical,
+                "affects_fire_safety": alert.affects_fire_safety,
+            }
+        )
 
-    fire_safety_alerts = [
-        a for a in data.active_alerts if a.affects_fire_safety
-    ]
+    fire_safety_alerts = [a for a in data.active_alerts if a.affects_fire_safety]
 
     # Determine coverage note based on coverage area
     coverage_area = getattr(data, "coverage_area", "none")
@@ -436,10 +443,12 @@ async def get_severe_weather(
 @router.get("/hazmat")
 async def get_hazmat_data(
     material: str = Query(
-        ..., min_length=2, max_length=200,
-        description="Material name (e.g., 'methane', 'propane', 'hydrogen')"
+        ...,
+        min_length=2,
+        max_length=200,
+        description="Material name (e.g., 'methane', 'propane', 'hydrogen')",
     ),
-):
+) -> dict[str, Any]:
     """
     Get hazardous material properties for engineering calculations.
 
@@ -491,7 +500,7 @@ async def get_hazmat_data(
 
 
 @router.get("/hazmat/known")
-async def list_known_materials():
+async def list_known_materials() -> dict[str, Any]:
     """
     List all materials in the internal hazardous materials database.
 
@@ -514,12 +523,13 @@ async def list_known_materials():
 
 # ── Comprehensive Context Endpoints ─────────────────────────────────────────
 
+
 @router.get("/context")
 async def get_full_environmental_context(
     lat: float = Query(..., ge=-90, le=90, description="Latitude"),
     lon: float = Query(..., ge=-180, le=180, description="Longitude"),
     is_indoor: bool = Query(True, description="Indoor or outdoor environment"),
-):
+) -> dict[str, Any]:
     """
     Get complete environmental context for engineering calculations (Phase 1).
 
@@ -544,7 +554,7 @@ async def get_full_environmental_context(
     )
 
     # Handle weather errors
-    if isinstance(weather, Exception):
+    if isinstance(weather, BaseException):
         logger.warning("Weather fetch failed: %s", weather)
         weather = weather_svc._get_default(lat, lon)
 
@@ -580,7 +590,9 @@ async def get_full_environmental_context(
             "location": {
                 "latitude": lat,
                 "longitude": lon,
-                "display_name": geo_result.display_name if isinstance(geo_result, GeocodingResult) else "",
+                "display_name": geo_result.display_name
+                if isinstance(geo_result, GeocodingResult)
+                else "",
                 "country_code": country_code,
             },
             "regulatory": {
@@ -606,10 +618,9 @@ async def get_full_phase2_context(
     lon: float = Query(..., ge=-180, le=180, description="Longitude"),
     is_indoor: bool = Query(True, description="Indoor or outdoor environment"),
     material: str | None = Query(
-        None, max_length=200,
-        description="Optional hazardous material name for HAC data"
+        None, max_length=200, description="Optional hazardous material name for HAC data"
     ),
-):
+) -> dict[str, Any]:
     """
     Get COMPLETE environmental context including all Phase 1 + Phase 2 data.
 
@@ -649,26 +660,30 @@ async def get_full_phase2_context(
 
     # Wait for all Phase 1 + Phase 2 parallel tasks
     results = await asyncio.gather(
-        weather_task, geo_task, elev_task, aq_task, sw_task,
+        weather_task,
+        geo_task,
+        elev_task,
+        aq_task,
+        sw_task,
         return_exceptions=True,
     )
 
     weather, geo_result, elevation, air_quality, severe_weather = results
 
     # Handle exceptions from parallel fetches
-    if isinstance(weather, Exception):
+    if isinstance(weather, BaseException):
         logger.warning("Weather fetch failed: %s", weather)
         weather = weather_svc._get_default(lat, lon)
 
-    if isinstance(elevation, Exception):
+    if isinstance(elevation, BaseException):
         logger.warning("Elevation fetch failed: %s", elevation)
         elevation = elev_svc._get_default(lat, lon)
 
-    if isinstance(air_quality, Exception):
+    if isinstance(air_quality, BaseException):
         logger.warning("Air quality fetch failed: %s", air_quality)
         air_quality = aq_svc._get_default(lat, lon)
 
-    if isinstance(severe_weather, Exception):
+    if isinstance(severe_weather, BaseException):
         logger.warning("Severe weather fetch failed: %s", severe_weather)
         severe_weather = sw_svc._get_default(lat, lon)
 
@@ -697,7 +712,7 @@ async def get_full_phase2_context(
     env_data = await weather_svc.get_environmental_context(lat, lon, is_indoor)
 
     # Build comprehensive response
-    response = {
+    response: dict[str, Any] = {
         "success": True,
         "data": {
             # Phase 1: Weather
@@ -713,7 +728,9 @@ async def get_full_phase2_context(
             "location": {
                 "latitude": lat,
                 "longitude": lon,
-                "display_name": geo_result.display_name if isinstance(geo_result, GeocodingResult) else "",
+                "display_name": geo_result.display_name
+                if isinstance(geo_result, GeocodingResult)
+                else "",
                 "country_code": country_code,
             },
             # Phase 1: Regulatory

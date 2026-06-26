@@ -654,7 +654,9 @@ class HACClassificationEngine:
 
         # GAP-01: zone extent using IEC Annex B or simplified fallback
         effective_temp = env_context.ambient_temp_c if env_context else ambient_temp_c
-        effective_lfl = lfl_corrected if lfl_corrected is not None else (substance.lfl_vol_pct or 1.0)
+        effective_lfl = (
+            lfl_corrected if lfl_corrected is not None else (substance.lfl_vol_pct or 1.0)
+        )
 
         # V48 FIX: When env_context is None, BW correction was not applied.
         # But ambient_temp_c defaults to 40°C (non-standard). At 40°C, the BW
@@ -694,7 +696,9 @@ class HACClassificationEngine:
                     f"room_volume={room_volume_m3:.1f} m3)."
                 )
             except (ValueError, ZeroDivisionError) as exc:
-                warnings.append(f"IEC Annex B calculation failed ({exc}); falling back to simplified k/LFL method.")
+                warnings.append(
+                    f"IEC Annex B calculation failed ({exc}); falling back to simplified k/LFL method."
+                )
                 use_annex_b = False
 
         if not use_annex_b:
@@ -706,7 +710,9 @@ class HACClassificationEngine:
             # so dust extent was never computed — only gas extent was used.
             if substance.hazard_type == HazardType.HYBRID:
                 # Compute both gas and dust extents
-                gas_ext = self._compute_extent_v21(effective_lfl, ventilation, is_indoor, source_height_m)
+                gas_ext = self._compute_extent_v21(
+                    effective_lfl, ventilation, is_indoor, source_height_m
+                )
                 dust_ext = self._compute_extent_dust_v21(
                     substance.mec_g_m3 or 15.0, ventilation, is_indoor, source_height_m
                 )
@@ -722,7 +728,9 @@ class HACClassificationEngine:
                 r_v = extent.vertical_m
                 vol_m3 = extent.volume_m3
             else:
-                extent = self._compute_extent_v21(effective_lfl, ventilation, is_indoor, source_height_m)
+                extent = self._compute_extent_v21(
+                    effective_lfl, ventilation, is_indoor, source_height_m
+                )
                 r_h = extent.horizontal_m
                 r_v = extent.vertical_m
                 vol_m3 = extent.volume_m3
@@ -1159,13 +1167,17 @@ class HACClassificationEngine:
                 "dust, using more stringent result per IEC 60079-10-1 §5.7."
             )
         else:
-            base_zone, zone_note = self._apply_ventilation_degree(base_zone, ventilation_degree, substance)
+            base_zone, zone_note = self._apply_ventilation_degree(
+                base_zone, ventilation_degree, substance
+            )
             if zone_note:
                 assumptions.append(zone_note)
             base_zone = self._apply_ventilation_availability(base_zone, ventilation_avail, warnings)
 
         zone = base_zone
-        extent = self._compute_extent(zone, release_sources, ventilation_degree, room_volume_m3, is_indoor, substance)
+        extent = self._compute_extent(
+            zone, release_sources, ventilation_degree, room_volume_m3, is_indoor, substance
+        )
 
         if self._can_be_negligible(zone, ventilation_degree, ventilation_avail):
             extent = ZoneExtentLegacy(
@@ -1185,7 +1197,9 @@ class HACClassificationEngine:
         self._check_temperature_class(substance, warnings)
 
         # V49 FIX: Handle lfl_vol_pct=None (changed from default 0.0 to None)
-        if (substance.lfl_vol_pct is None or substance.lfl_vol_pct <= 0) and substance.material_type in (
+        if (
+            substance.lfl_vol_pct is None or substance.lfl_vol_pct <= 0
+        ) and substance.material_type in (
             HazardousMaterial.GAS,
             HazardousMaterial.VAPOR,
         ):
@@ -1198,12 +1212,14 @@ class HACClassificationEngine:
         nec_div = self._zone_to_nec_division(zone)
         nfpa_ref = (
             "NFPA 497-2021"
-            if substance.material_type not in (HazardousMaterial.DUST_COMB, HazardousMaterial.DUST_HYBRID)
+            if substance.material_type
+            not in (HazardousMaterial.DUST_COMB, HazardousMaterial.DUST_HYBRID)
             else "NFPA 499-2021"
         )
         iec_ref = (
             "IEC 60079-10-1:2015"
-            if substance.material_type not in (HazardousMaterial.DUST_COMB, HazardousMaterial.DUST_HYBRID)
+            if substance.material_type
+            not in (HazardousMaterial.DUST_COMB, HazardousMaterial.DUST_HYBRID)
             else "IEC 60079-10-2:2015"
         )
 
@@ -1234,7 +1250,10 @@ class HACClassificationEngine:
 
     @staticmethod
     def _grade_to_base_zone(grade, substance):
-        is_dust = substance.material_type in (HazardousMaterial.DUST_COMB, HazardousMaterial.DUST_HYBRID)
+        is_dust = substance.material_type in (
+            HazardousMaterial.DUST_COMB,
+            HazardousMaterial.DUST_HYBRID,
+        )
         if is_dust:
             mapping = {
                 ReleaseGrade.CONTINUOUS: ATEXZone.ZONE_20,
@@ -1314,7 +1333,9 @@ class HACClassificationEngine:
         return zone
 
     @staticmethod
-    def _compute_extent(zone, sources, ventilation, room_volume_m3, is_indoor=True, substance=None):
+    def _compute_extent(
+        zone, sources, ventilation, room_volume_m3, is_indoor: bool = True, substance=None
+    ):
         base_r = _BASE_RADII_M.get(zone, 3.0)
         max_rate = max((s.release_rate_kg_s for s in sources), default=0.0)
         rate_factor = 1.0 + math.log1p(max_rate)
@@ -1331,7 +1352,9 @@ class HACClassificationEngine:
         location_factor = 1.0 if is_indoor else 1.5
         radius = base_r * rate_factor * vent_factor * location_factor * kst_factor
         r_h = radius
-        r_v = radius * 0.5  # V44: consistent with _gas_extent — vertical = 0.5 × horizontal per IEC 60079-10-1
+        r_v = (
+            radius * 0.5
+        )  # V44: consistent with _gas_extent — vertical = 0.5 × horizontal per IEC 60079-10-1
         area = math.pi * r_h**2
         # V44 FIX: Volume must use r_h² × r_v (hemi-ellipsoid/ellipsoid), not r_h³ (uniform sphere).
         # Per IEC 60079-10-1:2015 Annex A, zone extents are modeled as hemi-ellipsoids
@@ -1410,24 +1433,36 @@ class HACClassificationEngine:
 
     def _classify_hybrid(self, grade, ventilation_degree, ventilation_avail):
         gas_zone = self._grade_to_base_zone(
-            grade, SubstancePropertiesLegacy(substance_name="_hybrid_gas", material_type=HazardousMaterial.GAS)
+            grade,
+            SubstancePropertiesLegacy(
+                substance_name="_hybrid_gas", material_type=HazardousMaterial.GAS
+            ),
         )
         gas_zone, _ = self._apply_ventilation_degree(
             gas_zone,
             ventilation_degree,
-            SubstancePropertiesLegacy(substance_name="_hybrid_gas", material_type=HazardousMaterial.GAS),
+            SubstancePropertiesLegacy(
+                substance_name="_hybrid_gas", material_type=HazardousMaterial.GAS
+            ),
         )
         dust_zone = self._grade_to_base_zone(
-            grade, SubstancePropertiesLegacy(substance_name="_hybrid_dust", material_type=HazardousMaterial.DUST_COMB)
+            grade,
+            SubstancePropertiesLegacy(
+                substance_name="_hybrid_dust", material_type=HazardousMaterial.DUST_COMB
+            ),
         )
         dust_zone, _ = self._apply_ventilation_degree(
             dust_zone,
             ventilation_degree,
-            SubstancePropertiesLegacy(substance_name="_hybrid_dust", material_type=HazardousMaterial.DUST_COMB),
+            SubstancePropertiesLegacy(
+                substance_name="_hybrid_dust", material_type=HazardousMaterial.DUST_COMB
+            ),
         )
         dummy_warnings = []  # type: ignore[var-annotated]
         gas_zone = self._apply_ventilation_availability(gas_zone, ventilation_avail, dummy_warnings)
-        dust_zone = self._apply_ventilation_availability(dust_zone, ventilation_avail, dummy_warnings)
+        dust_zone = self._apply_ventilation_availability(
+            dust_zone, ventilation_avail, dummy_warnings
+        )
         if _ZONE_HAZARD_ORDER.get(gas_zone, 99) <= _ZONE_HAZARD_ORDER.get(dust_zone, 99):
             return gas_zone
         return dust_zone
@@ -1448,10 +1483,15 @@ class HACClassificationEngine:
 
     @staticmethod
     def _check_dust_properties(substance, warnings) -> None:
-        if substance.material_type not in (HazardousMaterial.DUST_COMB, HazardousMaterial.DUST_HYBRID):
+        if substance.material_type not in (
+            HazardousMaterial.DUST_COMB,
+            HazardousMaterial.DUST_HYBRID,
+        ):
             return
         if substance.mie_mj is not None and substance.mie_mj < 3.0:
-            warnings.append(f"MIE = {substance.mie_mj:.1f} mJ < 3 mJ. Static ignition risk. IEC 60079-10-2 §5.2.")
+            warnings.append(
+                f"MIE = {substance.mie_mj:.1f} mJ < 3 mJ. Static ignition risk. IEC 60079-10-2 §5.2."
+            )
         if substance.kst_bar_m_s is not None and substance.kst_bar_m_s > 200:
             st_class = "St-2" if substance.kst_bar_m_s <= 300 else "St-3"
             warnings.append(

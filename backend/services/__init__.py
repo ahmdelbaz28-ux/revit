@@ -60,14 +60,15 @@ try:
         close_workflow_service,
         get_workflow_service,
     )
+
     WORKFLOW_AVAILABLE = True
 except ImportError:
     WORKFLOW_AVAILABLE = False
-    WorkflowService = None  # type: ignore[misc,assignment]
-    PipelineState = None  # type: ignore[misc,assignment]
-    WorkflowStatus = None  # type: ignore[misc,assignment]
-    get_workflow_service = None  # type: ignore[misc,assignment]
-    close_workflow_service = None  # type: ignore[misc,assignment]
+    WorkflowService = None  # type: ignore[misc]
+    PipelineState = None  # type: ignore[misc]
+    WorkflowStatus = None  # type: ignore[misc]
+    get_workflow_service = None
+    close_workflow_service = None
 
 # Optional: Memory Layer — requires mem0 + qdrant-client (pip install fireai[memory])
 try:
@@ -83,19 +84,20 @@ try:
         close_memory_service,
         get_memory_service,
     )
+
     MEMORY_AVAILABLE = True
 except ImportError:
     MEMORY_AVAILABLE = False
-    MemoryService = None  # type: ignore[misc,assignment]
-    MemoryAddRequest = None  # type: ignore[misc,assignment]
-    MemorySearchRequest = None  # type: ignore[misc,assignment]
-    MemorySearchResponse = None  # type: ignore[misc,assignment]
-    MemoryResult = None  # type: ignore[misc,assignment]
-    MemoryServiceStatus = None  # type: ignore[misc,assignment]
-    MemoryScope = None  # type: ignore[misc,assignment]
-    MemoryCategory = None  # type: ignore[misc,assignment]
-    get_memory_service = None  # type: ignore[misc,assignment]
-    close_memory_service = None  # type: ignore[misc,assignment]
+    MemoryService = None  # type: ignore[misc]
+    MemoryAddRequest = None  # type: ignore[misc]
+    MemorySearchRequest = None  # type: ignore[misc]
+    MemorySearchResponse = None  # type: ignore[misc]
+    MemoryResult = None  # type: ignore[misc]
+    MemoryServiceStatus = None  # type: ignore[misc]
+    MemoryScope = None  # type: ignore[misc]
+    MemoryCategory = None  # type: ignore[misc]
+    get_memory_service = None
+    close_memory_service = None
 
 __all__ = [
     "AirQualityData",

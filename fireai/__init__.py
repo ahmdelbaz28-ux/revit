@@ -86,7 +86,7 @@ _PUBLIC_NAMES = [
 ]
 
 
-def __getattr__(name):
+def __getattr__(name: str):
     """Lazy import: only load sub-modules when actually accessed."""
     if name in _PUBLIC_NAMES:
         # V17 Critical Trilogy — import from v17_core package
@@ -118,7 +118,10 @@ def __getattr__(name):
 
             if name in ("FireAISystem", "EnhancedRoomResult"):
                 return (
-                    locals().get(name) or {"FireAISystem": FireAISystem, "EnhancedRoomResult": EnhancedRoomResult}[name]
+                    locals().get(name)
+                    or {"FireAISystem": FireAISystem, "EnhancedRoomResult": EnhancedRoomResult}[
+                        name
+                    ]
                 )
         except ImportError:
             pass

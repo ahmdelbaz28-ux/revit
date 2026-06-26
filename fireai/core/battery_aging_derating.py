@@ -67,11 +67,11 @@ try:
         Violation,
     )
 except ImportError:
-    DecisionProvenance = None  # type: ignore[misc,assignment]
-    RuleApplied = None  # type: ignore[misc,assignment]
-    Violation = None  # type: ignore[misc,assignment]
-    ConfidenceScore = None  # type: ignore[misc,assignment]
-    ConfidenceLevel = None  # type: ignore[misc,assignment]
+    DecisionProvenance = None  # type: ignore[misc]
+    RuleApplied = None  # type: ignore[misc]
+    Violation = None  # type: ignore[misc]
+    ConfidenceScore = None  # type: ignore[misc]
+    ConfidenceLevel = None  # type: ignore[misc]
 
 logger = logging.getLogger(__name__)
 
@@ -583,9 +583,11 @@ def size_battery(
     # V79 FIX: Validate remaining numeric inputs for NaN/Inf.
     # NaN standby_hours → standby_ah = NaN → confusing results.
     # NaN min_temperature_c → temp_derating falls through comparisons → NaN.
-    for _name, _val in [("standby_hours", standby_hours),
-                         ("alarm_hours", alarm_hours),
-                         ("min_temperature_c", min_temperature_c)]:
+    for _name, _val in [
+        ("standby_hours", standby_hours),
+        ("alarm_hours", alarm_hours),
+        ("min_temperature_c", min_temperature_c),
+    ]:
         if not math.isfinite(_val):
             raise ValueError(
                 f"Battery sizing parameter '{_name}' must be finite, got {_val!r}. "
@@ -714,7 +716,9 @@ def size_battery(
         # This ensures the panel doesn't brown out
         min_operating_voltage = battery.end_of_discharge_voltage
         if battery.nominal_voltage > 0:
-            voltage_drop_pct = (battery.nominal_voltage - min_operating_voltage) / battery.nominal_voltage * 100
+            voltage_drop_pct = (
+                (battery.nominal_voltage - min_operating_voltage) / battery.nominal_voltage * 100
+            )
             if voltage_drop_pct >= 12.5:  # V131 FIX: >= not > — for standard lead-acid
                 # batteries, drop is exactly 12.5% ((2.0-1.75)/2.0×100). The old
                 # check (>12.5) meant this warning could NEVER fire because

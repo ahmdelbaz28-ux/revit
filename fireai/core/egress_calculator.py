@@ -137,7 +137,9 @@ def calculate_egress_time(
     if not math.isfinite(aset_s) or aset_s <= 0:
         raise ValueError(f"aset_s must be positive finite, got {aset_s}")
     if not math.isfinite(premovement_time_s) or premovement_time_s < 0:
-        raise ValueError(f"premovement_time_s must be non-negative finite, got {premovement_time_s}")
+        raise ValueError(
+            f"premovement_time_s must be non-negative finite, got {premovement_time_s}"
+        )
 
     # Edge case: no occupants
     if occupant_count == 0:

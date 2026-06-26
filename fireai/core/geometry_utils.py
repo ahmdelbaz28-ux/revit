@@ -133,7 +133,10 @@ def point_in_polygon(
 
     # -- Fast bounding-box rejection --
     min_x, min_y, max_x, max_y = polygon_bounds(poly[:-1])
-    if not (min_x - tolerance <= px <= max_x + tolerance and min_y - tolerance <= py <= max_y + tolerance):
+    if not (
+        min_x - tolerance <= px <= max_x + tolerance
+        and min_y - tolerance <= py <= max_y + tolerance
+    ):
         return False
 
     # -- Boundary check --
@@ -178,7 +181,10 @@ def _point_on_segment(
         return False
 
     # Dot product — within segment bounds
-    return min(ax, bx) - tol <= px <= max(ax, bx) + tol and min(ay, by) - tol <= py <= max(ay, by) + tol
+    return (
+        min(ax, bx) - tol <= px <= max(ax, bx) + tol
+        and min(ay, by) - tol <= py <= max(ay, by) + tol
+    )
 
 
 def points_in_polygon(
@@ -252,7 +258,9 @@ def validate_polygon(poly: Polygon, min_area: float = 0.01) -> ValidationResult:
             if j == (i + n - 1) % n:
                 continue
             if _segments_intersect(poly[i], poly[(i + 1) % n], poly[j], poly[(j + 1) % n]):
-                errors.append(f"Self-intersection between edge {i}->{(i + 1) % n} and edge {j}->{(j + 1) % n}.")
+                errors.append(
+                    f"Self-intersection between edge {i}->{(i + 1) % n} and edge {j}->{(j + 1) % n}."
+                )
 
     area = polygon_area(poly)
     if area < min_area:
@@ -274,7 +282,9 @@ def validate_polygon(poly: Polygon, min_area: float = 0.01) -> ValidationResult:
             # Shapely's is_valid catches self-intersection, ring orientation,
             # and other geometric issues that the O(n²) check may miss.
             explanation = (
-                shapely_poly.explain_validity if hasattr(shapely_poly, "explain_validity") else "unknown reason"
+                shapely_poly.explain_validity
+                if hasattr(shapely_poly, "explain_validity")
+                else "unknown reason"
             )
             errors.append(
                 f"Polygon is invalid per Shapely: {explanation}. "
@@ -625,7 +635,9 @@ def convex_hull_2d(points: Sequence[Point]) -> Polygon:
     hull = lower[:-1] + upper[:-1]
 
     if len(hull) < 3:
-        raise ValueError(f"Cannot compute convex hull: only {len(hull)} unique hull vertices (points may be collinear)")
+        raise ValueError(
+            f"Cannot compute convex hull: only {len(hull)} unique hull vertices (points may be collinear)"
+        )
 
     return hull
 

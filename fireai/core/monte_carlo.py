@@ -106,7 +106,9 @@ def _run_resilience_check_fast(
             break
 
         # Calculate coverage
-        circles_remaining = np.array([Point(x, y).buffer(radius, quad_segs=12) for x, y in remaining])
+        circles_remaining = np.array(
+            [Point(x, y).buffer(radius, quad_segs=12) for x, y in remaining]
+        )
         coverage = unary_union(circles_remaining)
         covered_area = poly.intersection(coverage).area
         coverage_fraction = covered_area / total_area

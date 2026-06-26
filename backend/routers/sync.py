@@ -70,7 +70,7 @@ class ConnectionManager:
         # rejected at IP limit, or a test mock without 'client' attr).
         # Without this, disconnect() raises AttributeError, preventing cleanup
         # of active_connections and _subscriptions — memory leak.
-        client = getattr(websocket, 'client', None)
+        client = getattr(websocket, "client", None)
         if client:
             return client.host
         return "unknown"
@@ -127,7 +127,11 @@ class ConnectionManager:
             if not self._ip_connections[client_ip]:
                 del self._ip_connections[client_ip]
 
-        logger.info("WebSocket client disconnected from %s. Total: %s", client_ip, len(self.active_connections))
+        logger.info(
+            "WebSocket client disconnected from %s. Total: %s",
+            client_ip,
+            len(self.active_connections),
+        )
 
     def subscribe(self, websocket: WebSocket, project_id: str) -> None:
         """Subscribe a connection to updates for a specific project."""
@@ -165,6 +169,7 @@ manager = ConnectionManager()
 
 # ── Sync endpoints ──────────────────────────────────────────────────────────
 
+
 def _verify_project(project_id: str) -> None:
     db = get_db()
     project = db.get_project(project_id)
@@ -179,31 +184,40 @@ async def sync_project(project_id: str):
     db = get_db()
 
     # Set status to syncing
-    db.set_sync_status(project_id, {
-        "status": "syncing",
-        "lastSync": datetime.now(timezone.utc).isoformat(),
-        "pendingChanges": 0,
-    })
+    db.set_sync_status(
+        project_id,
+        {
+            "status": "syncing",
+            "lastSync": datetime.now(timezone.utc).isoformat(),
+            "pendingChanges": 0,
+        },
+    )
 
     # Simulate sync process (in production, this would sync with external systems)
     await asyncio.sleep(0.1)
 
     # Mark as synced
     now = datetime.now(timezone.utc).isoformat()
-    db.set_sync_status(project_id, {
-        "status": "synced",
-        "lastSync": now,
-        "pendingChanges": 0,
-    })
+    db.set_sync_status(
+        project_id,
+        {
+            "status": "synced",
+            "lastSync": now,
+            "pendingChanges": 0,
+        },
+    )
 
     sync_status = db.get_sync_status(project_id)
 
     # Broadcast sync completion via WebSocket
-    await manager.send_to_project(project_id, {
-        "channel": "sync",
-        "type": "sync_completed",
-        "data": sync_status,
-    })
+    await manager.send_to_project(
+        project_id,
+        {
+            "channel": "sync",
+            "type": "sync_completed",
+            "data": sync_status,
+        },
+    )
 
     return {"data": sync_status, "success": True}
 
@@ -218,6 +232,7 @@ async def get_sync_status(project_id: str):
 
 
 # ── WebSocket endpoint ─────────────────────────────────────────────────────
+
 
 def _validate_ws_origin(websocket: WebSocket) -> bool:
     """
@@ -354,25 +369,31 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
             env_key = os.getenv("FIREAI_API_KEY")
             env_match = bool(env_key) and _hmac.compare_digest(api_key_candidate, env_key)
             if message.get("action") == "auth" and (rbac_info is not None or env_match):
-                await websocket.send_json({
-                    "channel": "system",
-                    "type": "auth_success",
-                    "data": {"message": "Authenticated"},
-                })
+                await websocket.send_json(
+                    {
+                        "channel": "system",
+                        "type": "auth_success",
+                        "data": {"message": "Authenticated"},
+                    }
+                )
             else:
-                await websocket.send_json({
-                    "channel": "system",
-                    "type": "auth_failed",
-                    "data": {"error": "Invalid API key"},
-                })
+                await websocket.send_json(
+                    {
+                        "channel": "system",
+                        "type": "auth_failed",
+                        "data": {"error": "Invalid API key"},
+                    }
+                )
                 await websocket.close(code=4003, reason="Authentication failed")
                 return
         except (asyncio.TimeoutError, json.JSONDecodeError):
-            await websocket.send_json({
-                "channel": "system",
-                "type": "auth_timeout",
-                "data": {"error": "Authentication required within 5 seconds"},
-            })
+            await websocket.send_json(
+                {
+                    "channel": "system",
+                    "type": "auth_timeout",
+                    "data": {"error": "Authentication required within 5 seconds"},
+                }
+            )
             await websocket.close(code=4003, reason="Authentication timeout")
             return
 
@@ -397,41 +418,49 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
             try:
                 message = json.loads(raw)
             except json.JSONDecodeError:
-                await websocket.send_json({
-                    "channel": "error",
-                    "type": "invalid_message",
-                    "data": {"error": "Invalid JSON"},
-                })
+                await websocket.send_json(
+                    {
+                        "channel": "error",
+                        "type": "invalid_message",
+                        "data": {"error": "Invalid JSON"},
+                    }
+                )
                 continue
 
             action = message.get("action", "")
             if action == "ping":
-                await websocket.send_json({
-                    "channel": "system",
-                    "type": "pong",
-                    "data": {"timestamp": datetime.now(timezone.utc).isoformat()},
-                })
+                await websocket.send_json(
+                    {
+                        "channel": "system",
+                        "type": "pong",
+                        "data": {"timestamp": datetime.now(timezone.utc).isoformat()},
+                    }
+                )
             elif action == "subscribe":
                 project_id = message.get("projectId", "")
                 if project_id:
                     manager.subscribe(websocket, project_id)
-                await websocket.send_json({
-                    "channel": "system",
-                    "type": "subscribed",
-                    "data": {"projectId": project_id},
-                })
+                await websocket.send_json(
+                    {
+                        "channel": "system",
+                        "type": "subscribed",
+                        "data": {"projectId": project_id},
+                    }
+                )
             elif action == "get_status":
                 # Allow client to request project status via WebSocket
                 project_id = message.get("projectId", "")
                 if project_id:
                     db = get_db()
                     sync_status = db.get_sync_status(project_id)
-                    await websocket.send_json({
-                        "channel": "sync",
-                        "type": "status",
-                        "data": sync_status,
-                        "projectId": project_id,
-                    })
+                    await websocket.send_json(
+                        {
+                            "channel": "sync",
+                            "type": "status",
+                            "data": sync_status,
+                            "projectId": project_id,
+                        }
+                    )
 
     except WebSocketDisconnect:
         manager.disconnect(websocket)

@@ -190,7 +190,9 @@ class ConsensusEngine:
 
         # Engine 3: Grid-Based (use external result)
         if grid_proof_valid is not None:
-            grid_passed = grid_proof_valid and (grid_coverage_pct is None or grid_coverage_pct >= 99.9)
+            grid_passed = grid_proof_valid and (
+                grid_coverage_pct is None or grid_coverage_pct >= 99.9
+            )
             verdicts.append(
                 EngineVerdict(
                     engine=EngineName.GRID,

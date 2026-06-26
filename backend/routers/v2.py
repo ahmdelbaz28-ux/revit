@@ -45,7 +45,7 @@ References
 # Removing it forces actual type resolution at import time.
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
 
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
@@ -68,7 +68,9 @@ class GenerativeDesignRequest(BaseModel):
     """
 
     room_width: float = Field(..., gt=0, le=1000.0, description="Room width in metres (max 1000m)")
-    room_length: float = Field(..., gt=0, le=1000.0, description="Room length in metres (max 1000m)")
+    room_length: float = Field(
+        ..., gt=0, le=1000.0, description="Room length in metres (max 1000m)"
+    )
     room_height: float = Field(3.0, gt=0, le=30.0, description="Ceiling height in metres (max 30m)")
     room_name: str = Field("API_Room", max_length=200, description="Room identifier")
     occupancy_type: str = Field("office", max_length=100, description="NFPA 101 occupancy")
@@ -226,6 +228,7 @@ async def extract_rooms(req: BIMExtractRoomsRequest) -> dict[str, Any]:
     if req.source:
         import os
         from pathlib import Path
+
         try:
             source_path = Path(req.source).resolve()
             # V138 F-7 FIX: Use Path.is_relative_to() or proper boundary check
@@ -237,6 +240,7 @@ async def extract_rooms(req: BIMExtractRoomsRequest) -> dict[str, Any]:
                 Path("/var/tmp"),
                 Path(os.environ.get("FIREAI_UPLOAD_DIR", str(cwd / "uploads"))),
             ]
+
             # V138 F-7: Check if source_path is within any allowed root
             # using proper path containment (not string prefix)
             def _is_within(path: Path, root: Path) -> bool:
@@ -378,14 +382,16 @@ async def export_ar_snapshot(req: ARExportRequest) -> dict[str, Any]:
     if req.nodes:
         nodes = []
         for n in req.nodes:
-            nodes.append(ARSceneNode(
-                id=n.get("id", "unknown"),
-                name=n.get("name", ""),
-                node_type=n.get("node_type", "detector"),
-                position=tuple(n.get("position", (0, 0, 0))),
-                is_behind_wall=n.get("is_behind_wall", False),
-                inspection_critical=n.get("inspection_critical", False),
-            ))
+            nodes.append(
+                ARSceneNode(
+                    id=n.get("id", "unknown"),
+                    name=n.get("name", ""),
+                    node_type=n.get("node_type", "detector"),
+                    position=tuple(n.get("position", (0, 0, 0))),
+                    is_behind_wall=n.get("is_behind_wall", False),
+                    inspection_critical=n.get("inspection_critical", False),
+                )
+            )
         snapshot = ARSnapshot(building_id=req.building_id, nodes=nodes)
     else:
         # Without DigitalTwin access in API context, return empty snapshot
@@ -519,7 +525,8 @@ async def create_smoke_state(req: SmokeSimulationStateRequest) -> dict[str, Any]
         # and emit a WARNING if the format doesn't match. Full provenance
         # verification would require querying an FDS runner service.
         import re
-        FDS_RUN_ID_PATTERN = r'^fds-\d{4}-\d{3,}$'  # e.g., "fds-2026-001"
+
+        FDS_RUN_ID_PATTERN = r"^fds-\d{4}-\d{3,}$"  # e.g., "fds-2026-001"
         if not re.match(FDS_RUN_ID_PATTERN, req.fds_run_id):
             raise HTTPException(
                 status_code=422,
@@ -535,7 +542,9 @@ async def create_smoke_state(req: SmokeSimulationStateRequest) -> dict[str, Any]
         # V138 F-14: Use Pydantic-validated points (was unvalidated Dict)
         points = [
             SmokeDensityPoint(
-                x=p.x, y=p.y, z=p.z,
+                x=p.x,
+                y=p.y,
+                z=p.z,
                 density_kg_m3=p.density_kg_m3,
             )
             for p in req.smoke_density_points
@@ -562,7 +571,9 @@ class VectorMemoryStoreRequest(BaseModel):
     """Request body for /api/v2/memory/store."""
 
     content: str = Field(..., min_length=1, max_length=10000)
-    memory_type: str = Field("conversation", description="conversation|study_result|document|etap_knowledge")
+    memory_type: str = Field(
+        "conversation", description="conversation|study_result|document|etap_knowledge"
+    )
     metadata: Dict[str, Any] = Field(default_factory=dict)
 
 
@@ -606,6 +617,7 @@ async def store_memory(req: VectorMemoryStoreRequest) -> Dict[str, Any]:
         MemoryType,
         get_vector_memory,
     )
+
     service = get_vector_memory()
     try:
         mem_type = MemoryType(req.memory_type)
@@ -624,14 +636,17 @@ async def search_memory(req: VectorMemorySearchRequest) -> Dict[str, Any]:
         MemoryType,
         get_vector_memory,
     )
+
     service = get_vector_memory()
     try:
         mem_type = MemoryType(req.memory_type)
     except ValueError:
         raise HTTPException(status_code=422, detail=f"Invalid memory_type: {req.memory_type}")
     result = service.search(
-        query=req.query, memory_type=mem_type,
-        limit=req.limit, score_threshold=req.score_threshold,
+        query=req.query,
+        memory_type=mem_type,
+        limit=req.limit,
+        score_threshold=req.score_threshold,
     )
     return result.to_dict()
 
@@ -640,6 +655,7 @@ async def search_memory(req: VectorMemorySearchRequest) -> Dict[str, Any]:
 async def memory_health() -> Dict[str, Any]:
     """Check Qdrant vector database health."""
     from fireai.infrastructure.vector_memory_service import get_vector_memory
+
     return get_vector_memory().health_check()
 
 
@@ -651,14 +667,17 @@ async def add_topology_element(req: TopologyAddElementRequest) -> Dict[str, Any]
         NetworkElement,
         get_topology_service,
     )
+
     service = get_topology_service()
     try:
         et = ElementType(req.element_type)
     except ValueError:
         raise HTTPException(status_code=422, detail=f"Invalid element_type: {req.element_type}")
     element = NetworkElement(
-        element_id=req.element_id, element_type=et,
-        name=req.name, properties=req.properties,
+        element_id=req.element_id,
+        element_type=et,
+        name=req.name,
+        properties=req.properties,
     )
     added = service.add_element(element)
     return {"element_id": req.element_id, "added": added}
@@ -672,14 +691,19 @@ async def add_topology_connection(req: TopologyAddConnectionRequest) -> Dict[str
         RelationshipType,
         get_topology_service,
     )
+
     service = get_topology_service()
     try:
         rt = RelationshipType(req.relationship_type)
     except ValueError:
-        raise HTTPException(status_code=422, detail=f"Invalid relationship_type: {req.relationship_type}")
+        raise HTTPException(
+            status_code=422, detail=f"Invalid relationship_type: {req.relationship_type}"
+        )
     conn = NetworkConnection(
-        from_element=req.from_element, to_element=req.to_element,
-        relationship_type=rt, properties=req.properties,
+        from_element=req.from_element,
+        to_element=req.to_element,
+        relationship_type=rt,
+        properties=req.properties,
     )
     added = service.add_connection(conn)
     return {"from": req.from_element, "to": req.to_element, "added": added}
@@ -693,6 +717,7 @@ async def analyze_impact(req: TopologyImpactRequest) -> Dict[str, Any]:
     Answers: "If I trip this breaker, which loads and buses are affected?"
     """
     from fireai.infrastructure.topology_graph_service import get_topology_service
+
     service = get_topology_service()
     result = service.analyze_breaker_impact(req.breaker_id)
     return result.to_dict()
@@ -702,6 +727,7 @@ async def analyze_impact(req: TopologyImpactRequest) -> Dict[str, Any]:
 async def topology_health() -> Dict[str, Any]:
     """Check Neo4j topology graph health."""
     from fireai.infrastructure.topology_graph_service import get_topology_service
+
     return get_topology_service().health_check()
 
 
@@ -863,15 +889,17 @@ async def get_csrf_token(request: Request) -> dict[str, Any]:
 
     cookie_header = build_csrf_cookie_header(token, is_https=is_https)
 
-    response = JSONResponse(content={
-        "csrf_token": token,
-        "cookie_name": CSRF_COOKIE_NAME,
-        "header_name": "X-CSRF-Token",
-        "instructions": (
-            "Include this token in the X-CSRF-Token header for all "
-            "POST/PUT/DELETE/PATCH requests. The cookie is set automatically."
-        ),
-    })
+    response = JSONResponse(
+        content={
+            "csrf_token": token,
+            "cookie_name": CSRF_COOKIE_NAME,
+            "header_name": "X-CSRF-Token",
+            "instructions": (
+                "Include this token in the X-CSRF-Token header for all "
+                "POST/PUT/DELETE/PATCH requests. The cookie is set automatically."
+            ),
+        }
+    )
     response.headers["Set-Cookie"] = cookie_header
     return response
 

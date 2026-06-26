@@ -281,13 +281,15 @@ class FireAIPluginAPI:
             return (idx, result)
 
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            futures = {executor.submit(_analyse_indexed, i, room): i for i, room in enumerate(rooms)}
+            futures = {
+                executor.submit(_analyse_indexed, i, room): i for i, room in enumerate(rooms)
+            }
             for future in as_completed(futures):
                 idx, result = future.result()
                 indexed_results[idx] = result
 
         # Guarantee: every slot filled (analyse_room never returns None)
-        return list(indexed_results)  # type: ignore[arg-type]
+        return list(indexed_results)
 
     def analyse_building(
         self,

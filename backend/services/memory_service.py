@@ -106,23 +106,23 @@ Focus on extracting and storing fire protection engineering information:
 class MemoryScope(str, Enum):
     """Memory scoping levels — determines the context boundary of stored memories."""
 
-    USER = "user"          # Engineer's personal preferences and patterns
-    PROJECT = "project"    # Project-specific context (run_id)
-    AGENT = "agent"        # FireAI agent's learned procedures
-    GLOBAL = "global"      # Shared knowledge across all users/projects
+    USER = "user"  # Engineer's personal preferences and patterns
+    PROJECT = "project"  # Project-specific context (run_id)
+    AGENT = "agent"  # FireAI agent's learned procedures
+    GLOBAL = "global"  # Shared knowledge across all users/projects
 
 
 class MemoryCategory(str, Enum):
     """Categories of memories for structured storage and retrieval."""
 
-    LAYOUT = "layout"                    # Building layouts and detector placements
-    PREFERENCE = "preference"            # User preferences (standards, manufacturers)
-    CALCULATION = "calculation"          # Calculation patterns and results
-    DEVICE_MAPPING = "device_mapping"    # Repeated device selections
-    DECISION = "decision"                # Engineering decisions with rationale
-    STANDARD = "standard"                # Standard references and interpretations
+    LAYOUT = "layout"  # Building layouts and detector placements
+    PREFERENCE = "preference"  # User preferences (standards, manufacturers)
+    CALCULATION = "calculation"  # Calculation patterns and results
+    DEVICE_MAPPING = "device_mapping"  # Repeated device selections
+    DECISION = "decision"  # Engineering decisions with rationale
+    STANDARD = "standard"  # Standard references and interpretations
     PROJECT_CONTEXT = "project_context"  # Project-specific context
-    PROCEDURE = "procedure"              # Learned procedures and workflows
+    PROCEDURE = "procedure"  # Learned procedures and workflows
 
 
 class MemoryAddRequest(BaseModel):
@@ -130,18 +130,16 @@ class MemoryAddRequest(BaseModel):
 
     messages: Any = Field(
         ...,
-        description="Message(s) to extract memories from. Can be a string or list of message dicts."
+        description="Message(s) to extract memories from. Can be a string or list of message dicts.",
     )
     user_id: str | None = Field(None, description="Engineer/user identifier")
     agent_id: str | None = Field(None, description="FireAI agent identifier")
     run_id: str | None = Field(None, description="Project/run identifier")
     metadata: dict[str, Any] | None = Field(
-        None,
-        description="Additional metadata (category, project_type, standard, etc.)"
+        None, description="Additional metadata (category, project_type, standard, etc.)"
     )
     memory_type: str | None = Field(
-        None,
-        description="Memory type: semantic_memory, episodic_memory, procedural_memory"
+        None, description="Memory type: semantic_memory, episodic_memory, procedural_memory"
     )
 
 
@@ -195,6 +193,7 @@ class MemoryServiceStatus(BaseModel):
 
 
 # ── Memory Service ─────────────────────────────────────────────────────────────
+
 
 class MemoryService:
     """
@@ -277,6 +276,7 @@ class MemoryService:
                 # Initialize Mem0 with OpenAI
                 try:
                     from mem0 import Memory
+
                     self._memory = Memory.from_config(self._config)
 
                     self._status = MemoryServiceStatus(
@@ -339,6 +339,7 @@ class MemoryService:
 
                 try:
                     from mem0 import Memory
+
                     self._memory = Memory.from_config(self._config)
 
                     self._status = MemoryServiceStatus(
@@ -429,10 +430,7 @@ class MemoryService:
                 metadata=metadata,
             )
 
-            logger.info(
-                f"Memory added: user={request.user_id}, "
-                f"project={request.run_id}"
-            )
+            logger.info(f"Memory added: user={request.user_id}, project={request.run_id}")
 
             return {
                 "success": True,
@@ -487,30 +485,31 @@ class MemoryService:
 
             for item in items:
                 if isinstance(item, dict):
-                    results.append(MemoryResult(
-                        id=item.get("id", "unknown"),
-                        memory=item.get("memory", ""),
-                        score=item.get("score"),
-                        metadata=item.get("metadata"),
-                        created_at=item.get("created_at"),
-                        updated_at=item.get("updated_at"),
-                        source="memory",
-                    ))
+                    results.append(
+                        MemoryResult(
+                            id=item.get("id", "unknown"),
+                            memory=item.get("memory", ""),
+                            score=item.get("score"),
+                            metadata=item.get("metadata"),
+                            created_at=item.get("created_at"),
+                            updated_at=item.get("updated_at"),
+                            source="memory",
+                        )
+                    )
                 else:
-                    results.append(MemoryResult(
-                        id=getattr(item, "id", "unknown"),
-                        memory=getattr(item, "memory", ""),
-                        score=getattr(item, "score", None),
-                        metadata=getattr(item, "metadata", None),
-                        created_at=getattr(item, "created_at", None),
-                        updated_at=getattr(item, "updated_at", None),
-                        source="memory",
-                    ))
+                    results.append(
+                        MemoryResult(
+                            id=getattr(item, "id", "unknown"),
+                            memory=getattr(item, "memory", ""),
+                            score=getattr(item, "score", None),
+                            metadata=getattr(item, "metadata", None),
+                            created_at=getattr(item, "created_at", None),
+                            updated_at=getattr(item, "updated_at", None),
+                            source="memory",
+                        )
+                    )
 
-            logger.info(
-                f"Memory search: query='{request.query[:50]}...', "
-                f"results={len(results)}"
-            )
+            logger.info(f"Memory search: query='{request.query[:50]}...', results={len(results)}")
 
             return MemorySearchResponse(
                 results=results,

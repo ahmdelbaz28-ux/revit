@@ -81,7 +81,9 @@ async def create_connection(
     except ValueError as e:
         # Never expose str(e) from ValueError to the client.
         logger.warning("Connection creation ValueError: %s", e)
-        raise HTTPException(status_code=400, detail="Invalid connection data. Please check the input parameters.")
+        raise HTTPException(
+            status_code=400, detail="Invalid connection data. Please check the input parameters."
+        )
     except Exception as e:
         logger.error("create_connection failed: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")

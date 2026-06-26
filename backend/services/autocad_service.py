@@ -38,6 +38,7 @@ if IS_WINDOWS:
     try:
         import pythoncom
         import win32com.client
+
         HAS_AUTOCAD_API = True
     except ImportError:
         logger.warning("AutoCAD COM API not available. Install pywin32.")
@@ -163,122 +164,147 @@ class AutoCADService:
         """
         try:
             entity_data = {
-                "handle": getattr(entity, 'Handle', ''),
-                "object_name": getattr(entity, 'ObjectName', ''),
-                "layer": getattr(entity, 'Layer', '0'),
-                "color": getattr(entity, 'Color', 0),
-                "linetype": getattr(entity, 'Linetype', 'ByLayer'),
-                "lineweight": getattr(entity, 'Lineweight', -1),
-                "visible": getattr(entity, 'Visible', True),
-                "entity_type": getattr(entity, 'ObjectName', '').split('.')[-1].upper().replace('ACDB', '')  # e.g., 'LINE', 'CIRCLE'
+                "handle": getattr(entity, "Handle", ""),
+                "object_name": getattr(entity, "ObjectName", ""),
+                "layer": getattr(entity, "Layer", "0"),
+                "color": getattr(entity, "Color", 0),
+                "linetype": getattr(entity, "Linetype", "ByLayer"),
+                "lineweight": getattr(entity, "Lineweight", -1),
+                "visible": getattr(entity, "Visible", True),
+                "entity_type": getattr(entity, "ObjectName", "")
+                .split(".")[-1]
+                .upper()
+                .replace("ACDB", ""),  # e.g., 'LINE', 'CIRCLE'
             }
 
             # Extract type-specific properties
-            entity_type = entity_data['entity_type']
+            entity_type = entity_data["entity_type"]
 
-            if entity_type == 'LINE':
-                entity_data.update({
-                    "start_point": list(entity.StartPoint),
-                    "end_point": list(entity.EndPoint),
-                    "thickness": entity.Thickness,
-                    "normal": list(entity.Normal) if hasattr(entity, 'Normal') else [0, 0, 1]
-                })
+            if entity_type == "LINE":
+                entity_data.update(
+                    {
+                        "start_point": list(entity.StartPoint),
+                        "end_point": list(entity.EndPoint),
+                        "thickness": entity.Thickness,
+                        "normal": list(entity.Normal) if hasattr(entity, "Normal") else [0, 0, 1],
+                    }
+                )
 
-            elif entity_type == 'LWPOLYLINE':
-                entity_data.update({
-                    "coordinates": [float(coord) for coord in entity.Coordinates],
-                    "elevation": entity.Elevation,
-                    "thickness": entity.Thickness,
-                    "constant_width": entity.ConstantWidth,
-                    "normal": list(entity.Normal) if hasattr(entity, 'Normal') else [0, 0, 1]
-                })
+            elif entity_type == "LWPOLYLINE":
+                entity_data.update(
+                    {
+                        "coordinates": [float(coord) for coord in entity.Coordinates],
+                        "elevation": entity.Elevation,
+                        "thickness": entity.Thickness,
+                        "constant_width": entity.ConstantWidth,
+                        "normal": list(entity.Normal) if hasattr(entity, "Normal") else [0, 0, 1],
+                    }
+                )
 
-            elif entity_type == 'CIRCLE':
-                entity_data.update({
-                    "center": list(entity.Center),
-                    "radius": entity.Radius,
-                    "normal": list(entity.Normal) if hasattr(entity, 'Normal') else [0, 0, 1]
-                })
+            elif entity_type == "CIRCLE":
+                entity_data.update(
+                    {
+                        "center": list(entity.Center),
+                        "radius": entity.Radius,
+                        "normal": list(entity.Normal) if hasattr(entity, "Normal") else [0, 0, 1],
+                    }
+                )
 
-            elif entity_type == 'ARC':
-                entity_data.update({
-                    "center": list(entity.Center),
-                    "radius": entity.Radius,
-                    "start_angle": entity.StartAngle,
-                    "end_angle": entity.EndAngle,
-                    "normal": list(entity.Normal) if hasattr(entity, 'Normal') else [0, 0, 1]
-                })
+            elif entity_type == "ARC":
+                entity_data.update(
+                    {
+                        "center": list(entity.Center),
+                        "radius": entity.Radius,
+                        "start_angle": entity.StartAngle,
+                        "end_angle": entity.EndAngle,
+                        "normal": list(entity.Normal) if hasattr(entity, "Normal") else [0, 0, 1],
+                    }
+                )
 
-            elif entity_type == 'TEXT':
-                entity_data.update({
-                    "text_string": entity.TextString,
-                    "insertion_point": list(entity.InsertionPoint),
-                    "height": entity.Height,
-                    "rotation": entity.Rotation,
-                    "style_name": entity.StyleName
-                })
+            elif entity_type == "TEXT":
+                entity_data.update(
+                    {
+                        "text_string": entity.TextString,
+                        "insertion_point": list(entity.InsertionPoint),
+                        "height": entity.Height,
+                        "rotation": entity.Rotation,
+                        "style_name": entity.StyleName,
+                    }
+                )
 
-            elif entity_type == 'MTEXT':
-                entity_data.update({
-                    "contents": entity.TextString,
-                    "insertion_point": list(entity.InsertionPoint),
-                    "height": entity.Height,
-                    "width": entity.Width,
-                    "attachment_point": entity.AttachmentPoint
-                })
+            elif entity_type == "MTEXT":
+                entity_data.update(
+                    {
+                        "contents": entity.TextString,
+                        "insertion_point": list(entity.InsertionPoint),
+                        "height": entity.Height,
+                        "width": entity.Width,
+                        "attachment_point": entity.AttachmentPoint,
+                    }
+                )
 
-            elif entity_type == 'INSERT':  # Block reference
-                entity_data.update({
-                    "name": entity.Name,
-                    "insertion_point": list(entity.InsertionPoint),
-                    "x_scale_factor": entity.XScaleFactor,
-                    "y_scale_factor": entity.YScaleFactor,
-                    "z_scale_factor": entity.ZScaleFactor,
-                    "rotation": entity.Rotation,
-                    "has_attributes": entity.HasAttributes
-                })
+            elif entity_type == "INSERT":  # Block reference
+                entity_data.update(
+                    {
+                        "name": entity.Name,
+                        "insertion_point": list(entity.InsertionPoint),
+                        "x_scale_factor": entity.XScaleFactor,
+                        "y_scale_factor": entity.YScaleFactor,
+                        "z_scale_factor": entity.ZScaleFactor,
+                        "rotation": entity.Rotation,
+                        "has_attributes": entity.HasAttributes,
+                    }
+                )
 
                 # Get attributes if block has them
                 if entity.HasAttributes:
                     attributes = []
                     for attr in entity.GetAttributes():
-                        attributes.append({
-                            "tag": attr.TagString,
-                            "text_string": attr.TextString,
-                            "prompt": attr.Prompt
-                        })
+                        attributes.append(
+                            {
+                                "tag": attr.TagString,
+                                "text_string": attr.TextString,
+                                "prompt": attr.Prompt,
+                            }
+                        )
                     entity_data["attributes"] = attributes
 
-            elif entity_type == 'SPLINE':
-                entity_data.update({
-                    "degree": entity.Degree,
-                    "fit_tolerance": entity.FitTolerance,
-                    "normal": list(entity.Normal) if hasattr(entity, 'Normal') else [0, 0, 1]
-                })
+            elif entity_type == "SPLINE":
+                entity_data.update(
+                    {
+                        "degree": entity.Degree,
+                        "fit_tolerance": entity.FitTolerance,
+                        "normal": list(entity.Normal) if hasattr(entity, "Normal") else [0, 0, 1],
+                    }
+                )
 
-            elif entity_type == 'HATCH':
-                entity_data.update({
-                    "pattern_name": entity.PatternName,
-                    "pattern_scale": entity.PatternScale,
-                    "associative": entity.Associative,
-                    "area": entity.Area
-                })
+            elif entity_type == "HATCH":
+                entity_data.update(
+                    {
+                        "pattern_name": entity.PatternName,
+                        "pattern_scale": entity.PatternScale,
+                        "associative": entity.Associative,
+                        "area": entity.Area,
+                    }
+                )
 
-            elif entity_type == 'DIMENSION':
-                entity_data.update({
-                    "dimension_text": entity.TextOverride,
-                    "measurement": entity.Measurement,
-                    "normal": list(entity.Normal) if hasattr(entity, 'Normal') else [0, 0, 1]
-                })
+            elif entity_type == "DIMENSION":
+                entity_data.update(
+                    {
+                        "dimension_text": entity.TextOverride,
+                        "measurement": entity.Measurement,
+                        "normal": list(entity.Normal) if hasattr(entity, "Normal") else [0, 0, 1],
+                    }
+                )
 
             return entity_data
 
         except Exception as e:
             logger.error("Error extracting entity data: %s", e)
             return {
-                "handle": getattr(entity, 'Handle', ''),
-                "object_name": getattr(entity, 'ObjectName', ''),
-                "error": str(e)
+                "handle": getattr(entity, "Handle", ""),
+                "object_name": getattr(entity, "ObjectName", ""),
+                "error": str(e),
             }
 
     def read_dwg(self, filepath: str) -> Dict[str, Any]:
@@ -331,7 +357,7 @@ class AutoCADService:
                     "success": True,
                     "entities": entities,
                     "count": len(entities),
-                    "source_file": filepath
+                    "source_file": filepath,
                 }
             # If not connected, we can't read the file through COM
             # This would require alternative approach like Teigha or ODA libraries
@@ -340,17 +366,12 @@ class AutoCADService:
                 "success": False,
                 "error": "AutoCAD service not connected. Cannot read DWG file.",
                 "entities": [],
-                "count": 0
+                "count": 0,
             }
 
         except Exception as e:
             logger.error("Error reading DWG file %s: %s", filepath, e)
-            return {
-                "success": False,
-                "error": str(e),
-                "entities": [],
-                "count": 0
-            }
+            return {"success": False, "error": str(e), "entities": [], "count": 0}
 
     def write_dwg(self, filepath: str, entities: List[Dict[str, Any]]) -> bool:
         """
@@ -382,72 +403,72 @@ class AutoCADService:
 
             for entity_data in entities:
                 try:
-                    entity_type = entity_data.get('entity_type', '').upper()
+                    entity_type = entity_data.get("entity_type", "").upper()
 
-                    if entity_type == 'LINE':
-                        start_point = entity_data.get('start_point', [0, 0, 0])
-                        end_point = entity_data.get('end_point', [1, 0, 0])
+                    if entity_type == "LINE":
+                        start_point = entity_data.get("start_point", [0, 0, 0])
+                        end_point = entity_data.get("end_point", [1, 0, 0])
 
                         line_obj = model_space.AddLine(start_point, end_point)
 
                         # Apply properties
-                        if 'layer' in entity_data:
-                            line_obj.Layer = entity_data['layer']
-                        if 'color' in entity_data:
-                            line_obj.Color = entity_data['color']
-                        if 'linetype' in entity_data:
-                            line_obj.Linetype = entity_data['linetype']
-                        if 'lineweight' in entity_data:
-                            line_obj.Lineweight = entity_data['lineweight']
+                        if "layer" in entity_data:
+                            line_obj.Layer = entity_data["layer"]
+                        if "color" in entity_data:
+                            line_obj.Color = entity_data["color"]
+                        if "linetype" in entity_data:
+                            line_obj.Linetype = entity_data["linetype"]
+                        if "lineweight" in entity_data:
+                            line_obj.Lineweight = entity_data["lineweight"]
 
                         created_entities.append(line_obj)
 
-                    elif entity_type == 'CIRCLE':
-                        center = entity_data.get('center', [0, 0, 0])
-                        radius = entity_data.get('radius', 1.0)
+                    elif entity_type == "CIRCLE":
+                        center = entity_data.get("center", [0, 0, 0])
+                        radius = entity_data.get("radius", 1.0)
 
                         circle_obj = model_space.AddCircle(center, radius)
 
                         # Apply properties
-                        if 'layer' in entity_data:
-                            circle_obj.Layer = entity_data['layer']
-                        if 'color' in entity_data:
-                            circle_obj.Color = entity_data['color']
+                        if "layer" in entity_data:
+                            circle_obj.Layer = entity_data["layer"]
+                        if "color" in entity_data:
+                            circle_obj.Color = entity_data["color"]
 
                         created_entities.append(circle_obj)
 
-                    elif entity_type == 'TEXT':
-                        insertion_point = entity_data.get('insertion_point', [0, 0, 0])
-                        text_string = entity_data.get('text_string', 'Default Text')
-                        height = entity_data.get('height', 0.2)
+                    elif entity_type == "TEXT":
+                        insertion_point = entity_data.get("insertion_point", [0, 0, 0])
+                        text_string = entity_data.get("text_string", "Default Text")
+                        height = entity_data.get("height", 0.2)
 
                         text_obj = model_space.AddText(text_string, insertion_point, height)
 
                         # Apply properties
-                        if 'layer' in entity_data:
-                            text_obj.Layer = entity_data['layer']
-                        if 'color' in entity_data:
-                            text_obj.Color = entity_data['color']
-                        if 'rotation' in entity_data:
-                            text_obj.Rotation = entity_data['rotation']
+                        if "layer" in entity_data:
+                            text_obj.Layer = entity_data["layer"]
+                        if "color" in entity_data:
+                            text_obj.Color = entity_data["color"]
+                        if "rotation" in entity_data:
+                            text_obj.Rotation = entity_data["rotation"]
 
                         created_entities.append(text_obj)
 
-                    elif entity_type == 'LWPOLYLINE':
-                        coordinates = entity_data.get('coordinates', [0, 0, 1, 0, 1, 1, 0, 1])
+                    elif entity_type == "LWPOLYLINE":
+                        coordinates = entity_data.get("coordinates", [0, 0, 1, 0, 1, 1, 0, 1])
                         poly_obj = model_space.AddLightWeightPolyline(coordinates)
 
                         # Apply properties
-                        if 'layer' in entity_data:
-                            poly_obj.Layer = entity_data['layer']
-                        if 'color' in entity_data:
-                            poly_obj.Color = entity_data['color']
+                        if "layer" in entity_data:
+                            poly_obj.Layer = entity_data["layer"]
+                        if "color" in entity_data:
+                            poly_obj.Color = entity_data["color"]
 
                         created_entities.append(poly_obj)
 
-                    elif entity_type == 'INSERT':
-                        insertion_point = entity_data.get('insertion_point', [0, 0, 0])
-                        name = entity_data.get('name', 'UntitledBlock')
+                    elif entity_type == "INSERT":
+                        insertion_point = entity_data.get("insertion_point", [0, 0, 0])
+                        name = entity_data.get("name", "UntitledBlock")
 
                         # Check if block exists, if not create a simple one
                         try:
@@ -461,15 +482,18 @@ class AutoCADService:
                             block_obj.AddLine([1, 1, 0], [0, 1, 0])
                             block_obj.AddLine([0, 1, 0], [0, 0, 0])
 
-                        insert_obj = model_space.InsertBlock(insertion_point, name,
-                                                            entity_data.get('x_scale_factor', 1.0),
-                                                            entity_data.get('y_scale_factor', 1.0),
-                                                            entity_data.get('z_scale_factor', 1.0),
-                                                            entity_data.get('rotation', 0))
+                        insert_obj = model_space.InsertBlock(
+                            insertion_point,
+                            name,
+                            entity_data.get("x_scale_factor", 1.0),
+                            entity_data.get("y_scale_factor", 1.0),
+                            entity_data.get("z_scale_factor", 1.0),
+                            entity_data.get("rotation", 0),
+                        )
 
                         # Apply properties
-                        if 'layer' in entity_data:
-                            insert_obj.Layer = entity_data['layer']
+                        if "layer" in entity_data:
+                            insert_obj.Layer = entity_data["layer"]
 
                         created_entities.append(insert_obj)
 
@@ -488,8 +512,9 @@ class AutoCADService:
             logger.error("Error writing DWG file %s: %s", filepath, e)
             return False
 
-    def draw_line(self, start_point: List[float], end_point: List[float],
-                  layer: str = "0", color: int = 0) -> Optional[Any]:
+    def draw_line(
+        self, start_point: List[float], end_point: List[float], layer: str = "0", color: int = 0
+    ) -> Optional[Any]:
         """
         Draw a line in the active AutoCAD document.
 
@@ -522,8 +547,9 @@ class AutoCADService:
             logger.error("Error drawing line: %s", e)
             return None
 
-    def draw_polyline(self, vertices: List[List[float]],
-                      layer: str = "0", color: int = 0, closed: bool = False) -> Optional[Any]:
+    def draw_polyline(
+        self, vertices: List[List[float]], layer: str = "0", color: int = 0, closed: bool = False
+    ) -> Optional[Any]:
         """
         Draw a polyline in the active AutoCAD document.
 
@@ -563,8 +589,9 @@ class AutoCADService:
             logger.error("Error drawing polyline: %s", e)
             return None
 
-    def draw_circle(self, center: List[float], radius: float,
-                    layer: str = "0", color: int = 0) -> Optional[Any]:
+    def draw_circle(
+        self, center: List[float], radius: float, layer: str = "0", color: int = 0
+    ) -> Optional[Any]:
         """
         Draw a circle in the active AutoCAD document.
 
@@ -597,8 +624,14 @@ class AutoCADService:
             logger.error("Error drawing circle: %s", e)
             return None
 
-    def draw_text(self, text: str, insertion_point: List[float], height: float = 0.2,
-                  layer: str = "0", color: int = 0) -> Optional[Any]:
+    def draw_text(
+        self,
+        text: str,
+        insertion_point: List[float],
+        height: float = 0.2,
+        layer: str = "0",
+        color: int = 0,
+    ) -> Optional[Any]:
         """
         Draw text in the active AutoCAD document.
 
@@ -653,13 +686,13 @@ class AutoCADService:
                 "active_space": doc.ActiveSpace,
                 "limits": {
                     "min_point": list(doc.Limits.MinPoint) if doc.Limits else None,
-                    "max_point": list(doc.Limits.MaxPoint) if doc.Limits else None
+                    "max_point": list(doc.Limits.MaxPoint) if doc.Limits else None,
                 },
                 "variables": {
                     "units": doc.GetVariable("INSUNITS"),
                     "angle_units": doc.GetVariable("AUNITS"),
-                    "precision": doc.GetVariable("LUPREC")
-                }
+                    "precision": doc.GetVariable("LUPREC"),
+                },
             }
         except Exception as e:
             logger.error("Error getting document info: %s", e)

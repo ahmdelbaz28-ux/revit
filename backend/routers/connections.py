@@ -59,12 +59,16 @@ async def list_connections(
     """List all connections in a project with pagination."""
     _verify_project(project_id)
     db = get_db()
-    result = db.list_connections(project_id, page=page, limit=limit, sort=_normalize_sort(sort), order=order)
+    result = db.list_connections(
+        project_id, page=page, limit=limit, sort=_normalize_sort(sort), order=order
+    )
     validate_paginated(result, item_validator=validate_connection)
     return success(result)
 
 
-@router.post("", status_code=201, dependencies=[Depends(require_permission(Permission.CONNECTION_CREATE))])
+@router.post(
+    "", status_code=201, dependencies=[Depends(require_permission(Permission.CONNECTION_CREATE))]
+)
 async def create_connection(project_id: str, input_data: CreateConnectionInput):
     """Create a new connection in a project."""
     _verify_project(project_id)
@@ -97,18 +101,22 @@ async def create_connection(project_id: str, input_data: CreateConnectionInput):
 
     # Sync connection to UDM for conflict detection
     from backend.project_bridge import sync_connection_to_udm
+
     sync_connection_to_udm(project_id, conn_data)
 
     return success(connection)
 
 
-@router.put("/{connection_id}", dependencies=[Depends(require_permission(Permission.CONNECTION_UPDATE))])
+@router.put(
+    "/{connection_id}", dependencies=[Depends(require_permission(Permission.CONNECTION_UPDATE))]
+)
 async def update_connection(
     project_id: str,
     connection_id: str,
     cableSize: str | None = None,
     length: float | None = None,
-    connection_type: str | None = None,  # FIX #14: Renamed 'type' to 'connection_type' — 'type' shadows built-in
+    connection_type: str
+    | None = None,  # FIX #14: Renamed 'type' to 'connection_type' — 'type' shadows built-in
 ):
     """
     Update an existing connection in a project.
@@ -144,7 +152,9 @@ async def update_connection(
     return success(updated)
 
 
-@router.delete("/{connection_id}", dependencies=[Depends(require_permission(Permission.CONNECTION_DELETE))])
+@router.delete(
+    "/{connection_id}", dependencies=[Depends(require_permission(Permission.CONNECTION_DELETE))]
+)
 async def delete_connection(project_id: str, connection_id: str):
     """Delete a connection from a project."""
     _verify_project(project_id)
@@ -155,6 +165,7 @@ async def delete_connection(project_id: str, connection_id: str):
 
     # Sync connection deletion to UDM (soft-delete for audit trail)
     from backend.project_bridge import sync_connection_delete_to_udm
+
     sync_connection_delete_to_udm(project_id, connection_id)
 
     return success(None, "Connection deleted")

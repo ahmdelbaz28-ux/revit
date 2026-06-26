@@ -192,18 +192,14 @@ class MobileAPI:
 
     def authenticate(self, credentials: MobileCredentials) -> AuthToken:
         if not self._rate_limiter.allow(credentials.username):
-            raise PermissionError(
-                f"Rate limit exceeded for user {credentials.username}"
-            )
+            raise PermissionError(f"Rate limit exceeded for user {credentials.username}")
 
         user = self._users.get(credentials.username)
         if user is None:
             raise PermissionError("Invalid username or password")
 
         stored_hash = user.get("password_hash", "")
-        if not secrets.compare_digest(
-            credentials.password_hash, stored_hash
-        ):
+        if not secrets.compare_digest(credentials.password_hash, stored_hash):
             raise PermissionError("Invalid username or password")
 
         token_str = self._generate_token()
@@ -269,18 +265,12 @@ class MobileAPI:
     # ── Field Tasks ─────────────────────────────────────────────────────
 
     def get_field_tasks(self, user_id: str) -> list[FieldTask]:
-        return [
-            task
-            for task in self._tasks.values()
-            if task.assigned_to == user_id
-        ]
+        return [task for task in self._tasks.values() if task.assigned_to == user_id]
 
     def assign_task(self, task: FieldTask) -> None:
         self._tasks[task.task_id] = task
 
-    def update_task_status(
-        self, task_id: str, status: TaskStatus
-    ) -> bool:
+    def update_task_status(self, task_id: str, status: TaskStatus) -> bool:
         if task_id not in self._tasks:
             return False
         task = self._tasks[task_id]
@@ -340,9 +330,7 @@ class MobileAPI:
 
     # ── Offline Sync ────────────────────────────────────────────────────
 
-    def get_offline_sync(
-        self, user_id: str, since: datetime
-    ) -> SyncPackage:
+    def get_offline_sync(self, user_id: str, since: datetime) -> SyncPackage:
         try:
             user_tasks = self.get_field_tasks(user_id)
             updated_tasks = list(user_tasks)
@@ -375,9 +363,7 @@ class MobileAPI:
                 tasks=sync_data.tasks,
                 inspections=sync_data.inspections,
                 reference_data=sync_data.reference_data,
-                checksum=hashlib.sha256(
-                    raw.encode("utf-8")
-                ).hexdigest()[:16],
+                checksum=hashlib.sha256(raw.encode("utf-8")).hexdigest()[:16],
             )
 
         except Exception as exc:

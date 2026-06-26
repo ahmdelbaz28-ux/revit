@@ -304,7 +304,9 @@ class SubstanceProperties(BaseModel):
     ufl_vol_pct: float | None = Field(None, gt=0.0, le=100.0)
     flash_point_c: float | None = Field(None, ge=-200.0, le=500.0)
     autoignition_c: float | None = Field(None, ge=50.0, le=1000.0)
-    mec_g_m3: float | None = Field(None, gt=0.0, description="Minimum Explosible Concentration (dust)")
+    mec_g_m3: float | None = Field(
+        None, gt=0.0, description="Minimum Explosible Concentration (dust)"
+    )
     kst_bar_m_s: float | None = Field(None, ge=0.0, description="Dust explosion constant")
     mie_mj: float | None = Field(None, gt=0.0, description="Minimum Ignition Energy (mJ)")
     density_kg_m3: float | None = Field(None, gt=0.0)
@@ -324,8 +326,14 @@ class SubstanceProperties(BaseModel):
                 f"[NFPA 497 §4.2]"
             )
         # LFL < UFL
-        if self.lfl_vol_pct is not None and self.ufl_vol_pct is not None and self.lfl_vol_pct >= self.ufl_vol_pct:
-            raise ValueError(f"lfl_vol_pct ({self.lfl_vol_pct}) must be < ufl_vol_pct ({self.ufl_vol_pct}).")
+        if (
+            self.lfl_vol_pct is not None
+            and self.ufl_vol_pct is not None
+            and self.lfl_vol_pct >= self.ufl_vol_pct
+        ):
+            raise ValueError(
+                f"lfl_vol_pct ({self.lfl_vol_pct}) must be < ufl_vol_pct ({self.ufl_vol_pct})."
+            )
         # GAS needs LFL
         if self.hazard_type == HazardType.GAS and self.lfl_vol_pct is None:
             raise ValueError("GAS hazard requires lfl_vol_pct.")
@@ -335,7 +343,9 @@ class SubstanceProperties(BaseModel):
         # HYBRID needs both
         if self.hazard_type == HazardType.HYBRID:
             if self.lfl_vol_pct is None or self.mec_g_m3 is None:
-                raise ValueError("HYBRID hazard requires both lfl_vol_pct and mec_g_m3. [IEC 60079-10-1 §5.7]")
+                raise ValueError(
+                    "HYBRID hazard requires both lfl_vol_pct and mec_g_m3. [IEC 60079-10-1 §5.7]"
+                )
         # FIX #5 (HIGH): FIBER hazard type requires flammability data.
         # Without lfl_vol_pct or mec_g_m3, a FIBER substance passes validation
         # with zero flammability properties — a silent pass on an unvalidated
@@ -397,7 +407,10 @@ class HACResult(BaseModel):
 
     @model_validator(mode="after")
     def check_critical_combination(self) -> HACResult:
-        if self.ventilation == VentilationLevel.POOR and self.zone in (ZoneType.ZONE_0, ZoneType.ZONE_20):
+        if self.ventilation == VentilationLevel.POOR and self.zone in (
+            ZoneType.ZONE_0,
+            ZoneType.ZONE_20,
+        ):
             flag = (
                 "CRITICAL: Zone 0/20 with POOR ventilation — "
                 "most dangerous possible classification. "
@@ -406,7 +419,9 @@ class HACResult(BaseModel):
             )
             # Cannot be silently ignored — it's in critical_flags
             if flag not in self.critical_flags:
-                raise ValueError(f"{flag}\nSet critical_flags=['{flag}'] explicitly to acknowledge this condition.")
+                raise ValueError(
+                    f"{flag}\nSet critical_flags=['{flag}'] explicitly to acknowledge this condition."
+                )
         return self
 
 
@@ -570,7 +585,9 @@ class ATEXEquipmentSpec(BaseModel):
         if self.zone in zone_allowed:
             for mode in self.protection_modes:
                 if mode not in zone_allowed[self.zone]:
-                    raise ValueError(f"Protection mode '{mode}' not permitted for {self.zone.value}. [IEC 60079-14]")
+                    raise ValueError(
+                        f"Protection mode '{mode}' not permitted for {self.zone.value}. [IEC 60079-14]"
+                    )
         return self
 
     @model_validator(mode="after")
@@ -591,7 +608,12 @@ class ATEXEquipmentSpec(BaseModel):
             t_max = _T_CLASS_MAX.get(self.temp_class.value, 0)
             if t_max > 0:
                 # Zone 0/1/20/21: 5% thermal margin per IEC 60079-14 §5.3
-                if self.zone in (ZoneType.ZONE_0, ZoneType.ZONE_1, ZoneType.ZONE_20, ZoneType.ZONE_21):
+                if self.zone in (
+                    ZoneType.ZONE_0,
+                    ZoneType.ZONE_1,
+                    ZoneType.ZONE_20,
+                    ZoneType.ZONE_21,
+                ):
                     max_allowed = self.autoignition_c * 0.95
                     if t_max > max_allowed:
                         hac_critical_entry = (
@@ -601,7 +623,9 @@ class ATEXEquipmentSpec(BaseModel):
                             f"for {self.zone.value}. [IEC 60079-14 §5.3]"
                         )
                         # Cannot raise ValueError because frozen model; append to hac_critical
-                        object.__setattr__(self, "hac_critical", [*list(self.hac_critical), hac_critical_entry])
+                        object.__setattr__(
+                            self, "hac_critical", [*list(self.hac_critical), hac_critical_entry]
+                        )
                         # MED-06 FIX: Log CRITICAL so violation is not silent
                         logger.critical(
                             "MED-06: %s — equipment specification is NOT compliant. "
@@ -617,7 +641,9 @@ class ATEXEquipmentSpec(BaseModel):
                             f"({self.autoignition_c}°C) for {self.zone.value}. "
                             f"[IEC 60079-14 §5.3]"
                         )
-                        object.__setattr__(self, "hac_critical", [*list(self.hac_critical), hac_critical_entry])
+                        object.__setattr__(
+                            self, "hac_critical", [*list(self.hac_critical), hac_critical_entry]
+                        )
                         # MED-06 FIX: Log CRITICAL so violation is not silent
                         logger.critical(
                             "MED-06: %s — equipment specification is NOT compliant. "
@@ -833,7 +859,10 @@ class EnvironmentalContext(BaseModel):
     @model_validator(mode="after")
     def cross_validate_environment(self) -> EnvironmentalContext:
         # Physically impossible: high instability with near-zero wind
-        if self.wind_speed_m_s < 2.0 and self.stability_class in (PasquillStability.A, PasquillStability.B):
+        if self.wind_speed_m_s < 2.0 and self.stability_class in (
+            PasquillStability.A,
+            PasquillStability.B,
+        ):
             raise ValueError(
                 "Physics Violation: Highly unstable conditions (A/B) cannot exist "
                 "with wind speed < 2.0 m/s in standard dispersion models. "
@@ -1936,7 +1965,9 @@ class VolumetricMedium(BaseModel):
     medium_type: str = Field(description="SMOKE, STEAM, GAS_CLOUD, DUST_SUSPENSION")
     bbox_min: list[float] = Field(min_length=3, max_length=3)
     bbox_max: list[float] = Field(min_length=3, max_length=3)
-    cas_number: str | None = Field(None, description="CAS number for spectral lookup in SpectralSignatureRegistry")
+    cas_number: str | None = Field(
+        None, description="CAS number for spectral lookup in SpectralSignatureRegistry"
+    )
     concentration_factor: float = Field(
         default=1.0,
         gt=0.0,
@@ -1955,7 +1986,9 @@ class VolumetricMedium(BaseModel):
     def bbox_valid(self) -> VolumetricMedium:
         for i in range(3):
             if self.bbox_min[i] > self.bbox_max[i]:
-                raise ValueError(f"bbox_min[{i}]={self.bbox_min[i]} > bbox_max[{i}]={self.bbox_max[i]}")
+                raise ValueError(
+                    f"bbox_min[{i}]={self.bbox_min[i]} > bbox_max[{i}]={self.bbox_max[i]}"
+                )
         return self
 
     @model_validator(mode="after")
@@ -2021,7 +2054,9 @@ class VolumetricMedium(BaseModel):
 
         return float(raw) * self.concentration_factor
 
-    def get_alpha_with_registry(self, band: WavelengthBand, registry: SpectralSignatureRegistry) -> float:
+    def get_alpha_with_registry(
+        self, band: WavelengthBand, registry: SpectralSignatureRegistry
+    ) -> float:
         """
         Get absorption coefficient using registry lookup.
 

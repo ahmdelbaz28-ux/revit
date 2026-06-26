@@ -132,7 +132,10 @@ class CIBenchmarkSuite:
         try:
             from core.models import Geometry, Point3D
 
-            g = Geometry(points=[Point3D(0, 0), Point3D(10, 0), Point3D(10, 8), Point3D(0, 8)], polyline_closed=True)  # type: ignore[arg-type]
+            g = Geometry(
+                points=[Point3D(0, 0), Point3D(10, 0), Point3D(10, 8), Point3D(0, 8)],
+                polyline_closed=True,
+            )  # type: ignore[arg-type]
             ops, std = _run_timed(g.calculate_perimeter, n=500_000)
             return BenchResult("geometry_perimeter_4pt", ops, 1e6 / ops, 500_000, std)
         except ImportError:
@@ -217,7 +220,9 @@ class CIBenchmarkSuite:
         polys = _assemble_closed_polygons_v29(lines, tolerance=0.01)
         elapsed = time.perf_counter() - t
         rooms_per_s = len(polys) / elapsed
-        return BenchResult("assemble_10k_rooms", rooms_per_s, elapsed * 1e6 / max(len(polys), 1), 1, 0.0)
+        return BenchResult(
+            "assemble_10k_rooms", rooms_per_s, elapsed * 1e6 / max(len(polys), 1), 1, 0.0
+        )
 
     def bench_delta_cache_hit(self) -> BenchResult:
         """DeltaCache: cache hit throughput. Target: ≥ 500K/sec."""
@@ -315,7 +320,9 @@ class CIBenchmarkSuite:
 
         for result in self.results:
             if result.is_stub:
-                print(f"  SKIP {result.name:<43} {'N/A':>12} {'N/A':>12} {'N/A':>8}  (stub — not comparable)")
+                print(
+                    f"  SKIP {result.name:<43} {'N/A':>12} {'N/A':>12} {'N/A':>8}  (stub — not comparable)"
+                )
                 continue
 
             base_entry = base_data.get(result.name)
@@ -333,7 +340,9 @@ class CIBenchmarkSuite:
                     f"{result.name}: {delta_pct:+.1f}% ({base_ops:.0f} -> {result.ops_per_sec:.0f} ops/sec)"
                 )
 
-            print(f"  {symbol} {result.name:<43} {base_ops:>12.0f} {result.ops_per_sec:>12.0f} {delta_pct:>+7.1f}%")
+            print(
+                f"  {symbol} {result.name:<43} {base_ops:>12.0f} {result.ops_per_sec:>12.0f} {delta_pct:>+7.1f}%"
+            )
 
         return len(failures) == 0, failures
 

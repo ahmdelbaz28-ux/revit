@@ -47,7 +47,7 @@ except ImportError:
     # Standard xml.etree.ElementTree is vulnerable to XML attacks
     # (billion laughs, XXE). In a safety-critical system, we must
     # not silently fall back to an insecure parser.
-    ET = None  # type: ignore[assignment]
+    ET = None
 from dataclasses import dataclass
 
 import httpx
@@ -60,41 +60,43 @@ logger = logging.getLogger(__name__)
 # MeteoAlarm covers EU member states, EEA members, and cooperating countries.
 # Source: https://www.meteoalarm.org/
 
-METEOALARM_COUNTRY_CODES: frozenset[str] = frozenset({
-    # EU Member States
-    "AT",  # Austria
-    "BE",  # Belgium
-    "BG",  # Bulgaria
-    "HR",  # Croatia
-    "CY",  # Cyprus
-    "CZ",  # Czech Republic
-    "DK",  # Denmark
-    "EE",  # Estonia
-    "FI",  # Finland
-    "FR",  # France
-    "DE",  # Germany
-    "GR",  # Greece
-    "HU",  # Hungary
-    "IE",  # Ireland
-    "IT",  # Italy
-    "LV",  # Latvia
-    "LT",  # Lithuania
-    "LU",  # Luxembourg
-    "MT",  # Malta
-    "NL",  # Netherlands
-    "PL",  # Poland
-    "PT",  # Portugal
-    "RO",  # Romania
-    "SK",  # Slovakia
-    "SI",  # Slovenia
-    "ES",  # Spain
-    "SE",  # Sweden
-    # EEA / EFTA / Cooperating
-    "IS",  # Iceland
-    "NO",  # Norway
-    "CH",  # Switzerland
-    "UK",  # United Kingdom (post-Brexit, still covered)
-})
+METEOALARM_COUNTRY_CODES: frozenset[str] = frozenset(
+    {
+        # EU Member States
+        "AT",  # Austria
+        "BE",  # Belgium
+        "BG",  # Bulgaria
+        "HR",  # Croatia
+        "CY",  # Cyprus
+        "CZ",  # Czech Republic
+        "DK",  # Denmark
+        "EE",  # Estonia
+        "FI",  # Finland
+        "FR",  # France
+        "DE",  # Germany
+        "GR",  # Greece
+        "HU",  # Hungary
+        "IE",  # Ireland
+        "IT",  # Italy
+        "LV",  # Latvia
+        "LT",  # Lithuania
+        "LU",  # Luxembourg
+        "MT",  # Malta
+        "NL",  # Netherlands
+        "PL",  # Poland
+        "PT",  # Portugal
+        "RO",  # Romania
+        "SK",  # Slovakia
+        "SI",  # Slovenia
+        "ES",  # Spain
+        "SE",  # Sweden
+        # EEA / EFTA / Cooperating
+        "IS",  # Iceland
+        "NO",  # Norway
+        "CH",  # Switzerland
+        "UK",  # United Kingdom (post-Brexit, still covered)
+    }
+)
 
 # Mapping from ISO 3166-1 alpha-2 to MeteoAlarm country feed identifiers.
 # Most are identical, but some feeds use different codes.
@@ -220,10 +222,24 @@ class WeatherAlert:
     def affects_fire_safety(self) -> bool:
         """Whether this alert type is relevant to fire safety engineering."""
         fire_safety_keywords = [
-            "wind", "tornado", "hurricane", "tropical storm",
-            "heat", "cold", "flood", "storm", "thunderstorm",
-            "power", "ice", "snow", "fire", "temperature",
-            "avalanche", "fog", "coastal", "rain",
+            "wind",
+            "tornado",
+            "hurricane",
+            "tropical storm",
+            "heat",
+            "cold",
+            "flood",
+            "storm",
+            "thunderstorm",
+            "power",
+            "ice",
+            "snow",
+            "fire",
+            "temperature",
+            "avalanche",
+            "fog",
+            "coastal",
+            "rain",
         ]
         event_lower = self.event.lower()
         return any(kw in event_lower for kw in fire_safety_keywords)
@@ -298,9 +314,15 @@ class SevereWeatherService:
 
     NWS_ALERTS_URL = os.environ.get("NWS_API_URL", "https://api.weather.gov/alerts")
     NWS_POINT_URL = os.environ.get("NWS_POINTS_URL", "https://api.weather.gov/points")
-    METEOALARM_API_URL = os.environ.get("METEOALARM_API_URL", "https://api.meteoalarm.org/api/v1/warnings")
-    METEOALARM_ATOM_URL = os.environ.get("METEOALARM_ATOM_URL", "https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-country")
-    OPENMETEO_ALERTS_URL = os.environ.get("OPENMETEO_ALERTS_URL", "https://api.open-meteo.com/v1/forecast")
+    METEOALARM_API_URL = os.environ.get(
+        "METEOALARM_API_URL", "https://api.meteoalarm.org/api/v1/warnings"
+    )
+    METEOALARM_ATOM_URL = os.environ.get(
+        "METEOALARM_ATOM_URL", "https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-country"
+    )
+    OPENMETEO_ALERTS_URL = os.environ.get(
+        "OPENMETEO_ALERTS_URL", "https://api.open-meteo.com/v1/forecast"
+    )
 
     # US bounding box (continental US)
     US_LAT_MIN = 24.0
@@ -402,10 +424,7 @@ class SevereWeatherService:
         # Approximate EU/EEA bounding box
         # Covers from Iceland (approx -24, 64) to Cyprus (approx 34, 35)
         # This is intentionally broad to include all MeteoAlarm countries
-        if (
-            34.0 <= latitude <= 72.0
-            and -25.0 <= longitude <= 45.0
-        ):
+        if 34.0 <= latitude <= 72.0 and -25.0 <= longitude <= 45.0:
             return "eu"
 
         return "global"
@@ -417,9 +436,7 @@ class SevereWeatherService:
         wait=wait_exponential(min=1, max=10),
         reraise=True,
     )
-    async def _fetch_nws_alerts(
-        self, latitude: float, longitude: float
-    ) -> SevereWeatherData:
+    async def _fetch_nws_alerts(self, latitude: float, longitude: float) -> SevereWeatherData:
         """
         Fetch active weather alerts from NWS API.
 
@@ -437,9 +454,7 @@ class SevereWeatherService:
 
         """
         client = await self._get_client()
-        logger.info(
-            f"Fetching NWS alerts: lat={latitude:.4f}, lon={longitude:.4f}"
-        )
+        logger.info(f"Fetching NWS alerts: lat={latitude:.4f}, lon={longitude:.4f}")
         response = await client.get(
             self.NWS_ALERTS_URL,
             params={"point": f"{latitude},{longitude}"},
@@ -555,9 +570,7 @@ class SevereWeatherService:
 
         # Try the JSON API first
         try:
-            alerts, has_power_risk, has_extreme_temp = (
-                await self._fetch_meteoalarm_json(cc)
-            )
+            alerts, has_power_risk, has_extreme_temp = await self._fetch_meteoalarm_json(cc)
         except Exception as e:
             logger.warning(
                 f"MeteoAlarm JSON API failed for country={cc}: "
@@ -565,9 +578,7 @@ class SevereWeatherService:
             )
             # Fall back to Atom feed
             try:
-                alerts, has_power_risk, has_extreme_temp = (
-                    await self._fetch_meteoalarm_atom(cc)
-                )
+                alerts, has_power_risk, has_extreme_temp = await self._fetch_meteoalarm_atom(cc)
             except Exception as atom_err:
                 logger.warning(
                     f"MeteoAlarm Atom feed also failed for country={cc}: "
@@ -657,8 +668,7 @@ class SevereWeatherService:
 
             except Exception as parse_err:
                 logger.warning(
-                    f"Failed to parse MeteoAlarm warning: {parse_err}. "
-                    f"Skipping warning."
+                    f"Failed to parse MeteoAlarm warning: {parse_err}. Skipping warning."
                 )
                 continue
 
@@ -696,9 +706,7 @@ class SevereWeatherService:
             event = _METEOALARM_TYPE_MAP.get(alert_type, f"Weather Alert ({alert_type})")
 
         # Map severity
-        severity_raw = str(
-            warning.get("severity", warning.get("color", ""))
-        ).lower()
+        severity_raw = str(warning.get("severity", warning.get("color", ""))).lower()
         severity = WeatherAlertSeverity.METEOALARM_SEVERITY_MAP.get(
             severity_raw, WeatherAlertSeverity.UNKNOWN
         )
@@ -819,9 +827,7 @@ class SevereWeatherService:
                             has_extreme_temp = True
 
                 except Exception as parse_err:
-                    logger.warning(
-                        f"Failed to parse MeteoAlarm Atom entry: {parse_err}. Skipping."
-                    )
+                    logger.warning(f"Failed to parse MeteoAlarm Atom entry: {parse_err}. Skipping.")
                     continue
 
         except ET.ParseError as e:
@@ -831,9 +837,7 @@ class SevereWeatherService:
 
         return alerts, has_power_risk, has_extreme_temp
 
-    def _parse_meteoalarm_atom_entry(
-        self, entry: ET.Element, ns: dict
-    ) -> WeatherAlert | None:
+    def _parse_meteoalarm_atom_entry(self, entry: ET.Element, ns: dict) -> WeatherAlert | None:
         """
         Parse a single Atom <entry> element into a WeatherAlert.
 
@@ -856,6 +860,7 @@ class SevereWeatherService:
             WeatherAlert or None if parsing fails
 
         """
+
         # Try namespaced elements first, then fall back to non-namespaced
         def find_text(element: ET.Element, path_ns: str, path_no_ns: str) -> str:
             result = element.find(path_ns, ns)
@@ -917,9 +922,7 @@ class SevereWeatherService:
 
     # ── Open-Meteo Alerts (Global fallback) ───────────────────────────────
 
-    async def _fetch_openmeteo_alerts(
-        self, latitude: float, longitude: float
-    ) -> SevereWeatherData:
+    async def _fetch_openmeteo_alerts(self, latitude: float, longitude: float) -> SevereWeatherData:
         """
         Attempt to fetch weather alerts from Open-Meteo.
 
@@ -952,8 +955,7 @@ class SevereWeatherService:
 
         try:
             logger.info(
-                f"Attempting Open-Meteo alert check: "
-                f"lat={latitude:.4f}, lon={longitude:.4f}"
+                f"Attempting Open-Meteo alert check: lat={latitude:.4f}, lon={longitude:.4f}"
             )
             response = await client.get(
                 self.OPENMETEO_ALERTS_URL,
@@ -982,31 +984,35 @@ class SevereWeatherService:
 
             if weather_code >= 95:
                 # Thunderstorm
-                alerts.append(WeatherAlert(
-                    event="Thunderstorm Alert",
-                    severity=WeatherAlertSeverity.SEVERE,
-                    headline=f"Active thunderstorm detected (WMO code: {weather_code})",
-                    description="Open-Meteo detected thunderstorm conditions. "
-                                "Power outage risk elevated per NFPA 72 §10.6.",
-                    areas=f"lat={latitude:.2f}, lon={longitude:.2f}",
-                    effective=current.get("time", ""),
-                    urgency="Immediate",
-                    certainty="Observed",
-                ))
+                alerts.append(
+                    WeatherAlert(
+                        event="Thunderstorm Alert",
+                        severity=WeatherAlertSeverity.SEVERE,
+                        headline=f"Active thunderstorm detected (WMO code: {weather_code})",
+                        description="Open-Meteo detected thunderstorm conditions. "
+                        "Power outage risk elevated per NFPA 72 §10.6.",
+                        areas=f"lat={latitude:.2f}, lon={longitude:.2f}",
+                        effective=current.get("time", ""),
+                        urgency="Immediate",
+                        certainty="Observed",
+                    )
+                )
                 has_power_risk = True
             elif weather_code >= 71:
                 # Snow/ice
-                alerts.append(WeatherAlert(
-                    event="Snow/Ice Alert",
-                    severity=WeatherAlertSeverity.MODERATE,
-                    headline=f"Snow or ice conditions detected (WMO code: {weather_code})",
-                    description="Open-Meteo detected snow/ice conditions. "
-                                "Power outage risk may be elevated per NFPA 72 §10.6.",
-                    areas=f"lat={latitude:.2f}, lon={longitude:.2f}",
-                    effective=current.get("time", ""),
-                    urgency="Expected",
-                    certainty="Likely",
-                ))
+                alerts.append(
+                    WeatherAlert(
+                        event="Snow/Ice Alert",
+                        severity=WeatherAlertSeverity.MODERATE,
+                        headline=f"Snow or ice conditions detected (WMO code: {weather_code})",
+                        description="Open-Meteo detected snow/ice conditions. "
+                        "Power outage risk may be elevated per NFPA 72 §10.6.",
+                        areas=f"lat={latitude:.2f}, lon={longitude:.2f}",
+                        effective=current.get("time", ""),
+                        urgency="Expected",
+                        certainty="Likely",
+                    )
+                )
                 has_extreme_temp = True
                 has_power_risk = True
 
@@ -1080,9 +1086,7 @@ class SevereWeatherService:
 
     # ── Country Code Resolution ──────────────────────────────────────────
 
-    async def _resolve_country_code(
-        self, latitude: float, longitude: float
-    ) -> str | None:
+    async def _resolve_country_code(self, latitude: float, longitude: float) -> str | None:
         """
         Resolve coordinates to an ISO 3166-1 alpha-2 country code.
 
@@ -1099,6 +1103,7 @@ class SevereWeatherService:
         """
         try:
             from backend.services.geocoding_service import get_geocoding_service
+
             geo_svc = get_geocoding_service()
             result = await geo_svc.reverse_geocode(latitude, longitude)
             if result and result.country_code:
@@ -1189,9 +1194,7 @@ class SevereWeatherService:
                 country_code = await self._resolve_country_code(latitude, longitude)
 
                 if country_code and country_code in METEOALARM_COUNTRY_CODES:
-                    data = await self._fetch_meteoalarm_alerts(
-                        latitude, longitude, country_code
-                    )
+                    data = await self._fetch_meteoalarm_alerts(latitude, longitude, country_code)
                     self._set_cached(latitude, longitude, data)
                     return data
                 # Coordinates are in EU bounding box but country code

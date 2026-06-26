@@ -156,9 +156,16 @@ class SafeBuildingEngine:
                 }
         except Exception as ex:
             logger.error("Safe Solver Failure upon %s: %s", room_spec.get("room_id", "UNK"), ex)
-            return {"room_id": room_spec.get("room_id", "UNK"), "success": False, "status": "ERROR", "error": str(ex)}
+            return {
+                "room_id": room_spec.get("room_id", "UNK"),
+                "success": False,
+                "status": "ERROR",
+                "error": str(ex),
+            }
 
-    def run_multi_floor_safety_analysis(self, floor_spec_registry: list[dict[str, Any]]) -> list[dict]:
+    def run_multi_floor_safety_analysis(
+        self, floor_spec_registry: list[dict[str, Any]]
+    ) -> list[dict]:
         """
         Run MIP analysis across multiple floors in a thread-safe manner.
 
@@ -200,10 +207,16 @@ class SafeBuildingEngine:
                 rm_copy["virtual_floor"] = floor_lbl
                 rooms_flatted.append(rm_copy)
 
-        logger.info("Commencing protected multi-thread evaluation over %s discrete areas.", len(rooms_flatted))
+        logger.info(
+            "Commencing protected multi-thread evaluation over %s discrete areas.",
+            len(rooms_flatted),
+        )
 
         with ThreadPoolExecutor(max_workers=self.max_threads) as tpool:
-            work_q = {tpool.submit(self._solve_mip_safe, rm_args): rm_args["room_id"] for rm_args in rooms_flatted}
+            work_q = {
+                tpool.submit(self._solve_mip_safe, rm_args): rm_args["room_id"]
+                for rm_args in rooms_flatted
+            }
             for w in as_completed(work_q):
                 room_trace = work_q[w]
                 try:

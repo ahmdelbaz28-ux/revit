@@ -48,11 +48,11 @@ try:
         Violation,
     )
 except ImportError:
-    DecisionProvenance = None  # type: ignore[misc,assignment]
-    RuleApplied = None  # type: ignore[misc,assignment]
-    Violation = None  # type: ignore[misc,assignment]
-    ConfidenceScore = None  # type: ignore[misc,assignment]
-    ConfidenceLevel = None  # type: ignore[misc,assignment]
+    DecisionProvenance = None  # type: ignore[misc]
+    RuleApplied = None  # type: ignore[misc]
+    Violation = None  # type: ignore[misc]
+    ConfidenceScore = None  # type: ignore[misc]
+    ConfidenceLevel = None  # type: ignore[misc]
 
 logger = logging.getLogger(__name__)
 
@@ -375,7 +375,9 @@ class SeismicJointPenalyer:
                     value={
                         "crossings_detected": len(crossings),
                         "orthogonal_crossings": sum(1 for c in crossings if c.is_orthogonal),
-                        "non_orthogonal_crossings": sum(1 for c in crossings if not c.is_orthogonal),
+                        "non_orthogonal_crossings": sum(
+                            1 for c in crossings if not c.is_orthogonal
+                        ),
                         "flexible_junctions": [
                             {
                                 "joint_id": fj.joint_id,

@@ -16,7 +16,7 @@ import sqlite3
 import threading
 import uuid
 from datetime import datetime, timezone
-from typing import Any
+from typing import Optional, Type, Any
 
 from backend.schemas import (
     ConflictResponse,
@@ -56,13 +56,28 @@ logger = logging.getLogger(__name__)
 # 3. If future code uses sort_key in SQL (f-string interpolation),
 #    it becomes a full SQL injection
 # Per agent.md Rule 17: fix the root cause — use a strict whitelist.
-_SORT_WHITELIST = frozenset({
-    "created_at", "created_timestamp", "last_modified_timestamp",
-    "updated_at", "name", "description", "author", "status",
-    "type", "category", "voltage", "current", "load",
-    "element_type", "version", "project_id", "length",
-    "cable_size",
-})
+_SORT_WHITELIST = frozenset(
+    {
+        "created_at",
+        "created_timestamp",
+        "last_modified_timestamp",
+        "updated_at",
+        "name",
+        "description",
+        "author",
+        "status",
+        "type",
+        "category",
+        "voltage",
+        "current",
+        "load",
+        "element_type",
+        "version",
+        "project_id",
+        "length",
+        "cable_size",
+    }
+)
 
 # Map from camelCase (frontend) to snake_case (backend)
 _CAMEL_TO_SNAKE = {
@@ -118,7 +133,7 @@ class DatabaseService:
     _instance: DatabaseService | None = None
     _lock = threading.Lock()
 
-    def __new__(cls, *args: Any, **kwargs: Any) -> DatabaseService:
+    def __new__(cls: Type[DatabaseService], *args: Any, **kwargs: Any) -> DatabaseService:
         if cls._instance is None:
             with cls._lock:
                 # Double-checked locking
@@ -216,7 +231,7 @@ class DatabaseService:
         """Create projects table in the existing SQLite database."""
         with self._service_lock:
             try:
-                self._safe_db_execute('''
+                self._safe_db_execute("""
                     CREATE TABLE IF NOT EXISTS projects (
                         project_id TEXT PRIMARY KEY,
                         name TEXT NOT NULL,
@@ -226,7 +241,7 @@ class DatabaseService:
                         created_timestamp TEXT,
                         last_modified_timestamp TEXT
                     )
-                ''')
+                """)
                 # Enable foreign keys
                 self._safe_db_execute("PRAGMA foreign_keys=ON")
                 self._safe_db_execute("SELECT 1", commit=True)
@@ -433,7 +448,11 @@ class DatabaseService:
                     )
                     conn.commit()
                 except Exception as e:
-                    logger.warning("Failed to delete project %s from DB after association error: %s", project_id, e)
+                    logger.warning(
+                        "Failed to delete project %s from DB after association error: %s",
+                        project_id,
+                        e,
+                    )
 
             # Remove from cache
             del self._projects[project_id]
@@ -446,7 +465,11 @@ class DatabaseService:
         try:
             element_count = self._count_project_elements(project_dict["project_id"])
         except Exception as e:
-            logger.debug("Failed to count elements for project %s: %s", project_dict.get('project_id', '?'), e)
+            logger.debug(
+                "Failed to count elements for project %s: %s",
+                project_dict.get("project_id", "?"),
+                e,
+            )
 
         return ProjectResponse(
             project_id=project_dict["project_id"],
@@ -571,8 +594,15 @@ class DatabaseService:
             # Filter by element type
             if element_type:
                 elements = [
-                    e for e in elements
-                    if e.properties and (e.properties.element_type.value if hasattr(e.properties.element_type, 'value') else str(e.properties.element_type)) == element_type
+                    e
+                    for e in elements
+                    if e.properties
+                    and (
+                        e.properties.element_type.value
+                        if hasattr(e.properties.element_type, "value")
+                        else str(e.properties.element_type)
+                    )
+                    == element_type
                 ]
 
             # Filter by project
@@ -634,7 +664,9 @@ class DatabaseService:
                 existing_props = element.properties
                 props_dict = existing_props.to_dict() if existing_props else {}
 
-                for field_name, value in update_data.properties.model_dump(exclude_unset=True).items():
+                for field_name, value in update_data.properties.model_dump(
+                    exclude_unset=True
+                ).items():
                     if value is not None:
                         props_dict[field_name] = value
 
@@ -660,7 +692,9 @@ class DatabaseService:
                     try:
                         source = ChangeSource(update_data.last_modified_by)
                     except ValueError as ve:
-                        logger.debug("Unknown ChangeSource '%s': %s", update_data.last_modified_by, ve)
+                        logger.debug(
+                            "Unknown ChangeSource '%s': %s", update_data.last_modified_by, ve
+                        )
                 self._data_model.delete_element(element_id, source=source)
             elif updates:
                 source = ChangeSource.MANUAL
@@ -668,10 +702,10 @@ class DatabaseService:
                     try:
                         source = ChangeSource(update_data.last_modified_by)
                     except ValueError as ve:
-                        logger.debug("Unknown ChangeSource '%s': %s", update_data.last_modified_by, ve)
-                self._data_model.update_element(
-                    element_id, updates, source=source
-                )
+                        logger.debug(
+                            "Unknown ChangeSource '%s': %s", update_data.last_modified_by, ve
+                        )
+                self._data_model.update_element(element_id, updates, source=source)
 
             # Return updated element
             element = self._data_model.get_element(element_id)
@@ -700,7 +734,9 @@ class DatabaseService:
         """Lock for bridge operations. Always acquire before bridge_sql()."""
         return self._service_lock
 
-    def bridge_sql(self, sql: str, params: tuple = (), commit: bool = False, fetch: bool = False):
+    def bridge_sql(
+        self, sql: str, params: tuple = (), commit: bool = False, fetch: bool = False
+    ) -> sqlite3.Cursor:
         """
         Execute raw SQL for bridge sync operations safely.
 
@@ -725,7 +761,9 @@ class DatabaseService:
 
     # ──────────────────────────────────────────────────────────────────────────
 
-    def _element_to_response(self, element: UniversalElement, project_id: str | None = None) -> ElementResponse:
+    def _element_to_response(
+        self, element: UniversalElement, project_id: str | None = None
+    ) -> ElementResponse:
         """
         Convert UniversalElement to ElementResponse.
 
@@ -737,7 +775,9 @@ class DatabaseService:
         props_response = None
         if element.properties:
             props_response = SemanticPropertiesResponse(
-                element_type=element.properties.element_type.value if hasattr(element.properties.element_type, 'value') else str(element.properties.element_type),
+                element_type=element.properties.element_type.value
+                if hasattr(element.properties.element_type, "value")
+                else str(element.properties.element_type),
                 name=element.properties.name,
                 description=element.properties.description,
                 material=element.properties.material,
@@ -767,8 +807,12 @@ class DatabaseService:
             properties=props_response,
             geometry=geom_response,
             relationships=relationships,
-            created_timestamp=element.created_timestamp.isoformat() if element.created_timestamp else None,
-            last_modified_timestamp=element.last_modified_timestamp.isoformat() if element.last_modified_timestamp else None,
+            created_timestamp=element.created_timestamp.isoformat()
+            if element.created_timestamp
+            else None,
+            last_modified_timestamp=element.last_modified_timestamp.isoformat()
+            if element.last_modified_timestamp
+            else None,
             last_modified_by=element.last_modified_by,
             source_file=element.source_file,
             version=element.version,
@@ -784,7 +828,7 @@ class DatabaseService:
             return element.properties.name or ""
         if sort_key == "element_type" and element.properties:
             etype = element.properties.element_type
-            return etype.value if hasattr(etype, 'value') else str(etype)
+            return etype.value if hasattr(etype, "value") else str(etype)
         if sort_key == "created_timestamp" and element.created_timestamp:
             return element.created_timestamp.isoformat()
         if sort_key == "last_modified_timestamp" and element.last_modified_timestamp:
@@ -803,7 +847,7 @@ class DatabaseService:
         with self._service_lock:
             try:
                 # BUG-36 FIX: Use _safe_db_execute for proper lock acquisition
-                self._safe_db_execute('''
+                self._safe_db_execute("""
                     CREATE TABLE IF NOT EXISTS element_projects (
                         element_id TEXT,
                         project_id TEXT,
@@ -811,7 +855,7 @@ class DatabaseService:
                         FOREIGN KEY (element_id) REFERENCES elements(element_id),
                         FOREIGN KEY (project_id) REFERENCES projects(project_id)
                     )
-                ''')
+                """)
                 self._safe_db_execute(
                     "INSERT OR IGNORE INTO element_projects (element_id, project_id) VALUES (?, ?)",
                     (element_id, project_id),
@@ -954,13 +998,19 @@ class DatabaseService:
                 elements = self._data_model.get_all_elements()
                 for element in elements:
                     for rel in element.relationships:
-                        if element_id and rel.from_element_id != element_id and rel.to_element_id != element_id:
+                        if (
+                            element_id
+                            and rel.from_element_id != element_id
+                            and rel.to_element_id != element_id
+                        ):
                             continue
                         if relationship_type and rel.relationship_type != relationship_type:
                             continue
                         connections.append(
                             ConnectionResponse(
-                                connection_id=rel.connection_id if hasattr(rel, 'connection_id') and rel.connection_id else str(uuid.uuid4()),
+                                connection_id=rel.connection_id
+                                if hasattr(rel, "connection_id") and rel.connection_id
+                                else str(uuid.uuid4()),
                                 from_element_id=rel.from_element_id,
                                 to_element_id=rel.to_element_id,
                                 relationship_type=rel.relationship_type,
@@ -982,8 +1032,10 @@ class DatabaseService:
                 except Exception as e:
                     logger.debug("Failed to query element_projects for connection filter: %s", e)
                 connections = [
-                    c for c in connections
-                    if c.from_element_id in project_element_ids or c.to_element_id in project_element_ids
+                    c
+                    for c in connections
+                    if c.from_element_id in project_element_ids
+                    or c.to_element_id in project_element_ids
                 ]
 
             total = len(connections)
@@ -1033,20 +1085,26 @@ class DatabaseService:
                 from_element = self._data_model.elements.get(from_eid)
                 if from_element:
                     from_element.relationships = [
-                        r for r in from_element.relationships
-                        if not (r.from_element_id == from_eid
-                                and r.to_element_id == to_eid
-                                and r.relationship_type == rel_type)
+                        r
+                        for r in from_element.relationships
+                        if not (
+                            r.from_element_id == from_eid
+                            and r.to_element_id == to_eid
+                            and r.relationship_type == rel_type
+                        )
                     ]
 
                 to_element = self._data_model.elements.get(to_eid)
                 if to_element:
                     reverse_type = f"reverse_{rel_type}"
                     to_element.relationships = [
-                        r for r in to_element.relationships
-                        if not (r.from_element_id == to_eid
-                                and r.to_element_id == from_eid
-                                and r.relationship_type == reverse_type)
+                        r
+                        for r in to_element.relationships
+                        if not (
+                            r.from_element_id == to_eid
+                            and r.to_element_id == from_eid
+                            and r.relationship_type == reverse_type
+                        )
                     ]
 
                 return True
@@ -1100,9 +1158,16 @@ class DatabaseService:
             if resolved is not None:
                 all_conflicts = [c for c in all_conflicts if c.resolved == resolved]
             if conflict_type:
-                all_conflicts = [c for c in all_conflicts if (
-                    c.conflict_type.value if hasattr(c.conflict_type, 'value') else str(c.conflict_type)
-                ) == conflict_type]
+                all_conflicts = [
+                    c
+                    for c in all_conflicts
+                    if (
+                        c.conflict_type.value
+                        if hasattr(c.conflict_type, "value")
+                        else str(c.conflict_type)
+                    )
+                    == conflict_type
+                ]
 
             total = len(all_conflicts)
             start = (page - 1) * page_size
@@ -1111,25 +1176,47 @@ class DatabaseService:
 
             responses = []
             for c in paginated:
-                ct = c.conflict_type.value if hasattr(c.conflict_type, 'value') else str(c.conflict_type)
-                sa = c.source_a if isinstance(c.source_a, str) else (c.source_a.value if hasattr(c.source_a, 'value') else str(c.source_a)) if c.source_a else None
-                sb = c.source_b if isinstance(c.source_b, str) else (c.source_b.value if hasattr(c.source_b, 'value') else str(c.source_b)) if c.source_b else None
-                responses.append(ConflictResponse(
-                    conflict_id=c.conflict_id,
-                    element_id=c.element_id,
-                    conflict_type=ct,
-                    timestamp=c.timestamp.isoformat() if hasattr(c.timestamp, 'isoformat') and c.timestamp else (str(c.timestamp) if c.timestamp else None),
-                    source_a=sa,
-                    source_b=sb,
-                    change_a=c.change_a,
-                    change_b=c.change_b,
-                    resolution=c.resolution,
-                    resolved=c.resolved,
-                ))
+                ct = (
+                    c.conflict_type.value
+                    if hasattr(c.conflict_type, "value")
+                    else str(c.conflict_type)
+                )
+                sa = (
+                    c.source_a
+                    if isinstance(c.source_a, str)
+                    else (c.source_a.value if hasattr(c.source_a, "value") else str(c.source_a))
+                    if c.source_a
+                    else None
+                )
+                sb = (
+                    c.source_b
+                    if isinstance(c.source_b, str)
+                    else (c.source_b.value if hasattr(c.source_b, "value") else str(c.source_b))
+                    if c.source_b
+                    else None
+                )
+                responses.append(
+                    ConflictResponse(
+                        conflict_id=c.conflict_id,
+                        element_id=c.element_id,
+                        conflict_type=ct,
+                        timestamp=c.timestamp.isoformat()
+                        if hasattr(c.timestamp, "isoformat") and c.timestamp
+                        else (str(c.timestamp) if c.timestamp else None),
+                        source_a=sa,
+                        source_b=sb,
+                        change_a=c.change_a,
+                        change_b=c.change_b,
+                        resolution=c.resolution,
+                        resolved=c.resolved,
+                    )
+                )
 
             return responses, total
 
-    def resolve_conflict(self, conflict_id: str, strategy: str = "SEMANTIC_MERGE") -> ConflictResponse | None:
+    def resolve_conflict(
+        self, conflict_id: str, strategy: str = "SEMANTIC_MERGE"
+    ) -> ConflictResponse | None:
         """
         Resolve a conflict by ID.
 
@@ -1141,15 +1228,41 @@ class DatabaseService:
             if result is None:
                 return None
 
-            ct = result.conflict_type.value if hasattr(result.conflict_type, 'value') else str(result.conflict_type)
-            sa = result.source_a if isinstance(result.source_a, str) else (result.source_a.value if hasattr(result.source_a, 'value') else str(result.source_a)) if result.source_a else None
-            sb = result.source_b if isinstance(result.source_b, str) else (result.source_b.value if hasattr(result.source_b, 'value') else str(result.source_b)) if result.source_b else None
+            ct = (
+                result.conflict_type.value
+                if hasattr(result.conflict_type, "value")
+                else str(result.conflict_type)
+            )
+            sa = (
+                result.source_a
+                if isinstance(result.source_a, str)
+                else (
+                    result.source_a.value
+                    if hasattr(result.source_a, "value")
+                    else str(result.source_a)
+                )
+                if result.source_a
+                else None
+            )
+            sb = (
+                result.source_b
+                if isinstance(result.source_b, str)
+                else (
+                    result.source_b.value
+                    if hasattr(result.source_b, "value")
+                    else str(result.source_b)
+                )
+                if result.source_b
+                else None
+            )
 
             return ConflictResponse(
                 conflict_id=result.conflict_id,
                 element_id=result.element_id,
                 conflict_type=ct,
-                timestamp=result.timestamp.isoformat() if hasattr(result.timestamp, 'isoformat') and result.timestamp else (str(result.timestamp) if result.timestamp else None),
+                timestamp=result.timestamp.isoformat()
+                if hasattr(result.timestamp, "isoformat") and result.timestamp
+                else (str(result.timestamp) if result.timestamp else None),
                 source_a=sa,
                 source_b=sb,
                 change_a=result.change_a,
@@ -1169,9 +1282,7 @@ class DatabaseService:
 
             # Count projects
             total_projects = len(self._projects)
-            active_projects = sum(
-                1 for p in self._projects.values() if p.get("status") == "active"
-            )
+            active_projects = sum(1 for p in self._projects.values() if p.get("status") == "active")
 
             # Count connections
             total_connections = 0
@@ -1240,8 +1351,15 @@ class DatabaseService:
 
             if element_types:
                 elements = [
-                    e for e in elements
-                    if e.properties and (e.properties.element_type.value if hasattr(e.properties.element_type, 'value') else str(e.properties.element_type)) in element_types
+                    e
+                    for e in elements
+                    if e.properties
+                    and (
+                        e.properties.element_type.value
+                        if hasattr(e.properties.element_type, "value")
+                        else str(e.properties.element_type)
+                    )
+                    in element_types
                 ]
 
             exported_elements = [e.to_dict() for e in elements]
@@ -1254,14 +1372,16 @@ class DatabaseService:
                 cursor = conn.cursor()
                 cursor.execute("SELECT * FROM relationships")
                 for row in cursor.fetchall():
-                    connections.append({
-                        "relationship_id": row[0],
-                        "from_element_id": row[1],
-                        "to_element_id": row[2],
-                        "relationship_type": row[3],
-                        "is_parametric": row[4],
-                        "metadata": json.loads(row[5]) if row[5] else None,
-                    })
+                    connections.append(
+                        {
+                            "relationship_id": row[0],
+                            "from_element_id": row[1],
+                            "to_element_id": row[2],
+                            "relationship_type": row[3],
+                            "is_parametric": row[4],
+                            "metadata": json.loads(row[5]) if row[5] else None,
+                        }
+                    )
             except Exception as e:
                 logger.debug("Failed to query relationships for export: %s", e)
 

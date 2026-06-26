@@ -21,6 +21,7 @@ from fastapi.testclient import TestClient
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
+
 @pytest.fixture(scope="module", autouse=True)
 def _setup_env() -> None:
     """Set development environment for testing."""
@@ -32,6 +33,7 @@ def _setup_env() -> None:
 def client():
     """Create a test client for the FastAPI app."""
     from backend.app import app
+
     with TestClient(app) as c:
         yield c
 
@@ -54,8 +56,11 @@ def project_with_two_devices(client):
             "name": "Panel FACP-01",
             "type": "FA_PANEL",
             "category": "FIRE_ALARM",
-            "x": 0.0, "y": 0.0,
-            "voltage": 24.0, "current": 2.0, "load": 2.0,
+            "x": 0.0,
+            "y": 0.0,
+            "voltage": 24.0,
+            "current": 2.0,
+            "load": 2.0,
         },
     )
     dev1 = dev1_resp.json().get("data", dev1_resp.json())
@@ -67,8 +72,11 @@ def project_with_two_devices(client):
             "name": "Smoke Detector SD-01",
             "type": "FA_SMOKE",
             "category": "FIRE_ALARM",
-            "x": 10.0, "y": 20.0,
-            "voltage": 24.0, "current": 0.1, "load": 0.1,
+            "x": 10.0,
+            "y": 20.0,
+            "voltage": 24.0,
+            "current": 0.1,
+            "load": 0.1,
         },
     )
     dev2 = dev2_resp.json().get("data", dev2_resp.json())
@@ -84,7 +92,9 @@ def project_with_two_devices(client):
 class TestConnectionDeviceValidation:
     """Tests for device existence validation during connection creation."""
 
-    def test_create_connection_nonexistent_source_device(self, client, project_with_two_devices) -> None:
+    def test_create_connection_nonexistent_source_device(
+        self, client, project_with_two_devices
+    ) -> None:
         """Connection with nonexistent source device must return 400."""
         pid, _, dev2 = project_with_two_devices
         dev2_id = dev2.get("id") or dev2.get("device_id")
@@ -100,7 +110,9 @@ class TestConnectionDeviceValidation:
         )
         assert resp.status_code == 400
 
-    def test_create_connection_nonexistent_target_device(self, client, project_with_two_devices) -> None:
+    def test_create_connection_nonexistent_target_device(
+        self, client, project_with_two_devices
+    ) -> None:
         """Connection with nonexistent target device must return 400."""
         pid, dev1, _ = project_with_two_devices
         dev1_id = dev1.get("id") or dev1.get("device_id")
@@ -116,7 +128,9 @@ class TestConnectionDeviceValidation:
         )
         assert resp.status_code == 400
 
-    def test_create_connection_both_devices_nonexistent(self, client, project_with_two_devices) -> None:
+    def test_create_connection_both_devices_nonexistent(
+        self, client, project_with_two_devices
+    ) -> None:
         """Connection with both devices nonexistent must return 400."""
         pid, _, _ = project_with_two_devices
         resp = client.post(
@@ -131,7 +145,9 @@ class TestConnectionDeviceValidation:
         )
         assert resp.status_code == 400
 
-    def test_create_connection_self_connection_rejected(self, client, project_with_two_devices) -> None:
+    def test_create_connection_self_connection_rejected(
+        self, client, project_with_two_devices
+    ) -> None:
         """Connection with fromId == toId must be rejected (self-connection)."""
         pid, dev1, _ = project_with_two_devices
         dev1_id = dev1.get("id") or dev1.get("device_id")
@@ -171,7 +187,9 @@ class TestConnectionDeviceValidation:
 class TestConnectionCustomParameters:
     """Tests for connection creation with custom cable and type parameters."""
 
-    def test_create_connection_with_custom_cable_size(self, client, project_with_two_devices) -> None:
+    def test_create_connection_with_custom_cable_size(
+        self, client, project_with_two_devices
+    ) -> None:
         """Connection with custom cableSize must be stored correctly."""
         pid, dev1, dev2 = project_with_two_devices
         dev1_id = dev1.get("id") or dev1.get("device_id")

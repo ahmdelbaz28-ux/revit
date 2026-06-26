@@ -89,7 +89,9 @@ def _has_nan_inf(value: Any, path: str = "") -> list[str]:
         if math.isnan(value):
             violations.append(f"{path or 'value'} is NaN — NaN bypasses all safety checks")
         elif math.isinf(value):
-            violations.append(f"{path or 'value'} is Inf — infinite values are physically impossible")
+            violations.append(
+                f"{path or 'value'} is Inf — infinite values are physically impossible"
+            )
 
     elif isinstance(value, dict):
         for k, v in value.items():
@@ -126,7 +128,9 @@ def _validate_polygon(polygon: Any) -> list[str]:
         else:
             for j, c in enumerate(pt):
                 if not isinstance(c, (int, float)):
-                    warnings.append(f"polygon vertex {i} coord {j} must be numeric, got {type(c).__name__}")
+                    warnings.append(
+                        f"polygon vertex {i} coord {j} must be numeric, got {type(c).__name__}"
+                    )
 
     return warnings
 
@@ -336,7 +340,9 @@ def validate_room_input(payload: dict[str, Any]) -> dict[str, Any]:
         result["ceiling_type"] = "flat"
         warnings.append("ceiling_type defaulted to 'flat'")
     elif result["ceiling_type"] not in _VALID_CEILING_TYPES:
-        warnings.append(f"Unknown ceiling_type '{result['ceiling_type']}' — may not apply special rules")
+        warnings.append(
+            f"Unknown ceiling_type '{result['ceiling_type']}' — may not apply special rules"
+        )
 
     # Default occupancy_type
     if "occupancy_type" not in result:
@@ -514,12 +520,16 @@ def validate_battery_params(
     errors = []
 
     if not math.isfinite(standby_load_a) or standby_load_a < 0:
-        errors.append(f"standby_load_a = {standby_load_a} — must be non-negative finite (NFPA 72 §10.6.7)")
+        errors.append(
+            f"standby_load_a = {standby_load_a} — must be non-negative finite (NFPA 72 §10.6.7)"
+        )
     if standby_load_a > _MAX_CIRCUIT_CURRENT_A:
         errors.append(f"standby_load_a = {standby_load_a}A exceeds {_MAX_CIRCUIT_CURRENT_A}A limit")
 
     if not math.isfinite(alarm_load_a) or alarm_load_a < 0:
-        errors.append(f"alarm_load_a = {alarm_load_a} — must be non-negative finite (NFPA 72 §10.6.7)")
+        errors.append(
+            f"alarm_load_a = {alarm_load_a} — must be non-negative finite (NFPA 72 §10.6.7)"
+        )
     if alarm_load_a > _MAX_CIRCUIT_CURRENT_A:
         errors.append(f"alarm_load_a = {alarm_load_a}A exceeds {_MAX_CIRCUIT_CURRENT_A}A limit")
 
@@ -533,13 +543,23 @@ def validate_battery_params(
     if not math.isfinite(alarm_minutes) or alarm_minutes < 0:
         errors.append(f"alarm_minutes = {alarm_minutes} — must be non-negative finite")
 
-    if not math.isfinite(derating) or derating < _MIN_DERATING_FACTOR or derating > _MAX_DERATING_FACTOR:
+    if (
+        not math.isfinite(derating)
+        or derating < _MIN_DERATING_FACTOR
+        or derating > _MAX_DERATING_FACTOR
+    ):
         errors.append(
             f"derating = {derating} — must be in [{_MIN_DERATING_FACTOR}, {_MAX_DERATING_FACTOR}] (NFPA 72 §10.6.7.2.1)"
         )
 
-    if not math.isfinite(safety_margin) or safety_margin < _MIN_SAFETY_MARGIN or safety_margin > _MAX_SAFETY_MARGIN:
-        errors.append(f"safety_margin = {safety_margin} — must be in [{_MIN_SAFETY_MARGIN}, {_MAX_SAFETY_MARGIN}]")
+    if (
+        not math.isfinite(safety_margin)
+        or safety_margin < _MIN_SAFETY_MARGIN
+        or safety_margin > _MAX_SAFETY_MARGIN
+    ):
+        errors.append(
+            f"safety_margin = {safety_margin} — must be in [{_MIN_SAFETY_MARGIN}, {_MAX_SAFETY_MARGIN}]"
+        )
 
     if errors:
         raise ContractViolation(

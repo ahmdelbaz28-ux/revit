@@ -38,17 +38,16 @@ from tenacity import (
 
 logger = logging.getLogger(__name__)
 
+F = Callable[..., Any]
+Decorator = Callable[[F], F]
+
 
 def network_retry(
     max_attempts: int = 3,
     max_delay: int = 300,  # 5 minutes max
     multiplier: float = 1.0,
-    exceptions: Tuple[Type[BaseException], ...] = (
-        ConnectionError,
-        TimeoutError,
-        OSError
-    )
-):
+    exceptions: Tuple[Type[BaseException], ...] = (ConnectionError, TimeoutError, OSError),
+) -> Decorator:
     """
     Retry decorator for network operations with exponential backoff.
 
@@ -59,22 +58,21 @@ def network_retry(
         exceptions: Tuple of exception types to retry on
 
     """
-    def retry_decorator(func):
+
+    def retry_decorator(func: F) -> F:
         @wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
             return retry(
                 stop=stop_after_attempt(max_attempts),
-                wait=wait_exponential(
-                    multiplier=multiplier,
-                    min=1,
-                    max=max_delay
-                ),
+                wait=wait_exponential(multiplier=multiplier, min=1, max=max_delay),
                 retry=retry_if_exception_type(exceptions),
                 before_sleep=before_sleep_log(logger, logging.WARNING),
                 after=after_log(logger, logging.INFO),
                 reraise=True,
             )(func)(*args, **kwargs)
+
         return wrapper
+
     return retry_decorator
 
 
@@ -86,9 +84,9 @@ def skill_retry(
         ImportError,
         ModuleNotFoundError,
         AttributeError,
-        SyntaxError
-    )
-):
+        SyntaxError,
+    ),
+) -> Decorator:
     """
     Retry decorator for skill loading and initialization.
 
@@ -99,30 +97,27 @@ def skill_retry(
         exceptions: Tuple of exception types to retry on
 
     """
-    def retry_decorator(func):
+
+    def retry_decorator(func: F) -> F:
         @wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
             return retry(
                 stop=stop_after_attempt(max_attempts),
-                wait=wait_exponential(
-                    multiplier=multiplier,
-                    min=1,
-                    max=max_delay
-                ),
+                wait=wait_exponential(multiplier=multiplier, min=1, max=max_delay),
                 retry=retry_if_exception_type(exceptions),
                 before_sleep=before_sleep_log(logger, logging.WARNING),
                 after=after_log(logger, logging.INFO),
                 reraise=True,
             )(func)(*args, **kwargs)
+
         return wrapper
+
     return retry_decorator
 
 
 def conditional_retry(
-    condition_func: Callable[[Any], bool],
-    max_attempts: int = 3,
-    max_delay: int = 60
-):
+    condition_func: Callable[[Any], bool], max_attempts: int = 3, max_delay: int = 60
+) -> Decorator:
     """
     Retry decorator that retries based on return value condition.
 
@@ -132,9 +127,10 @@ def conditional_retry(
         max_delay: Maximum delay between retries in seconds
 
     """
-    def retry_decorator(func):
+
+    def retry_decorator(func: F) -> F:
         @wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
             return retry(
                 stop=stop_after_attempt(max_attempts),
                 wait=wait_random_exponential(multiplier=1, max=max_delay),
@@ -143,15 +139,17 @@ def conditional_retry(
                 after=after_log(logger, logging.INFO),
                 reraise=True,
             )(func)(*args, **kwargs)
+
         return wrapper
+
     return retry_decorator
 
 
 def timeout_retry(
     timeout_seconds: int = 60,
     max_delay: int = 10,
-    exceptions: Tuple[Type[BaseException], ...] = (TimeoutError,)
-):
+    exceptions: Tuple[Type[BaseException], ...] = (TimeoutError,),
+) -> Decorator:
     """
     Retry decorator with total timeout constraint.
 
@@ -161,9 +159,10 @@ def timeout_retry(
         exceptions: Tuple of exception types to retry on
 
     """
-    def retry_decorator(func):
+
+    def retry_decorator(func: F) -> F:
         @wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
             return retry(
                 stop=stop_after_delay(timeout_seconds),
                 wait=wait_random_exponential(multiplier=1, max=max_delay),
@@ -172,7 +171,9 @@ def timeout_retry(
                 after=after_log(logger, logging.INFO),
                 reraise=True,
             )(func)(*args, **kwargs)
+
         return wrapper
+
     return retry_decorator
 
 
@@ -182,9 +183,9 @@ def persistent_retry(
         ConnectionError,
         TimeoutError,
         OSError,
-        RuntimeError
-    )
-):
+        RuntimeError,
+    ),
+) -> Decorator:
     """
     Persistent retry decorator for critical operations.
 
@@ -193,9 +194,10 @@ def persistent_retry(
         exceptions: Tuple of exception types to retry on
 
     """
-    def retry_decorator(func):
+
+    def retry_decorator(func: F) -> F:
         @wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
             return retry(
                 stop=stop_after_attempt(max_attempts),
                 wait=wait_random_exponential(multiplier=1, max=60),
@@ -204,7 +206,9 @@ def persistent_retry(
                 after=after_log(logger, logging.INFO),
                 reraise=True,
             )(func)(*args, **kwargs)
+
         return wrapper
+
     return retry_decorator
 
 
@@ -212,12 +216,8 @@ def async_network_retry(
     max_attempts: int = 3,
     max_delay: int = 300,
     multiplier: float = 1.0,
-    exceptions: Tuple[Type[BaseException], ...] = (
-        ConnectionError,
-        TimeoutError,
-        OSError
-    )
-):
+    exceptions: Tuple[Type[BaseException], ...] = (ConnectionError, TimeoutError, OSError),
+) -> Decorator:
     """
     Async version of network retry decorator.
 
@@ -228,10 +228,11 @@ def async_network_retry(
         exceptions: Tuple of exception types to retry on
 
     """
-    def retry_decorator(coro):
+
+    def retry_decorator(coro: F) -> F:
         @wraps(coro)
-        async def wrapper(*args, **kwargs):
-            last_exception = None
+        async def wrapper(*args: Any, **kwargs: Any) -> Any:
+            last_exception: BaseException | None = None
 
             for attempt in range(max_attempts):
                 try:
@@ -240,31 +241,28 @@ def async_network_retry(
                     last_exception = e
                     if attempt < max_attempts - 1:  # Don't sleep on last attempt
                         delay = min(
-                            multiplier * (2 ** attempt) +
-                            (0.1 * attempt),  # Small jitter
-                            max_delay
+                            multiplier * (2**attempt) + (0.1 * attempt),  # Small jitter
+                            max_delay,
                         )
                         logger.warning(
-                            f"Attempt {attempt + 1} failed: {e}. "
-                            f"Retrying in {delay:.2f}s..."
+                            f"Attempt {attempt + 1} failed: {e}. Retrying in {delay:.2f}s..."
                         )
                         await asyncio.sleep(delay)
                     else:
                         logger.error("All %s attempts failed. Last error: %s", max_attempts, e)
 
             raise last_exception
+
         return wrapper
+
     return retry_decorator
 
 
 def circuit_breaker_retry(
     failure_threshold: int = 5,
     recovery_timeout: int = 60,
-    exceptions: Tuple[Type[BaseException], ...] = (
-        ConnectionError,
-        TimeoutError
-    )
-):
+    exceptions: Tuple[Type[BaseException], ...] = (ConnectionError, TimeoutError),
+) -> Decorator:
     """
     Circuit breaker pattern with retry capability.
 
@@ -274,40 +272,42 @@ def circuit_breaker_retry(
         exceptions: Tuple of exception types that count as failures
 
     """
-    def retry_decorator(func):
+
+    def retry_decorator(func: F) -> F:
         # Simple circuit breaker state tracking
-        state = {'failures': 0, 'last_failure_time': 0, 'open': False}
+        state: dict[str, Any] = {"failures": 0, "last_failure_time": 0, "open": False}
 
         @wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
 
             # Check if circuit is open
-            if state['open']:
-                time_since_failure = time.time() - state['last_failure_time']
+            if state["open"]:
+                time_since_failure = time.time() - state["last_failure_time"]
                 if time_since_failure >= recovery_timeout:
                     # Attempt to close circuit
                     logger.info("Attempting to reset circuit breaker...")
-                    state['open'] = False
-                    state['failures'] = 0
+                    state["open"] = False
+                    state["failures"] = 0
                 else:
                     raise RuntimeError("Circuit breaker is OPEN")
 
             try:
                 result = func(*args, **kwargs)
                 # Reset on success
-                state['failures'] = 0
+                state["failures"] = 0
                 return result
             except exceptions:
-                state['failures'] += 1
-                state['last_failure_time'] = time.time()
+                state["failures"] += 1
+                state["last_failure_time"] = time.time()
 
-                if state['failures'] >= failure_threshold:
-                    state['open'] = True
+                if state["failures"] >= failure_threshold:
+                    state["open"] = True
                     logger.error("Circuit breaker OPENED after %s failures", failure_threshold)
 
                 raise  # FIX: bare 'raise' preserves original traceback; 'raise e' loses it
 
         return wrapper
+
     return retry_decorator
 
 

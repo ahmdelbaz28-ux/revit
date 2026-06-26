@@ -25,6 +25,7 @@ class TestMonitorState:
     def _get_monitor(self) -> None:
         """Get the monitor singleton."""
         from backend.routers.monitor import MonitorState
+
         self.monitor = MonitorState()
         # Reset engines to running state before each test
         for eid in ["nfpa72-engine", "nec-engine", "sprinkler-engine", "facp-engine"]:
@@ -34,6 +35,7 @@ class TestMonitorState:
     def test_singleton_creation(self) -> None:
         """Test that MonitorState is a singleton."""
         from backend.routers.monitor import MonitorState
+
         m1 = MonitorState()
         m2 = MonitorState()
         assert m1 is m2
@@ -82,11 +84,13 @@ class TestMonitorState:
 
     def test_add_agent_activity(self) -> None:
         """Test adding agent activity entries."""
-        self.monitor.add_agent_activity({
-            "agent_id": "test-agent",
-            "type": "validation",
-            "message": "Test activity",
-        })
+        self.monitor.add_agent_activity(
+            {
+                "agent_id": "test-agent",
+                "type": "validation",
+                "message": "Test activity",
+            }
+        )
         activities = self.monitor.get_agent_activity(limit=10)
         assert len(activities) >= 1
         assert activities[0]["agent_id"] == "test-agent"
@@ -112,11 +116,13 @@ class TestMonitorState:
 
     def test_add_security_alert(self) -> None:
         """Test adding security alerts."""
-        self.monitor.add_security_alert({
-            "severity": "high",
-            "category": "unauthorized_access",
-            "message": "Test alert",
-        })
+        self.monitor.add_security_alert(
+            {
+                "severity": "high",
+                "category": "unauthorized_access",
+                "message": "Test alert",
+            }
+        )
         alerts = self.monitor.get_security_alerts(limit=10)
         assert len(alerts) >= 1
 
@@ -229,6 +235,7 @@ class TestMonitorState:
     def test_format_uptime(self) -> None:
         """Test uptime formatting helper."""
         from backend.routers.monitor import MonitorState
+
         assert MonitorState._format_uptime(90) == "1m 30s"
         assert MonitorState._format_uptime(3661) == "1h 1m 1s"
         assert MonitorState._format_uptime(86400) == "1d 0s"
@@ -248,6 +255,7 @@ class TestDashboardRateLimiter:
     def test_rate_limiter_allows_normal(self) -> None:
         """Test that normal request rates are allowed."""
         from backend.routers.monitor import DashboardRateLimiter
+
         limiter = DashboardRateLimiter(max_requests=5, window_seconds=60)
         for _ in range(5):
             assert limiter.check("192.168.1.1") is True
@@ -255,6 +263,7 @@ class TestDashboardRateLimiter:
     def test_rate_limiter_blocks_excess(self) -> None:
         """Test that excess requests are blocked."""
         from backend.routers.monitor import DashboardRateLimiter
+
         limiter = DashboardRateLimiter(max_requests=3, window_seconds=60)
         for _ in range(3):
             assert limiter.check("10.0.0.1") is True
@@ -263,6 +272,7 @@ class TestDashboardRateLimiter:
     def test_rate_limiter_per_ip(self) -> None:
         """Test that rate limiting is per-IP."""
         from backend.routers.monitor import DashboardRateLimiter
+
         limiter = DashboardRateLimiter(max_requests=2, window_seconds=60)
         assert limiter.check("1.1.1.1") is True
         assert limiter.check("1.1.1.1") is True
@@ -272,6 +282,7 @@ class TestDashboardRateLimiter:
     def test_rate_limiter_window_expiry(self) -> None:
         """Test that rate limit window expires."""
         from backend.routers.monitor import DashboardRateLimiter
+
         limiter = DashboardRateLimiter(max_requests=2, window_seconds=1)
         assert limiter.check("3.3.3.3") is True
         assert limiter.check("3.3.3.3") is True
@@ -293,6 +304,7 @@ class TestWorkflowPathValidation:
         """Import workflow module (may not be available without langgraph)."""
         try:
             from backend.routers import workflow
+
             self.workflow_mod = workflow
             self.available = True
         except ImportError:
@@ -329,6 +341,7 @@ class TestWorkflowPathValidation:
         if not self.available:
             pytest.skip("workflow module not available")
         from fastapi import HTTPException
+
         for ext in [".exe", ".sh", ".py", ".bat"]:
             test_path = os.path.join(self.workflow_mod.ALLOWED_DATA_DIRS[0], f"test{ext}")
             with pytest.raises(HTTPException) as exc_info:
@@ -340,6 +353,7 @@ class TestWorkflowPathValidation:
         if not self.available:
             pytest.skip("workflow module not available")
         from fastapi import HTTPException
+
         with pytest.raises(HTTPException) as exc_info:
             self.workflow_mod._validate_file_path("/tmp/test.pdf\x00.sh")
         assert exc_info.value.status_code == 400
@@ -349,6 +363,7 @@ class TestWorkflowPathValidation:
         if not self.available:
             pytest.skip("workflow module not available")
         from fastapi import HTTPException
+
         with pytest.raises(HTTPException) as exc_info:
             self.workflow_mod._validate_file_path("/etc/shadow.dxf")
         assert exc_info.value.status_code == 400
@@ -365,15 +380,19 @@ class TestConnectionManager:
     def test_connection_manager_creation(self) -> None:
         """Test ConnectionManager initializes correctly."""
         from backend.routers.sync import ConnectionManager
+
         mgr = ConnectionManager()
         assert len(mgr.active_connections) == 0
 
     def test_subscribe_without_connection(self) -> None:
         """Test subscribing a non-connected websocket does nothing."""
         from backend.routers.sync import ConnectionManager
+
         mgr = ConnectionManager()
+
         class MockWS:
             pass
+
         ws = MockWS()
         mgr.subscribe(ws, "proj-001")
         assert ws not in mgr._subscriptions
@@ -381,9 +400,12 @@ class TestConnectionManager:
     def test_disconnect_nonexistent(self) -> None:
         """Test disconnecting a non-connected websocket."""
         from backend.routers.sync import ConnectionManager
+
         mgr = ConnectionManager()
+
         class MockWS:
             pass
+
         ws = MockWS()
         mgr.disconnect(ws)  # Should not raise
 
@@ -399,15 +421,19 @@ class TestSyncWSValidation:
         import os
 
         from backend.routers.sync import _validate_ws_origin
+
         original_key = os.environ.get("FIREAI_API_KEY")
         try:
             os.environ.pop("FIREAI_API_KEY", None)  # No API key → dev mode
+
             class MockWS:
                 client = None
+
                 class headers:
                     @staticmethod
-                    def get(key, default=""):
+                    def get(key, default: str = ""):
                         return default
+
             result = _validate_ws_origin(MockWS())
             assert result is True  # Dev mode allows
         finally:
@@ -422,11 +448,14 @@ class TestSyncWSValidation:
         import os
 
         from backend.routers.sync import _validate_ws_api_key
+
         original_key = os.environ.get("FIREAI_API_KEY")
         try:
             os.environ.pop("FIREAI_API_KEY", None)  # No API key configured
+
             class MockWS:
                 client = None
+
             result = _validate_ws_api_key(MockWS())
             assert result is True  # No key configured → auth disabled
         finally:
@@ -441,11 +470,14 @@ class TestSyncWSValidation:
         import os
 
         from backend.routers.sync import _validate_ws_api_key
+
         original_key = os.environ.get("FIREAI_API_KEY")
         try:
             os.environ["FIREAI_API_KEY"] = "test-key-123"  # API key configured
+
             class MockWS:
                 client = None
+
             result = _validate_ws_api_key(MockWS())
             # Query param auth is DEPRECATED and REJECTED — only
             # message-based auth is accepted when API key is configured

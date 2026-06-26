@@ -59,9 +59,7 @@ logger = logging.getLogger(__name__)
 IFC43_SCHEMA_VERSION = "IFC4X3_ADD2"
 """Canonical IFC 4.3 ADD2 schema identifier (ISO 16739-1:2024)."""
 
-IFC43_FILE_DESCRIPTION = (
-    "ViewDefinition [CoordinationView, QuantityTakeOffAddOnView]",
-)
+IFC43_FILE_DESCRIPTION = ("ViewDefinition [CoordinationView, QuantityTakeOffAddOnView]",)
 IFC43_IMPLEMENTATION_LEVEL = "official"
 
 
@@ -201,7 +199,7 @@ class IFC43MappedElement:
     """
 
     global_id: str  # IFC GlobalId (22-char base64)
-    ifc_type: str   # e.g., "IfcFireAlarmInstance"
+    ifc_type: str  # e.g., "IfcFireAlarmInstance"
     predefined_type: str | None  # e.g., "SMOKE_DETECTOR"
     name: str
     description: str = ""
@@ -278,9 +276,9 @@ class IFC43Mapper:
         # Manual base64 encoding with IFC alphabet
         result = []
         for i in range(0, len(digest), 3):
-            chunk = digest[i:i+3]
+            chunk = digest[i : i + 3]
             # Pad chunk to 3 bytes
-            chunk_padded = chunk + b'\x00' * (3 - len(chunk))
+            chunk_padded = chunk + b"\x00" * (3 - len(chunk))
             n = (chunk_padded[0] << 16) | (chunk_padded[1] << 8) | chunk_padded[2]
             # Extract 4 6-bit groups
             result.append(_IFC_BASE64_ALPHABET[(n >> 18) & 0x3F])
@@ -357,10 +355,9 @@ class IFC43Mapper:
         y = float(detector.get("y", 0.0))
         z = float(detector.get("z", 0.0))
         import math
+
         if not all(math.isfinite(v) for v in (x, y, z)):
-            raise ValueError(
-                f"Detector {device_id} has non-finite position: ({x}, {y}, {z})"
-            )
+            raise ValueError(f"Detector {device_id} has non-finite position: ({x}, {y}, {z})")
 
         # Build property sets
         property_sets: dict[str, dict[str, Any]] = {}
@@ -568,15 +565,14 @@ class IFC43Mapper:
                 "total_rooms": len(mapped_rooms),
                 "total_detectors": len(mapped_detectors),
                 "smoke_detectors": sum(
-                    1 for d in mapped_detectors
-                    if d.predefined_type == "SMOKE_DETECTOR"
+                    1 for d in mapped_detectors if d.predefined_type == "SMOKE_DETECTOR"
                 ),
                 "heat_detectors": sum(
-                    1 for d in mapped_detectors
-                    if d.predefined_type == "HEAT_DETECTOR"
+                    1 for d in mapped_detectors if d.predefined_type == "HEAT_DETECTOR"
                 ),
                 "other_devices": sum(
-                    1 for d in mapped_detectors
+                    1
+                    for d in mapped_detectors
                     if d.predefined_type not in ("SMOKE_DETECTOR", "HEAT_DETECTOR")
                 ),
                 "source_schema": "IFC4",

@@ -72,18 +72,19 @@ try:
     )
 except ImportError as e:
     import logging
+
     logging.getLogger(__name__).warning(
-        "Could not import fireai_api from fireai.core: %s. "
-        "FastAPI may not be installed.", e,
+        "Could not import fireai_api from fireai.core: %s. FastAPI may not be installed.",
+        e,
     )
-    create_app = None  # type: ignore[assignment]
-    app = None  # type: ignore[assignment]
+    create_app = None
+    app = None
     _fireai_api_all = []
 
 try:
     from fireai.core.api_server import main as run_server
 except ImportError:
-    run_server = None  # type: ignore[assignment]
+    run_server = None
 
 try:
     from fireai.core.websocket_manager import (
@@ -91,11 +92,18 @@ try:
         get_manager,
     )
 except ImportError:
-    ConnectionManager = None  # type: ignore[assignment]
-    get_manager = None  # type: ignore[assignment]
+    ConnectionManager = None
+    get_manager = None
 
 
-__all__ = ["create_app", "app", "run_server", "ConnectionManager", "get_manager", *list(_fireai_api_all)]
+__all__ = [
+    "create_app",
+    "app",
+    "run_server",
+    "ConnectionManager",
+    "get_manager",
+    *list(_fireai_api_all),
+]
 
 
 # Version info for this package

@@ -65,7 +65,7 @@ class CSDGenerator:
         location: str,
         zone: int,
         status: CSDDeviceStatus = CSDDeviceStatus.ACTIVE,
-        device_id: str | None = None
+        device_id: str | None = None,
     ) -> CSDDevice:
         """Generates a new CSDDevice with a unique ID if not provided."""
         if not device_id:
@@ -76,7 +76,7 @@ class CSDGenerator:
             device_type=device_type,
             status=status,
             location=location,
-            zone=zone
+            zone=zone,
         )
 
     def generate_compliance_report(self, devices: list[CSDDevice]) -> CSDComplianceReport:
@@ -96,7 +96,7 @@ class CSDGenerator:
                 compliant_devices=0,
                 non_compliant_devices=0,
                 compliance_rate=100.0,
-                issues=[]
+                issues=[],
             )
 
         compliant_devices = 0
@@ -121,5 +121,5 @@ class CSDGenerator:
             compliant_devices=compliant_devices,
             non_compliant_devices=non_compliant_devices,
             compliance_rate=round(compliance_rate, 2),
-            issues=issues
+            issues=issues,
         )

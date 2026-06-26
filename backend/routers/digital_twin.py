@@ -43,6 +43,7 @@ router = APIRouter(prefix="/digital-twin", tags=["digital-twin"])
 # Previously, service and config_manager were created at module level,
 # making testing difficult and causing import-order issues.
 
+
 def get_digital_twin_service() -> DigitalTwinService:
     """Provide DigitalTwinService instance via dependency injection."""
     return DigitalTwinService()
@@ -71,6 +72,7 @@ def _safe_resolve_upload_path(filename: str) -> str:
 
 
 # ── Pydantic models ────────────────────────────────────────────────────────
+
 
 class ConvertRequest(BaseModel):
     """Request model for conversion operation."""
@@ -168,6 +170,7 @@ def _safe_error(status_code: int, log_msg: str, exc: Exception) -> HTTPException
 
 
 # ── Endpoints ───────────────────────────────────────────────────────────────
+
 
 @router.post("/convert", response_model=ConvertResponse)
 async def convert_files(
@@ -362,7 +365,9 @@ async def get_config(
         config = config_mgr.load_config()
         return {
             "config": config.to_dict(),
-            "loaded_from": str(config_mgr.config_file) if hasattr(config_mgr, "config_file") and config_mgr.config_file.exists() else "default",
+            "loaded_from": str(config_mgr.config_file)
+            if hasattr(config_mgr, "config_file") and config_mgr.config_file.exists()
+            else "default",
         }
     except Exception as e:
         raise _safe_error(500, "Error getting configuration", e)

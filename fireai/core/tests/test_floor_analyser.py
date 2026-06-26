@@ -4,12 +4,14 @@ Floor analyser tests — NFPA 72 floor-level fire detection validation.
 Tests the FloorAnalyser class which performs floor-level analysis of
 fire alarm detector placement using DensityOptimizer V7.3.
 """
+
 import pytest
 
 from fireai.core.floor_analyser import FloorAnalyser, FloorReport, RoomSummary
 from fireai.core.spatial_engine.density_optimizer import DensityOptimizer
 
 # ── Fixtures ─────────────────────────────────────────────────────────────────
+
 
 @pytest.fixture
 def optimizer():
@@ -56,6 +58,7 @@ def kitchen_room():
 # 1. FloorAnalyser Initialization
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class TestFloorAnalyserInit:
     """Verify FloorAnalyser initialization and configuration."""
 
@@ -75,7 +78,9 @@ class TestFloorAnalyserInit:
         assert fa.use_scenarios is True
 
     def test_custom_mip_params(self, optimizer) -> None:
-        fa = FloorAnalyser("L1", optimizer, use_mip=True, mip_candidate_step=0.5, mip_time_limit=5.0)
+        fa = FloorAnalyser(
+            "L1", optimizer, use_mip=True, mip_candidate_step=0.5, mip_time_limit=5.0
+        )
         assert fa.mip_candidate_step == 0.5
         assert fa.mip_time_limit == 5.0
 
@@ -87,6 +92,7 @@ class TestFloorAnalyserInit:
 # ═══════════════════════════════════════════════════════════════════════════════
 # 2. FloorAnalyser.analyse — Basic Scenarios
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class TestAnalyseBasic:
     """Basic analysis scenarios for FloorAnalyser."""
@@ -130,6 +136,7 @@ class TestAnalyseBasic:
 # 3. FloorAnalyser.analyse — Safety Refusal (NFPA 72 §17.6.4)
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class TestSafetyRefusal:
     """NFPA 72 §17.6.4 — safety refusal for inappropriate detector types."""
 
@@ -158,6 +165,7 @@ class TestSafetyRefusal:
 # 4. FloorAnalyser.analyse — Coverage and Compliance
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class TestCoverageAndCompliance:
     """Coverage percentage and compliance validation."""
 
@@ -183,6 +191,7 @@ class TestCoverageAndCompliance:
 # ═══════════════════════════════════════════════════════════════════════════════
 # 5. FloorAnalyser.analyse — Ceiling Height Variations
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class TestCeilingHeightVariations:
     """Dynamic coverage radius from NFPA 72 Table 17.6.3.1.1."""
@@ -238,6 +247,7 @@ class TestCeilingHeightVariations:
 # 6. FloorAnalyser.analyse — FloorReport
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class TestFloorReport:
     """FloorReport data class and aggregation."""
 
@@ -267,6 +277,7 @@ class TestFloorReport:
 # 7. FloorAnalyser — Heat Detector Support
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class TestHeatDetectorSupport:
     """Heat detector type detection and coverage radius calculation."""
 
@@ -289,6 +300,7 @@ class TestHeatDetectorSupport:
 # ═══════════════════════════════════════════════════════════════════════════════
 # 8. FloorAnalyser — Geometry Handling
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class TestGeometryHandling:
     """Geometry sanitization and non-rectangular room handling."""
@@ -338,6 +350,7 @@ class TestGeometryHandling:
 # 9. RoomSummary Dataclass
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class TestRoomSummary:
     """RoomSummary dataclass field defaults and construction."""
 
@@ -354,9 +367,14 @@ class TestRoomSummary:
 
     def test_custom_values(self) -> None:
         rs = RoomSummary(
-            room_id="R1", name="Test", detector_count=5,
-            coverage_pct=99.5, nfpa_valid=True, proof_valid=True,
-            compliant=True, safe_to_submit=True,
+            room_id="R1",
+            name="Test",
+            detector_count=5,
+            coverage_pct=99.5,
+            nfpa_valid=True,
+            proof_valid=True,
+            compliant=True,
+            safe_to_submit=True,
         )
         assert rs.detector_count == 5
         assert rs.coverage_pct == 99.5
@@ -366,6 +384,7 @@ class TestRoomSummary:
 # ═══════════════════════════════════════════════════════════════════════════════
 # 10. FloorReport Dataclass
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class TestFloorReportDataclass:
     """FloorReport dataclass field defaults."""

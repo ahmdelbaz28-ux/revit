@@ -440,7 +440,13 @@ class ScenarioLibrary:
         Does NOT include blind_spot_scan (expensive — call separately).
         Deduplicates scenarios with identical ignition points.
         """
-        raw: list[FireScenario] = [ScenarioLibrary.worst_case(room_polygon, ceiling_height, fire_load_mj_m2), ScenarioLibrary.most_probable_office(room_polygon, ceiling_height, fire_load_mj_m2 or 400.0), *ScenarioLibrary.all_corners(room_polygon, ceiling_height, fire_load_mj_m2)]
+        raw: list[FireScenario] = [
+            ScenarioLibrary.worst_case(room_polygon, ceiling_height, fire_load_mj_m2),
+            ScenarioLibrary.most_probable_office(
+                room_polygon, ceiling_height, fire_load_mj_m2 or 400.0
+            ),
+            *ScenarioLibrary.all_corners(room_polygon, ceiling_height, fire_load_mj_m2),
+        ]
 
         # Deduplicate by ignition point (rounded to 3 decimal places)
         seen: dict[tuple[float, float], FireScenario] = {}
@@ -551,7 +557,12 @@ class FirePhysics:
             return 0.0
         ratio = r_m / ceiling_h_m
         if ratio > 0.15:
-            return _ALPERT_V_FAR * (q_kw ** (1.0 / 3.0)) * (ratio ** (-5.0 / 6.0)) / (ceiling_h_m ** (1.0 / 3.0))
+            return (
+                _ALPERT_V_FAR
+                * (q_kw ** (1.0 / 3.0))
+                * (ratio ** (-5.0 / 6.0))
+                / (ceiling_h_m ** (1.0 / 3.0))
+            )
         return _ALPERT_V_NEAR * ((q_kw / ceiling_h_m) ** (1.0 / 3.0))
 
     @staticmethod
@@ -627,12 +638,16 @@ class FirePhysics:
             # Mass flow = rho * V * delta * 2*pi*r (integrated over annular ring)
 
             # Ceiling jet velocity (Alpert 1972, far field)
-            V_jet = _ALPERT_V_FAR * (q_kw ** (1.0 / 3.0)) * (ratio ** (-5.0 / 6.0)) / (H ** (1.0 / 3.0))
+            V_jet = (
+                _ALPERT_V_FAR * (q_kw ** (1.0 / 3.0)) * (ratio ** (-5.0 / 6.0)) / (H ** (1.0 / 3.0))
+            )
 
             # Ceiling jet mass flow (kg/s) — derived from velocity
             # m = rho * V * delta * 2*pi*r
             # Using rho ≈ 1.2 kg/m³, delta = 0.10*H
-            rho_air = 1.2  # V60 FIX (P5-4): Should use PHYSICAL_CONSTANTS["AMBIENT_AIR_DENSITY_KG_M3"]
+            rho_air = (
+                1.2  # V60 FIX (P5-4): Should use PHYSICAL_CONSTANTS["AMBIENT_AIR_DENSITY_KG_M3"]
+            )
             # but scenario_engine.py doesn't import semi_cfast_engine.
             # Documenting: value must match PHYSICAL_CONSTANTS if that dict is updated.
             m_jet = rho_air * V_jet * delta * 2.0 * math.pi * r
@@ -711,7 +726,9 @@ class FirePhysics:
         prev_od = 0.0
         while t <= max_t_s:
             q = FirePhysics.hrr_at_time(alpha, t, q_max)
-            od = FirePhysics.smoke_optical_density(q, max(distance_m, 0.01), ceiling_h_m, smoke_type)
+            od = FirePhysics.smoke_optical_density(
+                q, max(distance_m, 0.01), ceiling_h_m, smoke_type
+            )
             if od >= smoke_threshold:
                 # Linear interpolation for sub-step accuracy
                 if prev_od > 0 and t > 0:
@@ -720,7 +737,9 @@ class FirePhysics:
                     frac = (smoke_threshold - prev_od) / (od - prev_od)
                     t_det = t_prev + frac * dt_s
                     q_det = FirePhysics.hrr_at_time(alpha, t_det, q_max)
-                    od_det = FirePhysics.smoke_optical_density(q_det, max(distance_m, 0.01), ceiling_h_m, smoke_type)
+                    od_det = FirePhysics.smoke_optical_density(
+                        q_det, max(distance_m, 0.01), ceiling_h_m, smoke_type
+                    )
                     return (round(t_det, 2), round(q_det, 2), round(od_det, 4))
                 return (round(t, 2), round(q, 2), round(od, 4))
             prev_od = od
@@ -797,7 +816,11 @@ class ScenarioRunner:
             )
 
         # Smoke threshold from detector type (UL 268)
-        threshold = _SMOKE_THRESHOLD_ION_PCT_M if "ION" in detector_type_str.upper() else _SMOKE_THRESHOLD_PHOTO_PCT_M
+        threshold = (
+            _SMOKE_THRESHOLD_ION_PCT_M
+            if "ION" in detector_type_str.upper()
+            else _SMOKE_THRESHOLD_PHOTO_PCT_M
+        )
 
         # Optional Q_max from fire load
         q_max = None
@@ -1014,7 +1037,9 @@ class ScenarioBatteryResult:
 
     @property
     def worst_detection_time_s(self) -> float | None:
-        times = [r.first_detection_time_s for r in self.results if r.first_detection_time_s is not None]
+        times = [
+            r.first_detection_time_s for r in self.results if r.first_detection_time_s is not None
+        ]
         return max(times) if times else None
 
     @property
@@ -1076,7 +1101,11 @@ class ScenarioReporter:
         ]
         for r in battery.results:
             symbol = "PASS" if r.compliant else "FAIL"
-            t_str = f"{r.first_detection_time_s:.1f}s" if r.first_detection_time_s is not None else "NONE"
+            t_str = (
+                f"{r.first_detection_time_s:.1f}s"
+                if r.first_detection_time_s is not None
+                else "NONE"
+            )
             m_str = f"margin={r.margin_s:+.1f}s" if r.margin_s is not None else ""
             lines.append(
                 f"  [{symbol:<4}] [{r.verdict.value:<18}] "
@@ -1087,7 +1116,9 @@ class ScenarioReporter:
         if battery.all_pass:
             lines.append("RESULT: ALL SCENARIOS PASS — Design meets NFPA 72-2022 §17.7.3")
         else:
-            lines.append(f"RESULT: {battery.fail_count} SCENARIO(S) FAILED — Review detector layout. DO NOT SUBMIT.")
+            lines.append(
+                f"RESULT: {battery.fail_count} SCENARIO(S) FAILED — Review detector layout. DO NOT SUBMIT."
+            )
         lines.append(f"{'=' * 64}")
         return "\n".join(lines)
 
@@ -1100,7 +1131,9 @@ class ScenarioReporter:
     @staticmethod
     def to_csv(battery: ScenarioBatteryResult) -> str:
         """CSV output with proper escaping of commas in fields."""
-        lines = ["scenario_id,verdict,detection_time_s,margin_s,blind_spots,blind_area_pct,hrr_kw,compute_s"]
+        lines = [
+            "scenario_id,verdict,detection_time_s,margin_s,blind_spots,blind_area_pct,hrr_kw,compute_s"
+        ]
         for r in battery.results:
             # Escape commas in scenario_id
             sid = r.scenario_id.replace(",", ";")
@@ -1156,7 +1189,9 @@ def run_scenarios_for_room(
     """
     scenarios = ScenarioLibrary.all_scenarios(room_polygon, ceiling_height, fire_load_mj_m2)
     if run_blind_scan:
-        scenarios += ScenarioLibrary.blind_spot_scan(room_polygon, ceiling_height, fire_load_mj_m2, scan_grid_m)
+        scenarios += ScenarioLibrary.blind_spot_scan(
+            room_polygon, ceiling_height, fire_load_mj_m2, scan_grid_m
+        )
 
     runner = ScenarioRunner(time_step_s=time_step_s)
     return runner.run_battery(detector_positions, room_polygon, scenarios, detector_type)

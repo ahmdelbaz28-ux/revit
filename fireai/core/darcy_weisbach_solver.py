@@ -104,15 +104,15 @@ COLEBROOK_MAX_ITERATIONS: int = 100
 COLEBROOK_CONVERGENCE_TOLERANCE: float = 1e-8
 
 # Physical bounds for input validation
-MIN_PIPE_DIAMETER_M: float = 0.005       # 5mm — extremely small but valid
-MAX_PIPE_DIAMETER_M: float = 1.0         # 1m — industrial main
-MIN_FLOW_RATE_KG_S: float = 0.0          # Zero flow is valid (no friction)
-MIN_DENSITY_KG_M3: float = 0.1           # Gases can be very light
-MAX_DENSITY_KG_M3: float = 20000.0       # Denser than any liquid
-MIN_VISCOSITY_PA_S: float = 1e-7         # Gases have very low viscosity
-MAX_VISCOSITY_PA_S: float = 1000.0       # Very viscous fluids
-MIN_ROUGHNESS_M: float = 0.0             # Smooth pipe is valid
-MAX_ROUGHNESS_M: float = 0.01            # 10mm — extremely rough
+MIN_PIPE_DIAMETER_M: float = 0.005  # 5mm — extremely small but valid
+MAX_PIPE_DIAMETER_M: float = 1.0  # 1m — industrial main
+MIN_FLOW_RATE_KG_S: float = 0.0  # Zero flow is valid (no friction)
+MIN_DENSITY_KG_M3: float = 0.1  # Gases can be very light
+MAX_DENSITY_KG_M3: float = 20000.0  # Denser than any liquid
+MIN_VISCOSITY_PA_S: float = 1e-7  # Gases have very low viscosity
+MAX_VISCOSITY_PA_S: float = 1000.0  # Very viscous fluids
+MIN_ROUGHNESS_M: float = 0.0  # Smooth pipe is valid
+MAX_ROUGHNESS_M: float = 0.01  # 10mm — extremely rough
 
 
 # ---------------------------------------------------------------------------
@@ -128,51 +128,51 @@ class FluidType(str, Enum):
     """
 
     WATER = "water"
-    CO2_LIQUID = "co2_liquid"           # NFPA 12 — liquid CO2 at 20°C
-    CO2_VAPOR = "co2_vapor"             # NFPA 12 — gaseous CO2
-    FM200 = "fm200"                     # HFC-227ea (NFPA 2001)
-    NOVEC1230 = "novec1230"             # FK-5-1-12 (NFPA 2001)
-    INERGEN_IG541 = "inergen_ig541"     # IG-541 (NFPA 2001)
-    AFFF_FOAM = "afff_foam"             # Aqueous film-forming foam (NFPA 11)
-    CUSTOM = "custom"                   # User-provided properties
+    CO2_LIQUID = "co2_liquid"  # NFPA 12 — liquid CO2 at 20°C
+    CO2_VAPOR = "co2_vapor"  # NFPA 12 — gaseous CO2
+    FM200 = "fm200"  # HFC-227ea (NFPA 2001)
+    NOVEC1230 = "novec1230"  # FK-5-1-12 (NFPA 2001)
+    INERGEN_IG541 = "inergen_ig541"  # IG-541 (NFPA 2001)
+    AFFF_FOAM = "afff_foam"  # Aqueous film-forming foam (NFPA 11)
+    CUSTOM = "custom"  # User-provided properties
 
 
 # Physical properties at typical storage/design temperatures
 # Sources: NFPA 12, NFPA 2001, manufacturer datasheets
 FLUID_PROPERTIES: dict[FluidType, dict[str, float]] = {
     FluidType.WATER: {
-        "density_kg_m3": 999.7,         # 20°C
-        "viscosity_pa_s": 1.002e-3,     # 20°C
-        "typical_roughness_m": 4.57e-5, # Steel pipe (Crane TP-410)
+        "density_kg_m3": 999.7,  # 20°C
+        "viscosity_pa_s": 1.002e-3,  # 20°C
+        "typical_roughness_m": 4.57e-5,  # Steel pipe (Crane TP-410)
     },
     FluidType.CO2_LIQUID: {
-        "density_kg_m3": 770.0,         # 20°C, 5.7 MPa
-        "viscosity_pa_s": 7.0e-5,       # 20°C
+        "density_kg_m3": 770.0,  # 20°C, 5.7 MPa
+        "viscosity_pa_s": 7.0e-5,  # 20°C
         "typical_roughness_m": 4.57e-5,
     },
     FluidType.CO2_VAPOR: {
-        "density_kg_m3": 1.842,         # 20°C, 1 atm
-        "viscosity_pa_s": 1.47e-5,      # 20°C
+        "density_kg_m3": 1.842,  # 20°C, 1 atm
+        "viscosity_pa_s": 1.47e-5,  # 20°C
         "typical_roughness_m": 4.57e-5,
     },
     FluidType.FM200: {
-        "density_kg_m3": 1407.0,        # 25°C, saturated
-        "viscosity_pa_s": 2.8e-4,       # 25°C
+        "density_kg_m3": 1407.0,  # 25°C, saturated
+        "viscosity_pa_s": 2.8e-4,  # 25°C
         "typical_roughness_m": 4.57e-5,
     },
     FluidType.NOVEC1230: {
-        "density_kg_m3": 1606.0,        # 25°C
-        "viscosity_pa_s": 4.0e-4,       # 25°C
+        "density_kg_m3": 1606.0,  # 25°C
+        "viscosity_pa_s": 4.0e-4,  # 25°C
         "typical_roughness_m": 4.57e-5,
     },
     FluidType.INERGEN_IG541: {
-        "density_kg_m3": 1.417,         # 20°C, 1 atm (mixture N2/Ar/CO2)
-        "viscosity_pa_s": 1.74e-5,      # 20°C
+        "density_kg_m3": 1.417,  # 20°C, 1 atm (mixture N2/Ar/CO2)
+        "viscosity_pa_s": 1.74e-5,  # 20°C
         "typical_roughness_m": 4.57e-5,
     },
     FluidType.AFFF_FOAM: {
-        "density_kg_m3": 1080.0,        # 3% concentrate
-        "viscosity_pa_s": 4.0e-3,       # Higher than water
+        "density_kg_m3": 1080.0,  # 3% concentrate
+        "viscosity_pa_s": 4.0e-3,  # Higher than water
         "typical_roughness_m": 4.57e-5,
     },
     FluidType.CUSTOM: {
@@ -225,7 +225,7 @@ class DarcyWeisbachResult:
     # a DEBUG log — callers had no way to know.
     converged: bool = True
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         # V135 F-37: Keep __post_init__ for backward compat (in case
         # someone passes warnings=None explicitly)
         if self.warnings is None:
@@ -283,7 +283,9 @@ def calculate_darcy_weisbach_friction_loss(
     """
     # ── Input Validation (per agent.md V57 NaN/Inf bypass) ──
     _validate_input("pipe_length_m", pipe_length_m, min_val=0.0)
-    _validate_input("pipe_diameter_m", pipe_diameter_m, min_val=MIN_PIPE_DIAMETER_M, max_val=MAX_PIPE_DIAMETER_M)
+    _validate_input(
+        "pipe_diameter_m", pipe_diameter_m, min_val=MIN_PIPE_DIAMETER_M, max_val=MAX_PIPE_DIAMETER_M
+    )
     _validate_input("flow_rate_kg_s", flow_rate_kg_s, min_val=MIN_FLOW_RATE_KG_S)
 
     # ── Get fluid properties ──
@@ -293,7 +295,9 @@ def calculate_darcy_weisbach_friction_loss(
     roughness = pipe_roughness_m if pipe_roughness_m is not None else props["typical_roughness_m"]
 
     _validate_input("density_kg_m3", density, min_val=MIN_DENSITY_KG_M3, max_val=MAX_DENSITY_KG_M3)
-    _validate_input("viscosity_pa_s", viscosity, min_val=MIN_VISCOSITY_PA_S, max_val=MAX_VISCOSITY_PA_S)
+    _validate_input(
+        "viscosity_pa_s", viscosity, min_val=MIN_VISCOSITY_PA_S, max_val=MAX_VISCOSITY_PA_S
+    )
     _validate_input("pipe_roughness_m", roughness, min_val=MIN_ROUGHNESS_M, max_val=MAX_ROUGHNESS_M)
 
     warnings = []
@@ -314,7 +318,7 @@ def calculate_darcy_weisbach_friction_loss(
 
     # ── Compute flow velocity ──
     # v = ṁ / (ρ × A), where A = π × d² / 4
-    cross_sectional_area = math.pi * (pipe_diameter_m ** 2) / 4.0
+    cross_sectional_area = math.pi * (pipe_diameter_m**2) / 4.0
     if cross_sectional_area <= 0:
         raise ValueError(f"Cross-sectional area is non-positive: {cross_sectional_area}")
     flow_velocity = flow_rate_kg_s / (density * cross_sectional_area)
@@ -353,13 +357,20 @@ def calculate_darcy_weisbach_friction_loss(
 
     # ── Compute friction factor ──
     # V138 F-5: Unpack converged flag from _compute_friction_factor
-    friction_factor, _converged = _compute_friction_factor(reynolds, roughness, pipe_diameter_m, flow_regime)
+    friction_factor, _converged = _compute_friction_factor(
+        reynolds, roughness, pipe_diameter_m, flow_regime
+    )
 
     # ── Compute head loss (Darcy-Weisbach) ──
     # h_f = f × (L / d) × (v² / (2 × g))
     if pipe_diameter_m <= 0:
         raise ValueError(f"Pipe diameter must be positive: {pipe_diameter_m}")
-    head_loss = friction_factor * (pipe_length_m / pipe_diameter_m) * (flow_velocity ** 2) / (2 * GRAVITY_M_S2)
+    head_loss = (
+        friction_factor
+        * (pipe_length_m / pipe_diameter_m)
+        * (flow_velocity**2)
+        / (2 * GRAVITY_M_S2)
+    )
 
     # ── Convert to pressure loss ──
     # ΔP = ρ × g × h_f
@@ -468,9 +479,7 @@ def _solve_colebrook_white(
     # ── Initial guess: Haaland approximation (explicit, 1.4% accuracy) ──
     # Per Haaland (1983): 1/√f = -1.8 × log10( (ε/d/3.7)^1.11 + 6.9/Re )
     if reynolds > 0:
-        haaland_rhs = -1.8 * math.log10(
-            ((relative_roughness / 3.7) ** 1.11) + (6.9 / reynolds)
-        )
+        haaland_rhs = -1.8 * math.log10(((relative_roughness / 3.7) ** 1.11) + (6.9 / reynolds))
         f = (1.0 / haaland_rhs) ** 2 if haaland_rhs != 0 else 0.02
     else:
         f = 0.02
@@ -543,13 +552,12 @@ def _solve_colebrook_white(
         logger.warning(
             "Colebrook-White iteration produced non-finite friction factor "
             "(Re=%f, ε/d=%f). Returning Haaland approximation as fallback.",
-            reynolds, relative_roughness,
+            reynolds,
+            relative_roughness,
         )
         # Recompute Haaland (the initial guess)
         if reynolds > 0:
-            haaland_rhs = -1.8 * math.log10(
-                ((relative_roughness / 3.7) ** 1.11) + (6.9 / reynolds)
-            )
+            haaland_rhs = -1.8 * math.log10(((relative_roughness / 3.7) ** 1.11) + (6.9 / reynolds))
             return ((1.0 / haaland_rhs) ** 2 if haaland_rhs != 0 else 0.02, False)
         return (0.02, False)
 
@@ -557,7 +565,9 @@ def _solve_colebrook_white(
     # The OLD code always returned converged=True (field was never set False).
     logger.warning(
         "Colebrook-White iteration did not fully converge: Re=%f, ε/d=%f, f=%f",
-        reynolds, relative_roughness, f,
+        reynolds,
+        relative_roughness,
+        f,
     )
     # Store non-convergence flag — caller checks result.converged
     pass  # V138 F-5: converged=False returned via tuple
@@ -634,7 +644,9 @@ def compare_with_hazen_williams(
     # The OLD code didn't call _validate_input, so negative pipe_length
     # or NaN inputs would silently produce wrong results.
     _validate_input("pipe_length_m", pipe_length_m, min_val=0.0)
-    _validate_input("pipe_diameter_m", pipe_diameter_m, min_val=MIN_PIPE_DIAMETER_M, max_val=MAX_PIPE_DIAMETER_M)
+    _validate_input(
+        "pipe_diameter_m", pipe_diameter_m, min_val=MIN_PIPE_DIAMETER_M, max_val=MAX_PIPE_DIAMETER_M
+    )
     _validate_input("flow_rate_kg_s", flow_rate_kg_s, min_val=MIN_FLOW_RATE_KG_S)
     _validate_input("c_factor", c_factor, min_val=1.0, max_val=200.0)
 
@@ -656,7 +668,7 @@ def compare_with_hazen_williams(
 
     # Hazen-Williams: p = 4.52 × Q^1.85 / (C^1.85 × d^4.87) (psi/ft)
     if c_factor > 0 and diameter_in > 0 and flow_gpm > 0:
-        hw_psi_per_ft = 4.52 * (flow_gpm ** 1.85) / ((c_factor ** 1.85) * (diameter_in ** 4.87))
+        hw_psi_per_ft = 4.52 * (flow_gpm**1.85) / ((c_factor**1.85) * (diameter_in**4.87))
         hw_pressure_loss_psi = hw_psi_per_ft * length_ft
     else:
         hw_pressure_loss_psi = 0.0

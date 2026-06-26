@@ -141,7 +141,9 @@ def evaluate_elevator_recall(
 
     # NFPA 72 §21.3.5: Phase II required
     if not has_phase_ii:
-        violations.append(f"Elevator '{elevator_id}': No Phase II firefighter service per NFPA 72 §21.3.5")
+        violations.append(
+            f"Elevator '{elevator_id}': No Phase II firefighter service per NFPA 72 §21.3.5"
+        )
 
     is_compliant = len(violations) == 0
 
@@ -221,7 +223,9 @@ def evaluate_hvac_shutdown(
     shutdown_required = is_fire_floor or is_building_wide
 
     if detector_required and not has_duct_detector:
-        violations.append(f"AHU '{unit_id}': {cfm:.0f} CFM > 2000 CFM but no duct smoke detector — NFPA 72 §17.7.5.6.1")
+        violations.append(
+            f"AHU '{unit_id}': {cfm:.0f} CFM > 2000 CFM but no duct smoke detector — NFPA 72 §17.7.5.6.1"
+        )
 
     if shutdown_required and not has_duct_detector:
         violations.append(
@@ -437,13 +441,19 @@ def evaluate_fire_pump(
     violations = []
 
     if not has_running_signal:
-        violations.append(f"Pump '{pump_id}': No running signal — pump status unknown at FACP per NFPA 72 §21.8")
+        violations.append(
+            f"Pump '{pump_id}': No running signal — pump status unknown at FACP per NFPA 72 §21.8"
+        )
 
     if not has_power_monitor:
-        violations.append(f"Pump '{pump_id}': No power monitoring — power failure undetected per NFPA 20 §10.4")
+        violations.append(
+            f"Pump '{pump_id}': No power monitoring — power failure undetected per NFPA 20 §10.4"
+        )
 
     if not has_phase_reversal:
-        violations.append(f"Pump '{pump_id}': No phase reversal monitoring — motor may run backwards per NFPA 20 §10.4")
+        violations.append(
+            f"Pump '{pump_id}': No phase reversal monitoring — motor may run backwards per NFPA 20 §10.4"
+        )
 
     is_compliant = len(violations) == 0
 

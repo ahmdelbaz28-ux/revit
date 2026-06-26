@@ -194,14 +194,14 @@ def inject_fault_isolators(
         # Rule 2: Zone boundary crossed
         elif device_zone is not None and current_zone is not None and device_zone != current_zone:
             need_isolator = True
-            reason = f"Zone boundary: {current_zone} -> {device_zone} per {NFPA_CITATION_ZONE_LIMIT}"
+            reason = (
+                f"Zone boundary: {current_zone} -> {device_zone} per {NFPA_CITATION_ZONE_LIMIT}"
+            )
 
         # Rule 3: Max devices between isolators exceeded
         elif devices_since_last_isolator >= max_devices_between_isolators:
             need_isolator = True
-            reason = (
-                f"Max devices between isolators ({max_devices_between_isolators}) exceeded per engineering practice"
-            )
+            reason = f"Max devices between isolators ({max_devices_between_isolators}) exceeded per engineering practice"
 
         # Insert isolator if needed
         if need_isolator:

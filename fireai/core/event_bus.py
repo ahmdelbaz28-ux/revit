@@ -491,8 +491,10 @@ if __name__ == "__main__":
 
     # Test 7: Unsubscribe
     counter: list[int] = []
+
     def cb(e):
         return counter.append(1)
+
     bus3.subscribe(Events.COVERAGE_VERIFIED, cb)
     bus3.publish(Events.COVERAGE_VERIFIED, {})
     assert len(counter) == 1

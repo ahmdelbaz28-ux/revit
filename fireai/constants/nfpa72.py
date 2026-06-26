@@ -111,15 +111,15 @@ recommendation from ECMAG and SFPE Europe."""
 SMOKE_HEIGHT_SPACING_TABLE: List[Tuple[float, float]] = [
     # (ceiling_height_max_m, adjusted_spacing_m)
     # ALL heights: flat 9.1m per NFPA 72-2022 §17.7.3.2.3
-    (3.0,   9.10),   # h <= 3.0m: flat 30ft / 9.1m per §17.7.3.2.3
-    (3.7,   9.10),   # h <= 3.7m: flat 30ft / 9.1m per §17.7.3.2.3
-    (4.6,   9.10),   # h <= 4.6m: flat 30ft / 9.1m per §17.7.3.2.3
-    (5.5,   9.10),   # h <= 5.5m: flat 30ft / 9.1m per §17.7.3.2.3
-    (6.1,   9.10),   # h <= 6.1m: flat 30ft / 9.1m per §17.7.3.2.3
-    (7.6,   9.10),   # h <= 7.6m: flat 30ft / 9.1m per §17.7.3.2.3
-    (9.1,   9.10),   # h <= 9.1m: flat 30ft / 9.1m per §17.7.3.2.3
-    (10.7,  9.10),   # h <= 10.7m: flat 30ft / 9.1m per §17.7.3.2.3
-    (12.2,  9.10),   # h <= 12.2m: flat 30ft / 9.1m per §17.7.3.2.3
+    (3.0, 9.10),  # h <= 3.0m: flat 30ft / 9.1m per §17.7.3.2.3
+    (3.7, 9.10),  # h <= 3.7m: flat 30ft / 9.1m per §17.7.3.2.3
+    (4.6, 9.10),  # h <= 4.6m: flat 30ft / 9.1m per §17.7.3.2.3
+    (5.5, 9.10),  # h <= 5.5m: flat 30ft / 9.1m per §17.7.3.2.3
+    (6.1, 9.10),  # h <= 6.1m: flat 30ft / 9.1m per §17.7.3.2.3
+    (7.6, 9.10),  # h <= 7.6m: flat 30ft / 9.1m per §17.7.3.2.3
+    (9.1, 9.10),  # h <= 9.1m: flat 30ft / 9.1m per §17.7.3.2.3
+    (10.7, 9.10),  # h <= 10.7m: flat 30ft / 9.1m per §17.7.3.2.3
+    (12.2, 9.10),  # h <= 12.2m: flat 30ft / 9.1m per §17.7.3.2.3
 ]
 """Height-adjusted smoke detector spacing table.
 
@@ -193,15 +193,15 @@ Per NFPA 72-2022 §17.6.3.1: 50 ft (15.24 m)."""
 # This is the CORRECT table for heat detector height reduction.
 HEAT_HEIGHT_SPACING_TABLE: List[Tuple[float, float]] = [
     # (ceiling_height_max_m, adjusted_spacing_m)
-    (3.0,   6.10),   # 20 ft listed
-    (3.7,   5.80),   # 19 ft
-    (4.6,   5.50),   # 18 ft
-    (5.5,   5.20),   # 17 ft
-    (6.1,   4.90),   # 16 ft
-    (7.6,   4.60),   # 15 ft
-    (9.1,   4.30),   # 14 ft
-    (10.7,  4.00),   # 13 ft
-    (12.2,  3.70),   # 12 ft
+    (3.0, 6.10),  # 20 ft listed
+    (3.7, 5.80),  # 19 ft
+    (4.6, 5.50),  # 18 ft
+    (5.5, 5.20),  # 17 ft
+    (6.1, 4.90),  # 16 ft
+    (7.6, 4.60),  # 15 ft
+    (9.1, 4.30),  # 14 ft
+    (10.7, 4.00),  # 13 ft
+    (12.2, 3.70),  # 12 ft
 ]
 """Height-adjusted heat detector spacing table.
 Per NFPA 72-2022 Table 17.6.3.5.1 — this IS the correct table
@@ -218,15 +218,15 @@ COMBINED_HEIGHT_SPACING_TABLE: List[Tuple[float, float, float]] = [
     # (ceiling_height_max_m, smoke_spacing_m, heat_spacing_m)
     # Smoke: flat 9.1m at ALL heights per NFPA 72 §17.7.3.2.3
     # Heat: 1%/ft reduction per NFPA 72 Table 17.6.3.5.1
-    (3.0,   9.10, 6.10),
-    (3.7,   9.10, 5.80),
-    (4.6,   9.10, 5.50),
-    (5.5,   9.10, 5.20),
-    (6.1,   9.10, 4.90),
-    (7.6,   9.10, 4.60),
-    (9.1,   9.10, 4.30),
-    (10.7,  9.10, 4.00),
-    (12.2,  9.10, 3.70),
+    (3.0, 9.10, 6.10),
+    (3.7, 9.10, 5.80),
+    (4.6, 9.10, 5.50),
+    (5.5, 9.10, 5.20),
+    (6.1, 9.10, 4.90),
+    (7.6, 9.10, 4.60),
+    (9.1, 9.10, 4.30),
+    (10.7, 9.10, 4.00),
+    (12.2, 9.10, 3.70),
 ]
 
 

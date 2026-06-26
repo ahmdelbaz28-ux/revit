@@ -160,6 +160,7 @@ class RevitMCPServer:
         """Handle a hydraulic calculation query (read-only)."""
         try:
             from fireai.core.hydraulic_solver import calculate_friction_loss
+
             result = calculate_friction_loss(
                 flow_rate_gpm=params["flow_rate_gpm"],
                 friction_factor_c=params["friction_factor_c"],
@@ -189,6 +190,7 @@ class RevitMCPServer:
         """Handle a sprinkler compliance validation query (read-only)."""
         try:
             from fireai.core.hydraulic_solver import validate_sprinkler_compliance
+
             result = validate_sprinkler_compliance(
                 head_pressure_psi=params["head_pressure_psi"],
                 density_gpm_sqft=params["density_gpm_sqft"],
@@ -212,12 +214,11 @@ class RevitMCPServer:
                 sanitized_parameters=params,
             )
 
-    def _handle_battery_capacity(
-        self, request: MCPRequest, params: dict[str, Any]
-    ) -> MCPResponse:
+    def _handle_battery_capacity(self, request: MCPRequest, params: dict[str, Any]) -> MCPResponse:
         """Handle a battery capacity calculation query (read-only)."""
         try:
             from fireai.core.battery_aging_derating import size_battery
+
             standby_hours = params.get("standby_hours", 24.0)
             alarm_minutes = params.get("alarm_minutes", 5.0)
             result = size_battery(
@@ -258,6 +259,7 @@ class RevitMCPServer:
     ) -> MCPResponse:
         """Handle a hazard class query (read-only)."""
         from fireai.core.hazard_override import MANDATORY_HAZARD_OVERRIDES
+
         # Reuse the handler's existing verifier instance
         # Return the mandatory override table for reference
         return MCPResponse(

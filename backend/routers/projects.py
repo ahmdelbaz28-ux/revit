@@ -63,7 +63,9 @@ async def list_projects(
     return success(result)
 
 
-@router.post("", status_code=201, dependencies=[Depends(require_permission(Permission.PROJECT_CREATE))])
+@router.post(
+    "", status_code=201, dependencies=[Depends(require_permission(Permission.PROJECT_CREATE))]
+)
 async def create_project(input_data: CreateProjectInput):
     """Create a new project."""
     db = get_db()
@@ -117,7 +119,9 @@ async def update_project(project_id: str, input_data: UpdateProjectInput):
     return success(project)
 
 
-@router.delete("/{project_id}", dependencies=[Depends(require_permission(Permission.PROJECT_DELETE))])
+@router.delete(
+    "/{project_id}", dependencies=[Depends(require_permission(Permission.PROJECT_DELETE))]
+)
 async def delete_project(project_id: str):
     """Delete a project and all its children."""
     db = get_db()

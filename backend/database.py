@@ -28,7 +28,7 @@ import threading
 import uuid
 from contextlib import contextmanager, suppress
 from datetime import datetime, timezone
-from typing import Any
+from typing import Iterator, Optional, Any
 
 logger = logging.getLogger(__name__)
 
@@ -79,9 +79,7 @@ class Database:
         # would trigger an unnecessary makedirs on the project root. Skip
         # directory creation entirely for in-memory databases.
         _db_dir = (
-            os.path.dirname(os.path.abspath(db_path))
-            if db_path not in (":memory:", "")
-            else None
+            os.path.dirname(os.path.abspath(db_path)) if db_path not in (":memory:", "") else None
         )
         if _db_dir:
             os.makedirs(_db_dir, exist_ok=True)
@@ -130,6 +128,7 @@ class Database:
     def _pg_cursor(self):
         """Get a cursor from the PostgreSQL connection pool."""
         from psycopg2.extras import RealDictCursor
+
         conn = self._pg_pool.getconn()
         try:
             conn.autocommit = False
@@ -146,7 +145,7 @@ class Database:
             self._pg_pool.putconn(conn)
 
     @contextmanager
-    def _transaction(self):
+    def _transaction(self) -> Iterator[sqlite3.Cursor]:
         """
         Yield a cursor inside a locked, auto-committing transaction.
 
@@ -272,11 +271,15 @@ class Database:
 
             # ── Indexes (MUST match SQLite indexes exactly) ─────────
             cur.execute("CREATE INDEX IF NOT EXISTS idx_devices_project ON devices(project_id)")
-            cur.execute("CREATE INDEX IF NOT EXISTS idx_connections_project ON connections(project_id)")
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_connections_project ON connections(project_id)"
+            )
             cur.execute("CREATE INDEX IF NOT EXISTS idx_reports_project ON reports(project_id)")
             cur.execute("CREATE INDEX IF NOT EXISTS idx_connections_from ON connections(from_id)")
             cur.execute("CREATE INDEX IF NOT EXISTS idx_connections_to ON connections(to_id)")
-            cur.execute("CREATE INDEX IF NOT EXISTS idx_sync_ops_entity ON sync_operations(entity_type, entity_id)")
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_sync_ops_entity ON sync_operations(entity_type, entity_id)"
+            )
             cur.execute("CREATE INDEX IF NOT EXISTS idx_devices_type ON devices(type)")
             cur.execute("CREATE INDEX IF NOT EXISTS idx_reports_status ON reports(status)")
             cur.execute("CREATE INDEX IF NOT EXISTS idx_sync_ops_status ON sync_operations(status)")
@@ -382,7 +385,9 @@ class Database:
 
             # ── Indexes for performance ─────────────────────────────────
             cur.execute("CREATE INDEX IF NOT EXISTS idx_devices_project ON devices(project_id)")
-            cur.execute("CREATE INDEX IF NOT EXISTS idx_connections_project ON connections(project_id)")
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_connections_project ON connections(project_id)"
+            )
             cur.execute("CREATE INDEX IF NOT EXISTS idx_reports_project ON reports(project_id)")
             # SAFETY FIX: Missing indexes on connections.from_id and connections.to_id
             # Every device deletion triggers DELETE FROM connections WHERE from_id=? OR to_id=?
@@ -391,7 +396,9 @@ class Database:
             # Slow operations could cause timeouts that appear as failures in a safety system.
             cur.execute("CREATE INDEX IF NOT EXISTS idx_connections_from ON connections(from_id)")
             cur.execute("CREATE INDEX IF NOT EXISTS idx_connections_to ON connections(to_id)")
-            cur.execute("CREATE INDEX IF NOT EXISTS idx_sync_ops_entity ON sync_operations(entity_type, entity_id)")
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_sync_ops_entity ON sync_operations(entity_type, entity_id)"
+            )
             cur.execute("CREATE INDEX IF NOT EXISTS idx_devices_type ON devices(type)")
             cur.execute("CREATE INDEX IF NOT EXISTS idx_reports_status ON reports(status)")
             cur.execute("CREATE INDEX IF NOT EXISTS idx_sync_ops_status ON sync_operations(status)")
@@ -800,7 +807,9 @@ class Database:
                 (to_id, project_id),
             )
             if not cur.fetchone():
-                raise ValueError(f"Cannot create connection: to_id '{to_id}' does not exist in project '{project_id}'")
+                raise ValueError(
+                    f"Cannot create connection: to_id '{to_id}' does not exist in project '{project_id}'"
+                )
 
             cur.execute(
                 f"""INSERT INTO connections
@@ -1312,7 +1321,7 @@ class Database:
     def close(self) -> None:
         """Close the database connection or pool."""
         if self._is_postgres:
-            if hasattr(self, '_pg_pool') and self._pg_pool:
+            if hasattr(self, "_pg_pool") and self._pg_pool:
                 self._pg_pool.closeall()
                 logger.info("PostgreSQL connection pool closed")
         else:

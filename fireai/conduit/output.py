@@ -39,18 +39,18 @@ from fireai.conduit.types import (
 # ─────────────────────────────────────────────────────────────────────────────
 
 _DXF_LAYER: dict[ConduitType, str] = {
-    ConduitType.EMT:        "FA-CONDUIT-EMT",
+    ConduitType.EMT: "FA-CONDUIT-EMT",
     ConduitType.UPVC_SCH40: "FA-CONDUIT-PVC-SCH40",
     ConduitType.UPVC_SCH80: "FA-CONDUIT-PVC-SCH80",
-    ConduitType.RGD:        "FA-CONDUIT-RGD",
+    ConduitType.RGD: "FA-CONDUIT-RGD",
 }
 
 # Revit conduit type families
 _REVIT_FAMILY: dict[ConduitType, str] = {
-    ConduitType.EMT:        "EMT Conduit",
+    ConduitType.EMT: "EMT Conduit",
     ConduitType.UPVC_SCH40: "PVC Schedule 40 Conduit",
     ConduitType.UPVC_SCH80: "PVC Schedule 80 Conduit",
-    ConduitType.RGD:        "Rigid Metal Conduit",
+    ConduitType.RGD: "Rigid Metal Conduit",
 }
 
 # Metres to feet conversion (Revit uses decimal feet internally)
@@ -83,41 +83,45 @@ def generate_revit_conduit(run: ConduitRun) -> dict[str, Any]:
     """
     segments_out: list[dict[str, Any]] = []
     for seg in run.segments:
-        segments_out.append({
-            "start_ft": _pt_to_ft(seg.start),
-            "end_ft":   _pt_to_ft(seg.end),
-            "length_ft": round(seg.length_m * _M_TO_FT, 6),
-            "length_m":  round(seg.length_m, 6),
-            "conduit_type": seg.conduit_type.value,
-            "trade_size":   seg.trade_size.value,
-        })
+        segments_out.append(
+            {
+                "start_ft": _pt_to_ft(seg.start),
+                "end_ft": _pt_to_ft(seg.end),
+                "length_ft": round(seg.length_m * _M_TO_FT, 6),
+                "length_m": round(seg.length_m, 6),
+                "conduit_type": seg.conduit_type.value,
+                "trade_size": seg.trade_size.value,
+            }
+        )
 
     fittings_out: list[dict[str, Any]] = []
     for fit in run.fittings:
-        fittings_out.append({
-            "fitting_type":    fit.fitting_type.name,
-            "catalog_number":  fit.catalog_number,
-            "position_ft":     _pt_to_ft(fit.position),
-            "position_m":      _pt_to_m(fit.position),
-            "angle_deg":       fit.angle_deg,
-            "developed_length_ft": round(fit.developed_length_m * _M_TO_FT, 6),
-            "developed_length_m":  round(fit.developed_length_m, 6),
-            "weight_kg":       fit.weight_kg,
-        })
+        fittings_out.append(
+            {
+                "fitting_type": fit.fitting_type.name,
+                "catalog_number": fit.catalog_number,
+                "position_ft": _pt_to_ft(fit.position),
+                "position_m": _pt_to_m(fit.position),
+                "angle_deg": fit.angle_deg,
+                "developed_length_ft": round(fit.developed_length_m * _M_TO_FT, 6),
+                "developed_length_m": round(fit.developed_length_m, 6),
+                "weight_kg": fit.weight_kg,
+            }
+        )
 
     summary = _build_summary(run)
 
     payload: dict[str, Any] = {
-        "schema_version":  "fireai-conduit-v1",
-        "run_id":          run.run_id,
-        "conduit_type":    run.conduit_type.value,
-        "trade_size":      run.trade_size.value,
-        "family_name":     _REVIT_FAMILY.get(run.conduit_type, "Unknown Conduit"),
-        "segments":        segments_out,
-        "fittings":        fittings_out,
-        "summary":         summary,
-        "violations":      run.violations,
-        "is_compliant":    run.is_compliant,
+        "schema_version": "fireai-conduit-v1",
+        "run_id": run.run_id,
+        "conduit_type": run.conduit_type.value,
+        "trade_size": run.trade_size.value,
+        "family_name": _REVIT_FAMILY.get(run.conduit_type, "Unknown Conduit"),
+        "segments": segments_out,
+        "fittings": fittings_out,
+        "summary": summary,
+        "violations": run.violations,
+        "is_compliant": run.is_compliant,
     }
 
     # Deterministic SHA-256 — sorted keys for cross-platform consistency
@@ -151,37 +155,35 @@ def generate_autocad_entities(run: ConduitRun) -> list[dict[str, Any]]:
 
     # Straight segments → LINE entities
     for seg in run.segments:
-        entities.append({
-            "entity_type":  "LINE",
-            "layer":        layer,
-            "color_index":  color,
-            "start_mm":     _pt_to_mm(seg.start),
-            "end_mm":       _pt_to_mm(seg.end),
-            "length_mm":    round(seg.length_m * 1000.0, 3),
-            "description":  (
-                f"{run.conduit_type.value} {run.trade_size.value} conduit "
-                f"{seg.length_m * 1000:.0f}mm"
-            ),
-        })
+        entities.append(
+            {
+                "entity_type": "LINE",
+                "layer": layer,
+                "color_index": color,
+                "start_mm": _pt_to_mm(seg.start),
+                "end_mm": _pt_to_mm(seg.end),
+                "length_mm": round(seg.length_m * 1000.0, 3),
+                "description": (
+                    f"{run.conduit_type.value} {run.trade_size.value} conduit "
+                    f"{seg.length_m * 1000:.0f}mm"
+                ),
+            }
+        )
 
     # Fittings → POINT + ATTDEF entities
     for fit in run.fittings:
-        etype = "ARC" if fit.fitting_type in (
-            FittingType.ELBOW_90, FittingType.ELBOW_45
-        ) else "POINT"
+        etype = (
+            "ARC" if fit.fitting_type in (FittingType.ELBOW_90, FittingType.ELBOW_45) else "POINT"
+        )
 
         ent: dict[str, Any] = {
-            "entity_type":   etype,
-            "layer":         layer + "-FITTINGS",
-            "color_index":   color,
-            "position_mm":   _pt_to_mm(fit.position),
+            "entity_type": etype,
+            "layer": layer + "-FITTINGS",
+            "color_index": color,
+            "position_mm": _pt_to_mm(fit.position),
             "catalog_number": fit.catalog_number,
-            "fitting_type":  fit.fitting_type.name,
-            "description":   (
-                f"{fit.catalog_number} "
-                f"{fit.fitting_type.name} "
-                f"{run.trade_size.value}"
-            ),
+            "fitting_type": fit.fitting_type.name,
+            "description": (f"{fit.catalog_number} {fit.fitting_type.name} {run.trade_size.value}"),
         }
         if fit.fitting_type in (FittingType.ELBOW_90, FittingType.ELBOW_45):
             ent["angle_deg"] = fit.angle_deg
@@ -215,17 +217,17 @@ def generate_schedules(run: ConduitRun) -> dict[str, Any]:
     # ── Conduit schedule ─────────────────────────────────────────────────────
 
     total_m = run.total_length_m
-    stick_m = 3.048   # 10 ft per stick (all types)
+    stick_m = 3.048  # 10 ft per stick (all types)
     n_sticks = math.ceil(total_m / stick_m) if total_m > 0 else 0
 
     conduit_schedule = {
-        "conduit_type":  run.conduit_type.value,
-        "trade_size":    run.trade_size.value,
-        "total_length_m":  round(total_m, 3),
+        "conduit_type": run.conduit_type.value,
+        "trade_size": run.trade_size.value,
+        "total_length_m": round(total_m, 3),
         "total_length_ft": round(total_m * _M_TO_FT, 3),
-        "stick_count":     n_sticks,
+        "stick_count": n_sticks,
         "stick_length_ft": 10,
-        "segment_count":   len(run.segments),
+        "segment_count": len(run.segments),
     }
 
     # ── Fitting schedule ─────────────────────────────────────────────────────
@@ -237,10 +239,10 @@ def generate_schedules(run: ConduitRun) -> dict[str, Any]:
         if cn not in fitting_qty:
             fitting_qty[cn] = {
                 "catalog_number": cn,
-                "fitting_type":   fit.fitting_type.name,
-                "conduit_type":   fit.conduit_type.value,
-                "trade_size":     fit.trade_size.value,
-                "quantity":       0,
+                "fitting_type": fit.fitting_type.name,
+                "conduit_type": fit.conduit_type.value,
+                "trade_size": fit.trade_size.value,
+                "quantity": 0,
                 "total_weight_kg": 0.0,
             }
         fitting_qty[cn]["quantity"] += 1
@@ -256,7 +258,7 @@ def generate_schedules(run: ConduitRun) -> dict[str, Any]:
     return {
         "conduit_schedule": conduit_schedule,
         "fitting_schedule": fitting_schedule,
-        "summary":          summary,
+        "summary": summary,
     }
 
 
@@ -264,25 +266,26 @@ def generate_schedules(run: ConduitRun) -> dict[str, Any]:
 # Internal helpers
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 def _build_summary(run: ConduitRun) -> dict[str, Any]:
     """Build summary statistics for a ConduitRun."""
-    elbow_count   = sum(1 for f in run.fittings if f.fitting_type == FittingType.ELBOW_90)
+    elbow_count = sum(1 for f in run.fittings if f.fitting_type == FittingType.ELBOW_90)
     coupling_count = sum(1 for f in run.fittings if f.fitting_type == FittingType.COUPLING)
-    pullbox_count  = sum(1 for f in run.fittings if f.fitting_type == FittingType.PULL_BOX)
-    total_weight   = sum(f.weight_kg for f in run.fittings)
+    pullbox_count = sum(1 for f in run.fittings if f.fitting_type == FittingType.PULL_BOX)
+    total_weight = sum(f.weight_kg for f in run.fittings)
 
     return {
-        "run_id":            run.run_id,
-        "is_compliant":      run.is_compliant,
-        "violation_count":   len(run.violations),
-        "total_length_m":    round(run.total_length_m, 3),
-        "total_length_ft":   round(run.total_length_m * _M_TO_FT, 3),
-        "total_bend_deg":    run.total_bend_deg,
-        "segment_count":     len(run.segments),
-        "elbow_90_count":    elbow_count,
-        "coupling_count":    coupling_count,
-        "pull_box_count":    pullbox_count,
-        "total_weight_kg":   round(total_weight, 3),
+        "run_id": run.run_id,
+        "is_compliant": run.is_compliant,
+        "violation_count": len(run.violations),
+        "total_length_m": round(run.total_length_m, 3),
+        "total_length_ft": round(run.total_length_m * _M_TO_FT, 3),
+        "total_bend_deg": run.total_bend_deg,
+        "segment_count": len(run.segments),
+        "elbow_90_count": elbow_count,
+        "coupling_count": coupling_count,
+        "pull_box_count": pullbox_count,
+        "total_weight_kg": round(total_weight, 3),
     }
 
 
@@ -312,10 +315,10 @@ def _pt_to_mm(p: Point3D) -> dict[str, float]:
 def _dxf_color(ct: ConduitType) -> int:
     """Map conduit type to AutoCAD color index (ACI)."""
     return {
-        ConduitType.EMT:        1,    # Red
-        ConduitType.UPVC_SCH40: 3,    # Green
-        ConduitType.UPVC_SCH80: 4,    # Cyan
-        ConduitType.RGD:        5,    # Blue
+        ConduitType.EMT: 1,  # Red
+        ConduitType.UPVC_SCH40: 3,  # Green
+        ConduitType.UPVC_SCH80: 4,  # Cyan
+        ConduitType.RGD: 5,  # Blue
     }.get(ct, 7)  # 7 = white (default)
 
 

@@ -64,11 +64,11 @@ try:
         Violation,
     )
 except ImportError:
-    DecisionProvenance = None  # type: ignore[misc,assignment]
-    RuleApplied = None  # type: ignore[misc,assignment]
-    Violation = None  # type: ignore[misc,assignment]
-    ConfidenceScore = None  # type: ignore[misc,assignment]
-    ConfidenceLevel = None  # type: ignore[misc,assignment]
+    DecisionProvenance = None  # type: ignore[misc]
+    RuleApplied = None  # type: ignore[misc]
+    Violation = None  # type: ignore[misc]
+    ConfidenceScore = None  # type: ignore[misc]
+    ConfidenceLevel = None  # type: ignore[misc]
 
 logger = logging.getLogger(__name__)
 
@@ -496,7 +496,9 @@ class ElevatorShuntTripAuditor:
                 )
 
         # Count sprinklers inside elevator spaces
-        sprinklers_in_shaft = sum(1 for s in sprinkler_locations if s.get("room_id", "") in elevator_spaces)
+        sprinklers_in_shaft = sum(
+            1 for s in sprinkler_locations if s.get("room_id", "") in elevator_spaces
+        )
 
         safe = len(violations) == 0
 

@@ -64,17 +64,17 @@ from typing import Any
 
 _AWG_RESISTANCE_OHM_PER_KM: dict[str, float] = {
     # AWG : Ω/km — NEC Chapter 9, Table 8 (DC resistance at 75°C, copper)
-    "18": 25.49,   # 7.770 Ω/kft, solid
-    "16": 16.04,   # 4.890 Ω/kft, solid
-    "14": 10.07,   # 3.070 Ω/kft, stranded — standard FA circuit
-    "12": 6.33,    # 1.930 Ω/kft, stranded
-    "10": 3.97,    # 1.210 Ω/kft, stranded
-    "8": 2.55,     # 0.778 Ω/kft, stranded
-    "6": 1.61,     # 0.491 Ω/kft, stranded
-    "4": 1.01,     # 0.308 Ω/kft, stranded
-    "3": 0.804,    # 0.245 Ω/kft, stranded
-    "2": 0.636,    # 0.194 Ω/kft, stranded
-    "1": 0.505,    # 0.154 Ω/kft, stranded
+    "18": 25.49,  # 7.770 Ω/kft, solid
+    "16": 16.04,  # 4.890 Ω/kft, solid
+    "14": 10.07,  # 3.070 Ω/kft, stranded — standard FA circuit
+    "12": 6.33,  # 1.930 Ω/kft, stranded
+    "10": 3.97,  # 1.210 Ω/kft, stranded
+    "8": 2.55,  # 0.778 Ω/kft, stranded
+    "6": 1.61,  # 0.491 Ω/kft, stranded
+    "4": 1.01,  # 0.308 Ω/kft, stranded
+    "3": 0.804,  # 0.245 Ω/kft, stranded
+    "2": 0.636,  # 0.194 Ω/kft, stranded
+    "1": 0.505,  # 0.154 Ω/kft, stranded
     "1/0": 0.400,  # 0.122 Ω/kft, stranded
     "2/0": 0.317,  # 0.0967 Ω/kft, stranded
     "3/0": 0.251,  # 0.0766 Ω/kft, stranded
@@ -289,7 +289,7 @@ def calculate_battery_backup(
     standby_load_a: float,  # Amperes (NOT milliamps — BUG-13 confusion)
     alarm_load_a: float,  # Amperes during alarm
     standby_hours: float = 24.0,  # NFPA 72-2022 §10.6.7.2
-    alarm_hours: float = 5/60,  # 5 minutes per NFPA 72 §10.6.7.4
+    alarm_hours: float = 5 / 60,  # 5 minutes per NFPA 72 §10.6.7.4
     derating_factor: float = 0.80,  # 80% usable capacity per §10.6.7.1
     temperature_c: float = 25.0,  # Ambient temperature
 ) -> dict[str, float]:
@@ -379,6 +379,7 @@ def calculate_battery_backup(
     # V FIX: Deprecation warning at end of function to avoid interfering
     # with existing NFPA 24h standby warning tests that check w[0].
     import warnings as _warnings
+
     _warnings.warn(
         "calculate_battery_backup() is DEPRECATED — use battery_aging_derating.size_battery() "
         "which includes IEEE 485 temperature correction and Peukert discharge rate correction. "

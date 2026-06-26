@@ -183,15 +183,21 @@ class ScheduleGenerator:
                 ScheduleRow(
                     device_id=f"{getattr(r, 'device_from', '?')}→{getattr(r, 'device_to', '?')}",
                     from_location=str(
-                        getattr(r, "path_world_m", [[0, 0, 0]])[0] if getattr(r, "path_world_m", None) else (0, 0, 0)
+                        getattr(r, "path_world_m", [[0, 0, 0]])[0]
+                        if getattr(r, "path_world_m", None)
+                        else (0, 0, 0)
                     ),
                     to_location=str(
-                        getattr(r, "path_world_m", [[0, 0, 0]])[-1] if getattr(r, "path_world_m", None) else (0, 0, 0)
+                        getattr(r, "path_world_m", [[0, 0, 0]])[-1]
+                        if getattr(r, "path_world_m", None)
+                        else (0, 0, 0)
                     ),
                     length_m=float(getattr(r, "total_length_m", 0)),
                     wire_type=f'{getattr(r, "wire_gauge", "14 AWG")} in 3/4" RED EMT',
                     voltage_drop_v=float(getattr(r, "voltage_drop_v", 0)),
-                    end_voltage_v=float(getattr(r, "end_voltage_v", actual_ps_voltage)),  # V113: Use actual voltage
+                    end_voltage_v=float(
+                        getattr(r, "end_voltage_v", actual_ps_voltage)
+                    ),  # V113: Use actual voltage
                     bend_count=int(getattr(r, "bend_count", 0)),
                     compliant=bool(getattr(r, "compliant", False)),  # V69-10 FIX: fail-safe default
                 )

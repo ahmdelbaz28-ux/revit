@@ -195,8 +195,7 @@ class BentleyBridge:
             design = self._import_imodel(path, raw, file_hash)
         else:
             raise ValueError(
-                f"Unsupported Bentley file format: {ext}. "
-                f"Supported: .ifc, .dgn, .imodel, .bim"
+                f"Unsupported Bentley file format: {ext}. Supported: .ifc, .dgn, .imodel, .bim"
             )
 
         self._event_bus.publish(
@@ -229,9 +228,7 @@ class BentleyBridge:
             SyncStatus with results of the synchronization.
 
         """
-        project_id = design.metadata.get(
-            "bentley_project_id", "unknown"
-        )
+        project_id = design.metadata.get("bentley_project_id", "unknown")
         started = datetime.now(timezone.utc).isoformat()
 
         try:
@@ -293,9 +290,7 @@ class BentleyBridge:
 
     # ── Asset Queries ───────────────────────────────────────────────────
 
-    def get_bentley_assets(
-        self, project_id: str
-    ) -> list[BentleyAsset]:
+    def get_bentley_assets(self, project_id: str) -> list[BentleyAsset]:
         """
         Retrieve Bentley assets for a project.
 
@@ -308,9 +303,7 @@ class BentleyBridge:
         """
         return self._assets_cache.get(project_id, [])
 
-    def get_fire_relevant_assets(
-        self, project_id: str
-    ) -> list[BentleyAsset]:
+    def get_fire_relevant_assets(self, project_id: str) -> list[BentleyAsset]:
         """
         Get assets relevant to fire alarm design.
 
@@ -325,11 +318,7 @@ class BentleyBridge:
 
         """
         all_assets = self._assets_cache.get(project_id, [])
-        return [
-            a
-            for a in all_assets
-            if a.element_type in self.FIRE_RELEVANT_TYPES
-        ]
+        return [a for a in all_assets if a.element_type in self.FIRE_RELEVANT_TYPES]
 
     # ── Connection Management ───────────────────────────────────────────
 
@@ -348,9 +337,7 @@ class BentleyBridge:
         required = {"client_id", "client_secret", "subscription_id"}
         if not required.issubset(credentials.keys()):
             missing = required - credentials.keys()
-            logger.error(
-                "Missing Bentley API credentials: %s", missing
-            )
+            logger.error("Missing Bentley API credentials: %s", missing)
             return False
 
         self._api_connected = True
@@ -386,10 +373,7 @@ class BentleyBridge:
             bridge = HeadlessIFCBridge()  # type: ignore[call-arg]
             return bridge.import_ifc(path)  # type: ignore[attr-defined]
         except ImportError:
-            logger.warning(
-                "HeadlessIFCBridge not available — "
-                "returning IFC file metadata only"
-            )
+            logger.warning("HeadlessIFCBridge not available — returning IFC file metadata only")
         except Exception as exc:
             logger.error("IFC import failed: %s", exc)
 

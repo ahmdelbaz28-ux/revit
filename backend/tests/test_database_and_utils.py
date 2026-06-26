@@ -24,6 +24,7 @@ from fastapi.testclient import TestClient
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
+
 @pytest.fixture(scope="module", autouse=True)
 def _setup_env() -> None:
     """Set development environment for testing."""
@@ -35,6 +36,7 @@ def _setup_env() -> None:
 def client():
     """Create a test client for the FastAPI app."""
     from backend.app import app
+
     with TestClient(app) as c:
         yield c
 
@@ -50,6 +52,7 @@ class TestDatabaseDirect:
     def test_get_db_returns_singleton(self) -> None:
         """get_db() must always return the same instance."""
         from backend.database import get_db
+
         db1 = get_db()
         db2 = get_db()
         assert db1 is db2
@@ -57,6 +60,7 @@ class TestDatabaseDirect:
     def test_get_global_counts(self) -> None:
         """get_global_counts() must return count dictionary."""
         from backend.database import get_db
+
         db = get_db()
         counts = db.get_global_counts()
         assert isinstance(counts, dict)
@@ -67,6 +71,7 @@ class TestDatabaseDirect:
     def test_get_all_devices_for_empty_project(self) -> None:
         """get_all_devices_for_project() must return empty list for project with no devices."""
         from backend.database import get_db
+
         db = get_db()
         # Use a project created via API to ensure it exists
         # This is tested indirectly, but test the method directly too
@@ -77,6 +82,7 @@ class TestDatabaseDirect:
     def test_get_all_connections_for_empty_project(self) -> None:
         """get_all_connections_for_project() must return empty list for project with no connections."""
         from backend.database import get_db
+
         db = get_db()
         result = db.get_all_connections_for_project("nonexistent-project-id")
         assert isinstance(result, list)
@@ -85,6 +91,7 @@ class TestDatabaseDirect:
     def test_create_and_get_project(self) -> None:
         """Creating a project and getting it must return the same data."""
         from backend.database import get_db
+
         db = get_db()
         project_data = {
             "id": "test-db-direct-001",
@@ -104,6 +111,7 @@ class TestDatabaseDirect:
     def test_update_project(self) -> None:
         """Updating a project must persist changes."""
         from backend.database import get_db
+
         db = get_db()
         project_data = {
             "id": "test-db-update-001",
@@ -112,7 +120,9 @@ class TestDatabaseDirect:
             "author": "pytest",
         }
         db.create_project(project_data)
-        updated = db.update_project("test-db-update-001", {"name": "After Update", "status": "active"})
+        updated = db.update_project(
+            "test-db-update-001", {"name": "After Update", "status": "active"}
+        )
         assert updated is not None
         assert updated.get("name") == "After Update"
         # Verify via get
@@ -125,6 +135,7 @@ class TestDatabaseDirect:
     def test_delete_nonexistent_project(self) -> None:
         """Deleting a nonexistent project must return None/False."""
         from backend.database import get_db
+
         db = get_db()
         result = db.delete_project("nonexistent-project-id-99999")
         # Should return False or None, not raise
@@ -133,6 +144,7 @@ class TestDatabaseDirect:
     def test_sync_status_cycle(self) -> None:
         """set_sync_status/get_sync_status must round-trip correctly."""
         from backend.database import get_db
+
         db = get_db()
         # Create a project first
         project_data = {
@@ -143,20 +155,26 @@ class TestDatabaseDirect:
         }
         db.create_project(project_data)
         # Set sync status
-        db.set_sync_status("test-sync-cycle-001", {
-            "status": "syncing",
-            "lastSync": "2025-01-01T00:00:00Z",
-            "pendingChanges": 5,
-        })
+        db.set_sync_status(
+            "test-sync-cycle-001",
+            {
+                "status": "syncing",
+                "lastSync": "2025-01-01T00:00:00Z",
+                "pendingChanges": 5,
+            },
+        )
         status = db.get_sync_status("test-sync-cycle-001")
         assert status is not None
         assert status.get("status") == "syncing"
         # Update to synced
-        db.set_sync_status("test-sync-cycle-001", {
-            "status": "synced",
-            "lastSync": "2025-01-01T00:01:00Z",
-            "pendingChanges": 0,
-        })
+        db.set_sync_status(
+            "test-sync-cycle-001",
+            {
+                "status": "synced",
+                "lastSync": "2025-01-01T00:01:00Z",
+                "pendingChanges": 0,
+            },
+        )
         status2 = db.get_sync_status("test-sync-cycle-001")
         assert status2.get("status") == "synced"
         # Clean up
@@ -165,6 +183,7 @@ class TestDatabaseDirect:
     def test_report_create_and_get(self) -> None:
         """Creating and getting a report must round-trip correctly."""
         from backend.database import get_db
+
         db = get_db()
         # Need a project
         project_data = {
@@ -189,10 +208,14 @@ class TestDatabaseDirect:
         assert fetched is not None
         assert fetched.get("name") == "VD Report"
         # Update report
-        updated = db.update_report("test-report-db-001", "test-report-001", {
-            "status": "completed",
-            "completedAt": "2025-01-01T00:00:00Z",
-        })
+        updated = db.update_report(
+            "test-report-db-001",
+            "test-report-001",
+            {
+                "status": "completed",
+                "completedAt": "2025-01-01T00:00:00Z",
+            },
+        )
         assert updated is not None
         # Verify update
         fetched2 = db.get_report("test-report-db-001", "test-report-001")
@@ -212,6 +235,7 @@ class TestContractValidators:
     def test_validate_project_accepts_valid_data(self) -> None:
         """validate_project must accept valid project data."""
         from backend.contract import validate_project
+
         data = {
             "id": "proj-001",
             "name": "Test Project",
@@ -227,6 +251,7 @@ class TestContractValidators:
     def test_validate_project_accepts_udm_naming(self) -> None:
         """validate_project must accept UDM-style field names (projectId, etc.)."""
         from backend.contract import validate_project
+
         data = {
             "projectId": "proj-002",
             "name": "UDM Project",
@@ -238,6 +263,7 @@ class TestContractValidators:
     def test_validate_device_accepts_valid_data(self) -> None:
         """validate_device must accept valid device data."""
         from backend.contract import validate_device
+
         data = {
             "id": "dev-001",
             "type": "smoke_detector",
@@ -253,6 +279,7 @@ class TestContractValidators:
     def test_validate_connection_accepts_valid_data(self) -> None:
         """validate_connection must accept valid connection data."""
         from backend.contract import validate_connection
+
         data = {
             "id": "conn-001",
             "fromId": "dev-001",
@@ -267,12 +294,14 @@ class TestContractValidators:
     def test_validate_health_raises_on_missing_status(self) -> None:
         """validate_health must raise ContractViolation if status is missing."""
         from backend.contract import ContractViolation, validate_health
+
         with pytest.raises(ContractViolation):
             validate_health({"version": "1.0.0"})  # Missing 'status'
 
     def test_validate_health_accepts_valid_data(self) -> None:
         """validate_health must accept valid health data."""
         from backend.contract import validate_health
+
         data = {
             "status": "ok",
             "version": "1.0.0",
@@ -285,6 +314,7 @@ class TestContractValidators:
     def test_validate_paginated_accepts_valid_data(self) -> None:
         """validate_paginated must accept valid paginated data."""
         from backend.contract import validate_paginated
+
         data = {
             "total": 10,
             "page": 1,
@@ -307,6 +337,7 @@ class TestResponseHelpers:
     def test_success_response(self) -> None:
         """success() must return correct structure."""
         from backend.response import success
+
         result = success({"key": "value"}, "Test message")
         assert result["success"] is True
         assert result["data"] == {"key": "value"}
@@ -316,6 +347,7 @@ class TestResponseHelpers:
     def test_success_with_none_data(self) -> None:
         """success() with None data must still include data field."""
         from backend.response import success
+
         result = success(None, "Deleted successfully")
         assert result["success"] is True
         assert result["data"] is None
@@ -324,6 +356,7 @@ class TestResponseHelpers:
     def test_error_response(self) -> None:
         """error() must return correct error structure."""
         from backend.response import error
+
         result = error("Something went wrong", {"fallback": 0})
         assert result["success"] is False
         assert result["error"] == "Something went wrong"
@@ -333,6 +366,7 @@ class TestResponseHelpers:
     def test_paginated_response(self) -> None:
         """paginated() must return correct paginated structure."""
         from backend.response import paginated
+
         result = paginated([1, 2, 3], total=10, page=1, page_size=3, total_pages=4)
         assert result["success"] is True
         data = result["data"]
@@ -354,6 +388,7 @@ class TestProjectBridge:
     def test_sync_project_to_udm_does_not_raise(self) -> None:
         """sync_project_to_udm must not raise even with invalid data."""
         from backend.project_bridge import sync_project_to_udm
+
         # Should not raise
         try:
             sync_project_to_udm({"id": "test", "name": "Test"})
@@ -363,41 +398,50 @@ class TestProjectBridge:
     def test_sync_project_update_to_udm_does_not_raise(self) -> None:
         """sync_project_update_to_udm must not raise."""
         from backend.project_bridge import sync_project_update_to_udm
+
         with contextlib.suppress(Exception):
             sync_project_update_to_udm("test-project-id", {"name": "Updated"})
 
     def test_sync_project_delete_to_udm_does_not_raise(self) -> None:
         """sync_project_delete_to_udm must not raise."""
         from backend.project_bridge import sync_project_delete_to_udm
+
         with contextlib.suppress(Exception):
             sync_project_delete_to_udm("test-project-id")
 
     def test_sync_device_to_udm_does_not_raise(self) -> None:
         """sync_device_to_udm must not raise."""
         from backend.project_bridge import sync_device_to_udm
+
         with contextlib.suppress(Exception):
             sync_device_to_udm("test-project-id", {"id": "dev-001", "type": "FA_SMOKE"})
 
     def test_sync_device_update_to_udm_does_not_raise(self) -> None:
         """sync_device_update_to_udm must not raise."""
         from backend.project_bridge import sync_device_update_to_udm
+
         with contextlib.suppress(Exception):
             sync_device_update_to_udm("test-project-id", "dev-001", {"name": "Updated"})
 
     def test_sync_device_delete_to_udm_does_not_raise(self) -> None:
         """sync_device_delete_to_udm must not raise."""
         from backend.project_bridge import sync_device_delete_to_udm
+
         with contextlib.suppress(Exception):
             sync_device_delete_to_udm("test-project-id", "dev-001")
 
     def test_sync_connection_to_udm_does_not_raise(self) -> None:
         """sync_connection_to_udm must not raise."""
         from backend.project_bridge import sync_connection_to_udm
+
         with contextlib.suppress(Exception):
-            sync_connection_to_udm("test-project-id", {"id": "conn-001", "fromId": "a", "toId": "b"})
+            sync_connection_to_udm(
+                "test-project-id", {"id": "conn-001", "fromId": "a", "toId": "b"}
+            )
 
     def test_sync_connection_delete_to_udm_does_not_raise(self) -> None:
         """sync_connection_delete_to_udm must not raise."""
         from backend.project_bridge import sync_connection_delete_to_udm
+
         with contextlib.suppress(Exception):
             sync_connection_delete_to_udm("test-project-id", "conn-001")

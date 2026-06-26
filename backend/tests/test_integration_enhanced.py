@@ -16,6 +16,7 @@ from fastapi.testclient import TestClient
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
+
 @pytest.fixture(scope="module", autouse=True)
 def _setup_env() -> None:
     """Set development environment for testing."""
@@ -27,6 +28,7 @@ def _setup_env() -> None:
 def client():
     """Create a test client for the FastAPI app."""
     from backend.app import app
+
     with TestClient(app) as c:
         yield c
 
@@ -36,7 +38,11 @@ def sample_project(client):
     """Create a sample project for testing."""
     resp = client.post(
         "/api/projects",
-        json={"name": "Integration Test Project", "description": "For enhanced tests", "author": "pytest"},
+        json={
+            "name": "Integration Test Project",
+            "description": "For enhanced tests",
+            "author": "pytest",
+        },
     )
     data = resp.json().get("data", resp.json())
     return data.get("id") or data.get("project_id")
@@ -51,7 +57,7 @@ def sample_project_with_devices(client, sample_project):
         dev_resp = client.post(
             f"/api/projects/{pid}/devices",
             json={
-                "name": f"Device {i+1}",
+                "name": f"Device {i + 1}",
                 "type": "smoke_detector",
                 "position": {"x": float(i * 10), "y": 0.0, "z": 3.0},
                 "voltage": 24.0,
@@ -195,10 +201,13 @@ class TestQomnHeatSpacing:
 
     def test_heat_spacing(self, client) -> None:
         """Test heat detector spacing calculation."""
-        resp = client.post("/api/qomn/heat-spacing", json={
-            "ceiling_height_m": 3.0,
-            "area_per_detector_m2": 18.6,
-        })
+        resp = client.post(
+            "/api/qomn/heat-spacing",
+            json={
+                "ceiling_height_m": 3.0,
+                "area_per_detector_m2": 18.6,
+            },
+        )
         assert resp.status_code == 200
 
 
@@ -207,10 +216,13 @@ class TestQomnBattery:
 
     def test_battery_calculation(self, client) -> None:
         """Test NFPA 72 battery capacity calculation."""
-        resp = client.post("/api/qomn/battery", json={
-            "standby_load_a": 0.5,
-            "alarm_load_a": 1.2,
-        })
+        resp = client.post(
+            "/api/qomn/battery",
+            json={
+                "standby_load_a": 0.5,
+                "alarm_load_a": 1.2,
+            },
+        )
         assert resp.status_code == 200
 
 
@@ -219,10 +231,13 @@ class TestQomnVoltageDrop:
 
     def test_voltage_drop_calculation(self, client) -> None:
         """Test voltage drop calculation."""
-        resp = client.post("/api/qomn/voltage-drop", json={
-            "current_a": 0.5,
-            "length_m": 30.0,
-        })
+        resp = client.post(
+            "/api/qomn/voltage-drop",
+            json={
+                "current_a": 0.5,
+                "length_m": 30.0,
+            },
+        )
         assert resp.status_code == 200
 
 
@@ -275,13 +290,16 @@ class TestElementsCRUD:
 
     def test_create_element_with_properties(self, client) -> None:
         """Test creating a new element with required properties field."""
-        resp = client.post("/api/elements", json={
-            "element_id": "elem-test-001",
-            "properties": {
-                "element_type": "wall",
-                "name": "Test Wall",
+        resp = client.post(
+            "/api/elements",
+            json={
+                "element_id": "elem-test-001",
+                "properties": {
+                    "element_type": "wall",
+                    "name": "Test Wall",
+                },
             },
-        })
+        )
         # May return 500 if db_service has issues, but should not be 422 (validation)
         assert resp.status_code in (200, 201, 500)
 
@@ -414,11 +432,14 @@ class TestConnectionsV2:
 
     def test_create_connection(self, client) -> None:
         """Test creating a connection."""
-        resp = client.post("/api/connections", json={
-            "from_element_id": "elem-a",
-            "to_element_id": "elem-b",
-            "relationship_type": "adjacent",
-        })
+        resp = client.post(
+            "/api/connections",
+            json={
+                "from_element_id": "elem-a",
+                "to_element_id": "elem-b",
+                "relationship_type": "adjacent",
+            },
+        )
         assert resp.status_code in (200, 201, 400, 404, 422)
 
     def test_delete_nonexistent_connection(self, client) -> None:
@@ -440,7 +461,9 @@ class TestDWGUpload:
         dxf_content = "0\nSECTION\n2\nHEADER\n0\nENDSEC\n0\nEOF\n"
         resp = client.post(
             "/api/parse-dwg",
-            files={"file": ("test.dxf", io.BytesIO(dxf_content.encode()), "application/octet-stream")},
+            files={
+                "file": ("test.dxf", io.BytesIO(dxf_content.encode()), "application/octet-stream")
+            },
         )
         assert resp.status_code in (200, 400, 422, 503)
 
@@ -500,32 +523,44 @@ class TestFACPRouter:
 
     def test_facp_select(self, client) -> None:
         """Test FACP panel selection."""
-        resp = client.post("/api/facp/select", json={
-            "num_devices": 50,
-            "building_type": "commercial",
-        })
+        resp = client.post(
+            "/api/facp/select",
+            json={
+                "num_devices": 50,
+                "building_type": "commercial",
+            },
+        )
         assert resp.status_code in (200, 400, 422)
 
     def test_facp_verify(self, client) -> None:
         """Test FACP verification."""
-        resp = client.post("/api/facp/verify", json={
-            "panel_model": "Notifier NFS2-3030",
-            "num_devices": 50,
-        })
+        resp = client.post(
+            "/api/facp/verify",
+            json={
+                "panel_model": "Notifier NFS2-3030",
+                "num_devices": 50,
+            },
+        )
         assert resp.status_code in (200, 400, 422)
 
     def test_facp_spec(self, client) -> None:
         """Test FACP specification."""
-        resp = client.post("/api/facp/spec", json={
-            "panel_model": "Notifier NFS2-3030",
-        })
+        resp = client.post(
+            "/api/facp/spec",
+            json={
+                "panel_model": "Notifier NFS2-3030",
+            },
+        )
         assert resp.status_code in (200, 400, 422)
 
     def test_facp_schedule(self, client) -> None:
         """Test FACP schedule generation."""
-        resp = client.post("/api/facp/schedule", json={
-            "project_id": "test-project",
-        })
+        resp = client.post(
+            "/api/facp/schedule",
+            json={
+                "project_id": "test-project",
+            },
+        )
         assert resp.status_code in (200, 400, 422)
 
 

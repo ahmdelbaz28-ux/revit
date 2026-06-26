@@ -25,7 +25,7 @@ try:
 except ImportError:
     try:
         from ezdxf.addons import (  # type: ignore[attr-defined, no-redef]
-            Table,  # type: ignore[attr-defined,no-redef,import-untyped] # Older ezdxf versions
+            Table,  # Older ezdxf versions
         )
     except ImportError:
         Table = None  # type: ignore[misc]
@@ -53,7 +53,9 @@ class TrueAECDraftingTable:
     def __init__(self, table_position_xyz: tuple = (0.0, 0.0, 0.0)) -> None:
         self.position = table_position_xyz
 
-    def draft_device_boq_table(self, msp, device_array: list, project_metadata: str = "Fire Alarm Device Log") -> bool:
+    def draft_device_boq_table(
+        self, msp, device_array: list, project_metadata: str = "Fire Alarm Device Log"
+    ) -> bool:
         """
         Create a DXF TABLE entity with device schedule data.
 

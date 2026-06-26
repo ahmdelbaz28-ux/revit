@@ -50,7 +50,7 @@ def _get_ifcopenshell():
     global _ifcopenshell
     if _ifcopenshell is None:
         try:
-            import ifcopenshell as _ifs  # type: ignore[import-untyped]
+            import ifcopenshell as _ifs
 
             _ifcopenshell = _ifs
         except ImportError:
@@ -146,7 +146,11 @@ class BoundingBox3D:
 
     def contains_point(self, x: float, y: float, z: float) -> bool:
         """Check if a 3D point is inside this bounding box."""
-        return self.min_x <= x <= self.max_x and self.min_y <= y <= self.max_y and self.min_z <= z <= self.max_z
+        return (
+            self.min_x <= x <= self.max_x
+            and self.min_y <= y <= self.max_y
+            and self.min_z <= z <= self.max_z
+        )
 
     def overlaps(self, other: BoundingBox3D) -> bool:
         """Check if this bounding box overlaps another (AABB intersection)."""
@@ -216,7 +220,7 @@ class BuildingModel:
     grid_data: bytes = b""
     computation_hash: str = ""
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.computation_hash == "" and self.grid_data:
             # V64 FIX: Hash all data together, not concatenate two hashes
             # then truncate. Previous code did:
@@ -536,7 +540,11 @@ def _get_element_bbox(element, settings=None) -> BoundingBox3D | None:
                         if pos and hasattr(pos, "Location"):
                             px = float(pos.Location.Coordinates[0])
                             py = float(pos.Location.Coordinates[1])
-                            pz = float(pos.Location.Coordinates[2]) if len(pos.Location.Coordinates) > 2 else 0.0
+                            pz = (
+                                float(pos.Location.Coordinates[2])
+                                if len(pos.Location.Coordinates) > 2
+                                else 0.0
+                            )
                         else:
                             px, py, pz = 0.0, 0.0, 0.0
 
@@ -863,8 +871,9 @@ def parse_ifc_file(file_path: str) -> BuildingModel:
     """
     ifs = _get_ifcopenshell()
     if ifs is None:
-        raise ImportError("IfcOpenShell is required for IFC file parsing. Install with: pip install ifcopenshell")
-
+        raise ImportError(
+            "IfcOpenShell is required for IFC file parsing. Install with: pip install ifcopenshell"
+        )
 
     if not os.path.isfile(file_path):
         raise FileNotFoundError(f"IFC file not found: {file_path}")
@@ -896,7 +905,9 @@ def parse_ifc_from_string(ifc_content: str) -> BuildingModel:
     """
     ifs = _get_ifcopenshell()
     if ifs is None:
-        raise ImportError("IfcOpenShell is required for IFC parsing. Install with: pip install ifcopenshell")
+        raise ImportError(
+            "IfcOpenShell is required for IFC parsing. Install with: pip install ifcopenshell"
+        )
 
     try:
         import tempfile
@@ -909,7 +920,6 @@ def parse_ifc_from_string(ifc_content: str) -> BuildingModel:
             model = ifs.open(temp_path)
             return _extract_building_model(model)
         finally:
-
             os.unlink(temp_path)
     except Exception as exc:
         raise ValueError(f"Cannot parse IFC content: {exc}") from exc
@@ -980,7 +990,9 @@ def _extract_building_model(ifc_model) -> BuildingModel:
                             SpaceInfo(
                                 space_id=bbox.element_id,
                                 space_name=getattr(element, "Name", "") or "",
-                                space_number=getattr(element, "LongName", "") or getattr(element, "Name", "") or "",
+                                space_number=getattr(element, "LongName", "")
+                                or getattr(element, "Name", "")
+                                or "",
                                 bounding_box=bbox,
                                 floor_elevation=bbox.min_z,
                                 ceiling_elevation=bbox.max_z,

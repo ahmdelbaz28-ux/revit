@@ -62,11 +62,11 @@ try:
         Violation,
     )
 except ImportError:
-    DecisionProvenance = None  # type: ignore[misc,assignment]
-    RuleApplied = None  # type: ignore[misc,assignment]
-    Violation = None  # type: ignore[misc,assignment]
-    ConfidenceScore = None  # type: ignore[misc,assignment]
-    ConfidenceLevel = None  # type: ignore[misc,assignment]
+    DecisionProvenance = None  # type: ignore[misc]
+    RuleApplied = None  # type: ignore[misc]
+    Violation = None  # type: ignore[misc]
+    ConfidenceScore = None  # type: ignore[misc]
+    ConfidenceLevel = None  # type: ignore[misc]
 
 logger = logging.getLogger(__name__)
 
@@ -272,14 +272,16 @@ class SLCCapacitanceAuditor:
                         )
                     )
                 else:
-                    violations.append({
-                        "severity": "WARNING",
-                        "citation": _CITE_NFPA72_12_2,
-                        "description": (
-                            f"Cannot verify SLC compliance for unknown manufacturer "
-                            f"'{loop_mfr}' on loop '{loop_id}'."
-                        ),
-                    })
+                    violations.append(
+                        {
+                            "severity": "WARNING",
+                            "citation": _CITE_NFPA72_12_2,
+                            "description": (
+                                f"Cannot verify SLC compliance for unknown manufacturer "
+                                f"'{loop_mfr}' on loop '{loop_id}'."
+                            ),
+                        }
+                    )
 
             # V20.2 FIX: Unknown wire type → use most conservative (highest) value
             cap_pf_per_m = CABLE_CAPACITANCE_PF_PER_M.get(wire_type)
@@ -295,7 +297,9 @@ class SLCCapacitanceAuditor:
             # Total = (cable capacitance) + (device parasitic) + (isolator parasitic)
             # Per UL 864 10th Ed., total loop capacitance includes ALL connected devices.
             cable_cap_pf = total_length_m * cap_pf_per_m
-            device_cap_pf = (device_count * DEVICE_CAPACITANCE_PF) + (isolator_count * ISOLATOR_CAPACITANCE_PF)
+            device_cap_pf = (device_count * DEVICE_CAPACITANCE_PF) + (
+                isolator_count * ISOLATOR_CAPACITANCE_PF
+            )
             total_cap_pf = cable_cap_pf + device_cap_pf
             total_cap_uf = total_cap_pf / 1_000_000.0
 
@@ -417,14 +421,19 @@ class SLCCapacitanceAuditor:
                     violations=violations if violations else None,
                 )
             except Exception as e:
-                logger.warning("V112: audit_slc_loops: failed to construct DecisionProvenance audit result: %s", e)
+                logger.warning(
+                    "V112: audit_slc_loops: failed to construct DecisionProvenance audit result: %s",
+                    e,
+                )
                 pass
 
         return {
             "decision_type": "slc_capacitance_audit",
             "value": {
                 "safe": safe,
-                "detailed_results": [{"loop_id": r.loop_id, "compliant": r.compliant} for r in detailed_results],
+                "detailed_results": [
+                    {"loop_id": r.loop_id, "compliant": r.compliant} for r in detailed_results
+                ],
             },
             "safe": safe,
             "violations": violations,
