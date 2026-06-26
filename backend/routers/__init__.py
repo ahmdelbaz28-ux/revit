@@ -36,6 +36,7 @@ __all__ = [
     "ifc_service_router",
     "memory",
     "rag_router",
+    "agent_router",
     "monitor",
     "projects",
     "qomn",

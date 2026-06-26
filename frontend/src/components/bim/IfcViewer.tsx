@@ -36,10 +36,22 @@ interface IfcViewerProps {
   onError?: (error: Error) => void;
   /** Callback when loading succeeds */
   onLoaded?: (metadata: IfcMetadata) => void;
+  /** Show coverage overlay: green=covered, red=uncovered */
+  showCoverage?: boolean;
+  /** Coverage data: array of {x, y, radius, covered} */
+  coverageData?: CoveragePoint[];
   /** CSS class for the container */
   className?: string;
   /** Container style */
   style?: React.CSSProperties;
+}
+
+export interface CoveragePoint {
+  x: number;
+  y: number;
+  z?: number;
+  radius: number;
+  covered: boolean;
 }
 
 export interface IfcSpaceData {
@@ -68,6 +80,8 @@ export const IfcViewer: React.FC<IfcViewerProps> = ({
   onSpacesExtracted,
   onError,
   onLoaded,
+  showCoverage = false,
+  coverageData = [],
   className,
   style,
 }) => {
@@ -254,6 +268,26 @@ export const IfcViewer: React.FC<IfcViewerProps> = ({
       // ── Callbacks ──
       onSpacesExtracted?.(spaces);
       onLoaded?.(metadata);
+
+      // ── Coverage Overlay (P5) ──
+      if (showCoverage && coverageData.length > 0) {
+        for (const point of coverageData) {
+          const geometry = new THREE.CircleGeometry(point.radius, 32);
+          const material = new THREE.MeshBasicMaterial({
+            color: point.covered ? 0x00ff00 : 0xff0000,
+            transparent: true,
+            opacity: 0.25,
+            side: THREE.DoubleSide,
+          });
+          const circle = new THREE.Mesh(geometry, material);
+          circle.position.set(point.x, point.z ?? 0.1, point.y); // Y-up in Three.js
+          circle.rotation.x = -Math.PI / 2; // Lay flat on floor
+          scene.add(circle);
+        }
+        console.log(
+          `[IfcViewer] Coverage overlay | points=${coverageData.length} | correlationId=${correlationId}`
+        );
+      }
 
       setLoadingState("loaded");
       startRenderLoop();
