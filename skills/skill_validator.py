@@ -69,11 +69,16 @@ class SkillMetadata(BaseModel):
             raise ValueError("All version parts must be numeric")
         return v
 
-    @field_validator("name")
+    @field_validator("name", mode="before")
     @classmethod
     def validate_name_chars(cls, v: str) -> str:
         """Ensure name contains only allowed characters."""
         allowed = set("abcdefghijklmnopqrstuvwxyz0123456789-_")
+        # Check for whitespace in original value
+        if v != v.strip():
+            raise ValueError(
+                "Name must not contain leading/trailing whitespace"
+            )
         if not all(c.lower() in allowed for c in v):
             raise ValueError(
                 "Name must contain only lowercase letters, numbers, hyphens, underscores"
