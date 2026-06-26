@@ -97,7 +97,9 @@ def _validate_ifc_file_path(filename: str, root_dir: Path) -> Path:
     root_resolved = root_dir.resolve()
     target_path = (root_dir / filename).resolve()
 
-    if not str(target_path).startswith(str(root_resolved)):
+    try:
+        target_path.relative_to(root_resolved)
+    except ValueError:
         logger.warning(
             "SECURITY: Path escape detected: %s resolves outside %s",
             target_path, root_resolved,
