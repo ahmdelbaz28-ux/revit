@@ -1005,3 +1005,23 @@ Stage Summary:
 - PR link: https://github.com/ahmdelbaz28-ux/revit/pull/new/marine-v2-improvements
 - ملاحظة: GitHub يُبلغ عن 18 vulnerabilities في الـ default branch (9 high, 5 moderate, 4 low) — تحتاج معالجة لاحقة
 - توصية: فتح Pull Request على GitHub لمراجعة الفريق قبل الدمج
+
+---
+Task ID: fix-bump-cryptography-48
+Agent: Super Z (Main)
+Task: Bump cryptography 42.0.8 → 48.0.1+ to fix 6 vulnerabilities (PYSEC-2026-35, GHSA-h4gh-qq45-vh27, CVE-2024-12797, CVE-2026-26007, GHSA-537c-gmf6-5ccf, dup PYSEC)
+
+Work Log:
+- Analyzed PR #64 CI output: pip-audit reported 6 vulnerabilities in cryptography 42.0.8 (after PR #64 fixed the crash).
+- Verified cryptography is NOT directly imported in any .py file (grep returned empty). It is a transitive dep via pyjwt[crypto] + passlib[bcrypt]. No API breakage risk from the bump.
+- Found the upper-bound constraint in pyproject.toml line 45: `cryptography>=41.0.0,<43.0.0`. The `<43.0.0` cap is what pinned the install to 42.0.8.
+- Bumped to `cryptography>=48.0.1,<50.0.0`. The 48.0.1 floor addresses all 6 vulnerabilities (highest fix version required). The <50.0.0 cap leaves room for minor updates without breaking.
+- Left facp_distributed/setup.py untouched (its `cryptography>=41.0.0` has no upper bound, so the bump flows through naturally).
+- Verified TOML parses; verified only pyproject.toml changed (zero source code touched).
+
+Stage Summary:
+- Branch: fix-bump-cryptography-48 (off main c1d7fb42)
+- Files modified: 1 (pyproject.toml, 1 line)
+- Source code touched: ZERO
+- Expected post-merge: Gate 5 will turn GREEN (the 6 cryptography vulnerabilities are resolved). PR #64 + this PR together unblock Gate 5.
+- Note: this PR depends on PR #64 being merged first (otherwise pip-audit still crashes on numpy). Recommended merge order: #64 → #65 (this) → #63 (broader cleanup) → TypeScript fixes → lint fixes.
