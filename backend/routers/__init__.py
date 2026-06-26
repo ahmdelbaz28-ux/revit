@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 import logging as _logging
-from typing import TYPE_CHECKING
+import types
+from typing import TYPE_CHECKING, Optional
 
 _logger = _logging.getLogger(__name__)
 
 
-def _lazy_import(name: str):
+def _lazy_import(name: str) -> Optional[types.ModuleType]:
     """Lazily import a router module -- fails silently if unavailable."""
     import importlib as _importlib
     try:
