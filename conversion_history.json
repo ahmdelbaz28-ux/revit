@@ -322,5 +322,59 @@
     "conversion_type": "revit_to_autocad",
     "elements_count": 1,
     "status": "success"
+  },
+  {
+    "version_id": "7b82ad23-e75d-4b70-8225-7833041e7745",
+    "timestamp": "2026-06-26T04:51:18.696280",
+    "source_file": "/tmp/tmp617ui18g.dwg",
+    "target_file": "/tmp/tmpnt2zy8vz.rvt",
+    "conversion_type": "autocad_to_revit",
+    "elements_count": 1,
+    "status": "success"
+  },
+  {
+    "version_id": "3e9a7dbf-09ba-4e4b-8461-c722309582e9",
+    "timestamp": "2026-06-26T04:51:18.698582",
+    "source_file": "/tmp/tmp_z_otxuc.rvt",
+    "target_file": "/tmp/tmpcgy1or0v.dwg",
+    "conversion_type": "revit_to_autocad",
+    "elements_count": 1,
+    "status": "success"
+  },
+  {
+    "version_id": "016f9794-796f-4c3a-8b66-c90b3a03d85f",
+    "timestamp": "2026-06-26T04:55:18.969116",
+    "source_file": "/tmp/tmpqubua8jy.dwg",
+    "target_file": "/tmp/tmprjmz8i1m.rvt",
+    "conversion_type": "autocad_to_revit",
+    "elements_count": 1,
+    "status": "success"
+  },
+  {
+    "version_id": "28e875dc-f61b-4d73-bc46-9fac6b236666",
+    "timestamp": "2026-06-26T04:55:18.971464",
+    "source_file": "/tmp/tmpdct_ho_i.rvt",
+    "target_file": "/tmp/tmpa8x1crcp.dwg",
+    "conversion_type": "revit_to_autocad",
+    "elements_count": 1,
+    "status": "success"
+  },
+  {
+    "version_id": "0797870b-6601-44aa-814f-442bee73fe9e",
+    "timestamp": "2026-06-26T04:58:15.759239",
+    "source_file": "/tmp/tmpowt0vik6.dwg",
+    "target_file": "/tmp/tmpj5sr036o.rvt",
+    "conversion_type": "autocad_to_revit",
+    "elements_count": 1,
+    "status": "success"
+  },
+  {
+    "version_id": "244dc9ed-3b3f-47a2-9276-5062b1e29c5d",
+    "timestamp": "2026-06-26T04:58:15.761557",
+    "source_file": "/tmp/tmp64flrkwi.rvt",
+    "target_file": "/tmp/tmpk66f24f8.dwg",
+    "conversion_type": "revit_to_autocad",
+    "elements_count": 1,
+    "status": "success"
   }
 ]

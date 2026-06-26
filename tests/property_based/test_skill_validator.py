@@ -175,10 +175,10 @@ def test_execution_result_mutual_exclusion(success, has_data, has_error):
     # Cannot have data on failed execution
     if not success and has_data:
         has_data = False
-    
+
     # If has_error is True, has_data must be False (enforced by validator)
     # But we only test the case where validator accepts the input
-    
+
     data = {"key": "value"} if has_data else None
     error = ExecutionError(type="Test", message="Error") if has_error else None
 
