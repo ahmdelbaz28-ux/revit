@@ -25,7 +25,7 @@ import os
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Optional
+from typing import Any, Optional, cast
 
 logger = logging.getLogger(__name__)
 
@@ -394,7 +394,7 @@ class ContextWindowManager:
             tokens = self.encoder.encode(text)
             if len(tokens) <= max_tokens:
                 return text
-            return self.encoder.decode(tokens[:max_tokens])
+            return cast(str, self.encoder.decode(tokens[:max_tokens]))
 
         # Fallback: truncate by characters
         approx_chars = max_tokens * 4
