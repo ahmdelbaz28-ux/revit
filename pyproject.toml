@@ -302,7 +302,9 @@ ignore = [
     "W191",    # Tab indentation (legacy files)
     "B005",    # Strip with multi-characters (intentional)
     "F403",    # Undefined local with import-star (intentional re-exports)
-    "F823",    # Undefined local (false positive in complex scoping)
+    # V138 FIX (HIGH-2): F823/F821/F401 removed from global ignore — they were
+    # masking real bugs (e.g. websocket_transport.py:161 UnboundLocalError).
+    # Now scoped per-file via [tool.ruff.lint.per-file-ignores] below.
     "PGH004",  # Blanket noqa (progressive migration)
     "UP031",   # Printf-string-formatting (intentional % formatting in some places)
     "UP006",   # Non-pep585-annotation (Python 3.8 compat)
@@ -317,8 +319,9 @@ ignore = [
     "D209",    # New-line-after-last-paragraph (style preference)
     "D403",    # First-word-uncapitalized (engineering terms)
     "D212",    # Multi-line-summary-first-line (conflicts with D213)
-    "F401",    # Unused-import (intentional re-exports in __init__.py)
-    "F821",    # Undefined-name (false positives in dynamic imports)
+    # V138 FIX (HIGH-2): F401/F821 removed from global ignore.
+    # F401 is now scoped per-file (revit_samples/, __init__.py files).
+    # F821 is now scoped per-file (revit_samples/ for __revit__ globals).
     "SIM300",  # Yoda-conditions (style preference)
     "UP015",   # Redundant-open-modes (explicit is better)
     "RUF010",  # Explicit-f-string-type-conversion (style preference)
@@ -334,6 +337,20 @@ known-third-party = ["fastapi", "uvicorn", "pydantic", "sqlalchemy", "alembic", 
 # progressively being added; the skill's dataclasses use explicit types but
 # some helper functions remain untyped for readability.
 [tool.ruff.lint.per-file-ignores]
+# V138 FIX (HIGH-2): revit_samples/ uses RevitPythonShell-injected globals
+# (__revit__, doc) that ruff's static analysis cannot see. These are
+# legitimate false positives — the script runs inside Revit's embedded
+# Python interpreter which provides these globals. Scoping F821 here
+# (instead of globally) lets ruff catch REAL undefined-name bugs elsewhere.
+"revit_samples/python/*.py" = [
+    "F821",  # Undefined name (RevitPythonShell injects __revit__, doc, etc.)
+    "F401",  # Unused import (Revit samples import for side-effect namespace)
+]
+# __init__.py files commonly re-export symbols for public API. F401 (unused
+# import) is intentional in these files. Scoped here rather than globally.
+"**/__init__.py" = [
+    "F401",  # Unused import (intentional re-exports)
+]
 "skills/etap-expert/scripts/*.py" = [
     "RUF001",  # Ambiguous unicode in strings (×, °C — engineering notation)
     "RUF002",  # Ambiguous unicode in docstrings (×, °C — engineering notation)

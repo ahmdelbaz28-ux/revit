@@ -143,9 +143,25 @@ def validate_input_path(
 
     input_path_obj = Path(input_path)
 
-    # (1) Exists?
-    if not input_path_obj.exists():
-        raise FileNotFoundError(f"{parser_name}: input file not found: {input_path}")
+    # V138 FIX (LOW-1): Reordered checks — authorization BEFORE existence.
+    #
+    # The original order was:
+    #   (1) Path exists?  ← FileNotFoundError if not
+    #   (2) Path traversal check
+    #
+    # This leaked existence information: probing `/etc/shadow` (exists,
+    # readable by root) vs `/nonexistent` (doesn't exist) produced
+    # DIFFERENT exceptions, allowing an attacker to enumerate which
+    # files exist on the server.
+    #
+    # New order:
+    #   (1) Resolve path (follows symlinks)
+    #   (2) Authorization check: resolved path must be inside an allowed base
+    #   (3) Existence check (only after authorization passed)
+    #
+    # Now `/etc/shadow` and `/nonexistent` BOTH raise UnsafePathError
+    # (authorization failure), producing IDENTICAL exceptions. No
+    # existence oracle for the attacker.
 
     # (2) Path traversal: resolved path must be inside an allowed base.
     try:
@@ -172,6 +188,10 @@ def validate_input_path(
             f"allowed directories. Path traversal detected. Allowed bases: "
             f"{[str(b) for b in allowed_bases]}"
         )
+
+    # (1) Exists? — checked AFTER authorization to avoid information leak.
+    if not input_path_obj.exists():
+        raise FileNotFoundError(f"{parser_name}: input file not found: {input_path}")
 
     # Symlink note: Path.resolve() follows symlinks. If the original
     # was a symlink, log it for audit purposes — the resolved target

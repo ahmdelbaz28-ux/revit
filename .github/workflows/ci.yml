@@ -106,8 +106,8 @@ jobs:
             --cov=backend --cov=fireai --cov=core \
             --cov-report=html:reports/coverage_html \
             --cov-report=term-missing \
-            --cov-fail-under=5 \
-            -x || true
+            --cov-fail-under=20 \
+            -x
 
       - name: Upload coverage report
         if: always()
@@ -138,8 +138,7 @@ jobs:
 
       - name: Run property-based tests
         run: |
-          pytest tests/property_based/ -v --tb=short || true
-          echo "Property-based tests completed"
+          pytest tests/property_based/ -v --tb=short
 
   # ── Gate 4: Frontend Build ────────────────────────────────────────────────
   frontend-build:
