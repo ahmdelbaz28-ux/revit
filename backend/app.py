@@ -599,19 +599,31 @@ async def add_deprecation_headers(request, call_next):
     return response
 
 
-# Health endpoints (no version prefix - always available)
-@app.get("/api/v1/health", tags=["Health-v1"])
-async def health_check_v1():
-    """Health check endpoint for API v1 (DEPRECATED — use /api/v2/health)."""
-    return {
-        "status": "healthy",
-        "service": "CAD/BIM Integration Platform",
-        "version": "1.0.0",
-        "api_version": "v1",
-        "deprecated": True,
-        "successor": "/api/v2/health",
-        "sunset_date": "2027-06-25",
-    }
+# Health endpoints
+# V139 FIX: Removed the inline stub health endpoints that were shadowing
+# the real health_router_module (registered at /api/health above). The
+# stubs returned status="healthy" with no database check, which:
+#   1. Broke tests expecting status="ok"/"degraded" (real values from
+#      backend/routers/health.py::health_check which actually queries
+#      the database).
+#   2. Was a LIFE-SAFETY issue — a stub returning "healthy" without
+#      checking DB connectivity gives false-green health probes.
+#
+# The health_router_module is now ALSO registered at /api/v1 so that
+# /api/v1/health returns the real database-aware response (not the stub).
+# /api/v2/health is kept as a separate v2-only endpoint.
+app.include_router(health_router_module.router, prefix="/api/v1", tags=["Health-v1"])
+
+# V139 FIX: /health (no /api prefix) — alias to /api/health for backward
+# compatibility with stress tests and deployment probes that hit /health.
+@app.get("/health", tags=["Health"])
+async def health_check_legacy_alias():
+    """Legacy /health alias — delegates to the real health check.
+
+    Returns the same database-aware response as /api/health.
+    """
+    from backend.routers.health import health_check
+    return await health_check()
 
 @app.get("/api/v2/health", tags=["Health-v2"])
 async def health_check_v2():
@@ -627,18 +639,6 @@ async def health_check_v2():
             "ifc43_mapping", "ar_metadata_export",
             "webhook_delivery", "smoke_simulation_state",
         ],
-    }
-
-# Legacy health endpoint (deprecated)
-@app.get("/health", tags=["Health"])
-async def health_check():
-    """Health check endpoint (deprecated - use /api/v1/health)."""
-    return {
-        "status": "healthy",
-        "service": "CAD/BIM Integration Platform",
-        "version": "1.0.0",
-        "deprecated": True,
-        "suggestion": "Use /api/v1/health or /api/v2/health"
     }
 
 # ── Error handlers ──────────────────────────────────────────────────────────

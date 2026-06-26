@@ -26,7 +26,9 @@ from backend.schemas import (
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/v1/conflicts", tags=["conflicts"])
+# V139 FIX: Changed prefix from "/api/v1/conflicts" (absolute) to "/conflicts"
+# (relative) to avoid double-prefixing when include_router adds /api/v1.
+router = APIRouter(prefix="/conflicts", tags=["conflicts"])
 
 
 @router.get("", response_model=ApiResponse[PaginatedData[ConflictResponse]], dependencies=[Depends(require_permission(Permission.CONFLICT_READ))])

@@ -95,14 +95,52 @@ try:
     # the audit's HIGH-1 (auth) finding, which is already fixed above.
     _HTTP_METHODS = ("get", "post", "put", "delete", "patch", "head", "options")
 
+    # V139 FIX: Build the set of routes that ACTUALLY exist at /api/ (not /api/v1/).
+    # The health router is mounted at /api (not /api/v1) via app.include_router(
+    # health_router_module.router, prefix="/api"). So /api/health and
+    # /api/health/statistics are valid as-is — URL rewriting them to /api/v1/
+    # breaks them. We query the OpenAPI schema ONCE at import time to build
+    # an authoritative set, then skip rewriting for those paths.
+    _NON_VERSIONED_API_PATHS: set[str] = set()
+    try:
+        import os as _os
+        _os.environ.setdefault("FIREAI_API_KEY", TEST_API_KEY)
+        import logging as _logging
+        _logging.disable(_logging.CRITICAL)
+        from backend.app import app as _app
+        _schema = _app.openapi()
+        for _path in _schema.get("paths", {}):
+            # Collect /api/* paths that are NOT under /api/v1/ or /api/v2/
+            if _path.startswith("/api/") and not _path.startswith("/api/v1/") and not _path.startswith("/api/v2/"):
+                # Strip path params ({project_id} etc.) for prefix matching
+                _NON_VERSIONED_API_PATHS.add(_path.split("/{")[0])
+        _logging.disable(_logging.NOTSET)
+    except Exception:
+        # If schema introspection fails, fall back to known good prefixes.
+        _NON_VERSIONED_API_PATHS = {"/api/health", "/api/reports/statistics"}
+
     def _rewrite_legacy_url(url: str) -> str:
-        """Rewrite /api/* → /api/v1/* for legacy test URLs."""
+        """Rewrite /api/* → /api/v1/* for legacy test URLs.
+
+        V139 FIX: Skip rewriting for paths that exist at /api/ (health,
+        reports/statistics). These are mounted at /api/ via
+        app.include_router(health_router, prefix="/api") and must NOT
+        be rewritten to /api/v1/.
+        """
         if not isinstance(url, str):
             return url
-        # Only rewrite /api/ paths that are NOT already versioned
-        if url.startswith("/api/") and not url.startswith("/api/v1/") and not url.startswith("/api/v2/"):
-            return "/api/v1/" + url[len("/api/"):]
-        return url
+        if not url.startswith("/api/"):
+            return url
+        if url.startswith("/api/v1/") or url.startswith("/api/v2/"):
+            return url
+        # Check if the URL (or its prefix) matches a known /api/ route
+        # Strip query string for matching
+        path_only = url.split("?")[0]
+        for prefix in _NON_VERSIONED_API_PATHS:
+            if path_only == prefix or path_only.startswith(prefix + "/"):
+                return url  # Don't rewrite — route exists at /api/
+        # Default: rewrite to /api/v1/
+        return "/api/v1/" + url[len("/api/"):]
 
     for _method_name in _HTTP_METHODS:
         _original_method = getattr(_StarletteTestClient, _method_name)

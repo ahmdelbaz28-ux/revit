@@ -25,7 +25,11 @@ from backend.schemas import (
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/v1/elements", tags=["elements"])
+# V139 FIX: Changed prefix from "/api/v1/elements" (absolute) to "/elements"
+# (relative). The absolute prefix caused double-prefixing when
+# _safe_include_router added "/api/v1" via app.include_router(prefix="/api/v1"),
+# producing /api/v1/api/v1/elements which broke all tests.
+router = APIRouter(prefix="/elements", tags=["elements"])
 
 
 @router.get("", response_model=ApiResponse[PaginatedData[ElementResponse]], dependencies=[Depends(require_permission(Permission.ELEMENT_READ))])

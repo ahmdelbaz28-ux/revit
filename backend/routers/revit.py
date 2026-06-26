@@ -62,7 +62,18 @@ from pydantic import BaseModel, Field
 from backend.services.revit_service import RevitService
 
 logger = logging.getLogger(__name__)
-router = APIRouter()
+# V139 FIX: Added prefix="/revit" to prevent route collision with
+# backend/routers/elements.py. The revit router defines /elements/* routes
+# (for Revit-specific element operations like /elements/create/wall), but
+# elements.py also defines /elements/* (for UDM-backed CRUD). Without a
+# prefix, both registered at /api/v1/elements/*, causing FastAPI to
+# route all /elements requests to whichever router was registered LAST
+# (revit.py), which returns 503 "Not connected to Revit" for operations
+# that should hit the UDM database via elements.py.
+#
+# Now revit.py routes are at /api/v1/revit/elements/* (Revit-specific),
+# and elements.py routes remain at /api/v1/elements/* (UDM CRUD).
+router = APIRouter(prefix="/revit", tags=["revit"])
 
 # ── Thread-safe service singleton ────────────────────────────────────────
 _service: Optional[RevitService] = None
