@@ -16,3 +16,6 @@ beautifulsoup4==4.12.2
 # Background task processing (V143 Phase 0-A)
 celery==5.3.6
 redis==5.0.1
+
+# IFC-native processing (V145 P1 — breaks Windows/Revit dependency)
+ifcopenshell==0.8.5
