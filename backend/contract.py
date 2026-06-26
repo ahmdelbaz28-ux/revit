@@ -30,7 +30,8 @@ instead of raising a hard error, since both systems are in production.
 from __future__ import annotations
 
 import logging
-from typing import Optional, Any
+from collections.abc import Mapping
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -46,8 +47,8 @@ class ContractViolation(Exception):
 
 def _validate_fields(
     data: dict[str, Any],
-    required: dict[str, type],
-    optional: dict[str, type] | None = None,
+    required: Mapping[str, Any],
+    optional: Mapping[str, Any] | None = None,
 ) -> list[str]:
     """
     Validate that data has required fields with correct types.

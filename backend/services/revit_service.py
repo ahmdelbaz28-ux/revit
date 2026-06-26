@@ -149,10 +149,10 @@ class RevitService:
         # Connection state
         self._connected = False
         self._connection_method: Optional[ConnectionMethod] = None
-        self._revit_app = None
-        self._revit_doc = None
-        self._uiapp = None
-        self._uidoc = None
+        self._revit_app: Any = None
+        self._revit_doc: Any = None
+        self._uiapp: Any = None
+        self._uidoc: Any = None
 
         # RevitAPIDocGen data
         self._api_data_cache: List[Dict[str, Any]] = []
@@ -235,7 +235,7 @@ class RevitService:
             logger.error("Disconnect error: %s", e)
             return False
 
-    def _extract_element_data(self, element) -> Dict[str, Any]:
+    def _extract_element_data(self, element: Any) -> Dict[str, Any]:
         """
         Extract detailed data from a Revit element.
         In a real implementation, this would extract actual element properties.
@@ -691,11 +691,11 @@ class RevitService:
             logger.error("Close failed: %s", e)
             return False
 
-    def save(self, filepath: str) -> bool:  # noqa: F811  (legacy duplicate kept for backward-compat)
+    def save(self, filepath: str) -> bool:  # type: ignore[no-redef]  # noqa: F811  (legacy duplicate)
         """Legacy save method."""
         return self.save_document(filepath)
 
-    def get_document_info(self) -> Dict[str, Any]:  # noqa: F811  (legacy duplicate kept for backward-compat)
+    def get_document_info(self) -> Dict[str, Any]:  # type: ignore[no-redef]  # noqa: F811  (legacy duplicate)
         """Get document info."""
         if self._connection_method == ConnectionMethod.SIMULATION:
             return {
@@ -816,7 +816,7 @@ class RevitService:
     # ELEMENT OPERATIONS - CREATE
     # =========================================================================
 
-    def create_wall(  # noqa: F811  (legacy duplicate kept for backward-compat)
+    def create_wall(  # type: ignore[no-redef]  # noqa: F811  (legacy duplicate)
         self,
         start_point: List[float],
         end_point: List[float],
@@ -861,7 +861,7 @@ class RevitService:
 
         return None
 
-    def create_floor(  # noqa: F811  (legacy duplicate kept for backward-compat)
+    def create_floor(  # type: ignore[no-redef]  # noqa: F811  (legacy duplicate)
         self, boundary_points: List[List[float]], level: str = "Level 1", floor_type: str = "Floor"
     ) -> Optional[str]:
         """Create a floor."""
@@ -960,7 +960,7 @@ class RevitService:
         """Create a window in a wall."""
         return self.create_door(host_wall_id, location_point, family_type, level)
 
-    def create_column(  # noqa: F811  (legacy duplicate kept for backward-compat)
+    def create_column(  # type: ignore[no-redef]  # noqa: F811  (legacy duplicate)
         self,
         location_point: List[float],
         height: float = 3000.0,
@@ -1249,7 +1249,7 @@ class RevitService:
                 result = self._revit_doc.LoadFamily(family_path, family)
 
                 t.Commit()
-                return result
+                return bool(result)
 
         except Exception as e:
             logger.error("Failed to load family: %s", e)
@@ -1346,7 +1346,7 @@ class RevitService:
 
             if engine == "revitapidocs":
                 base_url = "https://ac.cnstrc.com/autocomplete"
-                params = {
+                params: dict[str, Any] = {
                     "autocomplete_key": "key_yyAC1mb0cTgZTwSo",
                     "query": query,
                     "num_results": 30,
@@ -1477,7 +1477,7 @@ class RevitService:
     # HELPER METHODS
     # =========================================================================
 
-    def _get_level_by_name(self, name: str):
+    def _get_level_by_name(self, name: str) -> Any:
         """Get Level element by name."""
         if not self._revit_doc:
             return None
@@ -1496,7 +1496,7 @@ class RevitService:
 
         return None
 
-    def _get_wall_type_id(self, wall_type_name: str):
+    def _get_wall_type_id(self, wall_type_name: str) -> Any:
         """Get WallType ID by name."""
         if not self._revit_doc:
             return None
@@ -1515,7 +1515,7 @@ class RevitService:
 
         return None
 
-    def _get_floor_type_id(self, floor_type_name: str):
+    def _get_floor_type_id(self, floor_type_name: str) -> Any:
         """Get FloorType ID by name."""
         if not self._revit_doc:
             return None
@@ -1534,7 +1534,7 @@ class RevitService:
 
         return None
 
-    def _get_family_symbol(self, category: str, symbol_name: str):
+    def _get_family_symbol(self, category: str, symbol_name: str) -> Any:
         """Get FamilySymbol - similar to RevitJumper pattern."""
         if not self._revit_doc:
             return None
@@ -1565,7 +1565,7 @@ class RevitService:
             logger.error("Failed to get family symbol: %s", e)
             return None
 
-    def _get_builtin_category(self, category_name: str):
+    def _get_builtin_category(self, category_name: str) -> Any:
         """Map category name to BuiltInCategory."""
         try:
             from Autodesk.Revit.DB import BuiltInCategory
@@ -1588,11 +1588,11 @@ class RevitService:
         except Exception:
             return None
 
-    def _extract_element_data(self, element) -> Dict[str, Any]:
+    def _extract_element_data(self, element: Any) -> Dict[str, Any]:  # type: ignore[no-redef]
         """Extract data from a Revit element."""
         try:
 
-            def get_attr(obj, name: str, default=None):
+            def get_attr(obj: Any, name: str, default: Any = None) -> Any:
                 val = getattr(obj, name, default)
                 if hasattr(val, "ToString"):
                     return val.ToString()
@@ -1608,7 +1608,7 @@ class RevitService:
         except Exception as e:
             return {"id": "unknown", "name": "error", "error": str(e)}
 
-    def _get_param_value(self, param):
+    def _get_param_value(self, param: Any) -> Any:
         """Get parameter value as Python type."""
         try:
             from Autodesk.Revit.DB import StorageType
@@ -1625,7 +1625,7 @@ class RevitService:
         except Exception:
             return None
 
-    def _set_element_parameter(self, element, param_name: str, value: Any) -> bool:
+    def _set_element_parameter(self, element: Any, param_name: str, value: Any) -> bool:
         """Set parameter value on element."""
         try:
             from Autodesk.Revit.DB import StorageType
@@ -1689,7 +1689,8 @@ class RevitService:
         if id_match:
             return id_match.group(1)
         if selected:
-            return selected[0].get("id")
+            val = selected[0].get("id")
+            return str(val) if val is not None else None
         return None
 
     def _find_element_of_type(self, elements: List[Dict], element_type: str) -> Optional[Dict]:
