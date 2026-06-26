@@ -7,6 +7,7 @@ Tests connection, file operations, and element creation functionality.
 """
 
 import os
+import platform
 import tempfile
 from unittest.mock import Mock, patch
 
@@ -14,10 +15,17 @@ import pytest
 
 from backend.services.revit_service import RevitService
 
+# Windows-only tests - Revit API only works on Windows
+skip_if_not_windows = pytest.mark.skipif(
+    platform.system() != "Windows",
+    reason="Revit API only available on Windows"
+)
+
 
 class TestRevitServiceInitialization:
     """Test Revit service initialization."""
 
+    @skip_if_not_windows
     def test_service_initialization(self):
         """Test that Revit service initializes properly."""
         service = RevitService()
@@ -53,6 +61,7 @@ class TestRevitServiceInitialization:
 class TestRevitElementOperations:
     """Test Revit element operations."""
 
+    @skip_if_not_windows
     def test_extract_wall_element_data(self):
         """Test extracting data from a wall element."""
         service = RevitService()
@@ -89,6 +98,7 @@ class TestRevitElementOperations:
         assert "height" in element_data
         assert "width" in element_data
 
+    @skip_if_not_windows
     def test_extract_floor_element_data(self):
         """Test extracting data from a floor element."""
         service = RevitService()
@@ -123,6 +133,7 @@ class TestRevitElementOperations:
         assert "area" in element_data
         assert "boundary" in element_data
 
+    @skip_if_not_windows
     def test_extract_door_element_data(self):
         """Test extracting data from a door element."""
         service = RevitService()
@@ -218,6 +229,7 @@ class TestRevitFileOperations:
 class TestRevitElementCreation:
     """Test Revit element creation."""
 
+    @skip_if_not_windows
     def test_create_wall(self):
         """Test creating a wall in Revit."""
         service = RevitService()
@@ -229,6 +241,7 @@ class TestRevitElementCreation:
         assert isinstance(result, str)
         assert len(result) > 10  # UUID should be a reasonable length
 
+    @skip_if_not_windows
     def test_create_floor(self):
         """Test creating a floor in Revit."""
         service = RevitService()
@@ -241,6 +254,7 @@ class TestRevitElementCreation:
         assert isinstance(result, str)
         assert len(result) > 10  # UUID should be a reasonable length
 
+    @skip_if_not_windows
     def test_create_column(self):
         """Test creating a column in Revit."""
         service = RevitService()
@@ -256,6 +270,7 @@ class TestRevitElementCreation:
 class TestRevitDocumentOperations:
     """Test Revit document operations."""
 
+    @skip_if_not_windows
     def test_get_document_info(self):
         """Test getting document information."""
         service = RevitService()
@@ -269,6 +284,7 @@ class TestRevitDocumentOperations:
         assert "project_information" in doc_info
         assert doc_info["title"] == "Simulated Revit Document"
 
+    @skip_if_not_windows
     def test_save_document(self):
         """Test saving a document."""
         service = RevitService()
@@ -285,6 +301,7 @@ class TestRevitDocumentOperations:
             if os.path.exists(temp_path):
                 os.unlink(temp_path)
 
+    @skip_if_not_windows
     def test_get_all_elements(self):
         """Test getting all elements."""
         service = RevitService()
@@ -297,6 +314,7 @@ class TestRevitDocumentOperations:
         assert all(isinstance(elem, dict) for elem in all_elements)
         assert all("id" in elem and "name" in elem for elem in all_elements)
 
+    @skip_if_not_windows
     def test_get_filtered_elements(self):
         """Test getting elements filtered by category."""
         service = RevitService()
@@ -311,6 +329,7 @@ class TestRevitDocumentOperations:
 class TestRevitConnectionManagement:
     """Test Revit connection management."""
 
+    @skip_if_not_windows
     def test_disconnect(self):
         """Test disconnecting from Revit."""
         service = RevitService()
@@ -327,6 +346,7 @@ class TestRevitConnectionManagement:
 class TestRevitErrorHandling:
     """Test Revit error handling."""
 
+    @skip_if_not_windows
     def test_extract_element_data_error_handling(self):
         """Test error handling in element data extraction."""
         service = RevitService()

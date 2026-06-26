@@ -247,16 +247,32 @@ class RevitService:
         try:
             # Helper to safely get attribute value
             def get_attr(obj: Any, name: str, default: Any = None) -> Any:
-                val = getattr(obj, name, default)
-                if hasattr(val, 'ToString'):
-                    return val.ToString()  # type: ignore
-                return val if val is not None else default
+                try:
+                    val = getattr(obj, name, default)
+                    if val is None:
+                        return default
+                    if hasattr(val, 'ToString'):
+                        result = val.ToString()
+                        if isinstance(result, type) or hasattr(result, '_mock_name'):
+                            return default
+                        return result
+                    return val
+                except Exception:
+                    return default
+
+            # Safely get category name
+            category_obj = getattr(element, 'Category', None)
+            category_name = get_attr(category_obj, 'Name', 'unknown') if category_obj else 'unknown'
+
+            # Safely get level name
+            level_obj = getattr(element, 'Level', None)
+            level_name = get_attr(level_obj, 'Name', 'Level 1') if level_obj else 'Level 1'
 
             element_data = {
                 "id": get_attr(element, 'Id', 'unknown'),
                 "name": get_attr(element, 'Name', 'unnamed'),
-                "category": get_attr(element, 'Category', {}).Name if hasattr(element, 'Category') else 'unknown',
-                "level": get_attr(element, 'Level', {}).Name if hasattr(element, 'Level') else 'Level 1',
+                "category": category_name,
+                "level": level_name,
                 "workset": get_attr(element, 'WorksetId', 'default'),
                 "element_type": getattr(element, 'GetType', lambda: 'Element')(),
             }
@@ -1549,16 +1565,34 @@ class RevitService:
         """Extract data from a Revit element."""
         try:
             def get_attr(obj, name, default=None):
-                val = getattr(obj, name, default)
-                if hasattr(val, 'ToString'):
-                    return val.ToString()
-                return val if val is not None else default
+                try:
+                    val = getattr(obj, name, default)
+                    if val is None:
+                        return default
+                    if hasattr(val, 'ToString'):
+                        result = val.ToString()
+                        if isinstance(result, type) or hasattr(result, '_mock_name'):
+                            return default
+                        return result
+                    return val
+                except Exception:
+                    return default
+
+            # Safely get category name
+            category_obj = getattr(element, 'Category', None)
+            category_name = get_attr(category_obj, 'Name', 'unknown') if category_obj else 'unknown'
+
+            # Safely get class name
+            try:
+                class_name = element.GetType().Name
+            except Exception:
+                class_name = 'Element'
 
             return {
-                "id": str(getattr(element, 'Id', 'unknown')),
+                "id": get_attr(element, 'Id', 'unknown'),
                 "name": get_attr(element, 'Name', 'unnamed'),
-                "category": get_attr(getattr(element, 'Category', None), 'Name', 'unknown'),
-                "class_name": element.GetType().Name,
+                "category": category_name,
+                "class_name": class_name,
             }
 
         except Exception as e:

@@ -7,12 +7,19 @@ Tests connection, file operations, and drawing functionality.
 """
 
 import os
+import platform
 import tempfile
 from unittest.mock import Mock, patch
 
 import pytest
 
 from backend.services.autocad_service import AutoCADService
+
+# Windows-only tests - AutoCAD COM API only works on Windows
+skip_if_not_windows = pytest.mark.skipif(
+    platform.system() != "Windows",
+    reason="AutoCAD COM API only available on Windows"
+)
 
 
 class TestAutoCADServiceInitialization:
@@ -27,6 +34,7 @@ class TestAutoCADServiceInitialization:
         assert service.connected is False
         assert service.active_entities == {}
 
+    @skip_if_not_windows
     @patch('backend.services.autocad_service.HAS_AUTOCAD_API', True)
     @patch('backend.services.autocad_service.win32com.client')
     @patch('backend.services.autocad_service.pythoncom')
@@ -153,6 +161,7 @@ class TestAutoCADFileOperations:
         assert result["entities"] == []
         assert result["count"] == 0
 
+    @skip_if_not_windows
     @patch('backend.services.autocad_service.HAS_AUTOCAD_API', True)
     @patch('backend.services.autocad_service.win32com.client')
     @patch('backend.services.autocad_service.pythoncom')
@@ -208,6 +217,7 @@ class TestAutoCADFileOperations:
 class TestAutoCADDrawingOperations:
     """Test AutoCAD drawing operations."""
 
+    @skip_if_not_windows
     @patch('backend.services.autocad_service.HAS_AUTOCAD_API', True)
     @patch('backend.services.autocad_service.win32com.client')
     @patch('backend.services.autocad_service.pythoncom')
@@ -243,6 +253,7 @@ class TestAutoCADDrawingOperations:
         assert mock_line.Color == 1
         assert result is mock_line
 
+    @skip_if_not_windows
     @patch('backend.services.autocad_service.HAS_AUTOCAD_API', True)
     @patch('backend.services.autocad_service.win32com.client')
     @patch('backend.services.autocad_service.pythoncom')
@@ -278,6 +289,7 @@ class TestAutoCADDrawingOperations:
         assert mock_circle.Color == 2
         assert result is mock_circle
 
+    @skip_if_not_windows
     @patch('backend.services.autocad_service.HAS_AUTOCAD_API', True)
     @patch('backend.services.autocad_service.win32com.client')
     @patch('backend.services.autocad_service.pythoncom')
@@ -317,6 +329,7 @@ class TestAutoCADDrawingOperations:
 class TestAutoCADConnectionManagement:
     """Test AutoCAD connection management."""
 
+    @skip_if_not_windows
     @patch('backend.services.autocad_service.HAS_AUTOCAD_API', True)
     @patch('backend.services.autocad_service.win32com.client')
     @patch('backend.services.autocad_service.pythoncom')

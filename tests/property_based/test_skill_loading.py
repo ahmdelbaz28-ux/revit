@@ -28,10 +28,9 @@ def is_two_part_numeric_version(value: str) -> bool:
     return len(parts) == 2 and all(part.isdigit() for part in parts)
 
 
-name_characters = st.characters(
-    whitelist_categories=["Ll", "Lu", "Nd"],
-    whitelist_characters=["-", "_"],
-)
+# ASCII-only characters for skill names (matches validator)
+# ASCII-only: lowercase letters and ASCII digits (0-9), hyphen, underscore
+name_characters = st.sampled_from(list("abcdefghijklmnopqrstuvwxyz0123456789-_"))
 
 skill_name_strategy = st.text(
     min_size=1,
@@ -448,12 +447,12 @@ def test_manifest_and_result_json_serialization() -> None:
         max_size=50,
         alphabet=st.characters(
             whitelist_categories=["Ll", "Lu", "Nd", "Zs", "Po"],
-            whitelist_characters=["-", "_", "@"],
+            whitelist_characters=["-", "_", "@", "!", "#", "$", "%", "^", "&", "*", "(", ")", "+", "=", "[", "]", "{", "}", "|", ";", ":", "'", "\"", ",", ".", "<", ">", "/", "?", " ", "µ", "Σ", "Ω", "α", "β"],
         ),
     ).filter(
-        lambda value: value == ""
-        or not value[0].isalpha()
-        or any(char not in "abcdefghijklmnopqrstuvwxyz0123456789-_" for char in value.lower())
+        lambda value: len(value) > 0 and any(
+            c.lower() not in "abcdefghijklmnopqrstuvwxyz0123456789-_" for c in value
+        )
     ),
 )
 def test_invalid_skill_name_rejected(bad_name: str) -> None:
@@ -482,7 +481,9 @@ def test_short_description_rejected(short_description: str) -> None:
 
 
 @settings(max_examples=50, deadline=1000)
-@given(trigger_words=st.lists(st.text(min_size=0, max_size=10), min_size=0, max_size=5))
+@given(trigger_words=st.lists(st.text(min_size=0, max_size=10), min_size=0, max_size=5).filter(
+    lambda lst: len(lst) == 0 or any(t.strip() == "" for t in lst)
+))
 def test_empty_trigger_words_rejected(trigger_words: list[str]) -> None:
     with pytest.raises(ValueError):
         SkillDescription(short_description="A valid description", trigger_words=trigger_words)
