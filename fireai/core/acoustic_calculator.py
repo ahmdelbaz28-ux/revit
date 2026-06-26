@@ -192,7 +192,9 @@ def calculate_spl_at_distance(
             f"ref_distance_m must be positive and finite, got {ref_distance_m}. "
             f"Non-positive or infinite reference distance makes SPL undefined."
         )
-    if room_absorption_m2 is not None and (not math.isfinite(room_absorption_m2) or room_absorption_m2 < 0):
+    if room_absorption_m2 is not None and (
+        not math.isfinite(room_absorption_m2) or room_absorption_m2 < 0
+    ):
         raise ValueError(
             f"room_absorption_m2 must be non-negative and finite when provided, got {room_absorption_m2}. "
             f"Negative or infinite absorption is physically meaningless."
@@ -233,7 +235,9 @@ def calculate_spl_at_distance(
         reverberant_spl += 10.0 * math.log10(ref_distance_m**2)
 
         # Total SPL = energy sum of direct + reverberant
-        total_spl = 10.0 * math.log10(10.0 ** (direct_spl / 10.0) + 10.0 ** (reverberant_spl / 10.0))
+        total_spl = 10.0 * math.log10(
+            10.0 ** (direct_spl / 10.0) + 10.0 ** (reverberant_spl / 10.0)
+        )
         room_gain_dB = total_spl - direct_spl
     else:
         total_spl = direct_spl
@@ -360,7 +364,11 @@ def calculate_min_speakers_for_room(
     # Estimate room absorption if not provided
     # Typical office: α ≈ 0.2-0.3, so A ≈ 0.25 × surface_area
     if room_absorption_m2 is None:
-        surface_area = 2 * (room_length_m * room_width_m + room_length_m * room_height_m + room_width_m * room_height_m)
+        surface_area = 2 * (
+            room_length_m * room_width_m
+            + room_length_m * room_height_m
+            + room_width_m * room_height_m
+        )
         room_absorption_m2 = 0.25 * surface_area  # Moderate absorption
 
     # Find maximum spacing that ensures compliance at the worst point
@@ -403,7 +411,9 @@ def calculate_min_speakers_for_room(
     # Final verification
     final_result = check_audibility_compliance(
         source_dba=source_dba,
-        target_distance_m=math.sqrt((best_spacing / 2) ** 2 + (best_spacing / 2) ** 2 + room_height_m**2),
+        target_distance_m=math.sqrt(
+            (best_spacing / 2) ** 2 + (best_spacing / 2) ** 2 + room_height_m**2
+        ),
         ambient_dba=ambient_dba,
         mode=mode,
         ref_distance_m=ref_distance_m,
@@ -753,7 +763,9 @@ class AcousticSPLCalculator:
                 # 3D distance (not 2D like consultant's code)
                 dist_m = max(
                     0.5,  # Minimum distance to avoid singularity
-                    math.sqrt((point.x - spkr.x) ** 2 + (point.y - spkr.y) ** 2 + (point.z - spkr.z) ** 2),
+                    math.sqrt(
+                        (point.x - spkr.x) ** 2 + (point.y - spkr.y) ** 2 + (point.z - spkr.z) ** 2
+                    ),
                 )
 
                 # Inverse square law with correct reference distance

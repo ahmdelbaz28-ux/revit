@@ -112,13 +112,9 @@ class Beam:
                     f"Beam {self.id} has non-finite coordinate: start={self.start}, end={self.end}"
                 )
         if not math.isfinite(self.depth_m) or self.depth_m <= 0:
-            raise ValueError(
-                f"Beam {self.id} depth must be positive finite: {self.depth_m}"
-            )
+            raise ValueError(f"Beam {self.id} depth must be positive finite: {self.depth_m}")
         if not math.isfinite(self.width_m) or self.width_m <= 0:
-            raise ValueError(
-                f"Beam {self.id} width must be positive finite: {self.width_m}"
-            )
+            raise ValueError(f"Beam {self.id} width must be positive finite: {self.width_m}")
 
     @property
     def length_m(self) -> float:
@@ -337,10 +333,7 @@ def calculate_beam_obstruction(
 
     # ── Identify significant beams (depth > 10% of ceiling height) ──
     threshold_depth = ceiling_height_m * BEAM_DEPTH_THRESHOLD_RATIO
-    significant_beams = [
-        beam for beam in beams
-        if beam.depth_m > threshold_depth
-    ]
+    significant_beams = [beam for beam in beams if beam.depth_m > threshold_depth]
 
     # ── Edge Case: No significant beams ──
     if not significant_beams:
@@ -485,8 +478,10 @@ def _subdivide_room_by_beams(
             "will be IGNORED for pocket calculation — manual FPE review required "
             "per NFPA 72 §17.7.3.2.4.2. Proceeding with %d horizontal and %d "
             "vertical beams for subdivision.",
-            room_id, len(mixed_beams),
-            len(horizontal_beams), len(vertical_beams),
+            room_id,
+            len(mixed_beams),
+            len(horizontal_beams),
+            len(vertical_beams),
         )
 
     # V134 F-6: If no horizontal or vertical beams remain (all mixed),
@@ -497,25 +492,26 @@ def _subdivide_room_by_beams(
             "Cannot subdivide without Shapely. Falling back to single pocket. "
             "WARNING: Beam pockets may be UNDER-protected — manual FPE review "
             "REQUIRED per NFPA 72 §17.7.3.2.4.2.",
-            room_id, len(mixed_beams),
+            room_id,
+            len(mixed_beams),
         )
         area = _compute_polygon_area(room_polygon)
-        return [BeamPocket(
-            pocket_id=f"{room_id}-P1",
-            polygon=list(room_polygon),
-            area_m2=area,
-            ceiling_height_m=ceiling_height_m,
-            created_by_beam_ids=[b.id for b in significant_beams],
-        )]
+        return [
+            BeamPocket(
+                pocket_id=f"{room_id}-P1",
+                polygon=list(room_polygon),
+                area_m2=area,
+                ceiling_height_m=ceiling_height_m,
+                created_by_beam_ids=[b.id for b in significant_beams],
+            )
+        ]
 
     # V134 F-6: Use the dominant orientation (only horizontal or vertical beams)
     if len(horizontal_beams) >= len(vertical_beams):
         return _subdivide_by_horizontal_beams(
             room_id, room_polygon, ceiling_height_m, horizontal_beams
         )
-    return _subdivide_by_vertical_beams(
-        room_id, room_polygon, ceiling_height_m, vertical_beams
-    )
+    return _subdivide_by_vertical_beams(room_id, room_polygon, ceiling_height_m, vertical_beams)
 
 
 def _subdivide_by_horizontal_beams(
@@ -532,12 +528,14 @@ def _subdivide_by_horizontal_beams(
     """
     if not beams:
         area = _compute_polygon_area(room_polygon)
-        return [BeamPocket(
-            pocket_id=f"{room_id}-P1",
-            polygon=list(room_polygon),
-            area_m2=area,
-            ceiling_height_m=ceiling_height_m,
-        )]
+        return [
+            BeamPocket(
+                pocket_id=f"{room_id}-P1",
+                polygon=list(room_polygon),
+                area_m2=area,
+                ceiling_height_m=ceiling_height_m,
+            )
+        ]
 
     # Get Y positions of beams (all horizontal beams have constant Y)
     y_positions = sorted({b.start[1] for b in beams})
@@ -554,12 +552,17 @@ def _subdivide_by_horizontal_beams(
     # ensure these beams are included in subdivision.
     # We use a small tolerance (1mm) to handle floating-point edge cases.
     _BOUNDARY_TOLERANCE_M = 0.001
-    boundaries = [y_min] + [
-        y for y in y_positions
-        if y_min - _BOUNDARY_TOLERANCE_M <= y <= y_max + _BOUNDARY_TOLERANCE_M
-        and abs(y - y_min) > _BOUNDARY_TOLERANCE_M
-        and abs(y - y_max) > _BOUNDARY_TOLERANCE_M
-    ] + [y_max]
+    boundaries = (
+        [y_min]
+        + [
+            y
+            for y in y_positions
+            if y_min - _BOUNDARY_TOLERANCE_M <= y <= y_max + _BOUNDARY_TOLERANCE_M
+            and abs(y - y_min) > _BOUNDARY_TOLERANCE_M
+            and abs(y - y_max) > _BOUNDARY_TOLERANCE_M
+        ]
+        + [y_max]
+    )
     boundaries = sorted(set(boundaries))
 
     # Get room X bounds for pocket polygon construction
@@ -574,12 +577,15 @@ def _subdivide_by_horizontal_beams(
         # V139: Use Shapely for accurate pocket polygon (handles non-rectangular rooms)
         # V135 F-16 fallback: rectangular approximation with WARNING when Shapely unavailable
         strip_rect = [
-            (x_min, y_low), (x_max, y_low),
-            (x_max, y_high), (x_min, y_high),
+            (x_min, y_low),
+            (x_max, y_low),
+            (x_max, y_high),
+            (x_min, y_high),
         ]
 
         try:
             from shapely.geometry import Polygon as ShapelyPolygon
+
             room_poly = ShapelyPolygon(room_polygon)
             strip_poly = ShapelyPolygon(strip_rect)
             intersection = room_poly.intersection(strip_poly)
@@ -595,7 +601,9 @@ def _subdivide_by_horizontal_beams(
                 logger.warning(
                     "Room %s pocket P%d: Shapely intersection is %s (not Polygon). "
                     "Using rectangular fallback.",
-                    room_id, i + 1, intersection.geom_type,
+                    room_id,
+                    i + 1,
+                    intersection.geom_type,
                 )
             area = intersection.area
             is_rectangular = True  # Shapely handled it — no warning needed
@@ -611,7 +619,8 @@ def _subdivide_by_horizontal_beams(
                 logger.warning(
                     "Room %s pocket P%d: non-rectangular room, Shapely unavailable. "
                     "Pocket polygon may include out-of-room space.",
-                    room_id, i + 1,
+                    room_id,
+                    i + 1,
                 )
 
         # V135 F-17: Reduce pocket ceiling height by max beam depth
@@ -619,12 +628,13 @@ def _subdivide_by_horizontal_beams(
         effective_ceiling_height = max(ceiling_height_m - max_beam_depth, 0.1)
 
         creating_beams = [
-            b.id for b in beams
+            b.id
+            for b in beams
             if abs(b.start[1] - y_low) < 0.001 or abs(b.start[1] - y_high) < 0.001
         ]
 
         pocket = BeamPocket(
-            pocket_id=f"{room_id}-P{i+1}",
+            pocket_id=f"{room_id}-P{i + 1}",
             polygon=pocket_polygon,
             area_m2=area,
             ceiling_height_m=effective_ceiling_height,
@@ -644,12 +654,14 @@ def _subdivide_by_vertical_beams(
     """Subdivide room using vertical beams (running along Y-axis)."""
     if not beams:
         area = _compute_polygon_area(room_polygon)
-        return [BeamPocket(
-            pocket_id=f"{room_id}-P1",
-            polygon=list(room_polygon),
-            area_m2=area,
-            ceiling_height_m=ceiling_height_m,
-        )]
+        return [
+            BeamPocket(
+                pocket_id=f"{room_id}-P1",
+                polygon=list(room_polygon),
+                area_m2=area,
+                ceiling_height_m=ceiling_height_m,
+            )
+        ]
 
     # Get X positions of beams
     x_positions = sorted({b.start[0] for b in beams})
@@ -689,12 +701,13 @@ def _subdivide_by_vertical_beams(
         effective_ceiling_height = max(ceiling_height_m - max_beam_depth, 0.1)
 
         creating_beams = [
-            b.id for b in beams
+            b.id
+            for b in beams
             if abs(b.start[0] - x_low) < 0.001 or abs(b.start[0] - x_high) < 0.001
         ]
 
         pocket = BeamPocket(
-            pocket_id=f"{room_id}-P{i+1}",
+            pocket_id=f"{room_id}-P{i + 1}",
             polygon=pocket_polygon,
             area_m2=area,
             ceiling_height_m=effective_ceiling_height,  # V135 F-17
@@ -705,7 +718,10 @@ def _subdivide_by_vertical_beams(
                 "Room %s pocket P%d: room is non-rectangular (room_area=%.2f, "
                 "bbox_area=%.2f). Pocket polygon may include out-of-room space. "
                 "Manual FPE review required per NFPA 72 §17.7.3.2.4.2.",
-                room_id, i + 1, room_area, bbox_area,
+                room_id,
+                i + 1,
+                room_area,
+                bbox_area,
             )
         pockets.append(pocket)
 

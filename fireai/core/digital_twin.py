@@ -272,7 +272,11 @@ class DetectorState:
     @property
     def position_drift_m(self) -> float:
         """Euclidean distance from design position to current position."""
-        return ((self.x - self.design_x) ** 2 + (self.y - self.design_y) ** 2 + (self.z - self.design_z) ** 2) ** 0.5
+        return (
+            (self.x - self.design_x) ** 2
+            + (self.y - self.design_y) ** 2
+            + (self.z - self.design_z) ** 2
+        ) ** 0.5
 
     @property
     def is_active(self) -> bool:
@@ -686,7 +690,9 @@ class TwinSimulator:
                 dets[did].status = DetectorStatus.OFFLINE
 
     @staticmethod
-    def _apply_status_change(dets: dict[str, DetectorState], ids: list[str], status: DetectorStatus) -> None:
+    def _apply_status_change(
+        dets: dict[str, DetectorState], ids: list[str], status: DetectorStatus
+    ) -> None:
         for did in ids:
             if did in dets:
                 dets[did].status = status
@@ -783,12 +789,16 @@ class TwinSerializer:
         twin = DigitalTwin.__new__(DigitalTwin)
         twin._lock = threading.RLock()
         twin._building_id = state["building_id"]
-        twin._detectors = {did: DetectorState.from_dict(ddata) for did, ddata in state["detectors"].items()}
+        twin._detectors = {
+            did: DetectorState.from_dict(ddata) for did, ddata in state["detectors"].items()
+        }
         twin._events = deque(
             [TwinEvent.from_dict(edata) for edata in state.get("events", [])],
             maxlen=10_000,
         )
-        twin._drift_records = [DriftRecord.from_dict(ddata) for ddata in state.get("drift_records", [])]
+        twin._drift_records = [
+            DriftRecord.from_dict(ddata) for ddata in state.get("drift_records", [])
+        ]
         twin._room_ids = set(state.get("room_ids", []))
         twin._created_at = state["created_at"]
         twin._bus = EventBus.instance()
@@ -1307,7 +1317,9 @@ class DigitalTwin:
         # V20.2 FIX: total==0 means NO protection → score=0.0, NOT 1.0
         if total == 0:
             health_score = 0.0
-            critical_issues: list[str] = ["ZERO detectors in building — NO fire protection (NFPA 72 §1.2)"]
+            critical_issues: list[str] = [
+                "ZERO detectors in building — NO fire protection (NFPA 72 §1.2)"
+            ]
         else:
             # V20.2 FIX: Exclude DECOMMISSIONED from denominator
             active_total = total - decommed
@@ -1333,7 +1345,9 @@ class DigitalTwin:
             )
 
         if planned > 0:
-            warnings.append(f"{planned} detector(s) are PLANNED (not yet installed) — they provide NO fire protection")
+            warnings.append(
+                f"{planned} detector(s) are PLANNED (not yet installed) — they provide NO fire protection"
+            )
 
         if faulted > 0:
             warnings.append(f"{faulted} detector(s) are in FAULT state")
@@ -1479,7 +1493,9 @@ class DigitalTwin:
         with self._lock:
             detectors_copy = dict(self._detectors)
 
-        result = self._simulator.simulate_add_detector(detectors_copy, room_id, x, y, z, detector_type)
+        result = self._simulator.simulate_add_detector(
+            detectors_copy, room_id, x, y, z, detector_type
+        )
 
         self._record_event(
             event_type=EventType.SIMULATION_RUN,
@@ -1965,10 +1981,15 @@ if __name__ == "__main__":
     # ── Test 7: Simulation ───────────────────────────────────────
     sim = twin.simulate_offline(["D-001"])
     check("Simulation result", sim.simulation_id != "")
-    check("Simulation score change", sim.original_health_score != sim.simulated_health_score or True)
+    check(
+        "Simulation score change", sim.original_health_score != sim.simulated_health_score or True
+    )
 
     sim_commission = twin.simulate_commission_all()
-    check("Commission simulation", sim_commission.simulated_health_score >= sim_commission.original_health_score)
+    check(
+        "Commission simulation",
+        sim_commission.simulated_health_score >= sim_commission.original_health_score,
+    )
 
     sim_add = twin.simulate_add_detector("R-03", x=5.0, y=5.0, z=3.0)
     check("Add detector simulation", sim_add.simulation_id != "")
@@ -2055,7 +2076,10 @@ if __name__ == "__main__":
 
     # Verify detectors were registered as PLANNED by default
     dets_b1 = twin_audit.get_detectors_by_room("R-B1")
-    check("Building report detectors PLANNED", all(d.status == DetectorStatus.PLANNED for d in dets_b1))
+    check(
+        "Building report detectors PLANNED",
+        all(d.status == DetectorStatus.PLANNED for d in dets_b1),
+    )
 
     # Test from_building_report with INSTALLED status
     twin_audit2 = DigitalTwin(building_id="INSTALLED-TEST")

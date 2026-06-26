@@ -48,6 +48,7 @@ from fireai.conduit.types import (
 # Factory elbows (catalog fittings) meet or exceed these.
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 def _min_bend_radius_in(
     conduit_type: ConduitType,
     trade_size: TradeSize,
@@ -63,17 +64,19 @@ def _min_bend_radius_in(
     """
     result = get_fitting(conduit_type, trade_size, FittingType.ELBOW_90)
     if result.is_err():
-        return Result.err(PhysicsError(
-            message=(
-                f"Cannot determine minimum bend radius for "
-                f"{conduit_type.value} {trade_size.value}: "
-                "no ELBOW_90 entry in catalog."
-            ),
-            remediation=(
-                "Add an ELBOW_90 catalog entry for this conduit type and "
-                "trade size, or specify a larger trade size."
-            ),
-        ))
+        return Result.err(
+            PhysicsError(
+                message=(
+                    f"Cannot determine minimum bend radius for "
+                    f"{conduit_type.value} {trade_size.value}: "
+                    "no ELBOW_90 entry in catalog."
+                ),
+                remediation=(
+                    "Add an ELBOW_90 catalog entry for this conduit type and "
+                    "trade size, or specify a larger trade size."
+                ),
+            )
+        )
     return Result.ok(result.value.bend_radius_in)
 
 
@@ -82,26 +85,27 @@ def _min_bend_radius_in(
 # ─────────────────────────────────────────────────────────────────────────────
 
 _NEC_BEND_ARTICLE: dict[ConduitType, str] = {
-    ConduitType.EMT:        "NEC 358.24 (EMT bend radius)",
+    ConduitType.EMT: "NEC 358.24 (EMT bend radius)",
     ConduitType.UPVC_SCH40: "NEC 352.24 (PVC conduit bend radius)",
     ConduitType.UPVC_SCH80: "NEC 352.24 (PVC conduit bend radius)",
-    ConduitType.RGD:        "NEC 344.24 (RMC/RGD bend radius)",
+    ConduitType.RGD: "NEC 344.24 (RMC/RGD bend radius)",
 }
 
 _NEC_PULL_ARTICLE: dict[ConduitType, str] = {
-    ConduitType.EMT:        "NEC 358.26 (EMT ≤360° between pull points)",
+    ConduitType.EMT: "NEC 358.26 (EMT ≤360° between pull points)",
     ConduitType.UPVC_SCH40: "NEC 352.26 (PVC ≤360° between pull points)",
     ConduitType.UPVC_SCH80: "NEC 352.26 (PVC ≤360° between pull points)",
-    ConduitType.RGD:        "NEC 344.26 (RMC ≤360° between pull points)",
+    ConduitType.RGD: "NEC 344.26 (RMC ≤360° between pull points)",
 }
 
 # NEC maximum cumulative bend degrees between pull points (all conduit types)
-MAX_CUMULATIVE_BEND_DEG: float = 360.0   # NEC 358.26/352.26/344.26
+MAX_CUMULATIVE_BEND_DEG: float = 360.0  # NEC 358.26/352.26/344.26
 
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Public API
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 def verify_bend_radius(
     conduit_type: ConduitType,
@@ -137,39 +141,45 @@ def verify_bend_radius(
     # ── Input validation ─────────────────────────────────────────────────────
 
     if not math.isfinite(actual_radius_in):
-        return Result.err(PhysicsError(
-            message=f"actual_radius_in={actual_radius_in} is not finite.",
-            remediation="Bend radius must be a positive finite number.",
-        ))
+        return Result.err(
+            PhysicsError(
+                message=f"actual_radius_in={actual_radius_in} is not finite.",
+                remediation="Bend radius must be a positive finite number.",
+            )
+        )
     if actual_radius_in <= 0.0:
-        return Result.err(PhysicsError(
-            message=f"actual_radius_in={actual_radius_in} ≤ 0.",
-            remediation=(
-                "Bend radius must be > 0. "
-                "A zero or negative radius is physically impossible."
-            ),
-        ))
+        return Result.err(
+            PhysicsError(
+                message=f"actual_radius_in={actual_radius_in} ≤ 0.",
+                remediation=(
+                    "Bend radius must be > 0. A zero or negative radius is physically impossible."
+                ),
+            )
+        )
     if not math.isfinite(angle_deg):
-        return Result.err(PhysicsError(
-            message=f"angle_deg={angle_deg} is not finite.",
-            remediation="Bend angle must be a positive finite number.",
-        ))
+        return Result.err(
+            PhysicsError(
+                message=f"angle_deg={angle_deg} is not finite.",
+                remediation="Bend angle must be a positive finite number.",
+            )
+        )
     if angle_deg <= 0.0:
-        return Result.err(PhysicsError(
-            message=f"angle_deg={angle_deg} ≤ 0.",
-            remediation=(
-                "Bend angle must be > 0°. "
-                "A zero or negative angle produces no bend."
-            ),
-        ))
+        return Result.err(
+            PhysicsError(
+                message=f"angle_deg={angle_deg} ≤ 0.",
+                remediation=("Bend angle must be > 0°. A zero or negative angle produces no bend."),
+            )
+        )
     if angle_deg > 360.0:
-        return Result.err(PhysicsError(
-            message=f"angle_deg={angle_deg} > 360°.",
-            remediation=(
-                "A single bend cannot exceed 360°. "
-                "For spiral routing, sum multiple bend results."
-            ),
-        ))
+        return Result.err(
+            PhysicsError(
+                message=f"angle_deg={angle_deg} > 360°.",
+                remediation=(
+                    "A single bend cannot exceed 360°. "
+                    "For spiral routing, sum multiple bend results."
+                ),
+            )
+        )
 
     # ── Get NEC minimum radius ────────────────────────────────────────────────
 
@@ -182,7 +192,7 @@ def verify_bend_radius(
     # Arc length = π × R × θ / 180   (where θ is in degrees)
 
     developed_in: float = math.pi * actual_radius_in * angle_deg / 180.0
-    developed_m: float = developed_in * 0.0254   # 1 in = 0.0254 m
+    developed_m: float = developed_in * 0.0254  # 1 in = 0.0254 m
 
     is_compliant = actual_radius_in >= min_r
     nec_ref = _NEC_BEND_ARTICLE.get(conduit_type, "NEC Chapter 3")
@@ -200,19 +210,21 @@ def verify_bend_radius(
     )
 
     if not is_compliant:
-        return Result.err(CodeViolationError(
-            message=(
-                f"Bend radius {actual_radius_in:.3f}\" is below NEC minimum "
-                f"{min_r:.3f}\" for {conduit_type.value} {trade_size.value}. "
-                f"Deficit: {min_r - actual_radius_in:.3f}\"."
-            ),
-            code_reference=nec_ref,
-            remediation=(
-                f"Increase bend radius to at least {min_r:.3f}\" "
-                "or use a factory elbow (catalog fitting) which meets the minimum by design."
-            ),
-            severity=Severity.FATAL,
-        ))
+        return Result.err(
+            CodeViolationError(
+                message=(
+                    f'Bend radius {actual_radius_in:.3f}" is below NEC minimum '
+                    f'{min_r:.3f}" for {conduit_type.value} {trade_size.value}. '
+                    f'Deficit: {min_r - actual_radius_in:.3f}".'
+                ),
+                code_reference=nec_ref,
+                remediation=(
+                    f'Increase bend radius to at least {min_r:.3f}" '
+                    "or use a factory elbow (catalog fitting) which meets the minimum by design."
+                ),
+                severity=Severity.FATAL,
+            )
+        )
 
     return Result.ok(bend_result)
 
@@ -240,15 +252,19 @@ def calculate_developed_length(
 
     """
     if not math.isfinite(bend_radius_in) or bend_radius_in <= 0.0:
-        return Result.err(PhysicsError(
-            message=f"bend_radius_in={bend_radius_in} must be a positive finite number.",
-            remediation="Provide a positive finite radius.",
-        ))
+        return Result.err(
+            PhysicsError(
+                message=f"bend_radius_in={bend_radius_in} must be a positive finite number.",
+                remediation="Provide a positive finite radius.",
+            )
+        )
     if not math.isfinite(angle_deg) or angle_deg <= 0.0:
-        return Result.err(PhysicsError(
-            message=f"angle_deg={angle_deg} must be a positive finite number.",
-            remediation="Provide a positive finite angle in degrees.",
-        ))
+        return Result.err(
+            PhysicsError(
+                message=f"angle_deg={angle_deg} must be a positive finite number.",
+                remediation="Provide a positive finite angle in degrees.",
+            )
+        )
     arc = math.pi * bend_radius_in * angle_deg / 180.0
     return Result.ok(arc)
 
@@ -278,17 +294,19 @@ def verify_cumulative_bends(
     total = sum(bend_angles_deg)
     if total > MAX_CUMULATIVE_BEND_DEG:
         article = _NEC_PULL_ARTICLE.get(conduit_type, "NEC §xx.26")
-        return Result.err(CodeViolationError(
-            message=(
-                f"Cumulative bend {total:.1f}° exceeds NEC limit of "
-                f"{MAX_CUMULATIVE_BEND_DEG:.0f}° between pull points. "
-                f"Excess: {total - MAX_CUMULATIVE_BEND_DEG:.1f}°."
-            ),
-            code_reference=article,
-            remediation=(
-                f"Insert a pull box after {MAX_CUMULATIVE_BEND_DEG:.0f}° of accumulated bends. "
-                "The pull box resets the bend count to zero."
-            ),
-            severity=Severity.FATAL,
-        ))
+        return Result.err(
+            CodeViolationError(
+                message=(
+                    f"Cumulative bend {total:.1f}° exceeds NEC limit of "
+                    f"{MAX_CUMULATIVE_BEND_DEG:.0f}° between pull points. "
+                    f"Excess: {total - MAX_CUMULATIVE_BEND_DEG:.1f}°."
+                ),
+                code_reference=article,
+                remediation=(
+                    f"Insert a pull box after {MAX_CUMULATIVE_BEND_DEG:.0f}° of accumulated bends. "
+                    "The pull box resets the bend count to zero."
+                ),
+                severity=Severity.FATAL,
+            )
+        )
     return Result.ok(total)

@@ -281,7 +281,9 @@ class FireAIPluginAPI:
             return (idx, result)
 
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            futures = {executor.submit(_analyse_indexed, i, room): i for i, room in enumerate(rooms)}
+            futures = {
+                executor.submit(_analyse_indexed, i, room): i for i, room in enumerate(rooms)
+            }
             for future in as_completed(futures):
                 idx, result = future.result()
                 indexed_results[idx] = result

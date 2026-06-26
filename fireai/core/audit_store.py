@@ -143,6 +143,7 @@ def _get_hmac_key() -> str:
     # -- Development fallback --------------------------------
     if _DEV_HMAC_KEY is None:
         import secrets as _secrets
+
         _DEV_HMAC_KEY = _secrets.token_hex(32)
     if not _DEV_KEY_WARNED:
         _DEV_KEY_WARNED = True
@@ -197,7 +198,7 @@ def _init_database() -> None:
         # doing the actual DB creation, allowing two threads to both
         # pass the double-check and create separate DBs.
         if _db_initialized:
-                return
+            return
         # Ensure parent directory exists (skip for :memory:)
         if DATABASE_PATH != ":memory:":
             db_dir = os.path.dirname(DATABASE_PATH)
@@ -295,7 +296,9 @@ def _release_connection(conn: sqlite3.Connection) -> None:
 # ============================================================================
 
 
-def _compute_hash(timestamp: str, event_type: str, room_id: str, details_json: str, previous_hash: str) -> str:
+def _compute_hash(
+    timestamp: str, event_type: str, room_id: str, details_json: str, previous_hash: str
+) -> str:
     """Compute SHA-256 hash for the event."""
     payload = f"{timestamp}|{event_type}|{room_id}|{details_json}|{previous_hash}"
     return hashlib.sha256(payload.encode()).hexdigest()
@@ -419,7 +422,9 @@ def verify_ecdsa_signature(record: dict[str, Any], public_key_pem: str) -> bool:
 
     """
     if not HAS_ECDSA:
-        raise ImportError("ecdsa library required for ECDSA verification. Install with: pip install ecdsa")
+        raise ImportError(
+            "ecdsa library required for ECDSA verification. Install with: pip install ecdsa"
+        )
 
     try:
         vk = VerifyingKey.from_pem(public_key_pem)
@@ -435,10 +440,16 @@ def verify_ecdsa_signature(record: dict[str, Any], public_key_pem: str) -> bool:
 
     # Verify hash integrity first
     details_json = (
-        json.dumps(record["details"], sort_keys=True) if isinstance(record["details"], dict) else record["details"]
+        json.dumps(record["details"], sort_keys=True)
+        if isinstance(record["details"], dict)
+        else record["details"]
     )
     expected_hash = _compute_hash(
-        record["timestamp"], record["event_type"], record.get("room_id", ""), details_json, record["previous_hash"]
+        record["timestamp"],
+        record["event_type"],
+        record.get("room_id", ""),
+        details_json,
+        record["previous_hash"],
     )
     if expected_hash != record["current_hash"]:
         logger.warning("Hash mismatch in ECDSA verification")
@@ -523,7 +534,16 @@ def add_event(event_type: str, room_id: str, details_dict: dict[str, Any]) -> st
             INSERT INTO audit_log (timestamp, event_type, room_id, details, previous_hash, current_hash, signature, ecdsa_signature)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """,
-            (timestamp, event_type, room_id, details_json, previous_hash, current_hash, hmac_signature, ecdsa_sig),
+            (
+                timestamp,
+                event_type,
+                room_id,
+                details_json,
+                previous_hash,
+                current_hash,
+                hmac_signature,
+                ecdsa_sig,
+            ),
         )
         conn.commit()
         _release_connection(conn)
@@ -561,9 +581,28 @@ def verify_chain() -> tuple[bool, dict[str, Any] | None] | None:
     for _i, row in enumerate(rows):
         # Handle both V10 (8 cols) and V11 (9 cols) rows
         if len(row) >= 9:
-            event_id, timestamp, event_type, room_id, details_json, previous_hash, current_hash, signature, _ = row[:9]
+            (
+                event_id,
+                timestamp,
+                event_type,
+                room_id,
+                details_json,
+                previous_hash,
+                current_hash,
+                signature,
+                _,
+            ) = row[:9]
         else:
-            event_id, timestamp, event_type, room_id, details_json, previous_hash, current_hash, signature = row[:8]
+            (
+                event_id,
+                timestamp,
+                event_type,
+                room_id,
+                details_json,
+                previous_hash,
+                current_hash,
+                signature,
+            ) = row[:8]
 
         # 1. Verify hash
         expected_hash = _compute_hash(timestamp, event_type, room_id, details_json, previous_hash)
@@ -588,7 +627,9 @@ def verify_chain() -> tuple[bool, dict[str, Any] | None] | None:
             }
 
         # Compute expected signature
-        expected_signature = hmac.new(key.encode(), expected_hash.encode(), hashlib.sha256).hexdigest()
+        expected_signature = hmac.new(
+            key.encode(), expected_hash.encode(), hashlib.sha256
+        ).hexdigest()
 
         if expected_signature != signature:
             return False, {
@@ -631,7 +672,16 @@ def get_events() -> list[dict[str, Any]]:
                 ecdsa_sig,
             ) = row[:9]
         else:
-            event_id, timestamp, event_type, room_id, details_json, previous_hash, current_hash, signature = row[:8]
+            (
+                event_id,
+                timestamp,
+                event_type,
+                room_id,
+                details_json,
+                previous_hash,
+                current_hash,
+                signature,
+            ) = row[:8]
             ecdsa_sig = None
 
         event_dict = {

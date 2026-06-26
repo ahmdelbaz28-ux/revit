@@ -157,8 +157,14 @@ class SensorPhysicsAdvisor:
         perf_based = False
 
         # ─── Check 1: Height beyond NFPA table ───────────────────
-        max_h = _POINT_DETECTOR_MAX_HEIGHT_SMOKE if detector_type == "smoke" else _POINT_DETECTOR_MAX_HEIGHT_HEAT
-        warn_h = _HIGH_CEILING_WARNING_SMOKE if detector_type == "smoke" else _HIGH_CEILING_WARNING_HEAT
+        max_h = (
+            _POINT_DETECTOR_MAX_HEIGHT_SMOKE
+            if detector_type == "smoke"
+            else _POINT_DETECTOR_MAX_HEIGHT_HEAT
+        )
+        warn_h = (
+            _HIGH_CEILING_WARNING_SMOKE if detector_type == "smoke" else _HIGH_CEILING_WARNING_HEAT
+        )
 
         if ceiling_height_m > max_h:
             severity = "CRITICAL"

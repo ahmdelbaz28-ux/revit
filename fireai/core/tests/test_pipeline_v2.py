@@ -150,14 +150,28 @@ class TestPipelineResult:
 
     def test_cable_routing_default_none(self) -> None:
         pr = PipelineResult(
-            run_id="test", room_id="R-1", success=True,
-            release_status="green", safety_tier="PROOF_VERIFIED",
-            coverage_pct=100.0, detector_count=1, detector_radius_m=6.3,
-            max_spacing_m=9.1, detector_positions=[(5, 5)],
-            wall_violations=0, battery=None, voltage_drop=None,
-            fault_isolation=None, stages=[], release_gates={},
-            evidence_hash="abc", total_ms=10.0, errors=[], warnings=[],
-            nfpa_references=[], timestamp="2024-01-01T00:00:00+00:00",
+            run_id="test",
+            room_id="R-1",
+            success=True,
+            release_status="green",
+            safety_tier="PROOF_VERIFIED",
+            coverage_pct=100.0,
+            detector_count=1,
+            detector_radius_m=6.3,
+            max_spacing_m=9.1,
+            detector_positions=[(5, 5)],
+            wall_violations=0,
+            battery=None,
+            voltage_drop=None,
+            fault_isolation=None,
+            stages=[],
+            release_gates={},
+            evidence_hash="abc",
+            total_ms=10.0,
+            errors=[],
+            warnings=[],
+            nfpa_references=[],
+            timestamp="2024-01-01T00:00:00+00:00",
         )
         assert pr.cable_routing is None
         assert pr.qomn_audit is None
@@ -205,7 +219,7 @@ class TestRunStage:
         assert any("RuntimeError" in e for e in sr.errors)
 
     def test_passes_args_kwargs(self) -> None:
-        def fn(a, b: int=0):
+        def fn(a, b: int = 0):
             return {"sum": a + b}
 
         sr = _run_stage("test", fn, 3, b=7)
@@ -231,21 +245,25 @@ class TestStage0Contract:
 
     def test_nan_in_payload(self) -> None:
         with pytest.raises(ContractViolation):
-            _stage0_contract({
-                "room_id": "R-1",
-                "room_polygon": [(0, 0), (1, 0), (1, 1)],
-                "ceiling_height_m": float("nan"),
-                "detector_type": "smoke",
-            })
+            _stage0_contract(
+                {
+                    "room_id": "R-1",
+                    "room_polygon": [(0, 0), (1, 0), (1, 1)],
+                    "ceiling_height_m": float("nan"),
+                    "detector_type": "smoke",
+                }
+            )
 
     def test_empty_room_id(self) -> None:
         with pytest.raises(ContractViolation):
-            _stage0_contract({
-                "room_id": "  ",
-                "room_polygon": [(0, 0), (1, 0), (1, 1)],
-                "ceiling_height_m": 3.0,
-                "detector_type": "smoke",
-            })
+            _stage0_contract(
+                {
+                    "room_id": "  ",
+                    "room_polygon": [(0, 0), (1, 0), (1, 1)],
+                    "ceiling_height_m": 3.0,
+                    "detector_type": "smoke",
+                }
+            )
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -362,10 +380,10 @@ class TestPointInPolygon:
     def test_concave_polygon(self) -> None:
         """L-shaped polygon — the inner corner is OUTSIDE."""
         poly = [(0, 0), (6, 0), (6, 3), (3, 3), (3, 6), (0, 6)]
-        assert _point_in_polygon(1, 1, poly) is True   # inside lower-left
+        assert _point_in_polygon(1, 1, poly) is True  # inside lower-left
         assert _point_in_polygon(4, 4, poly) is False  # inside cut-out corner (outside)
-        assert _point_in_polygon(1, 5, poly) is True   # inside upper-left
-        assert _point_in_polygon(5, 1, poly) is True   # inside lower-right
+        assert _point_in_polygon(1, 5, poly) is True  # inside upper-left
+        assert _point_in_polygon(5, 1, poly) is True  # inside lower-right
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -421,18 +439,14 @@ class TestStage3VerifyCoverage:
     def test_fallback_grid_estimate(self) -> None:
         """When ExactCoverageEngine is unavailable, uses grid estimate."""
         with patch.dict("sys.modules", {"fireai.core.spatial_engine.exact_coverage": None}):
-            result = _stage3_verify_coverage(
-                [(5, 4)], RECT_POLYGON, 6.3, "R-101"
-            )
+            result = _stage3_verify_coverage([(5, 4)], RECT_POLYGON, 6.3, "R-101")
         assert result["engine"] == "grid_estimate_fallback"
         assert "coverage_pct" in result
         assert 0.0 <= result["coverage_pct"] <= 100.0
 
     def test_is_compliant_flag(self) -> None:
         with patch.dict("sys.modules", {"fireai.core.spatial_engine.exact_coverage": None}):
-            result = _stage3_verify_coverage(
-                [(5, 4)], RECT_POLYGON, 6.3, "R-101"
-            )
+            result = _stage3_verify_coverage([(5, 4)], RECT_POLYGON, 6.3, "R-101")
         assert "is_compliant" in result
         assert isinstance(result["is_compliant"], bool)
 
@@ -490,7 +504,12 @@ class TestStage5ReleaseGates:
         )
         nfpa_result = {"is_compliant": True, "violations": []}
         result = _stage5_release_gates(
-            validated_payload, nfpa_result, 100.0, True, "PROOF_VERIFIED", 0,
+            validated_payload,
+            nfpa_result,
+            100.0,
+            True,
+            "PROOF_VERIFIED",
+            0,
             battery_result=battery,
         )
         assert "release_status" in result
@@ -498,7 +517,12 @@ class TestStage5ReleaseGates:
     def test_with_loop_data(self, validated_payload) -> None:
         nfpa_result = {"is_compliant": True, "violations": []}
         result = _stage5_release_gates(
-            validated_payload, nfpa_result, 100.0, True, "PROOF_VERIFIED", 0,
+            validated_payload,
+            nfpa_result,
+            100.0,
+            True,
+            "PROOF_VERIFIED",
+            0,
             loop_data={"devices": []},
         )
         assert "release_status" in result
@@ -517,8 +541,15 @@ class TestStage6Evidence:
             "nfpa_section": "NFPA 72-2022 §17.7.3.2.1",
         }
         result = _stage6_evidence(
-            "run-123", validated_payload, [(5, 4)], 100.0, True,
-            "PROOF_VERIFIED", spacing_result, 0, "APPROVED",
+            "run-123",
+            validated_payload,
+            [(5, 4)],
+            100.0,
+            True,
+            "PROOF_VERIFIED",
+            spacing_result,
+            0,
+            "APPROVED",
         )
         assert "evidence_hash" in result
         assert result["evidence_hash"] != ""
@@ -532,8 +563,15 @@ class TestStage6Evidence:
             "nfpa_section": "NFPA 72-2022 §17.7.3.2.1",
         }
         result = _stage6_evidence(
-            "run-456", validated_payload, [(0.05, 4)], 95.0, False,
-            "REJECTED", spacing_result, 1, "REJECTED",
+            "run-456",
+            validated_payload,
+            [(0.05, 4)],
+            95.0,
+            False,
+            "REJECTED",
+            spacing_result,
+            1,
+            "REJECTED",
         )
         refs = result["nfpa_references"]
         assert any("wall violation" in r.lower() for r in refs)
@@ -560,7 +598,14 @@ class TestStage7CableRouting:
         # This may hit the import error first if modules are unavailable
         # but the <2 positions check is after the import, so we need to
         # ensure the import succeeds
-        with patch.dict("sys.modules", {"fireai.core.cable_router": MagicMock(), "fireai.core.constraint_engine": MagicMock(), "fireai.core.schedule_generator": MagicMock()}):
+        with patch.dict(
+            "sys.modules",
+            {
+                "fireai.core.cable_router": MagicMock(),
+                "fireai.core.constraint_engine": MagicMock(),
+                "fireai.core.schedule_generator": MagicMock(),
+            },
+        ):
             # Need to also patch the function-level import
             with patch("fireai.core.pipeline._CABLE_ROUTER_AVAILABLE", True):
                 # The function has its own try/import, so mock sys.modules
@@ -568,11 +613,14 @@ class TestStage7CableRouting:
                 mock_cable_router = MagicMock()
                 mock_constraint = MagicMock()
                 mock_schedule = MagicMock()
-                with patch.dict("sys.modules", {
-                    "fireai.core.cable_router": mock_cable_router,
-                    "fireai.core.constraint_engine": mock_constraint,
-                    "fireai.core.schedule_generator": mock_schedule,
-                }):
+                with patch.dict(
+                    "sys.modules",
+                    {
+                        "fireai.core.cable_router": mock_cable_router,
+                        "fireai.core.constraint_engine": mock_constraint,
+                        "fireai.core.schedule_generator": mock_schedule,
+                    },
+                ):
                     result = _stage7_cable_routing(validated_payload, [(5, 4)])
         assert result["status"] == "skipped"
         assert result["reason"] == "fewer than 2 detector positions — no routing needed"
@@ -580,11 +628,14 @@ class TestStage7CableRouting:
 
     def test_no_positions(self, validated_payload) -> None:
         """Empty positions list → skipped."""
-        with patch.dict("sys.modules", {
-            "fireai.core.cable_router": MagicMock(),
-            "fireai.core.constraint_engine": MagicMock(),
-            "fireai.core.schedule_generator": MagicMock(),
-        }):
+        with patch.dict(
+            "sys.modules",
+            {
+                "fireai.core.cable_router": MagicMock(),
+                "fireai.core.constraint_engine": MagicMock(),
+                "fireai.core.schedule_generator": MagicMock(),
+            },
+        ):
             result = _stage7_cable_routing(validated_payload, [])
         assert result["status"] == "skipped"
 
@@ -596,15 +647,16 @@ class TestStage7CableRouting:
         # Also need IfcElementType, BoundingBox3D from ifc_parser
         mock_ifc = MagicMock()
 
-        with patch.dict("sys.modules", {
-            "fireai.core.cable_router": mock_cable_router_mod,
-            "fireai.core.constraint_engine": MagicMock(),
-            "fireai.core.schedule_generator": MagicMock(),
-            "fireai.core.ifc_parser": mock_ifc,
-        }):
-            result = _stage7_cable_routing(
-                validated_payload, [(5, 4), (8, 6)]
-            )
+        with patch.dict(
+            "sys.modules",
+            {
+                "fireai.core.cable_router": mock_cable_router_mod,
+                "fireai.core.constraint_engine": MagicMock(),
+                "fireai.core.schedule_generator": MagicMock(),
+                "fireai.core.ifc_parser": mock_ifc,
+            },
+        ):
+            result = _stage7_cable_routing(validated_payload, [(5, 4), (8, 6)])
         # Building model construction failure → status "failed" or "unavailable"
         assert result["status"] in ("failed", "unavailable", "dependency_missing")
         if result["status"] == "failed":
@@ -617,15 +669,16 @@ class TestStage7CableRouting:
 
         mock_ifc = MagicMock()
 
-        with patch.dict("sys.modules", {
-            "fireai.core.cable_router": mock_cable_router_mod,
-            "fireai.core.constraint_engine": MagicMock(),
-            "fireai.core.schedule_generator": MagicMock(),
-            "fireai.core.ifc_parser": mock_ifc,
-        }):
-            result = _stage7_cable_routing(
-                validated_payload, [(5, 4), (8, 6)]
-            )
+        with patch.dict(
+            "sys.modules",
+            {
+                "fireai.core.cable_router": mock_cable_router_mod,
+                "fireai.core.constraint_engine": MagicMock(),
+                "fireai.core.schedule_generator": MagicMock(),
+                "fireai.core.ifc_parser": mock_ifc,
+            },
+        ):
+            result = _stage7_cable_routing(validated_payload, [(5, 4), (8, 6)])
         if result["status"] == "failed":
             assert result.get("safety_block") is True
             assert "routes" in result
@@ -639,15 +692,16 @@ class TestStage7CableRouting:
         mock_constraint = MagicMock()
 
         # Need to make the initial import succeed but then the router fail
-        with patch.dict("sys.modules", {
-            "fireai.core.cable_router": mock_cable_router_mod,
-            "fireai.core.constraint_engine": mock_constraint,
-            "fireai.core.schedule_generator": MagicMock(),
-            "fireai.core.ifc_parser": MagicMock(),
-        }):
-            result = _stage7_cable_routing(
-                validated_payload, [(5, 4), (8, 6)]
-            )
+        with patch.dict(
+            "sys.modules",
+            {
+                "fireai.core.cable_router": mock_cable_router_mod,
+                "fireai.core.constraint_engine": mock_constraint,
+                "fireai.core.schedule_generator": MagicMock(),
+                "fireai.core.ifc_parser": MagicMock(),
+            },
+        ):
+            result = _stage7_cable_routing(validated_payload, [(5, 4), (8, 6)])
         # Should get a failed or unavailable status
         assert result["status"] in ("failed", "unavailable", "dependency_missing")
         if result["status"] == "failed":
@@ -672,9 +726,7 @@ class TestStage7CableRouting:
 
     def test_custom_room_z(self, validated_payload) -> None:
         """Custom room_z_m parameter is accepted."""
-        result = _stage7_cable_routing(
-            validated_payload, [(5, 4)], room_z_m=1.0
-        )
+        result = _stage7_cable_routing(validated_payload, [(5, 4)], room_z_m=1.0)
         # Should not crash; may be skipped if <2 positions
         assert "status" in result
 
@@ -690,9 +742,7 @@ class TestStage8ConduitFittings:
     def test_import_unavailable(self, validated_payload) -> None:
         """When conduit module is not available, returns 'unavailable'."""
         with patch.dict("sys.modules", {"fireai.conduit": None}):
-            result = _stage8_conduit_fittings(
-                validated_payload, [(5, 4), (8, 6)], {}
-            )
+            result = _stage8_conduit_fittings(validated_payload, [(5, 4), (8, 6)], {})
         assert result["status"] == "unavailable"
         assert "reason" in result
 
@@ -700,9 +750,7 @@ class TestStage8ConduitFittings:
         """< 2 positions → skipped."""
         mock_conduit = MagicMock()
         with patch.dict("sys.modules", {"fireai.conduit": mock_conduit}):
-            result = _stage8_conduit_fittings(
-                validated_payload, [(5, 4)], {}
-            )
+            result = _stage8_conduit_fittings(validated_payload, [(5, 4)], {})
         assert result["status"] == "skipped"
         assert "runs" in result
 
@@ -710,9 +758,7 @@ class TestStage8ConduitFittings:
         """Empty positions → skipped."""
         mock_conduit = MagicMock()
         with patch.dict("sys.modules", {"fireai.conduit": mock_conduit}):
-            result = _stage8_conduit_fittings(
-                validated_payload, [], {}
-            )
+            result = _stage8_conduit_fittings(validated_payload, [], {})
         assert result["status"] == "skipped"
 
     def test_fill_error_upsizes_trade(self, validated_payload) -> None:
@@ -737,9 +783,7 @@ class TestStage8ConduitFittings:
         mock_conduit.Point3D = MagicMock
 
         with patch.dict("sys.modules", {"fireai.conduit": mock_conduit}):
-            result = _stage8_conduit_fittings(
-                validated_payload, [(5, 4), (8, 6)], {}
-            )
+            result = _stage8_conduit_fittings(validated_payload, [(5, 4), (8, 6)], {})
         assert result["status"] == "completed"
         assert "runs" in result
         # The segment should have routing_failed status
@@ -767,9 +811,7 @@ class TestStage8ConduitFittings:
         mock_conduit.Point3D = MagicMock
 
         with patch.dict("sys.modules", {"fireai.conduit": mock_conduit}):
-            result = _stage8_conduit_fittings(
-                validated_payload, [(5, 4), (8, 6)], {}
-            )
+            result = _stage8_conduit_fittings(validated_payload, [(5, 4), (8, 6)], {})
         assert result["status"] == "completed"
         assert result["runs"][0]["status"] == "routing_failed"
         assert result["runs"][0]["reason"] == "blocked path"
@@ -800,9 +842,7 @@ class TestStage8ConduitFittings:
         mock_conduit.Point3D = MagicMock
 
         with patch.dict("sys.modules", {"fireai.conduit": mock_conduit}):
-            result = _stage8_conduit_fittings(
-                validated_payload, [(5, 4), (8, 6)], {}
-            )
+            result = _stage8_conduit_fittings(validated_payload, [(5, 4), (8, 6)], {})
         assert result["status"] == "completed"
         assert result["runs"][0]["status"] == "fitting_failed"
 
@@ -841,9 +881,7 @@ class TestStage8ConduitFittings:
         mock_conduit.Point3D = MagicMock
 
         with patch.dict("sys.modules", {"fireai.conduit": mock_conduit}):
-            result = _stage8_conduit_fittings(
-                validated_payload, [(5, 4), (8, 6)], {}
-            )
+            result = _stage8_conduit_fittings(validated_payload, [(5, 4), (8, 6)], {})
         assert result["status"] == "completed"
         assert result["all_compliant"] is True
         assert result["total_violations"] == 0
@@ -885,9 +923,7 @@ class TestStage8ConduitFittings:
         mock_conduit.Point3D = MagicMock
 
         with patch.dict("sys.modules", {"fireai.conduit": mock_conduit}):
-            result = _stage8_conduit_fittings(
-                validated_payload, [(5, 4), (8, 6)], {}
-            )
+            result = _stage8_conduit_fittings(validated_payload, [(5, 4), (8, 6)], {})
         assert result["status"] == "completed"
         assert result["all_compliant"] is False
         assert result["total_violations"] > 0
@@ -926,9 +962,7 @@ class TestStage8ConduitFittings:
 
         positions = [(5, 4), (8, 4), (8, 6)]
         with patch.dict("sys.modules", {"fireai.conduit": mock_conduit}):
-            result = _stage8_conduit_fittings(
-                validated_payload, positions, {}
-            )
+            result = _stage8_conduit_fittings(validated_payload, positions, {})
         assert len(result["runs"]) == 2  # 3 positions → 2 segments
 
     def test_cable_od_from_cable_routing_data(self, validated_payload) -> None:
@@ -1021,6 +1055,7 @@ class TestCountWallViolations:
 class TestFailedResult:
     def test_basic(self) -> None:
         import time
+
         pr = _failed_result("run-1", {"room_id": "R-1"}, [], ["err1"], [], time.perf_counter())
         assert pr.success is False
         assert pr.release_status == "blocked"
@@ -1031,22 +1066,28 @@ class TestFailedResult:
 
     def test_default_room_id(self) -> None:
         import time
+
         pr = _failed_result("run-2", {}, [], [], [], time.perf_counter())
         assert pr.room_id == "UNKNOWN"
 
     def test_explicit_room_id(self) -> None:
         import time
-        pr = _failed_result("run-3", {"room_id": "R-99"}, [], [], [], time.perf_counter(), room_id="R-99")
+
+        pr = _failed_result(
+            "run-3", {"room_id": "R-99"}, [], [], [], time.perf_counter(), room_id="R-99"
+        )
         assert pr.room_id == "R-99"
 
     def test_with_stages(self) -> None:
         import time
+
         stages = [StageResult("S0", True, 1.0)]
         pr = _failed_result("run-4", {}, stages, ["err"], ["warn"], time.perf_counter())
         assert len(pr.stages) == 1
 
     def test_non_dict_payload(self) -> None:
         import time
+
         pr = _failed_result("run-5", "not_a_dict", [], [], [], time.perf_counter())
         assert pr.room_id == "UNKNOWN"
 
@@ -1083,10 +1124,20 @@ class TestAnalyzeRoom:
         assert r1.run_id == r2.run_id
 
     def test_different_input_different_run_id(self) -> None:
-        p1 = {"room_id": "R-A", "room_polygon": list(RECT_POLYGON),
-               "ceiling_height_m": 3.0, "detector_type": "smoke", "area_m2": 80.0}
-        p2 = {"room_id": "R-B", "room_polygon": list(RECT_POLYGON),
-               "ceiling_height_m": 3.0, "detector_type": "smoke", "area_m2": 80.0}
+        p1 = {
+            "room_id": "R-A",
+            "room_polygon": list(RECT_POLYGON),
+            "ceiling_height_m": 3.0,
+            "detector_type": "smoke",
+            "area_m2": 80.0,
+        }
+        p2 = {
+            "room_id": "R-B",
+            "room_polygon": list(RECT_POLYGON),
+            "ceiling_height_m": 3.0,
+            "detector_type": "smoke",
+            "area_m2": 80.0,
+        }
         r1 = analyze_room(p1)
         r2 = analyze_room(p2)
         assert r1.run_id != r2.run_id
@@ -1286,7 +1337,10 @@ class TestCableRoutingPathA:
         }
         with patch("fireai.core.pipeline._stage7_cable_routing", return_value=stage7_data):
             # Also need to handle Stage 8
-            with patch("fireai.core.pipeline._stage8_conduit_fittings", return_value={"status": "unavailable"}):
+            with patch(
+                "fireai.core.pipeline._stage8_conduit_fittings",
+                return_value={"status": "unavailable"},
+            ):
                 result = analyze_room(valid_payload)
         # cable_routing should be populated from Stage 7
         if result.cable_routing is not None:
@@ -1307,7 +1361,10 @@ class TestCableRoutingPathA:
             "code_refs": ["NEC 760.24"],
         }
         with patch("fireai.core.pipeline._stage7_cable_routing", return_value=stage7_data):
-            with patch("fireai.core.pipeline._stage8_conduit_fittings", return_value={"status": "unavailable"}):
+            with patch(
+                "fireai.core.pipeline._stage8_conduit_fittings",
+                return_value={"status": "unavailable"},
+            ):
                 result = analyze_room(valid_payload)
         if result.cable_routing is not None and not result.cable_routing["all_compliant"]:
             assert any("Cable routing" in w for w in result.warnings)
@@ -1328,44 +1385,59 @@ class TestEdgeCases:
 
     def test_stage1_failure_returns_failed_result(self) -> None:
         """If stage1 somehow fails, pipeline returns a failed result."""
-        with patch("fireai.core.pipeline._stage1_nfpa_spacing", side_effect=RuntimeError("spacing error")):
-            result = analyze_room({
-                "room_id": "R-E1",
-                "room_polygon": list(RECT_POLYGON),
-                "ceiling_height_m": 3.0,
-                "detector_type": "smoke",
-                "area_m2": 80.0,
-            })
+        with patch(
+            "fireai.core.pipeline._stage1_nfpa_spacing", side_effect=RuntimeError("spacing error")
+        ):
+            result = analyze_room(
+                {
+                    "room_id": "R-E1",
+                    "room_polygon": list(RECT_POLYGON),
+                    "ceiling_height_m": 3.0,
+                    "detector_type": "smoke",
+                    "area_m2": 80.0,
+                }
+            )
         # Pipeline should handle stage1 failure gracefully
         assert isinstance(result, PipelineResult)
 
     def test_stage2_failure_uses_estimate(self) -> None:
         """When placement fails entirely, pipeline continues with estimates."""
-        with patch("fireai.core.pipeline._stage2_placement", side_effect=RuntimeError("placement crash")):
-            result = analyze_room({
-                "room_id": "R-E2",
-                "room_polygon": list(RECT_POLYGON),
-                "ceiling_height_m": 3.0,
-                "detector_type": "smoke",
-                "area_m2": 80.0,
-            })
+        with patch(
+            "fireai.core.pipeline._stage2_placement", side_effect=RuntimeError("placement crash")
+        ):
+            result = analyze_room(
+                {
+                    "room_id": "R-E2",
+                    "room_polygon": list(RECT_POLYGON),
+                    "ceiling_height_m": 3.0,
+                    "detector_type": "smoke",
+                    "area_m2": 80.0,
+                }
+            )
         assert isinstance(result, PipelineResult)
 
     def test_stage3_failure_uses_optimizer_estimate(self, valid_payload) -> None:
         """When coverage verification fails, optimizer estimate is used."""
-        with patch("fireai.core.pipeline._stage3_verify_coverage", side_effect=RuntimeError("coverage crash")):
+        with patch(
+            "fireai.core.pipeline._stage3_verify_coverage",
+            side_effect=RuntimeError("coverage crash"),
+        ):
             result = analyze_room(valid_payload)
         assert isinstance(result, PipelineResult)
 
     def test_stage5_failure_defaults_to_blocked(self, valid_payload) -> None:
         """When release gates fail, default is 'blocked'."""
-        with patch("fireai.core.pipeline._stage5_release_gates", side_effect=RuntimeError("gates crash")):
+        with patch(
+            "fireai.core.pipeline._stage5_release_gates", side_effect=RuntimeError("gates crash")
+        ):
             result = analyze_room(valid_payload)
         assert result.release_status == "blocked"
 
     def test_stage6_failure_empty_hash(self, valid_payload) -> None:
         """When evidence packaging fails, hash is empty string."""
-        with patch("fireai.core.pipeline._stage6_evidence", side_effect=RuntimeError("evidence crash")):
+        with patch(
+            "fireai.core.pipeline._stage6_evidence", side_effect=RuntimeError("evidence crash")
+        ):
             result = analyze_room(valid_payload)
         assert result.evidence_hash == ""
         assert result.nfpa_references == []
@@ -1437,7 +1509,10 @@ class TestQomnPhysicsGuard:
 class TestRulesCompliance:
     def test_rules_engine_failure_is_non_blocking(self, valid_payload) -> None:
         """When Rules Engine fails, pipeline still completes."""
-        with patch("fireai.core.pipeline._stage35_rules_compliance", side_effect=RuntimeError("rules crash")):
+        with patch(
+            "fireai.core.pipeline._stage35_rules_compliance",
+            side_effect=RuntimeError("rules crash"),
+        ):
             result = analyze_room(valid_payload)
         assert isinstance(result, PipelineResult)
         assert any("Rules Engine" in w for w in result.warnings)

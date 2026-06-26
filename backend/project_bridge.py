@@ -129,6 +129,7 @@ def sync_project_to_udm(project_data: dict[str, Any]) -> bool:
         # Try to record the failure — may also fail if DB is unavailable
         try:
             from backend.database import get_db
+
             get_db().record_sync("project", project_id, _TARGET_DB, "error", str(e))
         except Exception:
             pass
@@ -219,6 +220,7 @@ def sync_project_update_to_udm(project_id: str, updates: dict[str, Any]) -> bool
         logger.critical("UDM bridge unavailable during project update: %s", e)
         try:
             from backend.database import get_db
+
             get_db().record_sync("project", project_id, _TARGET_DB, "error", str(e))
         except Exception:
             pass
@@ -278,6 +280,7 @@ def sync_project_delete_to_udm(project_id: str) -> bool:
         logger.critical("UDM bridge unavailable during project deletion: %s", e)
         try:
             from backend.database import get_db
+
             get_db().record_sync("project", project_id, _TARGET_DB, "error", str(e))
         except Exception:
             pass
@@ -327,17 +330,19 @@ def sync_device_to_udm(project_id: str, device_data: dict[str, Any]) -> bool:
 
         # Build properties with device metadata
         properties = device_data.get("properties", {}) or {}
-        properties.update({
-            "source": "digital_twin_device",
-            "device_type": device_data.get("type", ""),
-            "device_name": device_data.get("name", ""),
-            "device_category": device_data.get("category", ""),
-            "voltage": device_data.get("voltage", 0.0),
-            "current": device_data.get("current", 0.0),
-            "load_amperes": device_data.get("load", 0.0),
-            "rotation": device_data.get("rotation", 0.0),
-            "original_id": device_id,
-        })
+        properties.update(
+            {
+                "source": "digital_twin_device",
+                "device_type": device_data.get("type", ""),
+                "device_name": device_data.get("name", ""),
+                "device_category": device_data.get("category", ""),
+                "voltage": device_data.get("voltage", 0.0),
+                "current": device_data.get("current", 0.0),
+                "load_amperes": device_data.get("load", 0.0),
+                "rotation": device_data.get("rotation", 0.0),
+                "original_id": device_id,
+            }
+        )
 
         try:
             udm.bridge_create_table("""
@@ -377,7 +382,9 @@ def sync_device_to_udm(project_id: str, device_data: dict[str, Any]) -> bool:
             """)
 
             # Performance indexes for UDM tables
-            udm.bridge_sql("CREATE INDEX IF NOT EXISTS idx_ep_project ON element_projects(project_id)")
+            udm.bridge_sql(
+                "CREATE INDEX IF NOT EXISTS idx_ep_project ON element_projects(project_id)"
+            )
             udm.bridge_sql("CREATE INDEX IF NOT EXISTS idx_elements_type ON elements(element_type)")
 
             now = datetime.now(timezone.utc).isoformat()
@@ -398,8 +405,7 @@ def sync_device_to_udm(project_id: str, device_data: dict[str, Any]) -> bool:
             )
 
             udm.bridge_insert(
-                "INSERT OR IGNORE INTO element_projects (element_id, project_id) "
-                "VALUES (?, ?)",
+                "INSERT OR IGNORE INTO element_projects (element_id, project_id) VALUES (?, ?)",
                 (device_id, project_id),
             )
 
@@ -415,6 +421,7 @@ def sync_device_to_udm(project_id: str, device_data: dict[str, Any]) -> bool:
         logger.critical("UDM bridge unavailable during device sync: %s", e)
         try:
             from backend.database import get_db
+
             get_db().record_sync("device", device_id, _TARGET_DB, "error", str(e))
         except Exception:
             pass
@@ -461,14 +468,16 @@ def sync_device_update_to_udm(project_id: str, device_id: str, updates: dict[str
 
             if _POSITION_FIELDS.intersection(updates.keys()):
                 # Validate that only known position fields are processed
-                safe_position_updates = {k: v for k, v in updates.items() if k in _POSITION_FIELDS and v is not None}
+                safe_position_updates = {
+                    k: v for k, v in updates.items() if k in _POSITION_FIELDS and v is not None
+                }
                 if safe_position_updates:
                     row = udm.bridge_sql(
                         "SELECT position FROM elements WHERE element_id = ?",
                         (device_id,),
                         fetch=True,
                     )
-                    row_data = row.fetchone() if hasattr(row, 'fetchone') else None
+                    row_data = row.fetchone() if hasattr(row, "fetchone") else None
                     current_pos = json.loads(row_data[0]) if row_data and row_data[0] else {}
                     for axis in ("x", "y", "z"):
                         if axis in safe_position_updates:
@@ -478,14 +487,16 @@ def sync_device_update_to_udm(project_id: str, device_id: str, updates: dict[str
 
             if _PROPERTY_FIELDS.intersection(updates.keys()):
                 # Validate that only known property fields are processed
-                safe_property_updates = {k: v for k, v in updates.items() if k in _PROPERTY_FIELDS and v is not None}
+                safe_property_updates = {
+                    k: v for k, v in updates.items() if k in _PROPERTY_FIELDS and v is not None
+                }
                 if safe_property_updates:
                     row = udm.bridge_sql(
                         "SELECT properties FROM elements WHERE element_id = ?",
                         (device_id,),
                         fetch=True,
                     )
-                    row_data = row.fetchone() if hasattr(row, 'fetchone') else None
+                    row_data = row.fetchone() if hasattr(row, "fetchone") else None
                     current_props = json.loads(row_data[0]) if row_data and row_data[0] else {}
                     if "voltage" in safe_property_updates:
                         current_props["voltage"] = safe_property_updates["voltage"]
@@ -525,6 +536,7 @@ def sync_device_update_to_udm(project_id: str, device_id: str, updates: dict[str
         logger.critical("UDM bridge unavailable during device update: %s", e)
         try:
             from backend.database import get_db
+
             get_db().record_sync("device", device_id, _TARGET_DB, "error", str(e))
         except Exception:
             pass
@@ -576,6 +588,7 @@ def sync_device_delete_to_udm(project_id: str, device_id: str) -> bool:
         logger.critical("UDM bridge unavailable during device deletion: %s", e)
         try:
             from backend.database import get_db
+
             get_db().record_sync("device", device_id, _TARGET_DB, "error", str(e))
         except Exception:
             pass
@@ -686,6 +699,7 @@ def sync_connection_to_udm(project_id: str, connection_data: dict[str, Any]) -> 
         logger.critical("UDM bridge unavailable during connection sync: %s", e)
         try:
             from backend.database import get_db
+
             get_db().record_sync("connection", connection_id, _TARGET_DB, "error", str(e))
         except Exception:
             pass
@@ -734,7 +748,7 @@ def sync_connection_delete_to_udm(project_id: str, connection_id: str) -> bool:
                 (connection_id,),
                 fetch=True,
             )
-            row_data = row.fetchone() if hasattr(row, 'fetchone') else None
+            row_data = row.fetchone() if hasattr(row, "fetchone") else None
             if row_data:
                 from_id, to_id = row_data[0], row_data[1]
                 udm.bridge_sql(
@@ -745,7 +759,9 @@ def sync_connection_delete_to_udm(project_id: str, connection_id: str) -> bool:
                     commit=True,
                 )
 
-            logger.info("Connection %s deletion synced to UDM for project %s", connection_id, project_id)
+            logger.info(
+                "Connection %s deletion synced to UDM for project %s", connection_id, project_id
+            )
             db.record_sync("connection", connection_id, _TARGET_DB, "synced")
             return True
         except Exception as e:
@@ -757,6 +773,7 @@ def sync_connection_delete_to_udm(project_id: str, connection_id: str) -> bool:
         logger.critical("UDM bridge unavailable during connection deletion: %s", e)
         try:
             from backend.database import get_db
+
             get_db().record_sync("connection", connection_id, _TARGET_DB, "error", str(e))
         except Exception:
             pass

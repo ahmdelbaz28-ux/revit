@@ -84,21 +84,21 @@ REVIT_API_DOCS_PATHS = {
 class ActionType(str, Enum):
     """Types of actions the AI can propose (NOT execute)."""
 
-    CREATE = "create"      # Create a new Revit element
-    UPDATE = "update"      # Modify an existing element
-    DELETE = "delete"      # Delete an element (HIGH RISK — requires explicit human approval)
-    READ = "read"          # Read element data (safe — can execute directly)
+    CREATE = "create"  # Create a new Revit element
+    UPDATE = "update"  # Modify an existing element
+    DELETE = "delete"  # Delete an element (HIGH RISK — requires explicit human approval)
+    READ = "read"  # Read element data (safe — can execute directly)
 
 
 class ActionStatus(str, Enum):
     """Status of a proposed action in the review queue."""
 
-    PROPOSED = "proposed"        # AI proposed, awaiting human review
-    APPROVED = "approved"        # Human approved, queued for execution
-    REJECTED = "rejected"        # Human rejected
-    EXECUTED = "executed"        # Successfully applied to Revit model
-    FAILED = "failed"            # Execution failed
-    EXPIRED = "expired"          # Proposal expired before review
+    PROPOSED = "proposed"  # AI proposed, awaiting human review
+    APPROVED = "approved"  # Human approved, queued for execution
+    REJECTED = "rejected"  # Human rejected
+    EXECUTED = "executed"  # Successfully applied to Revit model
+    FAILED = "failed"  # Execution failed
+    EXPIRED = "expired"  # Proposal expired before review
 
 
 # ---------------------------------------------------------------------------
@@ -244,11 +244,13 @@ class RevitAPIDocsSearcher:
             iterable = docs.items()
             for entry_name, entry_data in iterable:
                 if query_lower in str(entry_name).lower():
-                    results.append({
-                        "name": str(entry_name),
-                        "version": revit_version,
-                        "data": entry_data,
-                    })
+                    results.append(
+                        {
+                            "name": str(entry_name),
+                            "version": revit_version,
+                            "data": entry_data,
+                        }
+                    )
                     if len(results) >= max_results:
                         break
         elif isinstance(docs, list):
@@ -259,11 +261,13 @@ class RevitAPIDocsSearcher:
                 name = entry.get("APIName") or entry.get("Title") or entry.get("Name") or ""
                 keywords = entry.get("Keywords", "")
                 if query_lower in str(name).lower() or query_lower in str(keywords).lower():
-                    results.append({
-                        "name": str(name),
-                        "version": revit_version,
-                        "data": entry,
-                    })
+                    results.append(
+                        {
+                            "name": str(name),
+                            "version": revit_version,
+                            "data": entry,
+                        }
+                    )
                     if len(results) >= max_results:
                         break
 
@@ -338,6 +342,7 @@ class RevitAPIDocsSearcher:
 
         # Try multiple base paths
         import os
+
         possible_paths = [
             path,
             os.path.join(os.path.dirname(__file__), "..", "..", path),
@@ -454,6 +459,7 @@ class SmitheryMCPClient:
         """
         try:
             from fireai.bridges.bim_provider import get_provider
+
             provider = get_provider()
             if provider is None:
                 logger.warning("No BIM provider configured for read_rooms_from_bim")
@@ -561,8 +567,7 @@ class SmitheryMCPClient:
             element_id=element_id,
             parameters={},
             rationale=(
-                f"⚠️  DELETE PROPOSAL — requires explicit human approval. "
-                f"AI rationale: {rationale}"
+                f"⚠️  DELETE PROPOSAL — requires explicit human approval. AI rationale: {rationale}"
             ),
             confidence=confidence,
             nfpa_reference=nfpa_reference,
@@ -621,7 +626,9 @@ class SmitheryMCPClient:
 
             logger.info(
                 "Proposed action %s enqueued for human review: %s %s",
-                action.id, action.action_type.value, action.element_type,
+                action.id,
+                action.action_type.value,
+                action.element_type,
             )
 
             # Record in AuditStore (per Rule 12 + NFPA 72 §7.5)
@@ -637,7 +644,8 @@ class SmitheryMCPClient:
                 "Proposed action %s NOT enqueued for Revit review (DROPPED). "
                 "Action details: %s. "
                 "Caller must check action.is_enqueued before assuming review will occur.",
-                action.id, action.to_dict(),
+                action.id,
+                action.to_dict(),
             )
             # Still record in AuditStore for traceability
             self._record_audit(action, success=False, error=action.enqueue_error)
@@ -648,7 +656,9 @@ class SmitheryMCPClient:
 
             logger.error(
                 "Failed to enqueue proposed action %s: %s",
-                action.id, exc, exc_info=True,
+                action.id,
+                exc,
+                exc_info=True,
             )
             self._record_audit(action, success=False, error=str(exc))
 
@@ -661,6 +671,7 @@ class SmitheryMCPClient:
         """Record the proposed action in AuditStore."""
         try:
             from fireai.core.audit_store import AuditStore
+
             AuditStore.add_event(
                 event_type=f"REVIT_ACTION_PROPOSED_{action.action_type.value.upper()}",
                 room_id=str(action.parameters.get("room_id", "UNKNOWN")),
@@ -688,7 +699,9 @@ class SmitheryMCPClient:
                 "for action %s (%s): %s. "
                 "NFPA 72 §23.8 PE review audit trail at risk — investigate AuditStore. "
                 "The proposed action may be lost without human review.",
-                action.id, action.action_type.value, audit_exc,
+                action.id,
+                action.action_type.value,
+                audit_exc,
                 exc_info=True,
             )
 

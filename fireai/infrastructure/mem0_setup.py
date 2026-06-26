@@ -298,7 +298,11 @@ def _detect_provider() -> dict[str, Any]:
     if _detect_provider_cache is not None:
         elapsed = _time.monotonic() - _detect_provider_cache_time
         if elapsed < _PROVIDER_CACHE_TTL_SECONDS:
-            logger.debug("Provider detection cache hit (age=%ss, TTL=%ss)", elapsed, _PROVIDER_CACHE_TTL_SECONDS)
+            logger.debug(
+                "Provider detection cache hit (age=%ss, TTL=%ss)",
+                elapsed,
+                _PROVIDER_CACHE_TTL_SECONDS,
+            )
             return _detect_provider_cache
 
     result = _detect_provider_uncached()
@@ -355,7 +359,9 @@ def _detect_provider_uncached() -> dict[str, Any]:
     # OpenCode (opencode.ai) provides OpenAI-compatible API at /zen/v1/
     # Backward compat: OPENQUOTTA_* env vars still work as fallback
     opencode_key = os.getenv("OPENCODE_API_KEY") or os.getenv("OPENQUOTTA_API_KEY")
-    opencode_base_url = os.getenv("OPENCODE_BASE_URL", os.getenv("OPENQUOTTA_BASE_URL", "https://opencode.ai/zen/v1/"))
+    opencode_base_url = os.getenv(
+        "OPENCODE_BASE_URL", os.getenv("OPENQUOTTA_BASE_URL", "https://opencode.ai/zen/v1/")
+    )
 
     # ── Strategy 1: Try OpenAI (PRIMARY if available and not region-blocked) ──
     if openai_key:
@@ -397,7 +403,9 @@ def _detect_provider_uncached() -> dict[str, Any]:
     # Per agent.md Priority 1 (Safety): Using gpt-4o (not mini) for
     # engineering analysis ensures the highest accuracy for NFPA calculations.
     if openrouter_key:
-        openrouter_reachable = _test_openai_compatible_connectivity(openrouter_base_url, openrouter_key)
+        openrouter_reachable = _test_openai_compatible_connectivity(
+            openrouter_base_url, openrouter_key
+        )
 
         if openrouter_reachable:
             logger.info(
@@ -507,7 +515,9 @@ def _detect_provider_uncached() -> dict[str, Any]:
         # S310/B310 SECURITY: Validate URL scheme before opening.
         _parsed = _urlparse(proxy_url)
         if _parsed.scheme not in ("http", "https"):
-            raise ValueError(f"Rejected proxy URL scheme '{_parsed.scheme}' — only http/https allowed")
+            raise ValueError(
+                f"Rejected proxy URL scheme '{_parsed.scheme}' — only http/https allowed"
+            )
         req = urllib.request.Request(f"{proxy_url}/health", method="GET")
         with urllib.request.urlopen(req, timeout=5) as resp:
             health = json.loads(resp.read().decode())

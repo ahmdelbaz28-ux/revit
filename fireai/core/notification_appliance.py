@@ -452,7 +452,9 @@ def calculate_strobe_candela(
 
     # Select table based on ceiling height
     is_low_ceiling = ceiling_height_ft <= 10.0
-    table = _STROBE_CANDELA_TABLE_LOW_CEILING if is_low_ceiling else _STROBE_CANDELA_TABLE_HIGH_CEILING
+    table = (
+        _STROBE_CANDELA_TABLE_LOW_CEILING if is_low_ceiling else _STROBE_CANDELA_TABLE_HIGH_CEILING
+    )
     table_name = "Table 18.5.5.1(a)" if is_low_ceiling else "Table 18.5.5.1(b)"
 
     # Find required candela from table
@@ -486,7 +488,9 @@ def calculate_strobe_candela(
     # Check compliance if installed value provided
     if installed_candela is not None:
         if not math.isfinite(installed_candela) or installed_candela < 0:
-            raise ValueError(f"installed_candela must be non-negative finite, got {installed_candela}")
+            raise ValueError(
+                f"installed_candela must be non-negative finite, got {installed_candela}"
+            )
         is_compliant = installed_candela >= candela_per_strobe
     else:
         # No installed value — just check if we CAN comply
@@ -662,9 +666,11 @@ class NotificationAssessment:
 
         # V78 FIX: Do NOT start as True — if no results were evaluated,
         # the room must NOT claim compliance. This is a fail-closed design.
-        evaluated = sum(1 for r in [self.nac_result, self.spl_result,
-                                     self.strobe_result, self.corridor_strobe]
-                        if r is not None)
+        evaluated = sum(
+            1
+            for r in [self.nac_result, self.spl_result, self.strobe_result, self.corridor_strobe]
+            if r is not None
+        )
         if evaluated == 0:
             self.is_compliant = False
             self.violations.append(

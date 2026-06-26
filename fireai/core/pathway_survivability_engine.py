@@ -289,7 +289,12 @@ class PathwaySurvivabilityEngine:
 
         # Rule: Fully sprinklered + full evacuation → Level 1 permitted
         # V20.2 FIX: NFPA 72 §12.3.3 — Level 1 ONLY if fully sprinklered
-        if spec.is_sprinklered and spec.evacuation_type == "full" and not spec.is_high_rise and not spec.has_voice_evac:
+        if (
+            spec.is_sprinklered
+            and spec.evacuation_type == "full"
+            and not spec.is_high_rise
+            and not spec.has_voice_evac
+        ):
             if required_level > PathwaySurvivabilityLevel.LEVEL_1:
                 # Higher level already determined — keep it
                 pass
@@ -304,7 +309,9 @@ class PathwaySurvivabilityEngine:
         # NFPA 72 §12.3.3: Central station monitoring requires at
         # least Level 1 (which is always satisfied).
         if spec.has_central_station:
-            rationale.append("§12.3.3: Central station monitoring → Level 1 minimum (already satisfied by all levels).")
+            rationale.append(
+                "§12.3.3: Central station monitoring → Level 1 minimum (already satisfied by all levels)."
+            )
 
         result.building_level = required_level
 
@@ -323,7 +330,9 @@ class PathwaySurvivabilityEngine:
             )
             required_level = PathwaySurvivabilityLevel.LEVEL_2
             result.building_level = required_level  # V78 FIX: Propagate correction to result
-            result.warnings.append("Corrected: Non-sprinklered building escalated to Level 2 per NFPA 72 §12.3.3.")
+            result.warnings.append(
+                "Corrected: Non-sprinklered building escalated to Level 2 per NFPA 72 §12.3.3."
+            )
 
         if spec.is_high_rise and not spec.has_voice_evac:
             result.warnings.append(
@@ -463,9 +472,7 @@ class PathwaySurvivabilityEngine:
             if level == PathwaySurvivabilityLevel.LEVEL_3:
                 plenum_enclosure = True
                 plenum_rating = 2.0
-                plenum_notes = (
-                    "CI cable in 2-hour rated enclosure in plenum spaces. Level 3 requires maximum protection."
-                )
+                plenum_notes = "CI cable in 2-hour rated enclosure in plenum spaces. Level 3 requires maximum protection."
 
         requirements.append(
             CableRequirement(

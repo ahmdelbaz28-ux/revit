@@ -45,8 +45,8 @@ from fireai.conduit.types import (
 # ─────────────────────────────────────────────────────────────────────────────
 
 # NEC Chapter 9, Table 1: maximum conduit fill by conductor count
-_MAX_FILL_1_CONDUCTOR:    float = 53.0  # NEC Ch.9 Table 1, col "1 Wire"
-_MAX_FILL_2_CONDUCTORS:   float = 31.0  # NEC Ch.9 Table 1, col "2 Wires"
+_MAX_FILL_1_CONDUCTOR: float = 53.0  # NEC Ch.9 Table 1, col "1 Wire"
+_MAX_FILL_2_CONDUCTORS: float = 31.0  # NEC Ch.9 Table 1, col "2 Wires"
 _MAX_FILL_3PLUS_CONDUCTORS: float = 40.0  # NEC Ch.9 Table 1, col "Over 2 Wires"
 
 
@@ -72,36 +72,33 @@ def _max_fill_pct(conductor_count: int) -> float:
 # Source: NEC 2022 Chapter 9, Table 4
 _INTERNAL_AREA_IN2: dict[tuple[ConduitType, TradeSize], float] = {
     # EMT — Electrical Metallic Tubing (NEC Table 4, EMT section)
-    (ConduitType.EMT, TradeSize.HALF):      0.304,
+    (ConduitType.EMT, TradeSize.HALF): 0.304,
     (ConduitType.EMT, TradeSize.THREE_QTR): 0.533,
-    (ConduitType.EMT, TradeSize.ONE):       0.864,
-    (ConduitType.EMT, TradeSize.ONE_QTR):  1.496,
+    (ConduitType.EMT, TradeSize.ONE): 0.864,
+    (ConduitType.EMT, TradeSize.ONE_QTR): 1.496,
     (ConduitType.EMT, TradeSize.ONE_HALF): 2.036,
-    (ConduitType.EMT, TradeSize.TWO):      3.356,
-
+    (ConduitType.EMT, TradeSize.TWO): 3.356,
     # UPVC Schedule 40 — Rigid PVC (NEC Table 4, PVC Sch 40 section)
-    (ConduitType.UPVC_SCH40, TradeSize.HALF):      0.220,
+    (ConduitType.UPVC_SCH40, TradeSize.HALF): 0.220,
     (ConduitType.UPVC_SCH40, TradeSize.THREE_QTR): 0.410,
-    (ConduitType.UPVC_SCH40, TradeSize.ONE):       0.690,
-    (ConduitType.UPVC_SCH40, TradeSize.ONE_QTR):  1.240,
+    (ConduitType.UPVC_SCH40, TradeSize.ONE): 0.690,
+    (ConduitType.UPVC_SCH40, TradeSize.ONE_QTR): 1.240,
     (ConduitType.UPVC_SCH40, TradeSize.ONE_HALF): 1.710,
-    (ConduitType.UPVC_SCH40, TradeSize.TWO):      2.930,
-
+    (ConduitType.UPVC_SCH40, TradeSize.TWO): 2.930,
     # UPVC Schedule 80 — Rigid PVC heavy wall (NEC Table 4, PVC Sch 80 section)
-    (ConduitType.UPVC_SCH80, TradeSize.HALF):      0.164,
+    (ConduitType.UPVC_SCH80, TradeSize.HALF): 0.164,
     (ConduitType.UPVC_SCH80, TradeSize.THREE_QTR): 0.333,
-    (ConduitType.UPVC_SCH80, TradeSize.ONE):       0.581,
-    (ConduitType.UPVC_SCH80, TradeSize.ONE_QTR):  1.079,
+    (ConduitType.UPVC_SCH80, TradeSize.ONE): 0.581,
+    (ConduitType.UPVC_SCH80, TradeSize.ONE_QTR): 1.079,
     (ConduitType.UPVC_SCH80, TradeSize.ONE_HALF): 1.520,
-    (ConduitType.UPVC_SCH80, TradeSize.TWO):      2.648,
-
+    (ConduitType.UPVC_SCH80, TradeSize.TWO): 2.648,
     # RGD — Rigid Metal Conduit (NEC Table 4, RMC section)
-    (ConduitType.RGD, TradeSize.HALF):      0.220,
+    (ConduitType.RGD, TradeSize.HALF): 0.220,
     (ConduitType.RGD, TradeSize.THREE_QTR): 0.410,
-    (ConduitType.RGD, TradeSize.ONE):       0.690,
-    (ConduitType.RGD, TradeSize.ONE_QTR):  1.240,
+    (ConduitType.RGD, TradeSize.ONE): 0.690,
+    (ConduitType.RGD, TradeSize.ONE_QTR): 1.240,
     (ConduitType.RGD, TradeSize.ONE_HALF): 1.710,
-    (ConduitType.RGD, TradeSize.TWO):      2.930,
+    (ConduitType.RGD, TradeSize.TWO): 2.930,
 }
 
 # Ordered trade sizes for "next larger" recommendation
@@ -147,18 +144,20 @@ def get_internal_area(
     key = (conduit_type, trade_size)
     area = _INTERNAL_AREA_IN2.get(key)
     if area is None:
-        return Result.err(PhysicsError(
-            message=(
-                f"No NEC Table 4 entry for "
-                f"{conduit_type.value} {trade_size.value}. "
-                "This conduit type/size combination is not in NEC Table 4."
-            ),
-            remediation=(
-                "Verify conduit type and trade size. "
-                "Only sizes ½\" through 2\" are currently catalogued. "
-                "For larger sizes, extend _INTERNAL_AREA_IN2."
-            ),
-        ))
+        return Result.err(
+            PhysicsError(
+                message=(
+                    f"No NEC Table 4 entry for "
+                    f"{conduit_type.value} {trade_size.value}. "
+                    "This conduit type/size combination is not in NEC Table 4."
+                ),
+                remediation=(
+                    "Verify conduit type and trade size. "
+                    'Only sizes ½" through 2" are currently catalogued. '
+                    "For larger sizes, extend _INTERNAL_AREA_IN2."
+                ),
+            )
+        )
     return Result.ok(area)
 
 
@@ -197,28 +196,34 @@ def calculate_fill(
     # ── Input validation ─────────────────────────────────────────────────────
 
     if not cable_diameters_in:
-        return Result.err(PhysicsError(
-            message="cable_diameters_in must not be empty.",
-            remediation=(
-                "Provide at least one conductor diameter. "
-                "If the conduit is empty, no fill calculation is needed."
-            ),
-        ))
+        return Result.err(
+            PhysicsError(
+                message="cable_diameters_in must not be empty.",
+                remediation=(
+                    "Provide at least one conductor diameter. "
+                    "If the conduit is empty, no fill calculation is needed."
+                ),
+            )
+        )
 
     for i, d in enumerate(cable_diameters_in):
         if not math.isfinite(d):
-            return Result.err(PhysicsError(
-                message=f"cable_diameters_in[{i}]={d} is not finite.",
-                remediation="All cable diameters must be positive finite numbers.",
-            ))
+            return Result.err(
+                PhysicsError(
+                    message=f"cable_diameters_in[{i}]={d} is not finite.",
+                    remediation="All cable diameters must be positive finite numbers.",
+                )
+            )
         if d <= 0.0:
-            return Result.err(PhysicsError(
-                message=f"cable_diameters_in[{i}]={d} ≤ 0.",
-                remediation=(
-                    "All cable diameters must be strictly positive. "
-                    "Verify conductor OD values from NEC Table 5 or manufacturer data."
-                ),
-            ))
+            return Result.err(
+                PhysicsError(
+                    message=f"cable_diameters_in[{i}]={d} ≤ 0.",
+                    remediation=(
+                        "All cable diameters must be strictly positive. "
+                        "Verify conductor OD values from NEC Table 5 or manufacturer data."
+                    ),
+                )
+            )
 
     # ── Get conduit internal area from NEC Table 4 ───────────────────────────
 
@@ -228,19 +233,18 @@ def calculate_fill(
     conduit_area = area_result.value
 
     if conduit_area <= 0.0:
-        return Result.err(PhysicsError(
-            message=f"Conduit internal area={conduit_area} ≤ 0 in².",
-            remediation="Internal area must be positive. Check NEC Table 4 data.",
-        ))
+        return Result.err(
+            PhysicsError(
+                message=f"Conduit internal area={conduit_area} ≤ 0 in².",
+                remediation="Internal area must be positive. Check NEC Table 4 data.",
+            )
+        )
 
     # ── Calculate total conductor cross-sectional area ───────────────────────
     # Formula: π × (d/2)² = π × d² / 4
     # NEC Chapter 9, Table 5 uses this formula (area = π/4 × OD²)
 
-    total_conductor_area: float = sum(
-        math.pi * (d / 2.0) ** 2
-        for d in cable_diameters_in
-    )
+    total_conductor_area: float = sum(math.pi * (d / 2.0) ** 2 for d in cable_diameters_in)
 
     # ── Fill percentage ───────────────────────────────────────────────────────
 
@@ -284,21 +288,26 @@ def calculate_fill(
     )
 
     if not is_compliant:
-        return Result.err(CodeViolationError(
-            message=(
-                f"Conduit fill {fill_pct:.2f}% exceeds NEC Table 1 limit "
-                f"of {max_pct:.0f}% for {n} conductor(s) in "
-                f"{conduit_type.value} {trade_size.value}. "
-                + (f"Recommended: {recommended.value}." if recommended else
-                   "No standard size in catalog can accommodate these conductors.")
-            ),
-            code_reference=nec_ref,
-            remediation=(
-                f"""Increase conduit to {recommended.value if recommended else 'larger than 2"'}, """
-                "reduce conductor count, or split conductors into two conduits."
-            ),
-            severity=Severity.FATAL,
-        ))
+        return Result.err(
+            CodeViolationError(
+                message=(
+                    f"Conduit fill {fill_pct:.2f}% exceeds NEC Table 1 limit "
+                    f"of {max_pct:.0f}% for {n} conductor(s) in "
+                    f"{conduit_type.value} {trade_size.value}. "
+                    + (
+                        f"Recommended: {recommended.value}."
+                        if recommended
+                        else "No standard size in catalog can accommodate these conductors."
+                    )
+                ),
+                code_reference=nec_ref,
+                remediation=(
+                    f"""Increase conduit to {recommended.value if recommended else 'larger than 2"'}, """
+                    "reduce conductor count, or split conductors into two conduits."
+                ),
+                severity=Severity.FATAL,
+            )
+        )
 
     return Result.ok(result)
 

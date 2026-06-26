@@ -404,7 +404,9 @@ def _print_report(report: DependencyReport, root: Path) -> int:
 
     # Unused public modules
     if report.unused_public_modules:
-        print(f"\n[WARN] Modules not imported by any other module ({len(report.unused_public_modules)}):")
+        print(
+            f"\n[WARN] Modules not imported by any other module ({len(report.unused_public_modules)}):"
+        )
         for mod in report.unused_public_modules[:20]:
             print(f"  {mod}")
         if len(report.unused_public_modules) > 20:
@@ -415,7 +417,11 @@ def _print_report(report: DependencyReport, root: Path) -> int:
     # Summary
     print(f"\n{sep}")
     has_critical = any(c.severity == "CRITICAL" for c in report.circular_imports)
-    status = "FAIL" if has_critical else ("WARN" if report.circular_imports or report.dead_code_issues else "PASS")
+    status = (
+        "FAIL"
+        if has_critical
+        else ("WARN" if report.circular_imports or report.dead_code_issues else "PASS")
+    )
     print(f"Status: {status}")
     print(sep)
     return 1 if has_critical else 0

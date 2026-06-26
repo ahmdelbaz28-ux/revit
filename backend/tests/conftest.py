@@ -69,6 +69,7 @@ os.environ["FIREAI_API_KEY"] = TEST_API_KEY
 # regardless of when it's constructed.
 try:
     from starlette.testclient import TestClient as _StarletteTestClient
+
     _original_testclient_init = _StarletteTestClient.__init__
 
     def _patched_testclient_init(self, *args, **kwargs) -> None:
@@ -104,14 +105,21 @@ try:
     _NON_VERSIONED_API_PATHS: set[str] = set()
     try:
         import os as _os
+
         _os.environ.setdefault("FIREAI_API_KEY", TEST_API_KEY)
         import logging as _logging
+
         _logging.disable(_logging.CRITICAL)
         from backend.app import app as _app
+
         _schema = _app.openapi()
         for _path in _schema.get("paths", {}):
             # Collect /api/* paths that are NOT under /api/v1/ or /api/v2/
-            if _path.startswith("/api/") and not _path.startswith("/api/v1/") and not _path.startswith("/api/v2/"):
+            if (
+                _path.startswith("/api/")
+                and not _path.startswith("/api/v1/")
+                and not _path.startswith("/api/v2/")
+            ):
                 # Strip path params ({project_id} etc.) for prefix matching
                 _NON_VERSIONED_API_PATHS.add(_path.split("/{")[0])
         _logging.disable(_logging.NOTSET)
@@ -141,7 +149,7 @@ try:
             if path_only == prefix or path_only.startswith(prefix + "/"):
                 return url  # Don't rewrite — route exists at /api/
         # Default: rewrite to /api/v1/
-        return "/api/v1/" + url[len("/api/"):]
+        return "/api/v1/" + url[len("/api/") :]
 
     for _method_name in _HTTP_METHODS:
         _original_method = getattr(_StarletteTestClient, _method_name)
@@ -149,16 +157,21 @@ try:
         def _make_patched_method(orig, name: str):
             def _patched_method(self, url, *args, **kwargs):
                 return orig(self, _rewrite_legacy_url(url), *args, **kwargs)
+
             _patched_method.__name__ = name
             return _patched_method
 
-        setattr(_StarletteTestClient, _method_name, _make_patched_method(_original_method, _method_name))
+        setattr(
+            _StarletteTestClient, _method_name, _make_patched_method(_original_method, _method_name)
+        )
 
     # Also patch `request` (lower-level method used by some tests)
     if hasattr(_StarletteTestClient, "request"):
         _original_request = _StarletteTestClient.request
+
         def _patched_request(self, method, url, *args, **kwargs):
             return _original_request(self, method, _rewrite_legacy_url(url), *args, **kwargs)
+
         _StarletteTestClient.request = _patched_request
 
     # ── WebSocket handshake helper (test-only) ───────────────────────────────

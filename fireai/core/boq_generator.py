@@ -303,7 +303,11 @@ def generate_detector_boq(
     for det_type, quantity in sorted(type_counts.items()):
         unit_cost = UNIT_COSTS.get(det_type, 0.0)
         nfpa_ref = (
-            "NFPA 72 §17.6" if "smoke" in det_type else "NFPA 72 §17.9" if "heat" in det_type else "NFPA 72 §17.13"
+            "NFPA 72 §17.6"
+            if "smoke" in det_type
+            else "NFPA 72 §17.9"
+            if "heat" in det_type
+            else "NFPA 72 §17.13"
         )
         unit_label = "ea" if det_type != "duct_detector" else "ea"
 
@@ -367,7 +371,9 @@ def generate_isolator_boq(loops: list[dict]) -> list[BOQItem]:
 
         existing = compliance.get("isolator_count", 0)
 
-        if not compliance.get("compliant", False):  # V111 FIX: Fail-safe default — missing key = NOT compliant
+        if not compliance.get(
+            "compliant", False
+        ):  # V111 FIX: Fail-safe default — missing key = NOT compliant
             # Estimate needed isolators from the worst segment
             worst_segment = compliance.get(
                 "max_segment_devices", 0
@@ -762,7 +768,9 @@ def generate_full_boq(
             f"Verify voltage drop and signal integrity per NFPA 72 §12.2."
         )
     if detector_count == 0:
-        warnings.append("No detectors in BOQ. Verify that detection requirements are met per NFPA 72 §17.3.")
+        warnings.append(
+            "No detectors in BOQ. Verify that detection requirements are met per NFPA 72 §17.3."
+        )
     if panels > 3:
         warnings.append(
             f"Multiple panels ({panels}) – ensure network configuration complies with NFPA 72 §10.6.7 and §23.8."

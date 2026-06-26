@@ -125,7 +125,9 @@ def _analyse_room(data: dict[str, Any]) -> int:
                 length=length,
                 ceiling_height=ceiling_h,
             )
-            cov_det_type: Literal["smoke", "heat"] = "heat" if "heat" in det_type.lower() else "smoke"
+            cov_det_type: Literal["smoke", "heat"] = (
+                "heat" if "heat" in det_type.lower() else "smoke"
+            )
             spec = calculate_coverage_radius_from_height(ceiling_h, cov_det_type)
             radius = spec.radius
             layout = DensityOptimizer().optimize(room, coverage_radius=radius)

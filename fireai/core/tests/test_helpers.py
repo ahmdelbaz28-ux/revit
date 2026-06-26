@@ -108,8 +108,10 @@ def make_circle_polygon(radius: float, num_points: int = 36) -> Geometry:
 
     """
     pts = tuple(
-        Point3D(x=radius * math.cos(2 * math.pi * i / num_points),
-                y=radius * math.sin(2 * math.pi * i / num_points))
+        Point3D(
+            x=radius * math.cos(2 * math.pi * i / num_points),
+            y=radius * math.sin(2 * math.pi * i / num_points),
+        )
         for i in range(num_points)
     )
     return Geometry(points=pts, polyline_closed=True)

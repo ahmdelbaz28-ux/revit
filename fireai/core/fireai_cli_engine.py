@@ -297,7 +297,9 @@ class CLIFireAIEngine:
                             new_val = parts[1].split("%")[0].strip()
                             lfl_corrected = float(new_val)
                             if substance.lfl_vol_pct and lfl_corrected:
-                                lfl_correction_pct = round((1.0 - lfl_corrected / substance.lfl_vol_pct) * 100.0, 2)
+                                lfl_correction_pct = round(
+                                    (1.0 - lfl_corrected / substance.lfl_vol_pct) * 100.0, 2
+                                )
                     except (ValueError, IndexError):
                         pass
                     break
@@ -479,8 +481,12 @@ class CLIFireAIEngine:
                 audit_status=report.status,
                 total_checks=report.total_checks,
                 passed_checks=report.passed_checks,
-                critical_violations=tuple(v.message for v in report.violations if v.severity == "CRITICAL"),
-                warning_violations=tuple(v.message for v in report.violations if v.severity == "WARNING"),
+                critical_violations=tuple(
+                    v.message for v in report.violations if v.severity == "CRITICAL"
+                ),
+                warning_violations=tuple(
+                    v.message for v in report.violations if v.severity == "WARNING"
+                ),
                 info_violations=tuple(v.message for v in report.violations if v.severity == "INFO"),
                 all_violations=tuple(v.message for v in report.violations),
                 success=report.is_pass,
@@ -601,7 +607,9 @@ class CLIFireAIEngine:
             0,
             self._env_context.jurisdiction.value,
         )
-        detector_zs = [d.position[2] for d in detectors if len(d.position) > 2] if detectors else None
+        detector_zs = (
+            [d.position[2] for d in detectors if len(d.position) > 2] if detectors else None
+        )
         l6 = self.run_layer6(
             zone=l2.zone,
             hazard_type=l2.hazard_type,

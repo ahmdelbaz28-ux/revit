@@ -49,12 +49,12 @@ logger = logging.getLogger(__name__)
 class AQILevel(IntEnum):
     """EPA Air Quality Index levels — used for tenability baseline."""
 
-    GOOD = 50           # 0-50: Satisfactory
-    MODERATE = 100      # 51-100: Acceptable
+    GOOD = 50  # 0-50: Satisfactory
+    MODERATE = 100  # 51-100: Acceptable
     UNHEALTHY_SENSITIVE = 150  # 101-150: Unhealthy for sensitive groups
-    UNHEALTHY = 200     # 151-200: Unhealthy
+    UNHEALTHY = 200  # 151-200: Unhealthy
     VERY_UNHEALTHY = 300  # 201-300: Very unhealthy
-    HAZARDOUS = 500     # 301-500: Hazardous
+    HAZARDOUS = 500  # 301-500: Hazardous
 
 
 # Conservative default: assume MODERATE AQI for engineering calculations
@@ -197,9 +197,7 @@ class AirQualityService:
         wait=wait_exponential(min=1, max=10),
         reraise=True,
     )
-    async def _fetch_waqi(
-        self, latitude: float, longitude: float
-    ) -> AirQualityData:
+    async def _fetch_waqi(self, latitude: float, longitude: float) -> AirQualityData:
         """
         Fetch air quality from WAQI (World Air Quality Index) API.
 
@@ -231,8 +229,7 @@ class AirQualityService:
         # WAQI returns {"status": "ok", "data": {...}} on success
         if body.get("status") != "ok":
             raise ValueError(
-                f"WAQI returned status='{body.get('status')}' "
-                f"for lat={latitude}, lon={longitude}"
+                f"WAQI returned status='{body.get('status')}' for lat={latitude}, lon={longitude}"
             )
 
         data = body.get("data", {})
@@ -428,9 +425,7 @@ class AirQualityService:
 
         """
         if not (-90 <= latitude <= 90 and -180 <= longitude <= 180):
-            logger.warning(
-                f"Invalid coordinates: lat={latitude}, lon={longitude}. Using defaults."
-            )
+            logger.warning(f"Invalid coordinates: lat={latitude}, lon={longitude}. Using defaults.")
             return self._get_default(latitude, longitude)
 
         # Check cache

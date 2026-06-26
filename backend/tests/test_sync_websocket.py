@@ -17,6 +17,7 @@ from fastapi.testclient import TestClient
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
+
 @pytest.fixture(scope="module", autouse=True)
 def _setup_env() -> None:
     """Set development environment for testing."""
@@ -28,6 +29,7 @@ def _setup_env() -> None:
 def client():
     """Create a test client for the FastAPI app."""
     from backend.app import app
+
     with TestClient(app) as c:
         yield c
 

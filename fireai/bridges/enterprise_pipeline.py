@@ -125,11 +125,10 @@ class EnterpriseOrchestrator:
                 StrictBatterySizer,
                 TenabilityEvaluator,
             )
+
             self._v17_available = True
         except ImportError as e:
-            logger.critical(
-                f"V17 core modules unavailable: {e}. Enterprise pipeline DISABLED."
-            )
+            logger.critical(f"V17 core modules unavailable: {e}. Enterprise pipeline DISABLED.")
             self._v17_available = False
             self.acoustic_calc = None
             self.battery_sizer = None

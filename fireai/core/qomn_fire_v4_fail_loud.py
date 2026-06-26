@@ -48,19 +48,19 @@ class Config:
     في الإنتاج: يرفض العمل بدون QOMN_AUDIT_SECRET.
     """
 
-    SECRET_KEY: bytes = os.environ.get('QOMN_AUDIT_SECRET', '').encode()
-    CB_LIMIT: int = int(os.getenv('QOMN_CB_LIMIT', '15'))
-    CB_WINDOW: float = float(os.getenv('QOMN_CB_WINDOW', '60.0'))
-    CB_COOLDOWN: float = float(os.getenv('QOMN_CB_COOLDOWN', '30.0'))
-    CB_HALF_OPEN_MAX: int = int(os.getenv('QOMN_CB_HALF_OPEN', '3'))
-    AUDIT_FILE: str = os.getenv('QOMN_AUDIT_FILE', 'qomn_healing_audit.jsonl')
+    SECRET_KEY: bytes = os.environ.get("QOMN_AUDIT_SECRET", "").encode()
+    CB_LIMIT: int = int(os.getenv("QOMN_CB_LIMIT", "15"))
+    CB_WINDOW: float = float(os.getenv("QOMN_CB_WINDOW", "60.0"))
+    CB_COOLDOWN: float = float(os.getenv("QOMN_CB_COOLDOWN", "30.0"))
+    CB_HALF_OPEN_MAX: int = int(os.getenv("QOMN_CB_HALF_OPEN", "3"))
+    AUDIT_FILE: str = os.getenv("QOMN_AUDIT_FILE", "qomn_healing_audit.jsonl")
 
     # [v4.0 NEW] هل نرفض العمل بدون مفتاح سري؟
-    REFUSE_ON_MISSING_SECRET: bool = os.getenv('QOMN_REFUSE_NO_SECRET', 'true').lower() == 'true'
+    REFUSE_ON_MISSING_SECRET: bool = os.getenv("QOMN_REFUSE_NO_SECRET", "true").lower() == "true"
 
     @classmethod
     def is_production(cls) -> bool:
-        return cls.SECRET_KEY != b''
+        return cls.SECRET_KEY != b""
 
     @classmethod
     def verify_ready(cls) -> None:
@@ -80,11 +80,11 @@ class Config:
 # DATA TYPES — مع REJECTED و Human Review Gate
 # =====================================================================
 class SystemStatus(Enum):
-    NOMINAL = "NOMINAL"                         # الحساب نجح بدون أي تدخل
-    HEALED = "HEALED"                           # استُبدلت القيمة — يحتاج مراجعة بشرية
-    REJECTED = "REJECTED"                       # الحساب فشل — توقف فوري للخط
+    NOMINAL = "NOMINAL"  # الحساب نجح بدون أي تدخل
+    HEALED = "HEALED"  # استُبدلت القيمة — يحتاج مراجعة بشرية
+    REJECTED = "REJECTED"  # الحساب فشل — توقف فوري للخط
     CRITICAL_CIRCUIT_OPEN = "CRITICAL_CIRCUIT_OPEN"  # قاطع الدائرة مفتوح
-    DEGRADED = "DEGRADED"                       # أداء منخفض لكن يعمل
+    DEGRADED = "DEGRADED"  # أداء منخفض لكن يعمل
 
 
 @dataclass(frozen=True)
@@ -137,20 +137,20 @@ class SafetyResult:
 # أخطاء قاتلة = لا يمكن "شفاءها" بأمان = يجب رفضها
 FATAL_ERRORS: tuple[type, ...] = (
     ZeroDivisionError,  # قسمة على صفر = فيزياء مستحيلة
-    MemoryError,        # لا ذاكرة = لا يمكن الوثوق بأي نتيجة
-    OSError,            # فشل I/O = البيانات قد تكون تالفة
-    RuntimeError,       # خطأ عام = لا نعرف ما حدث
-    ConnectionError,    # انقطاع اتصال = بيانات ناقصة
-    PermissionError,    # لا صلاحية = نظام مُخترق أو مُعطّل
+    MemoryError,  # لا ذاكرة = لا يمكن الوثوق بأي نتيجة
+    OSError,  # فشل I/O = البيانات قد تكون تالفة
+    RuntimeError,  # خطأ عام = لا نعرف ما حدث
+    ConnectionError,  # انقطاع اتصال = بيانات ناقصة
+    PermissionError,  # لا صلاحية = نظام مُخترق أو مُعطّل
 )
 
 # أخطاء قابلة للشفاء = يمكن استبدالها بقيمة آمنة مع إنذار
 RECOVERABLE_ERRORS: tuple[type, ...] = (
-    IndexError,      # فهرس خارج النطاق = يمكن استخدام آخر عنصر
-    TimeoutError,    # انتهت المهلة = يمكن استخدام قيمة دنيا
-    ValueError,      # قيمة خاطئة = يمكن استخدام safe_minimum
-    KeyError,        # مفتاح مفقود = يمكن استخدام default
-    TypeError,       # نوع خاطئ = يمكن تحويل النوع
+    IndexError,  # فهرس خارج النطاق = يمكن استخدام آخر عنصر
+    TimeoutError,  # انتهت المهلة = يمكن استخدام قيمة دنيا
+    ValueError,  # قيمة خاطئة = يمكن استخدام safe_minimum
+    KeyError,  # مفتاح مفقود = يمكن استخدام default
+    TypeError,  # نوع خاطئ = يمكن تحويل النوع
 )
 
 
@@ -317,11 +317,14 @@ class WeightedCircuitBreaker:
     - لا يسمح بالانتقال من OPEN إلى CLOSED مباشرة.
     """
 
-    def __init__(self, limit: int = Config.CB_LIMIT,
-                 window: float = Config.CB_WINDOW,
-                 cooldown: float = Config.CB_COOLDOWN,
-                 half_open_max: int = Config.CB_HALF_OPEN_MAX,
-                 name: str = "unnamed") -> None:
+    def __init__(
+        self,
+        limit: int = Config.CB_LIMIT,
+        window: float = Config.CB_WINDOW,
+        cooldown: float = Config.CB_COOLDOWN,
+        half_open_max: int = Config.CB_HALF_OPEN_MAX,
+        name: str = "unnamed",
+    ) -> None:
         self.limit = limit
         self.window = window
         self.cooldown = cooldown
@@ -462,7 +465,7 @@ def fail_loud_v4(
                     status=SystemStatus.REJECTED,
                     metadata={"error": str(e), "tier": "pre-check"},
                     human_review_required=True,
-                    rejection_reason=f"Audit system unavailable: {e}"
+                    rejection_reason=f"Audit system unavailable: {e}",
                 )
 
             # تجزئة المدخلات (بدون بيانات حساسة)
@@ -481,25 +484,30 @@ def fail_loud_v4(
 
             # Tier 3: Circuit Breaker
             if cb.is_open:
-                audit_ref = logger.log_event({
-                    "function_name": func_name,
-                    "error_type": "CircuitBreakerOpen",
-                    "error_message": f"Breaker OPEN for {func_name} due to excessive fault rate "
-                                     f"(total_errors={cb.total_errors})",
-                    "tier_used": 3,
-                    "status": "CRITICAL_CIRCUIT_OPEN",
-                    "nfpa_ref": nfpa_reference,
-                    "severity": "CRITICAL",
-                })
+                audit_ref = logger.log_event(
+                    {
+                        "function_name": func_name,
+                        "error_type": "CircuitBreakerOpen",
+                        "error_message": f"Breaker OPEN for {func_name} due to excessive fault rate "
+                        f"(total_errors={cb.total_errors})",
+                        "tier_used": 3,
+                        "status": "CRITICAL_CIRCUIT_OPEN",
+                        "nfpa_ref": nfpa_reference,
+                        "severity": "CRITICAL",
+                    }
+                )
 
                 return SafetyResult(
                     value=None,
                     status=SystemStatus.CRITICAL_CIRCUIT_OPEN,
-                    metadata={"error": "Breaker Tripped", "state": cb.state,
-                              "total_errors": cb.total_errors},
+                    metadata={
+                        "error": "Breaker Tripped",
+                        "state": cb.state,
+                        "total_errors": cb.total_errors,
+                    },
                     audit_ref=audit_ref,
                     human_review_required=True,
-                    rejection_reason=f"Circuit breaker OPEN after {cb.total_errors} errors"
+                    rejection_reason=f"Circuit breaker OPEN after {cb.total_errors} errors",
                 )
 
             # Normal path
@@ -508,30 +516,34 @@ def fail_loud_v4(
 
                 # [v4.0 NEW] التحقق من النتيجة حتى في المسار الناجح
                 if _is_physically_invalid(nominal_val):
-                    audit_ref = logger.log_event({
-                        "function_name": func_name,
-                        "error_type": "InvalidNominalResult",
-                        "error_message": f"Function returned physically invalid value: {nominal_val}",
-                        "tier_used": 0,
-                        "status": "REJECTED",
-                        "nfpa_ref": nfpa_reference,
-                        "severity": "CRITICAL",
-                    })
+                    audit_ref = logger.log_event(
+                        {
+                            "function_name": func_name,
+                            "error_type": "InvalidNominalResult",
+                            "error_message": f"Function returned physically invalid value: {nominal_val}",
+                            "tier_used": 0,
+                            "status": "REJECTED",
+                            "nfpa_ref": nfpa_reference,
+                            "severity": "CRITICAL",
+                        }
+                    )
                     return SafetyResult(
                         value=None,
                         status=SystemStatus.REJECTED,
-                        metadata={"error": "Nominal result is physically invalid",
-                                  "returned_value": str(nominal_val)},
+                        metadata={
+                            "error": "Nominal result is physically invalid",
+                            "returned_value": str(nominal_val),
+                        },
                         audit_ref=audit_ref,
                         human_review_required=True,
-                        rejection_reason=f"Function returned invalid value: {nominal_val}"
+                        rejection_reason=f"Function returned invalid value: {nominal_val}",
                     )
 
                 cb.record_success()
                 return SafetyResult(
                     value=nominal_val,
                     status=SystemStatus.NOMINAL,
-                    metadata={"nfpa_ref": nfpa_reference, "unit": unit}
+                    metadata={"nfpa_ref": nfpa_reference, "unit": unit},
                 )
 
             except Exception as e:
@@ -547,71 +559,86 @@ def fail_loud_v4(
 
                 if not allow_healing:
                     # الحساب حرج — لا شفاء مسموح
-                    audit_ref = logger.log_event({
-                        "function_name": func_name,
-                        "error_type": f"CRITICAL_BLOCKED:{err_type}",
-                        "error_message": err_msg,
-                        "error_classification": err_classification,
-                        "tier_used": 0,
-                        "status": "REJECTED",
-                        "nfpa_ref": nfpa_reference,
-                        "severity": "CRITICAL",
-                        "reason": "Healing not allowed for this critical calculation",
-                    })
+                    audit_ref = logger.log_event(
+                        {
+                            "function_name": func_name,
+                            "error_type": f"CRITICAL_BLOCKED:{err_type}",
+                            "error_message": err_msg,
+                            "error_classification": err_classification,
+                            "tier_used": 0,
+                            "status": "REJECTED",
+                            "nfpa_ref": nfpa_reference,
+                            "severity": "CRITICAL",
+                            "reason": "Healing not allowed for this critical calculation",
+                        }
+                    )
                     return SafetyResult(
                         value=None,
                         status=SystemStatus.REJECTED,
-                        metadata={"error": err_msg, "error_type": err_type,
-                                  "classification": err_classification},
+                        metadata={
+                            "error": err_msg,
+                            "error_type": err_type,
+                            "classification": err_classification,
+                        },
                         audit_ref=audit_ref,
                         human_review_required=True,
-                        rejection_reason=f"Critical calculation failed ({err_type}): {err_msg}"
+                        rejection_reason=f"Critical calculation failed ({err_type}): {err_msg}",
                     )
 
                 if err_classification == "FATAL":
                     # خطأ قاتل — لا شفاء. الـ pipeline يتوقف.
-                    audit_ref = logger.log_event({
-                        "function_name": func_name,
-                        "error_type": f"FATAL:{err_type}",
-                        "error_message": err_msg,
-                        "error_classification": "FATAL",
-                        "tier_used": 1,
-                        "status": "REJECTED",
-                        "nfpa_ref": nfpa_reference,
-                        "severity": "CRITICAL",
-                        "reason": "Fatal error — cannot safely heal. Pipeline must stop.",
-                    })
+                    audit_ref = logger.log_event(
+                        {
+                            "function_name": func_name,
+                            "error_type": f"FATAL:{err_type}",
+                            "error_message": err_msg,
+                            "error_classification": "FATAL",
+                            "tier_used": 1,
+                            "status": "REJECTED",
+                            "nfpa_ref": nfpa_reference,
+                            "severity": "CRITICAL",
+                            "reason": "Fatal error — cannot safely heal. Pipeline must stop.",
+                        }
+                    )
                     return SafetyResult(
                         value=None,
                         status=SystemStatus.REJECTED,
-                        metadata={"error": err_msg, "error_type": err_type,
-                                  "classification": "FATAL"},
+                        metadata={
+                            "error": err_msg,
+                            "error_type": err_type,
+                            "classification": "FATAL",
+                        },
                         audit_ref=audit_ref,
                         human_review_required=True,
-                        rejection_reason=f"Fatal error ({err_type}): {err_msg}"
+                        rejection_reason=f"Fatal error ({err_type}): {err_msg}",
                     )
 
                 if err_classification == "UNKNOWN":
                     # خطأ مجهول — في نظام سلامة حرائق = رفض
-                    audit_ref = logger.log_event({
-                        "function_name": func_name,
-                        "error_type": f"UNKNOWN:{err_type}",
-                        "error_message": err_msg,
-                        "error_classification": "UNKNOWN",
-                        "tier_used": 1,
-                        "status": "REJECTED",
-                        "nfpa_ref": nfpa_reference,
-                        "severity": "CRITICAL",
-                        "reason": "Unknown error type — cannot safely heal in fire safety system.",
-                    })
+                    audit_ref = logger.log_event(
+                        {
+                            "function_name": func_name,
+                            "error_type": f"UNKNOWN:{err_type}",
+                            "error_message": err_msg,
+                            "error_classification": "UNKNOWN",
+                            "tier_used": 1,
+                            "status": "REJECTED",
+                            "nfpa_ref": nfpa_reference,
+                            "severity": "CRITICAL",
+                            "reason": "Unknown error type — cannot safely heal in fire safety system.",
+                        }
+                    )
                     return SafetyResult(
                         value=None,
                         status=SystemStatus.REJECTED,
-                        metadata={"error": err_msg, "error_type": err_type,
-                                  "classification": "UNKNOWN"},
+                        metadata={
+                            "error": err_msg,
+                            "error_type": err_type,
+                            "classification": "UNKNOWN",
+                        },
                         audit_ref=audit_ref,
                         human_review_required=True,
-                        rejection_reason=f"Unknown error ({err_type}): {err_msg}"
+                        rejection_reason=f"Unknown error ({err_type}): {err_msg}",
                     )
 
                 # err_classification == "RECOVERABLE"
@@ -631,26 +658,30 @@ def fail_loud_v4(
                     try:
                         is_valid = physics_validator(healed_val)
                         if not is_valid:
-                            validation_error = f"Physics validator rejected healed value: {healed_val}"
+                            validation_error = (
+                                f"Physics validator rejected healed value: {healed_val}"
+                            )
                     except Exception as ve:
                         is_valid = False
                         validation_error = f"Physics validator crashed: {ve}"
 
                 # [v4.0 CRITICAL CHANGE] إذا فشل التحقق الفيزيائي = رفض وليس 0.0
                 if not is_valid:
-                    audit_ref = logger.log_event({
-                        "function_name": func_name,
-                        "error_type": f"RECOVERABLE:{err_type}",
-                        "error_message": err_msg,
-                        "error_classification": "RECOVERABLE",
-                        "tier_used": 1,
-                        "status": "REJECTED",
-                        "healed_attempt": str(healed_val),
-                        "validation_error": validation_error,
-                        "nfpa_ref": nfpa_reference,
-                        "severity": "CRITICAL",
-                        "reason": "Healed value failed physics validation — REJECTED",
-                    })
+                    audit_ref = logger.log_event(
+                        {
+                            "function_name": func_name,
+                            "error_type": f"RECOVERABLE:{err_type}",
+                            "error_message": err_msg,
+                            "error_classification": "RECOVERABLE",
+                            "tier_used": 1,
+                            "status": "REJECTED",
+                            "healed_attempt": str(healed_val),
+                            "validation_error": validation_error,
+                            "nfpa_ref": nfpa_reference,
+                            "severity": "CRITICAL",
+                            "reason": "Healed value failed physics validation — REJECTED",
+                        }
+                    )
                     return SafetyResult(
                         value=None,
                         status=SystemStatus.REJECTED,
@@ -663,22 +694,24 @@ def fail_loud_v4(
                         },
                         audit_ref=audit_ref,
                         human_review_required=True,
-                        rejection_reason=f"Healed value {healed_val} failed physics validation"
+                        rejection_reason=f"Healed value {healed_val} failed physics validation",
                     )
 
                 # [v4.0] التحقق من أن القيمة المُعالجة ليست مستحيلة فيزيائياً
                 if _is_physically_invalid(healed_val):
-                    audit_ref = logger.log_event({
-                        "function_name": func_name,
-                        "error_type": f"RECOVERABLE:{err_type}",
-                        "error_message": err_msg,
-                        "tier_used": 1,
-                        "status": "REJECTED",
-                        "healed_attempt": str(healed_val),
-                        "nfpa_ref": nfpa_reference,
-                        "severity": "CRITICAL",
-                        "reason": "Healed value is physically invalid (inf/nan/negative where forbidden)",
-                    })
+                    audit_ref = logger.log_event(
+                        {
+                            "function_name": func_name,
+                            "error_type": f"RECOVERABLE:{err_type}",
+                            "error_message": err_msg,
+                            "tier_used": 1,
+                            "status": "REJECTED",
+                            "healed_attempt": str(healed_val),
+                            "nfpa_ref": nfpa_reference,
+                            "severity": "CRITICAL",
+                            "reason": "Healed value is physically invalid (inf/nan/negative where forbidden)",
+                        }
+                    )
                     return SafetyResult(
                         value=None,
                         status=SystemStatus.REJECTED,
@@ -689,23 +722,25 @@ def fail_loud_v4(
                         },
                         audit_ref=audit_ref,
                         human_review_required=True,
-                        rejection_reason=f"Healed value is physically invalid: {healed_val}"
+                        rejection_reason=f"Healed value is physically invalid: {healed_val}",
                     )
 
                 # الشفاء نجح — لكن بصوت عالٍ
-                audit_ref = logger.log_event({
-                    "function_name": func_name,
-                    "error_type": err_type,
-                    "error_message": err_msg,
-                    "error_classification": "RECOVERABLE",
-                    "tier_used": 1,
-                    "fix_applied": str(healed_val),
-                    "status": "HEALED",
-                    "nfpa_ref": nfpa_reference,
-                    "severity": "WARNING",
-                    "human_review": "REQUIRED",
-                    "reason": "Value healed — human review mandatory before acceptance",
-                })
+                audit_ref = logger.log_event(
+                    {
+                        "function_name": func_name,
+                        "error_type": err_type,
+                        "error_message": err_msg,
+                        "error_classification": "RECOVERABLE",
+                        "tier_used": 1,
+                        "fix_applied": str(healed_val),
+                        "status": "HEALED",
+                        "nfpa_ref": nfpa_reference,
+                        "severity": "WARNING",
+                        "human_review": "REQUIRED",
+                        "reason": "Value healed — human review mandatory before acceptance",
+                    }
+                )
 
                 return SafetyResult(
                     value=healed_val,
@@ -723,6 +758,7 @@ def fail_loud_v4(
         wrapper.__name__ = func_name
         wrapper.__doc__ = func.__doc__
         return wrapper
+
     return decorator
 
 
@@ -804,8 +840,9 @@ def _compute_healed_value(
 # =====================================================================
 
 # 1. AAMKS: Monte Carlo
-_AAMKS_MIN_SIMULATIONS = 100   # [v4.0] NFPA يتطلب عادةً 1000+ محاكاة
+_AAMKS_MIN_SIMULATIONS = 100  # [v4.0] NFPA يتطلب عادةً 1000+ محاكاة
 _AAMKS_MAX_SIMULATIONS = 10000
+
 
 def _validate_aamks_simulation(val: float) -> bool:
     """لا نقبل محاكاة واحدة — لا معنى إحصائياً."""
@@ -815,6 +852,7 @@ def _validate_aamks_simulation(val: float) -> bool:
         and not math.isinf(val)
         and val >= _AAMKS_MIN_SIMULATIONS
     )
+
 
 class AamksAdapter:
     MIN_SIMULATIONS = _AAMKS_MIN_SIMULATIONS
@@ -853,10 +891,7 @@ class Evac4BimAdapter:
         if len(coords) == 0:
             return False
         return all(
-            isinstance(c, (int, float))
-            and not math.isnan(c)
-            and not math.isinf(c)
-            for c in coords
+            isinstance(c, (int, float)) and not math.isnan(c) and not math.isinf(c) for c in coords
         )
 
     @staticmethod
@@ -877,8 +912,9 @@ class Evac4BimAdapter:
 
 
 # 3. OpenFire: Smoke Layer Height
-_OPENFIRE_MIN_HEIGHT = 1.5   # [v4.0] أقل ارتفاع آمن per NFPA 92
+_OPENFIRE_MIN_HEIGHT = 1.5  # [v4.0] أقل ارتفاع آمن per NFPA 92
 _OPENFIRE_MAX_HEIGHT = 30.0  # [v4.0] أعلى ارتفاع واقعي
+
 
 def _validate_openfire_height(h: float) -> bool:
     """لا نقبل ارتفاعاً أقل من 1.5م أو مستحيلاً."""
@@ -888,6 +924,7 @@ def _validate_openfire_height(h: float) -> bool:
         and not math.isinf(h)
         and _OPENFIRE_MIN_HEIGHT <= h <= _OPENFIRE_MAX_HEIGHT
     )
+
 
 class OpenFireAdapter:
     """حساب ارتفاع طبقة الدخان — NFPA 92."""
@@ -930,7 +967,9 @@ class OpenFireAdapter:
 class EmergencyEvacuationAdapter:
     @staticmethod
     def validate_path(path: list[str]) -> bool:
-        return isinstance(path, list) and len(path) > 0 and all(isinstance(p, str) and p for p in path)
+        return (
+            isinstance(path, list) and len(path) > 0 and all(isinstance(p, str) and p for p in path)
+        )
 
     @staticmethod
     @fail_loud_v4(
@@ -987,6 +1026,7 @@ class SafeGuardAiAdapter:
 # 6. Disaster Evacuation: Crowd Simulation
 _DISASTER_MAX_THROUGHPUT = 100.0  # [v4.0] أقصى معدل واقعي (أشخاص/ثانية/مخرج)
 
+
 def _validate_disaster_throughput(val: float) -> bool:
     """لا نقبل قيمة سلبية أو لا نهائية."""
     return (
@@ -995,6 +1035,7 @@ def _validate_disaster_throughput(val: float) -> bool:
         and not math.isinf(val)
         and 0.0 <= val <= _DISASTER_MAX_THROUGHPUT
     )
+
 
 class DisasterEvacuationAdapter:
     MAX_THROUGHPUT = _DISASTER_MAX_THROUGHPUT
@@ -1029,9 +1070,10 @@ class DisasterEvacuationAdapter:
 
 
 # 7. EPyT: Hydraulic
-_EPYT_MIN_PSI = 7.0     # [v4.0] NFPA 13 minimum
-_EPYT_MAX_PSI = 400.0   # [v4.0] أعلى ضغط واقعي
+_EPYT_MIN_PSI = 7.0  # [v4.0] NFPA 13 minimum
+_EPYT_MAX_PSI = 400.0  # [v4.0] أعلى ضغط واقعي
 _EPYT_DEFAULT_PSI = 175.0  # [v4.0] قيمة افتراضية آمنة (ليس inf!)
+
 
 def _validate_epyt_pressure(val: float) -> bool:
     """لا نقبل ضغطاً سالباً أو لا نهائياً — NFPA 13 يحدد 7-400 PSI."""
@@ -1041,6 +1083,7 @@ def _validate_epyt_pressure(val: float) -> bool:
         and not math.isinf(val)
         and _EPYT_MIN_PSI <= val <= _EPYT_MAX_PSI
     )
+
 
 class EpytAdapter:
     """حساب ضغط تدفق المياه — NFPA 13/20."""
@@ -1063,8 +1106,7 @@ class EpytAdapter:
         if demand_lps == 0.0:
             # [v4.0] هذا FATAL — لا ضغط بدون طلب
             raise ZeroDivisionError(
-                "Zero demand — cannot calculate pressure. "
-                "Check hydraulic model inputs."
+                "Zero demand — cannot calculate pressure. Check hydraulic model inputs."
             )
         if demand_lps < 0:
             raise ValueError(f"Negative demand: {demand_lps} L/s")
@@ -1080,9 +1122,10 @@ class EpytAdapter:
 
 
 # 8. SprayHydraulic: Sprinkler — NO MORE INFINITY
-_SPRAY_MIN_PSI = 7.0       # NFPA 13 §8.2.1 minimum
-_SPRAY_MAX_PSI = 175.0    # NFPA 13 practical maximum
+_SPRAY_MIN_PSI = 7.0  # NFPA 13 §8.2.1 minimum
+_SPRAY_MAX_PSI = 175.0  # NFPA 13 practical maximum
 _SPRAY_DEFAULT_PSI = 7.0  # [v4.0] القيمة الدنيا كافتراضي آمن
+
 
 def _validate_spray_flow(val: float) -> bool:
     """لا نقبل inf — ضغط لا نهائي مستحيل فيزيائياً."""
@@ -1091,6 +1134,7 @@ def _validate_spray_flow(val: float) -> bool:
     if math.isnan(val) or math.isinf(val):
         return False
     return val >= _SPRAY_MIN_PSI
+
 
 class SprayHydraulicAdapter:
     """
@@ -1143,7 +1187,10 @@ class SprayHydraulicAdapter:
 # SCENARIOS — FAIL-LOUD: REJECTED = STOP PIPELINE
 # =====================================================================
 
-def execute_hospital_scenario(sim_runs: int, node_elevation: float, water_demand: float) -> dict[str, Any]:
+
+def execute_hospital_scenario(
+    sim_runs: int, node_elevation: float, water_demand: float
+) -> dict[str, Any]:
     """
     سيناريو المستشفى.
     إذا فشل أي حساب حرج، الـ pipeline يتوقف بالكامل.
@@ -1239,18 +1286,24 @@ def execute_bank_scenario(sensor_features: list[float]) -> dict[str, Any]:
     return {
         "facility_type": "SECURE_BANK",
         "fire_alert_active": inference_res.value,
-        "resilience_status": "HEALED_REVIEW_REQUIRED" if inference_res.requires_human_review() else "NOMINAL",
+        "resilience_status": "HEALED_REVIEW_REQUIRED"
+        if inference_res.requires_human_review()
+        else "NOMINAL",
         "human_review_required": inference_res.requires_human_review(),
         "critical_note": (
             "If fire_alert_active is False due to healing, this means the AI could not "
             "confirm fire presence — a human MUST verify before assuming no fire."
-        ) if inference_res.is_healed() else None,
+        )
+        if inference_res.is_healed()
+        else None,
     }
 
 
 def execute_school_scenario(students_count: int, door_width_m: float) -> dict[str, Any]:
     """سيناريو المدرسة."""
-    throughput_res = DisasterEvacuationAdapter.simulate_crowd_throughput(students_count, door_width_m)
+    throughput_res = DisasterEvacuationAdapter.simulate_crowd_throughput(
+        students_count, door_width_m
+    )
     if throughput_res.is_rejected():
         return {
             "facility_type": "SCHOOL",
@@ -1264,14 +1317,18 @@ def execute_school_scenario(students_count: int, door_width_m: float) -> dict[st
         "facility_type": "SCHOOL",
         "egress_throughput_rate_gps": throughput_res.value,
         "throughput_unit": "persons_per_second_per_meter",
-        "resilience_status": "HEALED_REVIEW_REQUIRED" if throughput_res.requires_human_review() else "NOMINAL",
+        "resilience_status": "HEALED_REVIEW_REQUIRED"
+        if throughput_res.requires_human_review()
+        else "NOMINAL",
         "human_review_required": throughput_res.requires_human_review(),
     }
 
 
 def execute_home_scenario(flow_rate_gpm: float, k_factor_coefficient: float) -> dict[str, Any]:
     """سيناريو المنزل."""
-    pressure_res = SprayHydraulicAdapter.calculate_discharge_pressure(flow_rate_gpm, k_factor_coefficient)
+    pressure_res = SprayHydraulicAdapter.calculate_discharge_pressure(
+        flow_rate_gpm, k_factor_coefficient
+    )
     if pressure_res.is_rejected():
         return {
             "facility_type": "RESIDENTIAL",
@@ -1286,7 +1343,9 @@ def execute_home_scenario(flow_rate_gpm: float, k_factor_coefficient: float) -> 
         "required_nozzle_pressure_psi": pressure_res.value,
         "pressure_unit": "PSI",
         "nfpa_minimum_psi": SprayHydraulicAdapter.MIN_NOZZLE_PRESSURE,
-        "resilience_status": "HEALED_REVIEW_REQUIRED" if pressure_res.requires_human_review() else "NOMINAL",
+        "resilience_status": "HEALED_REVIEW_REQUIRED"
+        if pressure_res.requires_human_review()
+        else "NOMINAL",
         "human_review_required": pressure_res.requires_human_review(),
     }
 
@@ -1317,7 +1376,7 @@ class TestQomnFireV4FailLoud(unittest.TestCase):
         res = SprayHydraulicAdapter.calculate_discharge_pressure(100.0, 0.0)
         assert res.is_rejected(), f"K=0 should be REJECTED, got {res.status}"
         assert res.value is None, "REJECTED should have no value"
-        assert res.value != float('inf'), "Must NOT return infinity"
+        assert res.value != float("inf"), "Must NOT return infinity"
 
     def test_spray_negative_k_factor_is_rejected(self) -> None:
         """K سلبي = بيانات خاطئة = REJECTED."""
@@ -1358,7 +1417,7 @@ class TestQomnFireV4FailLoud(unittest.TestCase):
     # ----------------------------------------------------------
     def test_nan_coords_are_healed(self) -> None:
         """إحداثيات NaN = تالفة = ValueError (RECOVERABLE) → HEALED مع default_value."""
-        res = Evac4BimAdapter.parse_ifc_coordinates([0.0, float('nan'), 10.0])
+        res = Evac4BimAdapter.parse_ifc_coordinates([0.0, float("nan"), 10.0])
         # ValueError is RECOVERABLE → HEALED with default_value
         assert res.is_healed()
         assert res.value == [0.0, 0.0, 0.0]  # default fallback
@@ -1469,7 +1528,9 @@ class TestQomnFireV4FailLoud(unittest.TestCase):
 
     def test_valid_route_is_nominal(self) -> None:
         """مسار صحيح = NOMINAL."""
-        res = EmergencyEvacuationAdapter.solve_evacuation_route(["LOBBY", "STAIR_A", "EXIT"], "EXIT")
+        res = EmergencyEvacuationAdapter.solve_evacuation_route(
+            ["LOBBY", "STAIR_A", "EXIT"], "EXIT"
+        )
         assert res.is_nominal()
         assert res.value == ["LOBBY", "EXIT"]
 
@@ -1504,31 +1565,20 @@ class TestQomnFireV4FailLoud(unittest.TestCase):
     # ----------------------------------------------------------
     def test_rejected_result_is_not_safe_to_use(self) -> None:
         """REJECTED = ليس آمناً للاستخدام."""
-        res = SafetyResult(
-            value=None,
-            status=SystemStatus.REJECTED,
-            rejection_reason="test"
-        )
+        res = SafetyResult(value=None, status=SystemStatus.REJECTED, rejection_reason="test")
         assert not res.is_safe_to_use()
         assert res.is_rejected()
         assert res.requires_human_review()
 
     def test_healed_result_requires_human_review(self) -> None:
         """HEALED = يحتاج مراجعة بشرية."""
-        res = SafetyResult(
-            value=7.0,
-            status=SystemStatus.HEALED,
-            human_review_required=True
-        )
+        res = SafetyResult(value=7.0, status=SystemStatus.HEALED, human_review_required=True)
         assert res.requires_human_review()
         assert res.is_safe_to_use()
 
     def test_nominal_result_does_not_require_review(self) -> None:
         """NOMINAL = لا يحتاج مراجعة."""
-        res = SafetyResult(
-            value=100.0,
-            status=SystemStatus.NOMINAL
-        )
+        res = SafetyResult(value=100.0, status=SystemStatus.NOMINAL)
         assert not res.requires_human_review()
 
     # ----------------------------------------------------------
@@ -1556,8 +1606,10 @@ class TestQomnFireV4FailLoud(unittest.TestCase):
 
     def test_custom_error_is_unknown(self) -> None:
         """خطأ مخصص = UNKNOWN = FATAL في نظام سلامة."""
+
         class CustomError(Exception):
             pass
+
         assert classify_error(CustomError("test")) == "UNKNOWN"
 
     # ----------------------------------------------------------
@@ -1566,22 +1618,22 @@ class TestQomnFireV4FailLoud(unittest.TestCase):
     def test_nan_fallback_is_rejected(self) -> None:
         """NaN كقيمة افتراضية = ValueError."""
         with pytest.raises(ValueError):
-            _validate_fallback(float('nan'), "test")
+            _validate_fallback(float("nan"), "test")
 
     def test_inf_fallback_is_rejected(self) -> None:
         """Infinity كقيمة افتراضية = ValueError."""
         with pytest.raises(ValueError):
-            _validate_fallback(float('inf'), "test")
+            _validate_fallback(float("inf"), "test")
 
     def test_negative_inf_fallback_is_rejected(self) -> None:
         """Negative infinity كقيمة افتراضية = ValueError."""
         with pytest.raises(ValueError):
-            _validate_fallback(float('-inf'), "test")
+            _validate_fallback(float("-inf"), "test")
 
     def test_list_with_nan_fallback_is_rejected(self) -> None:
         """قائمة تحتوي NaN = ValueError."""
         with pytest.raises(ValueError):
-            _validate_fallback([1.0, float('nan'), 3.0], "test")
+            _validate_fallback([1.0, float("nan"), 3.0], "test")
 
     # ----------------------------------------------------------
     # Decorator Configuration Tests
@@ -1589,6 +1641,7 @@ class TestQomnFireV4FailLoud(unittest.TestCase):
     def test_decorator_without_safe_minimum_and_default_rejects(self) -> None:
         """Decorator بدون safe_minimum ولا default_value = ValueError."""
         with pytest.raises(ValueError):
+
             @fail_loud_v4()
             def bad_func(x):
                 return x

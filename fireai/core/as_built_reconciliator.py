@@ -263,7 +263,9 @@ class AsBuiltReconciliator:
     ) -> None:
         # --- Validate design manifest structure ---
         if "devices" not in design_manifest:
-            raise ValueError("design_manifest must contain a 'devices' key with a list of device dicts.")
+            raise ValueError(
+                "design_manifest must contain a 'devices' key with a list of device dicts."
+            )
 
         design_devices = design_manifest["devices"]
         if not isinstance(design_devices, list):
@@ -399,7 +401,9 @@ class AsBuiltReconciliator:
                 missing_devices.append((device_id, msg))
 
         # --- Determine overall status ---
-        has_deviations = len(rogue_devices) > 0 or len(missing_devices) > 0 or len(drifted_devices) > 0
+        has_deviations = (
+            len(rogue_devices) > 0 or len(missing_devices) > 0 or len(drifted_devices) > 0
+        )
         status = "DEVIATION_DETECTED" if has_deviations else "VERIFIED"
 
         # --- Build summary ---

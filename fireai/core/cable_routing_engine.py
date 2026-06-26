@@ -160,8 +160,8 @@ class WireGauge(metaclass=_WireGaugeMeta):
     #   AWG 12: 1.620 Ω/kft @ 20°C → 1.930 Ω/kft @ 75°C
     AWG_18: _WireGaugeInstance = _WireGaugeInstance("18", 21.40, 25.49, 1.024, 1.0)
     AWG_16: _WireGaugeInstance = _WireGaugeInstance("16", 13.40, 16.04, 1.291, 2.0)
-    AWG_14: _WireGaugeInstance = _WireGaugeInstance("14",  8.450, 10.07, 1.628, 2.0)
-    AWG_12: _WireGaugeInstance = _WireGaugeInstance("12",  5.310,  6.33, 2.053, 3.0)
+    AWG_14: _WireGaugeInstance = _WireGaugeInstance("14", 8.450, 10.07, 1.628, 2.0)
+    AWG_12: _WireGaugeInstance = _WireGaugeInstance("12", 5.310, 6.33, 2.053, 3.0)
 
     _ALL_GAUGES: tuple[_WireGaugeInstance, ...] = (AWG_18, AWG_16, AWG_14, AWG_12)
 
@@ -182,7 +182,9 @@ class WireGauge(metaclass=_WireGaugeMeta):
         """Look up wire resistance in Ω/m by AWG label."""
         awg_clean = str(awg).strip()
         if awg_clean not in cls.VALID_GAUGES:
-            raise ValueError(f"Unknown AWG gauge: {awg!r}. Supported fire alarm gauges: {cls.VALID_GAUGES}.")
+            raise ValueError(
+                f"Unknown AWG gauge: {awg!r}. Supported fire alarm gauges: {cls.VALID_GAUGES}."
+            )
         return cls.RESISTANCE_PER_M[awg_clean]
 
 
@@ -357,7 +359,9 @@ class RouteResult:
     """
 
     circuit_id: str = ""
-    is_compliant: bool = False  # V112: FAIL-SAFE — new circuit starts as NOT compliant until verified
+    is_compliant: bool = (
+        False  # V112: FAIL-SAFE — new circuit starts as NOT compliant until verified
+    )
     total_voltage_drop_v: float = 0.0
     total_voltage_drop_pct: float = 0.0
     end_of_line_voltage_v: float = 0.0
@@ -409,7 +413,9 @@ class CableRoutingEngine:
         if not math.isfinite(ps_voltage) or ps_voltage <= 0:
             raise ValueError(f"ps_voltage={ps_voltage} must be finite and positive")
         if not math.isfinite(max_voltage_drop_pct) or max_voltage_drop_pct <= 0:
-            raise ValueError(f"max_voltage_drop_pct={max_voltage_drop_pct} must be finite and positive")
+            raise ValueError(
+                f"max_voltage_drop_pct={max_voltage_drop_pct} must be finite and positive"
+            )
 
         self._ps_voltage = ps_voltage
         self._max_drop_pct = max_voltage_drop_pct
@@ -473,7 +479,9 @@ class CableRoutingEngine:
         for name, pt in [("p1", p1), ("p2", p2)]:
             for i, coord in enumerate(pt):
                 if not math.isfinite(coord):
-                    raise ValueError(f"{name}[{i}]={coord} is not finite — 3D distance requires finite coordinates")
+                    raise ValueError(
+                        f"{name}[{i}]={coord} is not finite — 3D distance requires finite coordinates"
+                    )
         dx = p2[0] - p1[0]
         dy = p2[1] - p1[1]
         dz = p2[2] - p1[2]
@@ -535,7 +543,9 @@ class CableRoutingEngine:
                         f"NaN/Inf current produces NaN voltage drop."
                     )
                 if dev.current_a < 0:
-                    raise ValueError(f"Device '{dev.device_id}' has invalid current current_a={dev.current_a}")
+                    raise ValueError(
+                        f"Device '{dev.device_id}' has invalid current current_a={dev.current_a}"
+                    )
 
         # Class A must have return path
         from fireai.core.circuit_topology import CircuitClass
@@ -676,21 +686,23 @@ class CableRoutingEngine:
             # If actual routed cable length is available, use total route length
             # proportionally distributed across segments instead of Euclidean×factor.
             # This provides a more accurate voltage drop calculation.
-            total_cable_length = getattr(circuit, 'cable_length_m', None)
+            total_cable_length = getattr(circuit, "cable_length_m", None)
             if total_cable_length and total_cable_length > 0 and len(devices) > 0:
                 # Use actual cable length proportionally distributed by Euclidean ratio
                 total_euclidean = sum(
                     self.calculate_3d_distance(
-                        panel_pos if j == 0 else (
-                            getattr(devices[j-1], "position_x", 0.0),
-                            getattr(devices[j-1], "position_y", 0.0),
-                            getattr(devices[j-1], "position_z", 0.0),
+                        panel_pos
+                        if j == 0
+                        else (
+                            getattr(devices[j - 1], "position_x", 0.0),
+                            getattr(devices[j - 1], "position_y", 0.0),
+                            getattr(devices[j - 1], "position_z", 0.0),
                         ),
                         (
                             getattr(devices[j], "position_x", 0.0),
                             getattr(devices[j], "position_y", 0.0),
                             getattr(devices[j], "position_z", 0.0),
-                        )
+                        ),
                     )
                     for j in range(len(devices))
                 )
@@ -766,7 +778,9 @@ class CableRoutingEngine:
                 )
                 for obs in self._obstacles:
                     if obs.intersects_line_segment(prev_pt, dev_pt):
-                        if getattr(obs, "requires_firestop", False) or getattr(obs, "is_rated", False):
+                        if getattr(obs, "requires_firestop", False) or getattr(
+                            obs, "is_rated", False
+                        ):
                             rating = getattr(obs, "fire_rating_hours", 0.0)
                             warnings_list.append(
                                 f"firestopping required: cable penetrates "

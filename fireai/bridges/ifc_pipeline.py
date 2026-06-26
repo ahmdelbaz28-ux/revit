@@ -191,7 +191,9 @@ class IfcFirePipeline:
         # Arithmetic mean: 10m²@90% + 1000m²@50% → 70% (WRONG)
         # Area-weighted:   10m²@90% + 1000m²@50% → 50.4% (CORRECT)
         # A small room with high coverage inflates the average unfairly.
-        areas = [getattr(r, '_space_area_m2', getattr(r, 'space_area_m2', 0.0)) for r in all_results]
+        areas = [
+            getattr(r, "_space_area_m2", getattr(r, "space_area_m2", 0.0)) for r in all_results
+        ]
         total_area = sum(areas) if areas else 0.0
         if total_area > 0:
             global_cov = sum(c * a for c, a in zip(cov_pcts, areas, strict=False)) / total_area
@@ -266,11 +268,15 @@ class IfcFirePipeline:
 
         # ── L5: Flame detector optical coverage ───────────────────
         flame_det_specs = self._place_flame_detectors(space)
-        l5_coverage, optical_result = self._run_l5(flame_det_specs, grid_pts, obstructions, warnings)
+        l5_coverage, optical_result = self._run_l5(
+            flame_det_specs, grid_pts, obstructions, warnings
+        )
 
         # ── V23 + L7: Acoustic + Hybrid Survivability ─────────────
         ugld_sensors, sensor_positions = self._place_ugld_sensors(space)
-        l7_result, _hybrid_map = self._run_l7(optical_result, grid_pts, ugld_sensors, sensor_positions, warnings)
+        l7_result, _hybrid_map = self._run_l7(
+            optical_result, grid_pts, ugld_sensors, sensor_positions, warnings
+        )
 
         # ── Build device placement list ───────────────────────────
         zone_id = f"{space.get('storey_name', '?')}_{l2.get('zone', 'UNKNOWN')}"
@@ -366,9 +372,8 @@ class IfcFirePipeline:
                 # 1000 m³ default overestimates air changes, producing zone extents that
                 # are too small (more dilution assumed than reality). IEC 60079-10-1
                 # requires conservative (small volume = less dilution = larger zones).
-                room_volume_m3=space.get("volume_m3") or max(
-                    space.get("area_m2", 0.0) * space.get("height_m", 3.0), 1.0
-                ),
+                room_volume_m3=space.get("volume_m3")
+                or max(space.get("area_m2", 0.0) * space.get("height_m", 3.0), 1.0),
             )
 
             warnings.extend(result.warnings)
@@ -676,7 +681,7 @@ class IfcFirePipeline:
                     )
                 )
             except Exception as e:
-                logger.debug("Could not convert obstruction %s: %s", od.get('guid', '?'), e)
+                logger.debug("Could not convert obstruction %s: %s", od.get("guid", "?"), e)
         return result
 
     # ── Substance lookup ─────────────────────────────────────────
@@ -701,19 +706,26 @@ class IfcFirePipeline:
 
             registry = SpectralSignatureRegistry()
             sig = registry.get(self.cfg.substance_cas)
-            if sig and hasattr(sig, 'substance_properties') and sig.substance_properties:
+            if sig and hasattr(sig, "substance_properties") and sig.substance_properties:
                 return sig.substance_properties
             # Try SubstanceRegistry for full property data
             try:
                 from fireai.core.substance_registry import SubstanceRegistry
+
                 sub_reg = SubstanceRegistry()
                 substance = sub_reg.get_by_cas(self.cfg.substance_cas)
                 if substance is not None:
                     return substance
             except Exception as e:
-                logger.debug("Substance registry lookup failed for CAS %s: %s", self.cfg.substance_cas, e)
+                logger.debug(
+                    "Substance registry lookup failed for CAS %s: %s", self.cfg.substance_cas, e
+                )
         except Exception as e:
-            logger.debug("Spectral signature registry lookup failed for CAS %s: %s", self.cfg.substance_cas, e)
+            logger.debug(
+                "Spectral signature registry lookup failed for CAS %s: %s",
+                self.cfg.substance_cas,
+                e,
+            )
 
         # Fallback: propane — ONLY when registry is unavailable, with CRITICAL warning
         logger.critical(

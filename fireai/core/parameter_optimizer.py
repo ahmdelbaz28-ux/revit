@@ -200,7 +200,9 @@ class ParameterOptimizer:
         payload = {
             "recommendation": result.recommendation,
             "best": asdict(result.best_config),
-            "all_configs": [asdict(c) for c in sorted(result.all_configs, key=lambda x: x.pareto_score)],
+            "all_configs": [
+                asdict(c) for c in sorted(result.all_configs, key=lambda x: x.pareto_score)
+            ],
         }
         with open(path, "w") as f:
             json.dump(payload, f, indent=2)

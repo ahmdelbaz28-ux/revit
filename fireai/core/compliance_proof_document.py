@@ -274,7 +274,9 @@ class ComplianceProofDocument:
         total_detectors = sum(r.layout.count for r in self.records)
         all_proof = all(r.layout.proof_valid for r in self.records)
         all_nfpa = all(r.layout.nfpa_valid for r in self.records)
-        all_verified = all(r.consensus and r.consensus.confidence == ConfidenceLevel.VERIFIED for r in self.records)
+        all_verified = all(
+            r.consensus and r.consensus.confidence == ConfidenceLevel.VERIFIED for r in self.records
+        )
 
         lines.extend(
             [
@@ -353,7 +355,9 @@ class ComplianceProofDocument:
                     ]
                 )
                 for v in rec.consensus.engines:
-                    lines.append(f"- {v.engine.value}: {'PASS' if v.passed else 'FAIL'} — {v.details}")
+                    lines.append(
+                        f"- {v.engine.value}: {'PASS' if v.passed else 'FAIL'} — {v.details}"
+                    )
                 lines.append("")
 
             # Notes
@@ -370,9 +374,21 @@ class ComplianceProofDocument:
         if not self.records:
             return "## 4. Consensus Summary\n\nNo rooms verified."
 
-        verified = sum(1 for r in self.records if r.consensus and r.consensus.confidence == ConfidenceLevel.VERIFIED)
-        warning = sum(1 for r in self.records if r.consensus and r.consensus.confidence == ConfidenceLevel.WARNING)
-        fail = sum(1 for r in self.records if r.consensus and r.consensus.confidence == ConfidenceLevel.FAIL)
+        verified = sum(
+            1
+            for r in self.records
+            if r.consensus and r.consensus.confidence == ConfidenceLevel.VERIFIED
+        )
+        warning = sum(
+            1
+            for r in self.records
+            if r.consensus and r.consensus.confidence == ConfidenceLevel.WARNING
+        )
+        fail = sum(
+            1
+            for r in self.records
+            if r.consensus and r.consensus.confidence == ConfidenceLevel.FAIL
+        )
         no_consensus = sum(1 for r in self.records if not r.consensus)
         total = len(self.records)
 

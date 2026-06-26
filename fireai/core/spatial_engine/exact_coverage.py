@@ -241,7 +241,9 @@ class ExactCoverageEngine:
                     if obs_poly.is_valid and room_poly.intersects(obs_poly):
                         room_poly = room_poly.difference(obs_poly)
                 except Exception as e:
-                    logger.warning("V112: verify_with_obstacles: failed to subtract obstacle polygon: %s", e)
+                    logger.warning(
+                        "V112: verify_with_obstacles: failed to subtract obstacle polygon: %s", e
+                    )
                     pass  # Skip invalid obstacles
 
         # Build sensor coverage circles using effective radius (2% safety)
@@ -249,7 +251,9 @@ class ExactCoverageEngine:
         sensor_areas = []
         for loc in sensor_locations:
             try:
-                sensor_circle = Point(loc).buffer(self.effective_radius, quad_segs=self._CIRCLE_SEGS)
+                sensor_circle = Point(loc).buffer(
+                    self.effective_radius, quad_segs=self._CIRCLE_SEGS
+                )
                 # Only keep the portion inside the room
                 clipped = sensor_circle.intersection(room_poly)
                 if not clipped.is_empty:

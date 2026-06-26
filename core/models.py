@@ -109,6 +109,7 @@ except ImportError as _import_err:
 # GEOMETRY
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 @dataclass(frozen=True)
 class Point3D:
     """
@@ -170,9 +171,9 @@ class Geometry:
     def __post_init__(self) -> None:
         # Frozen dataclass — use object.__setattr__ to set computed fields
         if len(self.points) >= 3 and self.polyline_closed:
-            object.__setattr__(self, 'area', self.calculate_area())
+            object.__setattr__(self, "area", self.calculate_area())
         if len(self.points) >= 2:
-            object.__setattr__(self, 'perimeter', self.calculate_perimeter())
+            object.__setattr__(self, "perimeter", self.calculate_perimeter())
 
     def calculate_area(self) -> float:
         """
@@ -221,6 +222,7 @@ class Geometry:
 # ═══════════════════════════════════════════════════════════════════════════════
 # SEMANTIC PROPERTIES
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 @dataclass(frozen=True)
 class SemanticProperties:
@@ -278,7 +280,9 @@ class SemanticProperties:
     def to_dict(self) -> dict[str, Any]:
         """Serialize to dictionary for JSON storage/API response."""
         return {
-            "element_type": self.element_type.value if hasattr(self.element_type, 'value') else str(self.element_type),
+            "element_type": self.element_type.value
+            if hasattr(self.element_type, "value")
+            else str(self.element_type),
             "name": self.name,
             "description": self.description,
             "material": self.material,
@@ -294,6 +298,7 @@ class SemanticProperties:
 # ═══════════════════════════════════════════════════════════════════════════════
 # RELATIONSHIP
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 @dataclass(frozen=True)
 class Relationship:
@@ -341,6 +346,7 @@ class Relationship:
 # CONFLICT
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 @dataclass(frozen=True)
 class Conflict:
     """
@@ -380,10 +386,16 @@ class Conflict:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 # Allowed keys for update_element() — prevents arbitrary JSON injection (C-3)
-_ELEMENT_UPDATABLE_KEYS = frozenset({
-    "properties", "geometry", "source_file", "last_modified_by",
-    "is_deleted", "project_id",
-})
+_ELEMENT_UPDATABLE_KEYS = frozenset(
+    {
+        "properties",
+        "geometry",
+        "source_file",
+        "last_modified_by",
+        "is_deleted",
+        "project_id",
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -453,8 +465,12 @@ class UniversalElement:
             "last_modified_by": self.last_modified_by,
             "autocad_handle": self.autocad_handle,
             "revit_element_id": self.revit_element_id,
-            "created_timestamp": self.created_timestamp.isoformat() if self.created_timestamp else None,
-            "last_modified_timestamp": self.last_modified_timestamp.isoformat() if self.last_modified_timestamp else None,
+            "created_timestamp": self.created_timestamp.isoformat()
+            if self.created_timestamp
+            else None,
+            "last_modified_timestamp": self.last_modified_timestamp.isoformat()
+            if self.last_modified_timestamp
+            else None,
             "version": self.version,
             "is_deleted": self.is_deleted,
             "project_id": self.project_id,

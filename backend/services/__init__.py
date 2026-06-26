@@ -60,6 +60,7 @@ try:
         close_workflow_service,
         get_workflow_service,
     )
+
     WORKFLOW_AVAILABLE = True
 except ImportError:
     WORKFLOW_AVAILABLE = False
@@ -83,6 +84,7 @@ try:
         close_memory_service,
         get_memory_service,
     )
+
     MEMORY_AVAILABLE = True
 except ImportError:
     MEMORY_AVAILABLE = False

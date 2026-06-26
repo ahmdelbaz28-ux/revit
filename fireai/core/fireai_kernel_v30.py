@@ -35,7 +35,9 @@ from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import (
-    Optional, Type, Any,
+    Optional,
+    Type,
+    Any,
     AsyncGenerator,
     AsyncIterator,
     Callable,
@@ -214,7 +216,9 @@ class VectorEngine:
 
         if uncovered_fine:
             bad_pts = np.vstack(uncovered_fine)
-            frac = covered / total if total else 0.0  # V111 FIX: Fail-safe — no test points = 0% coverage, NOT 100%
+            frac = (
+                covered / total if total else 0.0
+            )  # V111 FIX: Fail-safe — no test points = 0% coverage, NOT 100%
             return CoverageResult(
                 coverage_fraction=max(0.0, frac - len(bad_pts) / max(fine_total, 1)),
                 covered_count=covered,
@@ -223,7 +227,9 @@ class VectorEngine:
                 uncovered_pts=[tuple(p) for p in bad_pts[:500]],
             )
 
-        frac = covered / total if total else 0.0  # V111 FIX: Fail-safe — no test points = 0% coverage, NOT 100%
+        frac = (
+            covered / total if total else 0.0
+        )  # V111 FIX: Fail-safe — no test points = 0% coverage, NOT 100%
         return CoverageResult(
             coverage_fraction=frac,
             covered_count=covered,
@@ -485,14 +491,18 @@ class StreamingParser:
                         # and will be removed in Python 3.14. Since this is an
                         # async method, a running loop is guaranteed.
                         # Per agent.md Rule 17: Root cause is deprecated API.
-                        walls = await asyncio.get_running_loop().run_in_executor(None, self._parse_dxf_chunk, buffer)
+                        walls = await asyncio.get_running_loop().run_in_executor(
+                            None, self._parse_dxf_chunk, buffer
+                        )
                         if walls:
                             yield walls
                         buffer = []
                 if buffer:
                     # V86 FIX: Same as above — replaced deprecated
                     # asyncio.get_event_loop() with asyncio.get_running_loop().
-                    walls = await asyncio.get_running_loop().run_in_executor(None, self._parse_dxf_chunk, buffer)
+                    walls = await asyncio.get_running_loop().run_in_executor(
+                        None, self._parse_dxf_chunk, buffer
+                    )
                     if walls:
                         yield walls
         except Exception as e:
@@ -513,7 +523,9 @@ class StreamingParser:
                 page = doc[page_num]
                 paths: list[NDArray] = []
                 for path_ in page.get_drawings():
-                    pts = [(item[1].x, item[1].y) for item in path_["items"] if item[0] in ("m", "l")]
+                    pts = [
+                        (item[1].x, item[1].y) for item in path_["items"] if item[0] in ("m", "l")
+                    ]
                     if len(pts) >= 2:
                         paths.append(np.array(pts, dtype=np.float64))
                 doc.close()
@@ -793,7 +805,9 @@ class SafetyLedger:
             content = entry.to_canonical_bytes()
             new_hash = hashlib.sha256(self._prev_hash + content).digest()
             sig = self._hmac.new(self._key, new_hash, hashlib.sha256).digest()
-            entry = LedgerEntry(**{**entry.__dict__, "entry_hash": new_hash.hex(), "signature": sig.hex()})
+            entry = LedgerEntry(
+                **{**entry.__dict__, "entry_hash": new_hash.hex(), "signature": sig.hex()}
+            )
 
             line = json.dumps(entry.to_dict()).encode() + b"\n"
             self._fh.write(line)
@@ -825,7 +839,12 @@ class SafetyLedger:
     def __enter__(self) -> SafetyLedger:
         return self
 
-    def __exit__(self, exc_type: Optional[Type[BaseException]], exc_val: Optional[BaseException], exc_tb: Optional[TracebackType]) -> None:
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[TracebackType],
+    ) -> None:
         self.close()
 
 
@@ -1047,7 +1066,10 @@ class WireRouterV2:
     def total_cable_length(self, path: list[tuple[float, float]]) -> float:
         if len(path) < 2:
             return 0.0
-        return sum(math.hypot(path[i + 1][0] - path[i][0], path[i + 1][1] - path[i][1]) for i in range(len(path) - 1))
+        return sum(
+            math.hypot(path[i + 1][0] - path[i][0], path[i + 1][1] - path[i][1])
+            for i in range(len(path) - 1)
+        )
 
     def _astar(
         self,
@@ -1224,7 +1246,9 @@ class KernelCore:
 
         rooms = await self._extract_rooms(path, ext)
         if not rooms:
-            return BuildingResult([], [], [], t_start, time.perf_counter(), "No rooms extracted", False)
+            return BuildingResult(
+                [], [], [], t_start, time.perf_counter(), "No rooms extracted", False
+            )
 
         self._store.bulk_put(rooms)
 
@@ -1257,7 +1281,9 @@ class KernelCore:
             )
 
             if not result.is_compliant:
-                all_violations.append(f"Room {room.name}: coverage {result.coverage_pct:.1f}% < 100%")
+                all_violations.append(
+                    f"Room {room.name}: coverage {result.coverage_pct:.1f}% < 100%"
+                )
 
             for i, (x, y) in enumerate(sol.placements):
                 all_detectors.append(
@@ -1302,7 +1328,13 @@ class KernelCore:
     @staticmethod
     def _wall_to_room(poly: NDArray[np.float64]) -> RoomRecord:
         area = (
-            abs(float(np.dot(poly[:, 0], np.roll(poly[:, 1], -1)) - np.dot(np.roll(poly[:, 0], -1), poly[:, 1]))) / 2.0
+            abs(
+                float(
+                    np.dot(poly[:, 0], np.roll(poly[:, 1], -1))
+                    - np.dot(np.roll(poly[:, 0], -1), poly[:, 1])
+                )
+            )
+            / 2.0
         )
         return RoomRecord(
             room_id=str(uuid.uuid4()),
@@ -1442,13 +1474,20 @@ class AdapterBridge:
                 continue
             poly = np.array(
                 [
-                    (p[0], p[1]) if isinstance(p, (list, tuple)) else (getattr(p, "x", 0), getattr(p, "y", 0))
+                    (p[0], p[1])
+                    if isinstance(p, (list, tuple))
+                    else (getattr(p, "x", 0), getattr(p, "y", 0))
                     for p in geom
                 ],
                 dtype=np.float64,
             )
             area = (
-                abs(float(np.dot(poly[:, 0], np.roll(poly[:, 1], -1)) - np.dot(np.roll(poly[:, 0], -1), poly[:, 1])))
+                abs(
+                    float(
+                        np.dot(poly[:, 0], np.roll(poly[:, 1], -1))
+                        - np.dot(np.roll(poly[:, 0], -1), poly[:, 1])
+                    )
+                )
                 / 2.0
             )
             records.append(

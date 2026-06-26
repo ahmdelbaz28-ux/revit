@@ -526,7 +526,9 @@ class SequenceOfOperationsMatrix:
                 "matrix": matrix_data,
                 "hash": matrix_hash,
                 "device_count": len(devices),
-                "unique_output_types": list({o.value for row in matrix_rows for o in row.outputs_triggered}),
+                "unique_output_types": list(
+                    {o.value for row in matrix_rows for o in row.outputs_triggered}
+                ),
                 "zone_count": len({row.zone_id for row in matrix_rows if row.zone_id}),
             }
 
@@ -645,7 +647,9 @@ class SequenceOfOperationsMatrix:
         # An unknown device is NOT a confirmed condition — false general alarm
         # in a high-rise or healthcare building causes injuries during
         # unnecessary evacuation.
-        logger.warning("Unknown device type '%s' for device %s", raw_type, dev.get('device_id', '?'))
+        logger.warning(
+            "Unknown device type '%s' for device %s", raw_type, dev.get("device_id", "?")
+        )
         return DeviceInputType.UNKNOWN
 
 

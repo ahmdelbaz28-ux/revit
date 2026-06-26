@@ -160,9 +160,7 @@ class ConstraintSolver:
             )
 
         if device_radius <= 0:
-            raise ValueError(
-                f"device_radius must be positive, got {device_radius}"
-            )
+            raise ValueError(f"device_radius must be positive, got {device_radius}")
 
         if not coverage_safety_factor > 0 or coverage_safety_factor > 1.0:
             raise ValueError(
@@ -178,9 +176,7 @@ class ConstraintSolver:
             room_polygon = room_polygon.buffer(0)
 
         if room_polygon.is_empty or room_polygon.area <= 0:
-            raise ValueError(
-                f"room_polygon has zero or negative area: {room_polygon.area}"
-            )
+            raise ValueError(f"room_polygon has zero or negative area: {room_polygon.area}")
 
         if room_polygon.geom_type == "MultiPolygon":
             # Use the largest polygon component
@@ -231,9 +227,9 @@ class ConstraintSolver:
 
         # Filter candidates inside the room polygon
         valid_candidates = [
-            (x, y) for x, y in candidates
-            if self.room_polygon.contains(Point(x, y))
-            or self.room_polygon.touches(Point(x, y))
+            (x, y)
+            for x, y in candidates
+            if self.room_polygon.contains(Point(x, y)) or self.room_polygon.touches(Point(x, y))
         ]
 
         if not valid_candidates:
@@ -285,9 +281,7 @@ class ConstraintSolver:
 
                 # Compute coverage circle
                 if pos not in coverage_circle_cache:
-                    circle = Point(pos).buffer(
-                        self.effective_radius, quad_segs=CIRCLE_SEGMENTS
-                    )
+                    circle = Point(pos).buffer(self.effective_radius, quad_segs=CIRCLE_SEGMENTS)
                     coverage_circle_cache[pos] = circle
                 else:
                     circle = coverage_circle_cache[pos]
@@ -316,9 +310,7 @@ class ConstraintSolver:
                 except Exception:
                     # Shapely error — try with buffer(0) repair
                     try:
-                        uncovered = uncovered.buffer(0).difference(
-                            best_circle.buffer(0)
-                        )
+                        uncovered = uncovered.buffer(0).difference(best_circle.buffer(0))
                     except Exception:
                         warnings.append(
                             f"Shapely error at detector #{len(placed)} — "
@@ -442,9 +434,7 @@ class ConstraintSolver:
                             # Offset inward from boundary by effective_radius/2
                             # to ensure coverage circles overlap with interior
                             if self.room_polygon.contains(pt):
-                                candidates.append(
-                                    (round(pt.x, 3), round(pt.y, 3))
-                                )
+                                candidates.append((round(pt.x, 3), round(pt.y, 3)))
             except Exception:
                 pass
 

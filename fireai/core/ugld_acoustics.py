@@ -180,7 +180,11 @@ def atmospheric_attenuation_db_per_m(
             f"temp_c must be finite and in range [-40, 85]°C, got {temp_c}. "
             f"Outside this range, ISO 9613-1 corrections are unreliable."
         )
-    if not math.isfinite(relative_humidity_pct) or relative_humidity_pct < 0.0 or relative_humidity_pct > 100.0:
+    if (
+        not math.isfinite(relative_humidity_pct)
+        or relative_humidity_pct < 0.0
+        or relative_humidity_pct > 100.0
+    ):
         raise ValueError(
             f"relative_humidity_pct must be finite and in range [0, 100]%, got {relative_humidity_pct}."
         )
@@ -276,7 +280,9 @@ class UltrasonicSensor(BaseModel):
     trigger_threshold_db: float = Field(
         default=74.0,
         gt=0.0,
-        description=("Minimum SPL (dB) to trigger alarm at sensor. Typical: 65-80 dB SPL depending on manufacturer."),
+        description=(
+            "Minimum SPL (dB) to trigger alarm at sensor. Typical: 65-80 dB SPL depending on manufacturer."
+        ),
     )
     background_noise_db: float = Field(
         default=60.0,
@@ -479,7 +485,9 @@ class UGLDTriggerResult(BaseModel):
         description="Margin above trigger threshold = final_spl_db - trigger_threshold_db",
     )
     margin_to_snr_db: float = Field(
-        description=("Margin above SNR requirement = snr_db - 6 dB minimum. Negative = insufficient SNR."),
+        description=(
+            "Margin above SNR requirement = snr_db - 6 dB minimum. Negative = insufficient SNR."
+        ),
     )
     fail_reason: str | None = Field(
         default=None,

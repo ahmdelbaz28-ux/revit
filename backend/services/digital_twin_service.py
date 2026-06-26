@@ -45,43 +45,50 @@ logger = logging.getLogger(__name__)
 # DATA MODELS
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 @dataclass
 class ConversionConfig:
     """Configuration for AutoCAD ↔ Revit conversion."""
 
     # AutoCAD → Revit mapping rules
-    layer_to_category: Dict[str, str] = field(default_factory=lambda: {
-        "Walls": "Walls",
-        "A-WALL": "Walls",
-        "Doors": "Doors",
-        "A-DOOR": "Doors",
-        "Windows": "Windows",
-        "A-GLAZ": "Windows",
-        "Floors": "Floors",
-        "A-FLOR": "Floors",
-        "Roofs": "Roofs",
-        "A-ROOF": "Roofs",
-        "Dimensions": "Dimensions",
-        "Text": "Text Notes",
-        "Furniture": "Furniture",
-        "Equipment": "Specialty Equipment",
-    })
+    layer_to_category: Dict[str, str] = field(
+        default_factory=lambda: {
+            "Walls": "Walls",
+            "A-WALL": "Walls",
+            "Doors": "Doors",
+            "A-DOOR": "Doors",
+            "Windows": "Windows",
+            "A-GLAZ": "Windows",
+            "Floors": "Floors",
+            "A-FLOR": "Floors",
+            "Roofs": "Roofs",
+            "A-ROOF": "Roofs",
+            "Dimensions": "Dimensions",
+            "Text": "Text Notes",
+            "Furniture": "Furniture",
+            "Equipment": "Specialty Equipment",
+        }
+    )
 
     # Line type to element mapping
-    linetype_to_element: Dict[str, str] = field(default_factory=lambda: {
-        "Continuous": "Wall",
-        "Hidden": "Wall",
-        "Center": "Grid",
-        "Dashdot": "Reference Plane",
-    })
+    linetype_to_element: Dict[str, str] = field(
+        default_factory=lambda: {
+            "Continuous": "Wall",
+            "Hidden": "Wall",
+            "Center": "Grid",
+            "Dashdot": "Reference Plane",
+        }
+    )
 
     # Block to family mapping
-    block_to_family: Dict[str, str] = field(default_factory=lambda: {
-        "Door": "Single-Flush",
-        "Window": "Fixed",
-        "Furniture": "Desk",
-        "Equipment": "Generic Models",
-    })
+    block_to_family: Dict[str, str] = field(
+        default_factory=lambda: {
+            "Door": "Single-Flush",
+            "Window": "Fixed",
+            "Furniture": "Desk",
+            "Equipment": "Generic Models",
+        }
+    )
 
     # Scale and units
     source_units: str = "Millimeters"
@@ -93,16 +100,18 @@ class ConversionConfig:
     level_height: float = 3000.0  # mm
 
     # Revit → AutoCAD mapping
-    category_to_layer: Dict[str, str] = field(default_factory=lambda: {
-        "Walls": "A-WALL",
-        "Doors": "A-DOOR",
-        "Windows": "A-GLAZ",
-        "Floors": "A-FLOR",
-        "Roofs": "A-ROOF",
-        "Furniture": "A-FURN",
-        "Dimensions": "A-ANNO-DIMS",
-        "Text Notes": "A-ANNO-TEXT",
-    })
+    category_to_layer: Dict[str, str] = field(
+        default_factory=lambda: {
+            "Walls": "A-WALL",
+            "Doors": "A-DOOR",
+            "Windows": "A-GLAZ",
+            "Floors": "A-FLOR",
+            "Roofs": "A-ROOF",
+            "Furniture": "A-FURN",
+            "Dimensions": "A-ANNO-DIMS",
+            "Text Notes": "A-ANNO-TEXT",
+        }
+    )
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary."""
@@ -179,6 +188,7 @@ class VersionInfo:
 # ═══════════════════════════════════════════════════════════════════════════════
 # SEMANTIC MAPPER
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class SemanticMapper:
     """
@@ -269,7 +279,7 @@ class SemanticMapper:
         vertices = []
         for i in range(0, len(coords), 2):  # Process pairs of X,Y coordinates
             if i + 1 < len(coords):
-                vertices.append([coords[i], coords[i+1], 0])  # Add Z=0
+                vertices.append([coords[i], coords[i + 1], 0])  # Add Z=0
 
         _closed = entity.get("closed", False)
 
@@ -457,7 +467,9 @@ class SemanticMapper:
         return {
             "entity_type": "LWPOLYLINE",
             "layer": layer,
-            "coordinates": [coord for point in boundary for coord in point[:2]],  # Flatten to X,Y pairs
+            "coordinates": [
+                coord for point in boundary for coord in point[:2]
+            ],  # Flatten to X,Y pairs
             "closed": True,
         }
 
@@ -490,7 +502,9 @@ class SemanticMapper:
         return {
             "entity_type": "LWPOLYLINE",
             "layer": layer,
-            "coordinates": [coord for point in boundary for coord in point[:2]],  # Flatten to X,Y pairs
+            "coordinates": [
+                coord for point in boundary for coord in point[:2]
+            ],  # Flatten to X,Y pairs
             "closed": True,
         }
 
@@ -546,6 +560,7 @@ class SemanticMapper:
 # CONVERSION ENGINE
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class DigitalTwinEngine:
     """
     Core conversion engine for AutoCAD ↔ Revit.
@@ -564,8 +579,9 @@ class DigitalTwinEngine:
         self.mapper = SemanticMapper(self.config)
         self.version_manager = VersionManager()
 
-    def convert_autocad_to_revit(self, dwg_filepath: str, rvt_filepath: str,
-                                  template_path: Optional[str] = None) -> ConversionResult:
+    def convert_autocad_to_revit(
+        self, dwg_filepath: str, rvt_filepath: str, template_path: Optional[str] = None
+    ) -> ConversionResult:
         """
         Convert AutoCAD DWG to Revit RVT.
 
@@ -591,21 +607,27 @@ class DigitalTwinEngine:
             # Initialize AutoCAD service
             acad_service = AutoCADService()
             if not acad_service.initialize():
-                logger.warning("AutoCAD service could not be initialized - proceeding with file operations only")
+                logger.warning(
+                    "AutoCAD service could not be initialized - proceeding with file operations only"
+                )
 
             # Read DWG file
             logger.info("Reading DWG file: %s", dwg_filepath)
             dwg_result = acad_service.read_dwg(dwg_filepath)
 
             if not dwg_result.get("success", False):
-                raise RuntimeError(f"Failed to read DWG file: {dwg_result.get('error', 'Unknown error')}")
+                raise RuntimeError(
+                    f"Failed to read DWG file: {dwg_result.get('error', 'Unknown error')}"
+                )
 
             dwg_data = dwg_result
 
             # Initialize Revit service
             revit_service = RevitService()
             if not revit_service.initialize():
-                logger.warning("Revit service could not be initialized - proceeding with file operations only")
+                logger.warning(
+                    "Revit service could not be initialized - proceeding with file operations only"
+                )
 
             # Prepare elements for Revit
             revit_elements = []
@@ -616,7 +638,9 @@ class DigitalTwinEngine:
                     # Map entity
                     revit_spec = self.mapper.map_autocad_to_revit(entity)
                     if not revit_spec:
-                        warnings.append(f"Skipped entity: {entity.get('entity_type', 'unknown')} on layer {entity.get('layer', '0')}")
+                        warnings.append(
+                            f"Skipped entity: {entity.get('entity_type', 'unknown')} on layer {entity.get('layer', '0')}"
+                        )
                         continue
 
                     # Add to elements list
@@ -638,7 +662,7 @@ class DigitalTwinEngine:
                 target_file=rvt_filepath,
                 conversion_type="autocad_to_revit",
                 elements_count=elements_converted,
-                status="success" if not errors else "partial"
+                status="success" if not errors else "partial",
             )
 
             duration = (datetime.now() - start_time).total_seconds()
@@ -689,21 +713,27 @@ class DigitalTwinEngine:
             # Initialize Revit service
             revit_service = RevitService()
             if not revit_service.initialize():
-                logger.warning("Revit service could not be initialized - proceeding with file operations only")
+                logger.warning(
+                    "Revit service could not be initialized - proceeding with file operations only"
+                )
 
             # Read Revit document
             logger.info("Reading RVT file: %s", rvt_filepath)
             rvt_result = revit_service.read_rvt(rvt_filepath)
 
             if not rvt_result.get("success", False):
-                raise RuntimeError(f"Failed to read RVT file: {rvt_result.get('error', 'Unknown error')}")
+                raise RuntimeError(
+                    f"Failed to read RVT file: {rvt_result.get('error', 'Unknown error')}"
+                )
 
             rvt_data = rvt_result
 
             # Initialize AutoCAD service
             acad_service = AutoCADService()
             if not acad_service.initialize():
-                logger.warning("AutoCAD service could not be initialized - proceeding with file operations only")
+                logger.warning(
+                    "AutoCAD service could not be initialized - proceeding with file operations only"
+                )
 
             # Prepare entities for AutoCAD
             autocad_entities = []
@@ -736,7 +766,7 @@ class DigitalTwinEngine:
                 target_file=dwg_filepath,
                 conversion_type="revit_to_autocad",
                 elements_count=elements_converted,
-                status="success" if not errors else "partial"
+                status="success" if not errors else "partial",
             )
 
             duration = (datetime.now() - start_time).total_seconds()
@@ -767,6 +797,7 @@ class DigitalTwinEngine:
 # VERSION MANAGER
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class VersionManager:
     """Manages version history and rollback."""
 
@@ -776,9 +807,14 @@ class VersionManager:
         self.history_dir = Path(history_dir or os.getenv("CONVERSION_HISTORY_DIR", "."))
         self.history_file = self.history_dir / self.VERSION_FILE
 
-    def record_version(self, source_file: str, target_file: str,
-                        conversion_type: str, elements_count: int,
-                        status: str) -> str:
+    def record_version(
+        self,
+        source_file: str,
+        target_file: str,
+        conversion_type: str,
+        elements_count: int,
+        status: str,
+    ) -> str:
         """Record a conversion in version history."""
         version_id = str(uuid.uuid4())
 
@@ -870,6 +906,7 @@ class VersionManager:
 # MAIN SERVICE
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class DigitalTwinService:
     """
     Main Digital Twin service — orchestrates bidirectional conversion.
@@ -891,8 +928,9 @@ class DigitalTwinService:
         self.config = config or ConversionConfig()
         self.engine = DigitalTwinEngine(self.config)
 
-    def convert_autocad_to_revit(self, dwg_path: str, rvt_path: str,
-                                  template: Optional[str] = None) -> ConversionResult:
+    def convert_autocad_to_revit(
+        self, dwg_path: str, rvt_path: str, template: Optional[str] = None
+    ) -> ConversionResult:
         """Convert AutoCAD to Revit."""
         return self.engine.convert_autocad_to_revit(dwg_path, rvt_path, template)
 
@@ -912,6 +950,7 @@ class DigitalTwinService:
 # ═══════════════════════════════════════════════════════════════════════════════
 # CONFIGURATION MANAGER
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class ConversionConfigManager:
     """Manages conversion configuration persistence."""
@@ -952,7 +991,9 @@ class ConversionConfigManager:
             logger.error("Failed to load configuration: %s", e)
             return ConversionConfig()
 
-    def update_mapping(self, layer: str, category: str, direction: str = "autocad_to_revit") -> bool:
+    def update_mapping(
+        self, layer: str, category: str, direction: str = "autocad_to_revit"
+    ) -> bool:
         """
         Update a single mapping rule.
 
@@ -988,10 +1029,7 @@ class ConversionConfigManager:
             "units": {
                 "source": config.source_units,
                 "target": config.target_units,
-                "scale_factor": config.scale_factor
+                "scale_factor": config.scale_factor,
             },
-            "levels": {
-                "default": config.default_level,
-                "height": config.level_height
-            }
+            "levels": {"default": config.default_level, "height": config.level_height},
         }

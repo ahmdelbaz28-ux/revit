@@ -72,9 +72,10 @@ try:
     )
 except ImportError as e:
     import logging
+
     logging.getLogger(__name__).warning(
-        "Could not import fireai_api from fireai.core: %s. "
-        "FastAPI may not be installed.", e,
+        "Could not import fireai_api from fireai.core: %s. FastAPI may not be installed.",
+        e,
     )
     create_app = None
     app = None
@@ -95,7 +96,14 @@ except ImportError:
     get_manager = None
 
 
-__all__ = ["create_app", "app", "run_server", "ConnectionManager", "get_manager", *list(_fireai_api_all)]
+__all__ = [
+    "create_app",
+    "app",
+    "run_server",
+    "ConnectionManager",
+    "get_manager",
+    *list(_fireai_api_all),
+]
 
 
 # Version info for this package

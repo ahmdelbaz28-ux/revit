@@ -44,7 +44,9 @@ class EliteGlobalRouter:
 
     """
 
-    def __init__(self, global_bounds: tuple[float, float, float, float], resolution: float = 0.25) -> None:
+    def __init__(
+        self, global_bounds: tuple[float, float, float, float], resolution: float = 0.25
+    ) -> None:
         min_x, min_y, max_x, max_y = global_bounds
         width = max_x - min_x
         length = max_y - min_y
@@ -56,7 +58,9 @@ class EliteGlobalRouter:
         self._min_x = min_x
         self._min_y = min_y
 
-    def apply_class_a_separation(self, outgoing_path: list[tuple[float, float]], min_sep_m: float = 1.0) -> None:
+    def apply_class_a_separation(
+        self, outgoing_path: list[tuple[float, float]], min_sep_m: float = 1.0
+    ) -> None:
         """
         No-op for backward compatibility. Separation is applied internally
         by EliteClassARouter.generate_class_a_loop().
@@ -100,7 +104,9 @@ class EliteGlobalRouter:
             all_firestops = out_seg.firestop_nodes + ret_seg.firestop_nodes
             firestop_note = ""
             if all_firestops:
-                firestop_note = f" | {len(all_firestops)} fire-rated wall penetration(s) detected (IBC S714)"
+                firestop_note = (
+                    f" | {len(all_firestops)} fire-rated wall penetration(s) detected (IBC S714)"
+                )
 
             return DecisionProvenance.new(
                 decision_type="class_a_route_creation",

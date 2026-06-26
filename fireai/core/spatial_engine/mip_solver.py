@@ -139,7 +139,9 @@ def solve_set_covering_mip(
     R2 = coverage_radius**2
     coverage: list[list[int]] = []  # coverage[i] = list of candidate indices
     for tx, ty in targets:
-        covers = [j for j, (cx, cy) in enumerate(candidates) if (tx - cx) ** 2 + (ty - cy) ** 2 <= R2]
+        covers = [
+            j for j, (cx, cy) in enumerate(candidates) if (tx - cx) ** 2 + (ty - cy) ** 2 <= R2
+        ]
         coverage.append(covers)
 
     # --- Formulate ILP ---
@@ -194,7 +196,9 @@ def solve_set_covering_mip(
 
     # --- Extract solution ---
     selected = [
-        candidates[j] for j in range(len(candidates)) if pulp.value(x[j]) is not None and pulp.value(x[j]) > 0.5
+        candidates[j]
+        for j in range(len(candidates))
+        if pulp.value(x[j]) is not None and pulp.value(x[j]) > 0.5
     ]
     theoretical_minimum = len(selected)
 

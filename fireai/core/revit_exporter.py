@@ -600,7 +600,9 @@ class RevitExporter:
         for route in schedule.routes:
             status = "COMPLIANT" if route.is_compliant else "VIOLATIONS"
             lines.append(f"  Route: {route.route_id} [{status}]")
-            lines.append(f"    From: ({route.start[0]:.2f}, {route.start[1]:.2f}, {route.start[2]:.2f})")
+            lines.append(
+                f"    From: ({route.start[0]:.2f}, {route.start[1]:.2f}, {route.start[2]:.2f})"
+            )
             lines.append(f"    To:   ({route.end[0]:.2f}, {route.end[1]:.2f}, {route.end[2]:.2f})")
             lines.append(f"    Length: {route.total_length_m:.2f}m")
             lines.append(f"    Bends: {route.num_bends}")

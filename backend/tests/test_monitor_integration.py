@@ -24,6 +24,7 @@ from fastapi.testclient import TestClient
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
+
 @pytest.fixture(scope="module", autouse=True)
 def _setup_env() -> None:
     """Set development environment for testing."""
@@ -35,6 +36,7 @@ def _setup_env() -> None:
 def client():
     """Create a test client for the FastAPI app."""
     from backend.app import app
+
     with TestClient(app) as c:
         yield c
 
@@ -231,6 +233,7 @@ class TestMonitorStatePropagation:
     def test_engine_degraded_reflected_in_health(self, client) -> None:
         """Setting an engine to error should be reflected in health endpoint."""
         from backend.routers.monitor import MonitorState
+
         monitor = MonitorState()
         monitor.get_engine("facp-engine")
         # Set to error
@@ -246,23 +249,29 @@ class TestMonitorStatePropagation:
     def test_agent_activity_visible_via_http(self, client) -> None:
         """Adding agent activity should be visible through HTTP endpoint."""
         from backend.routers.monitor import MonitorState
+
         monitor = MonitorState()
-        monitor.add_agent_activity({
-            "agent_id": "test-integration-agent",
-            "type": "integration_test",
-            "message": "Test activity from integration tests",
-        })
+        monitor.add_agent_activity(
+            {
+                "agent_id": "test-integration-agent",
+                "type": "integration_test",
+                "message": "Test activity from integration tests",
+            }
+        )
         response = client.get("/api/monitor/agent-activity?limit=5")
         assert response.status_code == 200
 
     def test_security_alert_visible_via_http(self, client) -> None:
         """Adding a security alert should be visible through HTTP endpoint."""
         from backend.routers.monitor import MonitorState
+
         monitor = MonitorState()
-        monitor.add_security_alert({
-            "severity": "low",
-            "category": "test",
-            "message": "Test alert from integration tests",
-        })
+        monitor.add_security_alert(
+            {
+                "severity": "low",
+                "category": "test",
+                "message": "Test alert from integration tests",
+            }
+        )
         response = client.get("/api/monitor/security-alerts?limit=5")
         assert response.status_code == 200

@@ -24,7 +24,9 @@ logger = logging.getLogger(__name__)
 @dataclass
 class ImprovementFeedback:
     feedback_id: str = ""
-    component: str = ""  # "spacing_factor", "margin", "threshold", "density", "routing", "verification"
+    component: str = (
+        ""  # "spacing_factor", "margin", "threshold", "density", "routing", "verification"
+    )
     metric: str = ""  # "coverage_pct", "compliance_rate", "false_positive_rate", "execution_time", "detector_count"
     actual_value: float = 0.0
     expected_value: float = 0.0
@@ -174,7 +176,13 @@ class SelfImprovementEngine:
             ),
         )
         self.conn.commit()
-        logger.info("Ingested feedback %s (%s/%s, severity=%s)", fid, feedback.component, feedback.metric, feedback.severity)
+        logger.info(
+            "Ingested feedback %s (%s/%s, severity=%s)",
+            fid,
+            feedback.component,
+            feedback.metric,
+            feedback.severity,
+        )
 
         gap = feedback.expected_value - feedback.actual_value
         if feedback.severity in ("high", "critical") and gap > 0.05:
@@ -197,7 +205,11 @@ class SelfImprovementEngine:
         action_taken: str,
     ) -> str:
         rid = str(uuid.uuid4())
-        change_pct = ((new_value - previous_value) / max(abs(previous_value), 1e-9)) * 100.0 if previous_value != 0 else 0.0
+        change_pct = (
+            ((new_value - previous_value) / max(abs(previous_value), 1e-9)) * 100.0
+            if previous_value != 0
+            else 0.0
+        )
         cursor = self.conn.cursor()
         cursor.execute(
             """
@@ -318,7 +330,9 @@ class SelfImprovementEngine:
             GROUP BY component
         """)
         gap_rows = cursor.fetchall()
-        gaps: dict[str, float] = {r["component"]: r["avg_gap"] if r["avg_gap"] is not None else 0.0 for r in gap_rows}
+        gaps: dict[str, float] = {
+            r["component"]: r["avg_gap"] if r["avg_gap"] is not None else 0.0 for r in gap_rows
+        }
 
         suggestions: dict[str, list[tuple[float, float]]] = {
             "spacing_factor": [],
@@ -365,7 +379,9 @@ class SelfImprovementEngine:
 
         return best
 
-    def _evaluate_param(self, design: Any, param: str, value: float, gaps: dict[str, float]) -> float:
+    def _evaluate_param(
+        self, design: Any, param: str, value: float, gaps: dict[str, float]
+    ) -> float:
         gap = abs(gaps.get(param, 0))
         if gap < 0.01:
             return 0.5

@@ -309,6 +309,8 @@ class ProofCertificateGenerator:
         if coverage_lower_bound < 99.9:
             cert.warnings.append(f"Coverage lower bound {coverage_lower_bound:.1f}% < 99.9%")
         if ceiling_height > 9.1:
-            cert.warnings.append(f"Ceiling height {ceiling_height}m > 9.1m — consider beam detectors per NFPA 72 §17.7")
+            cert.warnings.append(
+                f"Ceiling height {ceiling_height}m > 9.1m — consider beam detectors per NFPA 72 §17.7"
+            )
 
         return cert

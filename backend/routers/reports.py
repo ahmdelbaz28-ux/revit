@@ -70,14 +70,16 @@ def _generate_report_content(report_type: str, project_id: str) -> dict:
             from_dev = device_map.get(conn["fromId"])
             to_dev = device_map.get(conn["toId"])
             if from_dev and to_dev:
-                circuits.append({
-                    "from": from_dev["name"],
-                    "to": to_dev["name"],
-                    "cableSize": conn["cableSize"],
-                    "length": conn["length"],
-                    "load": to_dev["load"],
-                    "voltage": to_dev["voltage"],
-                })
+                circuits.append(
+                    {
+                        "from": from_dev["name"],
+                        "to": to_dev["name"],
+                        "cableSize": conn["cableSize"],
+                        "length": conn["length"],
+                        "load": to_dev["load"],
+                        "voltage": to_dev["voltage"],
+                    }
+                )
         return {
             "type": "voltage_drop",
             "standard": "IEC 60364 / NFPA 72-2022 §27.4.1.2",
@@ -120,14 +122,14 @@ def _generate_report_content(report_type: str, project_id: str) -> dict:
         # speakers used for evacuation) active for 5 minutes during alarm condition.
         # Standby load = all other devices (detectors, modules, panels) for 24 hours.
         _ALARM_DEVICE_TYPES = {
-            "FA_SOUND_STROBE",    # Combined sounder/strobe — PRIMARY evacuation signal
-            "FA_HORN",           # Fire alarm horn
-            "FA_STROBE",         # Visual alarm strobe
-            "FA_BELL",           # Fire alarm bell
-            "FA_SIREN",          # Electronic siren
-            "PA_CEILING_SPEAKER", # PA speaker used for voice evacuation
-            "PA_WALL_SPEAKER",   # Wall-mounted PA speaker for voice evacuation
-            "PA_HORN",           # Outdoor horn for voice evacuation
+            "FA_SOUND_STROBE",  # Combined sounder/strobe — PRIMARY evacuation signal
+            "FA_HORN",  # Fire alarm horn
+            "FA_STROBE",  # Visual alarm strobe
+            "FA_BELL",  # Fire alarm bell
+            "FA_SIREN",  # Electronic siren
+            "PA_CEILING_SPEAKER",  # PA speaker used for voice evacuation
+            "PA_WALL_SPEAKER",  # Wall-mounted PA speaker for voice evacuation
+            "PA_HORN",  # Outdoor horn for voice evacuation
         }
         # Also classify by category + type combination for devices using category-based storage
         _ALARM_CATEGORIES = {"PA_SYSTEM"}  # PA system devices are typically voice alarm
@@ -143,7 +145,10 @@ def _generate_report_content(report_type: str, project_id: str) -> dict:
             is_alarm = (
                 device_type in _ALARM_DEVICE_TYPES
                 or device_category == "notification"  # Legacy compatibility
-                or (device_category in _ALARM_CATEGORIES and device_type not in {"PA_AMPLIFIER", "PA_MICROPHONE"})
+                or (
+                    device_category in _ALARM_CATEGORIES
+                    and device_type not in {"PA_AMPLIFIER", "PA_MICROPHONE"}
+                )
             )
 
             if is_alarm:
@@ -155,7 +160,11 @@ def _generate_report_content(report_type: str, project_id: str) -> dict:
         # returned zero battery when only notification appliances exist.
         # NFPA 72 §27.6.2 requires battery capacity for alarm load regardless
         # of standby load. A system with only horns/strobes still needs battery.
-        battery_ah = (total_standby * 24 + total_alarm * 0.25) / 0.8 if (total_standby > 0 or total_alarm > 0) else 0
+        battery_ah = (
+            (total_standby * 24 + total_alarm * 0.25) / 0.8
+            if (total_standby > 0 or total_alarm > 0)
+            else 0
+        )
         return {
             "type": "nfpa72_battery",
             "standard": "NFPA 72-2022 §27.6.2",
@@ -241,11 +250,15 @@ async def list_reports(
     """List all reports for a project."""
     _verify_project(project_id)
     db = get_db()
-    result = db.list_reports(project_id, page=page, limit=limit, sort=_normalize_sort(sort), order=order)
+    result = db.list_reports(
+        project_id, page=page, limit=limit, sort=_normalize_sort(sort), order=order
+    )
     return {"success": True, "data": result}
 
 
-@router.post("", status_code=201, dependencies=[Depends(require_permission(Permission.REPORT_GENERATE))])
+@router.post(
+    "", status_code=201, dependencies=[Depends(require_permission(Permission.REPORT_GENERATE))]
+)
 async def generate_report(project_id: str, input_data: GenerateReportInput):
     """Generate a new engineering report."""
     _verify_project(project_id)
@@ -287,7 +300,10 @@ async def generate_report(project_id: str, input_data: GenerateReportInput):
             report["id"],
             {
                 "status": "failed",
-                "parameters": {**report.get("parameters", {}), "error": "Report generation failed. Contact administrator for details."},
+                "parameters": {
+                    **report.get("parameters", {}),
+                    "error": "Report generation failed. Contact administrator for details.",
+                },
             },
         )
 
@@ -310,7 +326,9 @@ async def get_report(project_id: str, report_id: str):
     return {"data": report, "success": True}
 
 
-@router.get("/{report_id}/export", dependencies=[Depends(require_permission(Permission.REPORT_READ))])
+@router.get(
+    "/{report_id}/export", dependencies=[Depends(require_permission(Permission.REPORT_READ))]
+)
 async def export_report(
     project_id: str,
     report_id: str,
@@ -335,7 +353,7 @@ async def export_report(
             io.BytesIO(content.encode("utf-8")),
             media_type="application/json",
             headers={
-                "Content-Disposition": f"attachment; filename=\"report_{_safe_filename(report_id)}.json\""
+                "Content-Disposition": f'attachment; filename="report_{_safe_filename(report_id)}.json"'
             },
         )
     if format == "pdf":
@@ -347,23 +365,32 @@ async def export_report(
             from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer
 
             pdf_buffer = io.BytesIO()
-            doc = SimpleDocTemplate(pdf_buffer, pagesize=A4,
-                                    topMargin=20*mm, bottomMargin=20*mm,
-                                    leftMargin=15*mm, rightMargin=15*mm)
+            doc = SimpleDocTemplate(
+                pdf_buffer,
+                pagesize=A4,
+                topMargin=20 * mm,
+                bottomMargin=20 * mm,
+                leftMargin=15 * mm,
+                rightMargin=15 * mm,
+            )
             styles = getSampleStyleSheet()
             story = []
 
             # Header
-            story.append(Paragraph(f"FireAI Report: {report['name']}", styles['Title']))
-            story.append(Paragraph(f"Type: {report['type']} | Status: {report['status']}", styles['Normal']))
-            story.append(Paragraph(f"Generated: {report.get('createdAt', 'N/A')}", styles['Normal']))
-            story.append(Spacer(1, 10*mm))
+            story.append(Paragraph(f"FireAI Report: {report['name']}", styles["Title"]))
+            story.append(
+                Paragraph(f"Type: {report['type']} | Status: {report['status']}", styles["Normal"])
+            )
+            story.append(
+                Paragraph(f"Generated: {report.get('createdAt', 'N/A')}", styles["Normal"])
+            )
+            story.append(Spacer(1, 10 * mm))
 
             # Report content
             params = report.get("parameters", {})
             content_data = params.get("content", {})
 
-            def _add_data(data, prefix: str="", depth: int=0) -> None:
+            def _add_data(data, prefix: str = "", depth: int = 0) -> None:
                 """
                 Recursively add data to PDF, limiting depth.
 
@@ -379,31 +406,45 @@ async def export_report(
                     for key, value in data.items():
                         label = f"{prefix}{key}" if prefix else str(key)
                         # Escape XML entities in labels and values
-                        safe_label = str(label).replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+                        safe_label = (
+                            str(label)
+                            .replace("&", "&amp;")
+                            .replace("<", "&lt;")
+                            .replace(">", "&gt;")
+                        )
                         if isinstance(value, (str, int, float, bool)):
-                            safe_value = str(value).replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
-                            story.append(Paragraph(
-                                f"<b>{safe_label}:</b> {safe_value}", styles['Normal']
-                            ))
+                            safe_value = (
+                                str(value)
+                                .replace("&", "&amp;")
+                                .replace("<", "&lt;")
+                                .replace(">", "&gt;")
+                            )
+                            story.append(
+                                Paragraph(f"<b>{safe_label}:</b> {safe_value}", styles["Normal"])
+                            )
                         elif isinstance(value, list):
-                            story.append(Paragraph(
-                                f"<b>{safe_label}:</b> {len(value)} items", styles['Normal']
-                            ))
+                            story.append(
+                                Paragraph(
+                                    f"<b>{safe_label}:</b> {len(value)} items", styles["Normal"]
+                                )
+                            )
                             for i, item in enumerate(value[:20]):
                                 _add_data(item, f"{label}[{i}].", depth + 1)
                         elif isinstance(value, dict):
-                            story.append(Paragraph(f"<b>{label}:</b>", styles['Normal']))
+                            story.append(Paragraph(f"<b>{label}:</b>", styles["Normal"]))
                             _add_data(value, f"  {label}.", depth + 1)
 
             if isinstance(content_data, dict):
                 _add_data(content_data)
 
             # Footer
-            story.append(Spacer(1, 15*mm))
-            story.append(Paragraph(
-                "FireAI Digital Twin — NFPA 72-2022 Compliant Engineering Report",
-                styles['Normal']
-            ))
+            story.append(Spacer(1, 15 * mm))
+            story.append(
+                Paragraph(
+                    "FireAI Digital Twin — NFPA 72-2022 Compliant Engineering Report",
+                    styles["Normal"],
+                )
+            )
 
             doc.build(story)
             pdf_buffer.seek(0)
@@ -412,7 +453,7 @@ async def export_report(
                 pdf_buffer,
                 media_type="application/pdf",
                 headers={
-                    "Content-Disposition": f"attachment; filename=\"report_{_safe_filename(report_id)}.pdf\""
+                    "Content-Disposition": f'attachment; filename="report_{_safe_filename(report_id)}.pdf"'
                 },
             )
         except ImportError:
@@ -466,7 +507,7 @@ async def export_report(
                 io.BytesIO(dxf_bytes),
                 media_type="application/dxf",
                 headers={
-                    "Content-Disposition": f"attachment; filename=\"report_{_safe_filename(report_id)}.dxf\""
+                    "Content-Disposition": f'attachment; filename="report_{_safe_filename(report_id)}.dxf"'
                 },
             )
         except ImportError:

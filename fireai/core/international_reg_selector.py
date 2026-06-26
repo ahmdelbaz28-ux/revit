@@ -654,7 +654,9 @@ class InternationalRegSelector:
             )
 
         if override_system is not None and override_system != system:
-            if not (region == JurisdictionRegion.CANADA and override_system == HazardSystem.NEC_DIVISION):
+            if not (
+                region == JurisdictionRegion.CANADA and override_system == HazardSystem.NEC_DIVISION
+            ):
                 warnings.append(
                     f"System overridden from {system.value} to "
                     f"{override_system.value} for {country!r}. "
@@ -683,7 +685,10 @@ class InternationalRegSelector:
             return None
         div, mapped_class = mapping
 
-        if mapped_class != hazard_class and hazard_class not in (HazardClass.CLASS_I, HazardClass.GAS_VAPOR):
+        if mapped_class != hazard_class and hazard_class not in (
+            HazardClass.CLASS_I,
+            HazardClass.GAS_VAPOR,
+        ):
             logger.warning(
                 "Zone %s maps to %s/%s but requested hazard_class=%s. Verify equipment group compatibility.",
                 zone.value,

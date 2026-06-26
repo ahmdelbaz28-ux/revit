@@ -40,6 +40,7 @@ logger = logging.getLogger(__name__)
 # HAZARD CLASSIFICATION ENUM
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class HazardClassification(str, Enum):
     """
     NFPA 13-2022 Chapter 11 hazard classifications.
@@ -102,7 +103,6 @@ MANDATORY_HAZARD_OVERRIDES: dict[str, str] = {
     "plastics fabrication": "extra_hazard_2",
     "printing (using inks)": "extra_hazard_2",
     "dipping": "extra_hazard_2",
-
     # ── Extra Hazard Group 1 (0.30 gpm/sq.ft) ──
     "substation": "extra_hazard_1",
     "electrical room": "extra_hazard_1",
@@ -117,7 +117,6 @@ MANDATORY_HAZARD_OVERRIDES: dict[str, str] = {
     "metal powder": "extra_hazard_1",
     "plywood": "extra_hazard_1",
     "particleboard": "extra_hazard_1",
-
     # ── Ordinary Hazard Group 2 (0.20 gpm/sq.ft) ──
     "storage": "ordinary_hazard_2",
     "warehouse": "ordinary_hazard_2",
@@ -133,7 +132,6 @@ MANDATORY_HAZARD_OVERRIDES: dict[str, str] = {
     "candy": "ordinary_hazard_2",
     "chemical": "ordinary_hazard_2",
     "laboratory": "ordinary_hazard_2",
-
     # ── Ordinary Hazard Group 1 (0.15 gpm/sq.ft) ──
     "electrical": "ordinary_hazard_1",
     "parking garage": "ordinary_hazard_1",
@@ -146,7 +144,6 @@ MANDATORY_HAZARD_OVERRIDES: dict[str, str] = {
     "retail": "ordinary_hazard_1",
     "corridor": "ordinary_hazard_1",
     "lobby": "ordinary_hazard_1",
-
     # ── Light Hazard (0.10 gpm/sq.ft) ──
     # NOTE: Light hazard is ONLY appropriate for spaces that are truly
     # non-combustible. We do NOT add keywords here because most spaces
@@ -157,6 +154,7 @@ MANDATORY_HAZARD_OVERRIDES: dict[str, str] = {
 # ═══════════════════════════════════════════════════════════════════════════════
 # OVERRIDE VERIFIER
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 @dataclass
 class OverrideResult:

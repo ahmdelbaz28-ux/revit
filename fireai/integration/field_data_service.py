@@ -165,29 +165,19 @@ class FieldDataService:
 
     # ── Inspection Submission ───────────────────────────────────────────
 
-    def submit_inspection(
-        self, inspection: FieldInspection
-    ) -> InspectionResult:
+    def submit_inspection(self, inspection: FieldInspection) -> InspectionResult:
         self._validate_inspection(inspection)
 
-        critical = [
-            f
-            for f in inspection.findings
-            if f.category == FindingCategory.CRITICAL
-        ]
+        critical = [f for f in inspection.findings if f.category == FindingCategory.CRITICAL]
         warnings: list[str] = []
 
         if critical:
             warnings.append(
-                f"Inspection {inspection.inspection_id} has "
-                f"{len(critical)} critical finding(s)"
+                f"Inspection {inspection.inspection_id} has {len(critical)} critical finding(s)"
             )
 
         if inspection.inspection_id in self._inspections:
-            warnings.append(
-                f"Inspection {inspection.inspection_id} already exists "
-                f"— overwriting"
-            )
+            warnings.append(f"Inspection {inspection.inspection_id} already exists — overwriting")
 
         self._inspections[inspection.inspection_id] = inspection
 
@@ -230,17 +220,11 @@ class FieldDataService:
 
     # ── Field Updates ───────────────────────────────────────────────────
 
-    def get_field_updates(
-        self, since: datetime
-    ) -> list[FieldUpdate]:
+    def get_field_updates(self, since: datetime) -> list[FieldUpdate]:
         if not isinstance(since, datetime):
             raise TypeError("since must be a datetime object")
 
-        return [
-            u
-            for u in self._field_updates
-            if u.updated_at > since
-        ]
+        return [u for u in self._field_updates if u.updated_at > since]
 
     def record_field_update(self, update: FieldUpdate) -> None:
         self._field_updates.append(update)
@@ -269,9 +253,7 @@ class FieldDataService:
         conflict = local_version > 0 and remote_ver > local_version
 
         if conflict:
-            resolved = self._resolve_conflict(
-                asset_id, local_version, remote_ver
-            )
+            resolved = self._resolve_conflict(asset_id, local_version, remote_ver)
             result = SyncResult(
                 asset_id=asset_id,
                 synced=True,
@@ -303,9 +285,7 @@ class FieldDataService:
         )
         return result
 
-    def get_outstanding_inspections(
-        self, building_id: str
-    ) -> list[InspectionTask]:
+    def get_outstanding_inspections(self, building_id: str) -> list[InspectionTask]:
         if not building_id.strip():
             raise ValueError("building_id must not be empty")
 
@@ -313,20 +293,15 @@ class FieldDataService:
             task
             for task in self._tasks.values()
             if task.building_id == building_id
-            and task.status
-            in (InspectionStatus.PENDING, InspectionStatus.IN_PROGRESS)
+            and task.status in (InspectionStatus.PENDING, InspectionStatus.IN_PROGRESS)
         ]
 
     def assign_inspection_task(self, task: InspectionTask) -> None:
         if task.task_id in self._tasks:
-            logger.warning(
-                "Task %s already exists, overwriting", task.task_id
-            )
+            logger.warning("Task %s already exists, overwriting", task.task_id)
         self._tasks[task.task_id] = task
 
-    def update_task_status(
-        self, task_id: str, status: InspectionStatus
-    ) -> bool:
+    def update_task_status(self, task_id: str, status: InspectionStatus) -> bool:
         if task_id not in self._tasks:
             return False
         task = self._tasks[task_id]
@@ -344,9 +319,7 @@ class FieldDataService:
 
     # ── Internal ────────────────────────────────────────────────────────
 
-    def _validate_inspection(
-        self, inspection: FieldInspection
-    ) -> None:
+    def _validate_inspection(self, inspection: FieldInspection) -> None:
         if not inspection.inspection_id.strip():
             raise ValueError("inspection_id is required")
         if not inspection.inspector_id.strip():
@@ -356,19 +329,12 @@ class FieldDataService:
         if not inspection.building_id.strip():
             raise ValueError("building_id is required")
         if inspection.timestamp.tzinfo is None:
-            raise ValueError(
-                "timestamp must be timezone-aware"
-            )
+            raise ValueError("timestamp must be timezone-aware")
         now = datetime.now(timezone.utc)
         if inspection.timestamp > now:
-            raise ValueError(
-                f"Inspection timestamp {inspection.timestamp} "
-                f"is in the future"
-            )
+            raise ValueError(f"Inspection timestamp {inspection.timestamp} is in the future")
 
-    def _resolve_conflict(
-        self, asset_id: str, local_ver: int, remote_ver: int
-    ) -> str:
+    def _resolve_conflict(self, asset_id: str, local_ver: int, remote_ver: int) -> str:
         """
         Last-write-wins conflict resolution.
 
@@ -413,9 +379,7 @@ if __name__ == "__main__":
     print(f"Inspection accepted: {result.accepted}")
     print(f"Critical findings: {result.critical_findings}")
 
-    updates = service.get_field_updates(
-        datetime(2020, 1, 1, tzinfo=timezone.utc)
-    )
+    updates = service.get_field_updates(datetime(2020, 1, 1, tzinfo=timezone.utc))
     print(f"Field updates: {len(updates)}")
 
     from fireai.analytics.predictive_maintenance import (

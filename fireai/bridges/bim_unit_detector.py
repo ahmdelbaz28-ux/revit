@@ -67,7 +67,7 @@ class UnitSystem(str, Enum):
     METRES = "metres"
     CENTIMETRES = "centimetres"
     MILLIMETRES = "millimetres"
-    FEET = "feet"              # Revit internal units
+    FEET = "feet"  # Revit internal units
     INCHES = "inches"
     UNKNOWN = "unknown"
 
@@ -107,17 +107,17 @@ class UnitSystem(str, Enum):
 # DXF $INSUNITS system variable values (per DXF Reference, AC1009+)
 # These map integer codes to UnitSystem enum values.
 _DXF_INSUNITS_MAP: dict[int, UnitSystem] = {
-    0: UnitSystem.UNKNOWN,      # Unspecified
-    1: UnitSystem.INCHES,       # Imperial inches
-    2: UnitSystem.FEET,         # Imperial feet
-    3: UnitSystem.UNKNOWN,      # Miles (not relevant for BIM)
+    0: UnitSystem.UNKNOWN,  # Unspecified
+    1: UnitSystem.INCHES,  # Imperial inches
+    2: UnitSystem.FEET,  # Imperial feet
+    3: UnitSystem.UNKNOWN,  # Miles (not relevant for BIM)
     4: UnitSystem.MILLIMETRES,  # SI millimetres
     5: UnitSystem.CENTIMETRES,  # SI centimetres
-    6: UnitSystem.METRES,       # SI metres (rare in DXF, but valid)
-    7: UnitSystem.UNKNOWN,      # Kilometres (not relevant for BIM)
-    8: UnitSystem.UNKNOWN,      # Microinches (not relevant for BIM)
-    9: UnitSystem.UNKNOWN,      # Mils (not relevant for BIM)
-    10: UnitSystem.UNKNOWN,     # Yards (not relevant for BIM)
+    6: UnitSystem.METRES,  # SI metres (rare in DXF, but valid)
+    7: UnitSystem.UNKNOWN,  # Kilometres (not relevant for BIM)
+    8: UnitSystem.UNKNOWN,  # Microinches (not relevant for BIM)
+    9: UnitSystem.UNKNOWN,  # Mils (not relevant for BIM)
+    10: UnitSystem.UNKNOWN,  # Yards (not relevant for BIM)
     # Note: Code 13 (Micrometres), 14 (Decimetres) exist but are extremely rare
 }
 
@@ -323,7 +323,8 @@ def _detect_from_dxf(filepath: str) -> UnitDetectionResult | None:
         search_start = idx + len("$INSUNITS")
         # Find "70\n" followed by a number
         import re
-        match = re.search(r"70\s*\n\s*(\d+)", content[search_start:search_start + 200])
+
+        match = re.search(r"70\s*\n\s*(\d+)", content[search_start : search_start + 200])
         if not match:
             return None
 
@@ -377,9 +378,7 @@ def _detect_from_heuristic(filepath: str) -> UnitDetectionResult | None:
 
         xs = [c[0] for c in coords]
         ys = [c[1] for c in coords]
-        diagonal = math.sqrt(
-            (max(xs) - min(xs)) ** 2 + (max(ys) - min(ys)) ** 2
-        )
+        diagonal = math.sqrt((max(xs) - min(xs)) ** 2 + (max(ys) - min(ys)) ** 2)
 
         if not math.isfinite(diagonal) or diagonal <= 0:
             return None

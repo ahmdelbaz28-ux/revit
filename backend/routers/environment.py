@@ -53,11 +53,15 @@ from backend.services.weather_service import get_weather_service
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/environment", tags=["environment"],
-                dependencies=[Depends(require_permission(Permission.QOMN_READ))])
+router = APIRouter(
+    prefix="/environment",
+    tags=["environment"],
+    dependencies=[Depends(require_permission(Permission.QOMN_READ))],
+)
 
 
 # ── Phase 1 Endpoints ───────────────────────────────────────────────────────
+
 
 @router.get("/countries")
 async def get_countries():
@@ -70,13 +74,16 @@ async def get_countries():
     from backend.services.region_service import (
         _COUNTRY_FRAMEWORK_MAP,
     )
+
     countries = []
     for code, (framework, electrical) in sorted(_COUNTRY_FRAMEWORK_MAP.items()):
-        countries.append({
-            "country_code": code,
-            "regulatory_framework": framework.value,
-            "electrical_code": electrical.value,
-        })
+        countries.append(
+            {
+                "country_code": code,
+                "regulatory_framework": framework.value,
+                "electrical_code": electrical.value,
+            }
+        )
     return {
         "success": True,
         "data": {
@@ -116,9 +123,7 @@ async def get_weather(
             "source": weather.source,
             "is_default": weather.is_default,
             "is_stale": weather.is_stale,
-            "fetched_at": time.strftime(
-                "%Y-%m-%dT%H:%M:%SZ", time.gmtime(weather.fetched_at)
-            ),
+            "fetched_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(weather.fetched_at)),
             "location": {
                 "latitude": weather.latitude,
                 "longitude": weather.longitude,
@@ -130,8 +135,7 @@ async def get_weather(
 @router.get("/geocode")
 async def geocode_address(
     address: str = Query(
-        ..., min_length=2, max_length=500,
-        description="Address to geocode (e.g., 'Cairo, Egypt')"
+        ..., min_length=2, max_length=500, description="Address to geocode (e.g., 'Cairo, Egypt')"
     ),
 ):
     """
@@ -165,8 +169,10 @@ async def geocode_address(
 @router.get("/region")
 async def get_region(
     country_code: str = Query(
-        ..., min_length=2, max_length=2,
-        description="ISO 3166-1 alpha-2 country code (e.g., 'US', 'EG', 'SA')"
+        ...,
+        min_length=2,
+        max_length=2,
+        description="ISO 3166-1 alpha-2 country code (e.g., 'US', 'EG', 'SA')",
     ),
 ):
     """
@@ -194,6 +200,7 @@ async def get_region(
 
 
 # ── Phase 2 Endpoints ───────────────────────────────────────────────────────
+
 
 @router.get("/elevation")
 async def get_elevation(
@@ -282,8 +289,7 @@ async def get_air_quality(
                     f"{'UNHEALTHY baseline — increase tenability margins' if data.is_unhealthy_baseline else 'Acceptable baseline for tenability calculations'}."
                 ),
                 "detection": (
-                    f"PM2.5={data.pm25_ug_m3}µg/m³ affects "
-                    f"smoke detector response time estimation."
+                    f"PM2.5={data.pm25_ug_m3}µg/m³ affects smoke detector response time estimation."
                 ),
             },
         },
@@ -386,19 +392,19 @@ async def get_severe_weather(
 
     alerts_list = []
     for alert in data.active_alerts:
-        alerts_list.append({
-            "event": alert.event,
-            "severity": alert.severity,
-            "headline": alert.headline,
-            "effective": alert.effective,
-            "expires": alert.expires,
-            "is_critical": alert.is_critical,
-            "affects_fire_safety": alert.affects_fire_safety,
-        })
+        alerts_list.append(
+            {
+                "event": alert.event,
+                "severity": alert.severity,
+                "headline": alert.headline,
+                "effective": alert.effective,
+                "expires": alert.expires,
+                "is_critical": alert.is_critical,
+                "affects_fire_safety": alert.affects_fire_safety,
+            }
+        )
 
-    fire_safety_alerts = [
-        a for a in data.active_alerts if a.affects_fire_safety
-    ]
+    fire_safety_alerts = [a for a in data.active_alerts if a.affects_fire_safety]
 
     # Determine coverage note based on coverage area
     coverage_area = getattr(data, "coverage_area", "none")
@@ -436,8 +442,10 @@ async def get_severe_weather(
 @router.get("/hazmat")
 async def get_hazmat_data(
     material: str = Query(
-        ..., min_length=2, max_length=200,
-        description="Material name (e.g., 'methane', 'propane', 'hydrogen')"
+        ...,
+        min_length=2,
+        max_length=200,
+        description="Material name (e.g., 'methane', 'propane', 'hydrogen')",
     ),
 ):
     """
@@ -514,6 +522,7 @@ async def list_known_materials():
 
 # ── Comprehensive Context Endpoints ─────────────────────────────────────────
 
+
 @router.get("/context")
 async def get_full_environmental_context(
     lat: float = Query(..., ge=-90, le=90, description="Latitude"),
@@ -580,7 +589,9 @@ async def get_full_environmental_context(
             "location": {
                 "latitude": lat,
                 "longitude": lon,
-                "display_name": geo_result.display_name if isinstance(geo_result, GeocodingResult) else "",
+                "display_name": geo_result.display_name
+                if isinstance(geo_result, GeocodingResult)
+                else "",
                 "country_code": country_code,
             },
             "regulatory": {
@@ -606,8 +617,7 @@ async def get_full_phase2_context(
     lon: float = Query(..., ge=-180, le=180, description="Longitude"),
     is_indoor: bool = Query(True, description="Indoor or outdoor environment"),
     material: str | None = Query(
-        None, max_length=200,
-        description="Optional hazardous material name for HAC data"
+        None, max_length=200, description="Optional hazardous material name for HAC data"
     ),
 ):
     """
@@ -649,7 +659,11 @@ async def get_full_phase2_context(
 
     # Wait for all Phase 1 + Phase 2 parallel tasks
     results = await asyncio.gather(
-        weather_task, geo_task, elev_task, aq_task, sw_task,
+        weather_task,
+        geo_task,
+        elev_task,
+        aq_task,
+        sw_task,
         return_exceptions=True,
     )
 
@@ -713,7 +727,9 @@ async def get_full_phase2_context(
             "location": {
                 "latitude": lat,
                 "longitude": lon,
-                "display_name": geo_result.display_name if isinstance(geo_result, GeocodingResult) else "",
+                "display_name": geo_result.display_name
+                if isinstance(geo_result, GeocodingResult)
+                else "",
                 "country_code": country_code,
             },
             # Phase 1: Regulatory

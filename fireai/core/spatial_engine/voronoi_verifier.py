@@ -152,7 +152,9 @@ class VoronoiVerifier:
                 # is on the boundary
 
                 # Check boundary vertices
-                boundary_coords = list(region.boundary.coords) if hasattr(region.boundary, "coords") else []
+                boundary_coords = (
+                    list(region.boundary.coords) if hasattr(region.boundary, "coords") else []
+                )
                 for bx, by in boundary_coords:
                     # Only consider points inside the room
                     if 0 <= bx <= width and 0 <= by <= length:

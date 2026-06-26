@@ -113,7 +113,9 @@ class AssetHealth:
         if not 0.0 <= self.health_score <= 1.0:
             raise ValueError(f"health_score must be in [0,1], got {self.health_score}")
         if not 0.0 <= self.failure_probability <= 1.0:
-            raise ValueError(f"failure_probability must be in [0,1], got {self.failure_probability}")
+            raise ValueError(
+                f"failure_probability must be in [0,1], got {self.failure_probability}"
+            )
 
 
 # ===========================================================================
@@ -189,9 +191,7 @@ class PredictiveMaintenance:
         failure_prob = prediction.failure_probability_90d
         risk_level = self._classify_risk(health_score, failure_prob)
 
-        recommendations = self._generate_recommendations(
-            asset, health_score, risk_level
-        )
+        recommendations = self._generate_recommendations(asset, health_score, risk_level)
 
         ttf = self._estimate_ttf(health_score, prediction)
 
@@ -215,15 +215,11 @@ class PredictiveMaintenance:
         # If we have repair/replacement events, fit Weibull parameters
         if maintenance_history:
             try:
-                fitted_shape, fitted_scale = self._fit_weibull(
-                    maintenance_history
-                )
+                fitted_shape, fitted_scale = self._fit_weibull(maintenance_history)
                 shape = fitted_shape
                 scale = fitted_scale
             except Exception:
-                logger.warning(
-                    "Weibull fit failed for asset, using defaults"
-                )
+                logger.warning("Weibull fit failed for asset, using defaults")
 
         model_type = "weibull"
         mttf = scale * math.gamma(1.0 + 1.0 / shape)
@@ -254,9 +250,7 @@ class PredictiveMaintenance:
             model_type=model_type,
         )
 
-    def recommend_maintenance(
-        self, asset: AssetData
-    ) -> MaintenanceRecommendation:
+    def recommend_maintenance(self, asset: AssetData) -> MaintenanceRecommendation:
         health = self.assess_health(asset)
         risk = health.risk_level
 
@@ -292,8 +286,7 @@ class PredictiveMaintenance:
                 recommended_action="INSPECT",
                 urgency="WITHIN_30_DAYS",
                 description=(
-                    f"Asset {asset.asset_id} is at MEDIUM risk. "
-                    f"Schedule inspection within 30 days."
+                    f"Asset {asset.asset_id} is at MEDIUM risk. Schedule inspection within 30 days."
                 ),
             )
         return MaintenanceRecommendation(
@@ -327,20 +320,14 @@ class PredictiveMaintenance:
             return 0.85
         return 1.0
 
-    def _compute_maintenance_factor(
-        self, asset: AssetData
-    ) -> float:
+    def _compute_maintenance_factor(self, asset: AssetData) -> float:
         history = self._history_cache.get(asset.asset_id, [])
         if not history:
             return 0.5  # Neutral — no data
 
         now = datetime.now(timezone.utc)
         # Recent maintenance within 1 year is good
-        recent = [
-            e
-            for e in history
-            if (now - e.timestamp).days < 365
-        ]
+        recent = [e for e in history if (now - e.timestamp).days < 365]
         if not recent:
             return 0.3  # No recent maintenance
 
@@ -359,8 +346,7 @@ class PredictiveMaintenance:
         base = 1.0 - (repair_ratio * 0.6)
         # Bonus for recent inspection
         has_recent_inspection = any(
-            e.maintenance_type == MaintenanceType.INSPECTION
-            and (now - e.timestamp).days < 90
+            e.maintenance_type == MaintenanceType.INSPECTION and (now - e.timestamp).days < 90
             for e in recent
         )
         if has_recent_inspection:
@@ -374,11 +360,7 @@ class PredictiveMaintenance:
 
         now = datetime.now(timezone.utc)
         # Look at last 2 years of events
-        window = [
-            e
-            for e in history
-            if (now - e.timestamp).days < 730
-        ]
+        window = [e for e in history if (now - e.timestamp).days < 730]
         if not window:
             return 1.0
 
@@ -392,15 +374,11 @@ class PredictiveMaintenance:
         return max(0.0, factor)
 
     def _compute_env_factor(self, asset: AssetData) -> float:
-        return self.ENVIRONMENT_FACTORS.get(
-            asset.environment_rating, 0.7
-        )
+        return self.ENVIRONMENT_FACTORS.get(asset.environment_rating, 0.7)
 
     # ── Internal: Weibull fitting ────────────────────────────────────────
 
-    def _fit_weibull(
-        self, history: list[MaintenanceEvent]
-    ) -> tuple[float, float]:
+    def _fit_weibull(self, history: list[MaintenanceEvent]) -> tuple[float, float]:
         """
         Fit Weibull parameters using method of moments on time-between-failures.
 
@@ -411,16 +389,13 @@ class PredictiveMaintenance:
             [
                 e
                 for e in history
-                if e.maintenance_type
-                in (MaintenanceType.REPAIR, MaintenanceType.REPLACEMENT)
+                if e.maintenance_type in (MaintenanceType.REPAIR, MaintenanceType.REPLACEMENT)
             ],
             key=lambda e: e.timestamp,
         )
 
         if len(repair_events) < 3:
-            return self.DEFAULT_WEIBULL.get(
-                AssetType.DETECTOR_SMOKE, (1.8, 3650.0)
-            )
+            return self.DEFAULT_WEIBULL.get(AssetType.DETECTOR_SMOKE, (1.8, 3650.0))
 
         # Compute time-between-failures in days
         tbf: list[float] = []
@@ -432,9 +407,7 @@ class PredictiveMaintenance:
             prev = event.timestamp
 
         if len(tbf) < 2:
-            return self.DEFAULT_WEIBULL.get(
-                AssetType.DETECTOR_SMOKE, (1.8, 3650.0)
-            )
+            return self.DEFAULT_WEIBULL.get(AssetType.DETECTOR_SMOKE, (1.8, 3650.0))
 
         # Method of moments
         mean_tbf = sum(tbf) / len(tbf)
@@ -442,9 +415,7 @@ class PredictiveMaintenance:
         std_tbf = math.sqrt(variance)
 
         if mean_tbf <= 0 or std_tbf <= 0:
-            return self.DEFAULT_WEIBULL.get(
-                AssetType.DETECTOR_SMOKE, (1.8, 3650.0)
-            )
+            return self.DEFAULT_WEIBULL.get(AssetType.DETECTOR_SMOKE, (1.8, 3650.0))
 
         cv = std_tbf / mean_tbf
         shape_estimate = 1.2 / cv if cv > 0 else 2.0
@@ -456,9 +427,7 @@ class PredictiveMaintenance:
 
     # ── Internal: Risk classification ────────────────────────────────────
 
-    def _classify_risk(
-        self, health_score: float, failure_prob: float
-    ) -> RiskLevel:
+    def _classify_risk(self, health_score: float, failure_prob: float) -> RiskLevel:
         if health_score < 0.25 or failure_prob > 0.5:
             return RiskLevel.CRITICAL
         if health_score < 0.50 or failure_prob > 0.3:
@@ -491,38 +460,21 @@ class PredictiveMaintenance:
         recs: list[str] = []
 
         if risk_level == RiskLevel.CRITICAL:
-            recs.append(
-                f"URGENT: Replace {asset.asset_type.value} "
-                f"{asset.asset_id} immediately"
-            )
-            recs.append(
-                "Isolate asset from critical circuits until replacement"
-            )
+            recs.append(f"URGENT: Replace {asset.asset_type.value} {asset.asset_id} immediately")
+            recs.append("Isolate asset from critical circuits until replacement")
         elif risk_level == RiskLevel.HIGH:
-            recs.append(
-                f"Schedule replacement of {asset.asset_id} within 7 days"
-            )
+            recs.append(f"Schedule replacement of {asset.asset_id} within 7 days")
             recs.append("Perform detailed functional test before replacement")
 
         if health_score < 0.6:
-            recs.append(
-                f"Increase inspection frequency for {asset.asset_id}"
-            )
-        if (
-            asset.asset_type
-            in (AssetType.BATTERY, AssetType.DETECTOR_SMOKE)
-            and health_score < 0.5
-        ):
+            recs.append(f"Increase inspection frequency for {asset.asset_id}")
+        if asset.asset_type in (AssetType.BATTERY, AssetType.DETECTOR_SMOKE) and health_score < 0.5:
             recs.append("Consider proactive replacement strategy")
         if asset.environment_rating in ("corrosive", "coastal", "desert"):
-            recs.append(
-                "Apply corrosion protection per NFPA 72 §14.4.4"
-            )
+            recs.append("Apply corrosion protection per NFPA 72 §14.4.4")
 
         if not recs:
-            recs.append(
-                f"No action required for {asset.asset_id} at this time"
-            )
+            recs.append(f"No action required for {asset.asset_id} at this time")
         return recs
 
 

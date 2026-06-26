@@ -38,48 +38,49 @@ logger = logging.getLogger(__name__)
 # ═══════════════════════════════════════════════════════════════════════════════
 
 # Length
-FEET_TO_METRES       = 0.3048      # Exact definition (1 ft = 0.3048 m since 1959)
-METRES_TO_FEET       = 1.0 / 0.3048
-INCHES_TO_MM         = 25.4        # Exact (1 in = 25.4 mm since 1959)
-MM_TO_INCHES         = 1.0 / 25.4
-FEET_TO_MM           = FEET_TO_METRES * 1000.0
-MM_TO_FEET           = 1.0 / FEET_TO_MM
-METRES_TO_MM         = 1000.0
-MM_TO_METRES         = 0.001
+FEET_TO_METRES = 0.3048  # Exact definition (1 ft = 0.3048 m since 1959)
+METRES_TO_FEET = 1.0 / 0.3048
+INCHES_TO_MM = 25.4  # Exact (1 in = 25.4 mm since 1959)
+MM_TO_INCHES = 1.0 / 25.4
+FEET_TO_MM = FEET_TO_METRES * 1000.0
+MM_TO_FEET = 1.0 / FEET_TO_MM
+METRES_TO_MM = 1000.0
+MM_TO_METRES = 0.001
 
 # Area
-SQFT_TO_SQM          = 0.09290304  # Exact (0.3048²)
-SQM_TO_SQFT          = 1.0 / 0.09290304
-SQIN_TO_SQMM         = 645.16      # Exact (25.4²)
-SQMM_TO_SQIN         = 1.0 / 645.16
+SQFT_TO_SQM = 0.09290304  # Exact (0.3048²)
+SQM_TO_SQFT = 1.0 / 0.09290304
+SQIN_TO_SQMM = 645.16  # Exact (25.4²)
+SQMM_TO_SQIN = 1.0 / 645.16
 
 # Volume
-CUBIC_FT_TO_CUBIC_M  = 0.028316846592  # Exact (0.3048³)
-CUBIC_M_TO_CUBIC_FT  = 1.0 / 0.028316846592
-GALLONS_US_TO_LITRES = 3.785411784      # Exact (1 US gal = 3.785411784 L)
+CUBIC_FT_TO_CUBIC_M = 0.028316846592  # Exact (0.3048³)
+CUBIC_M_TO_CUBIC_FT = 1.0 / 0.028316846592
+GALLONS_US_TO_LITRES = 3.785411784  # Exact (1 US gal = 3.785411784 L)
 LITRES_TO_GALLONS_US = 1.0 / 3.785411784
 
 # Pressure
-PSI_TO_BAR           = 0.0689476   # Approximate (1 psi ≈ 0.0689476 bar)
-BAR_TO_PSI           = 1.0 / 0.0689476
-PSI_TO_KPA           = 6.89476     # Approximate (1 psi ≈ 6.89476 kPa)
-KPA_TO_PSI           = 1.0 / 6.89476
-PSF_TO_PSI           = 1.0 / 144.0  # 1 psf = 1 lbf/ft², 1 psi = 144 psf
-PSI_TO_PSF           = 144.0
-PA_TO_PSI            = 1.0 / 6894.76
+PSI_TO_BAR = 0.0689476  # Approximate (1 psi ≈ 0.0689476 bar)
+BAR_TO_PSI = 1.0 / 0.0689476
+PSI_TO_KPA = 6.89476  # Approximate (1 psi ≈ 6.89476 kPa)
+KPA_TO_PSI = 1.0 / 6.89476
+PSF_TO_PSI = 1.0 / 144.0  # 1 psf = 1 lbf/ft², 1 psi = 144 psf
+PSI_TO_PSF = 144.0
+PA_TO_PSI = 1.0 / 6894.76
 
 # Flow rate
-GPM_TO_LPM           = 3.785411784  # 1 US gpm = 3.785411784 L/min
-LPM_TO_GPM           = 1.0 / 3.785411784
+GPM_TO_LPM = 3.785411784  # 1 US gpm = 3.785411784 L/min
+LPM_TO_GPM = 1.0 / 3.785411784
 
 # Temperature
-FAHRENHEIT_OFFSET    = 32.0
-FAHRENHEIT_SCALE     = 5.0 / 9.0  # °C = (°F - 32) × 5/9
+FAHRENHEIT_OFFSET = 32.0
+FAHRENHEIT_SCALE = 5.0 / 9.0  # °C = (°F - 32) × 5/9
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # SAFETY-CRITICAL CONVERSION FUNCTIONS
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 def revit_internal_to_metres(internal_feet: float) -> float:
     """
@@ -325,8 +326,9 @@ def celsius_to_fahrenheit(c: float) -> float:
 # BULK CONVERSION HELPERS
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 def convert_polygon_revit_to_metres(
-    polygon_revit: list[tuple[float, float]]
+    polygon_revit: list[tuple[float, float]],
 ) -> list[tuple[float, float]]:
     """
     Convert an entire polygon from Revit internal feet to metres.

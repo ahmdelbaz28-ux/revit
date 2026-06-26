@@ -73,7 +73,7 @@ def _stick_length(conduit_type: ConduitType) -> float:
         return _EMT_STICK_LENGTH_M
     if conduit_type in (ConduitType.UPVC_SCH40, ConduitType.UPVC_SCH80):
         return _PVC_STICK_LENGTH_M
-    return _RGD_STICK_LENGTH_M   # RGD
+    return _RGD_STICK_LENGTH_M  # RGD
 
 
 def _midpoint(a: Point3D, b: Point3D) -> Point3D:
@@ -97,6 +97,7 @@ def _lerp(a: Point3D, b: Point3D, t: float) -> Point3D:
 # ─────────────────────────────────────────────────────────────────────────────
 # Public API
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 def place_fittings(
     path: RoutePath,
@@ -133,22 +134,24 @@ def place_fittings(
     # ── Validate input path ───────────────────────────────────────────────────
 
     if len(path.waypoints) < 2:
-        return Result.err(PhysicsError(
-            message=(
-                f"RoutePath has {len(path.waypoints)} waypoints; minimum is 2."
-            ),
-            remediation=(
-                "Ensure the router produced a path with at least a start and end point."
-            ),
-        ))
+        return Result.err(
+            PhysicsError(
+                message=(f"RoutePath has {len(path.waypoints)} waypoints; minimum is 2."),
+                remediation=(
+                    "Ensure the router produced a path with at least a start and end point."
+                ),
+            )
+        )
 
     for i, wp in enumerate(path.waypoints):
         for ax, v in (("x", wp.x), ("y", wp.y), ("z", wp.z)):
             if not math.isfinite(v):
-                return Result.err(PhysicsError(
-                    message=f"Waypoint[{i}].{ax}={v} is not finite.",
-                    remediation="All waypoint coordinates must be finite numbers.",
-                ))
+                return Result.err(
+                    PhysicsError(
+                        message=f"Waypoint[{i}].{ax}={v} is not finite.",
+                        remediation="All waypoint coordinates must be finite numbers.",
+                    )
+                )
 
     rid = run_id or f"RUN-{uuid.uuid4().hex[:8].upper()}"
     run = ConduitRun(
@@ -164,7 +167,7 @@ def place_fittings(
     # Walk segments between consecutive waypoints
     for seg_idx in range(len(waypoints) - 1):
         wp_start = waypoints[seg_idx]
-        wp_end   = waypoints[seg_idx + 1]
+        wp_end = waypoints[seg_idx + 1]
 
         # ── Direction change → place ELBOW_90 ────────────────────────────────
 
@@ -182,23 +185,19 @@ def place_fittings(
                     cumulative_bends_deg += elbow.angle_deg
 
                     # Check cumulative bend limit
-                    cum_result = verify_cumulative_bends(
-                        conduit_type, [cumulative_bends_deg]
-                    )
+                    cum_result = verify_cumulative_bends(conduit_type, [cumulative_bends_deg])
                     if cum_result.is_err():
                         # Insert pull box — resets bend counter
                         pb = _make_pull_box(wp_start, conduit_type, trade_size)
                         run.fittings.append(pb)
                         run.violations.append(
-                            f"[PULL_BOX INSERTED at {wp_start!r}] "
-                            + cum_result.error.message
+                            f"[PULL_BOX INSERTED at {wp_start!r}] " + cum_result.error.message
                         )
                         cumulative_bends_deg = 0.0
                 else:
                     run.violations.append(
                         f"ELBOW_90 not in catalog for "
-                        f"{conduit_type.value} {trade_size.value}: "
-                        + elbow_result.error.message
+                        f"{conduit_type.value} {trade_size.value}: " + elbow_result.error.message
                     )
 
         # ── Place straight segment with couplings ─────────────────────────────
@@ -230,9 +229,8 @@ def place_fittings(
 # Internal helpers
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _is_direction_change(
-    prev: Point3D, curr: Point3D, nxt: Point3D
-) -> bool:
+
+def _is_direction_change(prev: Point3D, curr: Point3D, nxt: Point3D) -> bool:
     """
     True if the path changes direction at curr.
 
@@ -240,6 +238,7 @@ def _is_direction_change(
     quantised to the dominant axis (orthogonal routing guarantees
     only one axis changes at a time).
     """
+
     def dom_dir(a: Point3D, b: Point3D) -> tuple[int, int, int]:
         dx, dy, dz = b.x - a.x, b.y - a.y, b.z - a.z
         return (
@@ -266,12 +265,15 @@ def _place_elbow(
     cat_result = get_fitting(conduit_type, trade_size, FittingType.ELBOW_90)
     if cat_result.is_err():
         from fireai.conduit.errors import CodeViolationError
-        return Result.err(CodeViolationError(
-            message=cat_result.error.message,
-            code_reference="NEC 110.3(B)",
-            remediation=cat_result.error.remediation,
-            severity=Severity.FATAL,
-        ))
+
+        return Result.err(
+            CodeViolationError(
+                message=cat_result.error.message,
+                code_reference="NEC 110.3(B)",
+                remediation=cat_result.error.remediation,
+                severity=Severity.FATAL,
+            )
+        )
 
     fitting = cat_result.value
     pf = PlacedFitting(
@@ -308,7 +310,7 @@ def _make_pull_box(
         catalog_number=_PULL_BOX_CATALOG,
         angle_deg=0.0,
         developed_length_m=0.0,
-        weight_kg=0.5,   # typical pull box weight
+        weight_kg=0.5,  # typical pull box weight
     )
 
 
@@ -338,42 +340,48 @@ def _place_segment_with_couplings(
 
     if n_sticks <= 1:
         # Single stick — no coupling needed
-        run.segments.append(ConduitSegment(
-            start=seg_start,
-            end=seg_end,
-            conduit_type=conduit_type,
-            trade_size=trade_size,
-        ))
+        run.segments.append(
+            ConduitSegment(
+                start=seg_start,
+                end=seg_end,
+                conduit_type=conduit_type,
+                trade_size=trade_size,
+            )
+        )
         return
 
     # Multiple sticks — place couplings at joints
     cat_result = get_fitting(conduit_type, trade_size, FittingType.COUPLING)
     coupling_cat = cat_result.value.catalog_number if cat_result.is_ok() else "EC-000"
-    coupling_wt  = cat_result.value.weight_kg       if cat_result.is_ok() else 0.0
+    coupling_wt = cat_result.value.weight_kg if cat_result.is_ok() else 0.0
 
     prev_pt = seg_start
     for i in range(1, n_sticks + 1):
         t = min(1.0, (i * stick_len) / seg_length)
         next_pt = _lerp(seg_start, seg_end, t) if t < 1.0 else seg_end
 
-        run.segments.append(ConduitSegment(
-            start=prev_pt,
-            end=next_pt,
-            conduit_type=conduit_type,
-            trade_size=trade_size,
-        ))
+        run.segments.append(
+            ConduitSegment(
+                start=prev_pt,
+                end=next_pt,
+                conduit_type=conduit_type,
+                trade_size=trade_size,
+            )
+        )
 
         # Place coupling at joint (not after last stick)
         if i < n_sticks:
-            run.fittings.append(PlacedFitting(
-                fitting_type=FittingType.COUPLING,
-                conduit_type=conduit_type,
-                trade_size=trade_size,
-                position=next_pt,
-                catalog_number=coupling_cat,
-                angle_deg=0.0,
-                developed_length_m=0.0,
-                weight_kg=coupling_wt,
-            ))
+            run.fittings.append(
+                PlacedFitting(
+                    fitting_type=FittingType.COUPLING,
+                    conduit_type=conduit_type,
+                    trade_size=trade_size,
+                    position=next_pt,
+                    catalog_number=coupling_cat,
+                    angle_deg=0.0,
+                    developed_length_m=0.0,
+                    weight_kg=coupling_wt,
+                )
+            )
 
         prev_pt = next_pt

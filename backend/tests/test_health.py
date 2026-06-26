@@ -13,10 +13,12 @@ from fastapi.testclient import TestClient
 def client():
     """Create a test client for the FastAPI app."""
     import os
+
     os.environ.setdefault("FIREAI_ENV", "development")
     os.environ.setdefault("FIREAI_API_KEY", "")
 
     from backend.app import app
+
     with TestClient(app) as c:
         yield c
 

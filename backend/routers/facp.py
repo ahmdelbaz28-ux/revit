@@ -45,6 +45,7 @@ router = APIRouter(tags=["facp"])
 
 # ── Request/Response Models ──────────────────────────────────────────────────
 
+
 class FACPSelectionRequest(BaseModel):
     """
     Input for FACP panel selection.
@@ -53,44 +54,35 @@ class FACPSelectionRequest(BaseModel):
     """
 
     device_count: int = Field(
-        ..., gt=0,
-        description="Total number of addressable devices (detectors, modules, etc.)"
+        ..., gt=0, description="Total number of addressable devices (detectors, modules, etc.)"
     )
     nac_circuit_count: int = Field(
-        ..., gt=0,
-        description="Number of Notification Appliance Circuits required"
+        ..., gt=0, description="Number of Notification Appliance Circuits required"
     )
     building_size_m2: float = Field(
-        ..., gt=0,
-        description="Total building floor area in square meters"
+        ..., gt=0, description="Total building floor area in square meters"
     )
-    building_floors: int = Field(
-        ..., gt=0,
-        description="Number of building floors"
-    )
+    building_floors: int = Field(..., gt=0, description="Number of building floors")
     requires_network: bool = Field(
-        False,
-        description="True if panels must be networked across multiple locations"
+        False, description="True if panels must be networked across multiple locations"
     )
     requires_voice: bool = Field(
         False,
-        description="True if voice evacuation is required (affects alarm duration: 15min vs 5min per NFPA 72 SS10.6.7)"
+        description="True if voice evacuation is required (affects alarm duration: 15min vs 5min per NFPA 72 SS10.6.7)",
     )
     requires_releasing: bool = Field(
         False,
-        description="True if panel must support releasing service for suppression systems (NFPA 72 SS21.7)"
+        description="True if panel must support releasing service for suppression systems (NFPA 72 SS21.7)",
     )
-    jurisdiction: str = Field(
-        "US",
-        description="Jurisdiction code: US, Canada, FDNY, etc."
-    )
+    jurisdiction: str = Field("US", description="Jurisdiction code: US, Canada, FDNY, etc.")
     preferred_manufacturer: str | None = Field(
-        None,
-        description="Preferred FACP manufacturer (e.g., NOTIFIER, SIEMENS, SIMPLEX)"
+        None, description="Preferred FACP manufacturer (e.g., NOTIFIER, SIEMENS, SIMPLEX)"
     )
     min_temperature_c: float = Field(
-        20.0, ge=-40.0, le=60.0,
-        description="Minimum ambient temperature for battery derating per NFPA 72 SS10.6.7"
+        20.0,
+        ge=-40.0,
+        le=60.0,
+        description="Minimum ambient temperature for battery derating per NFPA 72 SS10.6.7",
     )
 
 
@@ -182,6 +174,7 @@ def _check_facp_available() -> bool:
             from facp_system.panel_output import OutputGenerator  # noqa: F401
             from facp_system.panel_selector import SelectionEngine  # noqa: F401
             from facp_system.panel_verifier import ComplianceVerifier  # noqa: F401
+
             _facp_available = True
             logger.info("FACP system modules loaded successfully")
         except ImportError as e:
@@ -213,6 +206,7 @@ def _require_facp() -> None:
 
 
 # ── Endpoints ────────────────────────────────────────────────────────────────
+
 
 @router.post("/facp/select", dependencies=[Depends(require_permission(Permission.FACP_MANAGE))])
 async def select_facp(req: FACPSelectionRequest):
@@ -346,9 +340,7 @@ async def verify_facp(req: FACPVerificationRequest):
             signature_hash="",
         )
 
-        violations = ComplianceVerifier.verify_national_code_rules(
-            project_req, recommendation
-        )
+        violations = ComplianceVerifier.verify_national_code_rules(project_req, recommendation)
 
         is_compliant = len(violations) == 0
 
@@ -409,9 +401,7 @@ async def generate_facp_schedule(req: FACPScheduleRequest):
             signature_hash=req.signature_hash,
         )
 
-        schedule_text = OutputGenerator.generate_dxf_schedule(
-            recommendation, qty=req.quantity
-        )
+        schedule_text = OutputGenerator.generate_dxf_schedule(recommendation, qty=req.quantity)
 
         return {
             "success": True,
@@ -479,9 +469,7 @@ async def generate_facp_spec(req: FACPSpecRequest):
             signature_hash=req.signature_hash,
         )
 
-        csi_spec = OutputGenerator.generate_csi_specification(
-            project_req, recommendation
-        )
+        csi_spec = OutputGenerator.generate_csi_specification(project_req, recommendation)
 
         # Also generate alternatives table
         alternatives_table = OutputGenerator.generate_alternatives_table(recommendation)
@@ -530,20 +518,22 @@ async def list_available_panels():
 
         panels = []
         for p in MASTER_PANEL_DATABASE:
-            panels.append({
-                "model": p.model,
-                "manufacturer": p.manufacturer,
-                "points_capacity": p.points_capacity,
-                "nac_capacity": p.nac_capacity,
-                "supports_networking": p.supports_networking,
-                "supports_voice": p.supports_voice,
-                "supports_releasing": p.supports_releasing,
-                "max_slc_loops": p.max_slc_loops,
-                "listings": p.listings,
-                "standby_current_amps": p.standby_current_amps,
-                "alarm_current_amps": p.alarm_current_amps,
-                "power_supply_watts": p.power_supply_watts,
-            })
+            panels.append(
+                {
+                    "model": p.model,
+                    "manufacturer": p.manufacturer,
+                    "points_capacity": p.points_capacity,
+                    "nac_capacity": p.nac_capacity,
+                    "supports_networking": p.supports_networking,
+                    "supports_voice": p.supports_voice,
+                    "supports_releasing": p.supports_releasing,
+                    "max_slc_loops": p.max_slc_loops,
+                    "listings": p.listings,
+                    "standby_current_amps": p.standby_current_amps,
+                    "alarm_current_amps": p.alarm_current_amps,
+                    "power_supply_watts": p.power_supply_watts,
+                }
+            )
 
         return {
             "success": True,

@@ -51,11 +51,17 @@ class FirestoppingAnnotator:
 
     """
 
-    def __init__(self, fire_rated_walls_lines: list[tuple[tuple[float, float], tuple[float, float]]]) -> None:
+    def __init__(
+        self, fire_rated_walls_lines: list[tuple[tuple[float, float], tuple[float, float]]]
+    ) -> None:
         # In real integration, wall line strings or full polygon footprints can be stored here
-        self.fire_lines = [LineString(fw) for fw in fire_rated_walls_lines] if SHAPELY_AVAILABLE else []
+        self.fire_lines = (
+            [LineString(fw) for fw in fire_rated_walls_lines] if SHAPELY_AVAILABLE else []
+        )
 
-    def locate_penetrations(self, cable_route: list[tuple[float, float]]) -> list[tuple[float, float]]:
+    def locate_penetrations(
+        self, cable_route: list[tuple[float, float]]
+    ) -> list[tuple[float, float]]:
         """
         Find all points where a cable route crosses fire-rated walls.
 
@@ -116,8 +122,16 @@ class FirestoppingAnnotator:
 
         for x, y in penetrations:
             msp.add_circle((x, y), radius=0.4, dxfattribs={"layer": "FA-FIRESTOP", "color": 1})
-            msp.add_line((x - 0.4, y - 0.4), (x + 0.4, y + 0.4), dxfattribs={"layer": "FA-FIRESTOP", "color": 1})
-            msp.add_line((x - 0.4, y + 0.4), (x + 0.4, y - 0.4), dxfattribs={"layer": "FA-FIRESTOP", "color": 1})
+            msp.add_line(
+                (x - 0.4, y - 0.4),
+                (x + 0.4, y + 0.4),
+                dxfattribs={"layer": "FA-FIRESTOP", "color": 1},
+            )
+            msp.add_line(
+                (x - 0.4, y + 0.4),
+                (x + 0.4, y - 0.4),
+                dxfattribs={"layer": "FA-FIRESTOP", "color": 1},
+            )
             text = msp.add_text(
                 "FIRESTOP REQ'D [IBC 714]",
                 dxfattribs={"layer": "FA-FIRESTOP", "height": 0.35, "color": 1},

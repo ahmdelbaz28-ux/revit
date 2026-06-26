@@ -375,7 +375,9 @@ class SeismicJointPenalyer:
                     value={
                         "crossings_detected": len(crossings),
                         "orthogonal_crossings": sum(1 for c in crossings if c.is_orthogonal),
-                        "non_orthogonal_crossings": sum(1 for c in crossings if not c.is_orthogonal),
+                        "non_orthogonal_crossings": sum(
+                            1 for c in crossings if not c.is_orthogonal
+                        ),
                         "flexible_junctions": [
                             {
                                 "joint_id": fj.joint_id,

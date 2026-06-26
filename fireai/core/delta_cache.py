@@ -67,7 +67,9 @@ def _content_hash(obj: Any) -> str:
     Consistent: same logical content → same hash (sorted keys).
     """
     try:
-        payload = json.dumps(obj, sort_keys=True, default=str, separators=(",", ":"), ensure_ascii=False)
+        payload = json.dumps(
+            obj, sort_keys=True, default=str, separators=(",", ":"), ensure_ascii=False
+        )
     except (TypeError, ValueError):
         payload = str(obj)
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:16]
@@ -388,7 +390,9 @@ class DeltaCache:
             # Invalidate all cache keys with this node_id prefix
             count += self._cache.invalidate_prefix(f"{nid}:")
 
-        self.total_invalidates += len(all_invalidated)  # V44 NOTE: Not thread-safe but acceptable for stats counter
+        self.total_invalidates += len(
+            all_invalidated
+        )  # V44 NOTE: Not thread-safe but acceptable for stats counter
         return frozenset(all_invalidated)
 
     def invalidate_batch(
@@ -650,7 +654,9 @@ class DeltaCache:
             "total_computes": self.total_computes,
             "saved_computes": self.saved_computes,
             "invalidates": self.total_invalidates,
-            "efficiency_pct": round(100.0 * self.saved_computes / max(self.saved_computes + self.total_computes, 1), 2),
+            "efficiency_pct": round(
+                100.0 * self.saved_computes / max(self.saved_computes + self.total_computes, 1), 2
+            ),
         }
 
     # Alias: test calls cache.stats() expecting the dict return
@@ -716,7 +722,9 @@ class DeltaCache:
             rows = cursor.fetchall()
 
             for row in rows:
-                (room_id, geo_hash, algo_ver, _ceiling_h, _det_type, result_json, ts, hit_count) = row
+                (room_id, geo_hash, algo_ver, _ceiling_h, _det_type, result_json, ts, hit_count) = (
+                    row
+                )
                 try:
                     result = json.loads(result_json)
                 except json.JSONDecodeError:

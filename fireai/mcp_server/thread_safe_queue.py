@@ -49,6 +49,7 @@ logger = logging.getLogger(__name__)
 # ACTION TYPES
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class ModelUpdateType(str, Enum):
     """
     Types of model updates that can be queued.
@@ -81,6 +82,7 @@ class ModelUpdateStatus(str, Enum):
 # ═══════════════════════════════════════════════════════════════════════════════
 # DATA STRUCTURES
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 @dataclass
 class ModelUpdateAction:
@@ -118,12 +120,16 @@ class ModelUpdateAction:
     def is_safety_critical(self) -> bool:
         """Whether this action affects life-safety parameters."""
         safety_critical_params = {
-            "pipe_diameter", "sprinkler_pressure", "hazard_class",
-            "detector_spacing", "coverage_area", "k_factor",
-            "flow_rate", "residual_pressure",
+            "pipe_diameter",
+            "sprinkler_pressure",
+            "hazard_class",
+            "detector_spacing",
+            "coverage_area",
+            "k_factor",
+            "flow_rate",
+            "residual_pressure",
         }
-        return (self.parameter_name.lower().replace(" ", "_")
-                in safety_critical_params)
+        return self.parameter_name.lower().replace(" ", "_") in safety_critical_params
 
 
 @dataclass
@@ -152,6 +158,7 @@ class ModelUpdateResult:
 # ═══════════════════════════════════════════════════════════════════════════════
 # THREAD-SAFE MODEL UPDATE QUEUE
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class ThreadSafeModelUpdateQueue:
     """
@@ -245,9 +252,7 @@ class ThreadSafeModelUpdateQueue:
             ModelUpdateType.SET_HAZARD_CLASS,
             ModelUpdateType.SET_ROOM_NAME,
         ):
-            raise ValueError(
-                f"parameter_name is required for {action.action_type.value} actions."
-            )
+            raise ValueError(f"parameter_name is required for {action.action_type.value} actions.")
 
         # Create result placeholder and event
         with self._results_lock:
@@ -383,11 +388,14 @@ class ThreadSafeModelUpdateQueue:
                         "be pending in the queue — check audit log."
                     ),
                 )
-            return self._results.get(action_id, ModelUpdateResult(
-                action_id=action_id,
-                status=ModelUpdateStatus.FAILED,
-                error_message="Result not found after event was set.",
-            ))
+            return self._results.get(
+                action_id,
+                ModelUpdateResult(
+                    action_id=action_id,
+                    status=ModelUpdateStatus.FAILED,
+                    error_message="Result not found after event was set.",
+                ),
+            )
 
     def get_pending_count(self) -> int:
         """Return the number of pending actions in the queue."""

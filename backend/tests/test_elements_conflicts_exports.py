@@ -18,6 +18,7 @@ from fastapi.testclient import TestClient
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
+
 @pytest.fixture(scope="module", autouse=True)
 def _setup_env() -> None:
     """Set development environment for testing."""
@@ -29,6 +30,7 @@ def _setup_env() -> None:
 def client():
     """Create a test client for the FastAPI app."""
     from backend.app import app
+
     with TestClient(app) as c:
         yield c
 
@@ -54,8 +56,11 @@ def project_with_device(client, test_project):
             "name": "Smoke Detector",
             "type": "FA_SMOKE",
             "category": "FIRE_ALARM",
-            "x": 10.0, "y": 20.0,
-            "voltage": 24.0, "current": 0.1, "load": 0.1,
+            "x": 10.0,
+            "y": 20.0,
+            "voltage": 24.0,
+            "current": 0.1,
+            "load": 0.1,
         },
     )
     return pid

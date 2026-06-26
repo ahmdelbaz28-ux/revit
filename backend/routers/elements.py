@@ -32,7 +32,11 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/elements", tags=["elements"])
 
 
-@router.get("", response_model=ApiResponse[PaginatedData[ElementResponse]], dependencies=[Depends(require_permission(Permission.ELEMENT_READ))])
+@router.get(
+    "",
+    response_model=ApiResponse[PaginatedData[ElementResponse]],
+    dependencies=[Depends(require_permission(Permission.ELEMENT_READ))],
+)
 async def list_elements(
     element_type: str | None = Query(None, description="Filter by element type"),
     project_id: str | None = Query(None, description="Filter by project ID"),
@@ -71,7 +75,12 @@ async def list_elements(
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@router.post("", response_model=ApiResponse[ElementResponse], status_code=201, dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])
+@router.post(
+    "",
+    response_model=ApiResponse[ElementResponse],
+    status_code=201,
+    dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))],
+)
 async def create_element(
     element_data: ElementCreate,
     db: DatabaseService = Depends(get_db_service),
@@ -85,15 +94,19 @@ async def create_element(
         # or class details. Sanitize before exposing to client.
         safe_msg = str(e)[:200]  # Truncate to prevent overflow
         # Remove common path patterns that leak server structure
-        safe_msg = re.sub(r'/[\w./-]+', '[PATH]', safe_msg)
-        safe_msg = re.sub(r'<class \w+>', '[CLASS]', safe_msg)
+        safe_msg = re.sub(r"/[\w./-]+", "[PATH]", safe_msg)
+        safe_msg = re.sub(r"<class \w+>", "[CLASS]", safe_msg)
         raise HTTPException(status_code=400, detail=safe_msg)
     except Exception as e:
         logger.error("create_element failed: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@router.get("/{element_id}", response_model=ApiResponse[ElementResponse], dependencies=[Depends(require_permission(Permission.ELEMENT_READ))])
+@router.get(
+    "/{element_id}",
+    response_model=ApiResponse[ElementResponse],
+    dependencies=[Depends(require_permission(Permission.ELEMENT_READ))],
+)
 async def get_element(
     element_id: str,
     db: DatabaseService = Depends(get_db_service),
@@ -111,7 +124,11 @@ async def get_element(
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@router.put("/{element_id}", response_model=ApiResponse[ElementResponse], dependencies=[Depends(require_permission(Permission.ELEMENT_UPDATE))])
+@router.put(
+    "/{element_id}",
+    response_model=ApiResponse[ElementResponse],
+    dependencies=[Depends(require_permission(Permission.ELEMENT_UPDATE))],
+)
 async def update_element(
     element_id: str,
     element_data: ElementUpdate,
@@ -130,7 +147,11 @@ async def update_element(
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@router.delete("/{element_id}", response_model=ApiResponse[None], dependencies=[Depends(require_permission(Permission.ELEMENT_DELETE))])
+@router.delete(
+    "/{element_id}",
+    response_model=ApiResponse[None],
+    dependencies=[Depends(require_permission(Permission.ELEMENT_DELETE))],
+)
 async def delete_element(
     element_id: str,
     db: DatabaseService = Depends(get_db_service),

@@ -215,7 +215,9 @@ RULE_CEILING_HEIGHT_EXCEEDS_TABLE = Rule(
         "flags this for mandatory professional review."
     ),
     fact_type="room",
-    condition=lambda f: "ceiling_height_m" in f.properties and f.properties["ceiling_height_m"] > 12.2,
+    condition=lambda f: (
+        "ceiling_height_m" in f.properties and f.properties["ceiling_height_m"] > 12.2
+    ),
     action=lambda facts, engine: [
         RuleResult(
             rule_id="NFPA72-003",
@@ -263,7 +265,9 @@ RULE_DEAD_AIR_SPACE = Rule(
         "smoke from reaching the detector."
     ),
     fact_type="detector",
-    condition=lambda f: "distance_to_wall_m" in f.properties and f.properties["distance_to_wall_m"] < 0.1,
+    condition=lambda f: (
+        "distance_to_wall_m" in f.properties and f.properties["distance_to_wall_m"] < 0.1
+    ),
     action=lambda facts, engine: [
         RuleResult(
             rule_id="NFPA72-004",
@@ -337,7 +341,9 @@ RULE_DUCT_DETECTOR_REQUIRED = Rule(
     ),
     fact_type="hvac_unit",
     condition=lambda f: (
-        "cfm" in f.properties and f.properties["cfm"] > 2000 and not f.properties.get("has_duct_detector", False)
+        "cfm" in f.properties
+        and f.properties["cfm"] > 2000
+        and not f.properties.get("has_duct_detector", False)
     ),
     action=lambda facts, engine: [
         RuleResult(
@@ -350,7 +356,11 @@ RULE_DUCT_DETECTOR_REQUIRED = Rule(
                 f"has {facts[0].properties['cfm']} CFM (> 2000 CFM threshold) "
                 f"but no duct smoke detector. NFPA 72 §17.7.5.1 requires "
                 f"smoke detection on air handlers > 2000 CFM."
-                + (" Supply AND return detectors required (> 15000 CFM)." if facts[0].properties["cfm"] > 15000 else "")
+                + (
+                    " Supply AND return detectors required (> 15000 CFM)."
+                    if facts[0].properties["cfm"] > 15000
+                    else ""
+                )
             ),
             asserted_facts=[
                 Fact(
@@ -475,7 +485,10 @@ def _action_min_detector_count(facts, engine):
     room_area_m2 = 1.0  # Conservative fallback
     room_facts = engine.get_facts("room")
     for rf in room_facts:
-        if rf.properties.get("room_id") == room_id and rf.properties.get("room_area_m2") is not None:
+        if (
+            rf.properties.get("room_id") == room_id
+            and rf.properties.get("room_area_m2") is not None
+        ):
             room_area_m2 = rf.properties["room_area_m2"]
             break
 
@@ -487,7 +500,9 @@ def _action_min_detector_count(facts, engine):
             rule_name="Minimum Detector Count for Room Coverage",
             nfpa_reference="NFPA 72 §17.6.3.1, §17.7.4.2.3.1",
             severity=RulePriority.COMPLIANCE_CHECK,
-            message=(f"Room '{room_id}': R={r_m:.2f}m, area={room_area_m2:.1f}m2, minimum_detectors={min_dets}"),
+            message=(
+                f"Room '{room_id}': R={r_m:.2f}m, area={room_area_m2:.1f}m2, minimum_detectors={min_dets}"
+            ),
             asserted_facts=[
                 Fact(
                     fact_type="detector_requirement",
@@ -532,7 +547,9 @@ RULE_MINIMUM_DETECTOR_COUNT = Rule(
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
-def _manhattan_exceeds_spacing(x1: float, y1: float, x2: float, y2: float, spacing_m: float) -> bool:
+def _manhattan_exceeds_spacing(
+    x1: float, y1: float, x2: float, y2: float, spacing_m: float
+) -> bool:
     """
     Quick Manhattan distance pre-filter for detector spacing joins.
 
@@ -558,7 +575,9 @@ RULE_DETECTOR_SPACING_VIOLATION = Rule(
         "detector pairs to check inter-detector distance."
     ),
     fact_type="detector",
-    condition=lambda f: "x" in f.properties and "y" in f.properties and "listed_spacing_m" in f.properties,
+    condition=lambda f: (
+        "x" in f.properties and "y" in f.properties and "listed_spacing_m" in f.properties
+    ),
     join_conditions=[
         (
             "detector",

@@ -31,6 +31,7 @@ from fireai.core.qomn_kernel import (
 
 logger = logging.getLogger(__name__)
 
+
 # ----------------------------------------------------------------------------
 # Safe error helper for PhysicsGuardError
 # ----------------------------------------------------------------------------
@@ -51,6 +52,7 @@ def _physics_guard_detail(exc: Exception) -> dict:
         }
     # Fallback — never leak raw str(exc)
     return {"error_type": "physics_guard_violation", "hint": "Input rejected by physics guard."}
+
 
 # ----------------------------------------------------------------------------
 # Routers
@@ -105,7 +107,9 @@ class RoomAnalyzeRequest(BaseModel):
         ..., description="Room polygon as [[x,y], ...] list of vertices"
     )
     ceiling_height_m: float = Field(
-        ..., gt=0, le=18.288,
+        ...,
+        gt=0,
+        le=18.288,
         description="Ceiling height (m). NFPA 72 §17.7.3.2.4 caps at 18.288m (60ft).",
     )
     detector_type: str = Field("smoke", description="Detector type: smoke | heat")

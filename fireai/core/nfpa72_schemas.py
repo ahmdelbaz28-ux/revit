@@ -31,6 +31,7 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 # ENUMS — Ceiling Type, Detector Type, Hazard Type
 # ============================================================================
 
+
 class CeilingTypePydantic(str, Enum):
     """Ceiling type classification per NFPA 72 §17.6.3."""
 
@@ -57,6 +58,7 @@ class DetectorTypePydantic(str, Enum):
 # ============================================================================
 # NFPA72Input — Coverage Radius Calculation Input Schema
 # ============================================================================
+
 
 class NFPA72Input(BaseModel):
     """
@@ -86,8 +88,8 @@ class NFPA72Input(BaseModel):
         gt=0,
         le=30.0,
         description="Nominal listed spacing between detectors (S) in meters. "
-                    "Must be > 0 and ≤ 30.0m per NFPA 72 Table 17.6.3.1.1. "
-                    "Standard smoke: 9.1m (30ft), heat: 6.1m (20ft).",
+        "Must be > 0 and ≤ 30.0m per NFPA 72 Table 17.6.3.1.1. "
+        "Standard smoke: 9.1m (30ft), heat: 6.1m (20ft).",
     )
 
     ceiling_height_m: float = Field(
@@ -95,17 +97,17 @@ class NFPA72Input(BaseModel):
         gt=0,
         le=18.288,
         description="Ceiling height (H) in meters. Must be > 0 and ≤ 18.288m "
-                    "(60ft) per NFPA 72 §17.7.3.2.4. Heights above 15.24m (50ft) "
-                    "require PE review flag. V128 FIX: Was ≤ 15.24m (50ft) which "
-                    "incorrectly rejected valid smoke detector placements at 15.24-18.288m.",
+        "(60ft) per NFPA 72 §17.7.3.2.4. Heights above 15.24m (50ft) "
+        "require PE review flag. V128 FIX: Was ≤ 15.24m (50ft) which "
+        "incorrectly rejected valid smoke detector placements at 15.24-18.288m.",
     )
 
     ceiling_type: CeilingTypePydantic = Field(
         default=CeilingTypePydantic.FLAT,
         description="Ceiling type per NFPA 72 §17.6.3. Affects spacing "
-                    "correction factors. Sloped ceilings require reduced spacing "
-                    "per Table 17.6.3.1.2(a). Waffle ceilings require special "
-                    "detector placement per §17.6.3.6.",
+        "correction factors. Sloped ceilings require reduced spacing "
+        "per Table 17.6.3.1.2(a). Waffle ceilings require special "
+        "detector placement per §17.6.3.6.",
     )
 
     hvac_velocity_ms: float = Field(
@@ -113,9 +115,9 @@ class NFPA72Input(BaseModel):
         ge=0.0,
         le=5.0,
         description="HVAC supply air velocity in m/s. High-velocity air "
-                    "currents can impede smoke detector operation per NFPA 72 "
-                    "Informative Annex. Velocities > 0.5 m/s may require "
-                    "detector spacing reduction.",
+        "currents can impede smoke detector operation per NFPA 72 "
+        "Informative Annex. Velocities > 0.5 m/s may require "
+        "detector spacing reduction.",
     )
 
     beam_depth_m: float = Field(
@@ -123,15 +125,15 @@ class NFPA72Input(BaseModel):
         ge=0.0,
         le=3.0,
         description="Exposed beam depth in meters. Per NFPA 72 §17.6.3.6, "
-                    "if beam depth > 10% of ceiling height, spacing within "
-                    "each beam pocket is limited to the pocket width.",
+        "if beam depth > 10% of ceiling height, spacing within "
+        "each beam pocket is limited to the pocket width.",
     )
 
     detector_type: DetectorTypePydantic = Field(
         default=DetectorTypePydantic.SMOKE,
         description="Type of detector. Heat detectors use square-grid "
-                    "(Chebyshev) coverage geometry per NFPA 72 §17.6.2.1. "
-                    "Smoke detectors use circular (Euclidean) coverage.",
+        "(Chebyshev) coverage geometry per NFPA 72 §17.6.2.1. "
+        "Smoke detectors use circular (Euclidean) coverage.",
     )
 
     @field_validator("ceiling_height_m")
@@ -223,18 +225,14 @@ class NFPA72Input(BaseModel):
                 excess = depth_fraction - 0.10
                 beam_correction = max(0.25, 1.0 - excess * 2.0)
 
-        coverage_radius = (
-            base_factor
-            * self.spacing_m
-            * hvac_correction
-            * beam_correction
-        )
+        coverage_radius = base_factor * self.spacing_m * hvac_correction * beam_correction
         return round(coverage_radius, 3)
 
 
 # ============================================================================
 # VoltageDropInput — NEC Voltage Drop Calculation Input Schema
 # ============================================================================
+
 
 class VoltageDropInput(BaseModel):
     """
@@ -257,7 +255,7 @@ class VoltageDropInput(BaseModel):
         gt=0,
         le=125.0,
         description="Nominal supply voltage (VDC). Fire alarm systems "
-                    "typically use 24VDC. Must be positive and ≤ 125V.",
+        "typically use 24VDC. Must be positive and ≤ 125V.",
     )
 
     load_current_a: float = Field(
@@ -265,7 +263,7 @@ class VoltageDropInput(BaseModel):
         ge=0.0,
         le=50.0,
         description="Total load current on the circuit (A). Must be "
-                    "non-negative per NEC requirements.",
+        "non-negative per NEC requirements.",
     )
 
     cable_resistance_ohm_per_m: float = Field(
@@ -273,8 +271,8 @@ class VoltageDropInput(BaseModel):
         gt=0,
         le=1.0,
         description="Cable resistance per meter (Ω/m) at 75°C per NEC "
-                    "Chapter 9 Table 8. AWG 18: 0.0255 Ω/m, AWG 14: "
-                    "0.00820 Ω/m, AWG 10: 0.00328 Ω/m.",
+        "Chapter 9 Table 8. AWG 18: 0.0255 Ω/m, AWG 14: "
+        "0.00820 Ω/m, AWG 10: 0.00328 Ω/m.",
     )
 
     cable_length_m: float = Field(
@@ -282,7 +280,7 @@ class VoltageDropInput(BaseModel):
         ge=0.0,
         le=2000.0,
         description="One-way cable length in meters. DC return path factor "
-                    "(2×) is applied automatically per NFPA 72 §10.14.",
+        "(2×) is applied automatically per NFPA 72 §10.14.",
     )
 
     ambient_temp_c: float = Field(
@@ -290,8 +288,8 @@ class VoltageDropInput(BaseModel):
         ge=-40.0,
         le=90.0,
         description="Ambient temperature in °C. Per NEC Table 310.15(B)(2)(a), "
-                    "conductor ampacity must be derated for temperatures above "
-                    "30°C (86°F). Default: 30°C (baseline, no correction).",
+        "conductor ampacity must be derated for temperatures above "
+        "30°C (86°F). Default: 30°C (baseline, no correction).",
     )
 
     num_conductors: int = Field(
@@ -299,19 +297,20 @@ class VoltageDropInput(BaseModel):
         ge=1,
         le=50,
         description="Number of current-carrying conductors in raceway. "
-                    "Per NEC Table 310.15(B)(3)(a), more than 3 conductors "
-                    "require ampacity derating.",
+        "Per NEC Table 310.15(B)(3)(a), more than 3 conductors "
+        "require ampacity derating.",
     )
 
     is_continuous_load: bool = Field(
         default=True,
         description="Whether the load is continuous (≥3 hours). Per NEC "
-                    "§210.19(A)(1), continuous loads require 125% conductor "
-                    "ampacity rating. Fire alarm loads are typically continuous.",
+        "§210.19(A)(1), continuous loads require 125% conductor "
+        "ampacity rating. Fire alarm loads are typically continuous.",
     )
 
-    @field_validator("supply_voltage_v", "load_current_a",
-                     "cable_resistance_ohm_per_m", "cable_length_m")
+    @field_validator(
+        "supply_voltage_v", "load_current_a", "cable_resistance_ohm_per_m", "cable_length_m"
+    )
     @classmethod
     def validate_finite(cls, v: float) -> float:
         """Reject NaN/Inf — they bypass comparison guards and corrupt calculations."""
@@ -377,7 +376,9 @@ class VoltageDropInput(BaseModel):
         # decreases. Dividing by bundling_factor overstated voltage drop by 25% for
         # 4-6 conductors. Bundling is already handled in the ampacity check below.
         drop_v = effective_current * total_resistance * temp_correction
-        drop_fraction = drop_v / self.supply_voltage_v if self.supply_voltage_v > 0 else float("inf")
+        drop_fraction = (
+            drop_v / self.supply_voltage_v if self.supply_voltage_v > 0 else float("inf")
+        )
         terminal_voltage = self.supply_voltage_v - drop_v
 
         # Compliance: branch circuit ≤ 3%, feeder+branch ≤ 5%
@@ -409,6 +410,7 @@ class VoltageDropInput(BaseModel):
 # ConvergenceConfig — Optimizer Termination Configuration
 # ============================================================================
 
+
 class ConvergenceConfig(BaseModel):
     """
     Convergence configuration for the density optimizer.
@@ -429,8 +431,8 @@ class ConvergenceConfig(BaseModel):
         gt=0,
         le=1.0,
         description="Termination tolerance for objective function change. "
-                    "When the improvement between successive iterations falls "
-                    "below this threshold, the optimizer has converged.",
+        "When the improvement between successive iterations falls "
+        "below this threshold, the optimizer has converged.",
     )
 
     max_iterations: int = Field(
@@ -438,13 +440,13 @@ class ConvergenceConfig(BaseModel):
         gt=0,
         le=1_000_000,
         description="Maximum iteration count to prevent infinite loops on "
-                    "pathological floor plans. Default: 10,000.",
+        "pathological floor plans. Default: 10,000.",
     )
 
     monotonicity_check: bool = Field(
         default=True,
         description="Ensure the solution never gets worse between iterations. "
-                    "If True, non-monotonic improvement raises an assertion.",
+        "If True, non-monotonic improvement raises an assertion.",
     )
 
     timeout_seconds: float = Field(
@@ -452,6 +454,6 @@ class ConvergenceConfig(BaseModel):
         gt=0,
         le=3600.0,
         description="Maximum wall-clock time in seconds. Prevents optimizer "
-                    "from consuming excessive computational resources on "
-                    "complex floor plans. Default: 5 minutes.",
+        "from consuming excessive computational resources on "
+        "complex floor plans. Default: 5 minutes.",
     )

@@ -189,7 +189,10 @@ def _moving_average_forecast(
         return {"forecast": [0.0] * horizon, "lower": [0.0] * horizon, "upper": [0.0] * horizon}
     w = min(window, n)
     ma = sum(series[-w:]) / w
-    residuals = [abs(series[i] - sum(series[max(0, i - w):i]) / max(len(series[max(0, i - w):i]), 1)) for i in range(n)]
+    residuals = [
+        abs(series[i] - sum(series[max(0, i - w) : i]) / max(len(series[max(0, i - w) : i]), 1))
+        for i in range(n)
+    ]
     std_err = max(_std_dev(residuals), 1e-9) if len(residuals) > 1 else 1.0
     forecast = [ma] * horizon
     lower = [ma - 1.96 * std_err] * horizon
@@ -220,8 +223,8 @@ def _std_dev(values: list[float]) -> float:
 def _trend_from_forecast(forecast: list[float]) -> str:
     if len(forecast) < 2:
         return "stable"
-    first = sum(forecast[:len(forecast) // 3]) / max(len(forecast[:len(forecast) // 3]), 1)
-    last = sum(forecast[-len(forecast) // 3:]) / max(len(forecast[-len(forecast) // 3:]), 1)
+    first = sum(forecast[: len(forecast) // 3]) / max(len(forecast[: len(forecast) // 3]), 1)
+    last = sum(forecast[-len(forecast) // 3 :]) / max(len(forecast[-len(forecast) // 3 :]), 1)
     diff = last - first
     if diff > 0.01 * abs(first):
         return "improving"
@@ -291,7 +294,14 @@ class PredictiveAnalyticsEngine:
         failure_rate = len(failure_events) / max(len(age_hours), 1)
         trouble_rate = len(trouble_events) / max(len(age_hours), 1)
 
-        fc = _holt_winters_forecast(age_hours, horizon=30, alpha=self.alpha, beta=self.beta, gamma=self.gamma, season_period=self.season_period)
+        fc = _holt_winters_forecast(
+            age_hours,
+            horizon=30,
+            alpha=self.alpha,
+            beta=self.beta,
+            gamma=self.gamma,
+            season_period=self.season_period,
+        )
         fc["forecast"][-1] if fc["forecast"] else age_hours[-1]
 
         base_ttf = 87600.0
@@ -330,7 +340,14 @@ class PredictiveAnalyticsEngine:
         coverage_series = self._simulate_recent_coverage(room_id)
         horizon = n
 
-        fc = _holt_winters_forecast(coverage_series, horizon, alpha=self.alpha, beta=self.beta, gamma=self.gamma, season_period=min(self.season_period, max(len(coverage_series) // 2, 2)))
+        fc = _holt_winters_forecast(
+            coverage_series,
+            horizon,
+            alpha=self.alpha,
+            beta=self.beta,
+            gamma=self.gamma,
+            season_period=min(self.season_period, max(len(coverage_series) // 2, 2)),
+        )
 
         forecast_values = fc["forecast"]
         lower_values = fc["lower"]
@@ -338,7 +355,9 @@ class PredictiveAnalyticsEngine:
 
         trend = _trend_from_forecast(forecast_values)
         if coverage_series:
-            degradation = (coverage_series[-1] - forecast_values[-1]) / max(coverage_series[-1], 1e-9)
+            degradation = (coverage_series[-1] - forecast_values[-1]) / max(
+                coverage_series[-1], 1e-9
+            )
         else:
             degradation = 0.0
 
@@ -372,7 +391,14 @@ class PredictiveAnalyticsEngine:
         current_load = loads[-1]
         capacity = max(current_load * 1.5, 100.0)
 
-        fc = _holt_winters_forecast(loads, horizon=30, alpha=0.5, beta=0.05, gamma=0.0, season_period=min(7, max(len(loads) // 2, 2)))
+        fc = _holt_winters_forecast(
+            loads,
+            horizon=30,
+            alpha=0.5,
+            beta=0.05,
+            gamma=0.0,
+            season_period=min(7, max(len(loads) // 2, 2)),
+        )
         predicted_peak = max(fc["forecast"]) if fc["forecast"] else current_load
 
         headroom = max(0.0, (capacity - predicted_peak) / max(capacity, 1e-9) * 100.0)

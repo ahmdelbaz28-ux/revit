@@ -11,6 +11,7 @@ passing it to dispatch(), defeating StreamingResponse used in exports
 and reports. For large projects, this caused OOM crashes.
 Pure ASGI middleware can add headers without consuming the body.
 """
+
 import logging
 import time
 import uuid
@@ -67,9 +68,7 @@ class CorrelationIdMiddleware:
                 if message["type"] == "http.response.start":
                     # Add correlation ID header
                     headers = list(message.get("headers", []))
-                    headers.append(
-                        (b"x-correlation-id", correlation_id.encode("utf-8"))
-                    )
+                    headers.append((b"x-correlation-id", correlation_id.encode("utf-8")))
                     message["headers"] = headers
 
                     # Log timing and status

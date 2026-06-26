@@ -165,7 +165,9 @@ class ProjectLearner:
         """Return a human-readable summary of the profile."""
         n = len(self._records)
         if n < 3:
-            return f"ProjectLearner '{self.building_id}': {n} room(s) recorded (need >=3 to profile)"
+            return (
+                f"ProjectLearner '{self.building_id}': {n} room(s) recorded (need >=3 to profile)"
+            )
         p = self._build_profile()
         lines = [
             f"ProjectLearner '{self.building_id}': "
@@ -213,7 +215,8 @@ class ProjectLearner:
             strategies = [records[i].strategy for i in idxs]
             effs = [records[i].efficiency for i in idxs]
             aspects = [
-                max(records[i].width, records[i].length) / max(min(records[i].width, records[i].length), 0.01)
+                max(records[i].width, records[i].length)
+                / max(min(records[i].width, records[i].length), 0.01)
                 for i in idxs
             ]
             dom = Counter(strategies).most_common(1)[0][0]
@@ -282,7 +285,12 @@ class ProjectLearner:
         labels = [0] * n
         for _ in range(max_iter):
             new_labels = [
-                min(range(k), key=lambda c: (pts[i][0] - centroids[c][0]) ** 2 + (pts[i][1] - centroids[c][1]) ** 2)
+                min(
+                    range(k),
+                    key=lambda c: (
+                        (pts[i][0] - centroids[c][0]) ** 2 + (pts[i][1] - centroids[c][1]) ** 2
+                    ),
+                )
                 for i in range(n)
             ]
             if new_labels == labels:
@@ -309,7 +317,8 @@ class ProjectLearner:
         for k in range(1, max_k + 1):
             _labels, centroids = self._kmeans(pts, k)
             inertia = sum(
-                min((p[0] - centroids[c][0]) ** 2 + (p[1] - centroids[c][1]) ** 2 for c in range(k)) for p in pts
+                min((p[0] - centroids[c][0]) ** 2 + (p[1] - centroids[c][1]) ** 2 for c in range(k))
+                for p in pts
             )
             inertias.append(inertia)
 

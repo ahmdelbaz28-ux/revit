@@ -805,7 +805,9 @@ class MultiFloorOrchestrator:
                 # In production, these would come from a device schedule
                 # Per NFPA 72 practice: 1 notification per ~3 detectors,
                 # 1 module per ~5 detectors (monitor/control modules)
-                fa.total_notification += max(1, rr.detector_count // 3) if rr.status == "PASS" else 0
+                fa.total_notification += (
+                    max(1, rr.detector_count // 3) if rr.status == "PASS" else 0
+                )
                 fa.total_modules += max(1, rr.detector_count // 5) if rr.status == "PASS" else 0
 
             fa.total_devices = fa.total_detectors + fa.total_notification + fa.total_modules
@@ -904,7 +906,9 @@ class MultiFloorOrchestrator:
                 # Assign device addresses
                 for _i in range(assign_count):
                     address_counter += 1
-                    current_loop.device_addresses.append(f"{current_loop.loop_id}:{address_counter:03d}")
+                    current_loop.device_addresses.append(
+                        f"{current_loop.loop_id}:{address_counter:03d}"
+                    )
 
                 current_loop.device_count += assign_count
                 current_loop.floors_served.add(fa.floor_id)
@@ -1418,7 +1422,9 @@ class MultiFloorOrchestrator:
                     affected_floors=floor_ids,
                     pressurization_required=True,
                     propagation_time_s=(
-                        building_height_m / STACK_EFFECT_VELOCITY_MPS if building_height_m > 0 else 0.0
+                        building_height_m / STACK_EFFECT_VELOCITY_MPS
+                        if building_height_m > 0
+                        else 0.0
                     ),
                     nfpa_reference=_CITE_NFPA92_6_1,
                 )
@@ -1690,7 +1696,8 @@ class MultiFloorOrchestrator:
             serving_loops = [
                 loop
                 for loop in slc_loops
-                if fa_current.floor_id in loop.floors_served or fa_next.floor_id in loop.floors_served
+                if fa_current.floor_id in loop.floors_served
+                or fa_next.floor_id in loop.floors_served
             ]
             # Estimate current: devices in serving loops × 0.05A/device
             total_current = sum(loop.device_count * 0.05 for loop in serving_loops)
@@ -1761,7 +1768,9 @@ class MultiFloorOrchestrator:
                     exc,
                 )
         else:
-            logger.info("CableRoutingEngine not available — using geometric estimation for riser cable lengths.")
+            logger.info(
+                "CableRoutingEngine not available — using geometric estimation for riser cable lengths."
+            )
 
         logger.info(
             "Riser routing: %d segments [%s]",

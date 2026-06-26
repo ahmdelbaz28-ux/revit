@@ -13,10 +13,12 @@ from fastapi.testclient import TestClient
 def client():
     """Create a test client for the FastAPI app."""
     import os
+
     os.environ.setdefault("FIREAI_ENV", "development")
     os.environ.setdefault("FIREAI_API_KEY", "")
 
     from backend.app import app
+
     with TestClient(app) as c:
         yield c
 
@@ -62,7 +64,13 @@ class TestDevicesCreate:
         """Creating a device in a nonexistent project must return 404."""
         response = client.post(
             "/api/projects/nonexistent-id/devices",
-            json={"name": "Ghost Device", "type": "smoke_detector", "category": "detection", "x": 0.0, "y": 0.0},
+            json={
+                "name": "Ghost Device",
+                "type": "smoke_detector",
+                "category": "detection",
+                "x": 0.0,
+                "y": 0.0,
+            },
         )
         assert response.status_code == 404
 

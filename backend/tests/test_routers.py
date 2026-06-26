@@ -30,6 +30,7 @@ from fastapi.testclient import TestClient
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
+
 @pytest.fixture(scope="module", autouse=True)
 def _setup_env() -> None:
     """Set development environment for testing."""
@@ -41,6 +42,7 @@ def _setup_env() -> None:
 def client():
     """Create a test client for the FastAPI app."""
     from backend.app import app
+
     with TestClient(app) as c:
         yield c
 
@@ -69,8 +71,12 @@ def project_with_devices(client, sample_project):
             "name": "Smoke Detector SD-01",
             "type": "FA_SMOKE",
             "category": "FIRE_ALARM",
-            "x": 10.0, "y": 20.0, "z": 2.4,
-            "voltage": 24.0, "current": 0.1, "load": 0.1,
+            "x": 10.0,
+            "y": 20.0,
+            "z": 2.4,
+            "voltage": 24.0,
+            "current": 0.1,
+            "load": 0.1,
         },
     )
     dev1 = dev1_resp.json().get("data", dev1_resp.json())
@@ -82,8 +88,12 @@ def project_with_devices(client, sample_project):
             "name": "Horn Strobe HS-01",
             "type": "FA_SOUND_STROBE",
             "category": "FIRE_ALARM",
-            "x": 30.0, "y": 40.0, "z": 2.4,
-            "voltage": 24.0, "current": 0.5, "load": 0.5,
+            "x": 30.0,
+            "y": 40.0,
+            "z": 2.4,
+            "voltage": 24.0,
+            "current": 0.5,
+            "load": 0.5,
         },
     )
     dev2 = dev2_resp.json().get("data", dev2_resp.json())
@@ -94,6 +104,7 @@ def project_with_devices(client, sample_project):
 # ══════════════════════════════════════════════════════════════════════════════
 # HEALTH ROUTER TESTS
 # ══════════════════════════════════════════════════════════════════════════════
+
 
 class TestHealthRouter:
     """Tests for backend/routers/health.py — 3 endpoints."""
@@ -161,6 +172,7 @@ class TestHealthRouter:
 # ══════════════════════════════════════════════════════════════════════════════
 # PROJECTS ROUTER TESTS
 # ══════════════════════════════════════════════════════════════════════════════
+
 
 class TestProjectsRouter:
     """Tests for backend/routers/projects.py — 5 endpoints."""
@@ -268,6 +280,7 @@ class TestProjectsRouter:
 # DEVICES ROUTER TESTS
 # ══════════════════════════════════════════════════════════════════════════════
 
+
 class TestDevicesRouter:
     """Tests for backend/routers/devices.py — 5 endpoints + load conversion."""
 
@@ -280,7 +293,8 @@ class TestDevicesRouter:
                 "name": "Smoke Detector",
                 "type": "smoke_detector",
                 "category": "detection",
-                "x": 10.0, "y": 20.0,
+                "x": 10.0,
+                "y": 20.0,
             },
         )
         assert response.status_code == 201
@@ -289,7 +303,13 @@ class TestDevicesRouter:
         """Creating a device in a nonexistent project must return 404."""
         response = client.post(
             "/api/projects/nonexistent-id/devices",
-            json={"name": "Ghost", "type": "smoke_detector", "category": "detection", "x": 0.0, "y": 0.0},
+            json={
+                "name": "Ghost",
+                "type": "smoke_detector",
+                "category": "detection",
+                "x": 0.0,
+                "y": 0.0,
+            },
         )
         assert response.status_code == 404
 
@@ -299,8 +319,14 @@ class TestDevicesRouter:
         response = client.post(
             f"/api/projects/{pid}/devices",
             json={
-                "name": "mA Device", "type": "smoke_detector", "category": "detection",
-                "x": 1.0, "y": 2.0, "voltage": 24.0, "load": 500.0, "load_unit": "mA",
+                "name": "mA Device",
+                "type": "smoke_detector",
+                "category": "detection",
+                "x": 1.0,
+                "y": 2.0,
+                "voltage": 24.0,
+                "load": 500.0,
+                "load_unit": "mA",
             },
         )
         assert response.status_code == 201
@@ -314,8 +340,14 @@ class TestDevicesRouter:
         response = client.post(
             f"/api/projects/{pid}/devices",
             json={
-                "name": "Watts Device", "type": "horn", "category": "notification",
-                "x": 5.0, "y": 5.0, "voltage": 24.0, "load": 12.0, "load_unit": "W",
+                "name": "Watts Device",
+                "type": "horn",
+                "category": "notification",
+                "x": 5.0,
+                "y": 5.0,
+                "voltage": 24.0,
+                "load": 12.0,
+                "load_unit": "W",
             },
         )
         assert response.status_code == 201
@@ -329,8 +361,14 @@ class TestDevicesRouter:
         response = client.post(
             f"/api/projects/{pid}/devices",
             json={
-                "name": "Bad Watts", "type": "horn", "category": "notification",
-                "x": 0.0, "y": 0.0, "voltage": 0.0, "load": 12.0, "load_unit": "W",
+                "name": "Bad Watts",
+                "type": "horn",
+                "category": "notification",
+                "x": 0.0,
+                "y": 0.0,
+                "voltage": 0.0,
+                "load": 12.0,
+                "load_unit": "W",
             },
         )
         assert response.status_code == 400
@@ -447,6 +485,7 @@ class TestDevicesRouter:
 # CONNECTIONS ROUTER TESTS
 # ══════════════════════════════════════════════════════════════════════════════
 
+
 class TestConnectionsRouter:
     """Tests for backend/routers/connections.py — 3 endpoints."""
 
@@ -530,6 +569,7 @@ class TestConnectionsRouter:
 # ══════════════════════════════════════════════════════════════════════════════
 # REPORTS ROUTER TESTS
 # ══════════════════════════════════════════════════════════════════════════════
+
 
 class TestReportsRouter:
     """Tests for backend/routers/reports.py — 4 endpoints."""
@@ -649,6 +689,7 @@ class TestReportsRouter:
 # EXPORTS ROUTER TESTS
 # ══════════════════════════════════════════════════════════════════════════════
 
+
 class TestExportsRouter:
     """Tests for backend/routers/exports.py — 3 endpoints."""
 
@@ -688,6 +729,7 @@ class TestExportsRouter:
 # SYNC ROUTER TESTS
 # ══════════════════════════════════════════════════════════════════════════════
 
+
 class TestSyncRouter:
     """Tests for backend/routers/sync.py — 2 REST endpoints."""
 
@@ -717,6 +759,7 @@ class TestSyncRouter:
 # ══════════════════════════════════════════════════════════════════════════════
 # ELEMENTS ROUTER TESTS
 # ══════════════════════════════════════════════════════════════════════════════
+
 
 class TestElementsRouter:
     """Tests for backend/routers/elements.py — 5 endpoints."""
@@ -767,6 +810,7 @@ class TestElementsRouter:
 # CONNECTIONS V2 ROUTER TESTS
 # ══════════════════════════════════════════════════════════════════════════════
 
+
 class TestConnectionsV2Router:
     """Tests for backend/routers/connections_v2.py — 3 endpoints."""
 
@@ -777,7 +821,9 @@ class TestConnectionsV2Router:
 
     def test_list_connections_v2_with_filters(self, client) -> None:
         """GET /api/connections with filter params must work."""
-        response = client.get("/api/connections?relationship_type=cable_connection&page=1&page_size=10")
+        response = client.get(
+            "/api/connections?relationship_type=cable_connection&page=1&page_size=10"
+        )
         assert response.status_code == 200
 
     def test_create_connection_v2(self, client) -> None:
@@ -802,6 +848,7 @@ class TestConnectionsV2Router:
 # ══════════════════════════════════════════════════════════════════════════════
 # CONFLICTS ROUTER TESTS
 # ══════════════════════════════════════════════════════════════════════════════
+
 
 class TestConflictsRouter:
     """Tests for backend/routers/conflicts.py — 3 endpoints."""
@@ -833,6 +880,7 @@ class TestConflictsRouter:
 # ══════════════════════════════════════════════════════════════════════════════
 # ENVIRONMENT ROUTER TESTS
 # ══════════════════════════════════════════════════════════════════════════════
+
 
 class TestEnvironmentRouter:
     """Tests for backend/routers/environment.py — 10 endpoints."""
@@ -896,6 +944,7 @@ class TestEnvironmentRouter:
 # ══════════════════════════════════════════════════════════════════════════════
 # FACP ROUTER TESTS
 # ══════════════════════════════════════════════════════════════════════════════
+
 
 class TestFACPRouter:
     """Tests for backend/routers/facp.py — 5 endpoints."""
@@ -979,6 +1028,7 @@ class TestFACPRouter:
 # ══════════════════════════════════════════════════════════════════════════════
 # QOMN ROUTER TESTS
 # ══════════════════════════════════════════════════════════════════════════════
+
 
 class TestQOMNRouter:
     """Tests for backend/routers/qomn.py — 8+ endpoints."""
@@ -1066,6 +1116,7 @@ class TestQOMNRouter:
 # DWG ROUTER TESTS
 # ══════════════════════════════════════════════════════════════════════════════
 
+
 class TestDWGRouter:
     """Tests for backend/routers/dwg.py — 1 endpoint."""
 
@@ -1099,6 +1150,7 @@ class TestDWGRouter:
 # WORKFLOW ROUTER TESTS
 # ══════════════════════════════════════════════════════════════════════════════
 
+
 class TestWorkflowRouter:
     """Tests for backend/routers/workflow.py — 5 endpoints."""
 
@@ -1110,27 +1162,51 @@ class TestWorkflowRouter:
     def test_start_workflow_invalid_path(self, client) -> None:
         """POST /api/workflow/start with invalid path must fail."""
         response = client.post("/api/workflow/start?file_path=/etc/passwd")
-        assert response.status_code in (400, 401, 403, 404, 405, 422, 503)  # 405 when workflow module not installed
+        assert response.status_code in (
+            400,
+            401,
+            403,
+            404,
+            405,
+            422,
+            503,
+        )  # 405 when workflow module not installed
 
     def test_get_workflow_status_nonexistent(self, client) -> None:
         """GET /api/workflow/{id}/status for nonexistent must return 404."""
         response = client.get("/api/workflow/nonexistent-id/status")
-        assert response.status_code in (401, 404, 405, 503)  # 405 when workflow module not installed
+        assert response.status_code in (
+            401,
+            404,
+            405,
+            503,
+        )  # 405 when workflow module not installed
 
     def test_approve_workflow_nonexistent(self, client) -> None:
         """POST /api/workflow/{id}/approve for nonexistent must return 404."""
         response = client.post("/api/workflow/nonexistent-id/approve")
-        assert response.status_code in (401, 404, 405, 503)  # 405 when workflow module not installed
+        assert response.status_code in (
+            401,
+            404,
+            405,
+            503,
+        )  # 405 when workflow module not installed
 
     def test_reject_workflow_nonexistent(self, client) -> None:
         """POST /api/workflow/{id}/reject for nonexistent must return 404."""
         response = client.post("/api/workflow/nonexistent-id/reject")
-        assert response.status_code in (401, 404, 405, 503)  # 405 when workflow module not installed
+        assert response.status_code in (
+            401,
+            404,
+            405,
+            503,
+        )  # 405 when workflow module not installed
 
 
 # ══════════════════════════════════════════════════════════════════════════════
 # MEMORY ROUTER TESTS
 # ══════════════════════════════════════════════════════════════════════════════
+
 
 class TestMemoryRouter:
     """Tests for backend/routers/memory.py — 6 endpoints."""
@@ -1178,6 +1254,7 @@ class TestMemoryRouter:
 # ══════════════════════════════════════════════════════════════════════════════
 # ROOT & MISC ENDPOINT TESTS
 # ══════════════════════════════════════════════════════════════════════════════
+
 
 class TestRootAndMiscEndpoints:
     """Tests for root endpoint and other misc routes."""

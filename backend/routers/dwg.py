@@ -30,6 +30,7 @@ from backend.rbac import Permission
 
 try:
     from backend.limiter import limiter
+
     _HAS_LIMITER = True
 except ImportError:
     _HAS_LIMITER = False
@@ -93,8 +94,8 @@ async def parse_dwg(request: Request, file: UploadFile = File(...)):
                     # Caller will clean up via finally block
                     raise HTTPException(
                         status_code=413,
-                        detail=f"File too large (max {_MAX_DWG_SIZE_BYTES // (1024*1024)} MB). "
-                               "Upload a smaller file or split the drawing.",
+                        detail=f"File too large (max {_MAX_DWG_SIZE_BYTES // (1024 * 1024)} MB). "
+                        "Upload a smaller file or split the drawing.",
                     )
                 out_f.write(chunk)
             # fsync to ensure data is on disk before parser reads it
@@ -155,7 +156,9 @@ async def parse_dwg(request: Request, file: UploadFile = File(...)):
         raise  # Re-raise HTTPExceptions (400, 422, 503) — don't convert to 500
     except Exception as exc:
         logger.error(
-            "DWG parse request failed: %s: %s", type(exc).__name__, exc,
+            "DWG parse request failed: %s: %s",
+            type(exc).__name__,
+            exc,
             exc_info=True,
         )
         raise HTTPException(

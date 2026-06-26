@@ -136,7 +136,9 @@ class HeadlessIFCBridge:
 
     def __init__(self, ifc_path: str) -> None:
         if not ifcopenshell:
-            raise ImportError("CRITICAL: ifcopenshell library missing. Install via pip install ifcopenshell")
+            raise ImportError(
+                "CRITICAL: ifcopenshell library missing. Install via pip install ifcopenshell"
+            )
         self.ifc_path = ifc_path
         try:
             self.model = ifcopenshell.open(ifc_path)
@@ -232,10 +234,22 @@ class HeadlessIFCBridge:
             # SMOKE was mapped to HEATSENSOR, losing UGLD, FLAME, and combo types.
             # This affects maintenance scheduling and ATEX marking per NFPA 72 §14.3.
             type_upper = dev.get("type", "").upper()
-            if "SMOKE" in type_upper or "FLAME" in type_upper or "UGLD" in type_upper or "ULTRASONIC" in type_upper or "HEAT" in type_upper or "COMBO" in type_upper or "MULTI" in type_upper:
+            if (
+                "SMOKE" in type_upper
+                or "FLAME" in type_upper
+                or "UGLD" in type_upper
+                or "ULTRASONIC" in type_upper
+                or "HEAT" in type_upper
+                or "COMBO" in type_upper
+                or "MULTI" in type_upper
+            ):
                 pass
             else:
-                logger.warning("Unknown device type '%s' mapped to HEATSENSOR for device %s", type_upper, dev.get('device_id'))
+                logger.warning(
+                    "Unknown device type '%s' mapped to HEATSENSOR for device %s",
+                    type_upper,
+                    dev.get("device_id"),
+                )
 
             # Match device z-coordinate to correct storey
             z = dev.get("z", 0.0)
@@ -263,9 +277,16 @@ class HeadlessIFCBridge:
             run("geometry.edit_object_placement", self.model, product=device_elem, matrix=matrix)
 
             if target_storey:
-                run("spatial.assign_container", self.model, relating_structure=target_storey, products=[device_elem])
+                run(
+                    "spatial.assign_container",
+                    self.model,
+                    relating_structure=target_storey,
+                    products=[device_elem],
+                )
 
-            pset = run("pset.add_pset", self.model, product=device_elem, name="Pset_FireAI_Compliance")
+            pset = run(
+                "pset.add_pset", self.model, product=device_elem, name="Pset_FireAI_Compliance"
+            )
             run(
                 "pset.edit_pset",
                 self.model,
@@ -284,7 +305,9 @@ class HeadlessIFCBridge:
             )
 
         self.model.write(output_path)
-        logger.info("Successfully exported Level-3 BIM IFC Model with Native Topology: %s", output_path)
+        logger.info(
+            "Successfully exported Level-3 BIM IFC Model with Native Topology: %s", output_path
+        )
         return True
 
     # ══════════════════════════════════════════════════════════════
@@ -516,7 +539,7 @@ class HeadlessIFCBridge:
         except Exception:
             return None, (0, 0, 0), 3.0, 0.0, 0.0
 
-        verts = shape.geometry.verts   # flat [x0,y0,z0, x1,y1,z1, ...]
+        verts = shape.geometry.verts  # flat [x0,y0,z0, x1,y1,z1, ...]
         if not verts:
             return None, (0, 0, 0), 3.0, 0.0, 0.0
 

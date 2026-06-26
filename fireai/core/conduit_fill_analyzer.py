@@ -321,7 +321,11 @@ class WireSpec:
                 # damage and thermal buildup per NEC 310.15. Overestimating area is SAFE
                 # (rejects conduit → upsizes). FPLP shielded 14 AWG is 5.20mm actual.
                 object.__setattr__(self, "outer_diameter_mm", 6.0)
-                logger.warning("No diameter data for %s AWG %s, using conservative default 6.0mm. Verify actual cable diameter.", self.insulation.value, self.awg)
+                logger.warning(
+                    "No diameter data for %s AWG %s, using conservative default 6.0mm. Verify actual cable diameter.",
+                    self.insulation.value,
+                    self.awg,
+                )
 
     @property
     def cross_section_mm2(self) -> float:
@@ -479,7 +483,9 @@ class ConduitSizer:
                 insulation = InsulationType(insul_str)
             except ValueError:
                 insulation = InsulationType.FPLP
-                warnings.append(f"Unknown insulation type '{insul_str}' for AWG {awg}, defaulting to FPLP.")
+                warnings.append(
+                    f"Unknown insulation type '{insul_str}' for AWG {awg}, defaulting to FPLP."
+                )
 
             # Resolve circuit class
             try:
@@ -539,7 +545,18 @@ class ConduitSizer:
                 conduit_order.append(ct.value)
 
         for ct in conduit_order:  # type: ignore[assignment]
-            for trade_size in ["1/2", "3/4", "1", "1-1/4", "1-1/2", "2", "2-1/2", "3", "3-1/2", "4"]:
+            for trade_size in [
+                "1/2",
+                "3/4",
+                "1",
+                "1-1/4",
+                "1-1/2",
+                "2",
+                "2-1/2",
+                "3",
+                "3-1/2",
+                "4",
+            ]:
                 key = (ct, trade_size)
                 if key not in CONDUIT_SPECS:
                     continue
@@ -576,7 +593,9 @@ class ConduitSizer:
                 }
             )
             optimal_size = "> 2 Inch / Cable Tray"
-            actual_fill_pct = (total_area / CONDUIT_SPECS.get((c_type, "4"), {"area_mm2": 8255.46})["area_mm2"]) * 100.0
+            actual_fill_pct = (
+                total_area / CONDUIT_SPECS.get((c_type, "4"), {"area_mm2": 8255.46})["area_mm2"]
+            ) * 100.0
 
         # --- Conductor derating check (NEC 310.15) ---
         derating = get_derating_factor(conductor_count)
@@ -818,7 +837,9 @@ class ConduitSizer:
 
             # If the fill changed, add a warning
             if overrides_applied:
-                override_desc = ", ".join(f"{o['original_awg']}AWG→{o['upgraded_awg']}AWG" for o in overrides_applied)
+                override_desc = ", ".join(
+                    f"{o['original_awg']}AWG→{o['upgraded_awg']}AWG" for o in overrides_applied
+                )
                 if hasattr(result, "warnings") and isinstance(result.warnings, list):
                     result.warnings.append(
                         f"NEC_WIRE_UPSIZE_FEEDBACK: Wire upsizing ({override_desc}) "
@@ -831,7 +852,9 @@ class ConduitSizer:
             result["wire_size_overrides"] = wire_size_overrides
             result["overrides_applied"] = overrides_applied
             if overrides_applied:
-                override_desc = ", ".join(f"{o['original_awg']}AWG→{o['upgraded_awg']}AWG" for o in overrides_applied)
+                override_desc = ", ".join(
+                    f"{o['original_awg']}AWG→{o['upgraded_awg']}AWG" for o in overrides_applied
+                )
                 result.setdefault("warnings", []).append(
                     f"NEC_WIRE_UPSIZE_FEEDBACK: Wire upsizing ({override_desc}) "
                     f"applied to conduit fill calculation. Conduit may need "

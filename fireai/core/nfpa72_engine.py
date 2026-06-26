@@ -198,12 +198,12 @@ CONDUCTOR_COUNT_DERATING = {
 _SMOKE_SPACING_TABLE = [
     # (max_ceiling_height_m, listed_spacing_m)
     # ALL heights: flat 9.10m per NFPA 72-2022 §17.7.3.2.3
-    (3.0, 9.10),   # flat 9.1m
-    (3.9, 9.10),   # flat 9.1m
-    (4.9, 9.10),   # flat 9.1m
-    (6.1, 9.10),   # flat 9.1m
-    (7.6, 9.10),   # flat 9.1m
-    (9.1, 9.10),   # flat 9.1m
+    (3.0, 9.10),  # flat 9.1m
+    (3.9, 9.10),  # flat 9.1m
+    (4.9, 9.10),  # flat 9.1m
+    (6.1, 9.10),  # flat 9.1m
+    (7.6, 9.10),  # flat 9.1m
+    (9.1, 9.10),  # flat 9.1m
     (10.7, 9.10),  # flat 9.1m
     (12.2, 9.10),  # flat 9.1m
 ]
@@ -602,7 +602,9 @@ def temperature_corrected_resistance(
     if not math.isfinite(operating_temp_c) or operating_temp_c < -50:
         raise ValueError(f"operating_temp_c must be finite and >= -50, got {operating_temp_c}")
 
-    corrected = r_at_20c * (1.0 + COPPER_TEMP_COEFFICIENT * (operating_temp_c - TABLE8_REFERENCE_TEMP_C))
+    corrected = r_at_20c * (
+        1.0 + COPPER_TEMP_COEFFICIENT * (operating_temp_c - TABLE8_REFERENCE_TEMP_C)
+    )
     # V65 SAFETY: Negative resistance means temperature factor made R negative.
     # This occurs at extremely cold temperatures (below ~-234°C for copper).
     # Silently clamping to 0.0 is DANGEROUS — it makes voltage drop = 0V,
@@ -673,7 +675,9 @@ def calculate_voltage_drop(
     if not math.isfinite(circuit_length_m) or circuit_length_m < 0:
         raise ValueError(f"circuit_length_m must be non-negative finite, got {circuit_length_m}")
     if not math.isfinite(ambient_temperature_c) or ambient_temperature_c < -50:
-        raise ValueError(f"ambient_temperature_c must be finite and >= -50, got {ambient_temperature_c}")
+        raise ValueError(
+            f"ambient_temperature_c must be finite and >= -50, got {ambient_temperature_c}"
+        )
     # V66 FIX: Validate ps_voltage — negative ps_voltage produces negative
     # drop_pct which always passes compliance check (NaN <= max == False is safe,
     # but negative ps_voltage <= 10.0 == True is dangerous).
@@ -685,7 +689,9 @@ def calculate_voltage_drop(
     # Get wire resistance at 20 degC (NEC Chapter 9, Table 8)
     gauge = str(awg_gauge).strip()
     if gauge not in AWG_RESISTANCE_OHM_PER_KM:
-        raise ValueError(f"Unsupported AWG gauge '{gauge}'. Supported: {sorted(AWG_RESISTANCE_OHM_PER_KM.keys())}")
+        raise ValueError(
+            f"Unsupported AWG gauge '{gauge}'. Supported: {sorted(AWG_RESISTANCE_OHM_PER_KM.keys())}"
+        )
 
     r_at_20c = AWG_RESISTANCE_OHM_PER_KM[gauge]
 
@@ -775,7 +781,9 @@ def get_ambient_derating_factor(
     if not math.isfinite(ambient_temp_c):
         raise ValueError(f"ambient_temp_c must be finite, got {ambient_temp_c}")
     if conductor_temp_rating_c not in (60, 75, 90):
-        raise ValueError(f"conductor_temp_rating_c must be 60, 75, or 90, got {conductor_temp_rating_c}")
+        raise ValueError(
+            f"conductor_temp_rating_c must be 60, 75, or 90, got {conductor_temp_rating_c}"
+        )
 
     # V65 FIX: Removed early return for temps ≤ 30°C. Previously, this
     # returned 1.0 for ALL conductor ratings at ≤30°C, but the actual NEC
@@ -836,7 +844,9 @@ def get_conductor_count_derating(
 
     """
     if not isinstance(num_current_carrying, int) or num_current_carrying < 1:
-        raise ValueError(f"num_current_carrying must be a positive integer, got {num_current_carrying}")
+        raise ValueError(
+            f"num_current_carrying must be a positive integer, got {num_current_carrying}"
+        )
 
     if num_current_carrying <= 3:
         return 1.00
@@ -904,7 +914,9 @@ def check_ampacity(
 
     gauge = str(awg_gauge).strip()
     if gauge not in AMPACITY_TABLE_NEC_310_16:
-        raise ValueError(f"Unsupported AWG gauge '{gauge}'. Supported: {sorted(AMPACITY_TABLE_NEC_310_16.keys())}")
+        raise ValueError(
+            f"Unsupported AWG gauge '{gauge}'. Supported: {sorted(AMPACITY_TABLE_NEC_310_16.keys())}"
+        )
 
     # Get base ampacity from NEC 310.16
     amp_60, amp_75, amp_90 = AMPACITY_TABLE_NEC_310_16[gauge]

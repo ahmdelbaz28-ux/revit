@@ -100,8 +100,7 @@ class LangWatchClient:
         api_key = os.environ.get(LANGWATCH_API_KEY_ENV)
         if not api_key:
             logger.info(
-                "LangWatch not initialized (no %s env var). "
-                "AI observability tracing disabled.",
+                "LangWatch not initialized (no %s env var). AI observability tracing disabled.",
                 LANGWATCH_API_KEY_ENV,
             )
             return
@@ -122,8 +121,7 @@ class LangWatchClient:
             )
         except Exception as exc:
             logger.warning(
-                "LangWatch initialization failed: %s. "
-                "AI observability tracing disabled.",
+                "LangWatch initialization failed: %s. AI observability tracing disabled.",
                 exc,
             )
 
@@ -221,6 +219,7 @@ def trace_llm_call(operation_name: str) -> Callable:
                 return await func(*args, **kwargs)
 
             import time
+
             t_start = time.perf_counter()
 
             with client.trace(operation_name) as trace_ctx:
@@ -270,6 +269,7 @@ def trace_llm_call(operation_name: str) -> Callable:
                 return func(*args, **kwargs)
 
             import time
+
             t_start = time.perf_counter()
 
             with client.trace(operation_name) as trace_ctx:
@@ -292,6 +292,7 @@ def trace_llm_call(operation_name: str) -> Callable:
                     raise
 
         import inspect
+
         return async_wrapper if inspect.iscoroutinefunction(func) else sync_wrapper
 
     return decorator
@@ -304,6 +305,7 @@ def _summarize_result(result: Any, max_length: int = 500) -> str:
             return result[:max_length]
         if isinstance(result, dict):
             import json
+
             return json.dumps(result, default=str)[:max_length]
         if isinstance(result, list):
             return f"[list with {len(result)} items]"
@@ -410,6 +412,7 @@ def hallucination_check_spacing(
     # Also record in AuditStore (per Rule 12 + NFPA 72 §7.5)
     try:
         from fireai.core.audit_store import AuditStore
+
         AuditStore.add_event(
             event_type="AI_HALLUCINATION_CHECK",
             room_id=str(operation_id or "AI_ADVISORY"),
@@ -450,7 +453,8 @@ def record_confidence_score(
     if not math.isfinite(confidence) or confidence < 0.0 or confidence > 1.0:
         logger.warning(
             "Invalid confidence score %f for decision %s — must be in [0, 1]",
-            confidence, decision,
+            confidence,
+            decision,
         )
         confidence = max(0.0, min(1.0, confidence if math.isfinite(confidence) else 0.0))
 
@@ -473,6 +477,7 @@ def record_confidence_score(
     # Record in AuditStore
     try:
         from fireai.core.audit_store import AuditStore
+
         AuditStore.add_event(
             event_type="AI_CONFIDENCE_SCORE",
             room_id=str(operation_id or "AI_DECISION"),

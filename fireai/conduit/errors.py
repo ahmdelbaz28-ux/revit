@@ -21,7 +21,7 @@ import enum
 class Severity(enum.Enum):
     """Error severity classification."""
 
-    FATAL   = "FATAL"    # Abort — calculation result cannot be trusted
+    FATAL = "FATAL"  # Abort — calculation result cannot be trusted
     WARNING = "WARNING"  # Log and continue — result is still usable
 
 
@@ -182,13 +182,8 @@ class RoutingError(ConduitError):
         ),
     ) -> None:
         super().__init__(
-            message=(
-                f"No valid route from {start} to {end}. "
-                f"Reason: {reason}"
-            ),
-            code_reference=(
-                "NFPA 72-2022 §12.2.2 / NEC 300.4"
-            ),
+            message=(f"No valid route from {start} to {end}. Reason: {reason}"),
+            code_reference=("NFPA 72-2022 §12.2.2 / NEC 300.4"),
             remediation=remediation,
             severity=Severity.FATAL,
         )

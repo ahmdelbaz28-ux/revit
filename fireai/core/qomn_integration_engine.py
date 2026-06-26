@@ -39,6 +39,7 @@ logger = logging.getLogger(__name__)
 # SECTION 1: CUSTOM LIFE-SAFETY EXCEPTIONS
 # =====================================================================
 
+
 class CableRoutingError(Exception):
     """Raised when a general cable routing error occurs."""
 
@@ -64,6 +65,7 @@ class NECViolationError(CableRoutingError):
 # SECTION 2: DETERMINISTIC GEOMETRIC STRUCTURES
 # =====================================================================
 
+
 @dataclass(frozen=True, slots=True)
 class Point3D:
     """
@@ -78,9 +80,9 @@ class Point3D:
 
     def __post_init__(self) -> None:
         # Force strict coordinate precision rounding on initialization
-        object.__setattr__(self, 'x', round(float(self.x), 4))
-        object.__setattr__(self, 'y', round(float(self.y), 4))
-        object.__setattr__(self, 'z', round(float(self.z), 4))
+        object.__setattr__(self, "x", round(float(self.x), 4))
+        object.__setattr__(self, "y", round(float(self.y), 4))
+        object.__setattr__(self, "z", round(float(self.z), 4))
 
     def to_tuple(self) -> tuple[float, float, float]:
         """Converts point to a plain tuple."""
@@ -94,6 +96,7 @@ class Point3D:
 # =====================================================================
 # SECTION 3: ENGINEERING CONVENTIONS & SCHEMAS
 # =====================================================================
+
 
 class ConduitType(Enum):
     """
@@ -121,14 +124,15 @@ class HatchPattern(Enum):
     Ensures absolute parity across AutoCAD, Revit, and IFC layers.
     """
 
-    ANSI31 = "ANSI31"     # Diagonal lines (General cable run protection)
-    SOLID = "SOLID"       # Solid fill (Device critical zone)
-    CROSS = "CROSS"       # Cross-hatch (Smoke coverage areas)
+    ANSI31 = "ANSI31"  # Diagonal lines (General cable run protection)
+    SOLID = "SOLID"  # Solid fill (Device critical zone)
+    CROSS = "CROSS"  # Cross-hatch (Smoke coverage areas)
 
 
 # =====================================================================
 # SECTION 4: QOMN-CABLE ROUTING ENGINE
 # =====================================================================
+
 
 class GridMap3D:
     """
@@ -150,15 +154,13 @@ class GridMap3D:
         return (
             round(pt.x / self.step_size),
             round(pt.y / self.step_size),
-            round(pt.z / self.step_size)
+            round(pt.z / self.step_size),
         )
 
     def to_physical(self, grid_pt: tuple[int, int, int]) -> Point3D:
         """Transforms discrete grid coordinates back to a physical Point3D."""
         return Point3D(
-            grid_pt[0] * self.step_size,
-            grid_pt[1] * self.step_size,
-            grid_pt[2] * self.step_size
+            grid_pt[0] * self.step_size, grid_pt[1] * self.step_size, grid_pt[2] * self.step_size
         )
 
     def add_obstacle(self, pt: Point3D) -> None:
@@ -186,7 +188,9 @@ class CableRouter:
         return float(abs(p1[0] - p2[0]) + abs(p1[1] - p2[1]) + abs(p1[2] - p2[2]))
 
     @classmethod
-    def route(cls, grid_map: GridMap3D, start: Point3D, end: Point3D, conduit: ConduitType) -> list[Point3D]:
+    def route(
+        cls, grid_map: GridMap3D, start: Point3D, end: Point3D, conduit: ConduitType
+    ) -> list[Point3D]:
         """
         Routes conduit orthogonal paths from Start to End point.
         Checks for bend compliance according to NEC code standards.
@@ -209,9 +213,7 @@ class CableRouter:
         end_grid = grid_map.to_grid(end)
 
         if grid_map.is_blocked(start_grid) or grid_map.is_blocked(end_grid):
-            raise CableRoutingError(
-                "Conduit routing blocked at start or end terminal."
-            )
+            raise CableRoutingError("Conduit routing blocked at start or end terminal.")
 
         # Tie-breaker counter to maintain absolute heap priority determinism
         heap_counter = 0
@@ -226,11 +228,7 @@ class CableRouter:
 
         # Fixed traversal order (directions) to ensure platform-independent path resolution
         # Ordered: +X, -X, +Y, -Y, +Z, -Z
-        directions = [
-            (1, 0, 0), (-1, 0, 0),
-            (0, 1, 0), (0, -1, 0),
-            (0, 0, 1), (0, 0, -1)
-        ]
+        directions = [(1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0), (0, 0, 1), (0, 0, -1)]
 
         while open_set:
             _, _, current = heapq.heappop(open_set)
@@ -261,7 +259,7 @@ class CableRouter:
 
                 # Uniform step cost = 1.0 grid unit
                 tentative_g = g_score[current] + 1.0
-                if tentative_g < g_score.get(neighbor, float('inf')):
+                if tentative_g < g_score.get(neighbor, float("inf")):
                     came_from[neighbor] = current
                     g_score[neighbor] = tentative_g
                     h = cls.manhattan_distance(neighbor, end_grid)
@@ -290,32 +288,31 @@ class CableRouter:
         prev_dir = (
             round(path[1].x - path[0].x, 4),
             round(path[1].y - path[0].y, 4),
-            round(path[1].z - path[0].z, 4)
+            round(path[1].z - path[0].z, 4),
         )
-        mag_p = math.sqrt(prev_dir[0]**2 + prev_dir[1]**2 + prev_dir[2]**2)
+        mag_p = math.sqrt(prev_dir[0] ** 2 + prev_dir[1] ** 2 + prev_dir[2] ** 2)
         if mag_p > 0:
-            prev_dir = (prev_dir[0]/mag_p, prev_dir[1]/mag_p, prev_dir[2]/mag_p)
+            prev_dir = (prev_dir[0] / mag_p, prev_dir[1] / mag_p, prev_dir[2] / mag_p)
 
         for i in range(1, len(path) - 1):
             curr_dir = (
-                round(path[i+1].x - path[i].x, 4),
-                round(path[i+1].y - path[i].y, 4),
-                round(path[i+1].z - path[i].z, 4)
+                round(path[i + 1].x - path[i].x, 4),
+                round(path[i + 1].y - path[i].y, 4),
+                round(path[i + 1].z - path[i].z, 4),
             )
-            mag_c = math.sqrt(curr_dir[0]**2 + curr_dir[1]**2 + curr_dir[2]**2)
+            mag_c = math.sqrt(curr_dir[0] ** 2 + curr_dir[1] ** 2 + curr_dir[2] ** 2)
             if mag_c > 0:
-                curr_dir = (curr_dir[0]/mag_c, curr_dir[1]/mag_c, curr_dir[2]/mag_c)
+                curr_dir = (curr_dir[0] / mag_c, curr_dir[1] / mag_c, curr_dir[2] / mag_c)
 
             # Dot product checks collinear alignment
-            dot = (prev_dir[0]*curr_dir[0] + prev_dir[1]*curr_dir[1]
-                   + prev_dir[2]*curr_dir[2])
+            dot = prev_dir[0] * curr_dir[0] + prev_dir[1] * curr_dir[1] + prev_dir[2] * curr_dir[2]
 
             # Non-collinear orthogonal transitions
             if abs(dot - 1.0) > 1e-4:
                 if abs(dot + 1.0) < 1e-4:
                     bends += 180.0  # U-Turn transition represents 2 quarter bends
                 else:
-                    bends += 90.0   # Single standard elbow conduit bend (90 degrees)
+                    bends += 90.0  # Single standard elbow conduit bend (90 degrees)
                 prev_dir = curr_dir
 
         return bends
@@ -324,6 +321,7 @@ class CableRouter:
 # =====================================================================
 # SECTION 5: QOMN-HATCH PLACEMENT ENGINE
 # =====================================================================
+
 
 class HatchPlacementEngine:
     """
@@ -356,9 +354,7 @@ class HatchPlacementEngine:
                 "Coverage radius must be positive per NFPA 72."
             )
         if num_sides < 4:
-            raise HatchPlacementError(
-                f"num_sides={num_sides} must be >= 4 for a valid polygon."
-            )
+            raise HatchPlacementError(f"num_sides={num_sides} must be >= 4 for a valid polygon.")
         vertices = []
         for i in range(num_sides):
             angle = (2.0 * math.pi * i) / num_sides
@@ -385,12 +381,10 @@ class HatchPlacementEngine:
 
         """
         if width <= 0:
-            raise HatchPlacementError(
-                f"Conduit corridor width={width} must be > 0."
-            )
+            raise HatchPlacementError(f"Conduit corridor width={width} must be > 0.")
         corridors = []
         for i in range(len(path) - 1):
-            p1, p2 = path[i], path[i+1]
+            p1, p2 = path[i], path[i + 1]
             # Skip vertical segments on 2D hatch rendering
             if abs(p1.x - p2.x) < 1e-4 and abs(p1.y - p2.y) < 1e-4:
                 continue
@@ -404,7 +398,7 @@ class HatchPlacementEngine:
                     (round(x_min, 4), round(y_min - width, 4)),
                     (round(x_max, 4), round(y_min - width, 4)),
                     (round(x_max, 4), round(y_min + width, 4)),
-                    (round(x_min, 4), round(y_min + width, 4))
+                    (round(x_min, 4), round(y_min + width, 4)),
                 ]
                 corridors.append(poly)
             # Segment is aligned with Y-axis
@@ -413,7 +407,7 @@ class HatchPlacementEngine:
                     (round(x_min - width, 4), round(y_min, 4)),
                     (round(x_min + width, 4), round(y_min, 4)),
                     (round(x_min + width, 4), round(y_max, 4)),
-                    (round(x_min - width, 4), round(y_max, 4))
+                    (round(x_min - width, 4), round(y_max, 4)),
                 ]
                 corridors.append(poly)
         return corridors
@@ -422,6 +416,7 @@ class HatchPlacementEngine:
 # =====================================================================
 # SECTION 6: VASCULAR CONNECTION & INTEGRATOR LAYER
 # =====================================================================
+
 
 class CableHatchIntegrator:
     """
@@ -494,8 +489,7 @@ class CableHatchIntegrator:
             )
         if hatch_scale > 1.0:
             logger.warning(
-                f"Hatch scale '{hatch_scale}' exceeds 1.0. "
-                "Pattern density might appear too sparse."
+                f"Hatch scale '{hatch_scale}' exceeds 1.0. Pattern density might appear too sparse."
             )
 
         # STEP 2: Solve pathfinding
@@ -509,40 +503,29 @@ class CableHatchIntegrator:
         # Conflict 1: Cable path crosses smoke detector zone
         for det_id, (loc, rad) in self.smoke_detectors.items():
             for i in range(len(path) - 1):
-                p1, p2 = path[i], path[i+1]
+                p1, p2 = path[i], path[i + 1]
                 if self._segment_intersects_circle_2d(p1, p2, loc, rad):
-                    warn_msg = (
-                        f"Conduit run '{run_id}' intersects smoke detector "
-                        f"zone '{det_id}'."
-                    )
+                    warn_msg = f"Conduit run '{run_id}' intersects smoke detector zone '{det_id}'."
                     warnings.append(warn_msg)
-                    logger.warning(
-                        f"[NFPA 72 REVIEW REQUIRED] {warn_msg}"
-                    )
+                    logger.warning(f"[NFPA 72 REVIEW REQUIRED] {warn_msg}")
                     break
 
         # Generate hatch polygons
-        cable_corridors = HatchPlacementEngine.generate_conduit_corridors(
-            path, width=0.15
-        )
+        cable_corridors = HatchPlacementEngine.generate_conduit_corridors(path, width=0.15)
         detector_zones = {}
         for det_id, (loc, rad) in self.smoke_detectors.items():
-            detector_zones[det_id] = (
-                HatchPlacementEngine.generate_smoke_detector_boundary(loc, rad)
-            )
+            detector_zones[det_id] = HatchPlacementEngine.generate_smoke_detector_boundary(loc, rad)
 
         # Conflict 2: Cable hatch intersects device coverage hatch
         for det_id, poly_det in detector_zones.items():
             for corr_poly in cable_corridors:
                 if self._polygons_intersect_2d(corr_poly, poly_det):
                     info_msg = (
-                        f"Cable route hatch '{run_id}' overlaps with Device "
-                        f"zone hatch '{det_id}'."
+                        f"Cable route hatch '{run_id}' overlaps with Device zone hatch '{det_id}'."
                     )
                     infos.append(info_msg)
                     logger.info(
-                        f"[HATCH INTERSECTION] {info_msg} "
-                        "Render with unique pattern ANSI31."
+                        f"[HATCH INTERSECTION] {info_msg} Render with unique pattern ANSI31."
                     )
                     break
 
@@ -568,21 +551,20 @@ class CableHatchIntegrator:
         """
         dx, dy = p2.x - p1.x, p2.y - p1.y
         cx, cy = center.x - p1.x, center.y - p1.y
-        segment_len_sq = dx*dx + dy*dy
+        segment_len_sq = dx * dx + dy * dy
         if segment_len_sq == 0.0:
-            return math.sqrt(cx*cx + cy*cy) <= radius
+            return math.sqrt(cx * cx + cy * cy) <= radius
 
-        t = (cx*dx + cy*dy) / segment_len_sq
+        t = (cx * dx + cy * dy) / segment_len_sq
         t = max(0.0, min(1.0, t))
         nearest_x = p1.x + t * dx
         nearest_y = p1.y + t * dy
-        dist_sq = (center.x - nearest_x)**2 + (center.y - nearest_y)**2
+        dist_sq = (center.x - nearest_x) ** 2 + (center.y - nearest_y) ** 2
         return dist_sq <= radius * radius
 
     @staticmethod
     def _polygons_intersect_2d(
-        poly1: list[tuple[float, float]],
-        poly2: list[tuple[float, float]]
+        poly1: list[tuple[float, float]], poly2: list[tuple[float, float]]
     ) -> bool:
         """
         Robust AABB intersection check for spatial poly overlaps.
@@ -597,10 +579,7 @@ class CableHatchIntegrator:
         min_y2 = min(p[1] for p in poly2)
         max_y2 = max(p[1] for p in poly2)
 
-        return not (
-            max_x1 < min_x2 or max_x2 < min_x1
-            or max_y1 < min_y2 or max_y2 < min_y1
-        )
+        return not (max_x1 < min_x2 or max_x2 < min_x1 or max_y1 < min_y2 or max_y2 < min_y1)
 
     def export_revit_json(self) -> str:
         """
@@ -612,40 +591,42 @@ class CableHatchIntegrator:
             "Metadata": {
                 "Project": "QOMN INTEGRATION SYSTEM",
                 "SourceSystem": "AutoCAD-Revit Sync Engine",
-                "TimestampEpoch": 1779974400.0  # Fixed for 100% determinism
+                "TimestampEpoch": 1779974400.0,  # Fixed for 100% determinism
             },
             "Zones": [],
-            "Cables": []
+            "Cables": [],
         }
 
         # Sort detectors by ID to guarantee identical file outputs
         for det_id in sorted(self.smoke_detectors.keys()):
             loc, rad = self.smoke_detectors[det_id]
-            boundary = (
-                HatchPlacementEngine.generate_smoke_detector_boundary(loc, rad)
+            boundary = HatchPlacementEngine.generate_smoke_detector_boundary(loc, rad)
+            revit_output["Zones"].append(
+                {
+                    "DeviceId": det_id,
+                    "Type": "CoverageZone",
+                    "RevitCategory": "Fire Protection",
+                    "FillPattern": HatchPattern.CROSS.value,
+                    "RGBColor": [255, 0, 0],
+                    "Boundary": [{"X": p[0], "Y": p[1]} for p in boundary],
+                }
             )
-            revit_output["Zones"].append({
-                "DeviceId": det_id,
-                "Type": "CoverageZone",
-                "RevitCategory": "Fire Protection",
-                "FillPattern": HatchPattern.CROSS.value,
-                "RGBColor": [255, 0, 0],
-                "Boundary": [{"X": p[0], "Y": p[1]} for p in boundary]
-            })
 
         # Sort cable runs by ID
         for run_id in sorted(self.cable_runs.keys()):
             run = self.cable_runs[run_id]
-            revit_output["Cables"].append({
-                "RunId": run["RunId"],
-                "ConduitType": run["ConduitType"],
-                "TotalBendsDegrees": run["TotalBendsDegrees"],
-                "Path": run["Path"],
-                "HatchCorridors": [
-                    [{"X": p[0], "Y": p[1]} for p in corridor]
-                    for corridor in run["HatchCorridors"]
-                ]
-            })
+            revit_output["Cables"].append(
+                {
+                    "RunId": run["RunId"],
+                    "ConduitType": run["ConduitType"],
+                    "TotalBendsDegrees": run["TotalBendsDegrees"],
+                    "Path": run["Path"],
+                    "HatchCorridors": [
+                        [{"X": p[0], "Y": p[1]} for p in corridor]
+                        for corridor in run["HatchCorridors"]
+                    ],
+                }
+            )
 
         return json.dumps(revit_output, indent=2, sort_keys=True)
 
@@ -653,6 +634,7 @@ class CableHatchIntegrator:
 # =====================================================================
 # SECTION 7: CANONICAL SERIALIZATION FOR CRYPTOGRAPHIC PARITY
 # =====================================================================
+
 
 def compute_engine_signature(integrator: CableHatchIntegrator) -> str:
     """

@@ -286,7 +286,9 @@ class StreamingDXFParser:
         pending_lines: list[tuple[tuple[float, float], tuple[float, float]]] = []
 
         try:
-            with open(filepath, encoding="utf-8", errors="replace", buffering=131_072) as fh:  # 128KB read buffer
+            with open(
+                filepath, encoding="utf-8", errors="replace", buffering=131_072
+            ) as fh:  # 128KB read buffer
                 chunk_buf: list[str] = []
                 for raw_line in fh:
                     stats.bytes_read += len(raw_line.encode("utf-8"))
@@ -324,7 +326,9 @@ class StreamingDXFParser:
                         # fire detectors = life safety failure. Now only remove consumed lines
                         # using the index set returned by _assemble_closed_polygons_v29.
                         if consumed:
-                            pending_lines = [ln for i, ln in enumerate(pending_lines) if i not in consumed]
+                            pending_lines = [
+                                ln for i, ln in enumerate(pending_lines) if i not in consumed
+                            ]
                         chunk_buf = []
 
                 # Final chunk

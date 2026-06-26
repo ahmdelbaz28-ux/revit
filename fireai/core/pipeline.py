@@ -301,7 +301,9 @@ def _stage05_qomn_physics_guard(
         qomn_voltage = None
         if circuit_length_m is not None and alarm_current_a is not None:
             try:
-                qomn_voltage = kernel.voltage_drop(alarm_current_a, circuit_length_m, awg_gauge, supply_voltage_v)
+                qomn_voltage = kernel.voltage_drop(
+                    alarm_current_a, circuit_length_m, awg_gauge, supply_voltage_v
+                )
             except Exception as ve:
                 guard_errors.append(f"QOMN voltage guard: {ve}")
 
@@ -751,8 +753,12 @@ def _stage35_rules_compliance(
             "nfpa_references": report.nfpa_references,
             "audit_rules_fired": report.audit_summary.get("rules_fired", 0),
             "audit_total_facts": report.audit_summary.get("total_facts", 0),
-            "critical_details": [{"rule_id": c["rule_id"], "message": c["message"]} for c in report.critical_issues],
-            "violation_details": [{"rule_id": v["rule_id"], "message": v["message"]} for v in report.violations],
+            "critical_details": [
+                {"rule_id": c["rule_id"], "message": c["message"]} for c in report.critical_issues
+            ],
+            "violation_details": [
+                {"rule_id": v["rule_id"], "message": v["message"]} for v in report.violations
+            ],
         }
     except Exception as exc:
         logger.warning(
@@ -837,7 +843,6 @@ def _stage5_release_gates(
         stale_detector_ids=[],  # Fresh run — no stale detectors
         evidence_secret_key=None,  # No HMAC key in basic pipeline
     )
-
 
 
 def _stage6_evidence(
@@ -969,7 +974,9 @@ def analyze_room(
     )
     stages.append(s05)
     qomn_audit = s05.data.get("audit_log") if s05.success else None
-    if s05.success and not s05.data.get("physics_guard_passed", False):  # V112: FAIL-SAFE — missing guard = FAILED
+    if s05.success and not s05.data.get(
+        "physics_guard_passed", False
+    ):  # V112: FAIL-SAFE — missing guard = FAILED
         # Physics guard rejected input — critical warning (not blocking)
         for err in s05.data.get("guard_errors", []):
             warnings.append(f"[QOMN PHYSICS GUARD] {err}")
@@ -1045,7 +1052,11 @@ def analyze_room(
         wall_violations,
     )
     stages.append(s4)
-    safety_tier = s4.data.get("safety_tier", SafetyTier.REJECTED.value) if s4.success else SafetyTier.REJECTED.value
+    safety_tier = (
+        s4.data.get("safety_tier", SafetyTier.REJECTED.value)
+        if s4.success
+        else SafetyTier.REJECTED.value
+    )
 
     # ── Optional: Battery Calculation ─────────────────────────────────────────
     battery_result: BatteryResult | None = None
@@ -1181,9 +1192,13 @@ def analyze_room(
     if s35.success and not rules_compliance_data.get("is_safe", False):
         # Rules engine found violations — add to warnings
         for detail in rules_compliance_data.get("critical_details", []):
-            warnings.append(f"RULES_ENGINE CRITICAL [{detail.get('rule_id', '?')}]: {detail.get('message', '')}")
+            warnings.append(
+                f"RULES_ENGINE CRITICAL [{detail.get('rule_id', '?')}]: {detail.get('message', '')}"
+            )
         for detail in rules_compliance_data.get("violation_details", []):
-            warnings.append(f"RULES_ENGINE VIOLATION [{detail.get('rule_id', '?')}]: {detail.get('message', '')}")
+            warnings.append(
+                f"RULES_ENGINE VIOLATION [{detail.get('rule_id', '?')}]: {detail.get('message', '')}"
+            )
     elif not s35.success:
         warnings.append("Rules Engine compliance check unavailable — investigate")
 
@@ -1250,24 +1265,31 @@ def analyze_room(
 
     # ── Stage 8: Conduit Fitting Engine (optional) ─────────────────────────
     s8 = _run_stage(
-        "S8_conduit_fittings", _stage8_conduit_fittings,
-        validated, positions, cable_routing_data,
+        "S8_conduit_fittings",
+        _stage8_conduit_fittings,
+        validated,
+        positions,
+        cable_routing_data,
     )
     stages.append(s8)
 
     # Populate cable_routing_dict from Stage 7 when it succeeds
     # (Path A via cable_connections is for pre-wired inputs; Stage 7 is the standard path)
-    if cable_routing_dict is None and s7.success and cable_routing_data.get("status") == "completed":
+    if (
+        cable_routing_dict is None
+        and s7.success
+        and cable_routing_data.get("status") == "completed"
+    ):
         cable_routing_dict = {
-            "total_cable_length_m":  cable_routing_data.get("total_cable_length_m", 0.0),
-            "total_bends":           cable_routing_data.get("total_bends", 0),
-            "max_circuit_length_m":  cable_routing_data.get("max_circuit_length_m", 0.0),
-            "min_end_voltage_v":     cable_routing_data.get("min_end_voltage_v", 0.0),
-            "all_compliant":         cable_routing_data.get("all_compliant", False),
-            "route_count":           cable_routing_data.get("route_count", 0),
-            "violations_count":      cable_routing_data.get("violations_count", 0),
-            "code_refs":             cable_routing_data.get("code_refs", []),
-            "status":                "completed",
+            "total_cable_length_m": cable_routing_data.get("total_cable_length_m", 0.0),
+            "total_bends": cable_routing_data.get("total_bends", 0),
+            "max_circuit_length_m": cable_routing_data.get("max_circuit_length_m", 0.0),
+            "min_end_voltage_v": cable_routing_data.get("min_end_voltage_v", 0.0),
+            "all_compliant": cable_routing_data.get("all_compliant", False),
+            "route_count": cable_routing_data.get("route_count", 0),
+            "violations_count": cable_routing_data.get("violations_count", 0),
+            "code_refs": cable_routing_data.get("code_refs", []),
+            "status": "completed",
         }
         if not cable_routing_dict["all_compliant"] and cable_routing_dict["violations_count"] > 0:
             warnings.append(
@@ -1329,7 +1351,10 @@ def analyze_room(
         )
         logger.error(
             "Audit chain write failed for run_id=%s room_id=%s: %s",
-            run_id, room_id, audit_exc, exc_info=True,
+            run_id,
+            room_id,
+            audit_exc,
+            exc_info=True,
         )
 
     return PipelineResult(
@@ -1571,7 +1596,9 @@ def _stage7_cable_routing(
         schedule = router.route_all(
             connections=connections,
             wire_gauge=WireGauge.AWG_14,  # type: ignore[arg-type]
-            ps_voltage=float(validated.get("ps_voltage_v", 24.0)),  # V113: configurable, not hardcoded
+            ps_voltage=float(
+                validated.get("ps_voltage_v", 24.0)
+            ),  # V113: configurable, not hardcoded
             project_name=f"FA-{validated.get('room_id', 'room')}",
             ambient_temp_c=float(validated.get("ambient_temp_c", 40.0)),
         )
@@ -1605,7 +1632,8 @@ def _stage7_cable_routing(
         # Previously, ImportError was caught by the generic handler and reported
         # as "routing failed", which is misleading and wastes engineering time.
         logger.critical(
-            "V113 DEPENDENCY MISSING: Cable routing engine not available. Install required dependency: %s", e
+            "V113 DEPENDENCY MISSING: Cable routing engine not available. Install required dependency: %s",
+            e,
         )
         return {
             "status": "dependency_missing",
@@ -1621,7 +1649,9 @@ def _stage7_cable_routing(
         # for safety_block would not see it, potentially allowing the pipeline
         # to proceed with a failed-but-not-safety-blocked cable routing result.
         logger.critical(
-            "V67 SAFETY: Stage 7 cable routing failed — marking as safety_block. Error: %s", e, exc_info=True
+            "V67 SAFETY: Stage 7 cable routing failed — marking as safety_block. Error: %s",
+            e,
+            exc_info=True,
         )
         return {
             "status": "failed",
@@ -1629,7 +1659,6 @@ def _stage7_cable_routing(
             "routes": [],
             "safety_block": True,
         }
-
 
 
 def _stage8_conduit_fittings(
@@ -1659,8 +1688,8 @@ def _stage8_conduit_fittings(
         return {"status": "skipped", "reason": "fewer than 2 positions", "runs": []}
 
     conduit_type = ConduitType.EMT
-    trade_size   = TradeSize.HALF
-    cable_od_in  = cable_routing_data.get("cable_od_in", 0.105)
+    trade_size = TradeSize.HALF
+    cable_od_in = cable_routing_data.get("cable_od_in", 0.105)
     z = float(validated.get("ceiling_height_m", 3.0)) * 0.9
 
     runs_out = []
@@ -1668,10 +1697,10 @@ def _stage8_conduit_fittings(
     total_violations = 0
 
     for i in range(len(positions) - 1):
-        x0, y0 = float(positions[i][0]),   float(positions[i][1])
-        x1, y1 = float(positions[i+1][0]), float(positions[i+1][1])
+        x0, y0 = float(positions[i][0]), float(positions[i][1])
+        x1, y1 = float(positions[i + 1][0]), float(positions[i + 1][1])
         start = Point3D(x0, y0, z)
-        end   = Point3D(x1, y1, z)
+        end = Point3D(x1, y1, z)
 
         fill_r = calculate_fill(conduit_type, trade_size, [cable_od_in, cable_od_in])
         if fill_r.is_err():
@@ -1679,8 +1708,9 @@ def _stage8_conduit_fittings(
 
         route_r = orthogonal_astar(start, end, conduit_type=conduit_type, trade_size=trade_size)
         if route_r.is_err():
-            runs_out.append({"segment": i, "status": "routing_failed",
-                             "reason": route_r.error.message})
+            runs_out.append(
+                {"segment": i, "status": "routing_failed", "reason": route_r.error.message}
+            )
             continue
 
         run_r = place_fittings(route_r.value, conduit_type, trade_size, run_id=f"SEG-{i:03d}")
@@ -1693,29 +1723,31 @@ def _stage8_conduit_fittings(
             all_compliant = False
             total_violations += len(run.violations)
 
-        runs_out.append({
-            "segment":        i,
-            "status":         "completed",
-            "run_id":         run.run_id,
-            "conduit_type":   conduit_type.value,
-            "trade_size":     trade_size.value,
-            "total_length_m": run.total_length_m,
-            "total_bend_deg": run.total_bend_deg,
-            "is_compliant":   run.is_compliant,
-            "violations":     run.violations,
-            "nec_reference":  "NEC Ch.9 Table 1 + NEC 358.26",
-        })
+        runs_out.append(
+            {
+                "segment": i,
+                "status": "completed",
+                "run_id": run.run_id,
+                "conduit_type": conduit_type.value,
+                "trade_size": trade_size.value,
+                "total_length_m": run.total_length_m,
+                "total_bend_deg": run.total_bend_deg,
+                "is_compliant": run.is_compliant,
+                "violations": run.violations,
+                "nec_reference": "NEC Ch.9 Table 1 + NEC 358.26",
+            }
+        )
 
     return {
-        "status":           "completed",
-        "conduit_type":     conduit_type.value,
-        "trade_size":       trade_size.value,
-        "run_count":        sum(1 for r in runs_out if r.get("status") == "completed"),
-        "all_compliant":    all_compliant,
+        "status": "completed",
+        "conduit_type": conduit_type.value,
+        "trade_size": trade_size.value,
+        "run_count": sum(1 for r in runs_out if r.get("status") == "completed"),
+        "all_compliant": all_compliant,
         "total_violations": total_violations,
-        "runs":             runs_out,
-        "nfpa_reference":   "NFPA 72-2022 §12.2.2",
-        "nec_reference":    "NEC Ch.9 Table 1 + NEC 358.26",
+        "runs": runs_out,
+        "nfpa_reference": "NFPA 72-2022 §12.2.2",
+        "nec_reference": "NEC Ch.9 Table 1 + NEC 358.26",
     }
 
 
@@ -1768,11 +1800,14 @@ def _failed_result(
     the cases that MOST need investigation (stage failures).
     Now we record a ROOM_ANALYSIS event with success=False before returning.
     """
-    room_id = room_id or str(payload.get("room_id", "UNKNOWN") if isinstance(payload, dict) else "UNKNOWN")
+    room_id = room_id or str(
+        payload.get("room_id", "UNKNOWN") if isinstance(payload, dict) else "UNKNOWN"
+    )
 
     # V137 F-4: Record audit for failed analysis (was missing entirely)
     try:
         from fireai.core.audit_store import AuditStore as _AuditStore
+
         _AuditStore.add_event(
             event_type="ROOM_ANALYSIS_FAILED",
             room_id=room_id,
@@ -1796,7 +1831,10 @@ def _failed_result(
         )
         logger.error(
             "Audit chain write failed for FAILED run_id=%s room_id=%s: %s",
-            run_id, room_id, audit_exc, exc_info=True,
+            run_id,
+            room_id,
+            audit_exc,
+            exc_info=True,
         )
 
     return PipelineResult(

@@ -90,11 +90,11 @@ class BIMProviderCapability(str, Enum):
     ROOM_EXTRACTION = "room_extraction"
     DEVICE_READ = "device_read"
     DEVICE_WRITE = "device_write"
-    LIVE_SYNC = "live_sync"               # bidirectional real-time updates
-    AUDIT_TRAIL = "audit_trail"           # provider emits change events
-    CLOUD_NATIVE = "cloud_native"         # no local file/process dependency
-    THREAD_SAFE = "thread_safe"           # safe to call from multiple threads
-    MULTI_USER = "multi_user"             # supports concurrent users
+    LIVE_SYNC = "live_sync"  # bidirectional real-time updates
+    AUDIT_TRAIL = "audit_trail"  # provider emits change events
+    CLOUD_NATIVE = "cloud_native"  # no local file/process dependency
+    THREAD_SAFE = "thread_safe"  # safe to call from multiple threads
+    MULTI_USER = "multi_user"  # supports concurrent users
 
 
 # ---------------------------------------------------------------------------
@@ -259,8 +259,12 @@ class BIMProviderRegistry:
         # Protocol with non-method members doesn't support isinstance
         # for classes (only instances).
         required_methods = (
-            "extract_rooms", "read_devices", "write_devices",
-            "health_check", "provider_name", "capabilities",
+            "extract_rooms",
+            "read_devices",
+            "write_devices",
+            "health_check",
+            "provider_name",
+            "capabilities",
         )
         for method in required_methods:
             if not hasattr(provider_class, method):
@@ -307,7 +311,8 @@ class BIMProviderRegistry:
         if name not in cls._providers:
             logger.warning(
                 "BIM provider '%s' not registered. Available: %s",
-                name, list(cls._providers.keys()),
+                name,
+                list(cls._providers.keys()),
             )
             return None
 
@@ -318,6 +323,7 @@ class BIMProviderRegistry:
         # silently return None because hash() fails on the list.
         # json.dumps handles all JSON-serializable types and is deterministic.
         import json as _json
+
         try:
             kwargs_str = _json.dumps(kwargs, sort_keys=True, default=str)
         except (TypeError, ValueError):
@@ -330,7 +336,9 @@ class BIMProviderRegistry:
             except Exception as exc:
                 logger.error(
                     "Failed to instantiate BIM provider '%s': %s",
-                    name, exc, exc_info=True,
+                    name,
+                    exc,
+                    exc_info=True,
                 )
                 return None
         return cls._instances[cache_key]
@@ -396,6 +404,7 @@ class LocalRevitProvider:
         # Late import to avoid circular dependency and to keep this
         # module importable on systems without Revit/ifcopenshell.
         from fireai.bridges.revit_bim_sync import RevitAPIBridge
+
         self._bridge = RevitAPIBridge()
 
     @property
@@ -431,9 +440,7 @@ class LocalRevitProvider:
                     room.source = "local_revit"
             return rooms
         except Exception as exc:
-            logger.error(
-                "LocalRevitProvider.extract_rooms failed: %s", exc, exc_info=True
-            )
+            logger.error("LocalRevitProvider.extract_rooms failed: %s", exc, exc_info=True)
             return []
 
     def read_devices(
@@ -531,6 +538,7 @@ class IfcFileProvider:
         # Verify ifcopenshell is available
         try:
             import ifcopenshell  # noqa: F401
+
             self._ifc_available = True
         except ImportError:
             self._ifc_available = False
@@ -596,7 +604,9 @@ class IfcFileProvider:
         except Exception as exc:
             logger.error(
                 "IfcFileProvider.extract_rooms failed for '%s': %s",
-                source, exc, exc_info=True,
+                source,
+                exc,
+                exc_info=True,
             )
             return []
 
@@ -610,6 +620,7 @@ class IfcFileProvider:
             return []
         try:
             import ifcopenshell
+
             ifc_file = ifcopenshell.open(source)
             # Look for IfcDistributionFlowElement / IfcFlowTerminal subtypes
             # that represent fire alarm devices
@@ -618,12 +629,14 @@ class IfcFileProvider:
                 # Filter to fire alarm related predefined types
                 pd_type = getattr(elem, "PredefinedType", None)
                 if pd_type and "FIREALARM" in str(pd_type).upper():
-                    devices.append({
-                        "device_id": str(elem.GlobalId),
-                        "room_id": "UNKNOWN",  # Would need spatial containment query
-                        "type": str(pd_type),
-                        "source": "ifc_file",
-                    })
+                    devices.append(
+                        {
+                            "device_id": str(elem.GlobalId),
+                            "room_id": "UNKNOWN",  # Would need spatial containment query
+                            "type": str(pd_type),
+                            "source": "ifc_file",
+                        }
+                    )
             return devices
         except Exception as exc:
             logger.error("IfcFileProvider.read_devices failed: %s", exc)
@@ -659,8 +672,7 @@ class IfcFileProvider:
             "healthy": self._ifc_available,
             "latency_ms": 0.0,
             "details": (
-                "ifcopenshell available" if self._ifc_available
-                else "ifcopenshell NOT installed"
+                "ifcopenshell available" if self._ifc_available else "ifcopenshell NOT installed"
             ),
             "error": None if self._ifc_available else "ImportError: ifcopenshell",
         }

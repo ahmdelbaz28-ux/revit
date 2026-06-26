@@ -109,6 +109,7 @@ def _should_emit_hsts(scope: Scope) -> bool:
     """
     return True
 
+
 # Production CSP: locked down. unsafe-inline is permitted for script-src
 # ONLY because the frontend (Vite/React) uses inline event handlers in
 # some legacy components; this is a known acceptable risk documented in
@@ -207,8 +208,7 @@ class SecurityHeadersMiddleware:
         csp_value = _build_csp(scope)
 
         extra_headers: list[tuple[bytes, bytes]] = [
-            (k.encode("latin-1"), v.encode("latin-1"))
-            for k, v in _STATIC_SECURITY_HEADERS.items()
+            (k.encode("latin-1"), v.encode("latin-1")) for k, v in _STATIC_SECURITY_HEADERS.items()
         ]
         extra_headers.append((b"content-security-policy", csp_value.encode("latin-1")))
 
@@ -217,9 +217,7 @@ class SecurityHeadersMiddleware:
         # or direct https scheme). Emitting on plain HTTP can lock users
         # out of dev/test environments via browser HSTS caching.
         if _should_emit_hsts(scope):
-            extra_headers.append(
-                (b"strict-transport-security", _HSTS_HEADER.encode("latin-1"))
-            )
+            extra_headers.append((b"strict-transport-security", _HSTS_HEADER.encode("latin-1")))
 
         # Pre-computed set of header names we're adding, for O(1) dedup check.
         # If an upstream handler already set one of our headers, we DO NOT
@@ -285,17 +283,19 @@ from backend.api_keys import validate_api_key as _validate_api_key
 # ASGI scope['path'] is already URL-decoded and normalized (no /../, no //),
 # but trailing slashes are preserved. We normalize by stripping trailing
 # slash (except for root).
-_PUBLIC_PATHS_EXACT = frozenset({
-    "/docs",
-    "/redoc",
-    "/openapi.json",
-    "/api/v1/health",
-    "/api/v2/health",
-    "/api/health",
-    "/api/health/statistics",
-    "/api/reports/statistics",
-    "/health",
-})
+_PUBLIC_PATHS_EXACT = frozenset(
+    {
+        "/docs",
+        "/redoc",
+        "/openapi.json",
+        "/api/v1/health",
+        "/api/v2/health",
+        "/api/health",
+        "/api/health/statistics",
+        "/api/reports/statistics",
+        "/health",
+    }
+)
 
 # Path prefixes that are public (for routes with path params, e.g. /docs/*)
 # Used ONLY for documented sub-paths, NOT for security bypass.
@@ -387,6 +387,7 @@ class ApiKeyMiddleware:
             if api_key and env_key and _hmac.compare_digest(api_key, env_key):
                 # Env var bypass — grant admin role (env key is the admin key)
                 from backend.rbac import Role as _Role
+
                 role = _Role.ADMIN
             elif api_key:
                 # Validate via RBAC key store
@@ -435,14 +436,14 @@ class ApiKeyMiddleware:
         headers.append((b"content-security-policy", csp_value.encode("latin-1")))
         # Add HSTS (always emit per _should_emit_hsts policy)
         if _should_emit_hsts(scope):
-            headers.append(
-                (b"strict-transport-security", _HSTS_HEADER.encode("latin-1"))
-            )
-        await send({
-            "type": "http.response.start",
-            "status": 401,
-            "headers": headers,
-        })
+            headers.append((b"strict-transport-security", _HSTS_HEADER.encode("latin-1")))
+        await send(
+            {
+                "type": "http.response.start",
+                "status": 401,
+                "headers": headers,
+            }
+        )
         await send({"type": "http.response.body", "body": body})
 
 

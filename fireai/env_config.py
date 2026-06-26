@@ -136,7 +136,9 @@ def _load_config() -> FireAIConfig:
 
     environment = _env("FIREAI_ENV", "development")
     if environment not in ("development", "testing", "production"):
-        raise ValueError(f"FIREAI_ENV='{environment}' is invalid. Must be one of: development, testing, production.")
+        raise ValueError(
+            f"FIREAI_ENV='{environment}' is invalid. Must be one of: development, testing, production."
+        )
 
     # Safe default DB path — relative to CWD, always writable in dev
     default_db_path = ":memory:" if environment == "testing" else "./data/fireai.db"
@@ -149,7 +151,9 @@ def _load_config() -> FireAIConfig:
     langfuse_host = _env("LANGFUSE_HOST", "https://cloud.langfuse.com")
     langfuse_explicitly_enabled = _env_bool("LANGFUSE_ENABLED", True)
     # Auto-detect: enabled if both keys are present
-    langfuse_enabled = langfuse_explicitly_enabled and bool(langfuse_public_key) and bool(langfuse_secret_key)
+    langfuse_enabled = (
+        langfuse_explicitly_enabled and bool(langfuse_public_key) and bool(langfuse_secret_key)
+    )
 
     cfg = FireAIConfig(
         database_path=database_path,

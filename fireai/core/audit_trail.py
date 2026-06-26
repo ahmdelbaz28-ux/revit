@@ -143,14 +143,20 @@ class AuditTrail:
             )
         )
 
-    def log_coverage_result(self, room_id, detector_count, coverage_pct, worst_case_m, status) -> None:
+    def log_coverage_result(
+        self, room_id, detector_count, coverage_pct, worst_case_m, status
+    ) -> None:
         self._add(
             AuditEntry(
                 timestamp_utc=datetime.now(timezone.utc).isoformat(),
                 room_id=room_id,
                 operation="COVERAGE_VERIFICATION",
                 inputs={"detector_count": detector_count, "grid_resolution_m": 0.20},
-                outputs={"coverage_pct": coverage_pct, "worst_case_m": worst_case_m, "status": status},
+                outputs={
+                    "coverage_pct": coverage_pct,
+                    "worst_case_m": worst_case_m,
+                    "status": status,
+                },
                 nfpa_reference="NFPA 72 (2022) Section 17.6.3",
             )
         )
@@ -162,7 +168,12 @@ class AuditTrail:
                 room_id="__FLOOR__",
                 operation="DXF_PARSE",
                 inputs={"source_file": source_file},
-                outputs={"units": units, "scale": scale, "rooms_found": rooms_found, "rooms_skipped": rooms_skipped},
+                outputs={
+                    "units": units,
+                    "scale": scale,
+                    "rooms_found": rooms_found,
+                    "rooms_skipped": rooms_skipped,
+                },
                 nfpa_reference="N/A — DXF input processing",
             )
         )
@@ -182,7 +193,9 @@ class AuditTrail:
 
     # ── V5.2.0 new methods ───────────────────────────────────────────
 
-    def log_placement(self, room_id, detector_count, detector_type, coverage_pct, positions) -> None:
+    def log_placement(
+        self, room_id, detector_count, detector_type, coverage_pct, positions
+    ) -> None:
         """Log a detector placement decision. NFPA 72 §17.6.3."""
         self._add(
             AuditEntry(
@@ -200,7 +213,9 @@ class AuditTrail:
             )
         )
 
-    def log_wall_distance_violation(self, room_id, detector_index, position, wall, distance_m) -> None:
+    def log_wall_distance_violation(
+        self, room_id, detector_index, position, wall, distance_m
+    ) -> None:
         """Log a wall distance violation. NFPA 72 §17.6.3.1.1."""
         self._add(
             AuditEntry(
@@ -210,7 +225,9 @@ class AuditTrail:
                 inputs={"detector_index": detector_index, "position": position},
                 outputs={"distance_m": distance_m, "required_m": 0.10},
                 nfpa_reference="NFPA 72 (2022) §17.6.3.1.1",
-                notes=[f"Detector {detector_index} at {position} is {distance_m:.3f}m from {wall} wall (min 0.10m)"],
+                notes=[
+                    f"Detector {detector_index} at {position} is {distance_m:.3f}m from {wall} wall (min 0.10m)"
+                ],
             )
         )
 
@@ -227,7 +244,9 @@ class AuditTrail:
             )
         )
 
-    def log_safe_fallback_used(self, room_id, original_height_m, clamped_height_m, effective_height_m) -> None:
+    def log_safe_fallback_used(
+        self, room_id, original_height_m, clamped_height_m, effective_height_m
+    ) -> None:
         """Log safe fallback activation for out-of-range ceiling height. Table 17.6.3.1."""
         self._add(
             AuditEntry(
@@ -235,9 +254,14 @@ class AuditTrail:
                 room_id=room_id,
                 operation="SAFE_FALLBACK_ACTIVATED",
                 inputs={"original_height_m": original_height_m},
-                outputs={"clamped_height_m": clamped_height_m, "effective_height_m": effective_height_m},
+                outputs={
+                    "clamped_height_m": clamped_height_m,
+                    "effective_height_m": effective_height_m,
+                },
                 nfpa_reference="NFPA 72 (2022) Table 17.6.3.1",
-                notes=[f"Ceiling height {original_height_m}m clamped to {clamped_height_m}m for safe calculation"],
+                notes=[
+                    f"Ceiling height {original_height_m}m clamped to {clamped_height_m}m for safe calculation"
+                ],
             )
         )
 

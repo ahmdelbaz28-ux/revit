@@ -496,7 +496,9 @@ class ElevatorShuntTripAuditor:
                 )
 
         # Count sprinklers inside elevator spaces
-        sprinklers_in_shaft = sum(1 for s in sprinkler_locations if s.get("room_id", "") in elevator_spaces)
+        sprinklers_in_shaft = sum(
+            1 for s in sprinkler_locations if s.get("room_id", "") in elevator_spaces
+        )
 
         safe = len(violations) == 0
 

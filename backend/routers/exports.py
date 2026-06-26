@@ -75,12 +75,12 @@ async def export_dxf(project_id: str):
 
     # ── Draw devices as circles with labels ─────────────────────────────
     DEVICE_COLORS = {
-        "smoke_detector": 3,    # Green
-        "heat_detector": 1,     # Red
-        "manual_pull": 5,      # Blue
-        "notification": 6,     # Magenta
-        "panel": 2,            # Yellow
-        "module": 4,           # Cyan
+        "smoke_detector": 3,  # Green
+        "heat_detector": 1,  # Red
+        "manual_pull": 5,  # Blue
+        "notification": 6,  # Magenta
+        "panel": 2,  # Yellow
+        "module": 4,  # Cyan
     }
 
     for device in devices:
@@ -138,7 +138,7 @@ async def export_dxf(project_id: str):
         io.BytesIO(dxf_bytes),
         media_type="application/dxf",
         headers={
-            "Content-Disposition": f"attachment; filename=\"{_safe_filename(project['name'])}_export.dxf\""
+            "Content-Disposition": f'attachment; filename="{_safe_filename(project["name"])}_export.dxf"'
         },
     )
 
@@ -204,7 +204,7 @@ async def export_revit(project_id: str):
         io.BytesIO(content.encode("utf-8")),
         media_type="application/json",
         headers={
-            "Content-Disposition": f"attachment; filename=\"{_safe_filename(project['name'])}_revit.json\""
+            "Content-Disposition": f'attachment; filename="{_safe_filename(project["name"])}_revit.json"'
         },
     )
 
@@ -262,7 +262,7 @@ async def export_ifc(
             io.BytesIO(content.encode("utf-8")),
             media_type="application/json",
             headers={
-                "Content-Disposition": f"attachment; filename=\"{_safe_filename(project['name'])}_ifc.json\""
+                "Content-Disposition": f'attachment; filename="{_safe_filename(project["name"])}_ifc.json"'
             },
         )
 
@@ -278,19 +278,19 @@ async def export_ifc(
         )
 
         # Create basic spatial structure
-        site = ifcopenshell.api.run(
-            "root.create_entity", ifc_file, ifc_class="IfcSite"
-        )
-        building = ifcopenshell.api.run(
-            "root.create_entity", ifc_file, ifc_class="IfcBuilding"
-        )
-        storey = ifcopenshell.api.run(
-            "root.create_entity", ifc_file, ifc_class="IfcBuildingStorey"
-        )
+        site = ifcopenshell.api.run("root.create_entity", ifc_file, ifc_class="IfcSite")
+        building = ifcopenshell.api.run("root.create_entity", ifc_file, ifc_class="IfcBuilding")
+        storey = ifcopenshell.api.run("root.create_entity", ifc_file, ifc_class="IfcBuildingStorey")
 
-        ifcopenshell.api.run("aggregate.assign_object", ifc_file, products=[site], relating_object=project_ifc)
-        ifcopenshell.api.run("aggregate.assign_object", ifc_file, products=[building], relating_object=site)
-        ifcopenshell.api.run("aggregate.assign_object", ifc_file, products=[storey], relating_object=building)
+        ifcopenshell.api.run(
+            "aggregate.assign_object", ifc_file, products=[site], relating_object=project_ifc
+        )
+        ifcopenshell.api.run(
+            "aggregate.assign_object", ifc_file, products=[building], relating_object=site
+        )
+        ifcopenshell.api.run(
+            "aggregate.assign_object", ifc_file, products=[storey], relating_object=building
+        )
 
         # Add devices as building element proxies
         for device in devices:
@@ -309,6 +309,7 @@ async def export_ifc(
         # not a BytesIO. Older versions accepted BytesIO but the current
         # version raises TypeError for non-str/non-PathLike arguments.
         import tempfile
+
         with tempfile.NamedTemporaryFile(suffix=".ifc", delete=False, prefix="fireai_ifc_") as tmp:
             tmp_path = tmp.name
         try:
@@ -317,6 +318,7 @@ async def export_ifc(
                 ifc_bytes = f.read()
         finally:
             import os as _os
+
             with contextlib.suppress(OSError):
                 _os.unlink(tmp_path)
 
@@ -324,7 +326,7 @@ async def export_ifc(
             io.BytesIO(ifc_bytes),
             media_type="application/ifc",
             headers={
-                "Content-Disposition": f"attachment; filename=\"{_safe_filename(project['name'])}.ifc\""
+                "Content-Disposition": f'attachment; filename="{_safe_filename(project["name"])}.ifc"'
             },
         )
     except Exception as e:

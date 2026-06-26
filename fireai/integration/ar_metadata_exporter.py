@@ -76,7 +76,7 @@ logger = logging.getLogger(__name__)
 GLTF_MAGIC = 0x46546C67  # "glTF" in little-endian
 GLTF_VERSION = 2
 GLB_CHUNK_JSON = 0x4E4F534A  # "JSON"
-GLB_CHUNK_BIN = 0x004E4942   # "BIN\0"
+GLB_CHUNK_BIN = 0x004E4942  # "BIN\0"
 
 USDZ_USDA_FILENAME = "scene.usda"
 
@@ -89,17 +89,17 @@ USDZ_USDA_FILENAME = "scene.usda"
 class ARExportFormat(str, Enum):
     """AR export format options."""
 
-    GLB = "glb"      # Binary glTF 2.0 — Unity/Web/Android
-    USDZ = "usdz"    # Universal Scene Description zipped — iOS RealityKit
-    BOTH = "both"    # Export both formats
+    GLB = "glb"  # Binary glTF 2.0 — Unity/Web/Android
+    USDZ = "usdz"  # Universal Scene Description zipped — iOS RealityKit
+    BOTH = "both"  # Export both formats
 
 
 class ARVisibilityMode(str, Enum):
     """AR visibility modes for behind-the-wall display."""
 
-    NORMAL = "normal"             # Only visible elements shown
-    X_RAY = "x_ray"               # All elements shown (x-ray mode)
-    INSPECTION = "inspection"     # Only inspection-critical elements highlighted
+    NORMAL = "normal"  # Only visible elements shown
+    X_RAY = "x_ray"  # All elements shown (x-ray mode)
+    INSPECTION = "inspection"  # Only inspection-critical elements highlighted
 
 
 # ---------------------------------------------------------------------------
@@ -150,6 +150,7 @@ class ARSceneNode:
     def __post_init__(self) -> None:
         """Validate position/rotation are finite (per agent.md V57)."""
         import math
+
         for coord in self.position:
             if not math.isfinite(coord):
                 raise ValueError(f"Node {self.id} position not finite: {self.position}")
@@ -350,7 +351,9 @@ class ARMetadataExporter:
             if not math.isfinite(coord_val):
                 logger.warning(
                     "Detector %s has non-finite %s=%f — defaulting to 0.0",
-                    det_id, coord_name, coord_val,
+                    det_id,
+                    coord_name,
+                    coord_val,
                 )
                 # Use 0.0 as fallback (safe default — not behind wall)
                 if coord_name == "x":
@@ -471,50 +474,62 @@ class ARMetadataExporter:
         materials = []
 
         # Default material
-        materials.append({
-            "name": "default",
-            "pbrMetallicRoughness": {
-                "baseColorFactor": [0.5, 0.5, 0.5, 1.0],
-                "metallicFactor": 0.0,
-                "roughnessFactor": 0.8,
-            },
-        })
+        materials.append(
+            {
+                "name": "default",
+                "pbrMetallicRoughness": {
+                    "baseColorFactor": [0.5, 0.5, 0.5, 1.0],
+                    "metallicFactor": 0.0,
+                    "roughnessFactor": 0.8,
+                },
+            }
+        )
 
         # Detector material (blue)
-        materials.append({
-            "name": "detector",
-            "pbrMetallicRoughness": {
-                "baseColorFactor": [0.2, 0.2, 0.8, 1.0],
-                "metallicFactor": 0.1,
-                "roughnessFactor": 0.6,
-            },
-        })
+        materials.append(
+            {
+                "name": "detector",
+                "pbrMetallicRoughness": {
+                    "baseColorFactor": [0.2, 0.2, 0.8, 1.0],
+                    "metallicFactor": 0.1,
+                    "roughnessFactor": 0.6,
+                },
+            }
+        )
 
         # V139: Box mesh (for walls) with REAL vertex data
         # 8 vertices, 12 triangles (36 indices)
         # Accessor 0: POSITION (3 floats per vertex × 8 = 24 floats = 96 bytes)
         # Accessor 1: indices (36 unsigned shorts = 72 bytes)
-        meshes.append({
-            "primitives": [{
-                "attributes": {"POSITION": 0},
-                "indices": 1,
-                "material": 0,
-                "mode": 4,  # TRIANGLES
-            }],
-        })
+        meshes.append(
+            {
+                "primitives": [
+                    {
+                        "attributes": {"POSITION": 0},
+                        "indices": 1,
+                        "material": 0,
+                        "mode": 4,  # TRIANGLES
+                    }
+                ],
+            }
+        )
 
         # V139: Cylinder mesh (for detectors) with REAL vertex data
         # 16 vertices (8 top + 8 bottom), 24 triangles (72 indices)
         # Accessor 2: POSITION (3 floats × 16 = 48 floats = 192 bytes)
         # Accessor 3: indices (72 unsigned shorts = 144 bytes)
-        meshes.append({
-            "primitives": [{
-                "attributes": {"POSITION": 2},
-                "indices": 3,
-                "material": 1,
-                "mode": 4,
-            }],
-        })
+        meshes.append(
+            {
+                "primitives": [
+                    {
+                        "attributes": {"POSITION": 2},
+                        "indices": 3,
+                        "material": 1,
+                        "mode": 4,
+                    }
+                ],
+            }
+        )
 
         # Nodes
         for ar_node in snapshot.nodes:
@@ -553,16 +568,60 @@ class ARMetadataExporter:
             # Total buffer: 504 bytes
             "buffers": [{"byteLength": 504}],
             "bufferViews": [
-                {"buffer": 0, "byteOffset": 0, "byteLength": 96, "target": 34962},   # ARRAY_BUFFER (box vertices)
-                {"buffer": 0, "byteOffset": 96, "byteLength": 72, "target": 34963},   # ELEMENT_ARRAY_BUFFER (box indices)
-                {"buffer": 0, "byteOffset": 168, "byteLength": 192, "target": 34962}, # ARRAY_BUFFER (cylinder vertices)
-                {"buffer": 0, "byteOffset": 360, "byteLength": 144, "target": 34963}, # ELEMENT_ARRAY_BUFFER (cylinder indices)
+                {
+                    "buffer": 0,
+                    "byteOffset": 0,
+                    "byteLength": 96,
+                    "target": 34962,
+                },  # ARRAY_BUFFER (box vertices)
+                {
+                    "buffer": 0,
+                    "byteOffset": 96,
+                    "byteLength": 72,
+                    "target": 34963,
+                },  # ELEMENT_ARRAY_BUFFER (box indices)
+                {
+                    "buffer": 0,
+                    "byteOffset": 168,
+                    "byteLength": 192,
+                    "target": 34962,
+                },  # ARRAY_BUFFER (cylinder vertices)
+                {
+                    "buffer": 0,
+                    "byteOffset": 360,
+                    "byteLength": 144,
+                    "target": 34963,
+                },  # ELEMENT_ARRAY_BUFFER (cylinder indices)
             ],
             "accessors": [
-                {"bufferView": 0, "componentType": 5126, "count": 8, "type": "VEC3", "max": [0.5, 0.5, 0.5], "min": [-0.5, -0.5, -0.5]},  # box positions
-                {"bufferView": 1, "componentType": 5123, "count": 36, "type": "SCALAR"},  # box indices (UNSIGNED_SHORT)
-                {"bufferView": 2, "componentType": 5126, "count": 16, "type": "VEC3", "max": [0.06, 0.06, 0.02], "min": [-0.06, -0.06, -0.02]},  # cylinder positions
-                {"bufferView": 3, "componentType": 5123, "count": 72, "type": "SCALAR"},  # cylinder indices
+                {
+                    "bufferView": 0,
+                    "componentType": 5126,
+                    "count": 8,
+                    "type": "VEC3",
+                    "max": [0.5, 0.5, 0.5],
+                    "min": [-0.5, -0.5, -0.5],
+                },  # box positions
+                {
+                    "bufferView": 1,
+                    "componentType": 5123,
+                    "count": 36,
+                    "type": "SCALAR",
+                },  # box indices (UNSIGNED_SHORT)
+                {
+                    "bufferView": 2,
+                    "componentType": 5126,
+                    "count": 16,
+                    "type": "VEC3",
+                    "max": [0.06, 0.06, 0.02],
+                    "min": [-0.06, -0.06, -0.02],
+                },  # cylinder positions
+                {
+                    "bufferView": 3,
+                    "componentType": 5123,
+                    "count": 72,
+                    "type": "SCALAR",
+                },  # cylinder indices
             ],
         }
 
@@ -582,10 +641,14 @@ class ARMetadataExporter:
         # ── Box vertices (8 vertices × 3 floats = 96 bytes) ──
         # Unit cube centered at origin, size ±0.5
         box_vertices = [
-            (-0.5, -0.5, -0.5), ( 0.5, -0.5, -0.5),
-            ( 0.5,  0.5, -0.5), (-0.5,  0.5, -0.5),
-            (-0.5, -0.5,  0.5), ( 0.5, -0.5,  0.5),
-            ( 0.5,  0.5,  0.5), (-0.5,  0.5,  0.5),
+            (-0.5, -0.5, -0.5),
+            (0.5, -0.5, -0.5),
+            (0.5, 0.5, -0.5),
+            (-0.5, 0.5, -0.5),
+            (-0.5, -0.5, 0.5),
+            (0.5, -0.5, 0.5),
+            (0.5, 0.5, 0.5),
+            (-0.5, 0.5, 0.5),
         ]
         for v in box_vertices:
             buffer.write(struct.pack("<fff", *v))
@@ -593,12 +656,42 @@ class ARMetadataExporter:
         # ── Box indices (36 unsigned shorts = 72 bytes) ──
         # 12 triangles: 6 faces × 2 triangles each
         box_indices = [
-            0, 1, 2,  0, 2, 3,  # bottom
-            4, 5, 6,  4, 6, 7,  # top
-            0, 1, 5,  0, 5, 4,  # front
-            2, 3, 7,  2, 7, 6,  # back
-            0, 3, 7,  0, 7, 4,  # left
-            1, 2, 6,  1, 6, 5,  # right
+            0,
+            1,
+            2,
+            0,
+            2,
+            3,  # bottom
+            4,
+            5,
+            6,
+            4,
+            6,
+            7,  # top
+            0,
+            1,
+            5,
+            0,
+            5,
+            4,  # front
+            2,
+            3,
+            7,
+            2,
+            7,
+            6,  # back
+            0,
+            3,
+            7,
+            0,
+            7,
+            4,  # left
+            1,
+            2,
+            6,
+            1,
+            6,
+            5,  # right
         ]
         for i in box_indices:
             buffer.write(struct.pack("<H", i))
@@ -606,6 +699,7 @@ class ARMetadataExporter:
         # ── Cylinder vertices (16 vertices × 3 floats = 192 bytes) ──
         # Radius=0.06m, Height=0.04m (typical detector size)
         import math as _math
+
         r = 0.06
         h_half = 0.02
         n_segments = 8
@@ -698,10 +792,10 @@ class ARMetadataExporter:
             "Reference: NFPA 72-2022 §7.5 (Audit Trail)",
             '"""',
             "",
-            "def Xform \"FireAIScene\"",
+            'def Xform "FireAIScene"',
             "{",
-            f"    string building_id = \"{snapshot.building_id}\"",
-            f"    string visibility_mode = \"{snapshot.visibility_mode.value}\"",
+            f'    string building_id = "{snapshot.building_id}"',
+            f'    string visibility_mode = "{snapshot.visibility_mode.value}"',
             f"    int behind_wall_count = {snapshot.behind_wall_count}",
             f"    int inspection_critical_count = {snapshot.inspection_critical_count}",
             "",
@@ -718,16 +812,16 @@ class ARMetadataExporter:
         x, y, z = node.position
         indent = "    "
         return [
-            f"{indent}def Xform \"{node.id}\"",
+            f'{indent}def Xform "{node.id}"',
             f"{indent}{{",
-            f"{indent}    string name = \"{node.name}\"",
-            f"{indent}    string node_type = \"{node.node_type}\"",
+            f'{indent}    string name = "{node.name}"',
+            f'{indent}    string node_type = "{node.node_type}"',
             f"{indent}    bool is_behind_wall = {str(node.is_behind_wall).lower()}",
             f"{indent}    bool x_ray_enabled = {str(node.x_ray_enabled).lower()}",
             f"{indent}    bool inspection_critical = {str(node.inspection_critical).lower()}",
-            f"{indent}    string safety_classification = \"{node.safety_classification}\"",
+            f'{indent}    string safety_classification = "{node.safety_classification}"',
             f"{indent}    double3 xformOp:translate = ({x}, {y}, {z})",
-            f"{indent}    token[] xformOpOrder = [\"xformOp:translate\"]",
+            f'{indent}    token[] xformOpOrder = ["xformOp:translate"]',
             f"{indent}}}",
             "",
         ]

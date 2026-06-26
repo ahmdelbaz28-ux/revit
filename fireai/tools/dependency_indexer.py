@@ -76,7 +76,7 @@ def extract_imports(file_path: Path, package_prefix: str) -> list[str]:
     imports = []
 
     # Match: from package.module import ...
-    pattern = rf'from\s+{package_prefix}\.(\w+)\s+import'
+    pattern = rf"from\s+{package_prefix}\.(\w+)\s+import"
     for match in re.finditer(pattern, content):
         module = match.group(1)
         if module not in imports:
@@ -154,13 +154,15 @@ def check_layer_violations(deps: dict) -> list[dict]:
 
             # Layer N can only import from Layer N or lower
             if imp_layer > module_layer and imp_layer > 0:
-                violations.append({
-                    "module": module,
-                    "imports": imp,
-                    "module_layer": module_layer,
-                    "imports_layer": imp_layer,
-                    "violation": f"Layer {module_layer} imports Layer {imp_layer}",
-                })
+                violations.append(
+                    {
+                        "module": module,
+                        "imports": imp,
+                        "module_layer": module_layer,
+                        "imports_layer": imp_layer,
+                        "violation": f"Layer {module_layer} imports Layer {imp_layer}",
+                    }
+                )
 
     return violations
 
@@ -177,7 +179,7 @@ def generate_markdown(deps: dict, circular: list, violations: list) -> str:
 
     md = f"""# FireAI — Module Dependency Index
 
-**Generated:** {subprocess.check_output(['date', '+%Y-%m-%d']).decode().strip()}
+**Generated:** {subprocess.check_output(["date", "+%Y-%m-%d"]).decode().strip()}
 **Purpose:** Map module dependencies to prevent circular imports
 
 ---
@@ -281,4 +283,5 @@ def main() -> int:
 
 if __name__ == "__main__":
     import sys
+
     sys.exit(main())

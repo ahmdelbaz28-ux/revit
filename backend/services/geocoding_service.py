@@ -121,6 +121,7 @@ class GeocodingService:
         elapsed = time.time() - self._last_request_time
         if elapsed < self._min_interval:
             import asyncio
+
             await asyncio.sleep(self._min_interval - elapsed)
         self._last_request_time = time.time()
 
@@ -164,8 +165,7 @@ class GeocodingService:
         )
 
         logger.info(
-            f"Geocoding: '{address}' → lat={lat:.6f}, lon={lon:.6f}, "
-            f"country={country_code}"
+            f"Geocoding: '{address}' → lat={lat:.6f}, lon={lon:.6f}, country={country_code}"
         )
         return result
 
@@ -199,21 +199,13 @@ class GeocodingService:
             self._set_cached(address, result)
             return result
         except (httpx.HTTPError, ValueError, KeyError) as e:
-            logger.warning(
-                f"Geocoding failed for '{address}': "
-                f"{type(e).__name__}: {e}"
-            )
+            logger.warning(f"Geocoding failed for '{address}': {type(e).__name__}: {e}")
             return None
         except Exception as e:
-            logger.error(
-                f"Unexpected geocoding error for '{address}': "
-                f"{type(e).__name__}: {e}"
-            )
+            logger.error(f"Unexpected geocoding error for '{address}': {type(e).__name__}: {e}")
             return None
 
-    async def reverse_geocode(
-        self, latitude: float, longitude: float
-    ) -> GeocodingResult | None:
+    async def reverse_geocode(self, latitude: float, longitude: float) -> GeocodingResult | None:
         """
         Reverse geocode coordinates to address.
 

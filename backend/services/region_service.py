@@ -41,14 +41,14 @@ logger = logging.getLogger(__name__)
 class RegulatoryFramework(str, Enum):
     """International regulatory frameworks supported by FireAI."""
 
-    NFPA = "nfpa"            # US: NFPA 72, NEC
-    ATEX_IEC = "atex_iec"    # EU: ATEX 2014/34/EU, IEC 60079
-    BS = "bs"                # UK: BS 5839-1, BS 7671
+    NFPA = "nfpa"  # US: NFPA 72, NEC
+    ATEX_IEC = "atex_iec"  # EU: ATEX 2014/34/EU, IEC 60079
+    BS = "bs"  # UK: BS 5839-1, BS 7671
     SAUDI_HCIS = "saudi_hcis"  # KSA: HCIS, SASO
-    UAE_FC = "uae_fc"        # UAE: UAE Fire Code, Civil Defence
-    EGYPT_FC = "egypt_fc"    # EG: Egyptian Fire Code
+    UAE_FC = "uae_fc"  # UAE: UAE Fire Code, Civil Defence
+    EGYPT_FC = "egypt_fc"  # EG: Egyptian Fire Code
     KUWAIT_FC = "kuwait_fc"  # KW: Kuwait Fire Code
-    QATAR_FC = "qatar_fc"    # QA: QCD, QCS
+    QATAR_FC = "qatar_fc"  # QA: QCD, QCS
     GULF_GENERAL = "gulf_general"  # General Gulf states
     STANDARD_IEC = "standard_iec"  # Default: IEC standards
 
@@ -56,8 +56,8 @@ class RegulatoryFramework(str, Enum):
 class ElectricalCode(str, Enum):
     """Electrical code standards."""
 
-    NEC = "nec"      # US: National Electrical Code (NFPA 70)
-    IEC = "iec"      # International: IEC 60364
+    NEC = "nec"  # US: National Electrical Code (NFPA 70)
+    IEC = "iec"  # International: IEC 60364
     BS7671 = "bs7671"  # UK: BS 7671 (IET Wiring Regulations)
 
 
@@ -102,7 +102,6 @@ _COUNTRY_FRAMEWORK_MAP: dict[str, tuple[RegulatoryFramework, ElectricalCode]] = 
     "US": (RegulatoryFramework.NFPA, ElectricalCode.NEC),
     "CA": (RegulatoryFramework.NFPA, ElectricalCode.NEC),
     "MX": (RegulatoryFramework.NFPA, ElectricalCode.NEC),
-
     # European Union / EEA (ATEX/IEC)
     "GB": (RegulatoryFramework.BS, ElectricalCode.BS7671),
     "DE": (RegulatoryFramework.ATEX_IEC, ElectricalCode.IEC),
@@ -123,7 +122,6 @@ _COUNTRY_FRAMEWORK_MAP: dict[str, tuple[RegulatoryFramework, ElectricalCode]] = 
     "CZ": (RegulatoryFramework.ATEX_IEC, ElectricalCode.IEC),
     "RO": (RegulatoryFramework.ATEX_IEC, ElectricalCode.IEC),
     "HU": (RegulatoryFramework.ATEX_IEC, ElectricalCode.IEC),
-
     # Gulf States
     "SA": (RegulatoryFramework.SAUDI_HCIS, ElectricalCode.IEC),
     "AE": (RegulatoryFramework.UAE_FC, ElectricalCode.IEC),
@@ -131,13 +129,11 @@ _COUNTRY_FRAMEWORK_MAP: dict[str, tuple[RegulatoryFramework, ElectricalCode]] = 
     "QA": (RegulatoryFramework.QATAR_FC, ElectricalCode.IEC),
     "BH": (RegulatoryFramework.GULF_GENERAL, ElectricalCode.IEC),
     "OM": (RegulatoryFramework.GULF_GENERAL, ElectricalCode.IEC),
-
     # Middle East / North Africa
     "EG": (RegulatoryFramework.EGYPT_FC, ElectricalCode.IEC),
     "JO": (RegulatoryFramework.GULF_GENERAL, ElectricalCode.IEC),
     "LB": (RegulatoryFramework.GULF_GENERAL, ElectricalCode.IEC),
     "IQ": (RegulatoryFramework.GULF_GENERAL, ElectricalCode.IEC),
-
     # Asia-Pacific
     "AU": (RegulatoryFramework.ATEX_IEC, ElectricalCode.IEC),
     "NZ": (RegulatoryFramework.ATEX_IEC, ElectricalCode.IEC),
@@ -146,7 +142,6 @@ _COUNTRY_FRAMEWORK_MAP: dict[str, tuple[RegulatoryFramework, ElectricalCode]] = 
     "CN": (RegulatoryFramework.STANDARD_IEC, ElectricalCode.IEC),
     "IN": (RegulatoryFramework.STANDARD_IEC, ElectricalCode.IEC),
     "SG": (RegulatoryFramework.STANDARD_IEC, ElectricalCode.IEC),
-
     # South America
     "BR": (RegulatoryFramework.STANDARD_IEC, ElectricalCode.IEC),
     "AR": (RegulatoryFramework.STANDARD_IEC, ElectricalCode.IEC),
@@ -172,8 +167,7 @@ class RegionService:
     """
 
     REST_COUNTRIES_URL = os.environ.get(
-        "REST_COUNTRIES_API_URL",
-        "https://restcountries.com/v3.1/alpha"
+        "REST_COUNTRIES_API_URL", "https://restcountries.com/v3.1/alpha"
     )
 
     def __init__(self) -> None:
@@ -195,9 +189,7 @@ class RegionService:
             await self._client.aclose()
             self._client = None
 
-    async def get_region_context(
-        self, country_code: str
-    ) -> RegionContext:
+    async def get_region_context(self, country_code: str) -> RegionContext:
         """
         Get regulatory region context for a country.
 
@@ -255,9 +247,7 @@ class RegionService:
                 country_name = api_data.get("name", {}).get("common", cc)
                 region = api_data.get("region", "")
                 # Infer framework from region
-                framework = _REGION_INFERRED_FRAMEWORK.get(
-                    region, RegulatoryFramework.STANDARD_IEC
-                )
+                framework = _REGION_INFERRED_FRAMEWORK.get(region, RegulatoryFramework.STANDARD_IEC)
                 return RegionContext(
                     country_code=cc,
                     country_name=country_name,
@@ -267,15 +257,10 @@ class RegionService:
                     source="rest-countries",
                 )
         except Exception as e:
-            logger.warning(
-                f"REST Countries API failed for {cc}: {e}. "
-                f"Using IEC defaults."
-            )
+            logger.warning(f"REST Countries API failed for {cc}: {e}. Using IEC defaults.")
 
         # 3. Default to IEC (most internationally applicable)
-        logger.warning(
-            f"Unknown country code '{cc}'. Defaulting to IEC standards."
-        )
+        logger.warning(f"Unknown country code '{cc}'. Defaulting to IEC standards.")
         return RegionContext(
             country_code=cc,
             country_name=cc,

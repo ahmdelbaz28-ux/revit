@@ -140,7 +140,9 @@ def _guard_positive_finite(value: float, field_name: str) -> float:
     """
     v = _guard_finite(value, field_name)
     if v <= 0:
-        raise ValueError(f"[L0 REJECTION] {field_name}={v}: must be > 0 for physical quantities. NFPA 72 §10.6.")
+        raise ValueError(
+            f"[L0 REJECTION] {field_name}={v}: must be > 0 for physical quantities. NFPA 72 §10.6."
+        )
     return v
 
 
@@ -202,7 +204,9 @@ WIRE_RESISTANCE_OHM_PER_1000FT: dict[int, float] = {
 
 # --- Wire Resistance in ohm/ft (derived for per-segment calculations) ---
 # V_drop = 2 × I × R_per_ft × L_ft (NEC 760 DC return path factor)
-WIRE_RESISTANCE_OHM_PER_FT: dict[int, float] = {awg: r / 1000.0 for awg, r in WIRE_RESISTANCE_OHM_PER_1000FT.items()}
+WIRE_RESISTANCE_OHM_PER_FT: dict[int, float] = {
+    awg: r / 1000.0 for awg, r in WIRE_RESISTANCE_OHM_PER_1000FT.items()
+}
 
 # --- Standard NAC Panel Ratings (amps) ---
 # Typical NAC circuit ratings per UL 864 10th Edition
@@ -276,7 +280,9 @@ SYNC_REQUIRED_WHEN_MULTIPLE_BPS: bool = True
 # --- Citations ---
 _CITE_NFPA72_10_6 = "NFPA 72-2022 §10.6"
 _CITE_NFPA72_10_6_4 = "NFPA 72-2022 §10.6.4"
-_CITE_NFPA72_10_14 = "NFPA 72-2022 §10.6.4"  # V78 FIX: Was §10.14 — obsolete reference from pre-2019 editions
+_CITE_NFPA72_10_14 = (
+    "NFPA 72-2022 §10.6.4"  # V78 FIX: Was §10.14 — obsolete reference from pre-2019 editions
+)
 _CITE_NFPA72_18_5_5 = "NFPA 72-2022 §18.5.5"
 _CITE_NFPA72_21_2 = "NFPA 72-2022 §21.2"
 _CITE_NEC_760 = "NEC Article 760"
@@ -367,7 +373,9 @@ def calculate_device_current(
     dt = device_type.lower().strip()
 
     if dt not in ("horn", "strobe", "horn_strobe", "speaker"):
-        raise ValueError(f"Unknown device_type '{device_type}'. Must be one of: horn, strobe, horn_strobe, speaker.")
+        raise ValueError(
+            f"Unknown device_type '{device_type}'. Must be one of: horn, strobe, horn_strobe, speaker."
+        )
 
     if horn_current_a is not None:
         h_current = _guard_non_negative_finite(horn_current_a, "horn_current_a")
@@ -774,7 +782,12 @@ def _validate_nac_circuit_result(result: NACCircuitResult) -> NACCircuitResult:
 
     """
     # Check for NaN/Inf in computed results
-    for attr_name in ("total_current_a", "eol_voltage_vdc", "current_headroom_a", "total_wire_length_ft"):
+    for attr_name in (
+        "total_current_a",
+        "eol_voltage_vdc",
+        "current_headroom_a",
+        "total_wire_length_ft",
+    ):
         val = getattr(result, attr_name)
         if not math.isfinite(val):
             raise ValueError(
@@ -990,7 +1003,9 @@ class NACBoosterAllocator:
                     f"NAC sub-circuits on this floor. "
                     f"Per {_CITE_NFPA72_10_6} / {_CITE_NFPA72_21_2}."
                 )
-                self._add_violation(violations, "CRITICAL", f"{_CITE_NFPA72_10_6} / {_CITE_NFPA72_21_2}", desc)
+                self._add_violation(
+                    violations, "CRITICAL", f"{_CITE_NFPA72_10_6} / {_CITE_NFPA72_21_2}", desc
+                )
                 logger.critical(desc)
 
             # Check against NAC circuit rating (not just total BPS capacity)
@@ -1002,7 +1017,9 @@ class NACBoosterAllocator:
                     f"Floor must be split across multiple NAC circuits. "
                     f"Per {_CITE_NFPA72_10_6_4} / {_CITE_NEC_760}."
                 )
-                self._add_violation(violations, "WARNING", f"{_CITE_NFPA72_10_6_4} / {_CITE_NEC_760}", desc)
+                self._add_violation(
+                    violations, "WARNING", f"{_CITE_NFPA72_10_6_4} / {_CITE_NEC_760}", desc
+                )
                 logger.warning(desc)
 
             # Determine zone capacity (FACP native vs BPS)
@@ -1081,7 +1098,11 @@ class NACBoosterAllocator:
         num_bps = sum(1 for b in panel_allocation if b.get("type") == "NAC_BOOSTER_BPS")
         facp_native_load = round(
             cumulative_load
-            - sum(b.get("peak_load", 0.0) for b in panel_allocation if b.get("type") == "NAC_BOOSTER_BPS"),
+            - sum(
+                b.get("peak_load", 0.0)
+                for b in panel_allocation
+                if b.get("type") == "NAC_BOOSTER_BPS"
+            ),
             4,
         )
 
@@ -1275,12 +1296,20 @@ class NACBoosterAllocator:
             try:
                 _dev_x_f = _guard_finite(float(_dev_x), f"devices_line[{i}].x")
             except ValueError:
-                logger.critical("BPS-003: Device '%s' has non-finite x=%r. Skipping.", dev.get('id', f'DEV-{i}'), _dev_x)
+                logger.critical(
+                    "BPS-003: Device '%s' has non-finite x=%r. Skipping.",
+                    dev.get("id", f"DEV-{i}"),
+                    _dev_x,
+                )
                 _dev_x_f = 0.0
             try:
                 _dev_y_f = _guard_finite(float(_dev_y), f"devices_line[{i}].y")
             except ValueError:
-                logger.critical("BPS-003: Device '%s' has non-finite y=%r. Skipping.", dev.get('id', f'DEV-{i}'), _dev_y)
+                logger.critical(
+                    "BPS-003: Device '%s' has non-finite y=%r. Skipping.",
+                    dev.get("id", f"DEV-{i}"),
+                    _dev_y,
+                )
                 _dev_y_f = 0.0
             curr_pt = (_dev_x_f, _dev_y_f)
 
@@ -1297,13 +1326,21 @@ class NACBoosterAllocator:
             # V_drop = 2 × I × R_per_ft × L  (NEC 760 DC return path)
             # V59 FIX: Guard running_current_tail against NaN before multiplication
             if not math.isfinite(running_current_tail):
-                logger.critical("BPS-004: running_current_tail=%r is NaN/Inf. Resetting to 0.", running_current_tail)
+                logger.critical(
+                    "BPS-004: running_current_tail=%r is NaN/Inf. Resetting to 0.",
+                    running_current_tail,
+                )
                 running_current_tail = 0.0
             if dist > 0 and running_current_tail > 0:
                 segment_drop = 2.0 * dist * ohm_per_ft * running_current_tail
                 if not math.isfinite(segment_drop):
-                    logger.critical("BPS-005: segment_drop=%r is NaN/Inf (dist=%r, ohm_per_ft=%r, current=%r). Skipping.",
-                                    segment_drop, dist, ohm_per_ft, running_current_tail)
+                    logger.critical(
+                        "BPS-005: segment_drop=%r is NaN/Inf (dist=%r, ohm_per_ft=%r, current=%r). Skipping.",
+                        segment_drop,
+                        dist,
+                        ohm_per_ft,
+                        running_current_tail,
+                    )
                     segment_drop = 0.0
                 running_voltage -= segment_drop
 
@@ -1313,8 +1350,11 @@ class NACBoosterAllocator:
             try:
                 dev_current = _guard_finite(float(_raw_current), f"devices_line[{i}].inrush_a")
             except ValueError:
-                logger.critical("BPS-006: Device '%s' has non-finite inrush_a=%r. Using 0.2A default.",
-                                dev.get('id', f'DEV-{i}'), _raw_current)
+                logger.critical(
+                    "BPS-006: Device '%s' has non-finite inrush_a=%r. Using 0.2A default.",
+                    dev.get("id", f"DEV-{i}"),
+                    _raw_current,
+                )
                 dev_current = 0.2
             running_current_tail = max(0.0, running_current_tail - dev_current)
             last_pt = curr_pt
@@ -1354,7 +1394,9 @@ class NACBoosterAllocator:
                 f"maximum branch distance ({max_cable_length_ft:.0f} ft) per "
                 f"{_CITE_NFPA72_10_14} / {_CITE_NEC_760}."
             )
-            self._add_violation(violations, "CRITICAL", f"{_CITE_NFPA72_10_14} / {_CITE_NEC_760}", desc)
+            self._add_violation(
+                violations, "CRITICAL", f"{_CITE_NFPA72_10_14} / {_CITE_NEC_760}", desc
+            )
             logger.critical(desc)
 
         safe = len(violations) == 0

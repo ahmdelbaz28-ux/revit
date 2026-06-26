@@ -56,7 +56,7 @@ def find_constant_usages(root: Path, constants: list[str]) -> dict:
     """Find all usages of each constant."""
     usages = defaultdict(list)
 
-    pattern = rf'\b({"|".join(constants)})\b'
+    pattern = rf"\b({'|'.join(constants)})\b"
 
     for py_file in root.rglob("*.py"):
         if "__pycache__" in str(py_file) or "test_" in py_file.name:
@@ -64,21 +64,23 @@ def find_constant_usages(root: Path, constants: list[str]) -> dict:
 
         try:
             content = py_file.read_text()
-            lines = content.split('\n')
+            lines = content.split("\n")
 
             for i, line in enumerate(lines, 1):
-                if line.strip().startswith('#'):
+                if line.strip().startswith("#"):
                     continue
 
                 for match in re.finditer(pattern, line):
                     const_name = match.group(1)
                     rel_path = str(py_file.relative_to(root))
 
-                    usages[const_name].append({
-                        "file": rel_path,
-                        "line": i,
-                        "context": line.strip()[:80],
-                    })
+                    usages[const_name].append(
+                        {
+                            "file": rel_path,
+                            "line": i,
+                            "context": line.strip()[:80],
+                        }
+                    )
         except Exception as e:
             logger.warning("Error scanning %s for constant usages: %s", py_file, e)
 
@@ -100,12 +102,14 @@ def find_inline_definitions(root: Path) -> list[dict]:
             if "WALL_MIN_M = 0.1016" in content and "EXAMPLE" not in content:
                 # Check if it's actually an import or inline
                 if "from fireai.constants" not in content:
-                    drift_issues.append({
-                        "file": str(py_file.relative_to(root)),
-                        "issue": "WALL_MIN_M defined inline (should import from canonical)",
-                        "expected": "Import from canonical",
-                        "fix": "from fireai.constants.nfpa72 import WALL_MIN_DISTANCE_M",
-                    })
+                    drift_issues.append(
+                        {
+                            "file": str(py_file.relative_to(root)),
+                            "issue": "WALL_MIN_M defined inline (should import from canonical)",
+                            "expected": "Import from canonical",
+                            "fix": "from fireai.constants.nfpa72 import WALL_MIN_DISTANCE_M",
+                        }
+                    )
         except Exception as e:
             logger.warning("Error scanning %s for inline definitions: %s", py_file, e)
 
@@ -116,7 +120,7 @@ def generate_markdown(usages: dict, drift: list) -> str:
     """Generate Markdown documentation."""
     md = f"""# FireAI — Constants Cross-Reference Map
 
-**Generated:** {datetime.now().strftime('%Y-%m-%d')}
+**Generated:** {datetime.now().strftime("%Y-%m-%d")}
 **Purpose:** Track constant usage across codebase
 
 ---
@@ -204,4 +208,5 @@ def main() -> int:
 
 if __name__ == "__main__":
     import sys
+
     sys.exit(main())

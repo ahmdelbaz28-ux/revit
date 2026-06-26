@@ -333,14 +333,18 @@ class AnalyticalVerifier:
                 gap_len = min(start, wall_length) - covered_up_to
                 if gap_len > 1e-6:
                     result.wall_gaps.append((wall_name, covered_up_to, start))
-                    result.details += f"Wall '{wall_name}': gap [{covered_up_to:.2f}, {start:.2f}m]. "
+                    result.details += (
+                        f"Wall '{wall_name}': gap [{covered_up_to:.2f}, {start:.2f}m]. "
+                    )
             covered_up_to = max(covered_up_to, end)
             if covered_up_to >= wall_length - 1e-9:
                 break
 
         if covered_up_to < wall_length - 1e-9:
             result.wall_gaps.append((wall_name, covered_up_to, wall_length))
-            result.details += f"Wall '{wall_name}': gap at end [{covered_up_to:.2f}, {wall_length:.2f}m]. "
+            result.details += (
+                f"Wall '{wall_name}': gap at end [{covered_up_to:.2f}, {wall_length:.2f}m]. "
+            )
             return False
 
         return True

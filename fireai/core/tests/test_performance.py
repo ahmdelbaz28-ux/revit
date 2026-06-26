@@ -146,7 +146,7 @@ class TestDatabaseQueryPerformance:
 
         assert result is not None
         assert result.element_id == "ELEM_000500"
-        assert elapsed < 0.01, f"get_element took {elapsed*1000:.1f}ms"
+        assert elapsed < 0.01, f"get_element took {elapsed * 1000:.1f}ms"
 
     def test_get_all_elements_1000(self, in_memory_db) -> None:
         """get_all_elements for 1000 elements completes in < 2 seconds."""
@@ -230,8 +230,7 @@ class TestGeometryCalculationPerformance:
         # Create a circular-ish polygon with 100 vertices
         n = 100
         pts = tuple(
-            Point3D(x=10.0 * math.cos(2 * math.pi * i / n),
-                     y=10.0 * math.sin(2 * math.pi * i / n))
+            Point3D(x=10.0 * math.cos(2 * math.pi * i / n), y=10.0 * math.sin(2 * math.pi * i / n))
             for i in range(n)
         )
         t0 = time.perf_counter()
@@ -240,14 +239,13 @@ class TestGeometryCalculationPerformance:
 
         assert geom.area > 0
         assert geom.perimeter > 0
-        assert elapsed < 0.1, f"100-vertex polygon took {elapsed*1000:.1f}ms"
+        assert elapsed < 0.1, f"100-vertex polygon took {elapsed * 1000:.1f}ms"
 
     def test_large_polygon_area_1000_vertices(self) -> None:
         """Area calculation for 1000-vertex polygon completes in < 500ms."""
         n = 1000
         pts = tuple(
-            Point3D(x=10.0 * math.cos(2 * math.pi * i / n),
-                     y=10.0 * math.sin(2 * math.pi * i / n))
+            Point3D(x=10.0 * math.cos(2 * math.pi * i / n), y=10.0 * math.sin(2 * math.pi * i / n))
             for i in range(n)
         )
         t0 = time.perf_counter()
@@ -256,7 +254,7 @@ class TestGeometryCalculationPerformance:
 
         assert geom.area > 0
         assert geom.perimeter > 0
-        assert elapsed < 0.5, f"1000-vertex polygon took {elapsed*1000:.1f}ms"
+        assert elapsed < 0.5, f"1000-vertex polygon took {elapsed * 1000:.1f}ms"
 
     def test_to_dict_1000_elements(self) -> None:
         """Serializing 1000 elements to dict completes in < 2 seconds."""
@@ -338,12 +336,14 @@ class TestDatabaseCRUDPerformance:
         for i in range(100):
             in_memory_db.update_element(
                 f"ELEM_{i:06d}",
-                {"properties": SemanticProperties(
-                    element_type=ElementType.DOOR,
-                    name=f"Updated Door {i}",
-                    height=2.1,
-                    width=0.9,
-                ).to_dict()},
+                {
+                    "properties": SemanticProperties(
+                        element_type=ElementType.DOOR,
+                        name=f"Updated Door {i}",
+                        height=2.1,
+                        width=0.9,
+                    ).to_dict()
+                },
             )
         elapsed = time.perf_counter() - t0
         assert elapsed < 2.0, f"100 updates took {elapsed:.3f}s"

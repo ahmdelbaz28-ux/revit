@@ -21,6 +21,7 @@ from pathlib import Path
 # Import bcrypt for stronger password hashing
 try:
     import bcrypt
+
     HAS_BCRYPT = True
 except ImportError:
     HAS_BCRYPT = False
@@ -65,6 +66,7 @@ def _normalize_key_for_bcrypt(key: str) -> bytes:
         # Pre-hash with SHA-256 and use hex digest (64 bytes, fits in bcrypt)
         return hashlib.sha256(key_bytes).hexdigest().encode("utf-8")
     return key_bytes
+
 
 # ── STRICT FIX A: Timing oracle mitigation ──────────────────────────────────
 # validate_api_key returns immediately for invalid keys (~0ms) but takes
@@ -116,6 +118,7 @@ def _timing_safe_dummy_verify(key: str) -> None:
     # This will return False but take ~250ms, matching the valid-key path
     normalized = _normalize_key_for_bcrypt(key)
     bcrypt.checkpw(normalized, dummy.encode())
+
 
 # ── STRESS-TEST FIX #1: fast O(1) lookup index ─────────────────────────────
 # A deterministic HMAC-SHA256 over (server_secret, key) is used as the dict
@@ -234,7 +237,7 @@ def _hash_key(key: str) -> str:
     """
     if HAS_BCRYPT:
         normalized = _normalize_key_for_bcrypt(key)
-        return bcrypt.hashpw(normalized, bcrypt.gensalt()).decode('utf-8')
+        return bcrypt.hashpw(normalized, bcrypt.gensalt()).decode("utf-8")
     # Fallback: HMAC-SHA256 with random salt
     salt = secrets.token_hex(16)
     h = hmac.new(salt.encode(), key.encode(), hashlib.sha256).hexdigest()
@@ -254,7 +257,7 @@ def _verify_key(key: str, hashed_key: str) -> bool:
     if not hashed_key:
         return False
     try:
-        if HAS_BCRYPT and hashed_key.startswith('$2'):
+        if HAS_BCRYPT and hashed_key.startswith("$2"):
             normalized = _normalize_key_for_bcrypt(key)
             return bcrypt.checkpw(normalized, hashed_key.encode())
         if hashed_key.startswith("hmac-sha256$"):
