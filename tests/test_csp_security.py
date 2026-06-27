@@ -94,9 +94,11 @@ class TestCSPEnvironmentAwareDefaults:
         assert "'unsafe-eval'" not in csp, (
             f"V119 REGRESSION: production CSP contains 'unsafe-eval' by default! CSP: {csp}"
         )
-        # Belt-and-braces: ensure 'unsafe-inline' for scripts is still present
-        # (needed for inline event handlers / legacy patterns)
-        assert "script-src 'self' 'unsafe-inline'" in csp
+        # V140 FIX: production no longer includes 'unsafe-inline' for scripts.
+        # Only 'self' is allowed for script-src in production (React doesn't
+        # need inline scripts). style-src still has 'unsafe-inline' (Tailwind CSS).
+        assert "script-src 'self'" in csp
+        assert "'unsafe-inline'" not in csp.split("style-src")[0]  # not in script-src
 
     def test_production_unset_env_var_also_secure(self, monkeypatch):
         """Same as above but using FIREAI_ENV default fallback."""
