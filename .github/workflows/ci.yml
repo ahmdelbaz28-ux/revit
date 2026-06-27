@@ -126,6 +126,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
           pip install pytest pytest-cov pytest-asyncio hypothesis
+          # V140 FIX: Starlette's TestClient requires httpx for backend/tests.
+          # Without it, conftest.py fails to import → entire test suite crashes.
+          pip install httpx
 
       - name: Run test suite with coverage
         run: |
