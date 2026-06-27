@@ -49,17 +49,15 @@ _MAX_DWG_SIZE_BYTES = 50 * 1024 * 1024  # 50 MB
 _AUTH = [Depends(require_permission(Permission.PROJECT_CREATE))]
 
 
-# V140 FIX: Add rate limit decorator to DWG upload endpoint
-# 10/minute per IP — parsing is CPU-intensive and file uploads are heavy
-if _HAS_LIMITER:
-    @router.post("", dependencies=_AUTH)
-    @limiter.limit("10/minute")
-    async def parse_dwg(request: Request, file: UploadFile = File(...)):
-        return await _parse_dwg_impl(request, file)
-else:
-    @router.post("", dependencies=_AUTH)
-    async def parse_dwg(request: Request, file: UploadFile = File(...)):
-        return await _parse_dwg_impl(request, file)
+# V140 Phase 10 SELF-CRITICISM FIX: Rate limit for DWG upload.
+# Previous approach used @router.post THEN @limiter.limit — wrong order.
+# The @router.post decorator captures the function as endpoint BEFORE
+# @limiter.limit can add _rate_limits metadata. Result: rate limit was
+# silently NOT applied.
+#
+# Correct approach: define function, apply @limiter.limit, then register
+# the route manually using router.add_api_route(). This ensures the
+# limiter-wrapped function is what the route uses.
 
 
 async def _parse_dwg_impl(request: Request, file: UploadFile):
@@ -74,12 +72,6 @@ async def _parse_dwg_impl(request: Request, file: UploadFile):
     rate-limited to 10/minute per client IP. Chunks are streamed directly
     to a temp file (no in-memory accumulation).
     """
-    # V140 FIX: Manual rate limit check (decorator approach requires global limiter state
-    # that may not be available in all deployment contexts)
-    if _HAS_LIMITER:
-        # Rate limit is handled by slowapi middleware globally;
-        # the @limiter.limit decorator is registered in app.py for this path
-        pass
     # ── Validate file extension ─────────────────────────────────────────
     if not file.filename:
         raise HTTPException(status_code=400, detail="No file provided")
@@ -190,3 +182,30 @@ async def _parse_dwg_impl(request: Request, file: UploadFile):
                 os.unlink(temp_path)
             except Exception as exc:
                 logger.debug("Temp file cleanup failed: %s", exc)
+
+
+# V140 Phase 10 SELF-CRITICISM FIX: Register route MANUALLY after applying
+# @limiter.limit. This ensures the limiter-wrapped function is the actual
+# endpoint. The previous @router.post + @limiter.limit order was wrong.
+if _HAS_LIMITER:
+    @limiter.limit("10/minute")
+    async def _rate_limited_parse_dwg(request: Request, file: UploadFile = File(...)):
+        """Rate-limited wrapper for DWG parse endpoint."""
+        return await _parse_dwg_impl(request, file)
+
+    router.add_api_route(
+        "",
+        _rate_limited_parse_dwg,
+        methods=["POST"],
+        dependencies=_AUTH,
+        name="parse_dwg",
+    )
+else:
+    router.add_api_route(
+        "",
+        _parse_dwg_impl,
+        methods=["POST"],
+        dependencies=_AUTH,
+        name="parse_dwg",
+    )
+
