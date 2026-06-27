@@ -39,7 +39,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 # Project root on sys.path
-PROJECT_ROOT = "/home/z/my-project/revit"
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, PROJECT_ROOT)
 
 # Isolate test artifacts

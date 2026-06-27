@@ -65,6 +65,9 @@ async def list_devices(
     sort: str = Query("createdAt"),
     order: str = Query("desc"),
 ):
+    # V140 FIX: Validate order to prevent injection
+    if order not in ("asc", "desc"):
+        order = "desc"
     """List all devices in a project with pagination."""
     _verify_project(project_id)
     db = get_db()
