@@ -696,20 +696,27 @@ class TestAnalyzeRoomErrorHandling:
 
     def test_string_dimension_crashes_format(self, pipeline) -> None:
         """
-        String dimension causes ValueError in the logging format string.
+        String dimension is handled gracefully (V140 fix).
 
-        The pipeline logs room dimensions with f-string formatting before
-        reaching the geometry validation guard. Setting width to a string
-        causes a ValueError in the format spec (:.1f), which propagates
-        up since it occurs before the geometry validation check.
-        This is a known edge case — Room.__post_init__ prevents this in
-        normal usage.
+        Previously, the pipeline logs room dimensions with f-string formatting
+        before reaching the geometry validation guard. Setting width to a
+        string caused a ValueError in the format spec (:.1f), which propagated
+        up since it occurred before the geometry validation check.
+
+        V140 FIX (Rule 17): The production code now validates the width type
+        BEFORE the f-string format call, logs "GEOMETRY INVALID for <room>:
+        room.width=<value>" and returns a result with errors. This is the
+        safer behavior — string dimensions don't crash the pipeline.
+
+        The test now asserts the new safe behavior: the pipeline returns a
+        result with "GEOMETRY INVALID" in errors, no exception raised.
         """
         room = Room(name="str-dim", width=10.0, length=10.0)
         room.width = "ten"
-        # The format string f"{room.width:.1f}" raises ValueError
-        with pytest.raises(ValueError, match="Unknown format code"):
-            pipeline.analyze_room(room=room, room_id="str-dim", ceiling_height=3.0)
+        # V140: Production now handles this gracefully — no exception raised
+        result = pipeline.analyze_room(room=room, room_id="str-dim", ceiling_height=3.0)
+        assert result is not None
+        assert any("GEOMETRY INVALID" in e for e in result.errors)
 
     def test_invalid_geometry_no_layout(self, pipeline) -> None:
         """Invalid geometry produces no layout."""
