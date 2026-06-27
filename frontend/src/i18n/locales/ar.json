@@ -9,7 +9,15 @@
     "elements": "العناصر",
     "connections": "التوصيلات",
     "conflicts": "التعارضات",
-    "settings": "الإعدادات"
+    "settings": "الإعدادات",
+    "autocad": "أوتوكاد",
+    "autocadDraw": "رسم أوتوكاد",
+    "revit": "ريفيت",
+    "revitCreate": "إنشاء ريفيت",
+    "revitElements": "عناصر ريفيت",
+    "dtConvert": "تحويل DT",
+    "dtConfig": "إعدادات DT",
+    "dtHistory": "سجل DT"
   },
   "common": {
     "create": "إنشاء",

@@ -20,6 +20,15 @@ import Elements from './pages/Elements';
 import Connections from './pages/Connections';
 import Conflicts from './pages/Conflicts';
 import ElementDetail from './pages/ElementDetail';
+// V140 Phase 6: New pages for comprehensive API coverage
+import { AutoCADPage } from './pages/AutoCADPage';
+import { AutoCADDrawPage } from './pages/AutoCADDrawPage';
+import { RevitPage } from './pages/RevitPage';
+import { RevitCreatePage } from './pages/RevitCreatePage';
+import { RevitElementsPage } from './pages/RevitElementsPage';
+import { DigitalTwinConvertPage } from './pages/DigitalTwinConvertPage';
+import { DigitalTwinConfigPage } from './pages/DigitalTwinConfigPage';
+import { DigitalTwinHistoryPage } from './pages/DigitalTwinHistoryPage';
 import './i18n';
 import './styles/globals.css';
 import './styles/typography.css';
@@ -74,6 +83,15 @@ function App() {
     { path: '/elements/:elementId', element: <ElementDetail /> },
     { path: '/connections', element: <Connections /> },
     { path: '/conflicts', element: <Conflicts /> },
+    // V140 Phase 6: New routes for comprehensive API coverage
+    { path: '/autocad', element: <AutoCADPage /> },
+    { path: '/autocad/draw', element: <AutoCADDrawPage /> },
+    { path: '/revit', element: <RevitPage /> },
+    { path: '/revit/create', element: <RevitCreatePage /> },
+    { path: '/revit/elements', element: <RevitElementsPage /> },
+    { path: '/digital-twin/convert', element: <DigitalTwinConvertPage /> },
+    { path: '/digital-twin/config', element: <DigitalTwinConfigPage /> },
+    { path: '/digital-twin/history', element: <DigitalTwinHistoryPage /> },
   ];
 
   return (

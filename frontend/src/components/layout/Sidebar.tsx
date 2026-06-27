@@ -14,6 +14,11 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
+  PencilRuler,
+  Building2,
+  ArrowRightLeft,
+  History,
+  Settings2,
 } from "lucide-react";
 
 interface NavItem {
@@ -24,13 +29,22 @@ interface NavItem {
   dataOnboarding?: string;
 }
 
-// V140 FIX: Use i18n keys + correct paths (no more 404s)
+// V140 FIX + Phase 6: Use i18n keys + correct paths + new CAD/BIM routes
 const navItems: NavItem[] = [
   { labelKey: "nav.dashboard", defaultLabel: "Dashboard", icon: LayoutDashboard, path: "/dashboard", dataOnboarding: "nav-dashboard" },
   { labelKey: "nav.projects", defaultLabel: "Projects", icon: FolderKanban, path: "/projects", dataOnboarding: "nav-projects" },
   { labelKey: "nav.engineering", defaultLabel: "Engineering", icon: Calculator, path: "/engineering", dataOnboarding: "nav-engineering" },
   { labelKey: "nav.fireAlarmDesigner", defaultLabel: "Fire Alarm Designer", icon: Flame, path: "/fire-alarm/designer", dataOnboarding: "nav-fire-alarm-designer" },
+  // V140 Phase 6: New AutoCAD / Revit / Digital Twin routes
+  { labelKey: "nav.autocad", defaultLabel: "AutoCAD", icon: PencilRuler, path: "/autocad" },
+  { labelKey: "nav.autocadDraw", defaultLabel: "ACAD Draw", icon: PencilRuler, path: "/autocad/draw" },
+  { labelKey: "nav.revit", defaultLabel: "Revit", icon: Building2, path: "/revit" },
+  { labelKey: "nav.revitCreate", defaultLabel: "Revit Create", icon: Building2, path: "/revit/create" },
+  { labelKey: "nav.revitElements", defaultLabel: "Revit Elements", icon: Layers, path: "/revit/elements" },
   { labelKey: "nav.digitalTwin", defaultLabel: "Digital Twin", icon: Box, path: "/digital-twin" },
+  { labelKey: "nav.dtConvert", defaultLabel: "DT Convert", icon: ArrowRightLeft, path: "/digital-twin/convert" },
+  { labelKey: "nav.dtConfig", defaultLabel: "DT Config", icon: Settings2, path: "/digital-twin/config" },
+  { labelKey: "nav.dtHistory", defaultLabel: "DT History", icon: History, path: "/digital-twin/history" },
   { labelKey: "nav.reports", defaultLabel: "Reports", icon: FileText, path: "/reports", dataOnboarding: "nav-reports" },
   { labelKey: "nav.elements", defaultLabel: "Elements", icon: Layers, path: "/elements" },
   { labelKey: "nav.connections", defaultLabel: "Connections", icon: Cable, path: "/connections" },

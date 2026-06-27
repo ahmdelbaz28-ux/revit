@@ -1094,6 +1094,14 @@
     "elements": "Elements",
     "connections": "Connections",
     "conflicts": "Conflicts",
-    "settings": "Settings"
+    "settings": "Settings",
+    "autocad": "AutoCAD",
+    "autocadDraw": "ACAD Draw",
+    "revit": "Revit",
+    "revitCreate": "Revit Create",
+    "revitElements": "Revit Elements",
+    "dtConvert": "DT Convert",
+    "dtConfig": "DT Config",
+    "dtHistory": "DT History"
   }
 }
