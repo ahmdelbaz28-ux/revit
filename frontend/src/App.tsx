@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Toaster } from 'sonner';
 import { useHealth } from '@/hooks/useApi';
@@ -7,6 +7,10 @@ import AppShell from '@/components/layout/AppShell';
 import { SmartHelpDrawer } from '@/components/help/SmartHelpDrawer';
 import CommandPalette from '@/components/command/CommandPalette';
 import OnboardingTour from '@/components/onboarding/OnboardingTour';
+import { GlobalHelpDrawer } from '@/components/shared/GlobalHelpDrawer';
+import { ContextualHelpButton } from '@/components/shared/ContextualHelpButton';
+import { ROUTE_HELP_MAP } from '@/help/types';
+import type { HelpTopicId } from '@/help/types';
 import { DashboardPage } from './pages/DashboardPage';
 import { ProjectsPage } from './pages/ProjectsPage';
 import { EngineeringPage } from './pages/EngineeringPage';
@@ -36,7 +40,9 @@ import './styles/typography.css';
 function App() {
   const { t, i18n } = useTranslation();
   const { connected } = useHealth();
+  const location = useLocation();
   const [helpOpen, setHelpOpen] = useState(false);
+  const [magicHelpTopic, setMagicHelpTopic] = useState<HelpTopicId | null>(null);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
 
   useEffect(() => {
@@ -50,11 +56,14 @@ function App() {
     }
   }, [i18n.language]);
 
-  // Keyboard shortcuts for help and command palette
+  // V140 Phase 7: Magic Help — F1 opens help for current page
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'F1' || (e.ctrlKey && e.key === 'h')) {
         e.preventDefault();
+        // Find help topic for current route
+        const routeTopic = ROUTE_HELP_MAP[location.pathname];
+        setMagicHelpTopic(routeTopic || null);
         setHelpOpen(true);
       } else if (e.ctrlKey && e.key === 'k') {
         e.preventDefault();
@@ -63,7 +72,7 @@ function App() {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [location.pathname]);
 
   // Define routes
   const routes = [
@@ -102,19 +111,25 @@ function App() {
         environment={import.meta.env.MODE || 'development'}
         currentLanguage={i18n.language}
         onLanguageChange={(lng: string) => i18n.changeLanguage(lng)}
-        onHelpOpen={() => setHelpOpen(true)}
+        onHelpOpen={() => { setMagicHelpTopic(null); setHelpOpen(true); }}
       >
-        <main className="flex-1 overflow-auto">
+        <main className="flex-1 overflow-auto relative">
           <Routes>
             {routes.map((route) => (
               <Route key={route.path} path={route.path} element={route.element} />
             ))}
           </Routes>
+          {/* V140 Phase 7: Contextual Help button — floats in top-right of every page */}
+          <div className="fixed top-16 right-4 z-30">
+            <ContextualHelpButton />
+          </div>
         </main>
       </AppShell>
-      <SmartHelpDrawer
+      {/* V140 Phase 7: Global Help Drawer with full tree + user guide */}
+      <GlobalHelpDrawer
         open={helpOpen}
         onOpenChange={setHelpOpen}
+        initialTopicId={magicHelpTopic}
       />
       <CommandPalette open={commandPaletteOpen} onOpenChange={setCommandPaletteOpen} />
       <OnboardingTour />

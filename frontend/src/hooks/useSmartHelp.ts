@@ -127,16 +127,43 @@ export function useSmartHelp(): SmartHelpHookValue {
   }, []);
 
   return useMemo<SmartHelpHookValue>(() => ({
+    isOpen: state.isHelpOpen,
+    open: openHelp,
+    close: closeHelp,
+    toggle: () => { if (state.isHelpOpen) { closeHelp(); } else { openHelp(); } },
+    searchQuery: state.searchQuery,
+    setSearchQuery,
+    results: state.results,
+    selectedTopic: state.selectedTopic ?? undefined,
+    selectTopic: (id: HelpTopicId) => openHelp(id),
+    categories,
+    getCategoryLabel: (cat: HelpCategory) => {
+      const labels: Record<string, { en: string; ar: string }> = {
+        'getting-started': { en: 'Getting Started', ar: 'البدء السريع' },
+        'dashboard': { en: 'Dashboard', ar: 'لوحة التحكم' },
+        'projects': { en: 'Projects', ar: 'المشاريع' },
+        'engineering': { en: 'Engineering', ar: 'الهندسة' },
+        'fire-alarm': { en: 'Fire Alarm', ar: 'إنذار الحريق' },
+        'autocad': { en: 'AutoCAD', ar: 'أوتوكاد' },
+        'revit': { en: 'Revit', ar: 'ريفيت' },
+        'digital-twin': { en: 'Digital Twin', ar: 'التوأم الرقمي' },
+        'reports': { en: 'Reports', ar: 'التقارير' },
+        'elements': { en: 'Elements', ar: 'العناصر' },
+        'connections': { en: 'Connections', ar: 'التوصيلات' },
+        'conflicts': { en: 'Conflicts', ar: 'التعارضات' },
+        'settings': { en: 'Settings', ar: 'الإعدادات' },
+        'troubleshooting': { en: 'Troubleshooting', ar: 'استكشاف الأخطاء' },
+        'general': { en: 'General', ar: 'عام' },
+      };
+      return labels[cat] || { en: cat, ar: cat };
+    },
+    // Legacy fields
     openHelp,
     openSearch,
     closeHelp,
     isHelpOpen: state.isHelpOpen,
-    selectedTopic: state.selectedTopic,
-    searchQuery: state.searchQuery,
-    setSearchQuery,
     category: state.category,
     setCategory,
     topics,
-    results: state.results,
   }), [state]);
 }
