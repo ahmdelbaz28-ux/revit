@@ -56,6 +56,9 @@ async def list_connections(
     sort: str = Query("createdAt"),
     order: str = Query("desc"),
 ):
+    # V140 FIX: Validate order to prevent injection
+    if order not in ("asc", "desc"):
+        order = "desc"
     """List all connections in a project with pagination."""
     _verify_project(project_id)
     db = get_db()

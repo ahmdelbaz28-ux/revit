@@ -238,6 +238,9 @@ async def list_reports(
     sort: str = Query("createdAt"),
     order: str = Query("desc"),
 ):
+    # V140 FIX: Validate order to prevent injection
+    if order not in ("asc", "desc"):
+        order = "desc"
     """List all reports for a project."""
     _verify_project(project_id)
     db = get_db()

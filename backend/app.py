@@ -124,7 +124,15 @@ def _build_csp() -> str:
             env,
         )
 
-    script_src = "'self' 'unsafe-inline'" + (" 'unsafe-eval'" if unsafe_eval else "")
+    # V140 FIX: Remove 'unsafe-inline' from script-src in production.
+    # 'unsafe-inline' is kept for style-src (Tailwind CSS requires it).
+    # For scripts, production uses 'self' only (React doesn't need inline scripts).
+    # Development keeps 'unsafe-inline' for Vite HMR.
+    if is_dev:
+        script_src = "'self' 'unsafe-inline'" + (" 'unsafe-eval'" if unsafe_eval else "")
+    else:
+        # Production: no unsafe-inline for scripts (only unsafe-eval if explicitly enabled)
+        script_src = "'self'" + (" 'unsafe-eval'" if unsafe_eval else "")
     style_src = "'self' 'unsafe-inline'"
     img_src = "'self' data: blob:"
 

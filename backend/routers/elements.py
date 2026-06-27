@@ -44,6 +44,9 @@ async def list_elements(
     db: DatabaseService = Depends(get_db_service),
 ):
     """List elements with optional filtering and pagination."""
+    # V140 FIX: Validate sort_order to prevent injection
+    if sort_order not in ("asc", "desc"):
+        sort_order = "desc"
     try:
         elements, total = db.list_elements(
             element_type=element_type,
