@@ -1,0 +1,4794 @@
+{
+  "stats": {
+    "backend_endpoints": 188,
+    "backend_modules": 386,
+    "backend_services": 13,
+    "frontend_pages": 21,
+    "frontend_components": 131,
+    "frontend_services": 10,
+    "frontend_hooks": 7,
+    "en_i18n_keys": 7,
+    "ar_i18n_keys": 10,
+    "skills_count": 59,
+    "python_test_files": 176,
+    "frontend_test_files": 9,
+    "deploy_files": 36,
+    "total_python_files": 576,
+    "total_ts_files": 219,
+    "total_python_lines": 279720,
+    "total_ts_lines": 43144
+  },
+  "endpoints": [
+    {
+      "router": "analyze",
+      "method": "POST",
+      "path": "/api/v1/None/analyze/battery"
+    },
+    {
+      "router": "analyze",
+      "method": "POST",
+      "path": "/api/v1/None/analyze/voltage"
+    },
+    {
+      "router": "api_keys",
+      "method": "GET",
+      "path": "/api/v1/admin/keys"
+    },
+    {
+      "router": "api_keys",
+      "method": "POST",
+      "path": "/api/v1/admin/keys"
+    },
+    {
+      "router": "api_keys",
+      "method": "DELETE",
+      "path": "/api/v1/admin/keys/{key_hash}"
+    },
+    {
+      "router": "api_keys",
+      "method": "PUT",
+      "path": "/api/v1/admin/keys/{key_hash}"
+    },
+    {
+      "router": "api_keys",
+      "method": "GET",
+      "path": "/api/v1/admin/keys/roles"
+    },
+    {
+      "router": "autocad",
+      "method": "POST",
+      "path": "/api/v1/autocad/connect"
+    },
+    {
+      "router": "autocad",
+      "method": "POST",
+      "path": "/api/v1/autocad/disconnect"
+    },
+    {
+      "router": "autocad",
+      "method": "POST",
+      "path": "/api/v1/autocad/read_dwg"
+    },
+    {
+      "router": "autocad",
+      "method": "POST",
+      "path": "/api/v1/autocad/write_dwg"
+    },
+    {
+      "router": "autocad",
+      "method": "POST",
+      "path": "/api/v1/autocad/draw_line"
+    },
+    {
+      "router": "autocad",
+      "method": "POST",
+      "path": "/api/v1/autocad/draw_polyline"
+    },
+    {
+      "router": "autocad",
+      "method": "POST",
+      "path": "/api/v1/autocad/draw_circle"
+    },
+    {
+      "router": "autocad",
+      "method": "POST",
+      "path": "/api/v1/autocad/draw_text"
+    },
+    {
+      "router": "autocad",
+      "method": "GET",
+      "path": "/api/v1/autocad/status"
+    },
+    {
+      "router": "autocad",
+      "method": "POST",
+      "path": "/api/v1/autocad/save"
+    },
+    {
+      "router": "autocad",
+      "method": "POST",
+      "path": "/api/v1/autocad/upload_dwg"
+    },
+    {
+      "router": "autocad",
+      "method": "DELETE",
+      "path": "/api/v1/autocad/entity/{handle}"
+    },
+    {
+      "router": "autocad",
+      "method": "PUT",
+      "path": "/api/v1/autocad/entity/{handle}"
+    },
+    {
+      "router": "conflicts",
+      "method": "GET",
+      "path": "/api/v1/conflicts"
+    },
+    {
+      "router": "conflicts",
+      "method": "POST",
+      "path": "/api/v1/conflicts/detect"
+    },
+    {
+      "router": "conflicts",
+      "method": "POST",
+      "path": "/api/v1/conflicts/{conflict_id}/resolve"
+    },
+    {
+      "router": "connections",
+      "method": "GET",
+      "path": "/api/v1/projects/{project_id}/connections"
+    },
+    {
+      "router": "connections",
+      "method": "POST",
+      "path": "/api/v1/projects/{project_id}/connections"
+    },
+    {
+      "router": "connections",
+      "method": "PUT",
+      "path": "/api/v1/projects/{project_id}/connections/{connection_id}"
+    },
+    {
+      "router": "connections",
+      "method": "DELETE",
+      "path": "/api/v1/projects/{project_id}/connections/{connection_id}"
+    },
+    {
+      "router": "connections_v2",
+      "method": "GET",
+      "path": "/api/v1/connections"
+    },
+    {
+      "router": "connections_v2",
+      "method": "POST",
+      "path": "/api/v1/connections"
+    },
+    {
+      "router": "connections_v2",
+      "method": "DELETE",
+      "path": "/api/v1/connections/{connection_id}"
+    },
+    {
+      "router": "devices",
+      "method": "GET",
+      "path": "/api/v1/projects/{project_id}/devices"
+    },
+    {
+      "router": "devices",
+      "method": "POST",
+      "path": "/api/v1/projects/{project_id}/devices"
+    },
+    {
+      "router": "devices",
+      "method": "GET",
+      "path": "/api/v1/projects/{project_id}/devices/{device_id}"
+    },
+    {
+      "router": "devices",
+      "method": "PUT",
+      "path": "/api/v1/projects/{project_id}/devices/{device_id}"
+    },
+    {
+      "router": "devices",
+      "method": "DELETE",
+      "path": "/api/v1/projects/{project_id}/devices/{device_id}"
+    },
+    {
+      "router": "digital_twin",
+      "method": "POST",
+      "path": "/api/v1/digital-twin/convert"
+    },
+    {
+      "router": "digital_twin",
+      "method": "GET",
+      "path": "/api/v1/digital-twin/history"
+    },
+    {
+      "router": "digital_twin",
+      "method": "POST",
+      "path": "/api/v1/digital-twin/configure"
+    },
+    {
+      "router": "digital_twin",
+      "method": "POST",
+      "path": "/api/v1/digital-twin/rollback/{version_id}"
+    },
+    {
+      "router": "digital_twin",
+      "method": "GET",
+      "path": "/api/v1/digital-twin/mappings"
+    },
+    {
+      "router": "digital_twin",
+      "method": "GET",
+      "path": "/api/v1/digital-twin/status"
+    },
+    {
+      "router": "digital_twin",
+      "method": "POST",
+      "path": "/api/v1/digital-twin/update_mapping"
+    },
+    {
+      "router": "digital_twin",
+      "method": "GET",
+      "path": "/api/v1/digital-twin/config"
+    },
+    {
+      "router": "digital_twin",
+      "method": "PUT",
+      "path": "/api/v1/digital-twin/config"
+    },
+    {
+      "router": "digital_twin",
+      "method": "GET",
+      "path": "/api/v1/digital-twin/download/{filename:path}"
+    },
+    {
+      "router": "dwg",
+      "method": "POST",
+      "path": "/api/v1/parse-dwg"
+    },
+    {
+      "router": "elements",
+      "method": "GET",
+      "path": "/api/v1/elements"
+    },
+    {
+      "router": "elements",
+      "method": "POST",
+      "path": "/api/v1/elements"
+    },
+    {
+      "router": "elements",
+      "method": "GET",
+      "path": "/api/v1/elements/{element_id}"
+    },
+    {
+      "router": "elements",
+      "method": "PUT",
+      "path": "/api/v1/elements/{element_id}"
+    },
+    {
+      "router": "elements",
+      "method": "DELETE",
+      "path": "/api/v1/elements/{element_id}"
+    },
+    {
+      "router": "environment",
+      "method": "GET",
+      "path": "/api/v1/environment/countries"
+    },
+    {
+      "router": "environment",
+      "method": "GET",
+      "path": "/api/v1/environment/weather"
+    },
+    {
+      "router": "environment",
+      "method": "GET",
+      "path": "/api/v1/environment/geocode"
+    },
+    {
+      "router": "environment",
+      "method": "GET",
+      "path": "/api/v1/environment/region"
+    },
+    {
+      "router": "environment",
+      "method": "GET",
+      "path": "/api/v1/environment/elevation"
+    },
+    {
+      "router": "environment",
+      "method": "GET",
+      "path": "/api/v1/environment/air-quality"
+    },
+    {
+      "router": "environment",
+      "method": "GET",
+      "path": "/api/v1/environment/severe-weather"
+    },
+    {
+      "router": "environment",
+      "method": "GET",
+      "path": "/api/v1/environment/hazmat"
+    },
+    {
+      "router": "environment",
+      "method": "GET",
+      "path": "/api/v1/environment/hazmat/known"
+    },
+    {
+      "router": "environment",
+      "method": "GET",
+      "path": "/api/v1/environment/context"
+    },
+    {
+      "router": "environment",
+      "method": "GET",
+      "path": "/api/v1/environment/full-context"
+    },
+    {
+      "router": "exports",
+      "method": "GET",
+      "path": "/api/v1/projects/{project_id}/export/dxf"
+    },
+    {
+      "router": "exports",
+      "method": "GET",
+      "path": "/api/v1/projects/{project_id}/export/revit"
+    },
+    {
+      "router": "exports",
+      "method": "GET",
+      "path": "/api/v1/projects/{project_id}/export/ifc"
+    },
+    {
+      "router": "facp",
+      "method": "POST",
+      "path": "/api/v1/None/facp/select"
+    },
+    {
+      "router": "facp",
+      "method": "POST",
+      "path": "/api/v1/None/facp/verify"
+    },
+    {
+      "router": "facp",
+      "method": "POST",
+      "path": "/api/v1/None/facp/schedule"
+    },
+    {
+      "router": "facp",
+      "method": "POST",
+      "path": "/api/v1/None/facp/spec"
+    },
+    {
+      "router": "facp",
+      "method": "GET",
+      "path": "/api/v1/None/facp/panels"
+    },
+    {
+      "router": "health",
+      "method": "GET",
+      "path": "/api//health"
+    },
+    {
+      "router": "health",
+      "method": "GET",
+      "path": "/api//health/statistics"
+    },
+    {
+      "router": "health",
+      "method": "GET",
+      "path": "/api//reports/statistics"
+    },
+    {
+      "router": "marine",
+      "method": "GET",
+      "path": "/api/v1/marine/standards"
+    },
+    {
+      "router": "marine",
+      "method": "GET",
+      "path": "/api/v1/marine/fire-classes"
+    },
+    {
+      "router": "marine",
+      "method": "POST",
+      "path": "/api/v1/marine/ship/validate"
+    },
+    {
+      "router": "marine",
+      "method": "POST",
+      "path": "/api/v1/marine/ship/design"
+    },
+    {
+      "router": "marine",
+      "method": "POST",
+      "path": "/api/v1/marine/zones/divide"
+    },
+    {
+      "router": "marine",
+      "method": "POST",
+      "path": "/api/v1/marine/extinguishing/design"
+    },
+    {
+      "router": "marine",
+      "method": "POST",
+      "path": "/api/v1/marine/alarm-logic/generate"
+    },
+    {
+      "router": "marine",
+      "method": "POST",
+      "path": "/api/v1/marine/integrations/scada"
+    },
+    {
+      "router": "marine",
+      "method": "POST",
+      "path": "/api/v1/marine/detection/design"
+    },
+    {
+      "router": "marine",
+      "method": "POST",
+      "path": "/api/v1/marine/divisions/generate"
+    },
+    {
+      "router": "marine",
+      "method": "POST",
+      "path": "/api/v1/marine/power/design"
+    },
+    {
+      "router": "marine",
+      "method": "POST",
+      "path": "/api/v1/marine/integrations/etap"
+    },
+    {
+      "router": "marine",
+      "method": "POST",
+      "path": "/api/v1/marine/integrations/dxf"
+    },
+    {
+      "router": "marine",
+      "method": "POST",
+      "path": "/api/v1/marine/integrations/revit"
+    },
+    {
+      "router": "memory",
+      "method": "GET",
+      "path": "/api/v1/memory/status"
+    },
+    {
+      "router": "memory",
+      "method": "POST",
+      "path": "/api/v1/memory/add"
+    },
+    {
+      "router": "memory",
+      "method": "POST",
+      "path": "/api/v1/memory/search"
+    },
+    {
+      "router": "memory",
+      "method": "GET",
+      "path": "/api/v1/memory/all"
+    },
+    {
+      "router": "memory",
+      "method": "DELETE",
+      "path": "/api/v1/memory/{memory_id}"
+    },
+    {
+      "router": "memory",
+      "method": "GET",
+      "path": "/api/v1/memory/{memory_id}/history"
+    },
+    {
+      "router": "monitor",
+      "method": "GET",
+      "path": "/api/v1/monitor/health"
+    },
+    {
+      "router": "monitor",
+      "method": "GET",
+      "path": "/api/v1/monitor/metrics"
+    },
+    {
+      "router": "monitor",
+      "method": "GET",
+      "path": "/api/v1/monitor/engine-status"
+    },
+    {
+      "router": "monitor",
+      "method": "GET",
+      "path": "/api/v1/monitor/agent-activity"
+    },
+    {
+      "router": "monitor",
+      "method": "GET",
+      "path": "/api/v1/monitor/security-alerts"
+    },
+    {
+      "router": "monitor",
+      "method": "GET",
+      "path": "/api/v1/monitor/alerts"
+    },
+    {
+      "router": "projects",
+      "method": "GET",
+      "path": "/api/v1/projects"
+    },
+    {
+      "router": "projects",
+      "method": "POST",
+      "path": "/api/v1/projects"
+    },
+    {
+      "router": "projects",
+      "method": "GET",
+      "path": "/api/v1/projects/{project_id}"
+    },
+    {
+      "router": "projects",
+      "method": "PUT",
+      "path": "/api/v1/projects/{project_id}"
+    },
+    {
+      "router": "projects",
+      "method": "DELETE",
+      "path": "/api/v1/projects/{project_id}"
+    },
+    {
+      "router": "qomn",
+      "method": "POST",
+      "path": "/api/v1/None/qomn/smoke-spacing"
+    },
+    {
+      "router": "qomn",
+      "method": "POST",
+      "path": "/api/v1/None/qomn/heat-spacing"
+    },
+    {
+      "router": "qomn",
+      "method": "POST",
+      "path": "/api/v1/None/qomn/battery"
+    },
+    {
+      "router": "qomn",
+      "method": "POST",
+      "path": "/api/v1/None/qomn/voltage-drop"
+    },
+    {
+      "router": "qomn",
+      "method": "POST",
+      "path": "/api/v1/None/qomn/place-detectors"
+    },
+    {
+      "router": "qomn",
+      "method": "POST",
+      "path": "/api/v1/None/qomn/place-duct"
+    },
+    {
+      "router": "qomn",
+      "method": "GET",
+      "path": "/api/v1/None/qomn/audit"
+    },
+    {
+      "router": "qomn",
+      "method": "GET",
+      "path": "/api/v1/None/qomn/physics-guards"
+    },
+    {
+      "router": "qomn",
+      "method": "GET",
+      "path": "/api/v1/None/qomn/constants"
+    },
+    {
+      "router": "qomn",
+      "method": "POST",
+      "path": "/api/v1/None/qomn/golden-tests"
+    },
+    {
+      "router": "reports",
+      "method": "GET",
+      "path": "/api/v1/projects/{project_id}/reports"
+    },
+    {
+      "router": "reports",
+      "method": "POST",
+      "path": "/api/v1/projects/{project_id}/reports"
+    },
+    {
+      "router": "reports",
+      "method": "GET",
+      "path": "/api/v1/projects/{project_id}/reports/{report_id}"
+    },
+    {
+      "router": "reports",
+      "method": "GET",
+      "path": "/api/v1/projects/{project_id}/reports/{report_id}/export"
+    },
+    {
+      "router": "revit",
+      "method": "POST",
+      "path": "/api/v1/revit/connect"
+    },
+    {
+      "router": "revit",
+      "method": "POST",
+      "path": "/api/v1/revit/disconnect"
+    },
+    {
+      "router": "revit",
+      "method": "GET",
+      "path": "/api/v1/revit/status"
+    },
+    {
+      "router": "revit",
+      "method": "POST",
+      "path": "/api/v1/revit/document/open"
+    },
+    {
+      "router": "revit",
+      "method": "POST",
+      "path": "/api/v1/revit/document/save"
+    },
+    {
+      "router": "revit",
+      "method": "POST",
+      "path": "/api/v1/revit/document/close"
+    },
+    {
+      "router": "revit",
+      "method": "POST",
+      "path": "/api/v1/revit/read_rvt"
+    },
+    {
+      "router": "revit",
+      "method": "POST",
+      "path": "/api/v1/revit/write_rvt"
+    },
+    {
+      "router": "revit",
+      "method": "POST",
+      "path": "/api/v1/revit/upload_rvt"
+    },
+    {
+      "router": "revit",
+      "method": "GET",
+      "path": "/api/v1/revit/elements"
+    },
+    {
+      "router": "revit",
+      "method": "GET",
+      "path": "/api/v1/revit/elements/selected"
+    },
+    {
+      "router": "revit",
+      "method": "GET",
+      "path": "/api/v1/revit/elements/{element_id}"
+    },
+    {
+      "router": "revit",
+      "method": "GET",
+      "path": "/api/v1/revit/elements/{element_id}/parameters"
+    },
+    {
+      "router": "revit",
+      "method": "POST",
+      "path": "/api/v1/revit/elements/create/wall"
+    },
+    {
+      "router": "revit",
+      "method": "POST",
+      "path": "/api/v1/revit/elements/create/floor"
+    },
+    {
+      "router": "revit",
+      "method": "POST",
+      "path": "/api/v1/revit/elements/create/door"
+    },
+    {
+      "router": "revit",
+      "method": "POST",
+      "path": "/api/v1/revit/elements/create/window"
+    },
+    {
+      "router": "revit",
+      "method": "POST",
+      "path": "/api/v1/revit/elements/create/column"
+    },
+    {
+      "router": "revit",
+      "method": "POST",
+      "path": "/api/v1/revit/elements/create/beam"
+    },
+    {
+      "router": "revit",
+      "method": "POST",
+      "path": "/api/v1/revit/elements/create/family"
+    },
+    {
+      "router": "revit",
+      "method": "PUT",
+      "path": "/api/v1/revit/elements/{element_id}/parameters"
+    },
+    {
+      "router": "revit",
+      "method": "DELETE",
+      "path": "/api/v1/revit/elements/{element_id}"
+    },
+    {
+      "router": "revit",
+      "method": "GET",
+      "path": "/api/v1/revit/views"
+    },
+    {
+      "router": "revit",
+      "method": "GET",
+      "path": "/api/v1/revit/levels"
+    },
+    {
+      "router": "revit",
+      "method": "GET",
+      "path": "/api/v1/revit/grids"
+    },
+    {
+      "router": "revit",
+      "method": "GET",
+      "path": "/api/v1/revit/worksets"
+    },
+    {
+      "router": "revit",
+      "method": "GET",
+      "path": "/api/v1/revit/families/{category}/symbols"
+    },
+    {
+      "router": "revit",
+      "method": "POST",
+      "path": "/api/v1/revit/families/load"
+    },
+    {
+      "router": "revit",
+      "method": "POST",
+      "path": "/api/v1/revit/search/api/load"
+    },
+    {
+      "router": "revit",
+      "method": "POST",
+      "path": "/api/v1/revit/search/api"
+    },
+    {
+      "router": "revit",
+      "method": "GET",
+      "path": "/api/v1/revit/search/online"
+    },
+    {
+      "router": "revit",
+      "method": "POST",
+      "path": "/api/v1/revit/execute"
+    },
+    {
+      "router": "sync",
+      "method": "POST",
+      "path": "/api/v1/projects/{project_id}/sync"
+    },
+    {
+      "router": "sync",
+      "method": "GET",
+      "path": "/api/v1/projects/{project_id}/sync"
+    },
+    {
+      "router": "sync",
+      "method": "WEBSOCKET",
+      "path": "/api/v1/projects/{project_id}/sync/ws"
+    },
+    {
+      "router": "v2",
+      "method": "POST",
+      "path": "/api/v1/None/generative/design"
+    },
+    {
+      "router": "v2",
+      "method": "GET",
+      "path": "/api/v1/None/bim/providers"
+    },
+    {
+      "router": "v2",
+      "method": "POST",
+      "path": "/api/v1/None/bim/extract-rooms"
+    },
+    {
+      "router": "v2",
+      "method": "GET",
+      "path": "/api/v1/None/bim/health"
+    },
+    {
+      "router": "v2",
+      "method": "POST",
+      "path": "/api/v1/None/ifc43/map-detector"
+    },
+    {
+      "router": "v2",
+      "method": "POST",
+      "path": "/api/v1/None/ifc43/map-project"
+    },
+    {
+      "router": "v2",
+      "method": "POST",
+      "path": "/api/v1/None/ar/export"
+    },
+    {
+      "router": "v2",
+      "method": "POST",
+      "path": "/api/v1/None/webhooks/subscribe"
+    },
+    {
+      "router": "v2",
+      "method": "GET",
+      "path": "/api/v1/None/webhooks/subscriptions"
+    },
+    {
+      "router": "v2",
+      "method": "DELETE",
+      "path": "/api/v1/None/webhooks/subscriptions/{sub_id}"
+    },
+    {
+      "router": "v2",
+      "method": "POST",
+      "path": "/api/v1/None/webhooks/publish"
+    },
+    {
+      "router": "v2",
+      "method": "POST",
+      "path": "/api/v1/None/smoke-simulation/state"
+    },
+    {
+      "router": "v2",
+      "method": "POST",
+      "path": "/api/v1/None/memory/store"
+    },
+    {
+      "router": "v2",
+      "method": "POST",
+      "path": "/api/v1/None/memory/search"
+    },
+    {
+      "router": "v2",
+      "method": "GET",
+      "path": "/api/v1/None/memory/health"
+    },
+    {
+      "router": "v2",
+      "method": "POST",
+      "path": "/api/v1/None/topology/element"
+    },
+    {
+      "router": "v2",
+      "method": "POST",
+      "path": "/api/v1/None/topology/connection"
+    },
+    {
+      "router": "v2",
+      "method": "POST",
+      "path": "/api/v1/None/topology/impact"
+    },
+    {
+      "router": "v2",
+      "method": "GET",
+      "path": "/api/v1/None/topology/health"
+    },
+    {
+      "router": "v2",
+      "method": "POST",
+      "path": "/api/v1/None/graphrag/knowledge"
+    },
+    {
+      "router": "v2",
+      "method": "POST",
+      "path": "/api/v1/None/graphrag/ask"
+    },
+    {
+      "router": "v2",
+      "method": "POST",
+      "path": "/api/v1/None/graphrag/search"
+    },
+    {
+      "router": "v2",
+      "method": "GET",
+      "path": "/api/v1/None/graphrag/health"
+    },
+    {
+      "router": "v2",
+      "method": "GET",
+      "path": "/api/v1/None/health"
+    },
+    {
+      "router": "v2",
+      "method": "GET",
+      "path": "/api/v1/None/auth/csrf-token"
+    },
+    {
+      "router": "workflow",
+      "method": "GET",
+      "path": "/api/v1/workflow/status"
+    },
+    {
+      "router": "workflow",
+      "method": "POST",
+      "path": "/api/v1/workflow/start"
+    },
+    {
+      "router": "workflow",
+      "method": "GET",
+      "path": "/api/v1/workflow/{workflow_id}/status"
+    },
+    {
+      "router": "workflow",
+      "method": "POST",
+      "path": "/api/v1/workflow/{workflow_id}/approve"
+    },
+    {
+      "router": "workflow",
+      "method": "POST",
+      "path": "/api/v1/workflow/{workflow_id}/reject"
+    },
+    {
+      "router": "workflow",
+      "method": "GET",
+      "path": "/api/v1/workflow/{workflow_id}/audit"
+    },
+    {
+      "router": "app",
+      "method": "GET",
+      "path": "/health"
+    },
+    {
+      "router": "app",
+      "method": "GET",
+      "path": "/api/v2/health"
+    },
+    {
+      "router": "app",
+      "method": "POST",
+      "path": "/api/v1/cache/clear"
+    },
+    {
+      "router": "app",
+      "method": "GET",
+      "path": "/api/v1/cache/stats"
+    }
+  ],
+  "modules": [
+    {
+      "path": "backend/__init__.py",
+      "module": "backend.__init__",
+      "lines": 7
+    },
+    {
+      "path": "backend/api_keys.py",
+      "module": "backend.api_keys",
+      "lines": 608
+    },
+    {
+      "path": "backend/app.py",
+      "module": "backend.app",
+      "lines": 758
+    },
+    {
+      "path": "backend/audit_integrity_helper.py",
+      "module": "backend.audit_integrity_helper",
+      "lines": 330
+    },
+    {
+      "path": "backend/auth.py",
+      "module": "backend.auth",
+      "lines": 60
+    },
+    {
+      "path": "backend/contract.py",
+      "module": "backend.contract",
+      "lines": 241
+    },
+    {
+      "path": "backend/database.py",
+      "module": "backend.database",
+      "lines": 1347
+    },
+    {
+      "path": "backend/db_models.py",
+      "module": "backend.db_models",
+      "lines": 190
+    },
+    {
+      "path": "backend/db_service.py",
+      "module": "backend.db_service",
+      "lines": 1320
+    },
+    {
+      "path": "backend/limiter.py",
+      "module": "backend.limiter",
+      "lines": 18
+    },
+    {
+      "path": "backend/models.py",
+      "module": "backend.models",
+      "lines": 332
+    },
+    {
+      "path": "backend/project_bridge.py",
+      "module": "backend.project_bridge",
+      "lines": 763
+    },
+    {
+      "path": "backend/rbac.py",
+      "module": "backend.rbac",
+      "lines": 154
+    },
+    {
+      "path": "backend/request_context.py",
+      "module": "backend.request_context",
+      "lines": 88
+    },
+    {
+      "path": "backend/response.py",
+      "module": "backend.response",
+      "lines": 57
+    },
+    {
+      "path": "backend/routers/__init__.py",
+      "module": "backend.routers.__init__",
+      "lines": 74
+    },
+    {
+      "path": "backend/routers/analyze.py",
+      "module": "backend.routers.analyze",
+      "lines": 221
+    },
+    {
+      "path": "backend/routers/api_keys.py",
+      "module": "backend.routers.api_keys",
+      "lines": 120
+    },
+    {
+      "path": "backend/routers/autocad.py",
+      "module": "backend.routers.autocad",
+      "lines": 659
+    },
+    {
+      "path": "backend/routers/conflicts.py",
+      "module": "backend.routers.conflicts",
+      "lines": 104
+    },
+    {
+      "path": "backend/routers/connections.py",
+      "module": "backend.routers.connections",
+      "lines": 160
+    },
+    {
+      "path": "backend/routers/connections_v2.py",
+      "module": "backend.routers.connections_v2",
+      "lines": 106
+    },
+    {
+      "path": "backend/routers/devices.py",
+      "module": "backend.routers.devices",
+      "lines": 241
+    },
+    {
+      "path": "backend/routers/digital_twin.py",
+      "module": "backend.routers.digital_twin",
+      "lines": 420
+    },
+    {
+      "path": "backend/routers/dwg.py",
+      "module": "backend.routers.dwg",
+      "lines": 174
+    },
+    {
+      "path": "backend/routers/elements.py",
+      "module": "backend.routers.elements",
+      "lines": 148
+    },
+    {
+      "path": "backend/routers/environment.py",
+      "module": "backend.routers.environment",
+      "lines": 785
+    },
+    {
+      "path": "backend/routers/exports.py",
+      "module": "backend.routers.exports",
+      "lines": 339
+    },
+    {
+      "path": "backend/routers/facp.py",
+      "module": "backend.routers.facp",
+      "lines": 570
+    },
+    {
+      "path": "backend/routers/health.py",
+      "module": "backend.routers.health",
+      "lines": 176
+    },
+    {
+      "path": "backend/routers/marine.py",
+      "module": "backend.routers.marine",
+      "lines": 550
+    },
+    {
+      "path": "backend/routers/memory.py",
+      "module": "backend.routers.memory",
+      "lines": 193
+    },
+    {
+      "path": "backend/routers/monitor.py",
+      "module": "backend.routers.monitor",
+      "lines": 756
+    },
+    {
+      "path": "backend/routers/projects.py",
+      "module": "backend.routers.projects",
+      "lines": 134
+    },
+    {
+      "path": "backend/routers/qomn.py",
+      "module": "backend.routers.qomn",
+      "lines": 889
+    },
+    {
+      "path": "backend/routers/reports.py",
+      "module": "backend.routers.reports",
+      "lines": 478
+    },
+    {
+      "path": "backend/routers/revit.py",
+      "module": "backend.routers.revit",
+      "lines": 1026
+    },
+    {
+      "path": "backend/routers/sync.py",
+      "module": "backend.routers.sync",
+      "lines": 492
+    },
+    {
+      "path": "backend/routers/v2.py",
+      "module": "backend.routers.v2",
+      "lines": 879
+    },
+    {
+      "path": "backend/routers/workflow.py",
+      "module": "backend.routers.workflow",
+      "lines": 372
+    },
+    {
+      "path": "backend/schemas.py",
+      "module": "backend.schemas",
+      "lines": 503
+    },
+    {
+      "path": "backend/security_csrf.py",
+      "module": "backend.security_csrf",
+      "lines": 493
+    },
+    {
+      "path": "backend/security_middleware.py",
+      "module": "backend.security_middleware",
+      "lines": 453
+    },
+    {
+      "path": "backend/services/__init__.py",
+      "module": "backend.services.__init__",
+      "lines": 137
+    },
+    {
+      "path": "backend/services/air_quality_service.py",
+      "module": "backend.services.air_quality_service",
+      "lines": 479
+    },
+    {
+      "path": "backend/services/autocad_service.py",
+      "module": "backend.services.autocad_service",
+      "lines": 751
+    },
+    {
+      "path": "backend/services/digital_twin_service.py",
+      "module": "backend.services.digital_twin_service",
+      "lines": 997
+    },
+    {
+      "path": "backend/services/elevation_service.py",
+      "module": "backend.services.elevation_service",
+      "lines": 310
+    },
+    {
+      "path": "backend/services/geocoding_service.py",
+      "module": "backend.services.geocoding_service",
+      "lines": 279
+    },
+    {
+      "path": "backend/services/hazmat_service.py",
+      "module": "backend.services.hazmat_service",
+      "lines": 461
+    },
+    {
+      "path": "backend/services/marine_service.py",
+      "module": "backend.services.marine_service",
+      "lines": 192
+    },
+    {
+      "path": "backend/services/memory_service.py",
+      "module": "backend.services.memory_service",
+      "lines": 738
+    },
+    {
+      "path": "backend/services/region_service.py",
+      "module": "backend.services.region_service",
+      "lines": 316
+    },
+    {
+      "path": "backend/services/revit_service.py",
+      "module": "backend.services.revit_service",
+      "lines": 1671
+    },
+    {
+      "path": "backend/services/severe_weather_service.py",
+      "module": "backend.services.severe_weather_service",
+      "lines": 1285
+    },
+    {
+      "path": "backend/services/weather_service.py",
+      "module": "backend.services.weather_service",
+      "lines": 401
+    },
+    {
+      "path": "backend/services/workflow_service.py",
+      "module": "backend.services.workflow_service",
+      "lines": 2173
+    },
+    {
+      "path": "backend/tests/__init__.py",
+      "module": "backend.tests.__init__",
+      "lines": 0
+    },
+    {
+      "path": "fireai/__init__.py",
+      "module": "fireai.__init__",
+      "lines": 129
+    },
+    {
+      "path": "fireai/agents/__init__.py",
+      "module": "fireai.agents.__init__",
+      "lines": 49
+    },
+    {
+      "path": "fireai/agents/learning_agent.py",
+      "module": "fireai.agents.learning_agent",
+      "lines": 314
+    },
+    {
+      "path": "fireai/agents/predictive_agent.py",
+      "module": "fireai.agents.predictive_agent",
+      "lines": 275
+    },
+    {
+      "path": "fireai/agents/self_improvement_engine.py",
+      "module": "fireai.agents.self_improvement_engine",
+      "lines": 420
+    },
+    {
+      "path": "fireai/agents/tool_selector.py",
+      "module": "fireai.agents.tool_selector",
+      "lines": 276
+    },
+    {
+      "path": "fireai/analytics/__init__.py",
+      "module": "fireai.analytics.__init__",
+      "lines": 39
+    },
+    {
+      "path": "fireai/analytics/ml_pipeline.py",
+      "module": "fireai.analytics.ml_pipeline",
+      "lines": 629
+    },
+    {
+      "path": "fireai/analytics/predictive_analytics.py",
+      "module": "fireai.analytics.predictive_analytics",
+      "lines": 451
+    },
+    {
+      "path": "fireai/analytics/predictive_maintenance.py",
+      "module": "fireai.analytics.predictive_maintenance",
+      "lines": 577
+    },
+    {
+      "path": "fireai/api/__init__.py",
+      "module": "fireai.api.__init__",
+      "lines": 104
+    },
+    {
+      "path": "fireai/bridges/__init__.py",
+      "module": "fireai.bridges.__init__",
+      "lines": 44
+    },
+    {
+      "path": "fireai/bridges/bim_provider.py",
+      "module": "fireai.bridges.bim_provider",
+      "lines": 874
+    },
+    {
+      "path": "fireai/bridges/bim_unit_detector.py",
+      "module": "fireai.bridges.bim_unit_detector",
+      "lines": 506
+    },
+    {
+      "path": "fireai/bridges/enterprise_pipeline.py",
+      "module": "fireai.bridges.enterprise_pipeline",
+      "lines": 411
+    },
+    {
+      "path": "fireai/bridges/ifc43_mapper.py",
+      "module": "fireai.bridges.ifc43_mapper",
+      "lines": 600
+    },
+    {
+      "path": "fireai/bridges/ifc_headless_bridge.py",
+      "module": "fireai.bridges.ifc_headless_bridge",
+      "lines": 601
+    },
+    {
+      "path": "fireai/bridges/ifc_pipeline.py",
+      "module": "fireai.bridges.ifc_pipeline",
+      "lines": 743
+    },
+    {
+      "path": "fireai/bridges/integration_bridge.py",
+      "module": "fireai.bridges.integration_bridge",
+      "lines": 1333
+    },
+    {
+      "path": "fireai/bridges/revit_bim_sync.py",
+      "module": "fireai.bridges.revit_bim_sync",
+      "lines": 508
+    },
+    {
+      "path": "fireai/cli.py",
+      "module": "fireai.cli",
+      "lines": 122
+    },
+    {
+      "path": "fireai/conduit/__init__.py",
+      "module": "fireai.conduit.__init__",
+      "lines": 120
+    },
+    {
+      "path": "fireai/conduit/bend.py",
+      "module": "fireai.conduit.bend",
+      "lines": 294
+    },
+    {
+      "path": "fireai/conduit/catalog.py",
+      "module": "fireai.conduit.catalog",
+      "lines": 477
+    },
+    {
+      "path": "fireai/conduit/errors.py",
+      "module": "fireai.conduit.errors",
+      "lines": 194
+    },
+    {
+      "path": "fireai/conduit/fill.py",
+      "module": "fireai.conduit.fill",
+      "lines": 349
+    },
+    {
+      "path": "fireai/conduit/fitting_engine.py",
+      "module": "fireai.conduit.fitting_engine",
+      "lines": 379
+    },
+    {
+      "path": "fireai/conduit/output.py",
+      "module": "fireai.conduit.output",
+      "lines": 331
+    },
+    {
+      "path": "fireai/conduit/router.py",
+      "module": "fireai.conduit.router",
+      "lines": 523
+    },
+    {
+      "path": "fireai/conduit/tests/__init__.py",
+      "module": "fireai.conduit.tests.__init__",
+      "lines": 0
+    },
+    {
+      "path": "fireai/conduit/types.py",
+      "module": "fireai.conduit.types",
+      "lines": 480
+    },
+    {
+      "path": "fireai/constants/__init__.py",
+      "module": "fireai.constants.__init__",
+      "lines": 291
+    },
+    {
+      "path": "fireai/constants/nec.py",
+      "module": "fireai.constants.nec",
+      "lines": 154
+    },
+    {
+      "path": "fireai/constants/nfpa72.py",
+      "module": "fireai.constants.nfpa72",
+      "lines": 421
+    },
+    {
+      "path": "fireai/core/__init__.py",
+      "module": "fireai.core.__init__",
+      "lines": 476
+    },
+    {
+      "path": "fireai/core/acoustic_calculator.py",
+      "module": "fireai.core.acoustic_calculator",
+      "lines": 888
+    },
+    {
+      "path": "fireai/core/acoustics_engine.py",
+      "module": "fireai.core.acoustics_engine",
+      "lines": 1257
+    },
+    {
+      "path": "fireai/core/ahj_submittal_package.py",
+      "module": "fireai.core.ahj_submittal_package",
+      "lines": 535
+    },
+    {
+      "path": "fireai/core/analysis_pipeline.py",
+      "module": "fireai.core.analysis_pipeline",
+      "lines": 1077
+    },
+    {
+      "path": "fireai/core/api_server.py",
+      "module": "fireai.core.api_server",
+      "lines": 595
+    },
+    {
+      "path": "fireai/core/api_stability.py",
+      "module": "fireai.core.api_stability",
+      "lines": 386
+    },
+    {
+      "path": "fireai/core/as_built_reconciliator.py",
+      "module": "fireai.core.as_built_reconciliator",
+      "lines": 486
+    },
+    {
+      "path": "fireai/core/aset_rset_calculator.py",
+      "module": "fireai.core.aset_rset_calculator",
+      "lines": 929
+    },
+    {
+      "path": "fireai/core/atex_hazardous_arbiter.py",
+      "module": "fireai.core.atex_hazardous_arbiter",
+      "lines": 906
+    },
+    {
+      "path": "fireai/core/audit_blockchain_bridge.py",
+      "module": "fireai.core.audit_blockchain_bridge",
+      "lines": 466
+    },
+    {
+      "path": "fireai/core/audit_log.py",
+      "module": "fireai.core.audit_log",
+      "lines": 561
+    },
+    {
+      "path": "fireai/core/audit_store.py",
+      "module": "fireai.core.audit_store",
+      "lines": 705
+    },
+    {
+      "path": "fireai/core/audit_trail.py",
+      "module": "fireai.core.audit_trail",
+      "lines": 294
+    },
+    {
+      "path": "fireai/core/auto_drafting_engine.py",
+      "module": "fireai.core.auto_drafting_engine",
+      "lines": 1177
+    },
+    {
+      "path": "fireai/core/battery_aging_derating.py",
+      "module": "fireai.core.battery_aging_derating",
+      "lines": 939
+    },
+    {
+      "path": "fireai/core/bim_input_sanitizer.py",
+      "module": "fireai.core.bim_input_sanitizer",
+      "lines": 309
+    },
+    {
+      "path": "fireai/core/blockchain_readiness_gate.py",
+      "module": "fireai.core.blockchain_readiness_gate",
+      "lines": 447
+    },
+    {
+      "path": "fireai/core/boq_generator.py",
+      "module": "fireai.core.boq_generator",
+      "lines": 848
+    },
+    {
+      "path": "fireai/core/bps_allocator.py",
+      "module": "fireai.core.bps_allocator",
+      "lines": 1916
+    },
+    {
+      "path": "fireai/core/building_engine.py",
+      "module": "fireai.core.building_engine",
+      "lines": 483
+    },
+    {
+      "path": "fireai/core/building_systems_integration.py",
+      "module": "fireai.core.building_systems_integration",
+      "lines": 533
+    },
+    {
+      "path": "fireai/core/cable_router.py",
+      "module": "fireai.core.cable_router",
+      "lines": 1059
+    },
+    {
+      "path": "fireai/core/cable_routing_engine.py",
+      "module": "fireai.core.cable_routing_engine",
+      "lines": 806
+    },
+    {
+      "path": "fireai/core/ci_benchmark.py",
+      "module": "fireai.core.ci_benchmark",
+      "lines": 410
+    },
+    {
+      "path": "fireai/core/circuit_topology.py",
+      "module": "fireai.core.circuit_topology",
+      "lines": 524
+    },
+    {
+      "path": "fireai/core/compliance_proof_document.py",
+      "module": "fireai.core.compliance_proof_document",
+      "lines": 560
+    },
+    {
+      "path": "fireai/core/conduit_fill_analyzer.py",
+      "module": "fireai.core.conduit_fill_analyzer",
+      "lines": 856
+    },
+    {
+      "path": "fireai/core/constraint_engine.py",
+      "module": "fireai.core.constraint_engine",
+      "lines": 1269
+    },
+    {
+      "path": "fireai/core/contracts.py",
+      "module": "fireai.core.contracts",
+      "lines": 671
+    },
+    {
+      "path": "fireai/core/contracts_validation.py",
+      "module": "fireai.core.contracts_validation",
+      "lines": 558
+    },
+    {
+      "path": "fireai/core/csd_generator.py",
+      "module": "fireai.core.csd_generator",
+      "lines": 125
+    },
+    {
+      "path": "fireai/core/darcy_weisbach_solver.py",
+      "module": "fireai.core.darcy_weisbach_solver",
+      "lines": 693
+    },
+    {
+      "path": "fireai/core/delta_cache.py",
+      "module": "fireai.core.delta_cache",
+      "lines": 747
+    },
+    {
+      "path": "fireai/core/density_optimizer_v2.py",
+      "module": "fireai.core.density_optimizer_v2",
+      "lines": 546
+    },
+    {
+      "path": "fireai/core/detector_response.py",
+      "module": "fireai.core.detector_response",
+      "lines": 311
+    },
+    {
+      "path": "fireai/core/device_placement.py",
+      "module": "fireai.core.device_placement",
+      "lines": 673
+    },
+    {
+      "path": "fireai/core/digital_twin.py",
+      "module": "fireai.core.digital_twin",
+      "lines": 2082
+    },
+    {
+      "path": "fireai/core/digital_twin_interface.py",
+      "module": "fireai.core.digital_twin_interface",
+      "lines": 1337
+    },
+    {
+      "path": "fireai/core/digital_twin_sync.py",
+      "module": "fireai.core.digital_twin_sync",
+      "lines": 1477
+    },
+    {
+      "path": "fireai/core/duct_detector.py",
+      "module": "fireai.core.duct_detector",
+      "lines": 417
+    },
+    {
+      "path": "fireai/core/dxf_table_schedule.py",
+      "module": "fireai.core.dxf_table_schedule",
+      "lines": 134
+    },
+    {
+      "path": "fireai/core/egress_calculator.py",
+      "module": "fireai.core.egress_calculator",
+      "lines": 239
+    },
+    {
+      "path": "fireai/core/elevator_shunt_trip.py",
+      "module": "fireai.core.elevator_shunt_trip",
+      "lines": 624
+    },
+    {
+      "path": "fireai/core/event_bus.py",
+      "module": "fireai.core.event_bus",
+      "lines": 506
+    },
+    {
+      "path": "fireai/core/evidence_chain.py",
+      "module": "fireai.core.evidence_chain",
+      "lines": 417
+    },
+    {
+      "path": "fireai/core/facp_capacity_auditor.py",
+      "module": "fireai.core.facp_capacity_auditor",
+      "lines": 627
+    },
+    {
+      "path": "fireai/core/fault_isolator_injector.py",
+      "module": "fireai.core.fault_isolator_injector",
+      "lines": 364
+    },
+    {
+      "path": "fireai/core/fire_cli.py",
+      "module": "fireai.core.fire_cli",
+      "lines": 341
+    },
+    {
+      "path": "fireai/core/fire_expert_system.py",
+      "module": "fireai.core.fire_expert_system",
+      "lines": 130
+    },
+    {
+      "path": "fireai/core/fire_zone_engine.py",
+      "module": "fireai.core.fire_zone_engine",
+      "lines": 479
+    },
+    {
+      "path": "fireai/core/fireai_api.py",
+      "module": "fireai.core.fireai_api",
+      "lines": 547
+    },
+    {
+      "path": "fireai/core/fireai_cli_engine.py",
+      "module": "fireai.core.fireai_cli_engine",
+      "lines": 638
+    },
+    {
+      "path": "fireai/core/fireai_core.py",
+      "module": "fireai.core.fireai_core",
+      "lines": 857
+    },
+    {
+      "path": "fireai/core/fireai_kernel_v30.py",
+      "module": "fireai.core.fireai_kernel_v30",
+      "lines": 1514
+    },
+    {
+      "path": "fireai/core/firestop_annotator.py",
+      "module": "fireai.core.firestop_annotator",
+      "lines": 126
+    },
+    {
+      "path": "fireai/core/flame_detector_aoc_raytrace.py",
+      "module": "fireai.core.flame_detector_aoc_raytrace",
+      "lines": 999
+    },
+    {
+      "path": "fireai/core/floor_analyser.py",
+      "module": "fireai.core.floor_analyser",
+      "lines": 1503
+    },
+    {
+      "path": "fireai/core/floor_orchestrator.py",
+      "module": "fireai.core.floor_orchestrator",
+      "lines": 410
+    },
+    {
+      "path": "fireai/core/geometry_utils.py",
+      "module": "fireai.core.geometry_utils",
+      "lines": 802
+    },
+    {
+      "path": "fireai/core/hac_classification_engine.py",
+      "module": "fireai.core.hac_classification_engine",
+      "lines": 1483
+    },
+    {
+      "path": "fireai/core/hazard_override.py",
+      "module": "fireai.core.hazard_override",
+      "lines": 363
+    },
+    {
+      "path": "fireai/core/hybrid_survivability.py",
+      "module": "fireai.core.hybrid_survivability",
+      "lines": 674
+    },
+    {
+      "path": "fireai/core/hydraulic_solver.py",
+      "module": "fireai.core.hydraulic_solver",
+      "lines": 554
+    },
+    {
+      "path": "fireai/core/ifc_parser.py",
+      "module": "fireai.core.ifc_parser",
+      "lines": 1267
+    },
+    {
+      "path": "fireai/core/international_reg_selector.py",
+      "module": "fireai.core.international_reg_selector",
+      "lines": 715
+    },
+    {
+      "path": "fireai/core/kernel_v30_integration.py",
+      "module": "fireai.core.kernel_v30_integration",
+      "lines": 800
+    },
+    {
+      "path": "fireai/core/learning_store.py",
+      "module": "fireai.core.learning_store",
+      "lines": 286
+    },
+    {
+      "path": "fireai/core/light_current.py",
+      "module": "fireai.core.light_current",
+      "lines": 573
+    },
+    {
+      "path": "fireai/core/mep_sync_injector.py",
+      "module": "fireai.core.mep_sync_injector",
+      "lines": 724
+    },
+    {
+      "path": "fireai/core/models_v21.py",
+      "module": "fireai.core.models_v21",
+      "lines": 2200
+    },
+    {
+      "path": "fireai/core/monte_carlo.py",
+      "module": "fireai.core.monte_carlo",
+      "lines": 179
+    },
+    {
+      "path": "fireai/core/monte_carlo_pipeline.py",
+      "module": "fireai.core.monte_carlo_pipeline",
+      "lines": 299
+    },
+    {
+      "path": "fireai/core/multi_floor_orchestrator.py",
+      "module": "fireai.core.multi_floor_orchestrator",
+      "lines": 1850
+    },
+    {
+      "path": "fireai/core/network_topology.py",
+      "module": "fireai.core.network_topology",
+      "lines": 632
+    },
+    {
+      "path": "fireai/core/nfpa72_calculations.py",
+      "module": "fireai.core.nfpa72_calculations",
+      "lines": 1400
+    },
+    {
+      "path": "fireai/core/nfpa72_coverage.py",
+      "module": "fireai.core.nfpa72_coverage",
+      "lines": 1168
+    },
+    {
+      "path": "fireai/core/nfpa72_engine.py",
+      "module": "fireai.core.nfpa72_engine",
+      "lines": 1162
+    },
+    {
+      "path": "fireai/core/nfpa72_models.py",
+      "module": "fireai.core.nfpa72_models",
+      "lines": 1106
+    },
+    {
+      "path": "fireai/core/nfpa72_schemas.py",
+      "module": "fireai.core.nfpa72_schemas",
+      "lines": 457
+    },
+    {
+      "path": "fireai/core/nfpa72_technology_dispatcher.py",
+      "module": "fireai.core.nfpa72_technology_dispatcher",
+      "lines": 388
+    },
+    {
+      "path": "fireai/core/notification_appliance.py",
+      "module": "fireai.core.notification_appliance",
+      "lines": 717
+    },
+    {
+      "path": "fireai/core/parameter_optimizer.py",
+      "module": "fireai.core.parameter_optimizer",
+      "lines": 207
+    },
+    {
+      "path": "fireai/core/pathway_survivability_engine.py",
+      "module": "fireai.core.pathway_survivability_engine",
+      "lines": 543
+    },
+    {
+      "path": "fireai/core/pdf_report.py",
+      "module": "fireai.core.pdf_report",
+      "lines": 673
+    },
+    {
+      "path": "fireai/core/pipeline.py",
+      "module": "fireai.core.pipeline",
+      "lines": 1897
+    },
+    {
+      "path": "fireai/core/polygon_optimizer.py",
+      "module": "fireai.core.polygon_optimizer",
+      "lines": 525
+    },
+    {
+      "path": "fireai/core/project_learner.py",
+      "module": "fireai.core.project_learner",
+      "lines": 349
+    },
+    {
+      "path": "fireai/core/provenance.py",
+      "module": "fireai.core.provenance",
+      "lines": 319
+    },
+    {
+      "path": "fireai/core/qomn_fire_v4_fail_loud.py",
+      "module": "fireai.core.qomn_fire_v4_fail_loud",
+      "lines": 1598
+    },
+    {
+      "path": "fireai/core/qomn_integration_engine.py",
+      "module": "fireai.core.qomn_integration_engine",
+      "lines": 689
+    },
+    {
+      "path": "fireai/core/qomn_kernel.py",
+      "module": "fireai.core.qomn_kernel",
+      "lines": 1048
+    },
+    {
+      "path": "fireai/core/qomn_self_healing_engine.py",
+      "module": "fireai.core.qomn_self_healing_engine",
+      "lines": 1883
+    },
+    {
+      "path": "fireai/core/release_gates.py",
+      "module": "fireai.core.release_gates",
+      "lines": 422
+    },
+    {
+      "path": "fireai/core/revit_acl.py",
+      "module": "fireai.core.revit_acl",
+      "lines": 529
+    },
+    {
+      "path": "fireai/core/revit_exporter.py",
+      "module": "fireai.core.revit_exporter",
+      "lines": 630
+    },
+    {
+      "path": "fireai/core/riser_diagram_generator.py",
+      "module": "fireai.core.riser_diagram_generator",
+      "lines": 638
+    },
+    {
+      "path": "fireai/core/room_lifecycle.py",
+      "module": "fireai.core.room_lifecycle",
+      "lines": 1002
+    },
+    {
+      "path": "fireai/core/room_templates.py",
+      "module": "fireai.core.room_templates",
+      "lines": 141
+    },
+    {
+      "path": "fireai/core/room_validator.py",
+      "module": "fireai.core.room_validator",
+      "lines": 95
+    },
+    {
+      "path": "fireai/core/routing_engine_v10.py",
+      "module": "fireai.core.routing_engine_v10",
+      "lines": 1567
+    },
+    {
+      "path": "fireai/core/routing_global_class_a.py",
+      "module": "fireai.core.routing_global_class_a",
+      "lines": 148
+    },
+    {
+      "path": "fireai/core/rules_engine/__init__.py",
+      "module": "fireai.core.rules_engine.__init__",
+      "lines": 87
+    },
+    {
+      "path": "fireai/core/rules_engine/api_contract.py",
+      "module": "fireai.core.rules_engine.api_contract",
+      "lines": 386
+    },
+    {
+      "path": "fireai/core/rules_engine/compliance_bridge.py",
+      "module": "fireai.core.rules_engine.compliance_bridge",
+      "lines": 766
+    },
+    {
+      "path": "fireai/core/rules_engine/engine.py",
+      "module": "fireai.core.rules_engine.engine",
+      "lines": 741
+    },
+    {
+      "path": "fireai/core/rules_engine/nfpa72_rules.py",
+      "module": "fireai.core.rules_engine.nfpa72_rules",
+      "lines": 802
+    },
+    {
+      "path": "fireai/core/rules_engine/truth_maintenance.py",
+      "module": "fireai.core.rules_engine.truth_maintenance",
+      "lines": 306
+    },
+    {
+      "path": "fireai/core/safe_building_engine.py",
+      "module": "fireai.core.safe_building_engine",
+      "lines": 215
+    },
+    {
+      "path": "fireai/core/safety_assurance.py",
+      "module": "fireai.core.safety_assurance",
+      "lines": 789
+    },
+    {
+      "path": "fireai/core/safety_audit_engine.py",
+      "module": "fireai.core.safety_audit_engine",
+      "lines": 1282
+    },
+    {
+      "path": "fireai/core/scenario_engine.py",
+      "module": "fireai.core.scenario_engine",
+      "lines": 1189
+    },
+    {
+      "path": "fireai/core/schedule_generator.py",
+      "module": "fireai.core.schedule_generator",
+      "lines": 329
+    },
+    {
+      "path": "fireai/core/secret_rotation.py",
+      "module": "fireai.core.secret_rotation",
+      "lines": 276
+    },
+    {
+      "path": "fireai/core/security_logging.py",
+      "module": "fireai.core.security_logging",
+      "lines": 705
+    },
+    {
+      "path": "fireai/core/seismic_joint_penalyer.py",
+      "module": "fireai.core.seismic_joint_penalyer",
+      "lines": 447
+    },
+    {
+      "path": "fireai/core/semi_cfast_engine.py",
+      "module": "fireai.core.semi_cfast_engine",
+      "lines": 1322
+    },
+    {
+      "path": "fireai/core/sensitivity_analyzer.py",
+      "module": "fireai.core.sensitivity_analyzer",
+      "lines": 277
+    },
+    {
+      "path": "fireai/core/sensor_physics_advisor.py",
+      "module": "fireai.core.sensor_physics_advisor",
+      "lines": 270
+    },
+    {
+      "path": "fireai/core/sequence_of_operations.py",
+      "module": "fireai.core.sequence_of_operations",
+      "lines": 660
+    },
+    {
+      "path": "fireai/core/slc_capacitance.py",
+      "module": "fireai.core.slc_capacitance",
+      "lines": 441
+    },
+    {
+      "path": "fireai/core/smoke_simulation_state.py",
+      "module": "fireai.core.smoke_simulation_state",
+      "lines": 624
+    },
+    {
+      "path": "fireai/core/spatial_engine/__init__.py",
+      "module": "fireai.core.spatial_engine.__init__",
+      "lines": 50
+    },
+    {
+      "path": "fireai/core/spatial_engine/analytical_verifier.py",
+      "module": "fireai.core.spatial_engine.analytical_verifier",
+      "lines": 435
+    },
+    {
+      "path": "fireai/core/spatial_engine/beam_obstruction.py",
+      "module": "fireai.core.spatial_engine.beam_obstruction",
+      "lines": 723
+    },
+    {
+      "path": "fireai/core/spatial_engine/consensus_engine.py",
+      "module": "fireai.core.spatial_engine.consensus_engine",
+      "lines": 269
+    },
+    {
+      "path": "fireai/core/spatial_engine/consensus_engine_v2.py",
+      "module": "fireai.core.spatial_engine.consensus_engine_v2",
+      "lines": 586
+    },
+    {
+      "path": "fireai/core/spatial_engine/constraint_solver.py",
+      "module": "fireai.core.spatial_engine.constraint_solver",
+      "lines": 463
+    },
+    {
+      "path": "fireai/core/spatial_engine/density_optimizer.py",
+      "module": "fireai.core.spatial_engine.density_optimizer",
+      "lines": 1359
+    },
+    {
+      "path": "fireai/core/spatial_engine/exact_coverage.py",
+      "module": "fireai.core.spatial_engine.exact_coverage",
+      "lines": 437
+    },
+    {
+      "path": "fireai/core/spatial_engine/generative_layout_agent.py",
+      "module": "fireai.core.spatial_engine.generative_layout_agent",
+      "lines": 947
+    },
+    {
+      "path": "fireai/core/spatial_engine/mip_solver.py",
+      "module": "fireai.core.spatial_engine.mip_solver",
+      "lines": 209
+    },
+    {
+      "path": "fireai/core/spatial_engine/proof_certificate.py",
+      "module": "fireai.core.spatial_engine.proof_certificate",
+      "lines": 314
+    },
+    {
+      "path": "fireai/core/spatial_engine/voronoi_verifier.py",
+      "module": "fireai.core.spatial_engine.voronoi_verifier",
+      "lines": 275
+    },
+    {
+      "path": "fireai/core/stairwell_smoke_control.py",
+      "module": "fireai.core.stairwell_smoke_control",
+      "lines": 1596
+    },
+    {
+      "path": "fireai/core/streaming_dwg_parser.py",
+      "module": "fireai.core.streaming_dwg_parser",
+      "lines": 515
+    },
+    {
+      "path": "fireai/core/submittal_integrity_gate.py",
+      "module": "fireai.core.submittal_integrity_gate",
+      "lines": 423
+    },
+    {
+      "path": "fireai/core/tenability_evaluator.py",
+      "module": "fireai.core.tenability_evaluator",
+      "lines": 178
+    },
+    {
+      "path": "fireai/core/tests/__init__.py",
+      "module": "fireai.core.tests.__init__",
+      "lines": 0
+    },
+    {
+      "path": "fireai/core/twin_db.py",
+      "module": "fireai.core.twin_db",
+      "lines": 476
+    },
+    {
+      "path": "fireai/core/ugld_acoustics.py",
+      "module": "fireai.core.ugld_acoustics",
+      "lines": 666
+    },
+    {
+      "path": "fireai/core/ugld_raytrace.py",
+      "module": "fireai.core.ugld_raytrace",
+      "lines": 725
+    },
+    {
+      "path": "fireai/core/unit_converter.py",
+      "module": "fireai.core.unit_converter",
+      "lines": 396
+    },
+    {
+      "path": "fireai/core/voltage_drop.py",
+      "module": "fireai.core.voltage_drop",
+      "lines": 439
+    },
+    {
+      "path": "fireai/core/websocket_manager.py",
+      "module": "fireai.core.websocket_manager",
+      "lines": 96
+    },
+    {
+      "path": "fireai/env_config.py",
+      "module": "fireai.env_config",
+      "lines": 176
+    },
+    {
+      "path": "fireai/infrastructure/__init__.py",
+      "module": "fireai.infrastructure.__init__",
+      "lines": 0
+    },
+    {
+      "path": "fireai/infrastructure/event_bus.py",
+      "module": "fireai.infrastructure.event_bus",
+      "lines": 922
+    },
+    {
+      "path": "fireai/infrastructure/graphrag_engine.py",
+      "module": "fireai.infrastructure.graphrag_engine",
+      "lines": 422
+    },
+    {
+      "path": "fireai/infrastructure/health.py",
+      "module": "fireai.infrastructure.health",
+      "lines": 172
+    },
+    {
+      "path": "fireai/infrastructure/langwatch_integration.py",
+      "module": "fireai.infrastructure.langwatch_integration",
+      "lines": 494
+    },
+    {
+      "path": "fireai/infrastructure/logging_setup.py",
+      "module": "fireai.infrastructure.logging_setup",
+      "lines": 103
+    },
+    {
+      "path": "fireai/infrastructure/mem0_setup.py",
+      "module": "fireai.infrastructure.mem0_setup",
+      "lines": 811
+    },
+    {
+      "path": "fireai/infrastructure/metrics.py",
+      "module": "fireai.infrastructure.metrics",
+      "lines": 65
+    },
+    {
+      "path": "fireai/infrastructure/stream_processor.py",
+      "module": "fireai.infrastructure.stream_processor",
+      "lines": 441
+    },
+    {
+      "path": "fireai/infrastructure/topology_graph_service.py",
+      "module": "fireai.infrastructure.topology_graph_service",
+      "lines": 610
+    },
+    {
+      "path": "fireai/infrastructure/tracing.py",
+      "module": "fireai.infrastructure.tracing",
+      "lines": 149
+    },
+    {
+      "path": "fireai/infrastructure/vector_memory_service.py",
+      "module": "fireai.infrastructure.vector_memory_service",
+      "lines": 524
+    },
+    {
+      "path": "fireai/infrastructure/webhook_service.py",
+      "module": "fireai.infrastructure.webhook_service",
+      "lines": 1077
+    },
+    {
+      "path": "fireai/integration/__init__.py",
+      "module": "fireai.integration.__init__",
+      "lines": 15
+    },
+    {
+      "path": "fireai/integration/ar_metadata_exporter.py",
+      "module": "fireai.integration.ar_metadata_exporter",
+      "lines": 774
+    },
+    {
+      "path": "fireai/integration/ar_vr_visualizer.py",
+      "module": "fireai.integration.ar_vr_visualizer",
+      "lines": 2001
+    },
+    {
+      "path": "fireai/integration/autocad_bridge.py",
+      "module": "fireai.integration.autocad_bridge",
+      "lines": 763
+    },
+    {
+      "path": "fireai/integration/bentley_bridge.py",
+      "module": "fireai.integration.bentley_bridge",
+      "lines": 506
+    },
+    {
+      "path": "fireai/integration/field_data_service.py",
+      "module": "fireai.integration.field_data_service",
+      "lines": 432
+    },
+    {
+      "path": "fireai/integration/iot_pipeline.py",
+      "module": "fireai.integration.iot_pipeline",
+      "lines": 762
+    },
+    {
+      "path": "fireai/integration/mobile_api.py",
+      "module": "fireai.integration.mobile_api",
+      "lines": 459
+    },
+    {
+      "path": "fireai/mcp_server/__init__.py",
+      "module": "fireai.mcp_server.__init__",
+      "lines": 57
+    },
+    {
+      "path": "fireai/mcp_server/revit_mcp_server.py",
+      "module": "fireai.mcp_server.revit_mcp_server",
+      "lines": 339
+    },
+    {
+      "path": "fireai/mcp_server/sanitized_handler.py",
+      "module": "fireai.mcp_server.sanitized_handler",
+      "lines": 414
+    },
+    {
+      "path": "fireai/mcp_server/smithery_mcp_integration.py",
+      "module": "fireai.mcp_server.smithery_mcp_integration",
+      "lines": 754
+    },
+    {
+      "path": "fireai/mcp_server/thread_safe_queue.py",
+      "module": "fireai.mcp_server.thread_safe_queue",
+      "lines": 437
+    },
+    {
+      "path": "fireai/tools/__init__.py",
+      "module": "fireai.tools.__init__",
+      "lines": 0
+    },
+    {
+      "path": "fireai/tools/api_indexer.py",
+      "module": "fireai.tools.api_indexer",
+      "lines": 156
+    },
+    {
+      "path": "fireai/tools/constant_consistency_checker.py",
+      "module": "fireai.tools.constant_consistency_checker",
+      "lines": 564
+    },
+    {
+      "path": "fireai/tools/constant_indexer.py",
+      "module": "fireai.tools.constant_indexer",
+      "lines": 283
+    },
+    {
+      "path": "fireai/tools/crossref_indexer.py",
+      "module": "fireai.tools.crossref_indexer",
+      "lines": 207
+    },
+    {
+      "path": "fireai/tools/dependency_analyzer.py",
+      "module": "fireai.tools.dependency_analyzer",
+      "lines": 458
+    },
+    {
+      "path": "fireai/tools/dependency_indexer.py",
+      "module": "fireai.tools.dependency_indexer",
+      "lines": 284
+    },
+    {
+      "path": "fireai/v17_core/__init__.py",
+      "module": "fireai.v17_core.__init__",
+      "lines": 32
+    },
+    {
+      "path": "fireai/v17_core/acoustic_calculator.py",
+      "module": "fireai.v17_core.acoustic_calculator",
+      "lines": 351
+    },
+    {
+      "path": "fireai/v17_core/battery_calculator.py",
+      "module": "fireai.v17_core.battery_calculator",
+      "lines": 326
+    },
+    {
+      "path": "fireai/v17_core/dynamic_tenability_evaluator.py",
+      "module": "fireai.v17_core.dynamic_tenability_evaluator",
+      "lines": 371
+    },
+    {
+      "path": "fireai/validation/__init__.py",
+      "module": "fireai.validation.__init__",
+      "lines": 11
+    },
+    {
+      "path": "fireai/validation/compliance_engine.py",
+      "module": "fireai.validation.compliance_engine",
+      "lines": 235
+    },
+    {
+      "path": "fireai/validation/multi_standard_validator.py",
+      "module": "fireai.validation.multi_standard_validator",
+      "lines": 1205
+    },
+    {
+      "path": "fireai/validation/qa_engine.py",
+      "module": "fireai.validation.qa_engine",
+      "lines": 1473
+    },
+    {
+      "path": "fireai/version.py",
+      "module": "fireai.version",
+      "lines": 74
+    },
+    {
+      "path": "core/__init__.py",
+      "module": "core.__init__",
+      "lines": 30
+    },
+    {
+      "path": "core/database.py",
+      "module": "core.database",
+      "lines": 901
+    },
+    {
+      "path": "core/models.py",
+      "module": "core.models",
+      "lines": 472
+    },
+    {
+      "path": "core/retry.py",
+      "module": "core.retry",
+      "lines": 365
+    },
+    {
+      "path": "core/tests/__init__.py",
+      "module": "core.tests.__init__",
+      "lines": 0
+    },
+    {
+      "path": "parsers/__init__.py",
+      "module": "parsers.__init__",
+      "lines": 74
+    },
+    {
+      "path": "parsers/_path_security.py",
+      "module": "parsers._path_security",
+      "lines": 256
+    },
+    {
+      "path": "parsers/ddc_adapter.py",
+      "module": "parsers.ddc_adapter",
+      "lines": 518
+    },
+    {
+      "path": "parsers/dwg_parser.py",
+      "module": "parsers.dwg_parser",
+      "lines": 659
+    },
+    {
+      "path": "parsers/dxf_parser.py",
+      "module": "parsers.dxf_parser",
+      "lines": 455
+    },
+    {
+      "path": "parsers/excel_parser.py",
+      "module": "parsers.excel_parser",
+      "lines": 262
+    },
+    {
+      "path": "parsers/geometry_extractor.py",
+      "module": "parsers.geometry_extractor",
+      "lines": 299
+    },
+    {
+      "path": "parsers/ifc_parser.py",
+      "module": "parsers.ifc_parser",
+      "lines": 261
+    },
+    {
+      "path": "parsers/image_parser.py",
+      "module": "parsers.image_parser",
+      "lines": 360
+    },
+    {
+      "path": "parsers/parser_confidence.py",
+      "module": "parsers.parser_confidence",
+      "lines": 277
+    },
+    {
+      "path": "parsers/pdf_input_layer.py",
+      "module": "parsers.pdf_input_layer",
+      "lines": 628
+    },
+    {
+      "path": "parsers/pdf_parser.py",
+      "module": "parsers.pdf_parser",
+      "lines": 492
+    },
+    {
+      "path": "parsers/revit_json_parser.py",
+      "module": "parsers.revit_json_parser",
+      "lines": 92
+    },
+    {
+      "path": "parsers/rvt_parser.py",
+      "module": "parsers.rvt_parser",
+      "lines": 45
+    },
+    {
+      "path": "parsers/symbol_extractor.py",
+      "module": "parsers.symbol_extractor",
+      "lines": 212
+    },
+    {
+      "path": "parsers/tests/__init__.py",
+      "module": "parsers.tests.__init__",
+      "lines": 1
+    },
+    {
+      "path": "parsers/word_parser.py",
+      "module": "parsers.word_parser",
+      "lines": 263
+    },
+    {
+      "path": "qomn_fire/__init__.py",
+      "module": "qomn_fire.__init__",
+      "lines": 1
+    },
+    {
+      "path": "qomn_fire/core/__init__.py",
+      "module": "qomn_fire.core.__init__",
+      "lines": 1
+    },
+    {
+      "path": "qomn_fire/core/constants.py",
+      "module": "qomn_fire.core.constants",
+      "lines": 37
+    },
+    {
+      "path": "qomn_fire/core/errors.py",
+      "module": "qomn_fire.core.errors",
+      "lines": 132
+    },
+    {
+      "path": "qomn_fire/core/hash.py",
+      "module": "qomn_fire.core.hash",
+      "lines": 10
+    },
+    {
+      "path": "qomn_fire/core/types.py",
+      "module": "qomn_fire.core.types",
+      "lines": 248
+    },
+    {
+      "path": "qomn_fire/drawing/__init__.py",
+      "module": "qomn_fire.drawing.__init__",
+      "lines": 1
+    },
+    {
+      "path": "qomn_fire/drawing/dxf_generator.py",
+      "module": "qomn_fire.drawing.dxf_generator",
+      "lines": 58
+    },
+    {
+      "path": "qomn_fire/drawing/hatch_engine.py",
+      "module": "qomn_fire.drawing.hatch_engine",
+      "lines": 71
+    },
+    {
+      "path": "qomn_fire/drawing/revision_control.py",
+      "module": "qomn_fire.drawing.revision_control",
+      "lines": 41
+    },
+    {
+      "path": "qomn_fire/drawing/title_block.py",
+      "module": "qomn_fire.drawing.title_block",
+      "lines": 69
+    },
+    {
+      "path": "qomn_fire/engine/__init__.py",
+      "module": "qomn_fire.engine.__init__",
+      "lines": 1
+    },
+    {
+      "path": "qomn_fire/engine/fill.py",
+      "module": "qomn_fire.engine.fill",
+      "lines": 255
+    },
+    {
+      "path": "qomn_fire/engine/panel_database.py",
+      "module": "qomn_fire.engine.panel_database",
+      "lines": 104
+    },
+    {
+      "path": "qomn_fire/engine/panel_selector.py",
+      "module": "qomn_fire.engine.panel_selector",
+      "lines": 180
+    },
+    {
+      "path": "qomn_fire/engine/placement.py",
+      "module": "qomn_fire.engine.placement",
+      "lines": 138
+    },
+    {
+      "path": "qomn_fire/engine/routing.py",
+      "module": "qomn_fire.engine.routing",
+      "lines": 245
+    },
+    {
+      "path": "qomn_fire/integration/__init__.py",
+      "module": "qomn_fire.integration.__init__",
+      "lines": 1
+    },
+    {
+      "path": "qomn_fire/integration/cable_hatch.py",
+      "module": "qomn_fire.integration.cable_hatch",
+      "lines": 134
+    },
+    {
+      "path": "qomn_fire/output/__init__.py",
+      "module": "qomn_fire.output.__init__",
+      "lines": 1
+    },
+    {
+      "path": "qomn_fire/output/revit_exporter.py",
+      "module": "qomn_fire.output.revit_exporter",
+      "lines": 47
+    },
+    {
+      "path": "qomn_fire/parsers/__init__.py",
+      "module": "qomn_fire.parsers.__init__",
+      "lines": 13
+    },
+    {
+      "path": "qomn_fire/parsers/dwg_converter.py",
+      "module": "qomn_fire.parsers.dwg_converter",
+      "lines": 131
+    },
+    {
+      "path": "qomn_fire/parsers/dxf_parser.py",
+      "module": "qomn_fire.parsers.dxf_parser",
+      "lines": 605
+    },
+    {
+      "path": "qomn_fire/parsers/file_validator.py",
+      "module": "qomn_fire.parsers.file_validator",
+      "lines": 186
+    },
+    {
+      "path": "qomn_fire/parsers/format_detector.py",
+      "module": "qomn_fire.parsers.format_detector",
+      "lines": 169
+    },
+    {
+      "path": "qomn_fire/parsers/geometry_validator.py",
+      "module": "qomn_fire.parsers.geometry_validator",
+      "lines": 277
+    },
+    {
+      "path": "qomn_fire/parsers/ifc_parser.py",
+      "module": "qomn_fire.parsers.ifc_parser",
+      "lines": 390
+    },
+    {
+      "path": "qomn_fire/parsers/rvt_converter.py",
+      "module": "qomn_fire.parsers.rvt_converter",
+      "lines": 129
+    },
+    {
+      "path": "qomn_fire/tests/__init__.py",
+      "module": "qomn_fire.tests.__init__",
+      "lines": 0
+    },
+    {
+      "path": "qomn_conduit/__init__.py",
+      "module": "qomn_conduit.__init__",
+      "lines": 118
+    },
+    {
+      "path": "qomn_conduit/bend.py",
+      "module": "qomn_conduit.bend",
+      "lines": 268
+    },
+    {
+      "path": "qomn_conduit/catalog.py",
+      "module": "qomn_conduit.catalog",
+      "lines": 632
+    },
+    {
+      "path": "qomn_conduit/errors.py",
+      "module": "qomn_conduit.errors",
+      "lines": 183
+    },
+    {
+      "path": "qomn_conduit/fill.py",
+      "module": "qomn_conduit.fill",
+      "lines": 279
+    },
+    {
+      "path": "qomn_conduit/fitting_engine.py",
+      "module": "qomn_conduit.fitting_engine",
+      "lines": 408
+    },
+    {
+      "path": "qomn_conduit/output.py",
+      "module": "qomn_conduit.output",
+      "lines": 324
+    },
+    {
+      "path": "qomn_conduit/router.py",
+      "module": "qomn_conduit.router",
+      "lines": 479
+    },
+    {
+      "path": "qomn_conduit/tests/__init__.py",
+      "module": "qomn_conduit.tests.__init__",
+      "lines": 0
+    },
+    {
+      "path": "qomn_conduit/types.py",
+      "module": "qomn_conduit.types",
+      "lines": 465
+    },
+    {
+      "path": "marine/__init__.py",
+      "module": "marine.__init__",
+      "lines": 58
+    },
+    {
+      "path": "marine/core/__init__.py",
+      "module": "marine.core.__init__",
+      "lines": 40
+    },
+    {
+      "path": "marine/core/constants.py",
+      "module": "marine.core.constants",
+      "lines": 367
+    },
+    {
+      "path": "marine/core/errors.py",
+      "module": "marine.core.errors",
+      "lines": 43
+    },
+    {
+      "path": "marine/core/types.py",
+      "module": "marine.core.types",
+      "lines": 364
+    },
+    {
+      "path": "marine/engine/__init__.py",
+      "module": "marine.engine.__init__",
+      "lines": 45
+    },
+    {
+      "path": "marine/engine/alarm_logic.py",
+      "module": "marine.engine.alarm_logic",
+      "lines": 298
+    },
+    {
+      "path": "marine/engine/detector_selector.py",
+      "module": "marine.engine.detector_selector",
+      "lines": 164
+    },
+    {
+      "path": "marine/engine/extinguishment.py",
+      "module": "marine.engine.extinguishment",
+      "lines": 468
+    },
+    {
+      "path": "marine/engine/fire_resistance.py",
+      "module": "marine.engine.fire_resistance",
+      "lines": 139
+    },
+    {
+      "path": "marine/engine/ship_power.py",
+      "module": "marine.engine.ship_power",
+      "lines": 120
+    },
+    {
+      "path": "marine/engine/zone_mapper.py",
+      "module": "marine.engine.zone_mapper",
+      "lines": 223
+    },
+    {
+      "path": "marine/iec60092/__init__.py",
+      "module": "marine.iec60092.__init__",
+      "lines": 22
+    },
+    {
+      "path": "marine/iec60092/electrical_installations.py",
+      "module": "marine.iec60092.electrical_installations",
+      "lines": 23
+    },
+    {
+      "path": "marine/iec60092/part_502.py",
+      "module": "marine.iec60092.part_502",
+      "lines": 235
+    },
+    {
+      "path": "marine/iec60092/part_504.py",
+      "module": "marine.iec60092.part_504",
+      "lines": 153
+    },
+    {
+      "path": "marine/integration/__init__.py",
+      "module": "marine.integration.__init__",
+      "lines": 34
+    },
+    {
+      "path": "marine/integration/autocad_exporter.py",
+      "module": "marine.integration.autocad_exporter",
+      "lines": 138
+    },
+    {
+      "path": "marine/integration/etap_bridge.py",
+      "module": "marine.integration.etap_bridge",
+      "lines": 64
+    },
+    {
+      "path": "marine/integration/revit_exporter.py",
+      "module": "marine.integration.revit_exporter",
+      "lines": 59
+    },
+    {
+      "path": "marine/integration/scada_bridge.py",
+      "module": "marine.integration.scada_bridge",
+      "lines": 184
+    },
+    {
+      "path": "marine/iso15370/__init__.py",
+      "module": "marine.iso15370.__init__",
+      "lines": 7
+    },
+    {
+      "path": "marine/iso15370/thermal_alarms.py",
+      "module": "marine.iso15370.thermal_alarms",
+      "lines": 136
+    },
+    {
+      "path": "marine/lr_rules/__init__.py",
+      "module": "marine.lr_rules.__init__",
+      "lines": 11
+    },
+    {
+      "path": "marine/lr_rules/fire_protection.py",
+      "module": "marine.lr_rules.fire_protection",
+      "lines": 49
+    },
+    {
+      "path": "marine/modu/__init__.py",
+      "module": "marine.modu.__init__",
+      "lines": 12
+    },
+    {
+      "path": "marine/modu/modu_code.py",
+      "module": "marine.modu.modu_code",
+      "lines": 229
+    },
+    {
+      "path": "marine/nfpa302/__init__.py",
+      "module": "marine.nfpa302.__init__",
+      "lines": 11
+    },
+    {
+      "path": "marine/nfpa302/small_craft.py",
+      "module": "marine.nfpa302.small_craft",
+      "lines": 45
+    },
+    {
+      "path": "marine/output/__init__.py",
+      "module": "marine.output.__init__",
+      "lines": 30
+    },
+    {
+      "path": "marine/output/bom_generator.py",
+      "module": "marine.output.bom_generator",
+      "lines": 137
+    },
+    {
+      "path": "marine/output/commissioning_checklist.py",
+      "module": "marine.output.commissioning_checklist",
+      "lines": 85
+    },
+    {
+      "path": "marine/solas/__init__.py",
+      "module": "marine.solas.__init__",
+      "lines": 18
+    },
+    {
+      "path": "marine/solas/chapter_ii_2.py",
+      "module": "marine.solas.chapter_ii_2",
+      "lines": 492
+    },
+    {
+      "path": "marine/tests/__init__.py",
+      "module": "marine.tests.__init__",
+      "lines": 1
+    },
+    {
+      "path": "facp_system/__init__.py",
+      "module": "facp_system.__init__",
+      "lines": 17
+    },
+    {
+      "path": "facp_system/panel_database.py",
+      "module": "facp_system.panel_database",
+      "lines": 139
+    },
+    {
+      "path": "facp_system/panel_output.py",
+      "module": "facp_system.panel_output",
+      "lines": 82
+    },
+    {
+      "path": "facp_system/panel_selector.py",
+      "module": "facp_system.panel_selector",
+      "lines": 308
+    },
+    {
+      "path": "facp_system/panel_verifier.py",
+      "module": "facp_system.panel_verifier",
+      "lines": 67
+    },
+    {
+      "path": "adapters/__init__.py",
+      "module": "adapters.__init__",
+      "lines": 6
+    },
+    {
+      "path": "adapters/pdf_to_rooms_adapter.py",
+      "module": "adapters.pdf_to_rooms_adapter",
+      "lines": 155
+    },
+    {
+      "path": "integration/__init__.py",
+      "module": "integration.__init__",
+      "lines": 2
+    },
+    {
+      "path": "integration/ifc_bridge.py",
+      "module": "integration.ifc_bridge",
+      "lines": 706
+    }
+  ],
+  "services": [
+    {
+      "file": "backend/services/air_quality_service.py",
+      "lines": 479
+    },
+    {
+      "file": "backend/services/autocad_service.py",
+      "lines": 751
+    },
+    {
+      "file": "backend/services/digital_twin_service.py",
+      "lines": 997
+    },
+    {
+      "file": "backend/services/elevation_service.py",
+      "lines": 310
+    },
+    {
+      "file": "backend/services/geocoding_service.py",
+      "lines": 279
+    },
+    {
+      "file": "backend/services/hazmat_service.py",
+      "lines": 461
+    },
+    {
+      "file": "backend/services/marine_service.py",
+      "lines": 192
+    },
+    {
+      "file": "backend/services/memory_service.py",
+      "lines": 738
+    },
+    {
+      "file": "backend/services/region_service.py",
+      "lines": 316
+    },
+    {
+      "file": "backend/services/revit_service.py",
+      "lines": 1671
+    },
+    {
+      "file": "backend/services/severe_weather_service.py",
+      "lines": 1285
+    },
+    {
+      "file": "backend/services/weather_service.py",
+      "lines": 401
+    },
+    {
+      "file": "backend/services/workflow_service.py",
+      "lines": 2173
+    }
+  ],
+  "pages": [
+    {
+      "file": "frontend/src/pages/AutoCADDrawPage.tsx",
+      "name": "AutoCADDrawPage",
+      "lines": 222
+    },
+    {
+      "file": "frontend/src/pages/AutoCADPage.tsx",
+      "name": "AutoCADPage",
+      "lines": 182
+    },
+    {
+      "file": "frontend/src/pages/CADSettingsPage.tsx",
+      "name": "CADSettingsPage",
+      "lines": 533
+    },
+    {
+      "file": "frontend/src/pages/Conflicts.tsx",
+      "name": "Conflicts",
+      "lines": 296
+    },
+    {
+      "file": "frontend/src/pages/Connections.tsx",
+      "name": "Connections",
+      "lines": 311
+    },
+    {
+      "file": "frontend/src/pages/DashboardPage.tsx",
+      "name": "DashboardPage",
+      "lines": 232
+    },
+    {
+      "file": "frontend/src/pages/DigitalTwinConfigPage.tsx",
+      "name": "DigitalTwinConfigPage",
+      "lines": 60
+    },
+    {
+      "file": "frontend/src/pages/DigitalTwinConvertPage.tsx",
+      "name": "DigitalTwinConvertPage",
+      "lines": 43
+    },
+    {
+      "file": "frontend/src/pages/DigitalTwinHistoryPage.tsx",
+      "name": "DigitalTwinHistoryPage",
+      "lines": 16
+    },
+    {
+      "file": "frontend/src/pages/DigitalTwinPage.tsx",
+      "name": "DigitalTwinPage",
+      "lines": 610
+    },
+    {
+      "file": "frontend/src/pages/ElementDetail.tsx",
+      "name": "ElementDetail",
+      "lines": 337
+    },
+    {
+      "file": "frontend/src/pages/Elements.tsx",
+      "name": "Elements",
+      "lines": 472
+    },
+    {
+      "file": "frontend/src/pages/EngineeringPage.tsx",
+      "name": "EngineeringPage",
+      "lines": 549
+    },
+    {
+      "file": "frontend/src/pages/FireAlarmPage.tsx",
+      "name": "FireAlarmPage",
+      "lines": 258
+    },
+    {
+      "file": "frontend/src/pages/ProjectsPage.tsx",
+      "name": "ProjectsPage",
+      "lines": 493
+    },
+    {
+      "file": "frontend/src/pages/ReportGeneratorPage.tsx",
+      "name": "ReportGeneratorPage",
+      "lines": 487
+    },
+    {
+      "file": "frontend/src/pages/ReportsPage.tsx",
+      "name": "ReportsPage",
+      "lines": 390
+    },
+    {
+      "file": "frontend/src/pages/RevitCreatePage.tsx",
+      "name": "RevitCreatePage",
+      "lines": 198
+    },
+    {
+      "file": "frontend/src/pages/RevitElementsPage.tsx",
+      "name": "RevitElementsPage",
+      "lines": 67
+    },
+    {
+      "file": "frontend/src/pages/RevitPage.tsx",
+      "name": "RevitPage",
+      "lines": 140
+    },
+    {
+      "file": "frontend/src/pages/SettingsPage.tsx",
+      "name": "SettingsPage",
+      "lines": 395
+    }
+  ],
+  "components": [
+    {
+      "file": "command/CommandPalette.tsx",
+      "lines": 233
+    },
+    {
+      "file": "context/ContextPanel.tsx",
+      "lines": 249
+    },
+    {
+      "file": "core/ErrorBoundary.tsx",
+      "lines": 61
+    },
+    {
+      "file": "core/ErrorRecovery.tsx",
+      "lines": 37
+    },
+    {
+      "file": "core/ErrorRecoveryView.tsx",
+      "lines": 111
+    },
+    {
+      "file": "core/FloatingErrorLog.tsx",
+      "lines": 81
+    },
+    {
+      "file": "core/Header.tsx",
+      "lines": 13
+    },
+    {
+      "file": "core/InteractiveCanvas.tsx",
+      "lines": 183
+    },
+    {
+      "file": "core/PageErrorBoundary.tsx",
+      "lines": 104
+    },
+    {
+      "file": "core/ProjectSidebar.tsx",
+      "lines": 55
+    },
+    {
+      "file": "core/ReportManager.tsx",
+      "lines": 79
+    },
+    {
+      "file": "firealarm/CanvasEditor.tsx",
+      "lines": 306
+    },
+    {
+      "file": "firealarm/DeviceProperties.tsx",
+      "lines": 271
+    },
+    {
+      "file": "firealarm/SymbolLibrary.tsx",
+      "lines": 602
+    },
+    {
+      "file": "firealarm/ZoneNavigator.tsx",
+      "lines": 171
+    },
+    {
+      "file": "help/ContextHelpButton.tsx",
+      "lines": 8
+    },
+    {
+      "file": "help/SmartHelpDrawer.tsx",
+      "lines": 17
+    },
+    {
+      "file": "layout/AppShell.tsx",
+      "lines": 66
+    },
+    {
+      "file": "layout/Sidebar.tsx",
+      "lines": 156
+    },
+    {
+      "file": "layout/StatusBar.tsx",
+      "lines": 42
+    },
+    {
+      "file": "layout/TopBar.tsx",
+      "lines": 129
+    },
+    {
+      "file": "mockups/engineering/AICopilot.tsx",
+      "lines": 233
+    },
+    {
+      "file": "mockups/engineering/AdvancedCADWorkspace.tsx",
+      "lines": 185
+    },
+    {
+      "file": "mockups/engineering/AuditTrail.tsx",
+      "lines": 324
+    },
+    {
+      "file": "mockups/engineering/BMSDashboard.tsx",
+      "lines": 341
+    },
+    {
+      "file": "mockups/engineering/CableCalculator.tsx",
+      "lines": 376
+    },
+    {
+      "file": "mockups/engineering/CablingNetwork.tsx",
+      "lines": 280
+    },
+    {
+      "file": "mockups/engineering/ClashDetection.tsx",
+      "lines": 310
+    },
+    {
+      "file": "mockups/engineering/Collaboration.tsx",
+      "lines": 342
+    },
+    {
+      "file": "mockups/engineering/ComplianceCenter.tsx",
+      "lines": 289
+    },
+    {
+      "file": "mockups/engineering/ComponentLibrary.tsx",
+      "lines": 276
+    },
+    {
+      "file": "mockups/engineering/DevicePalette.tsx",
+      "lines": 62
+    },
+    {
+      "file": "mockups/engineering/EngineeringCanvas.tsx",
+      "lines": 600
+    },
+    {
+      "file": "mockups/engineering/EngineeringLibrary.tsx",
+      "lines": 80
+    },
+    {
+      "file": "mockups/engineering/FaultSimulationIntegrationDemo.tsx",
+      "lines": 38
+    },
+    {
+      "file": "mockups/engineering/FaultSimulationWorkspace.tsx",
+      "lines": 78
+    },
+    {
+      "file": "mockups/engineering/FileManager.tsx",
+      "lines": 362
+    },
+    {
+      "file": "mockups/engineering/FireAlarmDesigner.tsx",
+      "lines": 323
+    },
+    {
+      "file": "mockups/engineering/ImportExportManager.tsx",
+      "lines": 82
+    },
+    {
+      "file": "mockups/engineering/LoadFlowAnalysis.tsx",
+      "lines": 324
+    },
+    {
+      "file": "mockups/engineering/MCCDesigner.tsx",
+      "lines": 309
+    },
+    {
+      "file": "mockups/engineering/MainWorkspace.tsx",
+      "lines": 569
+    },
+    {
+      "file": "mockups/engineering/MultilingualDemo.tsx",
+      "lines": 355
+    },
+    {
+      "file": "mockups/engineering/NexusWorkspace.tsx",
+      "lines": 129
+    },
+    {
+      "file": "mockups/engineering/PluginManager.tsx",
+      "lines": 447
+    },
+    {
+      "file": "mockups/engineering/ProjectDashboard.tsx",
+      "lines": 391
+    },
+    {
+      "file": "mockups/engineering/ProjectFileManager.tsx",
+      "lines": 485
+    },
+    {
+      "file": "mockups/engineering/PythonSwagger.tsx",
+      "lines": 421
+    },
+    {
+      "file": "mockups/engineering/ReportGenerator.tsx",
+      "lines": 512
+    },
+    {
+      "file": "mockups/engineering/ReportManager.tsx",
+      "lines": 505
+    },
+    {
+      "file": "mockups/engineering/RiskAssessment.tsx",
+      "lines": 86
+    },
+    {
+      "file": "mockups/engineering/SLDEditor.tsx",
+      "lines": 378
+    },
+    {
+      "file": "mockups/engineering/SecuritySystems.tsx",
+      "lines": 259
+    },
+    {
+      "file": "mockups/engineering/Settings.tsx",
+      "lines": 313
+    },
+    {
+      "file": "mockups/engineering/SystemAnalyzer.tsx",
+      "lines": 116
+    },
+    {
+      "file": "mockups/engineering/SystemOptimizer.tsx",
+      "lines": 94
+    },
+    {
+      "file": "mockups/engineering/ThermalLegend.tsx",
+      "lines": 270
+    },
+    {
+      "file": "mockups/engineering/WorkspaceArabic.tsx",
+      "lines": 492
+    },
+    {
+      "file": "mockups/engineering/dashboard/ControlPanel.tsx",
+      "lines": 47
+    },
+    {
+      "file": "mockups/engineering/dashboard/EventLog.tsx",
+      "lines": 68
+    },
+    {
+      "file": "mockups/engineering/dashboard/Header.tsx",
+      "lines": 305
+    },
+    {
+      "file": "mockups/engineering/dashboard/HelpDrawer.tsx",
+      "lines": 69
+    },
+    {
+      "file": "mockups/engineering/dashboard/Scene3D.tsx",
+      "lines": 149
+    },
+    {
+      "file": "mockups/engineering/dashboard/StatusGauges.tsx",
+      "lines": 38
+    },
+    {
+      "file": "onboarding/OnboardingTour.tsx",
+      "lines": 245
+    },
+    {
+      "file": "shared/ConfigEditor.tsx",
+      "lines": 136
+    },
+    {
+      "file": "shared/ConnectionStatus.tsx",
+      "lines": 71
+    },
+    {
+      "file": "shared/ContextualHelpButton.tsx",
+      "lines": 90
+    },
+    {
+      "file": "shared/ConversionPanel.tsx",
+      "lines": 113
+    },
+    {
+      "file": "shared/ElementList.tsx",
+      "lines": 144
+    },
+    {
+      "file": "shared/FileUploader.tsx",
+      "lines": 116
+    },
+    {
+      "file": "shared/GlobalHelpDrawer.tsx",
+      "lines": 286
+    },
+    {
+      "file": "shared/HistoryTimeline.tsx",
+      "lines": 115
+    },
+    {
+      "file": "ui/AccessibleToast.tsx",
+      "lines": 54
+    },
+    {
+      "file": "ui/ConfirmDialog.tsx",
+      "lines": 133
+    },
+    {
+      "file": "ui/accordion.tsx",
+      "lines": 55
+    },
+    {
+      "file": "ui/alert-dialog.tsx",
+      "lines": 139
+    },
+    {
+      "file": "ui/alert.tsx",
+      "lines": 59
+    },
+    {
+      "file": "ui/aspect-ratio.tsx",
+      "lines": 5
+    },
+    {
+      "file": "ui/avatar.tsx",
+      "lines": 50
+    },
+    {
+      "file": "ui/badge.tsx",
+      "lines": 37
+    },
+    {
+      "file": "ui/breadcrumb.tsx",
+      "lines": 115
+    },
+    {
+      "file": "ui/button-group.tsx",
+      "lines": 83
+    },
+    {
+      "file": "ui/button.tsx",
+      "lines": 58
+    },
+    {
+      "file": "ui/calendar.tsx",
+      "lines": 213
+    },
+    {
+      "file": "ui/card.tsx",
+      "lines": 76
+    },
+    {
+      "file": "ui/carousel.tsx",
+      "lines": 260
+    },
+    {
+      "file": "ui/chart.tsx",
+      "lines": 360
+    },
+    {
+      "file": "ui/checkbox.tsx",
+      "lines": 28
+    },
+    {
+      "file": "ui/collapsible.tsx",
+      "lines": 11
+    },
+    {
+      "file": "ui/command.tsx",
+      "lines": 153
+    },
+    {
+      "file": "ui/context-menu.tsx",
+      "lines": 198
+    },
+    {
+      "file": "ui/dialog.tsx",
+      "lines": 120
+    },
+    {
+      "file": "ui/drawer.tsx",
+      "lines": 116
+    },
+    {
+      "file": "ui/dropdown-menu.tsx",
+      "lines": 201
+    },
+    {
+      "file": "ui/empty-state.tsx",
+      "lines": 45
+    },
+    {
+      "file": "ui/empty.tsx",
+      "lines": 104
+    },
+    {
+      "file": "ui/field.tsx",
+      "lines": 244
+    },
+    {
+      "file": "ui/form.tsx",
+      "lines": 176
+    },
+    {
+      "file": "ui/hover-card.tsx",
+      "lines": 27
+    },
+    {
+      "file": "ui/input-group.tsx",
+      "lines": 165
+    },
+    {
+      "file": "ui/input-otp.tsx",
+      "lines": 69
+    },
+    {
+      "file": "ui/input.tsx",
+      "lines": 22
+    },
+    {
+      "file": "ui/item.tsx",
+      "lines": 193
+    },
+    {
+      "file": "ui/kbd.tsx",
+      "lines": 28
+    },
+    {
+      "file": "ui/label.tsx",
+      "lines": 26
+    },
+    {
+      "file": "ui/menubar.tsx",
+      "lines": 254
+    },
+    {
+      "file": "ui/navigation-menu.tsx",
+      "lines": 128
+    },
+    {
+      "file": "ui/pagination.tsx",
+      "lines": 117
+    },
+    {
+      "file": "ui/popover.tsx",
+      "lines": 31
+    },
+    {
+      "file": "ui/progress.tsx",
+      "lines": 28
+    },
+    {
+      "file": "ui/radio-group.tsx",
+      "lines": 42
+    },
+    {
+      "file": "ui/resizable.tsx",
+      "lines": 45
+    },
+    {
+      "file": "ui/scroll-area.tsx",
+      "lines": 46
+    },
+    {
+      "file": "ui/select.tsx",
+      "lines": 159
+    },
+    {
+      "file": "ui/separator.tsx",
+      "lines": 29
+    },
+    {
+      "file": "ui/sheet.tsx",
+      "lines": 140
+    },
+    {
+      "file": "ui/sidebar.tsx",
+      "lines": 714
+    },
+    {
+      "file": "ui/skeleton.tsx",
+      "lines": 15
+    },
+    {
+      "file": "ui/slider.tsx",
+      "lines": 26
+    },
+    {
+      "file": "ui/sonner.tsx",
+      "lines": 31
+    },
+    {
+      "file": "ui/spinner.tsx",
+      "lines": 16
+    },
+    {
+      "file": "ui/switch.tsx",
+      "lines": 27
+    },
+    {
+      "file": "ui/table.tsx",
+      "lines": 120
+    },
+    {
+      "file": "ui/tabs.tsx",
+      "lines": 53
+    },
+    {
+      "file": "ui/textarea.tsx",
+      "lines": 22
+    },
+    {
+      "file": "ui/toast.tsx",
+      "lines": 127
+    },
+    {
+      "file": "ui/toaster.tsx",
+      "lines": 33
+    },
+    {
+      "file": "ui/toggle-group.tsx",
+      "lines": 61
+    },
+    {
+      "file": "ui/toggle.tsx",
+      "lines": 43
+    },
+    {
+      "file": "ui/tooltip.tsx",
+      "lines": 32
+    }
+  ],
+  "fe_services": [
+    {
+      "file": "frontend/src/services/api.ts",
+      "lines": 319
+    },
+    {
+      "file": "frontend/src/services/apiValidation.ts",
+      "lines": 198
+    },
+    {
+      "file": "frontend/src/services/autocadService.ts",
+      "lines": 57
+    },
+    {
+      "file": "frontend/src/services/dataService.ts",
+      "lines": 487
+    },
+    {
+      "file": "frontend/src/services/digitalTwinApi.ts",
+      "lines": 789
+    },
+    {
+      "file": "frontend/src/services/digitalTwinService.ts",
+      "lines": 60
+    },
+    {
+      "file": "frontend/src/services/fullApi.ts",
+      "lines": 1082
+    },
+    {
+      "file": "frontend/src/services/mockServer.ts",
+      "lines": 57
+    },
+    {
+      "file": "frontend/src/services/mockWorker.ts",
+      "lines": 57
+    },
+    {
+      "file": "frontend/src/services/revitService.ts",
+      "lines": 200
+    }
+  ],
+  "hooks": [
+    {
+      "file": "frontend/src/hooks/use-mobile.tsx",
+      "lines": 19
+    },
+    {
+      "file": "frontend/src/hooks/use-toast.ts",
+      "lines": 189
+    },
+    {
+      "file": "frontend/src/hooks/useApi.ts",
+      "lines": 482
+    },
+    {
+      "file": "frontend/src/hooks/useDrawing.ts",
+      "lines": 628
+    },
+    {
+      "file": "frontend/src/hooks/useReportManager.ts",
+      "lines": 889
+    },
+    {
+      "file": "frontend/src/hooks/useSmartHelp.ts",
+      "lines": 169
+    },
+    {
+      "file": "frontend/src/hooks/useVoiceControl.ts",
+      "lines": 97
+    }
+  ],
+  "skills": [
+    {
+      "name": "ASR",
+      "has_skill_md": true,
+      "py_files": 0,
+      "ts_files": 1
+    },
+    {
+      "name": "LLM",
+      "has_skill_md": true,
+      "py_files": 0,
+      "ts_files": 1
+    },
+    {
+      "name": "TTS",
+      "has_skill_md": true,
+      "py_files": 0,
+      "ts_files": 1
+    },
+    {
+      "name": "VLM",
+      "has_skill_md": true,
+      "py_files": 0,
+      "ts_files": 1
+    },
+    {
+      "name": "agent-browser",
+      "has_skill_md": true,
+      "py_files": 0,
+      "ts_files": 0
+    },
+    {
+      "name": "ai-news-collectors",
+      "has_skill_md": true,
+      "py_files": 0,
+      "ts_files": 0
+    },
+    {
+      "name": "aminer-academic-search",
+      "has_skill_md": true,
+      "py_files": 1,
+      "ts_files": 0
+    },
+    {
+      "name": "aminer-daily-paper",
+      "has_skill_md": true,
+      "py_files": 1,
+      "ts_files": 0
+    },
+    {
+      "name": "aminer-free-academic",
+      "has_skill_md": true,
+      "py_files": 0,
+      "ts_files": 0
+    },
+    {
+      "name": "anti-pua",
+      "has_skill_md": true,
+      "py_files": 0,
+      "ts_files": 0
+    },
+    {
+      "name": "auto-target-tracker",
+      "has_skill_md": true,
+      "py_files": 0,
+      "ts_files": 0
+    },
+    {
+      "name": "blog-writer",
+      "has_skill_md": true,
+      "py_files": 1,
+      "ts_files": 0
+    },
+    {
+      "name": "charts",
+      "has_skill_md": true,
+      "py_files": 0,
+      "ts_files": 0
+    },
+    {
+      "name": "cheat-sheet",
+      "has_skill_md": true,
+      "py_files": 0,
+      "ts_files": 0
+    },
+    {
+      "name": "coding-agent",
+      "has_skill_md": true,
+      "py_files": 0,
+      "ts_files": 0
+    },
+    {
+      "name": "content-strategy",
+      "has_skill_md": true,
+      "py_files": 0,
+      "ts_files": 0
+    },
+    {
+      "name": "contentanalysis",
+      "has_skill_md": true,
+      "py_files": 0,
+      "ts_files": 0
+    },
+    {
+      "name": "docx",
+      "has_skill_md": true,
+      "py_files": 5,
+      "ts_files": 0
+    },
+    {
+      "name": "dream-interpreter",
+      "has_skill_md": true,
+      "py_files": 1,
+      "ts_files": 0
+    },
+    {
+      "name": "etap-expert",
+      "has_skill_md": true,
+      "py_files": 20,
+      "ts_files": 0
+    },
+    {
+      "name": "finance",
+      "has_skill_md": true,
+      "py_files": 0,
+      "ts_files": 0
+    },
+    {
+      "name": "fullstack-dev",
+      "has_skill_md": true,
+      "py_files": 0,
+      "ts_files": 0
+    },
+    {
+      "name": "get-fortune-analysis",
+      "has_skill_md": true,
+      "py_files": 1,
+      "ts_files": 0
+    },
+    {
+      "name": "gift-evaluator",
+      "has_skill_md": true,
+      "py_files": 1,
+      "ts_files": 0
+    },
+    {
+      "name": "image-edit",
+      "has_skill_md": true,
+      "py_files": 0,
+      "ts_files": 1
+    },
+    {
+      "name": "image-generation",
+      "has_skill_md": true,
+      "py_files": 0,
+      "ts_files": 1
+    },
+    {
+      "name": "image-understand",
+      "has_skill_md": true,
+      "py_files": 0,
+      "ts_files": 1
+    },
+    {
+      "name": "interview-designer",
+      "has_skill_md": true,
+      "py_files": 0,
+      "ts_files": 0
+    },
+    {
+      "name": "interview-prep",
+      "has_skill_md": true,
+      "py_files": 1,
+      "ts_files": 0
+    },
+    {
+      "name": "jd-resume-tailor",
+      "has_skill_md": true,
+      "py_files": 2,
+      "ts_files": 0
+    },
+    {
+      "name": "job-intent-tracker",
+      "has_skill_md": true,
+      "py_files": 2,
+      "ts_files": 0
+    },
+    {
+      "name": "market-research-reports",
+      "has_skill_md": true,
+      "py_files": 1,
+      "ts_files": 0
+    },
+    {
+      "name": "marketing-mode",
+      "has_skill_md": true,
+      "py_files": 0,
+      "ts_files": 0
+    },
+    {
+      "name": "mindfulness-meditation",
+      "has_skill_md": true,
+      "py_files": 0,
+      "ts_files": 0
+    },
+    {
+      "name": "multi-search-engine",
+      "has_skill_md": true,
+      "py_files": 0,
+      "ts_files": 0
+    },
+    {
+      "name": "pdf",
+      "has_skill_md": true,
+      "py_files": 5,
+      "ts_files": 0
+    },
+    {
+      "name": "podcast-generate",
+      "has_skill_md": true,
+      "py_files": 0,
+      "ts_files": 1
+    },
+    {
+      "name": "ppt",
+      "has_skill_md": true,
+      "py_files": 13,
+      "ts_files": 0
+    },
+    {
+      "name": "qingyan-research",
+      "has_skill_md": true,
+      "py_files": 1,
+      "ts_files": 0
+    },
+    {
+      "name": "quiz-html",
+      "has_skill_md": true,
+      "py_files": 1,
+      "ts_files": 0
+    },
+    {
+      "name": "quiz-mastery",
+      "has_skill_md": true,
+      "py_files": 15,
+      "ts_files": 0
+    },
+    {
+      "name": "resume-builder",
+      "has_skill_md": true,
+      "py_files": 1,
+      "ts_files": 0
+    },
+    {
+      "name": "seo-content-writer",
+      "has_skill_md": true,
+      "py_files": 0,
+      "ts_files": 0
+    },
+    {
+      "name": "skill-creator",
+      "has_skill_md": true,
+      "py_files": 10,
+      "ts_files": 0
+    },
+    {
+      "name": "skill-finder-cn",
+      "has_skill_md": true,
+      "py_files": 0,
+      "ts_files": 0
+    },
+    {
+      "name": "skill-vetter",
+      "has_skill_md": true,
+      "py_files": 0,
+      "ts_files": 0
+    },
+    {
+      "name": "stock-analysis-skill",
+      "has_skill_md": true,
+      "py_files": 0,
+      "ts_files": 7
+    },
+    {
+      "name": "storyboard-manager",
+      "has_skill_md": true,
+      "py_files": 2,
+      "ts_files": 0
+    },
+    {
+      "name": "study-buddy",
+      "has_skill_md": true,
+      "py_files": 0,
+      "ts_files": 0
+    },
+    {
+      "name": "task-review",
+      "has_skill_md": true,
+      "py_files": 0,
+      "ts_files": 0
+    },
+    {
+      "name": "ui-ux-pro-max",
+      "has_skill_md": true,
+      "py_files": 4,
+      "ts_files": 0
+    },
+    {
+      "name": "video-generation",
+      "has_skill_md": true,
+      "py_files": 0,
+      "ts_files": 1
+    },
+    {
+      "name": "video-understand",
+      "has_skill_md": true,
+      "py_files": 0,
+      "ts_files": 1
+    },
+    {
+      "name": "visual-design-foundations",
+      "has_skill_md": true,
+      "py_files": 0,
+      "ts_files": 0
+    },
+    {
+      "name": "web-reader",
+      "has_skill_md": true,
+      "py_files": 0,
+      "ts_files": 1
+    },
+    {
+      "name": "web-search",
+      "has_skill_md": true,
+      "py_files": 0,
+      "ts_files": 1
+    },
+    {
+      "name": "web-shader-extractor",
+      "has_skill_md": true,
+      "py_files": 0,
+      "ts_files": 0
+    },
+    {
+      "name": "writing-plans",
+      "has_skill_md": true,
+      "py_files": 0,
+      "ts_files": 0
+    },
+    {
+      "name": "xlsx",
+      "has_skill_md": true,
+      "py_files": 3,
+      "ts_files": 0
+    }
+  ],
+  "test_files": [
+    {
+      "file": "backend/tests/test_api_endpoints.py",
+      "lines": 697
+    },
+    {
+      "file": "backend/tests/test_connections_advanced.py",
+      "lines": 337
+    },
+    {
+      "file": "backend/tests/test_db_service_and_qomn.py",
+      "lines": 448
+    },
+    {
+      "file": "backend/tests/test_devices.py",
+      "lines": 111
+    },
+    {
+      "file": "backend/tests/test_devices_advanced.py",
+      "lines": 517
+    },
+    {
+      "file": "backend/tests/test_dwg.py",
+      "lines": 180
+    },
+    {
+      "file": "backend/tests/test_elements_conflicts_exports.py",
+      "lines": 365
+    },
+    {
+      "file": "backend/tests/test_health.py",
+      "lines": 96
+    },
+    {
+      "file": "backend/tests/test_integration_enhanced.py",
+      "lines": 548
+    },
+    {
+      "file": "backend/tests/test_monitor_integration.py",
+      "lines": 268
+    },
+    {
+      "file": "backend/tests/test_monitor_unit.py",
+      "lines": 457
+    },
+    {
+      "file": "backend/tests/test_projects.py",
+      "lines": 131
+    },
+    {
+      "file": "backend/tests/test_reports_advanced.py",
+      "lines": 336
+    },
+    {
+      "file": "backend/tests/test_routers.py",
+      "lines": 1203
+    },
+    {
+      "file": "backend/tests/test_sync_websocket.py",
+      "lines": 146
+    },
+    {
+      "file": "core/tests/test_utilities.py",
+      "lines": 836
+    },
+    {
+      "file": "fireai/core/tests/test_analysis_pipeline.py",
+      "lines": 1333
+    },
+    {
+      "file": "fireai/core/tests/test_audit_store.py",
+      "lines": 1283
+    },
+    {
+      "file": "fireai/core/tests/test_edge_cases.py",
+      "lines": 608
+    },
+    {
+      "file": "fireai/core/tests/test_fireai_core.py",
+      "lines": 1832
+    },
+    {
+      "file": "fireai/core/tests/test_floor_analyser.py",
+      "lines": 379
+    },
+    {
+      "file": "fireai/core/tests/test_helpers.py",
+      "lines": 491
+    },
+    {
+      "file": "fireai/core/tests/test_monte_carlo_pipeline.py",
+      "lines": 1482
+    },
+    {
+      "file": "fireai/core/tests/test_multi_floor_orchestrator.py",
+      "lines": 2290
+    },
+    {
+      "file": "fireai/core/tests/test_nfpa72_calculations.py",
+      "lines": 824
+    },
+    {
+      "file": "fireai/core/tests/test_performance.py",
+      "lines": 369
+    },
+    {
+      "file": "fireai/core/tests/test_pipeline_v2.py",
+      "lines": 1471
+    },
+    {
+      "file": "fireai/core/tests/test_regression.py",
+      "lines": 476
+    },
+    {
+      "file": "fireai/core/tests/test_routing_engine_v10.py",
+      "lines": 1466
+    },
+    {
+      "file": "fireai/core/tests/test_security_logging.py",
+      "lines": 531
+    },
+    {
+      "file": "marine/output/test_procedures.py",
+      "lines": 68
+    },
+    {
+      "file": "marine/tests/test_marine_lr_nfpa302.py",
+      "lines": 140
+    },
+    {
+      "file": "marine/tests/test_marine_module.py",
+      "lines": 326
+    },
+    {
+      "file": "marine/tests/test_marine_regression_v2.py",
+      "lines": 736
+    },
+    {
+      "file": "parsers/tests/test_dwg_parser.py",
+      "lines": 540
+    },
+    {
+      "file": "parsers/tests/test_dxf_parser.py",
+      "lines": 685
+    },
+    {
+      "file": "parsers/tests/test_ifc_parser.py",
+      "lines": 770
+    },
+    {
+      "file": "parsers/tests/test_parser_edge_cases.py",
+      "lines": 717
+    },
+    {
+      "file": "parsers/tests/test_path_security_enhanced.py",
+      "lines": 199
+    },
+    {
+      "file": "qomn_conduit/tests/test_bend.py",
+      "lines": 177
+    },
+    {
+      "file": "qomn_conduit/tests/test_catalog.py",
+      "lines": 215
+    },
+    {
+      "file": "qomn_conduit/tests/test_fill.py",
+      "lines": 182
+    },
+    {
+      "file": "qomn_conduit/tests/test_fitting_engine.py",
+      "lines": 212
+    },
+    {
+      "file": "qomn_conduit/tests/test_hardening.py",
+      "lines": 363
+    },
+    {
+      "file": "qomn_conduit/tests/test_integration.py",
+      "lines": 208
+    },
+    {
+      "file": "qomn_conduit/tests/test_output.py",
+      "lines": 187
+    },
+    {
+      "file": "qomn_conduit/tests/test_router.py",
+      "lines": 198
+    },
+    {
+      "file": "qomn_fire/tests/test_parsers.py",
+      "lines": 1062
+    },
+    {
+      "file": "tests/property_based/test_skill_loading.py",
+      "lines": 696
+    },
+    {
+      "file": "tests/property_based/test_skill_validator.py",
+      "lines": 349
+    },
+    {
+      "file": "tests/test_acoustic_calculator.py",
+      "lines": 732
+    },
+    {
+      "file": "tests/test_acoustics_engine.py",
+      "lines": 445
+    },
+    {
+      "file": "tests/test_atex_hazardous_arbiter.py",
+      "lines": 668
+    },
+    {
+      "file": "tests/test_audit_blockchain_bridge.py",
+      "lines": 419
+    },
+    {
+      "file": "tests/test_audit_log.py",
+      "lines": 821
+    },
+    {
+      "file": "tests/test_audit_report_fixes.py",
+      "lines": 570
+    },
+    {
+      "file": "tests/test_audit_store_v2.py",
+      "lines": 505
+    },
+    {
+      "file": "tests/test_audit_trail_v2.py",
+      "lines": 380
+    },
+    {
+      "file": "tests/test_auth_integration.py",
+      "lines": 117
+    },
+    {
+      "file": "tests/test_autocad.py",
+      "lines": 377
+    },
+    {
+      "file": "tests/test_backend_app_security.py",
+      "lines": 141
+    },
+    {
+      "file": "tests/test_battery_aging_derating.py",
+      "lines": 608
+    },
+    {
+      "file": "tests/test_bim_input_sanitizer.py",
+      "lines": 446
+    },
+    {
+      "file": "tests/test_bim_provider.py",
+      "lines": 423
+    },
+    {
+      "file": "tests/test_blockchain_readiness_gate.py",
+      "lines": 369
+    },
+    {
+      "file": "tests/test_cable_router.py",
+      "lines": 1265
+    },
+    {
+      "file": "tests/test_cable_routing.py",
+      "lines": 852
+    },
+    {
+      "file": "tests/test_circuit_topology_v2.py",
+      "lines": 562
+    },
+    {
+      "file": "tests/test_compliance_bridge.py",
+      "lines": 225
+    },
+    {
+      "file": "tests/test_compliance_engine.py",
+      "lines": 381
+    },
+    {
+      "file": "tests/test_compliance_proof_document.py",
+      "lines": 641
+    },
+    {
+      "file": "tests/test_compliance_proof_document_v2.py",
+      "lines": 1499
+    },
+    {
+      "file": "tests/test_conduit_fill_analyzer.py",
+      "lines": 723
+    },
+    {
+      "file": "tests/test_conduit_system.py",
+      "lines": 949
+    },
+    {
+      "file": "tests/test_constraint_engine_v2.py",
+      "lines": 900
+    },
+    {
+      "file": "tests/test_contracts_v2.py",
+      "lines": 590
+    },
+    {
+      "file": "tests/test_contracts_validation.py",
+      "lines": 944
+    },
+    {
+      "file": "tests/test_csp_security.py",
+      "lines": 255
+    },
+    {
+      "file": "tests/test_ddc_adapter_security_v123.py",
+      "lines": 213
+    },
+    {
+      "file": "tests/test_delta_cache.py",
+      "lines": 743
+    },
+    {
+      "file": "tests/test_detector_response.py",
+      "lines": 407
+    },
+    {
+      "file": "tests/test_device_placement.py",
+      "lines": 661
+    },
+    {
+      "file": "tests/test_digital_twin.py",
+      "lines": 310
+    },
+    {
+      "file": "tests/test_duct_detector.py",
+      "lines": 623
+    },
+    {
+      "file": "tests/test_dwg_parser_security_v122.py",
+      "lines": 302
+    },
+    {
+      "file": "tests/test_dwg_router.py",
+      "lines": 190
+    },
+    {
+      "file": "tests/test_dxf_table_schedule.py",
+      "lines": 172
+    },
+    {
+      "file": "tests/test_egress_calculator.py",
+      "lines": 291
+    },
+    {
+      "file": "tests/test_elevator_shunt_trip.py",
+      "lines": 809
+    },
+    {
+      "file": "tests/test_engine_regression_v95.py",
+      "lines": 332
+    },
+    {
+      "file": "tests/test_event_bus.py",
+      "lines": 518
+    },
+    {
+      "file": "tests/test_evidence_chain.py",
+      "lines": 433
+    },
+    {
+      "file": "tests/test_facp_router.py",
+      "lines": 401
+    },
+    {
+      "file": "tests/test_facp_system.py",
+      "lines": 677
+    },
+    {
+      "file": "tests/test_fault_isolator_injector.py",
+      "lines": 514
+    },
+    {
+      "file": "tests/test_fire_zone_engine.py",
+      "lines": 460
+    },
+    {
+      "file": "tests/test_fireai_core_v2.py",
+      "lines": 373
+    },
+    {
+      "file": "tests/test_firestop_annotator.py",
+      "lines": 219
+    },
+    {
+      "file": "tests/test_floor_orchestrator.py",
+      "lines": 905
+    },
+    {
+      "file": "tests/test_generative_layout_agent.py",
+      "lines": 393
+    },
+    {
+      "file": "tests/test_geometry_utils.py",
+      "lines": 591
+    },
+    {
+      "file": "tests/test_hazard_override_v2.py",
+      "lines": 493
+    },
+    {
+      "file": "tests/test_hybrid_survivability.py",
+      "lines": 826
+    },
+    {
+      "file": "tests/test_ifc43_mapper.py",
+      "lines": 236
+    },
+    {
+      "file": "tests/test_international_reg_selector.py",
+      "lines": 438
+    },
+    {
+      "file": "tests/test_launch_blockers_audit.py",
+      "lines": 1147
+    },
+    {
+      "file": "tests/test_light_current.py",
+      "lines": 549
+    },
+    {
+      "file": "tests/test_mandatory_security.py",
+      "lines": 280
+    },
+    {
+      "file": "tests/test_mip_solver.py",
+      "lines": 618
+    },
+    {
+      "file": "tests/test_models_v21.py",
+      "lines": 1283
+    },
+    {
+      "file": "tests/test_monte_carlo.py",
+      "lines": 230
+    },
+    {
+      "file": "tests/test_network_topology.py",
+      "lines": 470
+    },
+    {
+      "file": "tests/test_nfpa72_coverage_v2.py",
+      "lines": 770
+    },
+    {
+      "file": "tests/test_nfpa72_coverage_v3.py",
+      "lines": 1498
+    },
+    {
+      "file": "tests/test_nfpa72_engine.py",
+      "lines": 1239
+    },
+    {
+      "file": "tests/test_nfpa72_models.py",
+      "lines": 971
+    },
+    {
+      "file": "tests/test_nfpa72_schemas.py",
+      "lines": 696
+    },
+    {
+      "file": "tests/test_nfpa72_technology_dispatcher.py",
+      "lines": 358
+    },
+    {
+      "file": "tests/test_notification_appliance.py",
+      "lines": 573
+    },
+    {
+      "file": "tests/test_notification_appliance_v2.py",
+      "lines": 472
+    },
+    {
+      "file": "tests/test_parameter_optimizer.py",
+      "lines": 370
+    },
+    {
+      "file": "tests/test_parsers_security_v125.py",
+      "lines": 295
+    },
+    {
+      "file": "tests/test_pathway_survivability_engine.py",
+      "lines": 507
+    },
+    {
+      "file": "tests/test_pdf_hardening_properties.py",
+      "lines": 319
+    },
+    {
+      "file": "tests/test_pipeline.py",
+      "lines": 889
+    },
+    {
+      "file": "tests/test_proof_certificate.py",
+      "lines": 464
+    },
+    {
+      "file": "tests/test_provenance.py",
+      "lines": 512
+    },
+    {
+      "file": "tests/test_qomn_cable_hatch.py",
+      "lines": 392
+    },
+    {
+      "file": "tests/test_qomn_integration.py",
+      "lines": 509
+    },
+    {
+      "file": "tests/test_qomn_integration_engine_v2.py",
+      "lines": 581
+    },
+    {
+      "file": "tests/test_qomn_kernel.py",
+      "lines": 980
+    },
+    {
+      "file": "tests/test_qomn_parsers.py",
+      "lines": 635
+    },
+    {
+      "file": "tests/test_qomn_router_validation.py",
+      "lines": 216
+    },
+    {
+      "file": "tests/test_rbac.py",
+      "lines": 433
+    },
+    {
+      "file": "tests/test_release_gates.py",
+      "lines": 912
+    },
+    {
+      "file": "tests/test_revit.py",
+      "lines": 354
+    },
+    {
+      "file": "tests/test_revit_acl.py",
+      "lines": 554
+    },
+    {
+      "file": "tests/test_revit_exporter_v2.py",
+      "lines": 453
+    },
+    {
+      "file": "tests/test_room_templates.py",
+      "lines": 316
+    },
+    {
+      "file": "tests/test_room_validator.py",
+      "lines": 353
+    },
+    {
+      "file": "tests/test_routing_global_class_a.py",
+      "lines": 370
+    },
+    {
+      "file": "tests/test_rules_engine.py",
+      "lines": 858
+    },
+    {
+      "file": "tests/test_safety_assurance.py",
+      "lines": 712
+    },
+    {
+      "file": "tests/test_safety_critical_fixes.py",
+      "lines": 526
+    },
+    {
+      "file": "tests/test_schedule_generator.py",
+      "lines": 163
+    },
+    {
+      "file": "tests/test_security.py",
+      "lines": 1171
+    },
+    {
+      "file": "tests/test_security_logging_v2.py",
+      "lines": 561
+    },
+    {
+      "file": "tests/test_security_middleware_v129.py",
+      "lines": 378
+    },
+    {
+      "file": "tests/test_self_healing_engine.py",
+      "lines": 1369
+    },
+    {
+      "file": "tests/test_sensor_physics_advisor.py",
+      "lines": 436
+    },
+    {
+      "file": "tests/test_sequence_of_operations.py",
+      "lines": 397
+    },
+    {
+      "file": "tests/test_sequence_of_operations_v2.py",
+      "lines": 1069
+    },
+    {
+      "file": "tests/test_skill_integration.py",
+      "lines": 562
+    },
+    {
+      "file": "tests/test_slc_capacitance.py",
+      "lines": 482
+    },
+    {
+      "file": "tests/test_smoke_simulation_state.py",
+      "lines": 396
+    },
+    {
+      "file": "tests/test_smoke_spacing_audit_v120.py",
+      "lines": 239
+    },
+    {
+      "file": "tests/test_smoke_spacing_v127.py",
+      "lines": 200
+    },
+    {
+      "file": "tests/test_submittal_integrity_gate.py",
+      "lines": 253
+    },
+    {
+      "file": "tests/test_ugld_acoustics.py",
+      "lines": 480
+    },
+    {
+      "file": "tests/test_unit_converter.py",
+      "lines": 480
+    },
+    {
+      "file": "tests/test_v130_smoke_flat_spacing.py",
+      "lines": 357
+    },
+    {
+      "file": "tests/test_v133_phase1_security.py",
+      "lines": 225
+    },
+    {
+      "file": "tests/test_v133_phase2_3_ai.py",
+      "lines": 290
+    },
+    {
+      "file": "tests/test_v133_phase4_engineering.py",
+      "lines": 464
+    },
+    {
+      "file": "tests/test_v134_security_fixes.py",
+      "lines": 449
+    },
+    {
+      "file": "tests/test_v135_high_fixes.py",
+      "lines": 400
+    },
+    {
+      "file": "tests/test_v136_medium_low_fixes.py",
+      "lines": 367
+    },
+    {
+      "file": "tests/test_v137_audit_fixes.py",
+      "lines": 182
+    },
+    {
+      "file": "tests/test_v138_audit_fixes.py",
+      "lines": 228
+    },
+    {
+      "file": "tests/test_v141_vector_topology.py",
+      "lines": 316
+    },
+    {
+      "file": "tests/test_v142_graphrag.py",
+      "lines": 145
+    },
+    {
+      "file": "tests/test_v2_api.py",
+      "lines": 346
+    },
+    {
+      "file": "tests/test_voltage_drop.py",
+      "lines": 499
+    },
+    {
+      "file": "tests/test_webhook_service.py",
+      "lines": 392
+    },
+    {
+      "file": "tests/test_workflow_service.py",
+      "lines": 472
+    },
+    {
+      "file": "tests/test_workflow_service_v2.py",
+      "lines": 764
+    }
+  ],
+  "fe_tests": [
+    {
+      "file": "frontend/src/components/core/__tests__/PageErrorBoundary.test.tsx",
+      "lines": 60
+    },
+    {
+      "file": "frontend/src/components/mockups/engineering/hooks/__tests__/StatusIndicator.test.ts",
+      "lines": 90
+    },
+    {
+      "file": "frontend/src/components/mockups/engineering/hooks/__tests__/useFaultLogic.test.ts",
+      "lines": 61
+    },
+    {
+      "file": "frontend/src/components/mockups/engineering/hooks/__tests__/useTelemetryStream.test.ts",
+      "lines": 40
+    },
+    {
+      "file": "frontend/src/engine/__tests__/CalculationEngine.test.ts",
+      "lines": 320
+    },
+    {
+      "file": "frontend/src/lib/__tests__/adversarial.test.ts",
+      "lines": 47
+    },
+    {
+      "file": "frontend/src/pages/__tests__/DashboardPage.test.tsx",
+      "lines": 84
+    },
+    {
+      "file": "frontend/src/pages/__tests__/EngineeringPage.test.tsx",
+      "lines": 58
+    },
+    {
+      "file": "frontend/src/pages/__tests__/SettingsPage.test.tsx",
+      "lines": 84
+    }
+  ],
+  "deploy_files": [
+    "deploy/docker/Dockerfile.api",
+    "deploy/docker/Dockerfile.nginx",
+    "deploy/docker/Dockerfile.worker",
+    "deploy/docker/docker-compose.yml",
+    "deploy/docker/entrypoint-worker.sh",
+    "deploy/docker/nginx.conf",
+    "deploy/helm/fireai/Chart.yaml",
+    "deploy/helm/fireai/templates/_helpers.tpl",
+    "deploy/helm/fireai/templates/configmap.yaml",
+    "deploy/helm/fireai/templates/deployment-api.yaml",
+    "deploy/helm/fireai/templates/deployment-worker.yaml",
+    "deploy/helm/fireai/templates/hpa.yaml",
+    "deploy/helm/fireai/templates/ingress.yaml",
+    "deploy/helm/fireai/templates/namespace.yaml",
+    "deploy/helm/fireai/templates/networkpolicy.yaml",
+    "deploy/helm/fireai/templates/pdb.yaml",
+    "deploy/helm/fireai/templates/pvc.yaml",
+    "deploy/helm/fireai/templates/secret.yaml",
+    "deploy/helm/fireai/templates/service.yaml",
+    "deploy/helm/fireai/templates/serviceaccount.yaml",
+    "deploy/helm/fireai/values.yaml",
+    "deploy/k8s/configmap.yaml",
+    "deploy/k8s/deployment-api.yaml",
+    "deploy/k8s/deployment-worker.yaml",
+    "deploy/k8s/ingress.yaml",
+    "deploy/k8s/namespace.yaml",
+    "deploy/k8s/network-policy.yaml",
+    "deploy/k8s/pod-disruption-budget.yaml",
+    "deploy/k8s/secret.yaml",
+    "deploy/k8s/service-api.yaml",
+    "deploy/observability/alertmanager.yml",
+    "deploy/observability/grafana-dashboards/fireai-overview.json",
+    "deploy/observability/loki-config.yml",
+    "deploy/observability/prometheus-alert-rules.yml",
+    "deploy/observability/prometheus.yml",
+    "deploy/observability/tempo-config.yml"
+  ],
+  "has_dockerfile": true,
+  "has_docker_compose": true
+}
