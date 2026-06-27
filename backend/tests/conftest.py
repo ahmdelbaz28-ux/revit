@@ -67,16 +67,48 @@ os.environ["FIREAI_API_KEY"] = TEST_API_KEY
 # created inside module-scoped fixtures that may run before any function
 # fixture. Import-time patching ensures EVERY TestClient gets the header,
 # regardless of when it's constructed.
+#
+# V140 FIX (Rule 17 — Root-Cause Analysis): The old patch was GLOBAL — it
+# injected X-API-Key into EVERY TestClient instance across the entire test
+# suite. This broke tests/test_auth_integration.py::test_projects_requires_auth
+# which expects a 401 response when NO X-API-Key is sent. When backend/tests/
+# ran before tests/, the global patch persisted and the auth test got 200
+# instead of 401.
+#
+# Root-cause fix: only inject the header when the calling test is under
+# backend/tests/. We detect this by inspecting the calling frame's filename.
+# Tests outside backend/tests/ get an unpatched TestClient (no auto-injected
+# header), preserving their ability to test unauthenticated requests.
 try:
+    import os as _os
+    import sys as _sys
     from starlette.testclient import TestClient as _StarletteTestClient
     _original_testclient_init = _StarletteTestClient.__init__
 
+    # V140: cache the backend/tests/ directory path for fast comparison
+    _BACKEND_TESTS_DIR = _os.path.dirname(_os.path.abspath(__file__))
+
     def _patched_testclient_init(self, *args, **kwargs):
-        """Inject X-API-Key header by default into every TestClient."""
-        caller_headers = kwargs.pop("headers", None) or {}
-        # setdefault so a test can still override with its own X-API-Key
-        caller_headers.setdefault("X-API-Key", TEST_API_KEY)
-        kwargs["headers"] = caller_headers
+        """Inject X-API-Key header by default into every TestClient — but ONLY
+        when called from a test under backend/tests/. Other test directories
+        (tests/, fireai/core/tests/, etc.) get an unpatched TestClient so they
+        can test unauthenticated request paths."""
+        # V140: walk the call stack to find the calling test file
+        frame = _sys._getframe(1)
+        caller_file = ""
+        while frame is not None:
+            f_filename = frame.f_code.co_filename
+            if f_filename and ("test_" in _os.path.basename(f_filename) or "conftest" in f_filename):
+                caller_file = f_filename
+                break
+            frame = frame.f_back
+
+        # Only inject header if the caller is under backend/tests/
+        if caller_file and caller_file.startswith(_BACKEND_TESTS_DIR):
+            caller_headers = kwargs.pop("headers", None) or {}
+            # setdefault so a test can still override with its own X-API-Key
+            caller_headers.setdefault("X-API-Key", TEST_API_KEY)
+            kwargs["headers"] = caller_headers
         _original_testclient_init(self, *args, **kwargs)
 
     _StarletteTestClient.__init__ = _patched_testclient_init
