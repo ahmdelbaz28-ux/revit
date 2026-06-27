@@ -126,28 +126,22 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
           pip install pytest pytest-cov pytest-asyncio hypothesis
-          # V140 FIX: Starlette's TestClient requires httpx for backend/tests.
-          # Without it, conftest.py fails to import → entire test suite crashes.
           pip install httpx
-          # V140 FIX: Install parsing extras (shapely, ezdxf, pymupdf, reportlab,
-          # numpy, scipy, matplotlib, lxml, beautifulsoup4, pandas, psutil, PyYAML)
-          # because fireai/core/* imports shapely at module top-level. Without it,
-          # test collection crashes on `from fireai.core.X import Y` chains.
           pip install -e ".[parsing]"
-          # V140 FIX: opencv-python for image_parser.py (image floor plan parsing)
-          pip install opencv-python
-          # V140 FIX: prometheus_client for fireai.infrastructure.metrics
+          pip install opencv-python-headless
           pip install prometheus_client
+          pip install langgraph langgraph-checkpoint-sqlite
 
       - name: Run test suite with coverage
         run: |
-          pytest tests/ backend/tests/ -v \
+          pytest tests/ backend/tests/ \
             --tb=short \
             --cov=backend --cov=fireai --cov=core \
             --cov-report=html:reports/coverage_html \
             --cov-report=term-missing \
             --cov-fail-under=20 \
-            -x
+            -x \
+            -q
 
       - name: Upload coverage report
         if: always()
