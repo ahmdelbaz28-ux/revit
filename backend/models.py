@@ -73,6 +73,14 @@ class CreateProjectInput(BaseModel):
     description: str = Field(default="", max_length=5000)  # V113: max_length prevents 100MB body DoS
     author: str = Field(default="", max_length=255)  # V113: max_length prevents memory exhaustion
 
+    @field_validator("name", "description", "author")
+    @classmethod
+    def strip_null_bytes(cls, v):
+        """V140 FIX: Strip null bytes from all string fields (C string truncation attack)."""
+        if v is None:
+            return v
+        return v.replace("\x00", "")
+
 
 class UpdateProjectInput(BaseModel):
     """Input for updating an existing project."""

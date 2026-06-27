@@ -260,6 +260,28 @@ class ProjectCreate(BaseModel):
     status: ProjectStatus = ProjectStatus.DRAFT
     metadata: dict[str, Any] | None = None
 
+    @field_validator("name")
+    @classmethod
+    def sanitize_name(cls, v):
+        """V140 FIX: Strip null bytes and control characters from name."""
+        if v is None:
+            return v
+        # Remove null bytes (C string truncation attack)
+        v = v.replace("\x00", "")
+        # Remove other control chars except newline/tab
+        v = "".join(c for c in v if c == "\n" or c == "\t" or ord(c) >= 32)
+        if not v.strip():
+            raise ValueError("name must not be empty after sanitization")
+        return v
+
+    @field_validator("description")
+    @classmethod
+    def sanitize_description(cls, v):
+        """V140 FIX: Strip null bytes from description."""
+        if v is None:
+            return v
+        return v.replace("\x00", "")
+
     @field_validator("metadata")
     @classmethod
     def validate_metadata_size(cls, v):
