@@ -279,7 +279,28 @@ class PDFParser:
         return devices, '\n'.join(all_text), page_count
 
     def _ocr_page(self, page) -> str:
-        """Extract text from page using OCR (Tesseract)."""
+        """Extract text from page using OCR (Tesseract or DocTR)."""
+        # V140 Phase 10: Try DocTR OCR service first (more accurate), fall back to Tesseract
+        try:
+            from fireai.integration.document_intelligence import is_doctr_available, ocr_image
+            if is_doctr_available():
+                # Render page to image
+                img = page.to_image(resolution=200)
+                import io
+                buf = io.BytesIO()
+                img.original.save(buf, format="PNG")
+                image_bytes = buf.getvalue()
+
+                ocr_result = ocr_image(image_bytes)
+                if ocr_result and len(ocr_result) > 0:
+                    text = ocr_result[0].full_text
+                    if text and len(text.strip()) > 10:
+                        logger.info("DocTR OCR: extracted %d chars", len(text))
+                        return text
+        except Exception as e:
+            logger.debug("DocTR OCR unavailable, falling back to Tesseract: %s", e)
+
+        # Fall back to Tesseract
         try:
 
             import pytesseract

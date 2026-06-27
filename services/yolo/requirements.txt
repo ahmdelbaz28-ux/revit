@@ -1,0 +1,11 @@
+# YOLO Segmentation Service requirements
+doclayout-yolo>=0.0.7
+fastapi>=0.100.0
+uvicorn[standard]>=0.20.0
+python-multipart>=0.0.6
+torch>=2.0.0
+torchvision>=0.15.0
+numpy>=1.24.0
+Pillow>=10.0.0
+huggingface-hub>=0.20.0
+python-dotenv>=1.0.0

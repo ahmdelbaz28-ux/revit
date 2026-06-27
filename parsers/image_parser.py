@@ -212,12 +212,23 @@ class ImageParser:
             result.image_size = (img.shape[1], img.shape[0])
             logger.info("Image loaded: %s", result.image_size)
 
+            # V140 Phase 10: Try YOLO segmentation first (more accurate), fall back to OpenCV
+            yolo_rooms = self._try_yolo_segmentation(str(safe_path), result.image_size)
+            if yolo_rooms:
+                result.rooms = yolo_rooms
+                result.room_count = len(result.rooms)
+                result.scale_factor = self.scale_factor
+                result.success = result.room_count > 0
+                logger.info("YOLO segmentation: found %d rooms", result.room_count)
+                return result
+
+            # Fall back to OpenCV contour detection
             # Preprocess
             _gray, edges = self._preprocess(img)
 
             # Find contours (potential rooms)
             contours = self._find_contours(edges)
-            logger.info("Found %s potential regions", len(contours))
+            logger.info("OpenCV: found %s potential regions", len(contours))
 
             # Process each contour
             for contour in contours:
@@ -249,6 +260,56 @@ class ImageParser:
 
         # Regular image
         return cv2.imread(path)
+
+    def _try_yolo_segmentation(self, image_path: str, image_size: tuple) -> list:
+        """
+        V140 Phase 10: Try YOLO segmentation service for layout analysis.
+        Returns list of ImageRoom if successful, empty list if unavailable.
+        """
+        try:
+            from fireai.integration.document_intelligence import is_yolo_available, segment_image
+
+            if not is_yolo_available():
+                return []
+
+            # Read image file as bytes
+            with open(image_path, "rb") as f:
+                image_bytes = f.read()
+
+            seg_results = segment_image(image_bytes)
+            if not seg_results or len(seg_results) == 0:
+                return []
+
+            # Convert YOLO segments to ImageRoom objects
+            rooms = []
+            for seg in seg_results:
+                for segment in seg.segments:
+                    # Only treat "figure" and "text" segments as potential rooms
+                    # (YOLO detects layout elements, not architectural rooms directly,
+                    # but figure/text blocks often correspond to room boundaries)
+                    if segment.segment_type in ("figure", "text", "abandon"):
+                        left, top, width, height = segment.bbox
+                        if width > 20 and height > 20:  # Min 20px
+                            x = left + width / 2
+                            y = top + height / 2
+                            area_px = width * height
+                            area_m2 = area_px * (self.scale_factor ** 2)
+                            rooms.append(ImageRoom(
+                                name=f"YOLO_{segment.segment_type}_{len(rooms)+1}",
+                                x=int(x),
+                                y=int(y),
+                                width=int(width),
+                                height=int(height),
+                                width_m=width * self.scale_factor,
+                                height_m=height * self.scale_factor,
+                                floor_area=area_m2,
+                                room_type=segment.segment_type,
+                            ))
+            return rooms
+
+        except Exception as e:
+            logger.debug("YOLO segmentation unavailable: %s", e)
+            return []
 
     def _preprocess(self, img) -> Tuple[np.ndarray, np.ndarray]:
         """Preprocess image for contour detection."""
