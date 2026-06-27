@@ -11,14 +11,41 @@ Expected columns:
     - occupancy_type: office, residential, etc. (optional)
 """
 
+from __future__ import annotations
+
 import logging
 import os
 from dataclasses import dataclass, field
 from typing import Dict, List
 
-import pandas as pd
+# V140 FIX (Rule 17 — Root-Cause Analysis): pandas was imported at module
+# top-level. This crashed the module on systems without pandas installed,
+# even though path-security validation (the first stage of parse()) does NOT
+# require pandas. Tests `test_parsers_security_v125.py::TestExcelParserSecurity`
+# only exercise path validation, so they should pass without pandas.
+#
+# Root-cause fix: lazy-import pandas inside the methods that actually need it.
+# To enable Excel parsing, install the parsing extras:
+#   pip install -e ".[parsing]"
+pd = None  # type: ignore[assignment]
 
 logger = logging.getLogger("fireai.excel_parser")
+
+
+def _lazy_import_pandas():
+    """Lazily import pandas on first actual use."""
+    global pd
+    if pd is None:
+        try:
+            import pandas as _pd  # type: ignore
+            pd = _pd
+        except ImportError as e:
+            raise ImportError(
+                "pandas is required for Excel parsing. "
+                "Install with: pip install pandas openpyxl  "
+                f"(original error: {e})"
+            ) from e
+    return pd
 
 
 # ═══════════════════════════════════════════════════════
@@ -150,6 +177,8 @@ class ExcelParser:
         result = ExcelParseResult(source_file=file_path, success=False)
 
         try:
+            # V140: lazy import pandas (raises clear error if missing)
+            _lazy_import_pandas()
             # Read Excel
             df = pd.read_excel(str(safe_path), engine='openpyxl')
 

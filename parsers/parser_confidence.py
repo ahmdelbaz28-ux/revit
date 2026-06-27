@@ -191,8 +191,10 @@ class ParserConfidence:
                 if not actual_scale:
                     try:
                         from .pdf_parser import PDFParser
-                        _parser = PDFParser(self.pdf_path)
-                        _result = _parser.parse()
+                        # V140 FIX: PDFParser.__init__ takes min_confidence (float),
+                        # not pdf_path. The path is passed to .parse().
+                        _parser = PDFParser()
+                        _result = _parser.parse(self.pdf_path)
                         if hasattr(_result, 'scale') and _result.scale:
                             actual_scale = _result.scale
                             scale_confidence = 0.8

@@ -424,7 +424,7 @@ class LocalRevitProvider:
 
         """
         try:
-            rooms = self._bridge.extract_rooms(source_path=source, **kwargs)  # type: ignore[arg-type]
+            rooms = self._bridge.extract_rooms(source=source, **kwargs)  # type: ignore[arg-type]
             # Safety invariant: every room MUST have source set
             for room in rooms:
                 if not room.source:

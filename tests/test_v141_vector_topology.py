@@ -5,7 +5,6 @@ Per agent.md Rule 10 + Rule 19.
 """
 
 # No __future__ annotations — needed for Pydantic forward ref resolution
-from typing import Any, Dict
 
 import pytest
 from fastapi.testclient import TestClient

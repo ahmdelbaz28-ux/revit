@@ -1,7 +1,10 @@
 /**
  * EngineeringPage.tsx - Fire Alarm Electrical Calculations
+ *
+ * V140 Phase 5: Connected to real QOMN API endpoints. Falls back to local
+ * calculation when API is unavailable (offline mode).
  */
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -23,6 +26,7 @@ import {
   Cable,
   Ruler,
 } from 'lucide-react';
+import { qomnApi } from '@/services/fullApi';
 
 // ============================================================================
 // EngineeringPage Component
@@ -53,8 +57,11 @@ export function EngineeringPage() {
     alarmMinutes: '5',
   });
 
-  const calculateVoltageDrop = () => {
-    // Placeholder calculation
+  const [apiLoading, setApiLoading] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
+
+  const calculateVoltageDrop = useCallback(() => {
+    // Local fallback calculation
     const current = parseFloat(voltageDropInputs.current);
     const length = parseFloat(voltageDropInputs.length);
     const cableSize = parseFloat(voltageDropInputs.cableSize);
@@ -65,9 +72,8 @@ export function EngineeringPage() {
     }
     
     // Simplified calculation: Vdrop = (R * I * L) / 1000
-    // Where R is resistance per km (approximated)
-    const resistivity = voltageDropInputs.material === 'cu' ? 0.0172 : 0.0282; // Ohm·mm²/m
-    const resistance = (resistivity * length * 2) / cableSize; // *2 for round trip
+    const resistivity = voltageDropInputs.material === 'cu' ? 0.0172 : 0.0282;
+    const resistance = (resistivity * length * 2) / cableSize;
     const voltageDrop = current * resistance;
     const percentage = (voltageDrop / voltage) * 100;
     
@@ -75,7 +81,29 @@ export function EngineeringPage() {
       percentage: parseFloat(percentage.toFixed(2)),
       absolute: parseFloat(voltageDrop.toFixed(3))
     };
-  };
+  }, [voltageDropInputs]);
+
+  // V140 Phase 5: Call real QOMN API for voltage drop calculation
+  const calculateVoltageDropViaApi = useCallback(async () => {
+    setApiLoading(true);
+    setApiError(null);
+    try {
+      const result = await qomnApi.voltageDrop({
+        current: parseFloat(voltageDropInputs.current),
+        length: parseFloat(voltageDropInputs.length),
+        cable_size: voltageDropInputs.cableSize,
+        voltage: parseFloat(voltageDropInputs.voltage),
+        material: voltageDropInputs.material,
+      });
+      return result;
+    } catch (err) {
+      setApiError(err instanceof Error ? err.message : 'API calculation failed');
+      // Fall back to local calculation
+      return calculateVoltageDrop();
+    } finally {
+      setApiLoading(false);
+    }
+  }, [voltageDropInputs, calculateVoltageDrop]);
 
   const calculateCableSizing = () => {
     // Placeholder calculation

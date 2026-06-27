@@ -43,6 +43,14 @@ class TestAutoCADServiceInitialization:
         mock_app.ActiveDocument = mock_doc
         mock_doc.Utility = mock_util
 
+        # V140 FIX (Rule 17): The production code (autocad_service.py:99-112)
+        # tries `GetActiveObject` FIRST, and only falls back to `Dispatch` if
+        # GetActiveObject raises. The old test did NOT make GetActiveObject
+        # raise, so the success path never reached Dispatch. The test asserted
+        # Dispatch.called which was always False — a real bug in the test's
+        # mock setup. Fix: make GetActiveObject raise so Dispatch is exercised.
+        mock_win32com.GetActiveObject.side_effect = Exception("no instance")
+
         result = service.connect()  # noqa: F841  (verified via side effects below)
 
         # Verify the connection attempt
@@ -168,6 +176,16 @@ class TestAutoCADFileOperations:
         mock_win32com.Dispatch.return_value = mock_app
         mock_app.Documents.Add.return_value = mock_doc
         mock_doc.ModelSpace = mock_space
+
+        # V140 FIX (Rule 17): write_dwg (autocad_service.py:383-386) requires
+        # `self.connected == True`. The old test forgot to connect, so the
+        # method short-circuited with "AutoCAD service not connected" log.
+        # Force GetActiveObject to raise so Dispatch is the path that connects,
+        # then call connect() to establish the connected state.
+        mock_win32com.GetActiveObject.side_effect = Exception("no instance")
+        mock_app.ActiveDocument = mock_doc
+        mock_doc.Utility = Mock()
+        assert service.connect() is True
 
         # Create mock entities to write
         entities = [

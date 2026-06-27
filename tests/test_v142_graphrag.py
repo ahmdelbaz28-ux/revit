@@ -4,7 +4,6 @@ test_v142_graphrag.py — Tests for GraphRAG Engine + API endpoints.
 Per agent.md Rule 10 + Rule 19.
 """
 
-from typing import Any, Dict
 
 import pytest
 from fastapi.testclient import TestClient

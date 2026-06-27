@@ -17,7 +17,6 @@ Per agent.md Rule 1 (ABSOLUTE TRUTH): these tests provide REAL evidence
 that cloud services work, not just code that looks correct.
 """
 
-import math
 import os
 from pathlib import Path
 

@@ -233,7 +233,7 @@ export function ContextPanel({
                   <Button
                     type="button"
                     className="w-full bg-red-600 text-white hover:bg-red-700"
-                    onClick={() => openHelp(helpContextId)}
+                    onClick={() => openHelp?.()}
                   >
                     <CircleHelp className="h-4 w-4" />
                     Open related help

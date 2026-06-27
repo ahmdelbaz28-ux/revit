@@ -35,7 +35,7 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -266,7 +266,6 @@ class VectorMemoryService:
 
         # Fallback: hash-based pseudo-embedding (deterministic but not semantic)
         import hashlib
-        import struct
 
         hash_bytes = hashlib.sha256(text.encode("utf-8")).digest()
         # Repeat hash to fill EMBEDDING_DIMENSIONS

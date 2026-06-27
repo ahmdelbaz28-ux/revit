@@ -1083,5 +1083,25 @@
     "standbyHours": "Standby Hours",
     "alarmMinutes": "Alarm Minutes",
     "recommendations": "Recommendations"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "projects": "Projects",
+    "engineering": "Engineering",
+    "fireAlarmDesigner": "Fire Alarm Designer",
+    "digitalTwin": "Digital Twin",
+    "reports": "Reports",
+    "elements": "Elements",
+    "connections": "Connections",
+    "conflicts": "Conflicts",
+    "settings": "Settings",
+    "autocad": "AutoCAD",
+    "autocadDraw": "ACAD Draw",
+    "revit": "Revit",
+    "revitCreate": "Revit Create",
+    "revitElements": "Revit Elements",
+    "dtConvert": "DT Convert",
+    "dtConfig": "DT Config",
+    "dtHistory": "DT History"
   }
 }

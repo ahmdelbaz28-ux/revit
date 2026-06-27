@@ -45,7 +45,7 @@ References
 # Removing it forces actual type resolution at import time.
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
 
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field

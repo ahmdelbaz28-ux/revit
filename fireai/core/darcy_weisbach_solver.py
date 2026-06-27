@@ -403,7 +403,7 @@ def _compute_friction_factor(
     roughness: float,
     diameter: float,
     flow_regime: str,
-) -> float:
+) -> tuple[float, bool]:
     """
     Compute Darcy friction factor based on flow regime.
 
@@ -414,7 +414,9 @@ def _compute_friction_factor(
         flow_regime: "laminar", "turbulent", or "transitional".
 
     Returns:
-        Darcy friction factor (dimensionless).
+        Tuple of (friction_factor, converged). The friction factor is
+        dimensionless. ``converged`` is True when the result is exact or
+        the iterative solver converged.
 
     """
     if flow_regime == "laminar":

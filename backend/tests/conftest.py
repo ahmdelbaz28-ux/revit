@@ -67,17 +67,59 @@ os.environ["FIREAI_API_KEY"] = TEST_API_KEY
 # created inside module-scoped fixtures that may run before any function
 # fixture. Import-time patching ensures EVERY TestClient gets the header,
 # regardless of when it's constructed.
+#
+# V140 FIX (Rule 17 — Root-Cause Analysis): The old patch was GLOBAL — it
+# injected X-API-Key into EVERY TestClient instance across the entire test
+# suite. This broke tests/test_auth_integration.py::test_projects_requires_auth
+# which expects a 401 response when NO X-API-Key is sent. When backend/tests/
+# ran before tests/, the global patch persisted and the auth test got 200
+# instead of 401.
+#
+# Root-cause fix: only inject the header when the calling test is under
+# backend/tests/. We detect this by inspecting the calling frame's filename.
+# Tests outside backend/tests/ get an unpatched TestClient (no auto-injected
+# header), preserving their ability to test unauthenticated requests.
 try:
+    import os as _os
+    import sys as _sys
+
     from starlette.testclient import TestClient as _StarletteTestClient
     _original_testclient_init = _StarletteTestClient.__init__
 
+    # V140: cache the backend/tests/ directory path for fast comparison
+    _BACKEND_TESTS_DIR = _os.path.dirname(_os.path.abspath(__file__))
+
     def _patched_testclient_init(self, *args, **kwargs):
-        """Inject X-API-Key header by default into every TestClient."""
-        caller_headers = kwargs.pop("headers", None) or {}
-        # setdefault so a test can still override with its own X-API-Key
-        caller_headers.setdefault("X-API-Key", TEST_API_KEY)
-        kwargs["headers"] = caller_headers
+        """
+        Inject X-API-Key header by default into every TestClient — but ONLY
+        when called from a test under backend/tests/. Other test directories
+        (tests/, fireai/core/tests/, etc.) get an unpatched TestClient so they
+        can test unauthenticated request paths.
+        """
+        # V140: walk the call stack to find the calling test file
+        frame = _sys._getframe(1)
+        caller_file = ""
+        while frame is not None:
+            f_filename = frame.f_code.co_filename
+            if f_filename and ("test_" in _os.path.basename(f_filename) or "conftest" in f_filename):
+                caller_file = f_filename
+                break
+            frame = frame.f_back
+
+        # Only inject header if the caller is under backend/tests/
+        is_backend_test = bool(caller_file and caller_file.startswith(_BACKEND_TESTS_DIR))
+        if is_backend_test:
+            caller_headers = kwargs.pop("headers", None) or {}
+            # setdefault so a test can still override with its own X-API-Key
+            caller_headers.setdefault("X-API-Key", TEST_API_KEY)
+            kwargs["headers"] = caller_headers
         _original_testclient_init(self, *args, **kwargs)
+        # V140 FIX: Set a flag on the INSTANCE so _patched_method/_patched_request
+        # can check it without call-stack inspection (which is fragile because
+        # starlette's testclient.py filename contains "test_" and confuses the
+        # frame walker). This is the root-cause fix for the URL rewriting bug
+        # that was breaking tests/test_dwg_router.py.
+        self._fireai_backend_test = is_backend_test
 
     _StarletteTestClient.__init__ = _patched_testclient_init
 
@@ -120,7 +162,8 @@ try:
         _NON_VERSIONED_API_PATHS = {"/api/health", "/api/reports/statistics"}
 
     def _rewrite_legacy_url(url: str) -> str:
-        """Rewrite /api/* → /api/v1/* for legacy test URLs.
+        """
+        Rewrite /api/* → /api/v1/* for legacy test URLs.
 
         V139 FIX: Skip rewriting for paths that exist at /api/ (health,
         reports/statistics). These are mounted at /api/ via
@@ -135,7 +178,7 @@ try:
             return url
         # Check if the URL (or its prefix) matches a known /api/ route
         # Strip query string for matching
-        path_only = url.split("?")[0]
+        path_only = url.split("?", maxsplit=1)[0]
         for prefix in _NON_VERSIONED_API_PATHS:
             if path_only == prefix or path_only.startswith(prefix + "/"):
                 return url  # Don't rewrite — route exists at /api/
@@ -147,7 +190,12 @@ try:
 
         def _make_patched_method(orig, name):
             def _patched_method(self, url, *args, **kwargs):
-                return orig(self, _rewrite_legacy_url(url), *args, **kwargs)
+                # V140 FIX: Use instance flag instead of call-stack inspection.
+                # The flag is set in _patched_testclient_init based on whether
+                # the TestClient was created from a test under backend/tests/.
+                if getattr(self, '_fireai_backend_test', False):
+                    return orig(self, _rewrite_legacy_url(url), *args, **kwargs)
+                return orig(self, url, *args, **kwargs)
             _patched_method.__name__ = name
             return _patched_method
 
@@ -157,7 +205,10 @@ try:
     if hasattr(_StarletteTestClient, "request"):
         _original_request = _StarletteTestClient.request
         def _patched_request(self, method, url, *args, **kwargs):
-            return _original_request(self, method, _rewrite_legacy_url(url), *args, **kwargs)
+            # V140 FIX: Same instance-flag check as _patched_method
+            if getattr(self, '_fireai_backend_test', False):
+                return _original_request(self, method, _rewrite_legacy_url(url), *args, **kwargs)
+            return _original_request(self, method, url, *args, **kwargs)
         _StarletteTestClient.request = _patched_request
 
 except ImportError:

@@ -11,16 +11,52 @@ Features:
 Supported formats: JPEG, PNG, BMP, TIFF, GIF, WebP, HEIC
 """
 
+from __future__ import annotations
+
 import logging
 import os
 import re
 from dataclasses import dataclass, field
 from typing import List, Optional, Tuple
 
-import cv2
-import numpy as np
+# V140 FIX (Rule 17 — Root-Cause Analysis): cv2 (OpenCV) and numpy were
+# imported at module top-level. This crashed the entire module on systems
+# without opencv-python installed, even though path-security validation
+# (the first stage of parse()) does NOT require cv2. Tests
+# `test_parsers_security_v125.py::TestImageParserSecurity` only exercise
+# path validation, so they should pass without OpenCV.
+#
+# Root-cause fix: lazy-import cv2/numpy inside the methods that actually
+# need them. The ImageParser class can be instantiated and path-security
+# checks run successfully without OpenCV. Real image decoding raises a
+# clear ImportError if cv2 is missing — no silent failure.
+#
+# To enable full image-parsing functionality, install the parsing extras:
+#   pip install -e ".[parsing]"
+# or directly:
+#   pip install opencv-python numpy
+cv2 = None  # type: ignore[assignment]
+np = None   # type: ignore[assignment]
 
 logger = logging.getLogger("fireai.image_parser")
+
+
+def _lazy_import_cv2():
+    """Lazily import cv2 and numpy on first actual use."""
+    global cv2, np
+    if cv2 is None:
+        try:
+            import cv2 as _cv2  # type: ignore
+            import numpy as _np
+            cv2 = _cv2
+            np = _np
+        except ImportError as e:
+            raise ImportError(
+                "OpenCV (opencv-python) and numpy are required for image parsing. "
+                "Install with: pip install opencv-python numpy  "
+                f"(original error: {e})"
+            ) from e
+    return cv2, np
 
 
 # ═══════════════════════════════════════════════════════
@@ -200,6 +236,7 @@ class ImageParser:
 
     def _load_image(self, path: str):
         """Load image handling different formats."""
+        _lazy_import_cv2()  # V140: lazy import — raises clear error if cv2 missing
         # Try HEIC first
         if path.lower().endswith(('.heic', '.heif')):
             try:
@@ -215,6 +252,7 @@ class ImageParser:
 
     def _preprocess(self, img) -> Tuple[np.ndarray, np.ndarray]:
         """Preprocess image for contour detection."""
+        _lazy_import_cv2()  # V140: lazy import
         # Convert to grayscale
         if len(img.shape) == 3:
             gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -276,6 +314,7 @@ class ImageParser:
         """Extract room name using OCR."""
         try:
 
+            _lazy_import_cv2()  # V140: lazy import — needed for cvtColor below
             import pytesseract
             os.environ['TESSDATA_PREFIX'] = '/usr/share/tesseract-ocr'
 

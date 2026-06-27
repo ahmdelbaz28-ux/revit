@@ -1,10 +1,24 @@
 # Optional dependencies for FACP distributed system and integration modules
 # Install with: pip install -r requirements-optional.txt
+# Or use the extras: pip install -e ".[facp,parsing,dev]"
+
+# V140 FIX: aiohttp + nats-py are MANDATORY if importing facp_distributed.transport
+# The transport layer does `import aiohttp` at module top-level. Without it,
+# `import fireai.bridges.enterprise_pipeline` (which transitively touches
+# facp_distributed) crashes the entire process.
+aiohttp>=3.8.0,<4.0.0
+nats-py>=2.0.0,<3.0.0
 
 # FACP Distributed System — Redis-backed event bus and task queue
 redis>=4.0.0
 celery>=5.1.0
 asyncio-mqtt>=0.10.0
 
+# Observability (fireai.infrastructure.metrics imports prometheus_client)
+prometheus_client>=0.16.0,<1.0.0
+
 # Load testing (dev)
 locust>=2.20.0
+
+# HTTP test client (required by backend/tests/conftest.py)
+httpx>=0.24.0,<1.0.0

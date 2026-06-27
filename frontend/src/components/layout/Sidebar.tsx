@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useLocation, Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   LayoutDashboard,
   FolderKanban,
@@ -13,26 +14,42 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
+  PencilRuler,
+  Building2,
+  ArrowRightLeft,
+  History,
+  Settings2,
 } from "lucide-react";
 
 interface NavItem {
-  label: string;
+  labelKey: string;
+  defaultLabel: string;
   icon: React.ElementType;
   path: string;
   dataOnboarding?: string;
 }
 
+// V140 FIX + Phase 6: Use i18n keys + correct paths + new CAD/BIM routes
 const navItems: NavItem[] = [
-  { label: "Dashboard", icon: LayoutDashboard, path: "/", dataOnboarding: "nav-dashboard" },
-  { label: "Projects", icon: FolderKanban, path: "/projects", dataOnboarding: "nav-projects" },
-  { label: "Engineering", icon: Calculator, path: "/engineering", dataOnboarding: "nav-engineering" },
-  { label: "Fire Alarm Designer", icon: Flame, path: "/fire-alarm-designer", dataOnboarding: "nav-fire-alarm-designer" },
-  { label: "Digital Twin", icon: Box, path: "/digital-twin" },
-  { label: "Reports", icon: FileText, path: "/reports", dataOnboarding: "nav-reports" },
-  { label: "Elements", icon: Layers, path: "/elements" },
-  { label: "Connections", icon: Cable, path: "/connections" },
-  { label: "Conflicts", icon: AlertTriangle, path: "/conflicts" },
-  { label: "Settings", icon: Settings, path: "/settings", dataOnboarding: "nav-settings" },
+  { labelKey: "nav.dashboard", defaultLabel: "Dashboard", icon: LayoutDashboard, path: "/dashboard", dataOnboarding: "nav-dashboard" },
+  { labelKey: "nav.projects", defaultLabel: "Projects", icon: FolderKanban, path: "/projects", dataOnboarding: "nav-projects" },
+  { labelKey: "nav.engineering", defaultLabel: "Engineering", icon: Calculator, path: "/engineering", dataOnboarding: "nav-engineering" },
+  { labelKey: "nav.fireAlarmDesigner", defaultLabel: "Fire Alarm Designer", icon: Flame, path: "/fire-alarm/designer", dataOnboarding: "nav-fire-alarm-designer" },
+  // V140 Phase 6: New AutoCAD / Revit / Digital Twin routes
+  { labelKey: "nav.autocad", defaultLabel: "AutoCAD", icon: PencilRuler, path: "/autocad" },
+  { labelKey: "nav.autocadDraw", defaultLabel: "ACAD Draw", icon: PencilRuler, path: "/autocad/draw" },
+  { labelKey: "nav.revit", defaultLabel: "Revit", icon: Building2, path: "/revit" },
+  { labelKey: "nav.revitCreate", defaultLabel: "Revit Create", icon: Building2, path: "/revit/create" },
+  { labelKey: "nav.revitElements", defaultLabel: "Revit Elements", icon: Layers, path: "/revit/elements" },
+  { labelKey: "nav.digitalTwin", defaultLabel: "Digital Twin", icon: Box, path: "/digital-twin" },
+  { labelKey: "nav.dtConvert", defaultLabel: "DT Convert", icon: ArrowRightLeft, path: "/digital-twin/convert" },
+  { labelKey: "nav.dtConfig", defaultLabel: "DT Config", icon: Settings2, path: "/digital-twin/config" },
+  { labelKey: "nav.dtHistory", defaultLabel: "DT History", icon: History, path: "/digital-twin/history" },
+  { labelKey: "nav.reports", defaultLabel: "Reports", icon: FileText, path: "/reports", dataOnboarding: "nav-reports" },
+  { labelKey: "nav.elements", defaultLabel: "Elements", icon: Layers, path: "/elements" },
+  { labelKey: "nav.connections", defaultLabel: "Connections", icon: Cable, path: "/connections" },
+  { labelKey: "nav.conflicts", defaultLabel: "Conflicts", icon: AlertTriangle, path: "/conflicts" },
+  { labelKey: "nav.settings", defaultLabel: "Settings", icon: Settings, path: "/settings", dataOnboarding: "nav-settings" },
 ];
 
 interface SidebarProps {
@@ -43,6 +60,7 @@ const Sidebar: React.FC<SidebarProps> = ({ compact = false }) => {
   const [collapsed, setCollapsed] = useState(false);
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   const location = useLocation();
+  const { t } = useTranslation();
   const isRTL = document.documentElement.dir === "rtl";
 
   const width = collapsed
@@ -72,8 +90,11 @@ const Sidebar: React.FC<SidebarProps> = ({ compact = false }) => {
 
       <nav className="flex-1 py-2 overflow-y-auto">
         {navItems.map((item) => {
-          const isActive = location.pathname === item.path;
+          // V140 FIX: Match both exact path and sub-paths (e.g. /elements/123 matches /elements)
+          const isActive = location.pathname === item.path ||
+            (item.path !== "/dashboard" && location.pathname.startsWith(item.path + "/"));
           const isHovered = hoveredItem === item.path;
+          const labelText = t(item.labelKey, item.defaultLabel);
           return (
             <div key={item.path} className="relative">
               <Link
@@ -85,7 +106,7 @@ const Sidebar: React.FC<SidebarProps> = ({ compact = false }) => {
                 } ${compact && !collapsed ? "py-1.5 text-sm" : ""}`}
                 onMouseEnter={() => setHoveredItem(item.path)}
                 onMouseLeave={() => setHoveredItem(null)}
-                title={collapsed ? item.label : undefined}
+                title={collapsed ? labelText : undefined}
                 data-onboarding={item.dataOnboarding}
               >
                 <item.icon
@@ -97,13 +118,13 @@ const Sidebar: React.FC<SidebarProps> = ({ compact = false }) => {
                   <span
                     className={`truncate transition-all duration-200 ${compact && !collapsed ? "text-xs" : "text-sm"}`}
                   >
-                    {item.label}
+                    {labelText}
                   </span>
                 )}
               </Link>
               {collapsed && isHovered && (
                 <div className={`absolute top-1/2 -translate-y-1/2 px-2 py-1 bg-slate-800/90 backdrop-blur-sm text-slate-200 text-xs rounded shadow-lg z-50 whitespace-nowrap ${isRTL ? "right-full mr-2" : "left-full ml-2"}`}>
-                  {item.label}
+                  {labelText}
                 </div>
               )}
             </div>

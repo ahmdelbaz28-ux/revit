@@ -36,6 +36,7 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { digitalTwinApi } from '@/services/fullApi';
 
 interface ConversionResult {
   success: boolean;
@@ -147,23 +148,12 @@ export function DigitalTwinPage() {
   const fetchVersionHistory = async () => {
     setLoadingHistory(true);
     try {
-      // TODO: Implement actual API call
-      // const response = await api.getConversionHistory();
-      // setVersions(response);
-      
-      // Mock data for now
-      setVersions([
-        {
-          version_id: 'v1',
-          timestamp: new Date().toISOString(),
-          source_file: 'building_plan.dwg',
-          target_file: 'building_model.rvt',
-          conversion_type: 'autocad_to_revit',
-          elements_count: 85,
-          status: 'success',
-        },
-      ]);
+      // V140 Phase 5: Call real Digital Twin API
+      const history = await digitalTwinApi.getHistory() as VersionInfo[];
+      setVersions(Array.isArray(history) ? history : []);
     } catch (error) {
+      // Fallback to empty if API fails (no mock data)
+      setVersions([]);
       toast.error('Failed to load version history');
     } finally {
       setLoadingHistory(false);
@@ -172,9 +162,9 @@ export function DigitalTwinPage() {
 
   const handleRollback = async (versionId: string) => {
     try {
-      // TODO: Implement actual API call
+      // V140 Phase 5: Call real Digital Twin API
       toast.info(`Rolling back to version ${versionId}...`);
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await digitalTwinApi.rollback(versionId);
       toast.success('Rollback completed successfully');
       fetchVersionHistory();
     } catch (error) {

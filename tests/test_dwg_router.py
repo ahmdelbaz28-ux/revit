@@ -21,8 +21,6 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from backend.routers.dwg import router
-
 
 @pytest.fixture
 def app():

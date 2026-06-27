@@ -474,6 +474,20 @@ def _safe_include_router(module_name: str, prefix: str = "/api/v1", tag: str = "
         if hasattr(mod, "project_router"):
             app.include_router(mod.project_router, prefix=prefix, tags=[tag or module_name.title()])
             logger.debug("Registered project_router from: %s", module_name)
+        # V140 FIX (Rule 17 — Root-Cause Analysis): Some routers (notably
+        # backend.routers.sync) export a SEPARATE `ws_router` for WebSocket
+        # routes. WebSocket routes cannot share an APIRouter with HTTP routes
+        # that have a path prefix like "/projects/{project_id}/sync" because
+        # the prefix would be applied to the WebSocket path too, breaking the
+        # contract documented in sync.py ("/ws" at root, not "/api/v1/ws").
+        # The old _safe_include_router only registered `mod.router` and
+        # `mod.project_router`, silently dropping `ws_router` — so the /ws
+        # endpoint was unreachable and tests/test_sync_websocket.py failed
+        # with WebSocketDisconnect(1000). Registering ws_router WITHOUT a
+        # prefix preserves the documented "/ws" path.
+        if hasattr(mod, "ws_router"):
+            app.include_router(mod.ws_router, tags=[tag or module_name.title()])
+            logger.debug("Registered ws_router from: %s (no prefix — preserves /ws root path)", module_name)
     except ImportError as e:
         logger.warning("Router '%s' skipped (optional dependency missing): %s", module_name, e)
     except Exception as e:
@@ -516,9 +530,16 @@ app.include_router(marine_router_module.router, prefix="/api/v1", tags=["Marine"
 # Auth is enforced INSIDE the router via require_permission(Permission.MONITOR_READ).
 # For unauthenticated /metrics scraping, deploy a sidecar that injects a
 # service-account API key, or expose /metrics via a separate internal port.
+#
+# V140 FIX (Rule 17 — Root-Cause Analysis): The monitor router defines its
+# routes with the FULL path already (e.g. `@router.get("/api/v1/monitor/health")`
+# — see backend/routers/monitor.py:533). Adding `prefix="/api/v1"` here caused
+# the routes to be registered at /api/v1/api/v1/monitor/health — double prefix.
+# Every monitor test failed with 404. Removing the prefix here matches the
+# router's own path definitions.
 from backend.routers import monitor as monitor_router_module
 
-app.include_router(monitor_router_module.router, prefix="/api/v1", tags=["Monitor"])
+app.include_router(monitor_router_module.router, tags=["Monitor"])
 
 # V129: Mount the health router under /api prefix so /api/health works.
 # Previously only /api/v1/health existed (defined inline above), but tests
@@ -618,7 +639,8 @@ app.include_router(health_router_module.router, prefix="/api/v1", tags=["Health-
 # compatibility with stress tests and deployment probes that hit /health.
 @app.get("/health", tags=["Health"])
 async def health_check_legacy_alias():
-    """Legacy /health alias — delegates to the real health check.
+    """
+    Legacy /health alias — delegates to the real health check.
 
     Returns the same database-aware response as /api/health.
     """

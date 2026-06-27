@@ -19,6 +19,12 @@ FROM python:3.12-slim AS python-builder
 
 WORKDIR /build
 
+# V140 FIX: Install setuptools + wheel BEFORE pip install — required by
+# pyproject.toml build-system (setuptools.build_meta backend). Without this,
+# pip fails with "Cannot import 'setuptools.build_meta'" when installing
+# packages that use PEP 517 builds.
+RUN pip install --no-cache-dir --upgrade pip setuptools>=68 wheel
+
 COPY requirements.txt .
 RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 

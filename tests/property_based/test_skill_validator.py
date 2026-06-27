@@ -28,13 +28,15 @@ from skills.skill_validator import (
 # ═══════════════════════════════════════════════════════════════════════════
 
 
+# V140 FIX (Rule 17): skills/skill_validator.py:74-81 only accepts ASCII
+# lowercase + digits + hyphen + underscore. Unicode "Ll" includes 'µ' (U+00B5)
+# and "Nd" includes Arabic-Indic digits — both rejected by the validator.
+# Use sampled_from over the explicit allowed alphabet to guarantee validity.
 valid_name_strategy = st.text(
     min_size=1,
     max_size=50,
-    alphabet=st.characters(
-        whitelist_categories=["Ll", "Nd"],
-    ),
-).map(lambda s: s.lower())
+    alphabet=st.sampled_from(list("abcdefghijklmnopqrstuvwxyz0123456789-_")),
+)
 
 
 valid_version_strategy = st.tuples(
@@ -44,11 +46,16 @@ valid_version_strategy = st.tuples(
 ).map(lambda x: f"{x[0]}.{x[1]}.{x[2]}")
 
 
+# V140 FIX (Rule 17): The validator strips whitespace (ConfigDict
+# str_strip_whitespace=True) before enforcing min_length=1. The old strategy
+# allowed Zs (space separator) chars including U+0020 space, so ' ' (single
+# space) became '' after stripping and failed validation. Filter to ensure
+# the stripped value is non-empty.
 valid_author_strategy = st.text(
     min_size=1,
     max_size=50,
     alphabet=st.characters(whitelist_categories=["Ll", "Lu", "Nd", "Zs", "Po"]),
-)
+).filter(lambda s: s.strip() != "")
 
 
 trigger_word_strategy = st.text(
@@ -82,7 +89,10 @@ def test_skill_metadata_valid_inputs(name, version, author):
 
     assert metadata.name == name
     assert metadata.version == version
-    assert metadata.author == author
+    # V140 FIX: SkillMetadata has str_strip_whitespace=True in its ConfigDict,
+    # so author is stripped. The assertion must compare against the stripped
+    # value, not the raw input.
+    assert metadata.author == author.strip()
     assert isinstance(metadata.created_at, datetime)
 
 
@@ -136,7 +146,11 @@ def test_description_valid_inputs(short_desc, triggers):
 
     assert desc.short_description == short_desc
     assert len(desc.trigger_words) >= 1
-    assert all(t.islower() for t in desc.trigger_words)
+    # V140 FIX (Rule 17): str.islower() returns False for digit-only strings
+    # like '00' even though .lower() is a no-op on them. The validator's
+    # contract (skill_validator.py:121) is `t.strip().lower()` — i.e. each
+    # trigger word equals its own lowercased form. That is what we assert here.
+    assert all(t == t.lower() for t in desc.trigger_words)
 
 
 @given(triggers=st.lists(trigger_word_strategy, min_size=1, max_size=10))
@@ -166,11 +180,20 @@ def test_trigger_words_deduplicated(triggers):
 @settings(max_examples=50)
 def test_execution_result_mutual_exclusion(success, has_data, has_error):
     """Property: Cannot have both data and error."""
-    # Constrain to meaningful combinations
-    if success and (has_data or has_error):
-        has_data, has_error = False, False
+    # V140 FIX (Rule 17): Align conditioning with the validator contract at
+    # skill_validator.py:219-226:
+    #   (1) success=True  → error MUST be None (data is allowed)
+    #   (2) success=False → data MUST be None (error is allowed)
+    # The old logic forced has_data=False on success, which is wrong — data is
+    # the SUCCESS payload. And it allowed success=False + has_data=True which
+    # the validator correctly rejects.
+    if success and has_error:
+        has_error = False  # success cannot have error
+    if not success and has_data:
+        has_data = False  # failure cannot have data
+    # data and error are already mutually exclusive via the above
     if has_error:
-        has_data = False
+        has_data = False  # belt-and-suspenders
 
     data = {"key": "value"} if has_data else None
     error = ExecutionError(type="Test", message="Error") if has_error else None

@@ -1,104 +1,33 @@
-import React, { createContext, useCallback, useMemo, useState } from 'react';
-import type { HelpCategory, HelpTopicId, SmartHelpContextValue } from './types';
-
-interface SmartHelpProviderProps {
-  children: React.ReactNode;
-}
+/**
+ * SmartHelpProvider.tsx — Legacy stub (V140 Phase 7)
+ *
+ * The full help system is now in GlobalHelpDrawer.tsx + ContextualHelpButton.tsx.
+ * This file is kept as a stub for backward compatibility with any code that
+ * still imports it.
+ */
+import { createContext, type ReactNode } from 'react';
+import type { SmartHelpContextValue, HelpTopicId } from './types';
 
 export const SmartHelpContext = createContext<SmartHelpContextValue | null>(null);
 
-export function SmartHelpProvider({ children }: SmartHelpProviderProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [activeContextId, setActiveContextId] = useState<HelpTopicId | string | null>(null);
-  const [selectedTopicId, setSelectedTopicId] = useState<HelpTopicId | null>(null);
-  const [query, setQueryState] = useState('');
-  const [category, setCategoryState] = useState<HelpCategory | 'all'>('all');
+const noop = () => {};
 
-  const openHelp = useCallback((contextId?: HelpTopicId | string) => {
-    setActiveContextId(contextId ?? null);
-    setSelectedTopicId(null);
-    setQueryState('');
-    setCategoryState('all');
-    setIsSearchOpen(false);
-    setIsOpen(true);
-  }, []);
+const defaultValue: SmartHelpContextValue = {
+  open: false,
+  setOpen: noop,
+  searchQuery: '',
+  setSearchQuery: noop,
+  selectedTopicId: null,
+  setSelectedTopicId: noop,
+  topics: [],
+  categories: [],
+  searchResults: [],
+  navigateToTopic: noop,
+};
 
-  const closeHelp = useCallback(() => {
-    setIsOpen(false);
-    setIsSearchOpen(false);
-  }, []);
-
-  const openSearch = useCallback((initialQuery = '') => {
-    setQueryState(initialQuery);
-    setIsSearchOpen(true);
-    setSelectedTopicId(null);
-    setIsOpen(true);
-  }, []);
-
-  const closeSearch = useCallback(() => {
-    setIsSearchOpen(false);
-  }, []);
-
-  const selectTopic = useCallback((topicId: HelpTopicId) => {
-    setSelectedTopicId(topicId);
-    setActiveContextId(topicId);
-    setIsSearchOpen(false);
-    setIsOpen(true);
-  }, []);
-
-  const setQuery = useCallback((nextQuery: string) => {
-    setQueryState(nextQuery);
-    setSelectedTopicId(null);
-    setIsSearchOpen(true);
-  }, []);
-
-  const setCategory = useCallback((nextCategory: HelpCategory | 'all') => {
-    setCategoryState(nextCategory);
-    setSelectedTopicId(null);
-    setIsSearchOpen(true);
-  }, []);
-
-  const clearFilters = useCallback(() => {
-    setQueryState('');
-    setCategoryState('all');
-    setSelectedTopicId(null);
-  }, []);
-
-  const value = useMemo<SmartHelpContextValue>(() => ({
-    isOpen,
-    isSearchOpen,
-    activeContextId,
-    selectedTopicId,
-    query,
-    category,
-    openHelp,
-    closeHelp,
-    openSearch,
-    closeSearch,
-    selectTopic,
-    setQuery,
-    setCategory,
-    clearFilters,
-  }), [
-    isOpen,
-    isSearchOpen,
-    activeContextId,
-    selectedTopicId,
-    query,
-    category,
-    openHelp,
-    closeHelp,
-    openSearch,
-    closeSearch,
-    selectTopic,
-    setQuery,
-    setCategory,
-    clearFilters,
-  ]);
-
+export function SmartHelpProvider({ children }: { children: ReactNode }) {
   return (
-    <SmartHelpContext.Provider value={value}>
+    <SmartHelpContext.Provider value={defaultValue}>
       {children}
     </SmartHelpContext.Provider>
   );
