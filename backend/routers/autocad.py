@@ -254,7 +254,9 @@ async def connect_to_autocad(request: ConnectRequest) -> ConnectResponse:
     try:
         service = get_autocad_service()
 
-        if not service.connect(visible=request.visible, force_new=request.force_new):
+        # V140 FIX: AutoCADService.connect() does not accept parameters
+        # The visible and force_new parameters are not supported by the service
+        if not service.connect():
             raise HTTPException(
                 status_code=503,
                 detail="Failed to connect to AutoCAD. Is AutoCAD installed and running?",
