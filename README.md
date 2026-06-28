@@ -35,7 +35,7 @@ This platform provides bidirectional conversion between AutoCAD DWG files and Re
 ## Installation
 
 ### Prerequisites
-- Python 3.8+
+- Python 3.12+
 - Windows OS (for AutoCAD/Revit integration)
 - AutoCAD (optional, for full functionality)
 - Revit (optional, for full functionality)

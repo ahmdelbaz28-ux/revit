@@ -7,7 +7,7 @@ name = "cad-bim-integration-platform"
 dynamic = ["version"]
 description = "Complete platform for AutoCAD and Revit integration with Digital Twin capabilities"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.12"
 license = {text = "MIT"}
 authors = [{name = "FireAI Project", email = "contact@fireai.org"}]
 classifiers = [
@@ -16,10 +16,6 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering",
     "Topic :: Scientific/Engineering :: Mathematics",
@@ -350,8 +346,7 @@ ignore = [
     # Now scoped per-file via [tool.ruff.lint.per-file-ignores] below.
     "PGH004",  # Blanket noqa (progressive migration)
     "UP031",   # Printf-string-formatting (intentional % formatting in some places)
-    "UP006",   # Non-pep585-annotation (Python 3.8 compat)
-    "UP045",   # Non-pep604-annotation-optional (Python 3.8 compat)
+    # UP006/UP045 removed — Python 3.12+ supports PEP 585/604 natively
     "RUF013",  # Implicit-optional (progressive migration)
     "RET504",  # Unnecessary-assign (style preference)
     "RET505",  # Superfluous-else-return (style preference)

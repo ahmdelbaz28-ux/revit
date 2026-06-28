@@ -142,7 +142,7 @@ repos:
 
 # Configuration for the entire pre-commit system
 default_language_version:
-  python: python3.8
+  python: python3.12
 
 default_stages: [commit]
 
