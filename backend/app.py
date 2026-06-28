@@ -40,7 +40,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
@@ -248,7 +248,7 @@ def _ensure_cache_reaper_started() -> None:
         logger.info("Cache reaper thread started (interval=%ds)", _CACHE_REAPER_INTERVAL)
 
 
-def get_cache():
+def get_cache() -> _OrderedDict[str, dict]:
     """Get cache instance. Returns in-memory dict if Redis unavailable."""
     return _cache
 
@@ -267,7 +267,7 @@ async def cache_get(key: str):
         return entry["value"]
 
 
-async def cache_set(key: str, value: str, expire: int = 300) -> None:
+async def cache_set(key: str, value: object, expire: int = 300) -> None:
     """
     Set value in cache with expiration in seconds.
 
@@ -619,7 +619,7 @@ def _register_csrf_middleware() -> None:
 # Deprecation middleware: add Deprecation/Sunset/Link headers to v1 responses.
 # Per RFC 7234 (HTTP Caching) and the HTTP Deprecation header draft.
 @app.middleware("http")
-async def add_deprecation_headers(request, call_next):
+async def add_deprecation_headers(request: Request, call_next):
     """
     Add Deprecation: true, Sunset, and Link headers to /api/v1/ responses.
 
@@ -658,7 +658,7 @@ app.include_router(health_router_module.router, prefix="/api/v1", tags=["Health-
 # V139 FIX: /health (no /api prefix) — alias to /api/health for backward
 # compatibility with stress tests and deployment probes that hit /health.
 @app.get("/health", tags=["Health"])
-async def health_check_legacy_alias():
+async def health_check_legacy_alias() -> Response:
     """
     Legacy /health alias — delegates to the real health check.
 
@@ -668,7 +668,7 @@ async def health_check_legacy_alias():
     return await health_check()
 
 @app.get("/api/v2/health", tags=["Health-v2"])
-async def health_check_v2():
+async def health_check_v2() -> dict[str, object]:
     """Health check endpoint for API v2."""
     return {
         "status": "healthy",
@@ -688,7 +688,7 @@ async def health_check_v2():
 # to the client. In a fire-safety system, internal exception messages can
 # leak file paths, DB connection strings, and variable names.
 @app.exception_handler(Exception)
-async def general_exception_handler(request: Request, exc: Exception):
+async def general_exception_handler(request: Request, exc: Exception) -> Response:
     """General exception handler — logs full traceback, returns safe message."""
     logger.error("Unhandled exception on %s %s: %s", request.method, request.url.path, exc, exc_info=True)
     return JSONResponse(
@@ -707,8 +707,8 @@ async def general_exception_handler(request: Request, exc: Exception):
 # (information disclosure: reveals internal operational metrics).
 @app.post("/api/v1/cache/clear", tags=["Cache"])
 async def clear_cache(
-    _role=Depends(require_permission(Permission.SYSTEM_CONFIG)),
-):
+    _role: str = Depends(require_permission(Permission.SYSTEM_CONFIG)),
+) -> dict[str, object]:
     """
     Clear all cached data. Requires SYSTEM_CONFIG permission (admin only).
 
@@ -729,8 +729,8 @@ async def clear_cache(
 
 @app.get("/api/v1/cache/stats", tags=["Cache"])
 async def cache_stats(
-    _role=Depends(require_permission(Permission.SYSTEM_CONFIG)),
-):
+    _role: str = Depends(require_permission(Permission.SYSTEM_CONFIG)),
+) -> dict[str, object]:
     """
     Get cache statistics. Requires SYSTEM_CONFIG permission (admin only).
 
