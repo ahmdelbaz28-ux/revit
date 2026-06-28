@@ -346,7 +346,10 @@ ignore = [
     # Now scoped per-file via [tool.ruff.lint.per-file-ignores] below.
     "PGH004",  # Blanket noqa (progressive migration)
     "UP031",   # Printf-string-formatting (intentional % formatting in some places)
-    # UP006/UP045 removed — Python 3.12+ supports PEP 585/604 natively
+    # UP006/UP045: Kept ignored — Python 3.12 supports PEP 585/604 but
+    # 72 files still use Dict/Optional. Progressive migration tracked separately.
+    "UP006",   # Non-pep585-annotation (Dict → dict) — progressive migration
+    "UP045",   # Non-pep604-annotation-optional (Optional → | None) — progressive migration
     "RUF013",  # Implicit-optional (progressive migration)
     "RET504",  # Unnecessary-assign (style preference)
     "RET505",  # Superfluous-else-return (style preference)

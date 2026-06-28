@@ -1087,13 +1087,15 @@ class TestDWGRouter:
         assert response.status_code in (400, 422)
 
     def test_parse_invalid_extension_rejected(self, client) -> None:
-        """POST /api/parse-dwg with wrong extension must be rejected.
+        """
+        POST /api/parse-dwg with wrong extension must be rejected.
 
         Note: When run as part of the full suite, the DWG endpoint's rate
         limiter (10/minute) may trigger 429 instead of 400. Both are valid
         rejections — 400 means the file was rejected, 429 means the rate
         limiter rejected the request before parsing. Either way, the
         endpoint is NOT accepting invalid files.
+
         """
         response = client.post(
             "/api/parse-dwg",
