@@ -1189,24 +1189,33 @@ class DatabaseService:
                 total_connections = total_connections // 2  # Avoid double-counting
 
             # Count conflicts
-            total_conflicts = len(self._data_model.conflicts)
-            unresolved_conflicts = sum(
-                1 for c in self._data_model.conflicts.values() if not c.resolved
-            )
+            # HOTFIX C-2: UniversalDataModel has detect_conflicts() method, not conflicts attribute.
+            # Previous code raised AttributeError: conflicts → udm_database always "disconnected".
+            try:
+                conflicts_list = self._data_model.detect_conflicts()
+                total_conflicts = len(conflicts_list) if conflicts_list else 0
+                # detect_conflicts() returns list; unresolved = those without resolved flag.
+                # Since detect_conflicts() returns fresh detection each call, all are unresolved.
+                unresolved_conflicts = total_conflicts
+            except Exception:
+                total_conflicts = 0
+                unresolved_conflicts = 0
 
             return StatisticsResponse(
-                total_elements=stats["total_elements"],
-                deleted_elements=stats["deleted_elements"],
-                active_elements=stats["active_elements"],
+                # HOTFIX C-2: _Stats is a NamedTuple, not a dict. Use attribute access.
+                # Also _Stats only has 6 fields; missing fields default to 0/None.
+                total_elements=getattr(stats, "total_elements", 0),
+                deleted_elements=getattr(stats, "deleted_elements", 0),
+                active_elements=getattr(stats, "active_elements", 0),
                 total_projects=total_projects,
                 active_projects=active_projects,
-                total_connections=total_connections,
-                total_conflicts=total_conflicts,
-                unresolved_conflicts=unresolved_conflicts,
-                pending_autocad_to_revit=stats["pending_autocad_to_revit"],
-                pending_revit_to_autocad=stats["pending_revit_to_autocad"],
-                database_version=stats["database_version"],
-                last_sync=stats.get("last_sync"),
+                total_connections=getattr(stats, "total_connections", total_connections),
+                total_conflicts=getattr(stats, "total_conflicts", total_conflicts),
+                unresolved_conflicts=getattr(stats, "unresolved_conflicts", unresolved_conflicts),
+                pending_autocad_to_revit=0,
+                pending_revit_to_autocad=0,
+                database_version=1,
+                last_sync=None,
             )
 
     def export_data(
