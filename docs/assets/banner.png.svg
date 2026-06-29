@@ -1,0 +1,102 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 400" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="50%" stop-color="#1e3a5f"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+    <linearGradient id="spark" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#ef4444"/>
+    </linearGradient>
+    <linearGradient id="text" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#cbd5e1"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1280" height="400" fill="url(#bg)"/>
+
+  <!-- Decorative grid -->
+  <g opacity="0.05" stroke="#ffffff" stroke-width="1">
+    <line x1="0" y1="100" x2="1280" y2="100"/>
+    <line x1="0" y1="200" x2="1280" y2="200"/>
+    <line x1="0" y1="300" x2="1280" y2="300"/>
+    <line x1="320" y1="0" x2="320" y2="400"/>
+    <line x1="640" y1="0" x2="640" y2="400"/>
+    <line x1="960" y1="0" x2="960" y2="400"/>
+  </g>
+
+  <!-- Spark icon -->
+  <g transform="translate(80, 130)">
+    <path d="M70 0 L40 60 L60 60 L30 140 L90 50 L70 50 L100 0 Z"
+          fill="url(#spark)" filter="url(#glow)"/>
+  </g>
+
+  <!-- Title -->
+  <text x="220" y="170" font-family="system-ui, -apple-system, sans-serif"
+        font-size="72" font-weight="900" fill="url(#text)">
+    BAZ<tspan fill="url(#spark)">Spark</tspan>
+  </text>
+
+  <!-- Subtitle -->
+  <text x="222" y="215" font-family="system-ui, -apple-system, sans-serif"
+        font-size="24" font-weight="400" fill="#94a3b8" letter-spacing="2">
+    Safety-Critical Fire Alarm Engineering Platform
+  </text>
+
+  <!-- Tags -->
+  <g transform="translate(222, 250)">
+    <rect x="0" y="0" width="120" height="32" rx="16" fill="#1e293b" stroke="#334155"/>
+    <text x="60" y="21" font-family="system-ui" font-size="14" font-weight="600" fill="#e2e8f0" text-anchor="middle">NFPA 72</text>
+
+    <rect x="135" y="0" width="100" height="32" rx="16" fill="#1e293b" stroke="#334155"/>
+    <text x="185" y="21" font-family="system-ui" font-size="14" font-weight="600" fill="#e2e8f0" text-anchor="middle">FastAPI</text>
+
+    <rect x="250" y="0" width="90" height="32" rx="16" fill="#1e293b" stroke="#334155"/>
+    <text x="295" y="21" font-family="system-ui" font-size="14" font-weight="600" fill="#e2e8f0" text-anchor="middle">React</text>
+
+    <rect x="355" y="0" width="110" height="32" rx="16" fill="#1e293b" stroke="#334155"/>
+    <text x="410" y="21" font-family="system-ui" font-size="14" font-weight="600" fill="#e2e8f0" text-anchor="middle">Digital Twin</text>
+
+    <rect x="480" y="0" width="100" height="32" rx="16" fill="#1e293b" stroke="#334155"/>
+    <text x="530" y="21" font-family="system-ui" font-size="14" font-weight="600" fill="#e2e8f0" text-anchor="middle">Python 3.12</text>
+  </g>
+
+  <!-- Bottom line -->
+  <line x1="80" y1="320" x2="1200" y2="320" stroke="#1e293b" stroke-width="1"/>
+
+  <!-- Stats -->
+  <g transform="translate(80, 350)" font-family="system-ui" font-size="16" fill="#64748b">
+    <text x="0" y="0" font-weight="600" fill="#e2e8f0">193</text>
+    <text x="35" y="0">API Endpoints</text>
+
+    <text x="200" y="0" font-weight="600" fill="#e2e8f0">6,700+</text>
+    <text x="265" y="0">Tests Passing</text>
+
+    <text x="420" y="0" font-weight="600" fill="#4ade80">0</text>
+    <text x="440" y="0">Vulnerabilities</text>
+
+    <text x="600" y="0" font-weight="600" fill="#e2e8f0">21</text>
+    <text x="625" y="0">UI Pages</text>
+
+    <text x="750" y="0" font-weight="600" fill="#e2e8f0">NFPA 72-2022</text>
+    <text x="870" y="0">Compliant</text>
+  </g>
+
+  <!-- Right side decorative element -->
+  <g transform="translate(1050, 80)" opacity="0.3">
+    <circle cx="80" cy="80" r="60" fill="none" stroke="#f59e0b" stroke-width="2"/>
+    <circle cx="80" cy="80" r="40" fill="none" stroke="#ef4444" stroke-width="2"/>
+    <circle cx="80" cy="80" r="20" fill="none" stroke="#f59e0b" stroke-width="2"/>
+    <circle cx="80" cy="80" r="5" fill="#f59e0b"/>
+  </g>
+</svg>
