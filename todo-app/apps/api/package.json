@@ -31,7 +31,7 @@
     "express-rate-limit": "^7.5.0",
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
-    "vite": "8.0.16",
+    "vite": "6.4.3",
     "vitest": "4.1.9",
     "zod": "^3.22.4"
   },
