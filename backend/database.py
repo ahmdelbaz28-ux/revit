@@ -465,11 +465,12 @@ class Database:
         order: str = "desc",
     ) -> dict:
         """List projects with pagination — uses JOIN to avoid N+1 counts."""
-        # Whitelist sort columns and order direction to prevent SQL injection
-        _ALLOWED_PROJECT_SORTS = {"id", "name", "created_at", "updated_at", "status", "author"}
+        # Whitelist sort columns and order direction to prevent SQL injection.
+        # CodeQL: py/sql-injection — sort and order are SAFE (whitelisted).
+        _ALLOWED_PROJECT_SORTS = frozenset({"id", "name", "created_at", "updated_at", "status", "author"})
         if sort not in _ALLOWED_PROJECT_SORTS:
             sort = "created_at"
-        order = "DESC" if order.upper() not in ("ASC", "DESC") else order.upper()
+        order = "ASC" if order.upper() == "ASC" else "DESC"
 
         with self._transaction() as cur:
             # Get total count
@@ -495,7 +496,7 @@ class Database:
                     FROM connections
                     GROUP BY project_id
                 ) c ON p.id = c.project_id
-                ORDER BY p.{sort} {order}
+                ORDER BY p.{sort} {order}  -- lgtm[py/sql-injection] — sort/order whitelisted above
                 LIMIT {self._ph()} OFFSET {self._ph()}
                 """,
                 (limit, offset),
@@ -645,21 +646,15 @@ class Database:
         order: str = "desc",
     ) -> dict:
         """List devices in a project with pagination."""
-        # Whitelist sort columns and order direction to prevent SQL injection
-        _ALLOWED_DEVICE_SORTS = {
-            "id",
-            "created_at",
-            "updated_at",
-            "name",
-            "type",
-            "category",
-            "voltage",
-            "current",
-            "load",
-        }
+        # Whitelist sort columns and order direction to prevent SQL injection.
+        # CodeQL: py/sql-injection — sort and order are SAFE (whitelisted).
+        _ALLOWED_DEVICE_SORTS = frozenset({
+            "id", "created_at", "updated_at", "name", "type",
+            "category", "voltage", "current", "load",
+        })
         if sort not in _ALLOWED_DEVICE_SORTS:
             sort = "created_at"
-        order = "DESC" if order.upper() not in ("ASC", "DESC") else order.upper()
+        order = "ASC" if order.upper() == "ASC" else "DESC"
 
         with self._transaction() as cur:
             cur.execute(
@@ -669,6 +664,7 @@ class Database:
             total = cur.fetchone()[0]
 
             offset = (page - 1) * limit
+            # sort and order are SAFE here (whitelisted above) — lgtm[py/sql-injection]
             cur.execute(
                 f"SELECT * FROM devices WHERE project_id = {self._ph()} ORDER BY {sort} {order} LIMIT {self._ph()} OFFSET {self._ph()}",
                 (project_id, limit, offset),

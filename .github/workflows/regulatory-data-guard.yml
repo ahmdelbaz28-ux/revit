@@ -32,6 +32,8 @@ jobs:
   check-regulatory-attestation:
     name: "Require PE sign-off or standard citation"
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout PR
         uses: actions/checkout@v4

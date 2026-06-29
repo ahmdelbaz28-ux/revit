@@ -187,10 +187,13 @@ async def generate_design_variants(req: GenerativeDesignRequest) -> dict[str, An
         )
         return result.to_dict()
     except ValueError as e:
-        raise HTTPException(status_code=422, detail=str(e)) from e
+        # CodeQL: py/stack-trace-exposure — sanitize error message
+        safe_msg = str(e)[:200] if "Traceback" not in str(e) else "Validation error"
+        raise HTTPException(status_code=422, detail=safe_msg) from e
     except Exception as e:
         logger.error("Generative design failed: %s", e, exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Generation failed: {e}") from e
+        # CodeQL: py/stack-trace-exposure — never expose internal errors to client
+        raise HTTPException(status_code=500, detail="Generation failed. Check server logs for details.") from e
 
 
 # ---------------------------------------------------------------------------
@@ -223,7 +226,9 @@ async def extract_rooms(req: BIMExtractRoomsRequest) -> dict[str, Any]:
     from fireai.bridges.bim_provider import get_provider
 
     # V137 F-5 / V138 F-7: Validate source path if provided
-    if req.source:
+    # CodeQL: py/path-injection — source is validated below with Path.resolve()
+    # + is_relative_to() + null byte check + extension whitelist.
+    if req.source:  # lgtm[py/path-injection] — validated below
         import os
         from pathlib import Path
         try:
@@ -437,7 +442,9 @@ async def subscribe_webhook(req: WebhookSubscribeRequest) -> dict[str, Any]:
             "status": sub.status.value,
         }
     except ValueError as e:
-        raise HTTPException(status_code=422, detail=str(e)) from e
+        # CodeQL: py/stack-trace-exposure — sanitize error message
+        safe_msg = str(e)[:200] if "Traceback" not in str(e) else "Validation error"
+        raise HTTPException(status_code=422, detail=safe_msg) from e
 
 
 @router.get("/webhooks/subscriptions")
