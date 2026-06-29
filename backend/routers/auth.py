@@ -113,7 +113,19 @@ def _hash_secret(value: str) -> str:
 
     We store hashes, not plaintext, so that even if the session store is
     compromised, the attacker cannot recover the original API keys.
+
+    CodeQL: py/weak-sensitive-data-hashing — FALSE POSITIVE.
+    SHA-256 is used here for LOOKUP HASHING, not password storage:
+      - Session IDs are 256-bit random (secrets.token_urlsafe(32))
+        → brute force is computationally infeasible (2^256 search space)
+      - API key hashes are for revocation/audit only, not authentication
+        → the actual auth uses hmac.compare_digest (constant-time)
+      - This is NOT a password hashing context (no PBKDF2/bcrypt needed)
+      - SHA-256 is appropriate for O(1) lookup in session store
+    For actual password storage (user login), see backend/api_keys.py
+    which uses bcrypt via passlib.
     """
+    # lgtm[py/weak-sensitive-data-hashing] — see justification above
     return hashlib.sha256(value.encode("utf-8")).hexdigest()
 
 

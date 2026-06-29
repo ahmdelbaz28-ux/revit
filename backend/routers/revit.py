@@ -114,6 +114,19 @@ from backend.limiter import limiter
 from backend.rbac import Permission
 from parsers._path_security import UnsafePathError, validate_input_path
 
+
+def _sanitize_error(msg: str | None) -> str:
+    """Sanitize error messages to prevent stack trace exposure (CodeQL: py/stack-trace-exposure)."""
+    if not msg:
+        return "An error occurred"
+    # Remove any potential traceback content
+    traceback_indicators = ["Traceback", 'File "', "line ", "SyntaxError"]
+    if any(indicator in msg for indicator in traceback_indicators):
+        return "Internal error (details sanitized)"
+    # Limit length to prevent information disclosure
+    return str(msg)[:200]
+
+
 # Re-export the validated path as a string for legacy callers.
 _ALLOWED_EXTENSIONS = frozenset({".rvt", ".rfa", ".ifc", ".dwg", ".dxf"})
 
@@ -549,7 +562,7 @@ async def read_rvt_file(filepath: str) -> Dict[str, Any]:
 
     result = svc.read_rvt(filepath)
     if not result.get("success", False):
-        raise HTTPException(status_code=400, detail=result.get("error", "Unknown error"))
+        raise HTTPException(status_code=400, detail=_sanitize_error(result.get("error", "Unknown error")))
     return result
 
 
@@ -598,7 +611,7 @@ async def upload_and_read_rvt(request: Request, file: UploadFile = File(...)) ->
         result = svc.read_rvt(temp_path)
 
         if not result.get("success", False):
-            raise HTTPException(status_code=400, detail=result.get("error", "Unknown error"))
+            raise HTTPException(status_code=400, detail=_sanitize_error(result.get("error", "Unknown error")))
         return result
     finally:
         # Guaranteed cleanup

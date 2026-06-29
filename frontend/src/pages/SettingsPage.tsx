@@ -54,8 +54,27 @@ export function SettingsPage() {
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
 
   const persistSettings = (key: string, value: Record<string, unknown>) => {
+    // CodeQL: js/clear-text-storage-of-sensitive-data — FALSE POSITIVE.
+    // localStorage is used ONLY for non-sensitive UI preferences:
+    //   - theme (light/dark)
+    //   - language (en/ar)
+    //   - notifications (on/off)
+    //   - reportFormat (pdf/dxf)
+    //   - reportQuality (high/medium)
+    // API keys are NEVER stored in localStorage — they use HttpOnly cookies
+    // set by POST /api/v1/auth/login (see backend/routers/auth.py).
+    // sessionStorage is used as a legacy fallback for the API key, but
+    // that is being deprecated in favor of cookie-based auth.
     try {
-      localStorage.setItem(`fireai_settings_${key}`, JSON.stringify(value));
+      // Strip any sensitive fields before storing
+      const safeValue: Record<string, unknown> = {};
+      const SENSITIVE_KEYS = ['apiKey', 'api_key', 'password', 'token', 'secret'];
+      for (const [k, v] of Object.entries(value)) {
+        if (!SENSITIVE_KEYS.some(s => k.toLowerCase().includes(s.toLowerCase()))) {
+          safeValue[k] = v;
+        }
+      }
+      localStorage.setItem(`fireai_settings_${key}`, JSON.stringify(safeValue));
       setSaveStatus('saved');
       setTimeout(() => setSaveStatus(null), 2000);
     } catch {

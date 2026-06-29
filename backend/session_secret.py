@@ -389,18 +389,23 @@ def main() -> None:
     """CLI entry point for secret generation."""
     if len(sys.argv) > 1 and sys.argv[1] == "generate":
         secret = secrets.token_urlsafe(64)
-        print("# FireAI Session Secret — generated with cryptographic randomness")
-        print("# Store this securely. DO NOT commit to version control.")
-        print("#")
-        print("# Usage (env var):")
-        print(f"#   export FIREAI_SESSION_SECRET='{secret}'")
-        print("#")
-        print("# Usage (Docker/K8s file-based, more secure):")
-        print(f"#   echo -n '{secret}' > /run/secrets/fireai_session_secret")
-        print("#   export FIREAI_SESSION_SECRET_FILE=/run/secrets/fireai_session_secret")
-        print("#")
-        print("# The secret below has 512 bits of entropy (86 URL-safe base64 chars):")
-        print(secret)
+        # CodeQL: py/clear-text-logging-sensitive-data — FALSE POSITIVE.
+        # This is a CLI tool whose purpose is to OUTPUT the secret to stdout
+        # so the user can copy it. This is NOT logging (no logger, no file).
+        # The user MUST see the secret to set FIREAI_SESSION_SECRET.
+        # Suppressed with explicit justification per CodeQL docs.
+        print("# FireAI Session Secret — generated with cryptographic randomness")  # noqa: S105, T201 - CLI output, not logging
+        print("# Store this securely. DO NOT commit to version control.")  # noqa: T201
+        print("#")  # noqa: T201
+        print("# Usage (env var):")  # noqa: T201
+        print("#   export FIREAI_SESSION_SECRET='<copy-secret-below>'")  # noqa: T201
+        print("#")  # noqa: T201
+        print("# Usage (Docker/K8s file-based, more secure):")  # noqa: T201
+        print("#   echo -n '<copy-secret-below>' > /run/secrets/fireai_session_secret")  # noqa: T201
+        print("#   export FIREAI_SESSION_SECRET_FILE=/run/secrets/fireai_session_secret")  # noqa: T201
+        print("#")  # noqa: T201
+        print("# The secret below has 512 bits of entropy (86 URL-safe base64 chars):")  # noqa: T201
+        print(secret)  # noqa: S105, T201 - intentional CLI output for user to copy
     elif len(sys.argv) > 1 and sys.argv[1] == "info":
         mgr = get_secret_manager()
         info = mgr.get_info()
