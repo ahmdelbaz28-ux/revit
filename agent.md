@@ -15640,7 +15640,9 @@ caller wants stricter behavior, they can override.
 
 ### Commit Information
 
-Commit: <will-be-filled-after-commit>
+Commit: f1c6224a
+PR: https://github.com/ahmdelbaz28-ux/revit/pull/123
+GitHub link: https://github.com/ahmdelbaz28-ux/revit/commit/f1c6224a
 Files added: 6 adapter files + 1 test file = 7 new files
 Files modified: 1 (`fireai/integration/__init__.py` — added exports only)
 Lines added: ~1100 (production) + ~500 (tests)
