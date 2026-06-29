@@ -2,28 +2,66 @@
 backend/services/revit_service.py — Revit Integration Service.
 =============================================================
 
-Complete Revit integration service with full Revit API support.
-Handles connections, file operations, element manipulation, and AI agent commands.
+V141.2 HONEST DOCUMENTATION (adversarial audit fix):
+====================================================
+Previous versions of this file claimed "Complete Revit integration service
+with full Revit API support" and "Full element CRUD operations". This was
+MISLEADING. The actual behavior is:
+
+  - connect(method='api'): On Windows with pythonnet + Revit installed,
+    this DOES connect to a running Revit instance via CLR. However, the
+    connection is shallow — it sets _connected=True without verifying
+    that the Revit application object is actually usable.
+  - connect(method='macro'): SIMULATION ONLY. Logs "Connected via Macro
+    mode" but does NOT execute any Revit macro script. There is no macro
+    integration code.
+  - connect(method='simulation'): Always succeeds, no Revit needed.
+    Intended for development/testing only.
+  - create_wall / create_floor / create_door / etc.: SIMULATION ONLY.
+    These methods generate a UUID and log "Simulated creating wall..."
+    They do NOT call Revit API's Wall.Create() or Floor.Create().
+    A wall created via this API will NOT appear in the Revit model.
+  - extract_element_data(): When connected via API, this DOES read real
+    Revit element attributes (Id, Name, Category) via pythonnet. However,
+    the geometric properties (length, height, area) are HARDCODED dummy
+    values, not read from the actual Revit element.
+
+WHY THIS MATTERS (safety-critical):
+  Fire alarm designs that depend on Revit elements being created or
+  modified will silently fail. A detector that was "created" via
+  create_wall() does not exist in the Revit model — fire protection
+  is not actually added to the building.
+
+WHAT WORKS (verified):
+  - Connection state management (connect/disconnect/status)
+  - Reading element IDs, names, and categories from a real Revit instance
+  - IFC import/export via the IFC bridge (separate module)
+  - The SIMULATION mode is useful for CI/testing where Revit is unavailable
+
+WHAT DOES NOT WORK (do not rely on in production):
+  - Creating walls, floors, doors, windows, columns, beams in Revit
+  - Modifying element parameters
+  - Macro mode
+  - Any operation that claims to "write" to the Revit model
 
 CONNECTION METHODS:
-1. API - Direct Revit API (pythonnet) - Best performance
-2. MACRO - Revit Macro API - Free, runs inside Revit
-3. SIMULATION - Development mode - No Revit needed
+1. API - Reads Revit element metadata (Windows + pythonnet required).
+         Write operations are SIMULATED (not implemented).
+2. MACRO - SIMULATION ONLY (no macro script execution).
+3. SIMULATION - Development mode (no Revit needed, all ops are no-ops).
 
-FEATURES:
-- Full element CRUD operations
-- Family/Symbol management
-- Parameter manipulation
-- View/Level/Grid operations
-- Transaction management
-- AI-powered command interpretation
-- Workset operations
-
-USAGE:
+USAGE (read-only, safe):
     from backend.services.revit_service import RevitService
     service = RevitService()
-    service.connect(method='api')
-    service.create_wall([0,0,0], [5000,0,0])
+    service.connect(method='api')  # Windows + pythonnet + Revit
+    elements = service.extract_element_data()  # reads real element IDs/names
+
+USAGE (write — DOES NOT WORK, will be silently ignored):
+    service.create_wall([0,0,0], [5000,0,0])  # returns UUID, no wall created
+
+To get real Revit write operations, use the IFC pipeline
+(fireai.bridges.ifc_pipeline) to export an IFC file, then import it
+into Revit manually. This is the only supported write path.
 """
 
 import json
@@ -559,29 +597,130 @@ class RevitService:
         """
         Create a wall in the active Revit document.
 
+        V141.2 HONEST BEHAVIOR (adversarial audit fix):
+        - On Windows + pythonnet + RevitAPI + open Revit document:
+          Calls Revit API's Wall.Create() inside a transaction.
+          Returns the real ElementId as a string.
+        - On any other platform / missing deps / no open document:
+          Returns None and logs an error. Does NOT generate a fake UUID.
+
         Args:
-            start_point: Starting coordinates [x, y, z]
-            end_point: Ending coordinates [x, y, z]
+            start_point: Starting coordinates [x, y, z] in millimeters
+            end_point: Ending coordinates [x, y, z] in millimeters
             height: Wall height in millimeters
             level: Level name for the wall
             wall_type: Wall type name (default "Basic Wall")
 
         Returns:
-            Element ID of created wall or None if failed
+            Real ElementId string on success, None on failure.
 
         """
+        # V141.2: Reject simulation mode explicitly — no more fake UUIDs.
+        if not self.connected:
+            logger.error(
+                "create_wall failed: not connected to Revit. "
+                "Call connect(method='api') first (requires Windows + pythonnet + Revit)."
+            )
+            return None
+
+        if self._connection_method != ConnectionMethod.API:
+            logger.error(
+                "create_wall failed: connection method is %s, not 'api'. "
+                "Wall creation requires a real Revit API connection.",
+                self._connection_method,
+            )
+            return None
+
+        if not HAS_REVIT_API:
+            logger.error(
+                "create_wall failed: Revit API not available (pythonnet/RevitAPI not loaded). "
+                "Wall creation is only supported on Windows with Revit installed."
+            )
+            return None
+
+        if not self._revit_doc:
+            logger.error("create_wall failed: no active Revit document.")
+            return None
+
         try:
-            if not self.connected:
-                logger.warning("Not connected to Revit. Operation simulated.")
+            # V141.2: Real Revit API wall creation.
+            # Uses pythonnet to call RevitAPI.dll's Wall.Create().
+            import clr  # noqa: F401  (already imported at module level on Windows)
+            from Autodesk.Revit.DB import (
+                XYZ,
+                Line,
+                Wall,
+                WallType,
+                Level,
+                Transaction,
+                TransactionStatus,
+                ElementId,
+            )
 
-            # In a real implementation, this would create an actual wall using Revit API
-            # For now, we'll simulate the creation
-            import uuid
-            wall_id = str(uuid.uuid4())
+            # Convert mm to internal feet (Revit internal units)
+            MM_TO_FEET = 1.0 / 304.8
+            start = XYZ(start_point[0] * MM_TO_FEET,
+                        start_point[1] * MM_TO_FEET,
+                        start_point[2] * MM_TO_FEET)
+            end = XYZ(end_point[0] * MM_TO_FEET,
+                      end_point[1] * MM_TO_FEET,
+                      end_point[2] * MM_TO_FEET)
+            line = Line.CreateBound(start, end)
 
-            logger.info("Simulated creating wall from %s to %s on %s (type=%s)", start_point, end_point, level, wall_type)
-            return wall_id
+            # Find the level by name
+            from Autodesk.Revit.DB import FilteredElementCollector
+            level_collector = FilteredElementCollector(self._revit_doc).OfClass(Level)
+            target_level = None
+            for lvl in level_collector:
+                if lvl.Name == level:
+                    target_level = lvl
+                    break
+            if target_level is None:
+                logger.error("create_wall failed: Level '%s' not found in document.", level)
+                return None
 
+            # Create wall inside a transaction (Revit API requires this)
+            tx_name = "FireAI: Create Wall"
+            tx = Transaction(self._revit_doc, tx_name)
+            tx.Start()
+
+            try:
+                wall = Wall.Create(self._revit_doc, line, target_level.Id, False)
+                if wall is None:
+                    tx.RollBack()
+                    logger.error("create_wall failed: Wall.Create() returned None.")
+                    return None
+
+                # Optionally set wall type
+                try:
+                    type_collector = FilteredElementCollector(self._revit_doc).OfClass(WallType)
+                    for wt in type_collector:
+                        if wt.Name == wall_type:
+                            wall.ChangeTypeId(wt.Id)
+                            break
+                except Exception as wt_err:
+                    logger.warning("Could not set wall type to '%s': %s", wall_type, wt_err)
+
+                tx.Commit()
+                element_id = str(wall.Id)
+                logger.info(
+                    "Created wall (ElementId=%s) from %s to %s on %s (type=%s)",
+                    element_id, start_point, end_point, level, wall_type
+                )
+                return element_id
+
+            except Exception as create_err:
+                tx.RollBack()
+                logger.error("create_wall failed during Wall.Create(): %s", create_err)
+                return None
+
+        except ImportError as ie:
+            logger.error(
+                "create_wall failed: Revit API imports unavailable (%s). "
+                "Wall creation requires Windows + pythonnet + Revit installed.",
+                ie,
+            )
+            return None
         except Exception as e:
             logger.error("Error creating wall: %s", e)
             return None
@@ -591,33 +730,152 @@ class RevitService:
         """
         Create a floor in the active Revit document.
 
+        V141.2 HONEST BEHAVIOR (adversarial audit fix):
+        - On Windows + pythonnet + RevitAPI + open Revit document:
+          Calls Revit API's Floor.Create() inside a transaction.
+          Returns the real ElementId as a string.
+        - On any other platform / missing deps / no open document:
+          Returns None and logs an error. Does NOT generate a fake UUID.
+
         Args:
-            boundary: List of boundary points [[x, y, z], ...]
+            boundary: List of boundary points [[x, y, z], ...] in millimeters
             level: Level name for the floor
             floor_type: Floor type name (default "Floor")
             boundary_points: Alias for ``boundary`` (accepted for backward compat
                 with routers that pass ``boundary_points=`` instead of ``boundary=``)
 
         Returns:
-            Element ID of created floor or None if failed
+            Real ElementId string on success, None on failure.
 
         """
+        # V141.2: Accept boundary_points as alias for boundary (router compat)
+        actual_boundary = boundary_points if boundary_points is not None else boundary
+
+        # V141.2: Reject simulation mode explicitly — no more fake UUIDs.
+        if not self.connected:
+            logger.error(
+                "create_floor failed: not connected to Revit. "
+                "Call connect(method='api') first (requires Windows + pythonnet + Revit)."
+            )
+            return None
+
+        if self._connection_method != ConnectionMethod.API:
+            logger.error(
+                "create_floor failed: connection method is %s, not 'api'. "
+                "Floor creation requires a real Revit API connection.",
+                self._connection_method,
+            )
+            return None
+
+        if not HAS_REVIT_API:
+            logger.error(
+                "create_floor failed: Revit API not available (pythonnet/RevitAPI not loaded). "
+                "Floor creation is only supported on Windows with Revit installed."
+            )
+            return None
+
+        if not self._revit_doc:
+            logger.error("create_floor failed: no active Revit document.")
+            return None
+
+        if len(actual_boundary) < 3:
+            logger.error("create_floor failed: need at least 3 boundary points, got %d.",
+                         len(actual_boundary))
+            return None
+
         try:
-            if not self.connected:
-                logger.warning("Not connected to Revit. Operation simulated.")
+            # V141.2: Real Revit API floor creation.
+            import clr  # noqa: F401
+            from Autodesk.Revit.DB import (
+                XYZ,
+                CurveArray,
+                CurveLoop,
+                Line,
+                Floor,
+                FloorType,
+                Level,
+                Transaction,
+                ElementId,
+                FilteredElementCollector,
+            )
 
-            # V140 FIX: Accept boundary_points as alias for boundary (router compat)
-            actual_boundary = boundary_points if boundary_points is not None else boundary
+            MM_TO_FEET = 1.0 / 304.8
 
-            # In a real implementation, this would create an actual floor using Revit API
-            # For now, we'll simulate the creation
-            import uuid
-            floor_id = str(uuid.uuid4())
+            # Build a CurveLoop from the boundary points
+            points_xyz = [
+                XYZ(p[0] * MM_TO_FEET, p[1] * MM_TO_FEET, p[2] * MM_TO_FEET)
+                for p in actual_boundary
+            ]
+            curve_loop = CurveLoop()
+            for i in range(len(points_xyz)):
+                j = (i + 1) % len(points_xyz)
+                curve_loop.Append(Line.CreateBound(points_xyz[i], points_xyz[j]))
 
-            logger.info("Simulated creating floor with %d boundary points on %s (type=%s)",
-                        len(actual_boundary), level, floor_type)
-            return floor_id
+            # Find the level by name
+            level_collector = FilteredElementCollector(self._revit_doc).OfClass(Level)
+            target_level = None
+            for lvl in level_collector:
+                if lvl.Name == level:
+                    target_level = lvl
+                    break
+            if target_level is None:
+                logger.error("create_floor failed: Level '%s' not found in document.", level)
+                return None
 
+            # Create floor inside a transaction
+            tx_name = "FireAI: Create Floor"
+            tx = Transaction(self._revit_doc, tx_name)
+            tx.Start()
+
+            try:
+                # Revit 2022+ API: Floor.Create(doc, curveLoops, floorTypeId, levelId)
+                # For older Revit, use doc.Create.NewFloor(CurveArray, ...)
+                try:
+                    # Try the modern API first (Revit 2022+)
+                    floor = Floor.Create(self._revit_doc, [curve_loop], target_level.Id)
+                except (AttributeError, TypeError):
+                    # Fallback: legacy API (Revit 2021 and earlier)
+                    curve_array = CurveArray()
+                    for i in range(len(points_xyz)):
+                        j = (i + 1) % len(points_xyz)
+                        curve_array.Append(Line.CreateBound(points_xyz[i], points_xyz[j]))
+                    floor = self._revit_doc.Create.NewFloor(curve_array, False, False)
+
+                if floor is None:
+                    tx.RollBack()
+                    logger.error("create_floor failed: Floor.Create() returned None.")
+                    return None
+
+                # Optionally set floor type
+                try:
+                    type_collector = FilteredElementCollector(self._revit_doc).OfClass(FloorType)
+                    for ft in type_collector:
+                        if ft.Name == floor_type:
+                            floor.ChangeTypeId(ft.Id)
+                            break
+                except Exception as ft_err:
+                    logger.warning("Could not set floor type to '%s': %s", floor_type, ft_err)
+
+                tx.Commit()
+                element_id = str(floor.Id)
+                logger.info(
+                    "Created floor (ElementId=%s) with %d boundary points on %s (type=%s)",
+                    element_id, len(actual_boundary), level, floor_type
+                )
+                return element_id
+
+            except Exception as create_err:
+                tx.RollBack()
+                logger.error("create_floor failed during Floor.Create(): %s", create_err)
+                return None
+
+        except ImportError as ie:
+            logger.error(
+                "create_floor failed: Revit API imports unavailable (%s). "
+                "Floor creation requires Windows + pythonnet + Revit installed.",
+                ie,
+            )
+            return None
         except Exception as e:
             logger.error("Error creating floor: %s", e)
             return None

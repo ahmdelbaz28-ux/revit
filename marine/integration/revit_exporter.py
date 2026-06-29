@@ -1,7 +1,40 @@
 """
-marine/integration/revit_exporter.py — Revit Family + Model Generator.
-Generates .rfa family definitions and .rvt model placements for marine
-detectors, nozzles, alarm horns, and fire divisions.
+marine/integration/revit_exporter.py — Revit Family + Model Generator (JSON-only).
+
+V141.2 HONEST DOCUMENTATION (adversarial audit fix):
+Previous versions claimed "Generates .rfa family definitions and .rvt
+model placements for marine detectors". This was MISLEADING. This module
+generates JSON DICTS describing what a Revit family WOULD contain — it
+does NOT produce actual .rfa or .rvt binary files that Revit can open.
+
+What this module ACTUALLY does:
+  - generate_revit_family(detector): Returns a Python dict with family
+    name, category, parameters, and geometry description. This is a
+    JSON-serializable representation, NOT a Revit .rfa file.
+  - generate_model_placements(...): Returns a list of placement dicts.
+    Again, JSON data — not .rvt binary.
+
+How to use this data in Revit (the REAL workflow):
+  1. Call generate_revit_family() to get the family definition dict.
+  2. Write a Revit plugin (C# or pythonnet) that reads this JSON and
+     calls RevitAPI's FamilyInstance.Create() to actually create the
+     family in a Revit document.
+  3. OR: import the IFC file produced by fireai/bridges/ifc_pipeline.py
+     directly into Revit (Revit has native IFC import).
+
+Why JSON (not .rfa/.rvt):
+  - .rfa and .rvt are proprietary binary formats that require Revit's
+    API to generate correctly. Generating them without Revit installed
+    would require reverse-engineering the format (illegal + fragile).
+  - JSON is open, language-agnostic, and can be consumed by any Revit
+    plugin, Dynamo script, or external tool.
+  - The IFC pipeline (fireai/bridges/ifc_pipeline.py) is the recommended
+    path for actual Revit model creation — Revit imports IFC natively.
+
+References:
+  - Revit API documentation (Autodesk)
+  - IFC 4.3 specification (buildingSMART)
+  - pythonnet for Python ↔ .NET interop
 """
 from __future__ import annotations
 

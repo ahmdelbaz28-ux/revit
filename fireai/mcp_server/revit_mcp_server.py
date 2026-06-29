@@ -4,28 +4,47 @@ revit_mcp_server.py — Main Revit MCP Server Entry Point.
 LIFE-SAFETY CRITICAL: This module provides the MCP server that bridges
 AI assistants (Claude, GPT) with the Revit BIM model.
 
-Safety Architecture:
+V141.2 HONEST IMPLEMENTATION (adversarial audit fix):
+=====================================================
+Previous versions of start() only set `_running = True` and logged a message.
+This was MISLEADING — the docstring claimed "listens for AI assistant
+connections" but no actual listening occurred.
+
+V141.2 implements a REAL MCP server using the official Model Context
+Protocol (MCP) over stdio (JSON-RPC 2.0). The server:
+  1. Reads JSON-RPC requests from stdin (one per line)
+  2. Dispatches each request to SanitizedMCPHandler.process_request()
+  3. Writes JSON-RPC responses to stdout (one per line)
+  4. Logs all activity to stderr (keeps stdout clean for protocol)
+
+This matches the MCP specification: https://modelcontextprotocol.io/
+AI assistants (Claude Desktop, etc.) spawn this server as a subprocess
+and communicate via stdio. No network socket is needed.
+
+Safety Architecture (unchanged from V140):
   1. ALL requests pass through SanitizedMCPHandler (input sanitization)
   2. ALL Revit model writes go through ThreadSafeModelUpdateQueue
   3. NO eval(), exec(), or dynamic code execution
   4. Engineering calculations use validated, bounded inputs
   5. Full audit trail for all operations
 
-This module addresses:
-  - Finding 1: Unsafe Multithreading on Revit API (Catastrophic)
-  - Finding 4: RCE via Unsanitized MCP Tool Input (Catastrophic)
-
 Usage:
+    # As a subprocess (spawned by Claude Desktop / other MCP clients):
+    python -m fireai.mcp_server.revit_mcp_server
+
+    # Programmatically (in-process):
     server = RevitMCPServer()
-    # Start the MCP server (listens for AI assistant connections)
-    server.start()
+    server.start()  # blocks, reading from stdin until EOF or stop()
 """
 
 from __future__ import annotations
 
+import json
 import logging
 import queue
-from typing import Any
+import sys
+import threading
+from typing import Any, Optional
 
 from fireai.mcp_server.sanitized_handler import (
     MCPRequest,
@@ -39,6 +58,24 @@ from fireai.mcp_server.thread_safe_queue import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+# ── MCP Protocol Constants ──────────────────────────────────────────────────
+# Per https://modelcontextprotocol.io/specification
+MCP_PROTOCOL_VERSION = "2024-11-05"
+MCP_SERVER_NAME = "fireai-revit-mcp"
+MCP_SERVER_VERSION = "1.0.0"
+
+# MCP methods we support
+MCP_METHODS = {
+    "initialize",
+    "initialized",
+    "tools/list",
+    "tools/call",
+    "resources/list",
+    "resources/read",
+    "ping",
+}
 
 
 class RevitMCPServer:
@@ -60,6 +97,8 @@ class RevitMCPServer:
         self._handler = SanitizedMCPHandler()
         self._update_queue = ThreadSafeModelUpdateQueue()
         self._running = False
+        self._stdin_thread: Optional[threading.Thread] = None
+        self._client_capabilities: dict[str, Any] = {}
 
     @property
     def update_queue(self) -> ThreadSafeModelUpdateQueue:
@@ -325,15 +364,280 @@ class RevitMCPServer:
             sanitized_parameters=params,
         )
 
-    def start(self) -> None:
-        """Start the MCP server."""
+    def start(self, *, block: bool = True) -> None:
+        """Start the MCP server.
+
+        V141.2 REAL IMPLEMENTATION (adversarial audit fix):
+        Reads JSON-RPC 2.0 requests from stdin (one per line), dispatches
+        each to _handle_jsonrpc(), and writes responses to stdout.
+
+        This matches the MCP specification: AI assistants (Claude Desktop,
+        etc.) spawn this server as a subprocess and communicate via stdio.
+
+        Args:
+            block: If True (default), blocks the calling thread reading
+                stdin until EOF or stop(). If False, starts a daemon
+                thread and returns immediately (useful for testing).
+        """
+        if self._running:
+            logger.warning("RevitMCPServer.start() called but already running.")
+            return
+
         self._running = True
         logger.info(
-            "[MCP SERVER]: RevitMCPServer started. "
-            "All model updates will be queued for thread-safe execution."
+            "[MCP SERVER]: RevitMCPServer started (MCP protocol v%s). "
+            "Reading JSON-RPC from stdin. All model updates will be queued "
+            "for thread-safe execution.",
+            MCP_PROTOCOL_VERSION,
         )
 
+        if block:
+            self._stdin_loop()
+        else:
+            self._stdin_thread = threading.Thread(
+                target=self._stdin_loop,
+                name="mcp-stdin-reader",
+                daemon=True,
+            )
+            self._stdin_thread.start()
+
+    def _stdin_loop(self) -> None:
+        """Main stdio read loop. Reads JSON-RPC lines until EOF or stop()."""
+        # Use sys.stdin directly to keep stdout clean for protocol messages.
+        # All logging goes to stderr (configured by logging_setup).
+        for line in sys.stdin:
+            if not self._running:
+                break
+
+            line = line.strip()
+            if not line:
+                continue
+
+            try:
+                response = self._handle_jsonrpc_line(line)
+                if response is not None:
+                    sys.stdout.write(json.dumps(response) + "\n")
+                    sys.stdout.flush()
+            except Exception as e:
+                # Never crash the server on a malformed request — log and continue.
+                logger.error("[MCP SERVER] Error handling request: %s", e)
+                error_response = {
+                    "jsonrpc": "2.0",
+                    "id": None,
+                    "error": {
+                        "code": -32603,
+                        "message": "Internal error",
+                        "data": str(e),
+                    },
+                }
+                sys.stdout.write(json.dumps(error_response) + "\n")
+                sys.stdout.flush()
+
+        logger.info("[MCP SERVER]: stdin EOF reached, server shutting down.")
+
+    def _handle_jsonrpc_line(self, line: str) -> Optional[dict[str, Any]]:
+        """Parse a JSON-RPC line and return a response dict (or None for notifications).
+
+        Args:
+            line: A single JSON-RPC request string (one line from stdin).
+
+        Returns:
+            Response dict to write to stdout, or None if the message is a
+            notification (no response expected per JSON-RPC 2.0 spec).
+        """
+        try:
+            request = json.loads(line)
+        except json.JSONDecodeError as e:
+            return {
+                "jsonrpc": "2.0",
+                "id": None,
+                "error": {
+                    "code": -32700,
+                    "message": "Parse error",
+                    "data": str(e),
+                },
+            }
+
+        method = request.get("method")
+        req_id = request.get("id")
+        params = request.get("params", {})
+
+        # Notifications (no id) don't get a response per JSON-RPC 2.0
+        is_notification = req_id is None
+
+        try:
+            if method == "initialize":
+                result = self._handle_initialize(params)
+            elif method == "initialized":
+                # Notification — no response
+                return None
+            elif method == "ping":
+                result = {}
+            elif method == "tools/list":
+                result = self._handle_tools_list()
+            elif method == "tools/call":
+                result = self._handle_tools_call(params)
+            elif method == "resources/list":
+                result = {"resources": []}
+            elif method == "resources/read":
+                result = {"contents": []}
+            else:
+                if is_notification:
+                    return None
+                return {
+                    "jsonrpc": "2.0",
+                    "id": req_id,
+                    "error": {
+                        "code": -32601,
+                        "message": f"Method not found: {method}",
+                    },
+                }
+
+            if is_notification:
+                return None
+
+            return {
+                "jsonrpc": "2.0",
+                "id": req_id,
+                "result": result,
+            }
+
+        except Exception as e:
+            if is_notification:
+                logger.error("[MCP SERVER] Notification %s failed: %s", method, e)
+                return None
+            return {
+                "jsonrpc": "2.0",
+                "id": req_id,
+                "error": {
+                    "code": -32603,
+                    "message": "Internal error",
+                    "data": str(e),
+                },
+            }
+
+    def _handle_initialize(self, params: dict[str, Any]) -> dict[str, Any]:
+        """Handle the MCP initialize request."""
+        self._client_capabilities = params.get("capabilities", {})
+        client_info = params.get("clientInfo", {})
+        logger.info(
+            "[MCP SERVER] Initialize from client: %s v%s",
+            client_info.get("name", "unknown"),
+            client_info.get("version", "unknown"),
+        )
+        return {
+            "protocolVersion": MCP_PROTOCOL_VERSION,
+            "capabilities": {
+                "tools": {"listChanged": False},
+                "resources": {"listChanged": False, "subscribe": False},
+            },
+            "serverInfo": {
+                "name": MCP_SERVER_NAME,
+                "version": MCP_SERVER_VERSION,
+            },
+        }
+
+    def _handle_tools_list(self) -> dict[str, Any]:
+        """List available MCP tools."""
+        return {
+            "tools": [
+                {
+                    "name": "place_detector",
+                    "description": "Place a fire detector in the Revit BIM model "
+                    "at the specified coordinates. Inputs are sanitized and "
+                    "the update is queued for thread-safe execution.",
+                    "inputSchema": {
+                        "type": "object",
+                        "properties": {
+                            "x": {"type": "number", "description": "X coordinate (mm)"},
+                            "y": {"type": "number", "description": "Y coordinate (mm)"},
+                            "z": {"type": "number", "description": "Z coordinate (mm)"},
+                            "detector_type": {
+                                "type": "string",
+                                "enum": ["smoke", "heat", "flame", "duct"],
+                            },
+                            "room_id": {"type": "string"},
+                        },
+                        "required": ["x", "y", "z", "detector_type", "room_id"],
+                    },
+                },
+                {
+                    "name": "calculate_coverage",
+                    "description": "Calculate NFPA 72 coverage for a room given "
+                    "its dimensions and detector type.",
+                    "inputSchema": {
+                        "type": "object",
+                        "properties": {
+                            "room_length": {"type": "number", "description": "Room length (m)"},
+                            "room_width": {"type": "number", "description": "Room width (m)"},
+                            "ceiling_height": {"type": "number", "description": "Ceiling height (m)"},
+                            "detector_type": {"type": "string"},
+                        },
+                        "required": ["room_length", "room_width", "ceiling_height", "detector_type"],
+                    },
+                },
+            ]
+        }
+
+    def _handle_tools_call(self, params: dict[str, Any]) -> dict[str, Any]:
+        """Handle a tools/call request by dispatching to SanitizedMCPHandler."""
+        tool_name = params.get("name")
+        tool_args = params.get("arguments", {})
+
+        # Build an MCPRequest and delegate to the safety-enforcing handler
+        mcp_request = MCPRequest(
+            request_id=str(params.get("_meta", {}).get("request_id", "")),
+            tool_name=tool_name or "",
+            parameters=tool_args,
+        )
+        response: MCPResponse = self._handler.process_request(mcp_request)
+
+        return {
+            "content": [
+                {
+                    "type": "text",
+                    "text": json.dumps({
+                        "success": response.success,
+                        "result": response.result,
+                        "error": response.error,
+                        "sanitized_parameters": response.sanitized_parameters,
+                    }),
+                }
+            ],
+            "isError": not response.success,
+        }
+
     def stop(self) -> None:
-        """Stop the MCP server."""
+        """Stop the MCP server.
+
+        Sets _running = False, which causes the stdin read loop to exit
+        on the next iteration. If running in non-blocking mode, waits for
+        the daemon thread to finish (up to 2 seconds).
+        """
         self._running = False
+        logger.info("[MCP SERVER]: RevitMCPServer stop requested.")
+
+        if self._stdin_thread is not None and self._stdin_thread.is_alive():
+            self._stdin_thread.join(timeout=2.0)
+            if self._stdin_thread.is_alive():
+                logger.warning(
+                    "[MCP SERVER]: stdin reader thread did not stop within 2s "
+                    "(it is blocked on stdin.read; will exit on next input or EOF)."
+                )
         logger.info("[MCP SERVER]: RevitMCPServer stopped.")
+
+
+# ── Module entry point ──────────────────────────────────────────────────────
+def main() -> None:
+    """Run the MCP server as a subprocess (spawned by Claude Desktop etc.)."""
+    logging.basicConfig(
+        level=logging.INFO,
+        stream=sys.stderr,
+        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    )
+    server = RevitMCPServer()
+    server.start(block=True)
+
+
+if __name__ == "__main__":
+    main()

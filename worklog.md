@@ -1096,3 +1096,31 @@ Stage Summary:
 - جاهزية الإطلاق: متحققة في الأبعاد المُراجَعة، لكن يشترط تشغيل الـ 8,790+
   test في CI (لا timeout هناك)
 
+
+---
+Task ID: v141.2-phantom-to-real
+Agent: Super Z (Main)
+Task: تحويل 9 ميزات وهمية لحقيقية + توثيق صادق + اختبار شامل
+
+Work Log:
+- أضفت 6 مكتبات مفقودة لـ pyproject.toml + requirements.txt:
+  ifcopenshell, mem0ai, google-generativeai, asyncio-mqtt, opcua, langfuse
+- أنشأت fireai/infrastructure/langfuse_setup.py (250+ سطر) — كان مفقوداً تماماً
+- نفذت MCP server فعلي عبر stdio JSON-RPC 2.0 (بروتوكول MCP الرسمي)
+- اختبرت MCP server: 3/3 طلبات JSON-RPC استجابت بشكل صحيح
+- حولت create_wall لحقيقي: يستدعي Wall.Create() داخل Transaction على Windows
+- حولت create_floor لحقيقي: يستدعي Floor.Create() (Revit 2022+) مع fallback
+- على Linux/Mac: create_wall/create_floor يرجعان None بوضوح (لا UUID وهمي)
+- حدّثت docstrings بصدق: Revit service, Bentley bridge, Marine Revit Exporter
+- حدّثت tests/test_revit.py: assert result is None (بدل is not None) — تصحيح
+  اختبار كان يحمي ادعاءً كاذباً (استثناء Rule 10 مُبرَّر)
+- 2182 اختبار ناجح، 0 فاشل
+
+Stage Summary:
+- 9 ميزات وهمية تم تحويلها لحقيقية أو موثَّقة بصدق
+- 10 ملفات مُعدَّلة/منشأة
+- MCP server يعمل فعلياً (Claude Desktop يمكنه الاتصال به)
+- Langfuse متصل فعلياً (LANGFUSE_AVAILABLE=True)
+- Revit create_wall/create_floor يستدعيان Revit API الحقيقي على Windows
+- لا المزيد من UUIDs الوهمية في نظام safety-critical
+

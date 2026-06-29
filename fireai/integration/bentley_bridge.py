@@ -1,16 +1,39 @@
 """
 fireai/integration/bentley_bridge.py.
 ======================================
-Bentley Systems Integration — OpenBuildings/STAAD integration via Bentley APIs.
+Bentley Systems Integration — IFC-based bridge (NOT direct Bentley API).
 
-Provides bidirectional data exchange with Bentley Systems applications
-for structural and building information relevant to fire alarm design.
+V141.2 HONEST DOCUMENTATION (adversarial audit fix):
+Previous versions claimed "Bentley OpenBuildings/STAAD integration via
+Bentley APIs". This was MISLEADING. This module does NOT call any Bentley
+API directly — it imports/exports IFC files (the open standard that
+Bentley products can read/write).
+
+What this module ACTUALLY does:
+  - import_bentley(path): Reads an IFC file exported from Bentley
+    OpenBuildings/STAAD/iTwin. Uses ifcopenshell (not Bentley API).
+  - export_to_bentley(path): Writes an IFC file that can be imported
+    into Bentley products. Again, IFC — not Bentley API.
+  - sync_with_bentley(): Placeholder that logs a message. Does NOT
+    establish any live connection to a Bentley process.
+
+What this module DOES NOT do (despite previous claims):
+  - Does NOT call Bentley OpenBuildings API
+  - Does NOT call Bentley STAAD.Pro API
+  - Does NOT call Bentley iTwin Platform API
+  - Does NOT establish a live connection to a running Bentley process
+
+Why IFC is the right approach:
+  Bentley products have full IFC import/export support. Using IFC avoids
+  vendor lock-in and works with any BIM software (Revit, ArchiCAD, etc.).
+  Direct API integration would require Bentley's proprietary SDKs which
+  are not freely available and add significant licensing complexity.
 
 References:
-  - Bentley OpenBuildings API documentation
-  - Bentley STAAD.Pro API
-  - Bentley iTwin Platform
-  - IFC for data exchange when direct API is unavailable
+  - IFC 4.3 specification (buildingSMART International)
+  - ifcopenshell Python library
+  - Bentley OpenBuildings IFC import/export documentation
+  - Bentley STAAD.Pro IFC import/export documentation
 
 """
 

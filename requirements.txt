@@ -73,6 +73,9 @@ pywin32>=306;platform_system=='Windows'
 pythonnet>=3.0.0rc1;platform_system=='Windows'
 
 # ── V141.2 FIX: Integration libraries (optional but required for full functionality) ──
+# These were previously missing from requirements.txt despite being used
+# in the codebase. Install them for full feature parity. They are also
+# available as 'integrations' extras: pip install -e ".[integrations]"
 ifcopenshell>=0.7.0,<1.0.0
 mem0ai>=0.1.0,<3.0.0
 google-generativeai>=0.3.0,<1.0.0

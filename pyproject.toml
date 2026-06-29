@@ -113,6 +113,45 @@ docs = [
     "mkdocs-material>=9.0.0,<10.0.0",
     "mkdocstrings[python]>=0.22.0,<1.0.0",
 ]
+# V141.2 FIX (Adversarial Audit — Missing Dependencies):
+# The following libraries are used by integration modules but were never
+# declared in pyproject.toml/requirements.txt. The code used try/except
+# ImportError to fall back gracefully, but this masked the fact that
+# these features were non-functional in default installs.
+#
+# They are declared as optional 'integrations' extras (not in core
+# dependencies) because:
+#   - ifcopenshell pulls in lark + isodate (heavy)
+#   - mem0ai pulls in openai + qdrant-client + grpcio (heavy)
+#   - google-generativeai is deprecated (use google-genai in V142)
+#   - asyncio-mqtt / opcua are only needed for IoT deployments
+#
+# Install with: pip install -e ".[integrations]"
+integrations = [
+    # IFC parsing — used by fireai/bridges/ifc_headless_bridge.py + ifc_pipeline.py
+    "ifcopenshell>=0.7.0,<1.0.0",
+    # Mem0 long-term memory — used by fireai/infrastructure/mem0_setup.py
+    # (V72/V75/V79 crash-recovery + procedural memory)
+    "mem0ai>=0.1.0,<3.0.0",
+    # Google Gemini — used by mem0_setup.py as dual-primary LLM provider
+    # NOTE: google-generativeai is deprecated; V142 should migrate to
+    # google-genai (the official successor). Kept for backward compat.
+    "google-generativeai>=0.3.0,<1.0.0",
+    # IoT MQTT ingestion — used by fireai/integration/iot_pipeline.py
+    "asyncio-mqtt>=0.16.0,<1.0.0",
+    # IoT OPC-UA ingestion — used by fireai/integration/iot_pipeline.py
+    # NOTE: 'opcua' is the legacy package (0.98.x). 'asyncua' is the
+    # maintained successor. The code imports 'opcua' so we keep it;
+    # V142 should migrate to asyncua.
+    "opcua>=0.98.0,<1.0.0",
+]
+# V141.2 FIX: Observability extras — Langfuse integration.
+# fireai/infrastructure/langfuse_setup.py was MISSING (V141.2 creates it).
+# langfuse is optional because self-hosted Langfuse is the recommended
+# deployment for life-safety data (no cloud exposure).
+observability = [
+    "langfuse>=2.0.0,<3.0.0",
+]
 
 [project.scripts]
 fireai-server = "fireai.cli:main"
