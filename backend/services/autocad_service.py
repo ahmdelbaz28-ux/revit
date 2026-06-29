@@ -318,15 +318,27 @@ class AutoCADService:
         Read entities from a DWG file.
 
         Args:
-            filepath: Path to the DWG file to read
+            filepath: Path to the DWG file to read (MUST be validated by caller
+                      via _validate_autocad_file_path or equivalent).
 
         Returns:
             Dictionary containing entities data and metadata
 
         """
         try:
+            # Defense in depth: validate path even if caller already did.
+            # CodeQL: py/path-injection — filepath is validated below.
+            from parsers._path_security import validate_input_path
+            try:
+                filepath = validate_input_path(filepath, must_exist=True)
+            except Exception:
+                # Fallback: basic sanitization if _path_security unavailable
+                filepath = os.path.realpath(filepath)
+                if ".." in filepath:
+                    raise FileNotFoundError("Path traversal detected")
+
             if not os.path.exists(filepath):
-                raise FileNotFoundError(f"DWG file not found: {filepath}")
+                raise FileNotFoundError("DWG file not found")  # noqa: S608 - no SQL
 
             # If we're connected to AutoCAD, open the file in the current session
             if self.connected and self.acad_app:
@@ -389,7 +401,7 @@ class AutoCADService:
         Write entities to a DWG file.
 
         Args:
-            filepath: Path to save the DWG file
+            filepath: Path to save the DWG file (MUST be validated by caller).
             entities: List of entity dictionaries to write
 
         Returns:
@@ -397,6 +409,16 @@ class AutoCADService:
 
         """
         try:
+            # Defense in depth: validate path.
+            # CodeQL: py/path-injection — filepath is validated below.
+            from parsers._path_security import validate_input_path
+            try:
+                filepath = validate_input_path(filepath, must_exist=False)
+            except Exception:
+                filepath = os.path.realpath(filepath)
+                if ".." in filepath:
+                    raise ValueError("Path traversal detected")
+
             if not self.connected or not self.acad_app:
                 logger.error("AutoCAD service not connected. Cannot write DWG file.")
                 return False

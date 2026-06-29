@@ -841,11 +841,16 @@ class Database:
         order: str = "desc",
     ) -> dict:
         """List connections in a project with pagination."""
-        # Whitelist sort columns and order direction to prevent SQL injection
-        _ALLOWED_CONNECTION_SORTS = {"id", "created_at", "type", "length", "cable_size"}
+        # Whitelist sort columns and order direction to prevent SQL injection.
+        # CodeQL: py/sql-injection — sort and order are SAFE because they are
+        # validated against a strict whitelist BEFORE being used in the query.
+        # If an attacker passes sort="; DROP TABLE connections; --", it will
+        # not match the whitelist and will be replaced with "created_at".
+        _ALLOWED_CONNECTION_SORTS = frozenset({"id", "created_at", "type", "length", "cable_size"})
         if sort not in _ALLOWED_CONNECTION_SORTS:
             sort = "created_at"
-        order = "DESC" if order.upper() not in ("ASC", "DESC") else order.upper()
+        # order is restricted to exactly ASC or DESC (no other values allowed)
+        order = "ASC" if order.upper() == "ASC" else "DESC"
 
         with self._transaction() as cur:
             cur.execute(
@@ -855,6 +860,7 @@ class Database:
             total = cur.fetchone()[0]
 
             offset = (page - 1) * limit
+            # sort and order are SAFE here (whitelisted above) — lgtm[py/sql-injection]
             cur.execute(
                 f"SELECT * FROM connections WHERE project_id = {self._ph()} ORDER BY {sort} {order} LIMIT {self._ph()} OFFSET {self._ph()}",
                 (project_id, limit, offset),
@@ -996,11 +1002,12 @@ class Database:
         order: str = "desc",
     ) -> dict:
         """List reports in a project with pagination."""
-        # Whitelist sort columns and order direction to prevent SQL injection
-        _ALLOWED_REPORT_SORTS = {"id", "created_at", "type", "status", "name"}
+        # Whitelist sort columns and order direction to prevent SQL injection.
+        # CodeQL: py/sql-injection — sort and order are SAFE (whitelisted).
+        _ALLOWED_REPORT_SORTS = frozenset({"id", "created_at", "type", "status", "name"})
         if sort not in _ALLOWED_REPORT_SORTS:
             sort = "created_at"
-        order = "DESC" if order.upper() not in ("ASC", "DESC") else order.upper()
+        order = "ASC" if order.upper() == "ASC" else "DESC"
 
         with self._transaction() as cur:
             cur.execute(
@@ -1010,6 +1017,7 @@ class Database:
             total = cur.fetchone()[0]
 
             offset = (page - 1) * limit
+            # sort and order are SAFE here (whitelisted above) — lgtm[py/sql-injection]
             cur.execute(
                 f"SELECT * FROM reports WHERE project_id = {self._ph()} ORDER BY {sort} {order} LIMIT {self._ph()} OFFSET {self._ph()}",
                 (project_id, limit, offset),
