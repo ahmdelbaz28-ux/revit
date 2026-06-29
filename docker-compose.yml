@@ -13,7 +13,8 @@ services:
     environment:
       - FIREAI_ENV=${FIREAI_ENV:-production}
       - FIREAI_API_KEY=${FIREAI_API_KEY:?ERROR: FIREAI_API_KEY must be set}
-      - DATABASE_URL=${DATABASE_URL:-sqlite:////app/data/digital_twin.db}
+      - FIREAI_SESSION_SECRET=${FIREAI_SESSION_SECRET:?ERROR: FIREAI_SESSION_SECRET must be set (generate with: python3 -c "import secrets; print(secrets.token_urlsafe(64))")}
+      - DATABASE_URL=${DATABASE_URL:-sqlite:////app/data/fireai.db}
       - UDM_DB_PATH=${UDM_DB_PATH:-/app/data/udm_elements.db}
       - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-}
       - CSP_UNSAFE_EVAL=${CSP_UNSAFE_EVAL:-false}
@@ -24,7 +25,6 @@ services:
     volumes:
       - fireai-data:/app/data
       - fireai-logs:/app/logs
-      - ./db:/app/db
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
       interval: 30s

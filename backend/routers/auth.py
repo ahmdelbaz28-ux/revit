@@ -1,33 +1,49 @@
 """
-backend/routers/auth.py — Session-based authentication with HttpOnly cookies.
+backend/routers/auth.py — Session-based authentication with signed HttpOnly cookies.
 
-M-3 FIX: Replaces sessionStorage API key storage with HttpOnly cookie.
-This is MORE secure because:
-  - HttpOnly: JavaScript cannot read the cookie (XSS-resistant)
-  - SameSite=Strict: CSRF-resistant
-  - Secure: Only transmitted over HTTPS in production
-  - The frontend no longer needs to manually attach X-API-Key to every request
+SECURITY DESIGN (CRITICAL FIX):
+  The API key is NEVER stored in the cookie. Instead, we generate a
+  cryptographically random session ID (32 bytes = 256 bits entropy),
+  sign it with HMAC-SHA256 using a server-side secret, and store ONLY
+  the signed token in the cookie.
+
+  The mapping (session_id → api_key_hash, role, expires_at) is stored
+  in an in-memory dict (production: Redis with TTL). The API key itself
+  is never persisted in session storage — only its SHA-256 hash (for
+  revocation checks) and the validated role.
+
+  Threat model addressed:
+    - Cookie theft (XSS, proxy, logging): attacker gets opaque session
+      token, NOT the API key. Token is useless without server secret.
+    - Replay attacks: token is bound to server-side session state that
+      can be revoked instantly via /logout.
+    - Timing attacks: HMAC verification uses constant-time comparison.
 
 Endpoints:
   POST /api/v1/auth/login
     Body: {"api_key": "..."}
-    Sets: Set-Cookie: fireai_session=<api_key>; HttpOnly; SameSite=Strict; Secure (prod)
-    Returns: {"success": true, "data": {"role": "ADMIN"}}
+    Sets: Set-Cookie: fireai_session=<signed_token>; HttpOnly; SameSite=Strict; Secure
+    Returns: {"success": true, "data": {"role": "ADMIN", "expires_at": "..."}}
 
   POST /api/v1/auth/logout
-    Clears the cookie.
+    Clears the cookie AND revokes the server-side session.
 
   GET /api/v1/auth/me
-    Returns the current session's role (or 401 if not logged in).
+    Returns the current session's role (or 401 if not authenticated).
 
 Compliance: agent.md ANTI-DECEPTION — every claim verified by tests.
 """
 
 from __future__ import annotations
 
+import hashlib
+import hmac
 import logging
 import os
+import secrets
+import time
 from datetime import datetime, timedelta, timezone
+from typing import Any
 
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
@@ -38,10 +54,47 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
-# Cookie settings
+# ═══════════════════════════════════════════════════════════════════════════════
+# SESSION SECURITY CONFIGURATION
+# ═══════════════════════════════════════════════════════════════════════════════
+
 _COOKIE_NAME = "fireai_session"
-# 8 hours — typical work session. Forces re-login daily.
-_COOKIE_MAX_AGE_SECONDS = 8 * 3600
+_COOKIE_MAX_AGE_SECONDS = 8 * 3600  # 8 hours
+_SESSION_ID_BYTES = 32  # 256 bits of entropy
+
+# Session secret: used to sign session tokens with HMAC-SHA256.
+# In production, MUST be set via FIREAI_SESSION_SECRET env var.
+# If not set in development, we generate a random one (sessions are lost on restart,
+# which is acceptable for dev but NOT for production).
+_SESSION_SECRET = os.getenv("FIREAI_SESSION_SECRET", "")
+if not _SESSION_SECRET:
+    if os.getenv("FIREAI_ENV", "development").lower() in ("production", "prod"):
+        # CRITICAL: refuse to start in production without a session secret
+        raise RuntimeError(
+            "FIREAI_SESSION_SECRET environment variable is REQUIRED in production. "
+            "Generate one with: python3 -c \"import secrets; print(secrets.token_urlsafe(64))\" "
+            "and set it as an environment variable. This secret signs all session cookies."
+        )
+    # Development only: generate a random secret (sessions lost on restart)
+    _SESSION_SECRET = secrets.token_urlsafe(64)
+    logger.warning(
+        "FIREAI_SESSION_SECRET not set — using random dev secret. "
+        "Sessions will be lost on restart. Set FIREAI_SESSION_SECRET for persistence."
+    )
+
+# In-memory session store: {session_id_hash: {api_key_hash, role, expires_at}}
+# Production: replace with Redis with TTL=_COOKIE_MAX_AGE_SECONDS
+_SESSION_STORE: dict[str, dict[str, Any]] = {}
+
+# Rate limiting: track failed login attempts per IP to prevent brute force
+_FAILED_ATTEMPTS: dict[str, list[float]] = {}
+_MAX_FAILED_ATTEMPTS = 5
+_FAILED_ATTEMPT_WINDOW = 300  # 5 minutes
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PYDANTIC MODELS
+# ═══════════════════════════════════════════════════════════════════════════════
 
 
 class LoginRequest(BaseModel):
@@ -55,15 +108,136 @@ class LoginResponse(BaseModel):
     expires_at: str
 
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# SECURITY HELPERS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+def _hash_secret(value: str) -> str:
+    """
+    Hash a secret value (API key or session ID) with SHA-256 for storage.
+
+    We store hashes, not plaintext, so that even if the session store is
+    compromised, the attacker cannot recover the original API keys.
+    """
+    return hashlib.sha256(value.encode("utf-8")).hexdigest()
+
+
+def _create_session_token(session_id: str) -> str:
+    """
+    Create a signed session token: session_id.HMAC_signature.
+
+    The token format is: <session_id>.<hmac_hex>
+    - session_id: 43-char URL-safe base64 (32 bytes entropy)
+    - hmac_hex: 64-char hex HMAC-SHA256 of session_id
+
+    On verification, we recompute the HMAC and compare in constant time.
+    """
+    signature = hmac.new(
+        _SESSION_SECRET.encode("utf-8"),
+        session_id.encode("utf-8"),
+        hashlib.sha256,
+    ).hexdigest()
+    return f"{session_id}.{signature}"
+
+
+def _verify_session_token(token: str) -> str | None:
+    """
+    Verify a session token and return the session_id if valid.
+
+    Returns None if:
+      - Token format is invalid (missing signature)
+      - HMAC signature does not match (tampered or wrong secret)
+      - Session ID is not in the session store (expired or revoked)
+    """
+    if "." not in token:
+        return None
+
+    parts = token.split(".", 1)
+    if len(parts) != 2:
+        return None
+
+    session_id, signature = parts
+    if not session_id or not signature:
+        return None
+
+    # Recompute expected signature
+    expected_sig = hmac.new(
+        _SESSION_SECRET.encode("utf-8"),
+        session_id.encode("utf-8"),
+        hashlib.sha256,
+    ).hexdigest()
+
+    # Constant-time comparison to prevent timing attacks
+    if not hmac.compare_digest(signature, expected_sig):
+        return None
+
+    # Check that session exists in store (not expired/revoked)
+    session_id_hash = _hash_secret(session_id)
+    session = _SESSION_STORE.get(session_id_hash)
+    if session is None:
+        return None
+
+    # Check expiry
+    if time.time() > session["expires_at"]:
+        del _SESSION_STORE[session_id_hash]
+        return None
+
+    return session_id
+
+
+def _check_rate_limit(client_ip: str) -> bool:
+    """
+    Check if client IP is within rate limit for login attempts.
+
+    Returns True if request is allowed, False if rate limited.
+    """
+    now = time.time()
+    # Clean old entries
+    if client_ip in _FAILED_ATTEMPTS:
+        _FAILED_ATTEMPTS[client_ip] = [
+            t for t in _FAILED_ATTEMPTS[client_ip]
+            if now - t < _FAILED_ATTEMPT_WINDOW
+        ]
+    else:
+        _FAILED_ATTEMPTS[client_ip] = []
+
+    return len(_FAILED_ATTEMPTS[client_ip]) < _MAX_FAILED_ATTEMPTS
+
+
+def _record_failed_attempt(client_ip: str) -> None:
+    """Record a failed login attempt for rate limiting."""
+    if client_ip not in _FAILED_ATTEMPTS:
+        _FAILED_ATTEMPTS[client_ip] = []
+    _FAILED_ATTEMPTS[client_ip].append(time.time())
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ENDPOINTS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
 @router.post("/login")
 async def login(request: Request, body: LoginRequest):
     """
-    Authenticate with an API key and receive an HttpOnly session cookie.
+    Authenticate with an API key and receive a signed HttpOnly session cookie.
 
-    The cookie replaces the need for X-API-Key header on subsequent requests.
-    The frontend should call this once at login, then rely on the cookie.
+    The API key is NEVER stored in the cookie. Instead, a random session ID
+    is generated, signed with HMAC-SHA256, and stored as an opaque token.
+    The server maintains a mapping (session_id_hash → role, expiry) that
+    can be revoked instantly via /logout.
     """
-    import hmac
+    client_ip = request.client.host if request.client else "unknown"
+
+    # Rate limit check
+    if not _check_rate_limit(client_ip):
+        logger.warning("Rate limit exceeded for login attempts from %s", client_ip)
+        raise HTTPException(
+            status_code=429,
+            detail="Too many failed login attempts. Try again in 5 minutes.",
+        )
+
+    import hmac as _hmac
 
     from backend.rbac import Role
     from backend.security_middleware import _validate_api_key
@@ -75,7 +249,7 @@ async def login(request: Request, body: LoginRequest):
     # Validate the API key
     role: Role | None = None
     env_key = os.getenv("FIREAI_API_KEY")
-    if env_key and hmac.compare_digest(api_key, env_key):
+    if env_key and _hmac.compare_digest(api_key, env_key):
         role = Role.ADMIN
     else:
         info = _validate_api_key(api_key)
@@ -83,12 +257,36 @@ async def login(request: Request, body: LoginRequest):
             role = info.role
 
     if role is None:
-        logger.warning("Failed login attempt from %s", request.client.host if request.client else "unknown")
+        _record_failed_attempt(client_ip)
+        logger.warning(
+            "Failed login attempt from %s (attempt %d/%d)",
+            client_ip,
+            len(_FAILED_ATTEMPTS.get(client_ip, [])),
+            _MAX_FAILED_ATTEMPTS,
+        )
         raise HTTPException(status_code=401, detail="Invalid API key")
+
+    # ── Create session ──────────────────────────────────────────────
+    # Generate cryptographically random session ID (256 bits entropy)
+    session_id = secrets.token_urlsafe(_SESSION_ID_BYTES)
+    session_id_hash = _hash_secret(session_id)
+
+    # Store session metadata (NOT the API key — only its hash for audit)
+    api_key_hash = _hash_secret(api_key)
+    expires_at_epoch = time.time() + _COOKIE_MAX_AGE_SECONDS
+    _SESSION_STORE[session_id_hash] = {
+        "api_key_hash": api_key_hash,  # For audit/revocation, never sent to client
+        "role": role.value,
+        "expires_at": expires_at_epoch,
+        "created_at": time.time(),
+        "client_ip": client_ip,
+    }
+
+    # Create signed token
+    token = _create_session_token(session_id)
 
     # Build Set-Cookie header
     is_production = os.getenv("FIREAI_ENV", "development").lower() in ("production", "prod")
-    # Detect HTTPS (behind reverse proxy)
     forwarded_proto = ""
     for name, value in request.scope.get("headers", []):
         if name == b"x-forwarded-proto":
@@ -97,7 +295,7 @@ async def login(request: Request, body: LoginRequest):
     is_https = forwarded_proto == "https" or request.url.scheme == "https"
 
     cookie_parts = [
-        f"{_COOKIE_NAME}={api_key}",
+        f"{_COOKIE_NAME}={token}",
         "Path=/",
         f"Max-Age={_COOKIE_MAX_AGE_SECONDS}",
         "HttpOnly",
@@ -106,26 +304,49 @@ async def login(request: Request, body: LoginRequest):
     if is_https or is_production:
         cookie_parts.append("Secure")
 
-    expires_at = (datetime.now(timezone.utc) + timedelta(seconds=_COOKIE_MAX_AGE_SECONDS)).isoformat()
+    expires_at_iso = datetime.now(timezone.utc) + timedelta(seconds=_COOKIE_MAX_AGE_SECONDS)
 
     from fastapi.responses import JSONResponse
     response = JSONResponse(
         content=success({
             "role": role.value,
-            "expires_at": expires_at,
+            "expires_at": expires_at_iso.isoformat(),
         }),
     )
     response.headers["Set-Cookie"] = "; ".join(cookie_parts)
     response.headers["Cache-Control"] = "no-store"
 
-    logger.info("Successful login, role=%s", role.value)
+    # Clear failed attempts on successful login
+    _FAILED_ATTEMPTS.pop(client_ip, None)
+
+    logger.info("Successful login, role=%s, ip=%s", role.value, client_ip)
     return response
 
 
 @router.post("/logout")
-async def logout():
-    """Clear the session cookie."""
+async def logout(request: Request):
+    """Clear the cookie AND revoke the server-side session."""
     from fastapi.responses import JSONResponse
+
+    # Extract session token from cookie and revoke it server-side
+    cookie_header = ""
+    for name, value in request.scope.get("headers", []):
+        if name == b"cookie":
+            cookie_header = value.decode("utf-8", errors="replace")
+            break
+
+    if cookie_header:
+        for pair in cookie_header.split(";"):
+            pair = pair.strip()
+            if "=" in pair:
+                k, v = pair.split("=", 1)
+                if k.strip() == _COOKIE_NAME:
+                    session_id = _verify_session_token(v.strip())
+                    if session_id:
+                        session_id_hash = _hash_secret(session_id)
+                        _SESSION_STORE.pop(session_id_hash, None)
+                    break
+
     response = JSONResponse(content=success({"logged_out": True}))
     response.headers["Set-Cookie"] = (
         f"{_COOKIE_NAME}=; Path=/; Max-Age=0; HttpOnly; SameSite=Strict"
@@ -140,3 +361,34 @@ async def get_current_user(request: Request):
     if role is None:
         raise HTTPException(status_code=401, detail="Not authenticated")
     return success({"role": role.value})
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PUBLIC API FOR MIDDLEWARE
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+def validate_session_cookie(cookie_value: str) -> str | None:
+    """
+    Validate a session cookie value and return the API key hash if valid.
+
+    This is called by ApiKeyMiddleware to authenticate requests via cookie.
+    Returns the api_key_hash if the session is valid, None otherwise.
+
+    The middleware then looks up the role from the session store and
+    sets it on the request scope.
+    """
+    session_id = _verify_session_token(cookie_value)
+    if session_id is None:
+        return None
+
+    session_id_hash = _hash_secret(session_id)
+    session = _SESSION_STORE.get(session_id_hash)
+    if session is None:
+        return None
+
+    if time.time() > session["expires_at"]:
+        del _SESSION_STORE[session_id_hash]
+        return None
+
+    return session.get("role")

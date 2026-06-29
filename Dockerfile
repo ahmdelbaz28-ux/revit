@@ -64,8 +64,10 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     FIREAI_ENV=production \
     LOG_LEVEL=WARNING \
-    DIGITAL_TWIN_DB_PATH=/app/data/digital_twin.db \
+    DATABASE_URL=sqlite:////app/data/fireai.db \
     UDM_DB_PATH=/app/data/udm_elements.db
+# CRITICAL-3: Unified DB path — DATABASE_URL is now the single source of truth.
+# Removed DIGITAL_TWIN_DB_PATH (was unused, caused confusion).
 
 USER fireai
 

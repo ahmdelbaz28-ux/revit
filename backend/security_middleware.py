@@ -382,11 +382,12 @@ class ApiKeyMiddleware:
                     api_key = value.decode("utf-8", errors="replace")
                     break
 
-            # M-3 FIX: Fallback to HttpOnly cookie if X-API-Key header is missing.
-            # The cookie is set by POST /api/v1/auth/login (see backend/routers/auth.py).
-            # HttpOnly prevents JavaScript from reading the key (XSS-resistant),
-            # SameSite=Strict prevents CSRF, Secure requires HTTPS in production.
-            # This is MORE secure than sessionStorage which is XSS-readable.
+            # CRITICAL FIX: Fallback to signed session cookie if X-API-Key header is missing.
+            # The cookie contains an opaque signed token (NOT the API key).
+            # The token is verified via validate_session_cookie() which checks
+            # HMAC signature + session store + expiry.
+            # This is XSS-resistant (HttpOnly), CSRF-resistant (SameSite=Strict),
+            # and replay-resistant (server-side revocation via /logout).
             if not api_key:
                 cookie_header: str | None = None
                 for name, value in headers:
@@ -400,7 +401,27 @@ class ApiKeyMiddleware:
                         if "=" in pair:
                             k, v = pair.split("=", 1)
                             if k.strip() == "fireai_session":
-                                api_key = v.strip()
+                                cookie_token = v.strip()
+                                # Validate the signed session token
+                                try:
+                                    from backend.routers.auth import validate_session_cookie
+                                    role_from_cookie = validate_session_cookie(cookie_token)
+                                    if role_from_cookie is not None:
+                                        # Session is valid — set role directly
+                                        from backend.rbac import Role as _Role
+                                        try:
+                                            role = _Role(role_from_cookie)
+                                        except ValueError:
+                                            role = None
+                                        if role is not None:
+                                            scope.setdefault("state", {})
+                                            scope["state"]["fireai_role"] = role
+                                            scope["fireai_role"] = role
+                                            # Skip the API key validation below — session is authenticated
+                                            await self.app(scope, receive, send)
+                                            return
+                                except ImportError:
+                                    pass  # auth module not available — fall through to 401
                                 break
 
             # Also accept FIREAI_API_KEY env var bypass for server-side
