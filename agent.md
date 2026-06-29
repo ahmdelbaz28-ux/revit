@@ -15507,3 +15507,155 @@ All verification evidence is real pytest/curl/pip-audit output.
 2. **Revoke leaked PAT** at github.com/settings/tokens (C-4, operational)
 3. **Run Phase 2** (HIGH issues): mypy errors, coverage, 0.0.0.0 binding, Python version
 4. **Re-audit** after Phase 2 using same evidence-based methodology
+
+---
+
+## V82 — External Advisory API Adapters (Surgical, Fail-Safe, Tested)
+
+**Task ID:** V82
+**Agent:** Super Z (Main)
+**Date:** 2026-06-30
+**Phase:** New feature — external API integration layer
+
+### Objective
+
+Bridge the gap identified in the public-apis audit: the FireAI system had 12
+strong local features but no awareness of external environmental context
+(wildfire smoke, earthquakes, marine vessel traffic, real air-quality
+observations, real elevations). This is a SAFETY gap — NFPA 72 §17.7 warns
+that ambient PM2.5 affects smoke detectors, and §14.4.3.3 requires post-
+earthquake inspection.
+
+### What Was Built
+
+Six new files under `fireai/integration/`:
+
+| File | Adapter | Source API | Purpose |
+|------|---------|-----------|---------|
+| `external_api_base.py` | `ExternalApiAdapter` (base) | (none) | Fail-safe + circuit-breaker contract |
+| `wildfire_smoke_adapter.py` | `WildfireSmokeAdapter` | Open-Meteo Air Quality | PM2.5 false-alarm advisory (NFPA 72 §17.7) |
+| `earthquake_adapter.py` | `EarthquakeAdapter` | USGS FDSN | Post-quake inspection trigger (NFPA 72 §14.4.3.3) |
+| `openaq_adapter.py` | `OpenAQAdapter` | OpenAQ v3 | Current air quality (gov-backed, replaces WAQI) |
+| `ais_vessel_adapter.py` | `AISVesselAdapter` | AIS Hub | Marine hazardous-cargo proximity (SOLAS II-2/7) |
+| `elevation_adapter.py` | `ElevationAdapter` | Open Topo Data | SRTM-30m elevation for hydraulic calcs (NFPA 13 §23.4.2) |
+
+Plus one test file: `tests/test_external_api_adapters.py` (41 tests).
+
+### Safety Architecture (Rules 12, 17 — Root-Cause)
+
+Every adapter enforces a NON-NEGOTIABLE contract:
+
+1. **NEVER RAISES**: `call()` returns `ApiResult`, never raises. The FACP
+   cannot be crashed by an external API outage.
+2. **CIRCUIT BREAKER**: 5 consecutive failures → OPEN for 5 minutes.
+   Prevents cascade failures and protects the event loop.
+3. **CONSERVATIVE FALLBACK**: On any failure, returns `ok=False` with a
+   typed fallback value. CRITICAL: fallback uses `UNKNOWN` / `NaN`, NEVER
+   `LOW` / `0.0` — fabricating "LOW" risk without data would be a
+   lie that could cause an operator to skip an inspection.
+4. **TYPED RESULT**: `ApiResult` invariant enforced in `__post_init__`:
+   - `ok=True ⟺ fallback_used=False ⟺ error=""`
+   - `ok=False ⟺ fallback_used=True ⟺ error!=""`
+5. **ADVISORY ONLY**: Adapters never modify FACP state, never silence
+   alarms, never auto-activate deluge. The returned assessment is a HINT.
+
+### Test Evidence (Rule 10 — Test-and-Fix Loop)
+
+```
+$ python3 -m pytest tests/test_external_api_adapters.py -q --tb=short
+================================ 41 passed in 6.28s ==============================
+```
+
+Test breakdown:
+- `TestApiResultInvariants` (6 tests): typed-result contract enforced
+- `TestCircuitBreaker` (6 tests): CLOSED → OPEN → HALF_OPEN → CLOSED state machine
+- `TestWildfireSmokeAdapter` (8 tests): happy path, HIGH risk, timeout, HTTP 5xx, parse error, bad input, circuit opens after 5 failures, health check
+- `TestEarthquakeAdapter` (6 tests): no events, M6 CRITICAL, M5 HIGH, network error, malformed feature skipped, bad radius
+- `TestOpenAQAdapter` (4 tests): happy path, missing API key, HTTP 403, empty results
+- `TestAISVesselAdapter` (5 tests): no vessels, tanker <1NM CRITICAL, fishing boat LOW, missing API key, haversine known distance
+- `TestElevationAdapter` (4 tests): happy path, null elevation, outside SRTM coverage, network error
+- `TestAdaptersShareBaseContract` (2 tests): never-raise contract, health method
+
+All tests use `respx` to mock `httpx` — no real HTTP calls. CI-safe.
+
+### Regression Evidence (Rule 4 — No Unauthorized Changes)
+
+```
+$ python3 -m pytest tests/test_external_api_adapters.py tests/test_security.py \
+                    tests/test_rbac.py tests/test_workflow_service.py \
+                    tests/test_nfpa72_engine.py marine/tests/ -q --tb=no
+============================= 406 passed in 9.29s ==============================
+```
+
+406 tests pass — no regressions in security, RBAC, workflow, NFPA 72, or marine.
+
+### Self-Criticism Notes (Rule 21 — Four-Layer Meta-Criticism)
+
+**Layer 1 — OUTPUT:** Is the result correct? YES — 41/41 tests pass, 406
+including regression. Evidence is real pytest output, not assumed.
+
+**Layer 2 — THINKING:** Did I rationalize? Initial implementation had TWO
+real bugs caught by tests:
+- Bug 1: `ApiResult.__post_init__` did not enforce `ok=False ⟺ fallback_used=True`. Fixed by adding the missing invariant check.
+- Bug 2: `__init__` did not accept `failure_threshold` kwarg, blocking circuit-breaker testing. Fixed by adding kwarg passthrough to base class.
+These were NOT test bugs — they were production bugs. Per Rule 10, I fixed
+the production code, NOT the tests.
+
+**Layer 3 — METHOD:** Is the approach flawed? One concern: the circuit
+breaker does NOT trip on `parse_error` (intentional — a single bad payload
+shouldn't disable the adapter). This is documented in the code. If a
+caller wants stricter behavior, they can override.
+
+**Layer 4 — COMMITMENT:** Did I cut corners? NO:
+- Did NOT skip writing tests.
+- Did NOT skip the fail-safe fallback (every adapter has one).
+- Did NOT use `LOW` as default — used `UNKNOWN` (Rule 17 root-cause: claiming LOW without data would be a fabrication).
+- Did NOT modify any existing production code (Rule 4 — only added new files + one tiny __init__.py export).
+- Did NOT wire adapters into workflow_service.py yet — that requires explicit operator authorization per Rule 14.
+
+### What Was NOT Done (Honest Confession per Rule 13)
+
+1. **Adapters are NOT wired into the workflow service yet.** They are
+   standalone modules. Wiring them into `workflow_service.py` as a
+   pre-check node requires modifying existing production code, which
+   Rule 14 forbids without explicit per-file authorization. The
+   operator should review this V82 entry and explicitly authorize
+   wiring in the next phase.
+2. **OpenAQ and AIS Hub require API keys** that the operator must
+   register for and set via environment variables (`OPENAQ_API_KEY`,
+   `AISHUB_API_KEY`). Without keys, those adapters return fallback.
+   This is documented in each adapter's docstring.
+3. **Storm Glass, BIC-Boxtech, HuggingFace, Groq adapters** from the
+   proposal were NOT implemented in this phase. Phase scope was
+   limited to the 4 PRIORITY-1 adapters + Open Topo Data (5 total).
+   Remaining adapters are deferred to V83 pending operator review.
+
+### Verification Gates
+
+- [Gate 1] Static Validation: ✅ `python3 -c "from fireai.integration import *"` succeeds
+- [Gate 2] Runtime Validation: ✅ 41/41 adapter tests pass
+- [Gate 3] Behavioral Validation: ✅ fail-safe fallback verified for every failure mode
+- [Gate 4] Regression Validation: ✅ 406 tests pass (no broken existing functionality)
+- [Gate 5] Adversarial Audit: ✅ tests cover timeout, HTTP 4xx/5xx, network errors, parse errors, malformed payloads, bad input, circuit-breaker trip/recovery
+
+### Commit Information
+
+Commit: f1c6224a
+PR: https://github.com/ahmdelbaz28-ux/revit/pull/123
+GitHub link: https://github.com/ahmdelbaz28-ux/revit/commit/f1c6224a
+Files added: 6 adapter files + 1 test file = 7 new files
+Files modified: 1 (`fireai/integration/__init__.py` — added exports only)
+Lines added: ~1100 (production) + ~500 (tests)
+Lines removed: 0
+
+### Confidence Level: HIGH
+
+All adapters are root-cause implementations of the fail-safe contract.
+No half-solutions. All verification evidence is real pytest output.
+
+### Next Steps (for Operator)
+
+1. **Review V82 entry** and authorize wiring adapters into `workflow_service.py` (V83)
+2. **Register API keys** for OpenAQ (https://docs.openaq.org/api-key) and AIS Hub (https://www.aishub.net/)
+3. **Authorize V83**: implement Storm Glass, BIC-Boxtech, HuggingFace, Groq adapters
+4. **Authorize V84**: add CI job to run adapter tests on every PR
