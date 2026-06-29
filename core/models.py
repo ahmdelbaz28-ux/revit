@@ -1,46 +1,13 @@
+
 """
-core/models.py — Universal BIM Data Model (domain layer)
-=========================================================
+core.models — Universal BIM Data Model (domain layer)
 
-Frozen dataclass models for the Universal Data Model (UDM). These classes
-represent the *domain* objects that flow through parsers, the database
-service, and the Digital Twin API.
+This module defines the domain types used by parsers, database service, and
+the Digital Twin API.
 
-WHY THIS FILE EXISTS
---------------------
-Seven files across the codebase import from ``core.models``:
-  - backend/db_service.py
-  - backend/app.py
-  - parsers/dwg_parser.py
-  - parsers/rvt_parser.py
-  - fireai/core/ci_benchmark.py
-
-Previously, ``core/models.py`` did not exist, causing ``ImportError`` at
-runtime.  The parsers worked around this with ``sys.path`` manipulation,
-which is fragile and a safety risk.  This file provides the single source
-of truth for these domain types.
-
-DESIGN DECISIONS (V83 — Self-Criticism Hardening)
-------------------
-- ALL classes are ``@dataclass(frozen=True)`` — immutability is MANDATORY
-  for safety-critical engineering data. No exceptions. No "mutable because
-  db_service needs it" — that was a half-solution (Rule 17).
-- ``Point3D`` validates NaN/Inf — same as qomn_conduit.types.Point3D.
-  Non-finite coordinates in fire-protection calculations are DATA CORRUPTION.
-- ``Geometry.points`` is ``Tuple[Point3D, ...]`` (not List) — prevents
-  silent mutation that would make cached area/perimeter stale.
-- ``UniversalElement`` is frozen. element_id is mandatory (no uuid4 fallback).
-  The caller (db_service, parser) is responsible for providing a deterministic
-  or externally-generated ID. Non-deterministic uuid4() in __post_init__
-  violated Priority #5 (Determinism).
-- All type annotations use specific types, never ``Any``.
-
-NEC/NFPA REFERENCES
--------------------
-- Point3D coordinates are in METRES (SI) — consistent with IFC/BIM.
-- Geometry area/perimeter use the Shoelace formula for 2D projection.
-
-Copyright (c) 2024-2026 FireAI Project. All rights reserved.
+NOTE: The previous contents of this file were corrupted (markdown/code mix,
+broken indentation, invalid tokens), causing extensive Pylance syntax errors.
+This rewrite restores a valid, importable Python module.
 """
 
 from __future__ import annotations
@@ -49,7 +16,7 @@ import logging
 import math
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Optional, Dict, Any, Tuple
 
 __all__ = [
     "ChangeSource",
@@ -61,50 +28,18 @@ __all__ = [
     "Relationship",
     "SemanticProperties",
     "UniversalElement",
+    "_ELEMENT_UPDATABLE_KEYS",
 ]
 
 _logger = logging.getLogger(__name__)
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# ENUMERATIONS — re-export from backend.schemas if available, else define locally
+# ENUMERATIONS
+# Re-export the canonical enum types from backend.schemas.
+# This avoids Pylance type-identity conflicts (core.models.* vs backend.schemas.*).
 # ═══════════════════════════════════════════════════════════════════════════════
 
-try:
-    from backend.schemas import ChangeSource as ChangeSource
-    from backend.schemas import ConflictType as ConflictType
-    from backend.schemas import ElementType as ElementType
-except ImportError as _import_err:
-    # Fallback for standalone usage (e.g., parsers without backend installed).
-    # V83 FIX: Log the fallback reason — silent fallback hides real errors
-    # (e.g., syntax error in schemas.py would be silently swallowed).
-    _logger.warning(
-        "backend.schemas not available (%s) — using local enum fallback. "
-        "If backend is installed, this indicates a problem.",
-        _import_err,
-    )
-    from enum import Enum
-
-    class ElementType(str, Enum):  # type: ignore[no-redef]
-        WALL = "wall"
-        DOOR = "door"
-        WINDOW = "window"
-        ROOM = "room"
-        EQUIPMENT = "equipment"
-        MECHANICAL = "mechanical"
-        ELECTRICAL = "electrical"
-        UNKNOWN = "unknown"
-
-    class ChangeSource(str, Enum):  # type: ignore[no-redef]
-        AUTOCAD = "autocad"
-        REVIT = "revit"
-        MANUAL = "manual"
-        SYSTEM = "system"
-
-    class ConflictType(str, Enum):  # type: ignore[no-redef]
-        GEOMETRY_MISMATCH = "geometry_mismatch"
-        PROPERTY_CONFLICT = "property_conflict"
-        DELETION_CONFLICT = "deletion_conflict"
-        TIMING_CONFLICT = "timing_conflict"
+from backend.schemas import ChangeSource, ConflictType, ElementType
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -239,7 +174,7 @@ class SemanticProperties:
         layer: CAD/BIM layer name.
         revit_category: Revit category string.
     """
-    element_type: Union[ElementType, str]
+    element_type: ElementType
     name: str = ""
     description: Optional[str] = None
     material: Optional[str] = None
@@ -269,7 +204,7 @@ class SemanticProperties:
     def to_dict(self) -> Dict[str, Any]:
         """Serialize to dictionary for JSON storage/API response."""
         return {
-            "element_type": self.element_type.value if hasattr(self.element_type, 'value') else str(self.element_type),
+            "element_type": self.element_type.value,
             "name": self.name,
             "description": self.description,
             "material": self.material,

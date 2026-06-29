@@ -547,7 +547,7 @@ app.include_router(health_router_module.router, prefix="/api", tags=["Health"])
 # NEW: Include our CAD/BIM integration routers (v1) - from the other branch
 app.include_router(revit_api.router, prefix="/api/v1", tags=["revit"])  # Added Revit API router
 app.include_router(engineering_copilot.router, prefix="/api/v1", tags=["engineering-copilot"])  # Added Engineering Copilot router
-app.include_router(projects.router, prefix="/api/v1", tags=["projects"])
+
 app.include_router(projects.router, prefix="/api", tags=["projects"])
 
 # Add admin rollback endpoint

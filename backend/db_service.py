@@ -33,7 +33,7 @@ from backend.schemas import (
     SemanticPropertiesResponse,
     StatisticsResponse,
 )
-from core.database import UniversalDataModel
+from backend.core.database import UniversalDataModel
 from core.models import (
     ChangeSource,
     Geometry,

@@ -132,6 +132,11 @@ class UniversalDataModel:
     def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         self.close()
 
+    class _ClosedConnection:
+        """Placeholder object raising RuntimeError for any operation after close."""
+        def __getattr__(self, name):
+            raise RuntimeError("Database connection is closed")
+
     def close(self) -> None:
         """Close the SQLite connection.
 
@@ -143,6 +148,8 @@ class UniversalDataModel:
                 self._conn.close()
             except Exception:
                 pass
+            # Replace closed connection with sentinel that raises RuntimeError on use
+            self._conn = self._ClosedConnection()
 
     def _init_tables(self) -> None:
         """Create database tables if they don't exist.

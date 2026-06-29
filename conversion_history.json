@@ -178,5 +178,23 @@
     "conversion_type": "revit_to_autocad",
     "elements_count": 1,
     "status": "success"
+  },
+  {
+    "version_id": "62709563-eda2-4992-8c28-f9a9bbb2c918",
+    "timestamp": "2026-06-29T15:31:30.628715",
+    "source_file": "C:\\Users\\EWS-01\\AppData\\Local\\Temp\\tmp8e7b4d1m.dwg",
+    "target_file": "C:\\Users\\EWS-01\\AppData\\Local\\Temp\\tmp_pdrkk5u.rvt",
+    "conversion_type": "autocad_to_revit",
+    "elements_count": 1,
+    "status": "success"
+  },
+  {
+    "version_id": "02f929ec-b055-4b35-894d-214a323372b8",
+    "timestamp": "2026-06-29T15:31:30.645311",
+    "source_file": "C:\\Users\\EWS-01\\AppData\\Local\\Temp\\tmpm4owgj13.rvt",
+    "target_file": "C:\\Users\\EWS-01\\AppData\\Local\\Temp\\tmpht6_dwok.dwg",
+    "conversion_type": "revit_to_autocad",
+    "elements_count": 1,
+    "status": "success"
   }
 ]

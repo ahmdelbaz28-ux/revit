@@ -120,12 +120,12 @@ jobs:
     strategy:
       matrix:
         image:
-          - dockerfile: deploy/docker/Dockerfile.api
-            target: api
-          - dockerfile: deploy/docker/Dockerfile.worker
-            target: worker
-          - dockerfile: deploy/docker/Dockerfile.nginx
-            target: nginx
+            - dockerfile: deploy/docker/Dockerfile.api
+              target: api
+            - dockerfile: deploy/docker/Dockerfile.worker
+              target: worker
+            - dockerfile: deploy/docker/Dockerfile.nginx
+              target: nginx
     steps:
       - uses: actions/checkout@v4
 
@@ -147,7 +147,8 @@ jobs:
           tags: |
             type=ref,event=branch
             type=ref,event=tag
-            type=sha,prefix={{branch}}-,format=short
+            type=sha,prefix={{github.ref_name}}-latest,
+            type=sha,format=short
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
 
       - name: Build and push
@@ -216,7 +217,7 @@ jobs:
         env:
           RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
         run: |
-          curl -X POST "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys" \
+          curl -X POST "https://api.render.com/v1/services/${{ env.RENDER_SERVICE_ID }}/deploys" \
             -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
             -H "Content-Type: application/json" \
             -d '{"clearCache": "clear"}'
@@ -301,7 +302,7 @@ jobs:
         env:
           ETAP_TOKEN: ${{ secrets.ETAP_TOKEN }}
         run: |
-          git clone https://${{ secrets.ETAP_TOKEN }}@github.com/${{ env.ETAP_REPO }} etap-repo
+          git clone https://$ETAP_TOKEN@github.com/${{ env.ETAP_REPO }} etap-repo
           cd etap-repo
           git checkout main || git checkout master
           

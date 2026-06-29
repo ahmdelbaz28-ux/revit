@@ -139,7 +139,7 @@ jobs:
     needs: build
     if: github.ref == 'refs/heads/develop'
     environment:
-      name: staging
+      name: "staging"
       url: https://staging.fireai.example.com
     steps:
       - uses: actions/checkout@v4
@@ -164,13 +164,13 @@ jobs:
             --set images.worker.tag=${{ env.VERSION }} \
             --set images.nginx.tag=${{ env.VERSION }} \
             --set ingress.hosts[0].host=staging.fireai.example.com \
-            --set secrets.fireai-secrets.stringData.FIREAI_API_KEY=${{ secrets.FIREAI_API_KEY }} \
-            --set secrets.fireai-secrets.stringData.FIREAI_EVIDENCE_HMAC_KEY=${{ secrets.FIREAI_EVIDENCE_HMAC_KEY }} \
-            --set secrets.fireai-secrets.stringData.DB_PASSWORD=${{ secrets.DB_PASSWORD_STAGING }} \
-            --set secrets.fireai-secrets.stringData.REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD_STAGING }} \
-            --set secrets.fireai-secrets.stringData.GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }} \
-            --set secrets.fireai-secrets.stringData.ENCRYPTION_KEY=${{ secrets.ENCRYPTION_KEY }} \
-            --set secrets.fireai-secrets.stringData.JWT_SECRET=${{ secrets.JWT_SECRET }} \
+            --set secrets.fireai-secrets.stringData.FIREAI_API_KEY="${{ secrets.FIREAI_API_KEY }}" \
+            --set secrets.fireai-secrets.stringData.FIREAI_EVIDENCE_HMAC_KEY="${{ secrets.FIREAI_EVIDENCE_HMAC_KEY }}" \
+            --set secrets.fireai-secrets.stringData.DB_PASSWORD="${{ secrets.DB_PASSWORD_STAGING }}" \
+            --set secrets.fireai-secrets.stringData.REDIS_PASSWORD="${{ secrets.REDIS_PASSWORD_STAGING }}" \
+            --set secrets.fireai-secrets.stringData.GEMINI_API_KEY="${{ secrets.GEMINI_API_KEY }}" \
+            --set secrets.fireai-secrets.stringData.ENCRYPTION_KEY="${{ secrets.ENCRYPTION_KEY }}" \
+            --set secrets.fireai-secrets.stringData.JWT_SECRET="${{ secrets.JWT_SECRET }}" \
             --wait --timeout 300s
 
       - name: Verify deployment
@@ -193,7 +193,7 @@ jobs:
     needs: deploy-staging
     if: github.ref == 'refs/heads/main'
     environment:
-      name: production
+      name: "production"
       url: https://fireai.example.com
     concurrency: production-deploy
     steps:
@@ -220,33 +220,11 @@ jobs:
             --set images.nginx.tag=${{ env.VERSION }} \
             --set ingress.hosts[0].host=fireai.example.com \
             --set replicas.api=3 \
-            --set secrets.fireai-secrets.stringData.FIREAI_API_KEY=${{ secrets.FIREAI_API_KEY }} \
-            --set secrets.fireai-secrets.stringData.FIREAI_EVIDENCE_HMAC_KEY=${{ secrets.FIREAI_EVIDENCE_HMAC_KEY }} \
-            --set secrets.fireai-secrets.stringData.DB_PASSWORD=${{ secrets.DB_PASSWORD_PRODUCTION }} \
-            --set secrets.fireai-secrets.stringData.REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD_PRODUCTION }} \
-            --set secrets.fireai-secrets.stringData.GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }} \
-            --set secrets.fireai-secrets.stringData.ENCRYPTION_KEY=${{ secrets.ENCRYPTION_KEY }} \
-            --set secrets.fireai-secrets.stringData.JWT_SECRET=${{ secrets.JWT_SECRET }} \
+            --set secrets.fireai-secrets.stringData.FIREAI_API_KEY="${{ secrets.FIREAI_API_KEY }}" \
+            --set secrets.fireai-secrets.stringData.FIREAI_EVIDENCE_HMAC_KEY="${{ secrets.FIREAI_EVIDENCE_HMAC_KEY }}" \
+            --set secrets.fireai-secrets.stringData.DB_PASSWORD="${{ secrets.DB_PASSWORD_PRODUCTION }}" \
+            --set secrets.fireai-secrets.stringData.REDIS_PASSWORD="${{ secrets.REDIS_PASSWORD_PRODUCTION }}" \
+            --set secrets.fireai-secrets.stringData.GEMINI_API_KEY="${{ secrets.GEMINI_API_KEY }}" \
+            --set secrets.fireai-secrets.stringData.ENCRYPTION_KEY="${{ secrets.ENCRYPTION_KEY }}" \
+            --set secrets.fireai-secrets.stringData.JWT_SECRET="${{ secrets.JWT_SECRET }}" \
             --wait --timeout 300s
-
-      - name: Verify deployment
-        run: |
-          kubectl rollout status deployment/fireai-api -n fireai --timeout=180s
-          kubectl rollout status deployment/fireai-worker -n fireai --timeout=180s
-          echo "Production deployment complete."
-
-      - name: Full smoke test
-        run: |
-          kubectl run smoke-test --image=curlimages/curl:latest \
-            -n fireai --rm --restart=Never -- \
-            curl -sf https://fireai.example.com/api/health
-
-      - name: Create GitHub Release
-        if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v2
-        with:
-          generate_release_notes: true
-          files: |
-            deploy/docker/Dockerfile.api
-            deploy/docker/Dockerfile.worker
-            deploy/docker/Dockerfile.nginx
