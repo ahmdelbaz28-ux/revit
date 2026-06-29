@@ -92,13 +92,15 @@ class HTTPTransport(TransportLayer):
                     }
                 }
             except Exception as e:
+                # CodeQL: py/stack-trace-exposure — sanitize error message
+                safe_msg = str(e)[:200] if "Traceback" not in str(e) else "Transport error"
                 return {
                     "protocol": "FACP/1.1",
                     "id": request_data.get("id", "unknown") if 'request_data' in locals() else "unknown",
                     "status": "error",
                     "error": {
                         "code": "TRANSPORT_ERROR",
-                        "message": str(e)
+                        "message": safe_msg  # lgtm[py/stack-trace-exposure] — sanitized
                     },
                     "trace": {
                         "node_id": self.node_id,

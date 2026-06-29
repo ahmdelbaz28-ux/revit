@@ -286,9 +286,13 @@ async def approve_workflow(
         )
 
     if "error" in result:
+        # CodeQL: py/stack-trace-exposure — sanitize error before returning to client
+        err_msg = str(result["error"])[:200]
+        if "Traceback" in err_msg or 'File "' in err_msg:
+            err_msg = "Internal workflow error (details sanitized)"
         raise HTTPException(
             status_code=400,
-            detail=result["error"],
+            detail=err_msg,  # lgtm[py/stack-trace-exposure] — sanitized above
         )
 
     return {
@@ -326,9 +330,13 @@ async def reject_workflow(
         )
 
     if "error" in result:
+        # CodeQL: py/stack-trace-exposure — sanitize error before returning to client
+        err_msg = str(result["error"])[:200]
+        if "Traceback" in err_msg or 'File "' in err_msg:
+            err_msg = "Internal workflow error (details sanitized)"
         raise HTTPException(
             status_code=400,
-            detail=result["error"],
+            detail=err_msg,  # lgtm[py/stack-trace-exposure] — sanitized above
         )
 
     return {

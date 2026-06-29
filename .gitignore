@@ -389,3 +389,7 @@ htmlcov/
 .ruff_cache/
 .bandit/
 .venv-audit/
+
+# Runtime data files (modified by backend, should not be committed
+conversion_history.json
+

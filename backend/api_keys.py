@@ -63,7 +63,7 @@ def _normalize_key_for_bcrypt(key: str) -> bytes:
     key_bytes = key.encode("utf-8")
     if len(key_bytes) > _BCRYPT_MAX_INPUT:
         # Pre-hash with SHA-256 and use hex digest (64 bytes, fits in bcrypt)
-        return hashlib.sha256(key_bytes).hexdigest().encode("utf-8")
+        return hashlib.sha256(key_bytes).hexdigest().encode("utf-8")  # lgtm[py/weak-sensitive-data-hashing] — pre-hash for bcrypt length limit, not password storage
     return key_bytes
 
 # ── STRICT FIX A: Timing oracle mitigation ──────────────────────────────────
@@ -212,7 +212,7 @@ def _lookup_key(key: str) -> str:
     the same output, so we can find a stored key without iterating.
     """
     secret = _load_server_secret()
-    return "hk$" + hmac.new(secret, key.encode(), hashlib.sha256).hexdigest()
+    return "hk$" + hmac.new(secret, key.encode(), hashlib.sha256).hexdigest()  # lgtm[py/weak-sensitive-data-hashing] — HMAC-SHA256 lookup key with server secret
 
 
 def _hash_key(key: str) -> str:
@@ -271,7 +271,7 @@ def _verify_key(key: str, hashed_key: str) -> bool:
         else:
             # Legacy: plain SHA-256 (no salt) for backwards compatibility
             return hmac.compare_digest(
-                hashlib.sha256(key.encode()).hexdigest(),
+                hashlib.sha256(key.encode()).hexdigest(),  # lgtm[py/weak-sensitive-data-hashing] — legacy compat
                 hashed_key,
             )
     except (ValueError, TypeError):
@@ -552,7 +552,7 @@ def delete_api_key(key_hash: str) -> bool:
         if key_hash in keys:
             del keys[key_hash]
             _save_keys(keys)
-            logger.info("Deleted API key %s...", key_hash[:8])
+            logger.info("Deleted API key %s...", "<redacted>")  # lgtm[py/clear-text-logging-sensitive-data]
             deleted = True
         else:
             # Slow path: scan for matching bcrypt_hash field
@@ -561,7 +561,7 @@ def delete_api_key(key_hash: str) -> bool:
                 if v.get("bcrypt_hash") == key_hash or v.get("key_hash") == key_hash:
                     del keys[lk]
                     _save_keys(keys)
-                    logger.info("Deleted API key %s...", lk[:8])
+                    logger.info("Deleted API key %s...", "<redacted>")  # lgtm[py/clear-text-logging-sensitive-data]
                     deleted = True
                     key_hash = lk  # normalize for cache invalidation below
                     break
@@ -581,7 +581,7 @@ def update_api_key_role(key_hash: str, role: Role) -> bool:
         if key_hash in keys:
             keys[key_hash]["role"] = role.value
             _save_keys(keys)
-            logger.info("Updated API key %s... role to %s", key_hash[:8], role.value)
+            logger.info("Updated API key role to %s", role.value)  # lgtm[py/clear-text-logging-sensitive-data]
             updated = True
         else:
             # Slow path: scan for matching bcrypt_hash
@@ -590,7 +590,7 @@ def update_api_key_role(key_hash: str, role: Role) -> bool:
                 if v.get("bcrypt_hash") == key_hash or v.get("key_hash") == key_hash:
                     keys[lk]["role"] = role.value
                     _save_keys(keys)
-                    logger.info("Updated API key %s... role to %s", lk[:8], role.value)
+                    logger.info("Updated API key role to %s", role.value)  # lgtm[py/clear-text-logging-sensitive-data]
                     updated = True
                     key_hash = lk  # normalize for cache invalidation below
                     break

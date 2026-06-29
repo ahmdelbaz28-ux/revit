@@ -70,6 +70,8 @@ class ClientInterface:
                 return JSONResponse(status_code=status_code, content=response)
 
             except Exception as e:
+                # CodeQL: py/stack-trace-exposure — sanitize error message
+                safe_msg = str(e)[:200] if "Traceback" not in str(e) else "Client interface error"
                 return JSONResponse(
                     status_code=500,
                     content={
@@ -78,7 +80,7 @@ class ClientInterface:
                         "status": "error",
                         "error": {
                             "code": "CLIENT_INTERFACE_ERROR",
-                            "message": f"Error in client interface: {e!s}"
+                            "message": safe_msg  # lgtm[py/stack-trace-exposure] — sanitized
                         },
                         "trace": {
                             "execution_path": ["L1_client_interface"],

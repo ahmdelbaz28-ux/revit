@@ -444,7 +444,7 @@ def _compute_chain_hash(event_json: str) -> str:
         return _hmac_module.new(
             _hmac_key.encode("utf-8"),
             event_json.encode("utf-8"),
-            hashlib.sha256,
+            hashlib.sha256  # lgtm[py/weak-sensitive-data-hashing] — audit hash, not password,
         ).hexdigest()[:32]
     return hashlib.sha256(event_json.encode("utf-8")).hexdigest()[:32]
 
