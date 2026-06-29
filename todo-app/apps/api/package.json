@@ -44,7 +44,7 @@
     "@types/node": "^22.9.0",
     "@types/supertest": "^6.0.2",
     "eslint": "^9.14.0",
-    "jest": "^25.0.0",
+    "jest": "^30.4.2",
     "prisma": "^5.22.0",
     "supertest": "^7.0.0",
     "ts-jest": "^29.1.2",
