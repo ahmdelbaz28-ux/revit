@@ -222,13 +222,27 @@ class TestProductionSecret:
 
     def test_production_requires_session_secret(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """In production, FIREAI_SESSION_SECRET must be set."""
-        # Clear the module to force re-import
         import importlib
-        import backend.routers.auth as auth_module
 
+        # Clear ALL session secret env vars
         monkeypatch.setenv("FIREAI_ENV", "production")
         monkeypatch.delenv("FIREAI_SESSION_SECRET", raising=False)
+        monkeypatch.delenv("FIREAI_SESSION_SECRET_FILE", raising=False)
+        monkeypatch.delenv("FIREAI_SESSION_SECRET_NEW", raising=False)
+        monkeypatch.delenv("FIREAI_SESSION_SECRET_NEW_FILE", raising=False)
 
-        # Reload module — should raise RuntimeError
-        with pytest.raises(RuntimeError, match="FIREAI_SESSION_SECRET.*REQUIRED"):
-            importlib.reload(auth_module)
+        # Reset the global secret manager singleton
+        import backend.session_secret as secret_mod
+        old_manager = secret_mod._secret_manager
+        secret_mod._secret_manager = None
+
+        # Reload session_secret module — should raise RuntimeError on load()
+        importlib.reload(secret_mod)
+
+        try:
+            with pytest.raises(RuntimeError, match="FIREAI_SESSION_SECRET.*REQUIRED"):
+                mgr = secret_mod.SessionSecretManager()
+                mgr.load()
+        finally:
+            # Restore original module state
+            secret_mod._secret_manager = old_manager

@@ -37,7 +37,6 @@ Compliance: agent.md ANTI-DECEPTION — every claim verified by tests.
 from __future__ import annotations
 
 import hashlib
-import hmac
 import logging
 import os
 import secrets
@@ -49,6 +48,7 @@ from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from backend.response import success
+from backend.session_secret import get_secret_manager
 
 logger = logging.getLogger(__name__)
 
@@ -62,28 +62,22 @@ _COOKIE_NAME = "fireai_session"
 _COOKIE_MAX_AGE_SECONDS = 8 * 3600  # 8 hours
 _SESSION_ID_BYTES = 32  # 256 bits of entropy
 
-# Session secret: used to sign session tokens with HMAC-SHA256.
-# In production, MUST be set via FIREAI_SESSION_SECRET env var.
-# If not set in development, we generate a random one (sessions are lost on restart,
-# which is acceptable for dev but NOT for production).
-_SESSION_SECRET = os.getenv("FIREAI_SESSION_SECRET", "")
-if not _SESSION_SECRET:
-    if os.getenv("FIREAI_ENV", "development").lower() in ("production", "prod"):
-        # CRITICAL: refuse to start in production without a session secret
-        raise RuntimeError(
-            "FIREAI_SESSION_SECRET environment variable is REQUIRED in production. "
-            "Generate one with: python3 -c \"import secrets; print(secrets.token_urlsafe(64))\" "
-            "and set it as an environment variable. This secret signs all session cookies."
-        )
-    # Development only: generate a random secret (sessions lost on restart)
-    _SESSION_SECRET = secrets.token_urlsafe(64)
-    logger.warning(
-        "FIREAI_SESSION_SECRET not set — using random dev secret. "
-        "Sessions will be lost on restart. Set FIREAI_SESSION_SECRET for persistence."
-    )
+# Session secret manager: handles loading, validation, and rotation.
+# Supports:
+#   - Env var: FIREAI_SESSION_SECRET
+#   - File-based (Docker/K8s): FIREAI_SESSION_SECRET_FILE
+#   - Rotation: FIREAI_SESSION_SECRET_NEW (new secret becomes primary, old retained)
+#   - Validation: minimum 256-bit entropy, character set check
+#   - Constant-time comparison: all comparisons use hmac.compare_digest
+_SECRET_MANAGER = get_secret_manager()
 
 # In-memory session store: {session_id_hash: {api_key_hash, role, expires_at}}
-# Production: replace with Redis with TTL=_COOKIE_MAX_AGE_SECONDS
+# NOTE: This is LOST on restart. For production with rotation support:
+#   1. Use Redis with TTL=_COOKIE_MAX_AGE_SECONDS (sessions survive restarts)
+#   2. The rotation feature (FIREAI_SESSION_SECRET_NEW) only provides value
+#      when sessions persist across restarts — otherwise all users must
+#      re-login after restart anyway.
+#   3. See backend/session_secret.py for rotation instructions.
 _SESSION_STORE: dict[str, dict[str, Any]] = {}
 
 # Rate limiting: track failed login attempts per IP to prevent brute force
@@ -127,17 +121,12 @@ def _create_session_token(session_id: str) -> str:
     """
     Create a signed session token: session_id.HMAC_signature.
 
-    The token format is: <session_id>.<hmac_hex>
-    - session_id: 43-char URL-safe base64 (32 bytes entropy)
-    - hmac_hex: 64-char hex HMAC-SHA256 of session_id
-
-    On verification, we recompute the HMAC and compare in constant time.
+    Uses SessionSecretManager.sign() which supports:
+      - Multiple secrets (for zero-downtime rotation)
+      - File-based secrets (Docker/K8s)
+      - Validation (minimum entropy)
     """
-    signature = hmac.new(
-        _SESSION_SECRET.encode("utf-8"),
-        session_id.encode("utf-8"),
-        hashlib.sha256,
-    ).hexdigest()
+    signature = _SECRET_MANAGER.sign(session_id)
     return f"{session_id}.{signature}"
 
 
@@ -161,15 +150,8 @@ def _verify_session_token(token: str) -> str | None:
     if not session_id or not signature:
         return None
 
-    # Recompute expected signature
-    expected_sig = hmac.new(
-        _SESSION_SECRET.encode("utf-8"),
-        session_id.encode("utf-8"),
-        hashlib.sha256,
-    ).hexdigest()
-
-    # Constant-time comparison to prevent timing attacks
-    if not hmac.compare_digest(signature, expected_sig):
+    # Verify signature against primary AND previous secrets (rotation support)
+    if not _SECRET_MANAGER.verify_signature(session_id, signature):
         return None
 
     # Check that session exists in store (not expired/revoked)
