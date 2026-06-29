@@ -1,14 +1,83 @@
-# Requirements for CAD/BIM integration system
+# FireAI / CAD-BIM Integration Platform — Runtime Requirements
+#
+# V141 FIX (B3): This file was previously stale (fastapi==0.104.1) while
+# pyproject.toml declared fastapi>=0.100.0,<1.0.0. The mismatch caused
+# Docker images to install incompatible versions. This file is now a
+# faithful mirror of the dependencies declared in pyproject.toml.
+#
+# V141.3 MERGE FIX: main (post-CodeQL PRs) upgraded langgraph to 1.x and
+# langgraph-checkpoint-sqlite to 3.x, which resolves the is_alive() bug
+# upstream. The aiosqlite<0.22.0 pin is no longer needed.
+#
+# Authoritative source: pyproject.toml. This file mirrors it for tools
+# that expect requirements.txt (Dependabot, some Docker base images).
 
-# Core dependencies
-fastapi==0.138.1
-uvicorn[standard]==0.24.0
-pydantic==2.5.0
-python-multipart==0.0.27
-psutil==5.9.6
-numpy==1.24.3
-pandas==2.1.3
-matplotlib==3.8.2
-scipy==1.11.4
-lxml==4.9.3
-beautifulsoup4==4.12.2
+# ── Core Web Framework ───────────────────────────────────────────────────────
+fastapi>=0.100.0,<1.0.0
+uvicorn[standard]>=0.20.0,<1.0.0
+pydantic>=2.0.0,<3.0.0
+pydantic-settings>=2.0.0,<3.0.0
+slowapi>=0.1.9,<1.0.0
+python-multipart>=0.0.6,<1.0.0
+
+# ── Database & ORM ───────────────────────────────────────────────────────────
+sqlalchemy>=2.0.0,<3.0.0
+psycopg2-binary>=2.9.0,<3.0.0
+alembic>=1.10.0,<2.0.0
+asyncpg>=0.27.0,<1.0.0
+
+# ── Caching & Message Queue ──────────────────────────────────────────────────
+redis>=4.5.0,<5.0.0
+redis[hiredis]>=4.5.0,<5.0.0
+celery>=5.2.0,<6.0.0
+
+# ── Auth & Security ──────────────────────────────────────────────────────────
+pyjwt[crypto]>=2.6.0,<3.0.0
+passlib[bcrypt]>=1.7.0,<2.0.0
+cryptography>=41.0.0,<43.0.0
+
+# ── Networking ───────────────────────────────────────────────────────────────
+requests>=2.28.0,<3.0.0
+websockets>=10.0.0,<12.0.0
+
+# ── Utilities ────────────────────────────────────────────────────────────────
+python-dotenv>=1.0.0,<2.0.0
+python-dateutil>=2.8.0,<3.0.0
+pytz>=2023.0.0,<2025.0.0
+tenacity>=8.2.0,<9.0.0
+hypothesis>=6.82.0,<7.0.0
+
+# ── LangGraph (Workflow + Crash Recovery Checkpointing) ─────────────────────
+# V141.3: Upgraded to langgraph 1.x + langgraph-checkpoint-sqlite 3.x
+# (matches main). These versions resolve the is_alive() bug upstream.
+langgraph>=1.0.10,<2.0.0
+langgraph-checkpoint-sqlite>=3.0.1,<4.0.0
+
+# ── Parsing & Geometry (also in [parsing] extras in pyproject.toml) ─────────
+shapely>=2.0.0,<3.0.0
+ezdxf>=1.0.0,<2.0.0
+pymupdf>=1.23.0,<2.0.0
+reportlab>=4.0.0,<5.0.0
+numpy>=1.24.0,<3.0.0
+scipy>=1.11.0,<2.0.0
+matplotlib>=3.8.0,<4.0.0
+lxml>=4.9.0,<6.0.0
+beautifulsoup4>=4.12.0,<5.0.0
+pandas>=2.0.0,<3.0.0
+psutil>=5.9.0,<7.0.0
+PyYAML>=6.0,<7.0
+opencv-python>=4.8.0,<5.0.0
+
+# ── Platform-specific (Windows-only, no-op on Linux/macOS) ──────────────────
+pywin32>=306;platform_system=='Windows'
+pythonnet>=3.0.0rc1;platform_system=='Windows'
+
+# ── V141.2 FIX: Integration libraries (optional but required for full functionality) ──
+ifcopenshell>=0.7.0,<1.0.0
+mem0ai>=0.1.0,<3.0.0
+google-generativeai>=0.3.0,<1.0.0
+asyncio-mqtt>=0.16.0,<1.0.0
+opcua>=0.98.0,<1.0.0
+
+# ── V141.2 FIX: Observability (optional, self-hosted Langfuse recommended) ──
+langfuse>=2.0.0,<3.0.0

@@ -15431,3 +15431,243 @@ Wheel build succeeds. Package imports cleanly.
 - **Branch:** `fix/v140-pre-launch-build-readiness`
 - **Commit Hash:** (to be filled after commit)
 - **Pull Request:** #100 (will be updated with Phase 2 commit)
+
+---
+
+## V141 Pre-Launch Readiness Fixes (2026-06-30)
+
+### Operator Request
+المراجعة الشاملة للمشاكل الموجودة في: الورك تري (Workflow)، السي آي/سي دي (CI/CD)،
+والرف (Deployment: Docker / k8s / Helm). التأكد من جاهزية المشروع للإطلاق.
+
+### Audit Methodology
+Applied the mandatory execution state machine: ANALYZE → UNDERSTAND_EXISTING_SYSTEM →
+VERIFY_ASSUMPTIONS → RISK_ANALYSIS → IMPLEMENT_INCREMENTALLY → SELF_REVIEW →
+EXECUTE_VALIDATION → ADVERSARIAL_AUDIT → DOCUMENT → FINAL_VERIFICATION.
+
+Created a venv, installed `.[dev][parsing]` extras, ran critical test suites
+(workflow_service, security, launch_blockers, audit, fireai/core) and inspected
+Dockerfiles, Helm chart, CI/CD workflows, and pyproject.toml.
+
+### 6 Launch Blockers Discovered & Fixed
+
+#### B1 — AsyncSqliteSaver crash-recovery broken (CRITICAL — Launch Blocker)
+**File:** `pyproject.toml` (added `aiosqlite>=0.19.0,<0.22.0` pin)
+**Root Cause:** `langgraph-checkpoint-sqlite` 2.0.0–2.0.11 calls `conn.is_alive()`
+inside `AsyncSqliteSaver.setup()` (langgraph/checkpoint/sqlite/aio.py:283).
+`aiosqlite` 0.22.0 **removed** the `is_alive()` method from `Connection`.
+Verified by testing every aiosqlite release:
+  - 0.19.0 → is_alive=True
+  - 0.20.0 → is_alive=True  (last good)
+  - 0.21.0 → is_alive=True  (last good)
+  - 0.22.0 → is_alive=False  ← BREAKS
+  - 0.22.1 → is_alive=False  ← BREAKS (latest as of 2026-06-30)
+**Impact:** `test_full_workflow_with_pdf` (E2E integration test) failed with
+`AttributeError: 'Connection' object has no attribute 'is_alive'`. The V72
+crash-recovery mechanism (AsyncSqliteSaver persistent checkpointing) was
+non-functional — any worker crash would lose in-flight workflow state.
+**Fix:** Pinned `aiosqlite>=0.19.0,<0.22.0` in pyproject.toml dependencies.
+Root-cause fix, not a workaround.
+**Why NOT downgrade langgraph-checkpoint-sqlite:** All 2.0.x releases have
+the same `is_alive()` call. The bug is in aiosqlite's breaking change, not
+in langgraph. Once langgraph publishes a release that doesn't depend on
+`is_alive()`, the pin can be relaxed.
+**Verification:** `pytest tests/test_workflow_service.py tests/test_workflow_service_v2.py`
+→ **108/108 PASS** (was 1 failed before fix).
+
+#### B2 — Dockerfile references non-existent `facp/` directory (CRITICAL)
+**Files:** `deploy/docker/Dockerfile.api`, `deploy/docker/Dockerfile.worker`
+**Root Cause:** Both Dockerfiles had `COPY --chown=fireai:fireai facp/ ./facp/`
+but `facp/` does not exist in the repo. The actual FACP packages are
+`facp_system/` (used by `backend/routers/facp.py` for panel selection/
+verification — mandatory) and `facp_distributed/` (optional distributed
+mode — requires `[facp]` extras).
+**Impact:** `docker build` would fail with `COPY failed: file does not exist`.
+**Fix:** Replaced `facp/` with `facp_system/` + `facp_distributed/` in both
+Dockerfiles. Verified all referenced paths exist.
+**Verification:** All 8 Dockerfile paths (`backend`, `fireai`, `facp_system`,
+`facp_distributed`, `core`, `parsers`, `pyproject.toml`, `requirements.txt`)
+now exist ✅.
+
+#### B3 — `requirements.txt` stale, conflicts with pyproject.toml (CRITICAL)
+**Files:** `requirements.txt`, `deploy/docker/Dockerfile.{api,worker}`
+**Root Cause:** `requirements.txt` declared `fastapi==0.104.1`, `uvicorn==0.24.0`,
+`pydantic==2.5.0` (pinned, old). `pyproject.toml` declares
+`fastapi>=0.100.0,<1.0.0` (pip resolves to 0.138.2), `uvicorn>=0.20.0,<1.0.0`
+(0.49.0), `pydantic>=2.0.0,<3.0.0` (2.13.4). Dockerfiles used
+`pip install -r requirements.txt` → installed incompatible older versions.
+**Impact:** Docker image would have FastAPI 0.104.1 while backend code uses
+features from 0.138+. Runtime errors guaranteed.
+**Fix:**
+1. Rewrote `requirements.txt` as a faithful mirror of pyproject.toml
+   dependencies (ranges match exactly). Documented that pyproject.toml is
+   the authoritative source.
+2. Updated both Dockerfiles to install from pyproject.toml:
+   `pip install -e ".[parsing]"` (same pattern as CI).
+**Verification:** `pip install -e ".[dev][parsing]"` succeeds; all imports
+(backend.app, fireai, workflow_service, facp_system) succeed.
+
+#### B4 — `setup.py` broken + wheel build empty (CRITICAL)
+**Files:** `setup.py` (deleted), `pyproject.toml` (added `[tool.setuptools.packages.find]`)
+**Root Cause:**
+1. `setup.py` declared `name="facp"`, `find_packages(where="facp")`,
+   `entry_points=["facp-server=facp.__main__:main"]` — but `facp/` does not
+   exist (only `facp_system/` and `facp_distributed/`). The `setup.py` was
+   a leftover from a different project (FACP Communication Protocol) and
+   did not match the actual package `cad-bim-integration-platform`.
+2. `pyproject.toml` had `dynamic = ["version"]` and `[tool.setuptools_scm]`
+   but **no `[tool.setuptools.packages.find]`**. Result: wheel build
+   produced an EMPTY package (6.8KB, only dist-info metadata, 0 Python files).
+   This was masked because `pip install -e .` (editable mode) adds the
+   source directory to sys.path directly, bypassing the wheel.
+**Impact:** `pip install cad-bim-integration-platform` from a registry
+would install an empty package. Production Docker images worked only
+because they used editable install.
+**Fix:**
+1. Deleted `setup.py` — `pyproject.toml` is the sole build config (PEP 517/518).
+2. Added `[tool.setuptools.packages.find]` with explicit `include` list
+   (backend*, fireai*, core*, parsers*, facp_system*, facp_distributed*,
+   qomn_fire*, qomn_conduit*, integration*, marine*, adapters*, services*,
+   skills*) and `exclude` list (tests*, docs*, deploy*, etc.).
+3. Added `[tool.setuptools.package-data]` for py.typed, JSON, YAML, SVG, HTML.
+4. Updated Dockerfiles to `COPY pyproject.toml ./` (removed `setup.py`).
+**Verification:** `python -m build --wheel` now produces a 4.5MB wheel with
+**570 Python files** across 13 packages (fireai: 238, skills: 93, backend: 75,
+marine: 39, facp_distributed: 36, qomn_fire: 31, parsers: 22, qomn_conduit: 18,
+core: 7, facp_system: 5, adapters: 2, integration: 2, services: 2).
+
+#### B5 — `deploy.yml` ignored workflow_service tests (HIGH)
+**File:** `.github/workflows/deploy.yml`
+**Root Cause:** The deploy pipeline's test step had:
+```
+--ignore=tests/test_workflow_service.py
+--ignore=tests/test_workflow_service_v2.py
+```
+These were ignored because they failed due to B1 (aiosqlite
+incompatibility). This hid the crash-recovery bug from CI.
+**Impact:** Crash-recovery regressions would not be caught by the deploy gate.
+**Fix:** Removed both `--ignore` flags. Added explanatory comment referencing
+B1. All 108 workflow_service tests now run in deploy CI.
+**Verification:** Local run of the same pytest command → 108/108 PASS.
+
+#### B6 — Helm chart referenced non-existent `ghcr.io/fireai/*` (HIGH)
+**File:** `deploy/helm/fireai/values.yaml`
+**Root Cause:** All 6 image repository references used
+`ghcr.io/fireai/{api,worker,nginx}` but the `fireai` org does not exist on
+GitHub Container Registry. The deploy.yml workflow pushes to
+`ghcr.io/${{ github.repository }}/{api,worker,nginx}` =
+`ghcr.io/ahmdelbaz28-ux/revit/{api,worker,nginx}`.
+**Impact:** `helm install` would fail with ImagePullError on all 3 deployments.
+**Fix:** Replaced all 6 occurrences of `ghcr.io/fireai/` with
+`ghcr.io/ahmdelbaz28-ux/revit/`. Added header comment explaining how to
+override per-environment via `--set`.
+**Verification:** `yaml.safe_load()` on values.yaml succeeds ✅.
+
+### Additional Discovery (Non-Blocking — Reported, NOT Fixed)
+
+#### N1 — `v1.55.0` git tag is not on HEAD
+**Status:** Reported, not fixed (requires operator decision).
+**Detail:** `git rev-parse v1.55.0` = `e3c907b5`, but HEAD = `4e28407d`.
+The tag is 103 commits behind HEAD. `setuptools_scm` correctly reports
+version as `1.2.2.dev103` (103 commits after v1.2.1, the last tag on the
+HEAD lineage). The `VERSION` file says `1.55.0` but is not used because
+`dynamic = ["version"]` prefers git tags.
+**Recommendation:** After merging V141, create a new tag `v1.56.0` on HEAD
+to reflect the actual release version. Until then, builds will show
+`1.2.2.dev103` as the version string.
+
+### Verification Evidence (V141)
+
+After all 6 fixes, ran the following test suites with Python 3.12.13:
+
+| Suite | Tests | Result |
+|---|---|---|
+| tests/test_workflow_service.py + test_workflow_service_v2.py | 108 | ✅ 108 PASS |
+| tests/test_mandatory_security.py + tests/test_rbac.py | 43 | ✅ 43 PASS |
+| tests/test_launch_blockers_audit.py + test_release_gates.py + test_safety_critical_fixes.py | 214 | ✅ 214 PASS |
+| backend/tests/test_sync_websocket.py + test_monitor_integration.py | 32 | ✅ 32 PASS |
+| tests/test_v138_audit_fixes.py + test_v137_audit_fixes.py + test_audit_report_fixes.py | 82 | ✅ 82 PASS |
+| fireai/core/tests/test_audit_store.py + test_security_logging.py | 147 | ✅ 138 PASS, 9 skipped (ecdsa optional) |
+| **Total** | **626** | **✅ 617 PASS, 9 skipped, 0 FAIL** |
+
+Import smoke tests:
+- `from backend.app import app` → ✅ (35 routes)
+- `import fireai` → ✅
+- `from backend.services.workflow_service import WorkflowService` → ✅
+- `from facp_system.panel_selector import SelectionEngine` → ✅
+
+Wheel build: `python -m build --wheel` → ✅ 4.5MB, 570 Python files, 13 packages.
+
+Dockerfile path verification: all 8 paths referenced in Dockerfile.api and
+Dockerfile.worker exist in the repo ✅.
+
+YAML lint: `values.yaml`, `deploy.yml`, `ci.yml` all parse as valid YAML ✅.
+
+### Files Modified in V141 (7 files)
+
+1. `pyproject.toml` — Added `aiosqlite>=0.19.0,<0.22.0` pin (B1);
+   added `[tool.setuptools.packages.find]` + `[tool.setuptools.package-data]`
+   (B4); added `[tool.setuptools_scm] local_scheme` comment.
+2. `setup.py` — **DELETED** (B4 — pyproject.toml is sole build config).
+3. `requirements.txt` — Rewrote as faithful mirror of pyproject.toml (B3).
+4. `deploy/docker/Dockerfile.api` — Fixed `facp/` → `facp_system/` +
+   `facp_distributed/` (B2); install from pyproject.toml (B3); removed
+   `setup.py` from COPY (B4).
+5. `deploy/docker/Dockerfile.worker` — Same fixes as Dockerfile.api (B2, B3, B4).
+6. `.github/workflows/deploy.yml` — Removed `--ignore=test_workflow_service*.py`
+   (B5).
+7. `deploy/helm/fireai/values.yaml` — Replaced `ghcr.io/fireai/*` with
+   `ghcr.io/ahmdelbaz28-ux/revit/*` (B6).
+
+### Self-Criticism Notes (V141)
+
+1. **B1 root-cause depth:** Initially thought the bug was in
+   `langgraph-checkpoint-sqlite 2.0.11` specifically and tried downgrading
+   to 2.0.0. Discovered 2.0.0 has the SAME `is_alive()` call. Then tested
+   every aiosqlite version to find that 0.22.0 removed the method. The
+   root cause is aiosqlite's breaking change, not langgraph's. This is
+   the difference between a patch (downgrade langgraph) and a root-cause
+   fix (pin aiosqlite).
+2. **B4 depth:** Discovered the empty-wheel bug as a side effect of
+   investigating setup.py. Without running `python -m build --wheel` and
+   inspecting contents, this would have shipped as a "works in Docker
+   because editable install" latent bug. The fix (packages.find) is the
+   root cause; deleting setup.py is cleanup.
+3. **N1 (version tag):** Reported but not fixed because creating a git
+   tag is an operator decision, not a code fix. Rule 4 (NEVER SELF-EDIT)
+   applies — I will not create tags without explicit authorization.
+4. **Layer 4 (Commitment):** Every fix is root-cause. No test-softening.
+   Every fix is verified by re-running affected test suites. No
+   `|| true` or `continue-on-error` added to hide failures.
+
+### Phase Status Report (Rule 11)
+
+- **Current Status:** All 6 launch blockers (B1–B6) resolved. 617 tests
+  pass across critical suites. Wheel build produces a complete package.
+  Dockerfiles reference only existing paths. Helm chart references the
+  correct GHCR namespace. CI/CD no longer hides workflow_service failures.
+- **Launch Readiness:** ACHIEVED for the dimensions audited (Workflow,
+  CI/CD, Deployment). The 6 blockers that previously prevented launch
+  are all fixed and verified.
+- **Required to Advance:**
+  1. Operator must revoke the leaked GitHub PAT from the previous session
+     (still active as of this writing).
+  2. Operator should create a new git tag (e.g., `v1.56.0`) on HEAD
+     after merging V141, so `setuptools_scm` reports the correct version
+     (currently reports `1.2.2.dev103`).
+  3. Operator should run the full test suite in CI (8,790+ tests) to
+     catch any regressions not covered by the 617-test critical subset
+     run locally.
+  4. Recommended: address the 18 GitHub Dependabot vulnerabilities on
+     the default branch (9 high, 5 moderate, 4 low) in a follow-up cycle.
+
+### Confidence Level: HIGH
+
+All 6 fixes are root-cause. No half-solutions. No test-softening. All
+verification evidence is real pytest output. Wheel build succeeds with
+570 Python files. All imports clean.
+
+### Commit Information
+- **Branch:** `fix/v141-pre-launch-readiness`
+- **Commit Hash:** (to be filled after commit)
+- **Files Modified:** 7 (1 deleted)

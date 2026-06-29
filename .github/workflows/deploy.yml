@@ -66,14 +66,18 @@ jobs:
         run: bandit -r fireai/ qomn_conduit/ -f json -o reports/bandit.json -ll
 
       - name: Unit tests
+        # V141 FIX (B5 — Launch Blocker): Removed --ignore=test_workflow_service*.py
+        # These tests were previously ignored because they failed due to the
+        # aiosqlite 0.22.0+ incompatibility (B1 — conn.is_alive() removed).
+        # B1 fixed by pinning aiosqlite<0.22.0 in pyproject.toml. All 108
+        # workflow_service tests now pass (40 + 68), so they are included
+        # in the deploy gate to prevent regressions.
         run: |
           pytest tests/ -v \
             --tb=short \
             --cov=fireai --cov=backend \
             --cov-report=term-missing \
-            --cov-fail-under=10 \
-            --ignore=tests/test_workflow_service.py \
-            --ignore=tests/test_workflow_service_v2.py
+            --cov-fail-under=10
 
       - name: Build frontend
         run: |

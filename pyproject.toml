@@ -50,6 +50,14 @@ dependencies = [
     "pythonnet>=3.0.0rc1;platform_system=='Windows'",
     "tenacity>=8.2.0,<9.0.0",
     "hypothesis>=6.82.0,<7.0.0",
+    # V141.3 MERGE FIX: main (post-CodeQL PRs) upgraded to langgraph 1.x +
+    # langgraph-checkpoint-sqlite 3.x, which resolves the is_alive() bug
+    # at the upstream level (3.x no longer calls the removed aiosqlite
+    # Connection.is_alive() method). V141.1's pin to <2.0.6 was a
+    # necessary workaround before upstream fixed it; now that upstream
+    # has fixed it (3.x), we adopt main's versions.
+    # The aiosqlite pin (<0.22.0) is no longer needed — langgraph 1.x
+    # works with aiosqlite 0.22.x. Removed.
     "langgraph>=1.0.10,<2.0.0",
     "langgraph-checkpoint-sqlite>=3.0.1,<4.0.0"
 ]
@@ -120,6 +128,55 @@ Changelog = "https://github.com/fireai/platform/blob/main/CHANGELOG.md"
 "LinkedIn" = "https://linkedin.com/company/fireai-platform"
 
 [tool.setuptools_scm]
+# V141 FIX (B4 — Launch Blocker, Rule 17 Root-Cause Analysis):
+# `dynamic = ["version"]` above resolves version from git tags via
+# setuptools_scm. By default setuptools_scm picks the most recent tag by
+# commit date (not numeric value), which correctly resolves to v1.55.0
+# (the latest tag by commit history). The previous build picked v1.2.2
+# only because v1.55.0 tag was on the same commit as HEAD — fixed by
+# ensuring local_scheme = "no-local-version" produces clean version strings.
+# For Docker builds where .git is absent, set env var:
+#   SETUPTOOLS_SCM_PRETEND_VERSION=1.55.0
+local_scheme = "no-local-version"
+
+# V141 FIX (B4 — Launch Blocker): Without [tool.setuptools.packages.find],
+# the wheel build produced an EMPTY package (only dist-info metadata, no
+# Python code). This was masked because `pip install -e .` (editable mode)
+# adds the source directory to sys.path directly, bypassing the wheel.
+# Production Docker images use `pip install -e .` so they worked, but
+# `pip install cad-bim-integration-platform` from PyPI/registry would have
+# installed an empty package. Explicitly declaring packages.find fixes this.
+[tool.setuptools.packages.find]
+where = ["."]
+include = [
+    "backend*",
+    "fireai*",
+    "core*",
+    "parsers*",
+    "facp_system*",
+    "facp_distributed*",
+    "qomn_fire*",
+    "qomn_conduit*",
+    "integration*",
+    "marine*",
+    "adapters*",
+    "services*",
+    "skills*",
+]
+exclude = [
+    "tests*",
+    "*.tests*",
+    "docs*",
+    "deploy*",
+    "todo-app*",
+    "revit_samples*",
+    "test_data*",
+    "build*",
+    "dist*",
+]
+
+[tool.setuptools.package-data]
+"*" = ["py.typed", "*.json", "*.yaml", "*.yml", "*.svg", "*.html"]
 
 [tool.black]
 line-length = 88

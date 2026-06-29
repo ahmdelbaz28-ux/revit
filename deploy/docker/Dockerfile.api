@@ -7,8 +7,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
+COPY requirements.txt pyproject.toml ./
+# V141 FIX (B3 — Launch Blocker): requirements.txt was stale (fastapi==0.104.1
+# while pyproject.toml declares fastapi>=0.100.0,<1.0.0 — pip resolved to
+# 0.138.2). The mismatch caused Docker image to install incompatible versions.
+# Now install from pyproject.toml (single source of truth) using the same
+# `pip install -e .` pattern as CI, plus parsing extras for full functionality.
+RUN pip install --no-cache-dir --prefix=/install -r requirements.txt && \
+    pip install --no-cache-dir --prefix=/install -e ".[parsing]"
 
 FROM python:3.12-slim
 
@@ -30,10 +36,17 @@ COPY --from=builder /install /usr/local
 
 COPY --chown=fireai:fireai backend/ ./backend/
 COPY --chown=fireai:fireai fireai/ ./fireai/
-COPY --chown=fireai:fireai facp/ ./facp/
+# V141 FIX (B2 — Launch Blocker): `facp/` directory does not exist in the
+# repo. The actual FACP packages are `facp_system/` (used by
+# backend/routers/facp.py for panel selection/verification) and
+# `facp_distributed/` (optional distributed mode — requires [facp] extras).
+# Copying `facp_system/` is mandatory; `facp_distributed/` is also copied
+# so the image can run in distributed mode if [facp] extras are installed.
+COPY --chown=fireai:fireai facp_system/ ./facp_system/
+COPY --chown=fireai:fireai facp_distributed/ ./facp_distributed/
 COPY --chown=fireai:fireai core/ ./core/
 COPY --chown=fireai:fireai parsers/ ./parsers/
-COPY --chown=fireai:fireai pyproject.toml setup.py ./
+COPY --chown=fireai:fireai pyproject.toml ./
 
 RUN mkdir -p /app/data /app/logs /app/tmp && \
     chown -R fireai:fireai /app/data /app/logs /app/tmp

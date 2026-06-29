@@ -7,8 +7,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
+COPY requirements.txt pyproject.toml ./
+# V141 FIX (B3 — Launch Blocker): Install from pyproject.toml (single source
+# of truth) instead of stale requirements.txt. Includes parsing extras for
+# full DXF/IFC/PDF parsing capability in the worker.
+RUN pip install --no-cache-dir --prefix=/install -r requirements.txt && \
+    pip install --no-cache-dir --prefix=/install -e ".[parsing]"
 
 FROM python:3.12-slim
 
@@ -30,10 +34,15 @@ COPY --from=builder /install /usr/local
 
 COPY --chown=fireai:fireai backend/ ./backend/
 COPY --chown=fireai:fireai fireai/ ./fireai/
-COPY --chown=fireai:fireai facp/ ./facp/
+# V141 FIX (B2 — Launch Blocker): `facp/` directory does not exist in the
+# repo. Copy the actual FACP packages: `facp_system/` (mandatory, used by
+# backend/routers/facp.py) and `facp_distributed/` (optional distributed
+# mode — worker may need it for distributed FACP cluster processing).
+COPY --chown=fireai:fireai facp_system/ ./facp_system/
+COPY --chown=fireai:fireai facp_distributed/ ./facp_distributed/
 COPY --chown=fireai:fireai core/ ./core/
 COPY --chown=fireai:fireai parsers/ ./parsers/
-COPY --chown=fireai:fireai pyproject.toml setup.py ./
+COPY --chown=fireai:fireai pyproject.toml ./
 COPY deploy/docker/entrypoint-worker.sh /entrypoint-worker.sh
 
 RUN mkdir -p /app/data /app/logs /app/tmp && \

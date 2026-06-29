@@ -1,4 +1,11 @@
 ---
+# V141 FIX (B6 — Launch Blocker): Image repositories corrected from
+# `ghcr.io/fireai/*` (non-existent org) to `ghcr.io/ahmdelbaz28-ux/revit/*`
+# (actual GitHub Container Registry path produced by deploy.yml's
+# `ghcr.io/${{ github.repository }}/{api,worker,nginx}`).
+# Override per-environment via `helm install --set images.api.repository=...`
+# or by maintaining separate values files per environment.
+
 global:
   environment: production
   imagePullPolicy: Always
@@ -9,15 +16,15 @@ global:
 # ── Image Configuration ──────────────────────────────────────────────────────
 images:
   api:
-    repository: ghcr.io/fireai/api
+    repository: ghcr.io/ahmdelbaz28-ux/revit/api
     tag: "1.0.0"
     pullPolicy: Always
   worker:
-    repository: ghcr.io/fireai/worker
+    repository: ghcr.io/ahmdelbaz28-ux/revit/worker
     tag: "1.0.0"
     pullPolicy: Always
   nginx:
-    repository: ghcr.io/fireai/nginx
+    repository: ghcr.io/ahmdelbaz28-ux/revit/nginx
     tag: "1.0.0"
     pullPolicy: Always
 
@@ -47,7 +54,7 @@ serviceAccount:
 api:
   enabled: true
   image:
-    repository: ghcr.io/fireai/api
+    repository: ghcr.io/ahmdelbaz28-ux/revit/api
     tag: "1.0.0"
     pullPolicy: Always
   replicaCount: 3
@@ -126,7 +133,7 @@ api:
 worker:
   enabled: true
   image:
-    repository: ghcr.io/fireai/worker
+    repository: ghcr.io/ahmdelbaz28-ux/revit/worker
     tag: "1.0.0"
     pullPolicy: Always
   replicaCount: 1
@@ -177,7 +184,7 @@ worker:
 nginx:
   enabled: true
   image:
-    repository: ghcr.io/fireai/nginx
+    repository: ghcr.io/ahmdelbaz28-ux/revit/nginx
     tag: "1.0.0"
     pullPolicy: Always
   replicaCount: 2
