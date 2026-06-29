@@ -1,14 +1,14 @@
 {
-  "name": "fireai-digital-twin",
-  "version": "1.0.0",
+  "name": "bazspark",
+  "version": "1.55.0",
   "type": "module",
   "private": true,
-  "description": "FireAI Digital Twin — Safety-Critical Fire Alarm Engineering Platform",
+  "description": "BAZSpark — Safety-Critical Fire Alarm Engineering Platform",
   "author": {
-    "name": "FireAI Team",
-    "email": "engineering@fireai.org"
+    "name": "Eng. Ahmed Elbaz",
+    "email": "engineering@bazspark.com"
   },
-  "homepage": "https://fireai.org",
+  "homepage": "https://bazspark.com",
   "license": "MIT",
   "scripts": {
     "dev": "vite dev",
