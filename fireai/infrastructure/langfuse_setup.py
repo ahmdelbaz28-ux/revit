@@ -72,7 +72,8 @@ def _check_langfuse_available() -> bool:
 
 
 def get_langfuse() -> Optional[Any]:
-    """Get the lazy-initialized Langfuse client.
+    """
+    Get the lazy-initialized Langfuse client.
 
     Returns None if langfuse is not installed or not configured.
     Never raises — calling code can safely use `if client:` pattern.
@@ -106,7 +107,8 @@ def get_langfuse_callback_handler(
     workflow_id: Optional[str] = None,
     project_id: Optional[str] = None,
 ) -> Optional[Any]:
-    """Create a LangGraph CallbackHandler for auto-tracing.
+    """
+    Create a LangGraph CallbackHandler for auto-tracing.
 
     V141.2: Accepts workflow_id and project_id kwargs for compatibility with
     workflow_service.py's calling convention. workflow_id is used as the
@@ -161,7 +163,8 @@ def log_verification_score(
     value: float,
     comment: Optional[str] = None,
 ) -> bool:
-    """Create a tamper-evident score on a Langfuse trace.
+    """
+    Create a tamper-evident score on a Langfuse trace.
 
     Returns True on success, False on failure. Never raises.
     """
@@ -183,7 +186,8 @@ def log_verification_score(
 
 
 def log_workflow_scores(result: Any, handler: Optional[Any]) -> None:
-    """Log all 5 verification scores to Langfuse after workflow completion.
+    """
+    Log all 5 verification scores to Langfuse after workflow completion.
 
     Scores logged:
       1. nfpa_coverage_pct: Normalized coverage (0.0–1.0)
@@ -260,7 +264,8 @@ def log_workflow_scores(result: Any, handler: Optional[Any]) -> None:
 
 
 def flush_langfuse() -> None:
-    """Ensure all Langfuse events are sent before process exit.
+    """
+    Ensure all Langfuse events are sent before process exit.
 
     Never raises — safe to call from signal handlers / shutdown hooks.
     """
@@ -274,7 +279,8 @@ def flush_langfuse() -> None:
 
 
 def langfuse_health_check() -> dict[str, Any]:
-    """Health status for monitoring endpoints.
+    """
+    Health status for monitoring endpoints.
 
     Returns a dict with:
       - enabled: bool

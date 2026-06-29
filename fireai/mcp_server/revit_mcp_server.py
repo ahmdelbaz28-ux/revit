@@ -365,7 +365,8 @@ class RevitMCPServer:
         )
 
     def start(self, *, block: bool = True) -> None:
-        """Start the MCP server.
+        """
+        Start the MCP server.
 
         V141.2 REAL IMPLEMENTATION (adversarial audit fix):
         Reads JSON-RPC 2.0 requests from stdin (one per line), dispatches
@@ -436,7 +437,8 @@ class RevitMCPServer:
         logger.info("[MCP SERVER]: stdin EOF reached, server shutting down.")
 
     def _handle_jsonrpc_line(self, line: str) -> Optional[dict[str, Any]]:
-        """Parse a JSON-RPC line and return a response dict (or None for notifications).
+        """
+        Parse a JSON-RPC line and return a response dict (or None for notifications).
 
         Args:
             line: A single JSON-RPC request string (one line from stdin).
@@ -608,7 +610,8 @@ class RevitMCPServer:
         }
 
     def stop(self) -> None:
-        """Stop the MCP server.
+        """
+        Stop the MCP server.
 
         Sets _running = False, which causes the stdin read loop to exit
         on the next iteration. If running in non-blocking mode, waits for

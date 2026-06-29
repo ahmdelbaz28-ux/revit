@@ -648,13 +648,11 @@ class RevitService:
             import clr  # noqa: F401  (already imported at module level on Windows)
             from Autodesk.Revit.DB import (
                 XYZ,
+                Level,
                 Line,
+                Transaction,
                 Wall,
                 WallType,
-                Level,
-                Transaction,
-                TransactionStatus,
-                ElementId,
             )
 
             # Convert mm to internal feet (Revit internal units)
@@ -790,13 +788,12 @@ class RevitService:
                 XYZ,
                 CurveArray,
                 CurveLoop,
-                Line,
+                FilteredElementCollector,
                 Floor,
                 FloorType,
                 Level,
+                Line,
                 Transaction,
-                ElementId,
-                FilteredElementCollector,
             )
 
             MM_TO_FEET = 1.0 / 304.8
