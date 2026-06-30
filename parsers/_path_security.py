@@ -246,8 +246,14 @@ def validate_output_path(
 
     # Resolve symlinks and get canonical absolute path.
     # strict=False: don't require the file to exist (we're creating it).
+    # lgtm [py/path-injection] — this IS the security validation function.
+    # The resolve() call here is intentional: it follows symlinks so we
+    # can verify the FINAL target is inside an allowed base. CodeQL flags
+    # this as path-injection because output_path is user-provided, but
+    # the whole purpose of this function is to make user-provided paths
+    # safe. Suppressing the false positive.
     try:
-        safe_path = output_path_obj.resolve(strict=False)
+        safe_path = output_path_obj.resolve(strict=False)  # lgtm [py/path-injection]
     except (OSError, RuntimeError) as e:
         raise UnsafePathError(
             f"{parser_name}: cannot resolve output path '{output_path}' "
