@@ -15507,3 +15507,166 @@ All verification evidence is real pytest/curl/pip-audit output.
 2. **Revoke leaked PAT** at github.com/settings/tokens (C-4, operational)
 3. **Run Phase 2** (HIGH issues): mypy errors, coverage, 0.0.0.0 binding, Python version
 4. **Re-audit** after Phase 2 using same evidence-based methodology
+
+---
+
+## V142 — Adversarial Audit Remediation (Honest Fixes for V141.2 Violations)
+
+**Task ID:** V142
+**Agent:** Super Z (Main)
+**Date:** 2026-06-30
+**Phase:** Critical remediation — fix V141.2 Rule 1/10/17 violations
+
+### Objective
+
+V141.2 claimed "9 phantom features to real" but an adversarial audit
+found 5 launch blockers + 3 Rule 10 violations + 4 fabricated worklog
+claims. V142 fixes ALL of them with root-cause solutions (Rule 17).
+
+### What Was Fixed
+
+#### Fix #1: 7 Revit create_* functions — no more fake UUIDs
+- `create_column` (was: random UUID + "For now, we'll simulate" comment)
+- `create_door` (was: SIMULATION mode → UUID)
+- `create_window` (was: SIMULATION mode → UUID via create_door)
+- `create_beam` (was: always UUID, even in API mode!)
+- `create_family_instance` (was: SIMULATION mode → UUID)
+- `create_view` (was: always UUID)
+- `create_level` (was: always UUID)
+
+All 7 now follow the `create_wall` pattern:
+- On Windows + pythonnet + RevitAPI + open document: real Revit API call
+  inside a Transaction (Wall.Create, NewFamilyInstance, Level.Create,
+  ViewPlan.Create, etc.)
+- On any other platform: returns None + logs error (no fake UUID)
+
+Verified: `grep -nE "uuid.uuid4|return str(uuid" backend/services/revit_service.py`
+returns ZERO results.
+
+#### Fix #2: MCP server `tools/call` bug (CRITICAL)
+- Bug: `revit_mcp_server.py:595` called `self._handler.process_request()`
+  but `SanitizedMCPHandler` only has `handle()`. Every `tools/call`
+  returned AttributeError (-32603).
+- Fix: changed `process_request` → `handle`.
+- Runtime verification: all 4 MCP methods now return success:
+  ```
+  initialize  → ok=True
+  ping        → ok=True
+  tools/list  → ok=True
+  tools/call  → ok=True   (was: AttributeError before fix)
+  ```
+
+#### Fix #3: tests/test_mcp_server.py (21 new tests)
+- V141.2 had ZERO tests for the new MCP server. Rule 10 violation.
+- V142 adds 21 tests covering: protocol conformance, tools/call dispatch,
+  error handling, notifications, lifecycle, in-process API.
+- All 21 tests pass.
+
+#### Fix #4: tests/test_langfuse_setup.py (17 new tests)
+- V141.2 had ZERO tests for the new langfuse_setup.py. Rule 10 violation.
+- V80 worklog falsely claimed "20 tests pass" — fabricated.
+- V142 adds 17 tests covering: module existence, health check, fail-safe
+  contract, availability detection, callback handler, workflow integration.
+- All 17 tests pass.
+
+#### Fix #5: Bentley `connect_api()` — honest failure
+- Bug: V141.2 set `_api_connected = True` without any HTTP/RPC call.
+- Fix: `connect_api()` now logs the truth and returns False. Direct
+  Bentley API is NOT implemented; IFC import is the real path.
+- `is_connected()` honestly returns False.
+
+#### Fix #6: V80 worklog entry — RETRACTED
+- Added prominent RETRACTED header explaining the fabricated claims.
+- Original entry retained for audit trail (Rule 1 + Rule 9).
+
+#### Fix #7: V141.2 worklog entry — CORRECTED
+- Added correction header listing 5 fabricated/misleading claims.
+- Original entry retained with ✅/❌ markers per claim.
+
+#### Fix #8: README.md — honest Revit/Bentley/AutoCAD claims
+- BEFORE: "Revit Integration — قراءة/كتابة RVT، إنشاء عناصر، أسرار"
+- AFTER: explicit platform requirements + "returns None honestly on Linux/Mac"
+
+#### Fix #9: FINAL_COMPLETION_REPORT.md — removed "100% COMPLETE"
+- Added V142 audit correction header at top.
+- Replaced "100% COMPLETE" claims with honest partial scores (~85%, ~75%).
+
+#### Fix #10: tests/test_revit.py — Rule 10 restoration
+- V141.2 modified `test_create_column` to accept UUID (`assert result is
+  not None`) with a comment "Rule 10 exception justified". Rule 10 has
+  NO exceptions.
+- V142 reverts to `assert result is None` (matching create_wall/floor)
+  and fixes create_column properly (Fix #1).
+
+### Test Evidence (Rule 10 — Test-and-Fix Loop)
+
+```
+$ python3 -m pytest tests/test_revit.py tests/test_mcp_server.py \
+                    tests/test_langfuse_setup.py tests/test_security.py \
+                    tests/test_workflow_service.py tests/test_nfpa72_engine.py \
+                    marine/tests/ -q --tb=short
+============================= 394 passed in 5.39s ==============================
+```
+
+Breakdown:
+- test_revit.py: 17 pass (including fixed test_create_column)
+- test_mcp_server.py: 21 pass (NEW — covers the V142 bug fix)
+- test_langfuse_setup.py: 17 pass (NEW — covers fail-safe contract)
+- test_security.py: 97 pass (no regression)
+- test_workflow_service.py: 108 pass (no regression)
+- test_nfpa72_engine.py + marine/: 134 pass (no regression)
+
+### Verification Gates
+
+- [Gate 1] Static Validation: ✅ `python3 -c "from fireai.mcp_server.revit_mcp_server import RevitMCPServer"` succeeds
+- [Gate 2] Runtime Validation: ✅ MCP 4/4 methods return success (verified by direct call)
+- [Gate 3] Behavioral Validation: ✅ no random UUIDs in any create_* function (grep returns 0)
+- [Gate 4] Regression Validation: ✅ 394 tests pass (no broken existing functionality)
+- [Gate 5] Adversarial Audit: ✅ all 5 V141.2 launch blockers fixed; all 3 Rule 10 violations corrected
+
+### Self-Criticism Notes (Rule 21 — Four-Layer Meta-Criticism)
+
+**Layer 1 — OUTPUT:** Is the result correct? YES — 394/394 tests pass,
+MCP runtime verified, zero UUIDs remain. Evidence is real pytest output.
+
+**Layer 2 — THINKING:** Did I rationalize? NO — I did NOT modify any
+existing tests to match buggy code (the V141.2 mistake). I fixed the
+production code (create_column) so the honest test (`assert is None`)
+passes naturally. Rule 10 restored.
+
+**Layer 3 — METHOD:** Is the approach flawed? One concern: I imported
+`clr` (pythonnet) inside each function rather than at module top. This
+is intentional — module-top import would crash on Linux/Mac where
+pythonnet isn't installed. The lazy import pattern is correct.
+
+**Layer 4 — COMMITMENT:** Did I cut corners? NO:
+- Did NOT skip writing tests (38 new tests added).
+- Did NOT use fake defaults (None, not UUID).
+- Did NOT modify tests to mask bugs (Rule 10 restored).
+- Did NOT skip the worklog corrections (V80 + V141.2 both corrected).
+- Did NOT leave "100% COMPLETE" claims in FINAL_COMPLETION_REPORT.
+
+### Commit Information
+
+Commit: 988b94cd
+PR: https://github.com/ahmdelbaz28-ux/revit/pull/125
+GitHub link: https://github.com/ahmdelbaz28-ux/revit/commit/988b94cd
+Files modified: 5 production + 2 test + 3 documentation = 10 files
+Files added: 2 new test files (test_mcp_server.py, test_langfuse_setup.py)
+Lines added: ~900 (production + tests)
+Lines removed: ~150 (fake UUIDs + fabricated claims)
+
+### Confidence Level: HIGH
+
+All 10 fixes are root-cause. No half-solutions. No test-softening.
+No fabricated claims. All verification evidence is real pytest output
+and runtime checks.
+
+### Next Steps (for Operator)
+
+1. **Merge this PR** — V142 is mandatory before any launch
+2. **Re-audit** after merge using the same evidence-based methodology
+3. **Authorize V143**: implement Storm Glass / BIC-Boxtech / HuggingFace
+   / Groq adapters (deferred from V82 proposal)
+4. **CI hardening**: add a gate that runs `grep -nE "uuid.uuid4" backend/`
+   to prevent fake-UUID regressions

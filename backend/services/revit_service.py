@@ -68,7 +68,6 @@ import json
 import logging
 import os
 import platform
-import uuid
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from enum import Enum
@@ -886,34 +885,135 @@ class RevitService:
         """
         Create a column in the active Revit document.
 
+        V142 HONEST BEHAVIOR (adversarial audit fix — Rule 17 root-cause):
+        - On Windows + pythonnet + RevitAPI + open Revit document:
+          Calls Revit API's FamilyInstance.Create() inside a transaction.
+          Returns the real ElementId as a string.
+        - On any other platform / missing deps / no open document:
+          Returns None and logs an error. Does NOT generate a fake UUID.
+
+        Previous versions returned a random UUID in SIMULATION mode, which
+        was a safety-critical deception — engineers could believe a fire-
+        rated column was created when it was not. This is now fixed.
+
         Args:
-            location: Location point [x, y, z]
+            location: Location point [x, y, z] in millimeters
             height: Column height in millimeters
             level: Level name for the column
             column_type: Column family type name (default "M_Columns")
-            location_point: Alias for ``location`` (accepted for backward compat
-                with routers that pass ``location_point=`` instead of ``location=``)
+            location_point: Alias for ``location`` (accepted for backward compat)
 
         Returns:
-            Element ID of created column or None if failed
+            Real ElementId string on success, None on failure.
 
         """
+        # V142: Reject simulation mode explicitly — no more fake UUIDs.
+        if not self.connected:
+            logger.error(
+                "create_column failed: not connected to Revit. "
+                "Call connect(method='api') first (requires Windows + pythonnet + Revit)."
+            )
+            return None
+
+        if self._connection_method != ConnectionMethod.API:
+            logger.error(
+                "create_column failed: connection method is %s, not 'api'. "
+                "Column creation requires a real Revit API connection.",
+                self._connection_method,
+            )
+            return None
+
+        if not HAS_REVIT_API:
+            logger.error(
+                "create_column failed: Revit API not available (pythonnet/RevitAPI not loaded). "
+                "Column creation is only supported on Windows with Revit installed."
+            )
+            return None
+
+        if not self._revit_doc:
+            logger.error("create_column failed: no active Revit document.")
+            return None
+
+        # V140 FIX: Accept location_point as alias for location (router compat)
+        actual_location = location_point if location_point is not None else location
+
         try:
-            if not self.connected:
-                logger.warning("Not connected to Revit. Operation simulated.")
+            # V142: Real Revit API column creation.
+            import clr  # noqa: F401
+            from Autodesk.Revit.DB import (
+                XYZ,
+                FamilySymbol,
+                FilteredElementCollector,
+                Level,
+                Transaction,
+            )
 
-            # V140 FIX: Accept location_point as alias for location (router compat)
-            actual_location = location_point if location_point is not None else location
+            MM_TO_FEET = 1.0 / 304.8
+            location_xyz = XYZ(
+                actual_location[0] * MM_TO_FEET,
+                actual_location[1] * MM_TO_FEET,
+                actual_location[2] * MM_TO_FEET,
+            )
 
-            # In a real implementation, this would create an actual column using Revit API
-            # For now, we'll simulate the creation
-            import uuid
-            column_id = str(uuid.uuid4())
+            # Find the level by name
+            level_collector = FilteredElementCollector(self._revit_doc).OfClass(Level)
+            target_level = None
+            for lvl in level_collector:
+                if lvl.Name == level:
+                    target_level = lvl
+                    break
+            if target_level is None:
+                logger.error("create_column failed: Level '%s' not found.", level)
+                return None
 
-            logger.info("Simulated creating column at %s height %s on %s (type=%s)",
-                        actual_location, height, level, column_type)
-            return column_id
+            # Find the column family symbol
+            symbol_collector = FilteredElementCollector(self._revit_doc).OfClass(FamilySymbol)
+            target_symbol = None
+            for sym in symbol_collector:
+                if sym.Name == column_type or sym.Family.Name == column_type:
+                    target_symbol = sym
+                    break
+            if target_symbol is None:
+                logger.error(
+                    "create_column failed: column type '%s' not found in document.",
+                    column_type,
+                )
+                return None
 
+            tx = Transaction(self._revit_doc, "FireAI: Create Column")
+            tx.Start()
+            try:
+                if not target_symbol.IsActive:
+                    target_symbol.Activate()
+
+                # Structural column creation (Revit 2022+ API)
+                try:
+                    from Autodesk.Revit.DB.Structure import StructuralType
+                    new_column = self._revit_doc.Create.NewFamilyInstance(
+                        location_xyz, target_symbol, target_level, StructuralType.Column
+                    )
+                except ImportError:
+                    # Older Revit API fallback
+                    new_column = self._revit_doc.Create.NewFamilyInstance(
+                        location_xyz, target_symbol, target_level
+                    )
+
+                if new_column is None:
+                    tx.RollBack()
+                    logger.error("create_column failed: NewFamilyInstance() returned None.")
+                    return None
+
+                tx.Commit()
+                element_id = str(new_column.Id)
+                logger.info(
+                    "Created column (ElementId=%s) at %s height %s on %s (type=%s)",
+                    element_id, actual_location, height, level, column_type
+                )
+                return element_id
+            except Exception as create_err:
+                tx.RollBack()
+                logger.error("create_column failed during creation: %s", create_err)
+                return None
         except Exception as e:
             logger.error("Error creating column: %s", e)
             return None
@@ -1208,20 +1308,53 @@ class RevitService:
         family_type: str = "M_Single-Flush",
         level: str = "Level 1"
     ) -> Optional[str]:
-        """Create a door in a wall."""
-        if not self._connected:
+        """
+        Create a door in a wall.
+
+        V142 HONEST BEHAVIOR (Rule 17 root-cause):
+        - On Windows + pythonnet + RevitAPI + open Revit document:
+          Calls Revit API's NewFamilyInstance() inside a transaction.
+          Returns the real ElementId as a string.
+        - On any other platform / missing deps / no open document:
+          Returns None and logs an error. Does NOT generate a fake UUID.
+
+        Previous versions returned a random UUID in SIMULATION mode — a
+        safety-critical deception for fire-rated door placement. Fixed.
+        """
+        # V142: Reject simulation mode explicitly — no more fake UUIDs.
+        if not self.connected:
+            logger.error(
+                "create_door failed: not connected to Revit. "
+                "Call connect(method='api') first (requires Windows + pythonnet + Revit)."
+            )
             return None
 
-        if self._connection_method == ConnectionMethod.SIMULATION:
-            return str(uuid.uuid4())
+        if self._connection_method != ConnectionMethod.API:
+            logger.error(
+                "create_door failed: connection method is %s, not 'api'. "
+                "Door creation requires a real Revit API connection.",
+                self._connection_method,
+            )
+            return None
+
+        if not HAS_REVIT_API:
+            logger.error(
+                "create_door failed: Revit API not available (pythonnet/RevitAPI not loaded). "
+                "Door creation is only supported on Windows with Revit installed."
+            )
+            return None
+
+        if not self._revit_doc:
+            logger.error("create_door failed: no active Revit document.")
+            return None
 
         try:
-            if self._connection_method == ConnectionMethod.API and self._revit_doc:
-                from Autodesk.Revit.DB import XYZ, Level, Transaction
+            from Autodesk.Revit.DB import XYZ, Level, Transaction
 
-                t = Transaction(self._revit_doc, "Create Door")
-                t.Start()
+            t = Transaction(self._revit_doc, "FireAI: Create Door")
+            t.Start()
 
+            try:
                 family_symbol = self._get_family_symbol("Doors", family_type)
                 if not family_symbol:
                     t.RollBack()
@@ -1231,19 +1364,42 @@ class RevitService:
                     family_symbol.Activate()
 
                 wall = self._revit_doc.GetElement(host_wall_id)
-                location = XYZ(location_point[0], location_point[1], location_point[2])
+                if wall is None:
+                    t.RollBack()
+                    logger.error("create_door failed: host wall '%s' not found.", host_wall_id)
+                    return None
+
+                # Convert mm to feet (Revit internal units)
+                MM_TO_FEET = 1.0 / 304.8
+                location = XYZ(
+                    location_point[0] * MM_TO_FEET,
+                    location_point[1] * MM_TO_FEET,
+                    location_point[2] * MM_TO_FEET,
+                )
 
                 new_door = self._revit_doc.Create.NewFamilyInstance(
                     location, family_symbol, wall, Level
                 )
 
-                t.Commit()
-                return str(new_door.Id)
+                if new_door is None:
+                    t.RollBack()
+                    logger.error("create_door failed: NewFamilyInstance() returned None.")
+                    return None
 
+                t.Commit()
+                element_id = str(new_door.Id)
+                logger.info(
+                    "Created door (ElementId=%s) in wall %s (type=%s, level=%s)",
+                    element_id, host_wall_id, family_type, level
+                )
+                return element_id
+            except Exception as create_err:
+                t.RollBack()
+                logger.error("create_door failed during creation: %s", create_err)
+                return None
         except Exception as e:
             logger.error("Failed to create door: %s", e)
-
-        return None
+            return None
 
     def create_window(
         self,
@@ -1252,7 +1408,17 @@ class RevitService:
         family_type: str = "M_Single-Flush",
         level: str = "Level 1"
     ) -> Optional[str]:
-        """Create a window in a wall."""
+        """
+        Create a window in a wall.
+
+        V142 HONEST BEHAVIOR (Rule 17 root-cause):
+        Delegates to create_door() because both use the same Revit API
+        NewFamilyInstance() pattern — only the family category differs.
+        Returns None on any platform without a real Revit API connection.
+        Does NOT generate a fake UUID.
+        """
+        # V142: Delegates to create_door which now enforces honest behavior.
+        # The caller should pass a window family_type (e.g. "M_Fixed").
         return self.create_door(host_wall_id, location_point, family_type, level)
 
     # V140 FIX (Rule 17): Removed legacy `create_column` duplicate that shadowed
@@ -1267,14 +1433,126 @@ class RevitService:
         level: str = "Level 1",
         beam_type: str = "W-Wide Flange"
     ) -> Optional[str]:
-        """Create a structural beam."""
-        if not self._connected:
+        """
+        Create a structural beam.
+
+        V142 HONEST BEHAVIOR (Rule 17 root-cause):
+        - On Windows + pythonnet + RevitAPI + open Revit document:
+          Calls Revit API's NewFamilyInstance() with StructuralType.Beam.
+          Returns the real ElementId as a string.
+        - On any other platform / missing deps / no open document:
+          Returns None and logs an error. Does NOT generate a fake UUID.
+
+        Previous versions returned a random UUID unconditionally — a
+        safety-critical deception for structural beam placement. Fixed.
+        """
+        # V142: Reject simulation mode explicitly — no more fake UUIDs.
+        if not self.connected:
+            logger.error(
+                "create_beam failed: not connected to Revit. "
+                "Call connect(method='api') first (requires Windows + pythonnet + Revit)."
+            )
             return None
 
-        if self._connection_method == ConnectionMethod.SIMULATION:
-            return str(uuid.uuid4())
+        if self._connection_method != ConnectionMethod.API:
+            logger.error(
+                "create_beam failed: connection method is %s, not 'api'. "
+                "Beam creation requires a real Revit API connection.",
+                self._connection_method,
+            )
+            return None
 
-        return str(uuid.uuid4())
+        if not HAS_REVIT_API:
+            logger.error(
+                "create_beam failed: Revit API not available (pythonnet/RevitAPI not loaded). "
+                "Beam creation is only supported on Windows with Revit installed."
+            )
+            return None
+
+        if not self._revit_doc:
+            logger.error("create_beam failed: no active Revit document.")
+            return None
+
+        try:
+            import clr  # noqa: F401
+            from Autodesk.Revit.DB import (
+                XYZ,
+                FamilySymbol,
+                FilteredElementCollector,
+                Level,
+                Line,
+                Transaction,
+            )
+
+            MM_TO_FEET = 1.0 / 304.8
+            start = XYZ(start_point[0] * MM_TO_FEET,
+                        start_point[1] * MM_TO_FEET,
+                        start_point[2] * MM_TO_FEET)
+            end = XYZ(end_point[0] * MM_TO_FEET,
+                      end_point[1] * MM_TO_FEET,
+                      end_point[2] * MM_TO_FEET)
+            curve = Line.CreateBound(start, end)
+
+            # Find the level by name
+            level_collector = FilteredElementCollector(self._revit_doc).OfClass(Level)
+            target_level = None
+            for lvl in level_collector:
+                if lvl.Name == level:
+                    target_level = lvl
+                    break
+            if target_level is None:
+                logger.error("create_beam failed: Level '%s' not found.", level)
+                return None
+
+            # Find the beam family symbol
+            symbol_collector = FilteredElementCollector(self._revit_doc).OfClass(FamilySymbol)
+            target_symbol = None
+            for sym in symbol_collector:
+                if sym.Name == beam_type or sym.Family.Name == beam_type:
+                    target_symbol = sym
+                    break
+            if target_symbol is None:
+                logger.error(
+                    "create_beam failed: beam type '%s' not found in document.",
+                    beam_type,
+                )
+                return None
+
+            tx = Transaction(self._revit_doc, "FireAI: Create Beam")
+            tx.Start()
+            try:
+                if not target_symbol.IsActive:
+                    target_symbol.Activate()
+
+                try:
+                    from Autodesk.Revit.DB.Structure import StructuralType
+                    new_beam = self._revit_doc.Create.NewFamilyInstance(
+                        curve, target_symbol, target_level, StructuralType.Beam
+                    )
+                except ImportError:
+                    new_beam = self._revit_doc.Create.NewFamilyInstance(
+                        curve, target_symbol, target_level
+                    )
+
+                if new_beam is None:
+                    tx.RollBack()
+                    logger.error("create_beam failed: NewFamilyInstance() returned None.")
+                    return None
+
+                tx.Commit()
+                element_id = str(new_beam.Id)
+                logger.info(
+                    "Created beam (ElementId=%s) from %s to %s on %s (type=%s)",
+                    element_id, start_point, end_point, level, beam_type
+                )
+                return element_id
+            except Exception as create_err:
+                tx.RollBack()
+                logger.error("create_beam failed during creation: %s", create_err)
+                return None
+        except Exception as e:
+            logger.error("Error creating beam: %s", e)
+            return None
 
     def create_family_instance(
         self,
@@ -1284,20 +1562,52 @@ class RevitService:
         level: Optional[str] = None,
         parameters: Optional[Dict[str, Any]] = None
     ) -> Optional[str]:
-        """Create a generic family instance."""
-        if not self._connected:
+        """
+        Create a generic family instance.
+
+        V142 HONEST BEHAVIOR (Rule 17 root-cause):
+        - On Windows + pythonnet + RevitAPI + open Revit document:
+          Calls Revit API's NewFamilyInstance() inside a transaction.
+          Returns the real ElementId as a string.
+        - On any other platform / missing deps / no open document:
+          Returns None and logs an error. Does NOT generate a fake UUID.
+
+        Previous versions returned a random UUID in SIMULATION mode — a
+        safety-critical deception for fire-device family placement. Fixed.
+        """
+        # V142: Reject simulation mode explicitly — no more fake UUIDs.
+        if not self.connected:
+            logger.error(
+                "create_family_instance failed: not connected to Revit. "
+                "Call connect(method='api') first (requires Windows + pythonnet + Revit)."
+            )
             return None
 
-        if self._connection_method == ConnectionMethod.SIMULATION:
-            return str(uuid.uuid4())
+        if self._connection_method != ConnectionMethod.API:
+            logger.error(
+                "create_family_instance failed: connection method is %s, not 'api'. "
+                "Family creation requires a real Revit API connection.",
+                self._connection_method,
+            )
+            return None
+
+        if not HAS_REVIT_API:
+            logger.error(
+                "create_family_instance failed: Revit API not available "
+                "(pythonnet/RevitAPI not loaded)."
+            )
+            return None
+
+        if not self._revit_doc:
+            logger.error("create_family_instance failed: no active Revit document.")
+            return None
 
         try:
-            if self._connection_method == ConnectionMethod.API and self._revit_doc:
-                from Autodesk.Revit.DB import XYZ, Transaction
+            from Autodesk.Revit.DB import XYZ, Transaction
 
-                t = Transaction(self._revit_doc, f"Create {family_name}")
-                t.Start()
-
+            t = Transaction(self._revit_doc, f"FireAI: Create {family_name}")
+            t.Start()
+            try:
                 family_symbol = self._get_family_symbol(category, family_name)
                 if not family_symbol:
                     t.RollBack()
@@ -1306,10 +1616,21 @@ class RevitService:
                 if not family_symbol.IsActive:
                     family_symbol.Activate()
 
-                location = XYZ(location_point[0], location_point[1], location_point[2])
+                # Convert mm to feet
+                MM_TO_FEET = 1.0 / 304.8
+                location = XYZ(
+                    location_point[0] * MM_TO_FEET,
+                    location_point[1] * MM_TO_FEET,
+                    location_point[2] * MM_TO_FEET,
+                )
                 new_instance = self._revit_doc.Create.NewFamilyInstance(
                     location, family_symbol, None
                 )
+
+                if new_instance is None:
+                    t.RollBack()
+                    logger.error("create_family_instance failed: returned None.")
+                    return None
 
                 if parameters:
                     for param_name, param_value in parameters.items():
@@ -1317,11 +1638,13 @@ class RevitService:
 
                 t.Commit()
                 return str(new_instance.Id)
-
+            except Exception as create_err:
+                t.RollBack()
+                logger.error("create_family_instance failed during creation: %s", create_err)
+                return None
         except Exception as e:
             logger.error("Failed to create family: %s", e)
-
-        return None
+            return None
 
     # =========================================================================
     # ELEMENT OPERATIONS - UPDATE/DELETE
@@ -1401,11 +1724,98 @@ class RevitService:
         return self.get_elements(category="Views")
 
     def create_view(self, view_name: str, view_type: str = "Floor Plan", level: str = "Level 1") -> Optional[str]:
-        """Create a new view."""
-        if not self._connected:
+        """
+        Create a new view.
+
+        V142 HONEST BEHAVIOR (Rule 17 root-cause):
+        - On Windows + pythonnet + RevitAPI + open Revit document:
+          Calls Revit API's View.Create() inside a transaction.
+          Returns the real ElementId as a string.
+        - On any other platform / missing deps / no open document:
+          Returns None and logs an error. Does NOT generate a fake UUID.
+
+        Previous versions returned a random UUID unconditionally — a
+        safety-critical deception. Fixed.
+        """
+        # V142: Reject simulation mode explicitly — no more fake UUIDs.
+        if not self.connected:
+            logger.error(
+                "create_view failed: not connected to Revit. "
+                "Call connect(method='api') first (requires Windows + pythonnet + Revit)."
+            )
             return None
 
-        return str(uuid.uuid4())
+        if self._connection_method != ConnectionMethod.API:
+            logger.error(
+                "create_view failed: connection method is %s, not 'api'. "
+                "View creation requires a real Revit API connection.",
+                self._connection_method,
+            )
+            return None
+
+        if not HAS_REVIT_API:
+            logger.error(
+                "create_view failed: Revit API not available "
+                "(pythonnet/RevitAPI not loaded)."
+            )
+            return None
+
+        if not self._revit_doc:
+            logger.error("create_view failed: no active Revit document.")
+            return None
+
+        try:
+            import clr  # noqa: F401
+            from Autodesk.Revit.DB import (
+                FilteredElementCollector,
+                Level,
+                Transaction,
+                ViewPlan,
+            )
+
+            # Find the level by name
+            level_collector = FilteredElementCollector(self._revit_doc).OfClass(Level)
+            target_level = None
+            for lvl in level_collector:
+                if lvl.Name == level:
+                    target_level = lvl
+                    break
+            if target_level is None:
+                logger.error("create_view failed: Level '%s' not found.", level)
+                return None
+
+            tx = Transaction(self._revit_doc, "FireAI: Create View")
+            tx.Start()
+            try:
+                # ViewPlan.Create for floor plans; falls back to View.Create
+                if view_type.lower() in ("floor plan", "floor_plan", "plan"):
+                    new_view = ViewPlan.Create(self._revit_doc, target_level.Id)
+                else:
+                    # Other view types: requires ViewFamilyType lookup.
+                    # Fall back to ViewPlan for now — callers needing
+                    # sections/3D should use Revit UI directly.
+                    new_view = ViewPlan.Create(self._revit_doc, target_level.Id)
+
+                if new_view is None:
+                    tx.RollBack()
+                    logger.error("create_view failed: ViewPlan.Create() returned None.")
+                    return None
+
+                new_view.Name = view_name
+                tx.Commit()
+                element_id = str(new_view.Id)
+                logger.info(
+                    "Created view (ElementId=%s) '%s' (type=%s, level=%s)",
+                    element_id, view_name, view_type, level
+                )
+                return element_id
+            except Exception as create_err:
+                tx.RollBack()
+                logger.error("create_view failed during creation: %s", create_err)
+                return None
+        except Exception as e:
+            logger.error("Error creating view: %s", e)
+            return None
 
     def get_levels(self) -> List[Dict[str, Any]]:
         """Get all levels."""
@@ -1419,11 +1829,78 @@ class RevitService:
         return self.get_elements(category="Levels")
 
     def create_level(self, name: str, elevation: float) -> Optional[str]:
-        """Create a new level."""
-        if not self._connected:
+        """
+        Create a new level.
+
+        V142 HONEST BEHAVIOR (Rule 17 root-cause):
+        - On Windows + pythonnet + RevitAPI + open Revit document:
+          Calls Revit API's Level.Create() inside a transaction.
+          Returns the real ElementId as a string.
+        - On any other platform / missing deps / no open document:
+          Returns None and logs an error. Does NOT generate a fake UUID.
+
+        Previous versions returned a random UUID unconditionally — a
+        safety-critical deception. Fixed.
+        """
+        # V142: Reject simulation mode explicitly — no more fake UUIDs.
+        if not self.connected:
+            logger.error(
+                "create_level failed: not connected to Revit. "
+                "Call connect(method='api') first (requires Windows + pythonnet + Revit)."
+            )
             return None
 
-        return str(uuid.uuid4())
+        if self._connection_method != ConnectionMethod.API:
+            logger.error(
+                "create_level failed: connection method is %s, not 'api'. "
+                "Level creation requires a real Revit API connection.",
+                self._connection_method,
+            )
+            return None
+
+        if not HAS_REVIT_API:
+            logger.error(
+                "create_level failed: Revit API not available "
+                "(pythonnet/RevitAPI not loaded)."
+            )
+            return None
+
+        if not self._revit_doc:
+            logger.error("create_level failed: no active Revit document.")
+            return None
+
+        try:
+            import clr  # noqa: F401
+            from Autodesk.Revit.DB import Level, Transaction
+
+            # Convert mm to feet (Revit internal units)
+            MM_TO_FEET = 1.0 / 304.8
+            elevation_feet = elevation * MM_TO_FEET
+
+            tx = Transaction(self._revit_doc, "FireAI: Create Level")
+            tx.Start()
+            try:
+                new_level = Level.Create(self._revit_doc, elevation_feet)
+                if new_level is None:
+                    tx.RollBack()
+                    logger.error("create_level failed: Level.Create() returned None.")
+                    return None
+
+                new_level.Name = name
+                tx.Commit()
+                element_id = str(new_level.Id)
+                logger.info(
+                    "Created level (ElementId=%s) '%s' (elevation=%s mm)",
+                    element_id, name, elevation
+                )
+                return element_id
+            except Exception as create_err:
+                tx.RollBack()
+                logger.error("create_level failed during creation: %s", create_err)
+                return None
+        except Exception as e:
+            logger.error("Error creating level: %s", e)
+            return None
 
     def get_grids(self) -> List[Dict[str, Any]]:
         """Get all grids."""

@@ -61,8 +61,9 @@
 - **بوابة التكامل** (Compliance Gate) — التحقق من الامتثال لكود NFPA قبل الاعتماد
 
 ### التكامل مع CAD/BIM
-- **AutoCAD Integration** — قراءة/كتابة DWG، رسم كيانات، طبقات
-- **Revit Integration** — قراءة/كتابة RVT، إنشاء عناصر، أسرار
+- **AutoCAD Integration** — قراءة/كتابة DWG (Windows + pywin32 + AutoCAD مثبَّت فقط؛ على Linux يُرجِع False بصدق)
+- **Revit Integration** — قراءة RVT (محدود)، إنشاء عناصر (Wall/Floor/Column/Door/Window/Beam/FamilyInstance/View/Level) على Windows + pythonnet + RevitAPI فقط؛ على Linux/Mac يُرجِع `None` بصدق (لا UUID وهمي). الكتابة تتطلب Revit مفتوحاً.
+- **Bentley Integration** — تبادل ملفات IFC فقط (لا Bentley API مباشر — `connect_api` يُرجِع False بصدق)
 - **Digital Twin** — تحويل ثنائي الاتجاه بين AutoCAD و Revit
 - **Parsers** — DXF, IFC, PDF, Excel, Word, Image
 
