@@ -28,6 +28,7 @@ TEST PHILOSOPHY (agent.md Rule 12 — Safety-First):
 from __future__ import annotations
 
 import json
+import time
 
 import pytest
 
@@ -295,8 +296,15 @@ class TestServerLifecycle:
         server.start(block=False)
         assert server._running is True
         assert server._stdin_thread is not None
-        # Thread should be alive (it's waiting on _running, not stdin)
-        assert server._stdin_thread.is_alive() is True
+        # V144 FIX: Small retry loop to handle OS thread scheduler delays in CI.
+        import time
+        deadline = time.time() + 2.0
+        while time.time() < deadline:
+            if server._stdin_thread.is_alive():
+                break
+            time.sleep(0.05)
+        else:
+            pytest.fail("Daemon thread did not start within 2.0 seconds")
         server.stop()
         assert server._running is False
         # Wait for thread to finish (it's a daemon, but join for cleanliness)

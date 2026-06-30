@@ -18,6 +18,17 @@
 
 </div>
 
+## 📸 لقطات من البرنامج
+
+<div align="center">
+
+| Dashboard | Fire Alarm System | Reports |
+|:---------:|:-----------------:|:-------:|
+| ![Dashboard](docs/assets/screenshot_dashboard.png) | ![Fire Alarm](docs/assets/screenshot_firealarm.png) | ![Reports](docs/assets/screenshot_reports.png) |
+| لوحة التحكم الرئيسية | نظام إنذار الحريق | التقارير الهندسية |
+
+</div>
+
 ---
 
 ## 📋 جدول المحتويات
