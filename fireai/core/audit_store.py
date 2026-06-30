@@ -110,6 +110,14 @@ def _get_hmac_key() -> str:
       default. Two different dev processes will have different keys,
       preventing any false sense of consistency.
 
+    V150 FIX (Thread Safety): the dev-key generation path is now
+    protected by _hmac_init_lock. Without the lock, two concurrent
+    callers could both see _DEV_HMAC_KEY is None, both generate
+    different random keys, and one key would be discarded — but
+    records signed during the race window with the discarded key
+    would fail HMAC verification forever after. The lock ensures
+    the dev key is generated exactly once per process.
+
     Returns:
         The HMAC key for signing events.
 
@@ -141,16 +149,20 @@ def _get_hmac_key() -> str:
             'Set AUDIT_HMAC_KEY: python -c "import secrets; print(secrets.token_hex(32))"'
         )
     # -- Development fallback --------------------------------
-    if _DEV_HMAC_KEY is None:
-        import secrets as _secrets
-        _DEV_HMAC_KEY = _secrets.token_hex(32)
-    if not _DEV_KEY_WARNED:
-        _DEV_KEY_WARNED = True
-        logger.warning(
-            "\n[SECURITY] AUDIT_HMAC_KEY not set — auto-generated dev key in use.\n"
-            "[SECURITY] Set FIREAI_ENV=production to enforce key requirement in prod.\n"
-            '[SECURITY] Generate: python -c "import secrets; print(secrets.token_hex(32))"'
-        )
+    # V150 FIX (Thread Safety): protect dev-key generation with
+    # _hmac_init_lock. The warning flag is also set under the lock
+    # so the warning is emitted exactly once even under concurrency.
+    with _hmac_init_lock:
+        if _DEV_HMAC_KEY is None:
+            import secrets as _secrets
+            _DEV_HMAC_KEY = _secrets.token_hex(32)
+        if not _DEV_KEY_WARNED:
+            _DEV_KEY_WARNED = True
+            logger.warning(
+                "\n[SECURITY] AUDIT_HMAC_KEY not set — auto-generated dev key in use.\n"
+                "[SECURITY] Set FIREAI_ENV=production to enforce key requirement in prod.\n"
+                '[SECURITY] Generate: python -c "import secrets; print(secrets.token_hex(32))"'
+            )
     return _DEV_HMAC_KEY
 
 
@@ -176,6 +188,16 @@ _init_lock: threading.Lock = threading.Lock()  # Guards _db_initialized singleto
 # V137 F-1: Lock for the hash chain read-modify-write sequence.
 # Without this, concurrent add_event() calls cause chain forking.
 _chain_lock: threading.Lock = threading.Lock()
+
+# V150 FIX (Thread Safety): Lock for _get_hmac_key() lazy dev-key
+# initialization. Without this, two concurrent threads could both
+# see _DEV_HMAC_KEY is None, both generate DIFFERENT random keys,
+# and one would win while the other thread's key is discarded —
+# but the discarded key was used to sign audit records during the
+# race window. Those records would then fail HMAC verification
+# on every subsequent verify_chain() call. The lock ensures the
+# dev key is generated exactly once.
+_hmac_init_lock: threading.Lock = threading.Lock()
 
 
 def _init_database() -> None:
@@ -324,6 +346,14 @@ def _get_last_hash() -> str:
 # Module-level ECDSA signer (lazy initialization)
 _ecdsa_signing_key: Any | None = None
 _ecdsa_initialized = False
+# V150 FIX (Thread Safety): _ecdsa_init_lock protects the lazy
+# initialization of the ECDSA signer. The previous code had a classic
+# check-then-act race: two threads could both see _ecdsa_initialized=False,
+# both proceed past the check, and both call SigningKey.from_pem(). In
+# the best case this is wasted work (idempotent); in the worst case,
+# if the key parsing has side effects (e.g., file handles, env lookups),
+# the race could leak resources. The lock makes init exactly-once.
+_ecdsa_init_lock: threading.Lock = threading.Lock()
 
 
 def _get_ecdsa_signer():
@@ -344,30 +374,40 @@ def _get_ecdsa_signer():
     Returns:
         SigningKey instance, or None if ECDSA is not configured.
 
+    V150 FIX (Thread Safety): uses double-checked locking with
+    _ecdsa_init_lock so that concurrent callers do not race on the
+    init. The fast path (already initialized) takes no lock.
     """
     global _ecdsa_signing_key, _ecdsa_initialized
 
+    # Fast path: already initialized (no lock needed for reads)
     if _ecdsa_initialized:
         return _ecdsa_signing_key
 
-    _ecdsa_initialized = True
+    with _ecdsa_init_lock:
+        # Double-check inside the lock — another thread may have
+        # completed the init while we were waiting.
+        if _ecdsa_initialized:
+            return _ecdsa_signing_key
 
-    if not HAS_ECDSA:
-        logger.debug("ecdsa library not installed - ECDSA signing disabled")
-        return None
+        _ecdsa_initialized = True
 
-    key_pem = os.environ.get("AUDIT_ECDSA_KEY_PEM")
-    if not key_pem:
-        logger.debug("AUDIT_ECDSA_KEY_PEM not set - ECDSA signing disabled")
-        return None
+        if not HAS_ECDSA:
+            logger.debug("ecdsa library not installed - ECDSA signing disabled")
+            return None
 
-    try:
-        _ecdsa_signing_key = SigningKey.from_pem(key_pem)
-        logger.info("ECDSA signing enabled (NIST P-256 curve)")
-        return _ecdsa_signing_key
-    except Exception as e:
-        logger.warning("Failed to load ECDSA key: %s - ECDSA signing disabled", e)
-        return None
+        key_pem = os.environ.get("AUDIT_ECDSA_KEY_PEM")
+        if not key_pem:
+            logger.debug("AUDIT_ECDSA_KEY_PEM not set - ECDSA signing disabled")
+            return None
+
+        try:
+            _ecdsa_signing_key = SigningKey.from_pem(key_pem)
+            logger.info("ECDSA signing enabled (NIST P-256 curve)")
+            return _ecdsa_signing_key
+        except Exception as e:
+            logger.warning("Failed to load ECDSA key: %s - ECDSA signing disabled", e)
+            return None
 
 
 def _compute_ecdsa_signature(current_hash: str) -> str | None:

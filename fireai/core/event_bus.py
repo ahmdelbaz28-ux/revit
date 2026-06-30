@@ -274,6 +274,14 @@ class EventBus:
         self._lock = threading.Lock()
         self._listeners: dict[str, list[EventCallback]] = {}
         self._recorder = EventRecorder()
+        # V150 FIX (Thread Safety): _error_count is now protected by a
+        # dedicated _error_lock. The publish() method dispatches callbacks
+        # OUTSIDE self._lock (to avoid blocking subscribe/unsubscribe
+        # during long callback chains), which means the increment at
+        # line ~388 was racing. A dedicated lock around just the counter
+        # is the minimal, root-cause fix — it does not block dispatch
+        # and does not block subscription management.
+        self._error_lock = threading.Lock()
         self._error_count = 0
 
     @classmethod
@@ -385,7 +393,17 @@ class EventBus:
             try:
                 callback(event)
             except Exception as exc:
-                self._error_count += 1
+                # V150 FIX (Thread Safety): _error_count was previously
+                # incremented WITHOUT any lock held (self._lock was
+                # released above after copying the callback lists).
+                # Under concurrent publish() calls with failing
+                # callbacks, the read-modify-write `+= 1` raced and
+                # lost increments — masking the true error severity in
+                # a safety-critical observability signal. The dedicated
+                # _error_lock makes the increment atomic without
+                # blocking dispatch or subscription management.
+                with self._error_lock:
+                    self._error_count += 1
                 # Log the error — the bus must never crash, but
                 # operators MUST know about subscriber failures.
                 # In a safety-critical system, silent failures are
@@ -411,7 +429,10 @@ class EventBus:
     @property
     def error_count(self) -> int:
         """Number of callback errors since creation."""
-        return self._error_count
+        # V150 FIX (Thread Safety): read under _error_lock so that a
+        # concurrent publish() cannot observe a half-incremented value.
+        with self._error_lock:
+            return self._error_count
 
     def subscriber_count(self, event_type: str | None = None) -> int:
         """Count subscribers for an event type, or total if None."""

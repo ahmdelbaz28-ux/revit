@@ -166,17 +166,43 @@ class _LRUCache:
 
     @property
     def hit_rate(self) -> float:
-        total = self.hits + self.misses
-        return self.hits / total if total > 0 else 0.0
+        # V150 FIX (Thread Safety): read hits and misses under the
+        # lock so that a concurrent get()/put() cannot make the
+        # property observe a torn state (e.g., hits incremented but
+        # misses not yet incremented).
+        with self._lock:
+            total = self.hits + self.misses
+            return self.hits / total if total > 0 else 0.0
 
     def stats(self) -> dict[str, Any]:
-        return {
-            "size": self.size,
-            "maxsize": self._maxsize,
-            "hits": self.hits,
-            "misses": self.misses,
-            "hit_rate": round(self.hit_rate * 100, 2),
-        }
+        # V150 FIX (Thread Safety): snapshot all counters under a
+        # single lock acquisition so the returned dict is internally
+        # consistent (no torn state between size and hits/misses).
+        with self._lock:
+            return {
+                "size": len(self._data),
+                "maxsize": self._maxsize,
+                "hits": self.hits,
+                "misses": self.misses,
+                "hit_rate": round(
+                    (self.hits / (self.hits + self.misses) * 100.0)
+                    if (self.hits + self.misses) > 0
+                    else 0.0,
+                    2,
+                ),
+            }
+
+    def snapshot(self) -> list[tuple[str, CacheEntry]]:
+        """
+        V150 FIX (API Ergonomics): Public, read-only snapshot of all
+        cache entries. Replaces the previous pattern in DeltaCache.persist()
+        which reached into self._cache._lock and self._cache._data directly
+        — a fragile encapsulation break that would silently break if the
+        LRU internals changed. Returns a list of (key, entry) tuples
+        copied under the lock.
+        """
+        with self._lock:
+            return [(k, v) for k, v in self._data.items()]
 
 
 # ---------------------------------------------------------------------------
@@ -297,12 +323,31 @@ class DeltaCache:
         self._algorithm_version = algorithm_version
 
         # Metrics
+        # V150 FIX (Thread Safety): all metrics counters are now
+        # protected by _stats_lock. The previous "V44 NOTE: Not
+        # thread-safe but acceptable for stats counter" was a
+        # COP-OUT in a safety-critical system — inaccurate stats
+        # mask real bugs (e.g., a runaway invalidation loop that
+        # the operator never sees because total_invalidates is
+        # undercounted). The fix is trivial: a dedicated lock so
+        # the counters do not race. _stats_lock is separate from
+        # _lock to avoid contention with get_or_compute's compute
+        # path (which holds no lock during compute_fn).
+        self._stats_lock = threading.Lock()
         self.total_computes: int = 0
         self.total_invalidates: int = 0
         self.saved_computes: int = 0
 
-        # Legacy stats (backward compat)
+        # Legacy stats (backward compat) — also protected by _stats_lock
         self._legacy_stats = {"hits": 0, "misses": 0, "invalidations": 0}
+
+        # V150 FIX (Edge Case): _loaded_results holds entries loaded
+        # from the on-disk SQLite cache by _load_from_db(). The legacy
+        # on-disk schema does not store the full room_dict, so we cannot
+        # recompute the content hash — we store these results keyed by
+        # room_id alone and consult them in has_valid_entry/get before
+        # falling back to the LRU. Read-only after _load_from_db returns.
+        self._loaded_results: dict[str, Any] = {}
 
         # Load from SQLite if available (legacy feature)
         if db_path and os.path.exists(db_path):
@@ -341,7 +386,10 @@ class DeltaCache:
         # Cache hit?
         entry = self._cache.get(cache_key)
         if entry is not None:
-            self.saved_computes += 1  # V44 NOTE: Not thread-safe but acceptable for stats counter
+            # V150 FIX (Thread Safety): _stats_lock replaces the
+            # previous unsynchronized `self.saved_computes += 1`.
+            with self._stats_lock:
+                self.saved_computes += 1
             return entry.result
 
         # Cache miss — compute OUTSIDE the lock
@@ -359,7 +407,9 @@ class DeltaCache:
                 compute_time_s=elapsed,
             ),
         )
-        self.total_computes += 1  # V44 NOTE: Not thread-safe but acceptable for stats counter
+        # V150 FIX (Thread Safety): _stats_lock protects total_computes.
+        with self._stats_lock:
+            self.total_computes += 1
         return result
 
     def invalidate(
@@ -388,7 +438,9 @@ class DeltaCache:
             # Invalidate all cache keys with this node_id prefix
             count += self._cache.invalidate_prefix(f"{nid}:")
 
-        self.total_invalidates += len(all_invalidated)  # V44 NOTE: Not thread-safe but acceptable for stats counter
+        # V150 FIX (Thread Safety): _stats_lock protects total_invalidates.
+        with self._stats_lock:
+            self.total_invalidates += len(all_invalidated)
         return frozenset(all_invalidated)
 
     def invalidate_batch(
@@ -463,14 +515,32 @@ class DeltaCache:
           2. Algorithm version matches
           3. Ceiling height matches
           4. Detector type matches
+
+        V150 FIX (Edge Case): also consult _loaded_results (entries
+        loaded from the on-disk SQLite cache by _load_from_db). The
+        previous implementation only checked the LRU, so any room
+        cached in a previous session was a silent miss on the first
+        call of the new session — defeating the entire purpose of
+        persist()/_load_from_db().
         """
         room_id = room_dict.get("room_id", room_dict.get("id", ""))
         content = self._room_dict_to_content(room_dict)
         result = self.get(room_id, content)
-        if result is not None:
-            self._legacy_stats["hits"] += 1
-            return True
-        self._legacy_stats["misses"] += 1
+        # V150 FIX (Thread Safety): _legacy_stats dict was previously
+        # mutated without any lock — concurrent process_incremental
+        # calls (which BuildingEngine may invoke from a thread pool)
+        # would lose hit/miss counts.
+        with self._stats_lock:
+            if result is not None:
+                self._legacy_stats["hits"] += 1
+                return True
+            # V150 FIX (Edge Case): fall back to _loaded_results so
+            # entries persisted in a previous session are actually
+            # used instead of silently re-analyzing every room.
+            if room_id in self._loaded_results:
+                self._legacy_stats["hits"] += 1
+                return True
+            self._legacy_stats["misses"] += 1
         return False
 
     def put_room(self, room_dict: dict, result: dict[str, Any]) -> None:
@@ -487,12 +557,16 @@ class DeltaCache:
     def invalidate_room(self, room_id: str) -> None:
         """Invalidate a specific room's cached result. Legacy API."""
         self.invalidate(room_id, cascade=False)
-        self._legacy_stats["invalidations"] += 1
+        # V150 FIX (Thread Safety): _stats_lock protects _legacy_stats.
+        with self._stats_lock:
+            self._legacy_stats["invalidations"] += 1
 
     def invalidate_all(self) -> None:
         """Invalidate all cached results (e.g., after algorithm update)."""
         self._cache.clear()
-        self._legacy_stats["invalidations"] += 1
+        # V150 FIX (Thread Safety): _stats_lock protects _legacy_stats.
+        with self._stats_lock:
+            self._legacy_stats["invalidations"] += 1
         logger.info("DeltaCache: All entries invalidated.")
 
     def process_incremental(
@@ -529,8 +603,14 @@ class DeltaCache:
                 # Cache hit
                 content = self._room_dict_to_content(room_dict)
                 cached = self.get(room_id, content)
+                # V150 FIX (Edge Case): if LRU missed but _loaded_results
+                # had the entry, use it (and promote it into the LRU so
+                # subsequent lookups are fast).
+                if cached is None and room_id in self._loaded_results:
+                    cached = self._loaded_results.pop(room_id)
+                    self.put_room(room_dict, cached if isinstance(cached, dict) else {"result": cached})
                 if cached is not None:
-                    cached_with_meta = dict(cached)
+                    cached_with_meta = dict(cached) if isinstance(cached, dict) else {"result": cached}
                     cached_with_meta["_cache_hit"] = True
                     cached_with_meta["_geometry_hash"] = self._compute_geometry_hash(room_dict)
                     results.append(cached_with_meta)
@@ -551,11 +631,17 @@ class DeltaCache:
                 self.put_room(room_dict, result)
 
         total_time = time.time() - t0
+        # V150 FIX (Thread Safety): snapshot legacy_stats under _stats_lock
+        # so the returned stats dict is internally consistent.
+        with self._stats_lock:
+            legacy_hits = self._legacy_stats["hits"]
+            legacy_misses = self._legacy_stats["misses"]
+            legacy_invalidations = self._legacy_stats["invalidations"]
         stats = {
             "total_rooms": len(rooms),
-            "cache_hits": self._legacy_stats["hits"],
-            "cache_misses": self._legacy_stats["misses"],
-            "invalidations": self._legacy_stats["invalidations"],
+            "cache_hits": legacy_hits,
+            "cache_misses": legacy_misses,
+            "invalidations": legacy_invalidations,
             "total_time_s": round(total_time, 3),
             "estimated_time_saved_s": round(time_saved, 3),
             "cache_entries": self._cache.size,
@@ -596,33 +682,36 @@ class DeltaCache:
             )
 
             # Write current LRU entries to SQLite
-            with self._cache._lock:
-                for key, entry in self._cache._data.items():
-                    # Extract room_id from cache key (format: "node_id:content_hash")
-                    room_id = key.split(":", 1)[0]
-                    try:
-                        result_json = json.dumps(entry.result, default=str)
-                    except (TypeError, ValueError):
-                        result_json = str(entry.result)
+            # V150 FIX (API Ergonomics): use the new public _LRUCache.snapshot()
+            # method instead of reaching into _cache._lock and _cache._data
+            # directly. The previous pattern was a fragile encapsulation
+            # break that would silently break if the LRU internals changed.
+            for key, entry in self._cache.snapshot():
+                # Extract room_id from cache key (format: "node_id:content_hash")
+                room_id = key.split(":", 1)[0]
+                try:
+                    result_json = json.dumps(entry.result, default=str)
+                except (TypeError, ValueError):
+                    result_json = str(entry.result)
 
-                    cursor.execute(
-                        """
-                        INSERT OR REPLACE INTO delta_cache
-                        (room_id, geometry_hash, algorithm_version, ceiling_height,
-                         detector_type, result_json, timestamp, hit_count)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                        """,
-                        (
-                            room_id,
-                            entry.content_hash,
-                            self._algorithm_version,
-                            0.0,
-                            "unknown",
-                            result_json,
-                            entry.computed_at,
-                            entry.hit_count,
-                        ),
-                    )
+                cursor.execute(
+                    """
+                    INSERT OR REPLACE INTO delta_cache
+                    (room_id, geometry_hash, algorithm_version, ceiling_height,
+                     detector_type, result_json, timestamp, hit_count)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        room_id,
+                        entry.content_hash,
+                        self._algorithm_version,
+                        0.0,
+                        "unknown",
+                        result_json,
+                        entry.computed_at,
+                        entry.hit_count,
+                    ),
+                )
 
             conn.commit()
             logger.info("DeltaCache: Persisted to %s", self._db_path)
@@ -644,13 +733,28 @@ class DeltaCache:
 
     def stats_summary(self) -> dict[str, Any]:
         """Detailed statistics (Section 11.2 API)."""
+        # V150 FIX (Thread Safety): snapshot all counters under
+        # _stats_lock so the returned dict is internally consistent.
+        with self._stats_lock:
+            total_computes = self.total_computes
+            saved_computes = self.saved_computes
+            total_invalidates = self.total_invalidates
+            legacy_hits = self._legacy_stats["hits"]
+            legacy_misses = self._legacy_stats["misses"]
+            legacy_invalidations = self._legacy_stats["invalidations"]
         return {
             "cache": self._cache.stats(),
             "graph": self._graph.stats(),
-            "total_computes": self.total_computes,
-            "saved_computes": self.saved_computes,
-            "invalidates": self.total_invalidates,
-            "efficiency_pct": round(100.0 * self.saved_computes / max(self.saved_computes + self.total_computes, 1), 2),
+            "total_computes": total_computes,
+            "saved_computes": saved_computes,
+            "invalidates": total_invalidates,
+            "efficiency_pct": round(
+                100.0 * saved_computes / max(saved_computes + total_computes, 1), 2
+            ),
+            # V150 FIX: expose legacy stats so operators can see them.
+            "legacy_hits": legacy_hits,
+            "legacy_misses": legacy_misses,
+            "legacy_invalidations": legacy_invalidations,
         }
 
     # Alias: test calls cache.stats() expecting the dict return
@@ -694,7 +798,32 @@ class DeltaCache:
         return hashlib.sha256(geo_string.encode("utf-8")).hexdigest()
 
     def _load_from_db(self) -> None:
-        """Load cached entries from SQLite database (legacy feature)."""
+        """Load cached entries from SQLite database (legacy feature).
+
+        V150 FIX (Edge Case): The previous implementation stored entries
+        in the LRU cache using a content_hash derived from
+        ``{"geometry_hash": geo_hash, "algorithm_version": algo_ver}``,
+        but ``put_room``/``has_valid_entry`` compute the content hash
+        from a completely different structure (``_room_dict_to_content``
+        — coords, holes, height, slope, beam_depth, room_type,
+        detector_type, algorithm_version). This meant loaded entries
+        could NEVER be matched by ``has_valid_entry`` — they were
+        orphans occupying cache slots without ever being hit.
+
+        The root-cause fix: store the loaded entries in BOTH:
+          1. ``_loaded_results`` (dict keyed by room_id) — consulted
+             by ``has_valid_entry`` and ``process_incremental`` for
+             correct matching by room_id alone.
+          2. The LRU cache (using the same legacy key pattern as
+             before) — for backward compat with ``size`` and any code
+             that iterates the LRU directly.
+
+        The LRU entries are still "orphaned" in the sense that
+        ``has_valid_entry``'s LRU lookup uses a different hash and
+        won't find them — but ``_loaded_results`` is consulted FIRST
+        and WILL find them. The LRU entries at least show up in
+        ``size``, preserving backward compatibility.
+        """
         if not self._db_path or not os.path.exists(self._db_path):
             return
 
@@ -714,6 +843,12 @@ class DeltaCache:
             )
 
             rows = cursor.fetchall()
+            loaded_count = 0
+
+            # V150 FIX: clear _loaded_results (it was initialized to
+            # {} in __init__, but clear it here too in case _load_from_db
+            # is ever called more than once).
+            self._loaded_results = {}
 
             for row in rows:
                 (room_id, geo_hash, algo_ver, _ceiling_h, _det_type, result_json, ts, hit_count) = row
@@ -722,11 +857,16 @@ class DeltaCache:
                 except json.JSONDecodeError:
                     continue
 
-                # Store in LRU cache using room_id as node_id
+                # V150 FIX: store in _loaded_results for correct
+                # matching by room_id (consulted by has_valid_entry).
+                self._loaded_results[room_id] = result
+
+                # V150 FIX: ALSO store in the LRU using the same
+                # legacy key pattern as before, for backward compat
+                # with size and any code that iterates the LRU.
                 content = {"geometry_hash": geo_hash, "algorithm_version": algo_ver}
                 content_hash = self._hash(content)
                 cache_key = f"{room_id}:{content_hash}"
-
                 self._cache.put(
                     cache_key,
                     CacheEntry(
@@ -737,8 +877,13 @@ class DeltaCache:
                         hit_count=hit_count,
                     ),
                 )
+                loaded_count += 1
 
-            logger.info("DeltaCache: Loaded %d entries from %s", len(rows), self._db_path)
+            logger.info(
+                "DeltaCache: Loaded %d entries from %s (LRU + _loaded_results)",
+                loaded_count,
+                self._db_path,
+            )
 
         except Exception as e:
             logger.warning("DeltaCache: Failed to load from %s: %s", self._db_path, e)

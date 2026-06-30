@@ -1201,3 +1201,53 @@ Stage Summary:
 - branch protection أُعيد تفعيلها (enforce_admins=true, reviews=1)
 - جاهزية الإطلاق: متحققة بالكامل
 
+
+---
+Task ID: V150
+Agent: Super Z (Main)
+Task: V150 — Thread Safety + Edge Cases + API Ergonomics (3 new audit categories)
+
+Work Log:
+- قرأت agent.md بالكامل والتزمت بكل القواعد الـ21
+- نسخت الريبو: https://github.com/ahmdelbaz28-ux/revit.git
+- أجريت تدقيقاً عدائياً في 3 فئات جديدة لم تُفحص منهجياً قبل V150:
+  1. Thread Safety — حالة قابلة للتغيير مشتركة، سباقات، أقفال
+  2. Edge Cases — NaN/Inf، مدخلات فارغة، قيم غير موجبة
+  3. API Ergonomics — تجاوزات غير قابلة للمراجعة، اختراقات تغليف
+- اكتشفت 12 خطأ جذرياً عبر 4 ملفات إنتاجية حرجة:
+  * event_bus.py: سباق _error_count (CRITICAL)
+  * delta_cache.py: 6 أخطاء (سباق عدّادات، سباق _legacy_stats، orphan entries، encapsulation break، stats/hit_rate thread safety)
+  * digital_twin.py: 5 أخطاء (NaN/Inf coords، IDs فارغة، coverage_radius غير موجب، detector_type غير معروف، force=True بدون سبب)
+  * audit_store.py: 2 أخطاء (سباق ECDSA lazy init، سباق HMAC dev-key)
+- طبّقت 12 إصلاحاً جذرياً (Rule 17 — لا حلول نصفية):
+  * Fix #1: _error_lock مخصص في EventBus (الإصلاح خارج _lock حتى لا يحجب dispatch)
+  * Fix #2-3: _stats_lock في DeltaCache لكل عدّادات metrics و legacy_stats
+  * Fix #4-5: double-checked locking في audit_store (_ecdsa_init_lock + _hmac_init_lock)
+  * Fix #6: _validate_finite_coord() في DigitalTwin — يرفض NaN/Inf في x,y,z
+  * Fix #7: _validate_nonempty_id() — يرفض IDs فارغة/مسافات فقط
+  * Fix #8: تحقق coverage_radius موجب ومحدود
+  * Fix #9: تحذير (رفض ناعم) لأ detector_type غير معروف
+  * Fix #10: _loaded_results dict في DeltaCache — يحل orphan entries
+  * Fix #11: force_reason مطلوب عند force=True في update_detector_status (مع audit trail)
+  * Fix #12: _LRUCache.snapshot() API عام بدلاً من اختراق _lock/_data
+  * Bonus: _LRUCache.stats() و hit_rate الآن thread-safe
+- أنشأت tests/test_v150_thread_safety_edge_cases_api_ergonomics.py:
+  * 38 اختباراً جديداً عبر 8 فئات اختبار
+  * كل اختبار يوثق الخطأ الذي يمنعه ويحاول كسر الإصلاح
+  * كل الـ38 تنجح
+- شغّلت اختبارات شاملة للتأكد من عدم وجود انحدارات:
+  * fireai/core/tests/: 1232 PASS, 9 skipped (ecdsa optional)
+  * tests/ slice: 1182 PASS, 6 skipped (PuLP optional)
+  * V150 new tests: 38 PASS
+  * المجموع: 2452 PASS, 0 FAIL من تغييرات V150
+  * 5 errors في test_v133_phase1_security.py كلها ModuleNotFoundError: slowapi (بيئية، سابقة، ليست من V150)
+- حدّثت agent.md بقسم V150 كامل (~250 سطر) موثَّق بالأدلة (Rule 9)
+- التزمت بـ Rule 10: لم أعدّل أي اختبار موجود، أصلحت الكود الإنتاجي فقط
+
+Stage Summary:
+- 12 إصلاح جذري في 4 ملفات إنتاجية + 1 ملف اختبار جديد
+- 2452 اختبار ناجح، 0 فاشل من V150
+- 38 اختبار جديد يغطي الـ3 فئات الجديدة
+- كل الإصلاحات root-cause (لا حلول نصفية، لا cop-outs، لا test-softening)
+- مستوى الثقة: HIGH — كل الأدلة pytest حقيقية
+- جاهز للـ commit + push

@@ -47,6 +47,7 @@ import copy
 import hashlib
 import json
 import logging
+import math  # V150 FIX (Edge Case): needed for math.isfinite() in _validate_finite_coord
 import threading
 import uuid
 from collections import deque
@@ -888,6 +889,83 @@ class DigitalTwin:
 
     # ── Detector Registration ─────────────────────────────────────────
 
+    # V150 FIX (Edge Case): set of recognized detector_type values.
+    # register_detector() validates against this set so a typo like
+    # "smoke_photoelec" (missing "tric") does not silently fall back
+    # to the default smoke radius while the type field is wrong —
+    # which would cause downstream confusion in reports and BOM.
+    _KNOWN_DETECTOR_TYPES: frozenset[str] = frozenset({
+        "smoke",
+        "smoke_photoelectric",
+        "smoke_ionization",
+        "smoke_duct",
+        "duct_smoke",
+        "heat",
+        "heat_fixed",
+        "heat_rate_of_rise",
+        "flame",
+        "gas",
+        "carbon_monoxide",
+        "co",
+        "combination",
+        "multi_sensor",
+        "aspirating",
+        "beam",
+        "projected_beam",
+        "reflected_beam",
+        "spot_type",
+    })
+
+    @staticmethod
+    def _validate_finite_coord(name: str, value: float) -> None:
+        """
+        V150 FIX (Edge Case): Validate a coordinate is finite.
+
+        NaN or Inf in detector coordinates would silently corrupt
+        every downstream distance calculation: Shapely's
+        ``Point(x, y).distance(other)`` returns NaN when either
+        coordinate is NaN, and ``NaN < threshold`` is always False,
+        so coverage checks would silently report "covered" for an
+        unreachable detector. In a life-safety system this is
+        catastrophic — a detector that "covers" a room it can never
+        reach means the room burns undetected.
+
+        This is the root-cause fix: reject NaN/Inf at registration
+        time rather than allowing it to propagate silently.
+        """
+        try:
+            v = float(value)
+        except (TypeError, ValueError) as e:
+            raise ValueError(
+                f"{name} must be a real number, got {value!r} ({type(value).__name__})"
+            ) from e
+        if not math.isfinite(v):
+            raise ValueError(
+                f"{name} must be finite (not NaN or Inf), got {v!r}. "
+                f"A NaN or Inf coordinate would silently corrupt all "
+                f"distance and coverage calculations downstream."
+            )
+
+    @staticmethod
+    def _validate_nonempty_id(name: str, value: str) -> None:
+        """
+        V150 FIX (Edge Case): Validate an ID string is non-empty.
+
+        An empty detector_id or room_id causes:
+          - Cache key collisions (all empty-ID detectors share one key)
+          - Lookup confusion (get_detector("") returns arbitrary detector)
+          - Silent corruption of audit logs (room_id="" in every record)
+        """
+        if not isinstance(value, str):
+            raise ValueError(
+                f"{name} must be a string, got {type(value).__name__}"
+            )
+        if not value.strip():
+            raise ValueError(
+                f"{name} must be a non-empty, non-whitespace string. "
+                f"Empty IDs cause cache collisions and audit-log corruption."
+            )
+
     def register_detector(
         self,
         room_id: str,
@@ -916,9 +994,70 @@ class DigitalTwin:
             The newly created DetectorState.
 
         Raises:
-            ValueError: If detector_id already exists.
+            ValueError: If detector_id already exists, or if any input
+                fails V150 edge-case validation (NaN/Inf coordinates,
+                empty IDs, non-positive coverage_radius, unknown
+                detector_type).
 
+        V150 FIX (Edge Case): previously, this method accepted ANY
+        coordinate value (including NaN and Inf), ANY string for IDs
+        (including empty), ANY numeric value for coverage_radius
+        (including 0 and negative), and ANY string for detector_type
+        (including typos). All four of these silently corrupted
+        downstream safety calculations. Each is now validated at
+        registration time with a clear ValueError.
         """
+        # V150 FIX (Edge Case): validate all inputs BEFORE any state
+        # mutation, so a failed registration leaves the twin in a
+        # clean state.
+        self._validate_nonempty_id("room_id", room_id)
+        self._validate_nonempty_id("detector_id", detector_id)
+        self._validate_finite_coord("x", x)
+        self._validate_finite_coord("y", y)
+        self._validate_finite_coord("z", z)
+
+        if not isinstance(detector_type, str) or not detector_type.strip():
+            raise ValueError(
+                f"detector_type must be a non-empty string, got {detector_type!r}"
+            )
+        # V150 FIX (Edge Case): warn (do not reject) unknown detector
+        # types. We accept them because custom/proprietary types exist
+        # in the field, but we log a WARNING so the operator notices
+        # typos. Rejecting would break existing deployments that use
+        # types not in our known set.
+        normalized_type = detector_type.strip().lower()
+        if normalized_type not in self._KNOWN_DETECTOR_TYPES:
+            logger.warning(
+                "Unknown detector_type %r for detector %s — not in known set %s. "
+                "Falling back to default smoke radius (%.2fm). Verify this is "
+                "not a typo.",
+                detector_type,
+                detector_id,
+                sorted(self._KNOWN_DETECTOR_TYPES),
+                NFPA72_SMOKE_RADIUS_M,
+            )
+
+        # V150 FIX (Edge Case): validate coverage_radius is positive
+        # when explicitly provided. A zero or negative radius means
+        # the detector provides NO coverage — silent safety failure.
+        if coverage_radius is not None:
+            try:
+                r = float(coverage_radius)
+            except (TypeError, ValueError) as e:
+                raise ValueError(
+                    f"coverage_radius must be a number, got {coverage_radius!r}"
+                ) from e
+            if not math.isfinite(r):
+                raise ValueError(
+                    f"coverage_radius must be finite (not NaN or Inf), got {r!r}"
+                )
+            if r <= 0:
+                raise ValueError(
+                    f"coverage_radius must be positive, got {r!r}. "
+                    f"A zero or negative radius means the detector "
+                    f"provides NO fire protection — silent safety failure."
+                )
+
         # V20.2 FIX: Select default radius based on detector_type
         effective_radius = (
             coverage_radius
@@ -1026,6 +1165,7 @@ class DigitalTwin:
         new_status: DetectorStatus,
         verified_by: str = "",
         force: bool = False,
+        force_reason: str = "",
     ) -> DetectorState:
         """
         Update the lifecycle status of a detector.
@@ -1041,15 +1181,38 @@ class DigitalTwin:
             force: If True, bypass status transition validation and
                 allow illegal transitions (logs a WARNING). Use with
                 extreme caution — illegal transitions are safety violations.
+            force_reason: V150 FIX (API Ergonomics) — REQUIRED when
+                force=True. A human-readable explanation of why the
+                safety check is being bypassed. This is recorded in
+                the audit log so the bypass is traceable. Empty string
+                when force=False.
 
         Returns:
             The updated DetectorState.
 
         Raises:
             KeyError: If detector_id not found.
-            ValueError: If the transition is illegal and force is False.
+            ValueError: If the transition is illegal and force is False,
+                or if force=True and force_reason is empty (V150 FIX).
 
+        V150 FIX (API Ergonomics): force=True previously bypassed safety
+        validation with no audit trail. In a life-safety system, an
+        unreviewable bypass is itself a safety defect — the operator
+        cannot answer "why was this illegal transition allowed?" during
+        an incident investigation. The fix: force=True now REQUIRES a
+        non-empty force_reason, which is recorded in the audit log and
+        the EventBus event.
         """
+        # V150 FIX (API Ergonomics): force=True requires a reason.
+        if force and not (isinstance(force_reason, str) and force_reason.strip()):
+            raise ValueError(
+                "force=True requires a non-empty force_reason explaining "
+                "why the safety transition check is being bypassed. "
+                "This reason is recorded in the audit log for incident "
+                "investigation. An unreviewable safety bypass is itself "
+                "a safety defect."
+            )
+
         with self._lock:
             if detector_id not in self._detectors:
                 raise KeyError(f"Detector {detector_id} not found")
@@ -1059,10 +1222,12 @@ class DigitalTwin:
 
             if force:
                 logger.warning(
-                    "FORCE bypassing status transition validation for %s: %s → %s (SAFETY CHECK BYPASSED)",
+                    "FORCE bypassing status transition validation for %s: %s → %s "
+                    "(SAFETY CHECK BYPASSED, reason=%r)",
                     detector_id,
                     old_status.value,
                     new_status.value,
+                    force_reason,
                 )
             else:
                 self.validate_status_transition(old_status, new_status)
@@ -1087,6 +1252,8 @@ class DigitalTwin:
                 "old_status": old_status.value,
                 "new_status": new_status.value,
                 "verified_by": verified_by,
+                "forced": force,
+                "force_reason": force_reason if force else "",
             },
         )
 
@@ -1099,6 +1266,8 @@ class DigitalTwin:
                 "old_status": old_status.value,
                 "new_status": new_status.value,
                 "verified_by": verified_by,
+                "forced": force,
+                "force_reason": force_reason if force else "",
             },
             source="DigitalTwin",
         )
@@ -1112,16 +1281,19 @@ class DigitalTwin:
                 "old_status": old_status.value,
                 "new_status": new_status.value,
                 "verified_by": verified_by,
+                "forced": force,
+                "force_reason": force_reason if force else "",
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             },
         )
 
         logger.info(
-            "Detector %s: %s → %s (verified_by=%s)",
+            "Detector %s: %s → %s (verified_by=%s, forced=%s)",
             detector_id,
             old_status.value,
             new_status.value,
             verified_by or "N/A",
+            force,
         )
 
         return det
