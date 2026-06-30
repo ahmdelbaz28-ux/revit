@@ -68,7 +68,6 @@ import json
 import logging
 import os
 import platform
-import uuid
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from enum import Enum
@@ -943,10 +942,10 @@ class RevitService:
             import clr  # noqa: F401
             from Autodesk.Revit.DB import (
                 XYZ,
+                FamilySymbol,
+                FilteredElementCollector,
                 Level,
                 Transaction,
-                FilteredElementCollector,
-                FamilySymbol,
             )
 
             MM_TO_FEET = 1.0 / 304.8
@@ -1478,11 +1477,11 @@ class RevitService:
             import clr  # noqa: F401
             from Autodesk.Revit.DB import (
                 XYZ,
-                Line,
-                Level,
-                Transaction,
-                FilteredElementCollector,
                 FamilySymbol,
+                FilteredElementCollector,
+                Level,
+                Line,
+                Transaction,
             )
 
             MM_TO_FEET = 1.0 / 304.8
@@ -1768,11 +1767,10 @@ class RevitService:
         try:
             import clr  # noqa: F401
             from Autodesk.Revit.DB import (
-                View,
-                ViewPlan,
+                FilteredElementCollector,
                 Level,
                 Transaction,
-                FilteredElementCollector,
+                ViewPlan,
             )
 
             # Find the level by name
