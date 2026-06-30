@@ -270,14 +270,35 @@ class TestNotifications:
 class TestServerLifecycle:
     """Verify start()/stop() management of _running flag and threads."""
 
-    def test_start_nonblocking_starts_thread(self, server):
-        """start(block=False) starts a daemon thread and returns immediately."""
+    def test_start_nonblocking_starts_thread(self, server, monkeypatch):
+        """
+        start(block=False) starts a daemon thread and returns immediately.
+
+        NOTE: The stdin loop reads from sys.stdin which may be closed
+        immediately in CI (EOF). To make this test deterministic across
+        environments, we patch _stdin_loop to a no-op so the thread
+        stays alive until stop() is called.
+        """
+        # Patch the stdin loop so the daemon thread doesn't exit immediately
+        # when stdin is /dev/null (common in CI).
+        def _idle_loop():
+            import threading
+            event = threading.Event()
+            # Wait until stop() sets _running=False, but cap at 5s for safety
+            while server._running and not event.wait(0.05):
+                pass
+
+        monkeypatch.setattr(server, "_stdin_loop", _idle_loop)
+
         server.start(block=False)
         assert server._running is True
         assert server._stdin_thread is not None
+        # Thread should be alive (it's waiting on _running, not stdin)
         assert server._stdin_thread.is_alive() is True
         server.stop()
         assert server._running is False
+        # Wait for thread to finish (it's a daemon, but join for cleanliness)
+        server._stdin_thread.join(timeout=2.0)
 
     def test_stop_sets_running_false(self, server):
         """stop() must set _running=False."""
