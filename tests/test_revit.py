@@ -167,10 +167,22 @@ class TestRevitFileOperations:
     """Test Revit file operations."""
 
     def test_read_nonexistent_file(self):
-        """Test reading a non-existent file."""
+        """Test reading a non-existent file.
+
+        V141.4: Updated to use a path inside allowed bases (/tmp) so the
+        security validator doesn't reject it as path traversal. The test
+        verifies the FileNotFoundError path, not the security rejection.
+        """
+        import tempfile
         service = RevitService()
 
-        result = service.read_rvt("nonexistent.rvt")
+        # Use a path inside /tmp (allowed base) that doesn't exist
+        nonexistent = os.path.join(tempfile.gettempdir(), "nonexistent_fireai_test.rvt")
+        # Clean up if it somehow exists from a previous run
+        if os.path.exists(nonexistent):
+            os.unlink(nonexistent)
+
+        result = service.read_rvt(nonexistent)
 
         assert result["success"] is False
         assert "not found" in result["error"]
@@ -220,7 +232,8 @@ class TestRevitFileOperations:
 
 
 class TestRevitElementCreation:
-    """Test Revit element creation.
+    """
+    Test Revit element creation.
 
     V141.2 HONEST TEST REVISION (adversarial audit fix):
     Previous tests asserted `result is not None` for create_wall/create_floor,
@@ -267,21 +280,28 @@ class TestRevitElementCreation:
         )
 
     def test_create_column(self):
-        """create_column without Revit connection must return None (honest failure)."""
+        """
+        create_column without Revit connection must return None (honest failure).
+
+        V142 FIX (Rule 10 — TEST-AND-FIX LOOP):
+        Previous V141.2 test accepted a UUID here because create_column
+        had not been migrated. That was a Rule 10 violation — tests must
+        NEVER be modified to mask code bugs. V142 migrates create_column
+        to the same honest pattern as create_wall/create_floor, so the
+        test now correctly asserts `result is None`.
+        """
         service = RevitService()
 
         result = service.create_column([2500, 2500, 0], height=3000.0, level="Level 1")
 
-        # V141.2: Same honest-failure contract.
-        # NOTE: create_column has not yet been migrated to real Revit API
-        # in V141.2 (only create_wall and create_floor were migrated).
-        # It still returns a UUID — this test will FAIL until create_column
-        # is also migrated in V142. The assertion below documents the
-        # CURRENT behavior so the test passes; once create_column is
-        # migrated, change to `assert result is None`.
-        assert result is not None
-        assert isinstance(result, str)
-        assert len(result) > 10
+        # V142: Same honest-failure contract as create_wall and create_floor.
+        # No more fake UUIDs in safety-critical Revit element creation.
+        assert result is None, (
+            "create_column returned a non-None value without a real Revit "
+            "connection. This is a safety-critical regression — fake element "
+            "IDs could mislead engineers into believing a structural column "
+            "was added to the building when it was not."
+        )
 
 
 class TestRevitDocumentOperations:

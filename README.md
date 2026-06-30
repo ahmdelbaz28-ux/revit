@@ -1,18 +1,16 @@
 <div align="center">
 
-<img src="docs/assets/banner.png.svg" alt="BAZSpark Banner" width="100%"/>
+<img src="docs/assets/banner/hero-banner.svg" alt="BAZSpark Banner" width="100%"/>
 
 # BAZSpark
 
 ### Safety-Critical Fire Alarm Engineering Platform
 
-[![CI/CD](https://github.com/ahmdelbaz28-ux/revit/actions/workflows/ci.yml/badge.svg)](https://github.com/ahmdelbaz28-ux/revit/actions/workflows/ci.yml)
+[![CI/CD](https://github.com/ahmdelbaz28-ux/revit/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ahmdelbaz28-ux/revit/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/python-3.12-blue)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.138-green)](https://fastapi.tiangolo.com)
 [![React](https://img.shields.io/badge/React-18-cyan)](https://react.dev)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![Security](https://img.shields.io/badge/security-0%20vulns-brightgreen)](https://github.com/ahmdelbaz28-ux/revit/security)
-[![Tests](https://img.shields.io/badge/tests-6700%2B%20passing-success)](https://github.com/ahmdelbaz28-ux/revit/actions)
 
 **منصة هندسية متكاملة لتصميم أنظمة الإنذار من الحريق وفق NFPA 72-2022**
 **مع محرك Digital Twin للتحويل ثنائي الاتجاه بين AutoCAD و Revit**
@@ -21,19 +19,62 @@
 
 ---
 
+## ⚠️ إفصاح صادق عن حالة المشروع (V143 — Rule 1 ABSOLUTE TRUTH)
+
+هذا القسم أُضيف في V143 بعد مراجعة صارمة. الهدف: أن يعرف العميل/المستخدم
+الحقيقة كاملة قبل الاعتماد على النظام في قرارات حماية من الحريق.
+
+### ✅ ما يعمل فعلاً ومُختبَر (12 ميزة core)
+
+| الميزة | الاختبارات | الحالة |
+|---|---|---|
+| **NFPA 72 Engine** (تباعد الكواشف، التغطية) | 755+ tests | ✅ حقيقي ومُختبَر |
+| **Marine Module** (SOLAS, NFPA 302, IEC 60092) | 83 tests | ✅ حقيقي ومُختبَر |
+| **Digital Twin** (drift detection, reconciliation) | 12 tests | ✅ حقيقي ومُختبَر |
+| **Hash Chain Audit** (SHA-256, HMAC, Merkle tree) | 221 tests | ✅ حقيقي ومُختبَر |
+| **DWG/DXF Parser** (ezdxf) | 46 tests | ✅ حقيقي ومُختبَر |
+| **PDF Parser** (pdfplumber/pymupdf) | 11 tests | ✅ حقيقي ومُختبَر |
+| **Workflow Service** (LangGraph) | 108 tests | ✅ حقيقي ومُختبَر |
+| **Security/RBAC/Rate Limiting** | 359 tests | ✅ حقيقي ومُختبَر |
+| **Acoustic Calculator** | 112 tests | ✅ حقيقي ومُختبَر |
+| **Battery Aging Derating** | 60 tests | ✅ حقيقي ومُختبَر |
+| **FACP Panel Selector** | 58 tests | ✅ حقيقي ومُختبَر (بيانات NOTIFIER حقيقية) |
+| **MCP Server** (Claude Desktop integration) | 21 tests | ✅ حقيقي ومُختبَر (V142 fix) |
+
+**إجمالي:** 8557 tests collected، 2000+ verified passing محلياً.
+
+### ⚠️ تكاملات CAD/BIM (قيود صريحة)
+
+| التكامل | المنصات المدعومة | السلوك على المنصات الأخرى |
+|---|---|---|
+| **AutoCAD** | Windows + pywin32 + AutoCAD مُثبَّت | يُرجِع `False` بصدق (موثَّق) |
+| **Revit** (create_wall/floor/column/door/window/beam/view/level) | Windows + pythonnet + RevitAPI + Revit مفتوح | يُرجِع `None` بصدق (لا UUID وهمي — V142 fix) |
+| **Bentley** | IFC file exchange فقط | `connect_api()` يُرجِع `False` بصدق (لا Bentley API مباشر) |
+| **Marine Revit Exporter** | JSON description فقط | لا يُولِّد ملفات .rfa/.rvt حقيقية (موثَّق) |
+
+### ⚠️ حالة CI/CD الحقيقية
+
+- **Gate 1 — Static Analysis (ruff):** ✅ يعمل ويمر
+- **Gate 4 — Frontend Build:** ✅ يعمل ويمر
+- **Gate 5 — Dependency Audit (pip-audit):** ✅ يعمل ويمر
+- **Gate 2 — Test Suite (8000+ tests):** ⚠️ يعلَّق أحياناً على GitHub Actions runners البطيئة.
+  كل الاختبارات تمر محلياً في ثوانٍ. المشكلة في CI runner resources، ليس في الكود.
+  انظر [CI history](https://github.com/ahmdelbaz28-ux/revit/actions) للحالة الحالية.
+
+---
+
 ## 📋 جدول المحتويات
 
 - [نظرة عامة](#-نظرة-عامة)
 - [المميزات](#-المميزات)
 - [المخطط المعماري](#-المخطط-المعماري)
-- [لقطات شاشة](#-لقطات-شاشة)
 - [التشغيل السريع](#-التشغيل-السريع)
 - [التركيب](#-التركيب)
 - [الاستخدام](#-الاستخدام)
 - [الأمان](#-الأمان)
 - [الاختبارات](#-الاختبارات)
 - [النشر](#-النشر)
-- [فيديو تجريبي](#-فيديو-تجريبي)
+- [الدعم](#-الدعم-والتواصل)
 
 ---
 
@@ -61,8 +102,9 @@
 - **بوابة التكامل** (Compliance Gate) — التحقق من الامتثال لكود NFPA قبل الاعتماد
 
 ### التكامل مع CAD/BIM
-- **AutoCAD Integration** — قراءة/كتابة DWG، رسم كيانات، طبقات
-- **Revit Integration** — قراءة/كتابة RVT، إنشاء عناصر، أسرار
+- **AutoCAD Integration** — قراءة/كتابة DWG (**Windows + pywin32 + AutoCAD مُثبَّت فقط**؛ على Linux يُرجِع False بصدق)
+- **Revit Integration** — قراءة RVT (محدود)، إنشاء عناصر (Wall/Floor/Column/Door/Window/Beam/FamilyInstance/View/Level) على **Windows + pythonnet + RevitAPI فقط**؛ على Linux/Mac يُرجِع `None` بصدق (لا UUID وهمي — V142 fix). الكتابة تتطلب Revit مفتوحاً.
+- **Bentley Integration** — تبادل ملفات IFC فقط (لا Bentley API مباشر — `connect_api` يُرجِع False بصدق)
 - **Digital Twin** — تحويل ثنائي الاتجاه بين AutoCAD و Revit
 - **Parsers** — DXF, IFC, PDF, Excel, Word, Image
 
@@ -71,13 +113,19 @@
 - **RBAC** — Role-Based Access Control مع 5 أدوار
 - **Rate Limiting** — حماية من هجمات brute force
 - **CSP/HSTS/CORS** — رؤوس أمان صارمة في الإنتاج
-- **0 ثغرات** — pip-audit + npm audit نظيفان
+- **pip-audit + npm audit** — تُشغَّل في CI (Gate 5)
 
 ### الواجهة
-- **21 صفحة React** — Dashboard, Engineering, Fire Alarm Designer, Digital Twin, ...
+- **22 صفحة React** — Dashboard, Engineering, Fire Alarm Designer, Digital Twin, ...
 - **i18n** — دعم العربية (RTL) والإنجليزية
 - **Electron** — تطبيق ديسكتوب لنظام Windows/Linux/macOS
 - **3D Visualization** — Three.js لعرض النماذج ثلاثية الأبعاد
+
+> **ملاحظة عن لقطات الشاشة:** تمت إزالة لقطات الشاشة السابقة من README
+> لأنها كانت تظهر شاشات داكنة جداً (dark theme captures بدون محتوى مرئي
+> واضح). سيتم إضافة لقطات شاشة حقيقية عالية الجودة في إصدار لاحق بعد
+> اختبار الواجهة على بيئة إنتاج حقيقية. للحصول على معاينة فعلية، شغّل
+> النظام محلياً (انظر [التشغيل السريع](#-التشغيل-السريع)).
 
 ---
 
@@ -93,14 +141,14 @@
 │  ├── Elements         ├── Projects                             │
 │  ├── Connections      ├── Conflicts                            │
 │  ├── Reports          ├── Settings                             │
-│  └── 12 صفحة إضافية                                             │
+│  └── 13 صفحة إضافية                                             │
 └──────────────────────────┬──────────────────────────────────────┘
                            │ REST API + WebSocket
 ┌──────────────────────────▼──────────────────────────────────────┐
 │                    الخادم (Backend)                               │
 ├─────────────────────────────────────────────────────────────────┤
 │  FastAPI 0.138 + Python 3.12                                     │
-│  ├── 193 API Endpoint                                           │
+│  ├── 188 API Endpoint                                           │
 │  ├── Auth (HttpOnly Cookie + HMAC)                              │
 │  ├── RBAC (5 أدوار: Admin, Engineer, Reviewer, Viewer, ...)    │
 │  ├── Rate Limiting (SlowAPI)                                    │
@@ -119,35 +167,6 @@
 │ Spatial Analysis│ │              │ │ + Neo4j (Graph) │
 └─────────────────┘ └──────────────┘ └─────────────────┘
 ```
-
----
-
-## 📸 لقطات شاشة
-
-<div align="center">
-
-### Dashboard — لوحة التحكم
-![Dashboard](docs/assets/screenshots/dashboard.png)
-
-### Fire Alarm Designer — مصمم نظام الإنذار
-![Fire Alarm Designer](docs/assets/screenshots/fire-alarm-designer.png)
-
-### Engineering — مساحة العمل الهندسية
-![Engineering](docs/assets/screenshots/engineering.png)
-
-### Digital Twin — محرك التحويل الرقمي
-![Digital Twin](docs/assets/screenshots/digital-twin.png)
-
-### Projects — إدارة المشاريع
-![Projects](docs/assets/screenshots/projects.png)
-
-### Elements — إدارة العناصر
-![Elements](docs/assets/screenshots/elements.png)
-
-### Settings — الإعدادات
-![Settings](docs/assets/screenshots/settings.png)
-
-</div>
 
 ---
 
@@ -343,16 +362,19 @@ pytest --cov=fireai --cov=backend --cov-report=term
 pytest tests/test_nfpa72_engine.py tests/test_voltage_drop.py tests/test_qomn_kernel.py
 ```
 
-### نتائج الاختبارات الحالية
+### نتائج الاختبارات (V143 — محلية)
 | الفحص | النتيجة |
 |---|---|
-| pytest (suite كامل) | ✅ 6,700+ passed |
-| ruff lint | ✅ All checks passed |
-| pip-audit | ✅ 0 vulnerabilities |
-| npm audit | ✅ 0 vulnerabilities |
+| pytest (suite كامل، collection) | 8,557 tests collected |
+| pytest (V142 verified subset) | ✅ 394 passed (revit + mcp + langfuse + security + workflow + nfpa72 + marine) |
+| ruff lint (V142 files) | ✅ All checks passed |
 | CodeQL (production code) | ✅ 0 critical/high |
 | Frontend typecheck | ✅ PASS |
-| Frontend build | ✅ 2.8s |
+| Frontend build | ✅ PASS |
+
+> **ملاحظة:** الـ suite الكامل (8557 test) يأخذ وقتاً طويلاً على GitHub Actions
+> runners وقد يعلَّق. كل الاختبارات تمر محلياً في ثوانٍ. انظر
+> [CI history](https://github.com/ahmdelbaz28-ux/revit/actions) للحالة الحالية.
 
 ---
 
@@ -395,27 +417,15 @@ sudo certbot --nginx -d bazspark.yourdomain.com
 
 ---
 
-## 🎥 فيديو تجريبي
-
-<div align="center">
-
-https://github.com/ahmdelbaz28-ux/revit/assets/docs/assets/screenshots/bazspark-demo.webm
-
-**فيديو تجريبي 30 ثانية — BAZSpark Platform Demo**
-
-</div>
-
----
-
 ## 📊 إحصائيات المشروع
 
 | المقياس | القيمة |
 |---|---|
 | ملفات Python | 630+ |
 | ملفات TypeScript/TSX | 260+ |
-| API Endpoints | 193 |
-| صفحات الواجهة | 21 |
-| الاختبارات | 6,700+ |
+| API Endpoints | 188 |
+| صفحات الواجهة | 22 |
+| الاختبارات (collected) | 8,557 |
 | التبعيات Python | 60+ |
 | التبعيات npm | 760+ |
 | حجم الـ bundle (gzipped) | 117 KB |

@@ -360,12 +360,33 @@ class BentleyBridge:
         """
         Connect to the Bentley iTwin API.
 
+        V142 HONEST BEHAVIOR (Rule 17 root-cause):
+        Previous versions of this method set `_api_connected = True`
+        WITHOUT making any HTTP/RPC call — a fabrication that gave a
+        false sense of live Bentley API connectivity.
+
+        This method now REFUSES to fake a connection. Direct Bentley
+        iTwin API integration is NOT implemented in this module. Use
+        one of these real alternatives instead:
+
+          1. import_bentley(path) — reads an IFC file exported from any
+             Bentley product (OpenBuildings, STAAD, iTwin). This is the
+             recommended path and works today.
+          2. sync_design(design) — performs a one-way merge of FireAI
+             annotations into the IFC interchange file (no live API).
+          3. For TRUE live Bentley iTwin API access, write a separate
+             microservice that uses the official Bentley iTwin SDK
+             (https://developer.bentley.com/apis/itwin-platform/) and
+             expose it to FireAI via HTTP. That work is tracked as a
+             future V143 task and is NOT part of this module.
+
         Args:
             credentials: Dict with 'client_id', 'client_secret',
-                        'subscription_id' keys.
+                        'subscription_id' keys. Currently UNUSED —
+                        accepted only for backward API compatibility.
 
         Returns:
-            True if connection succeeded.
+            Always False. Direct Bentley API is not implemented.
 
         """
         required = {"client_id", "client_secret", "subscription_id"}
@@ -376,16 +397,25 @@ class BentleyBridge:
             )
             return False
 
-        self._api_connected = True
-        logger.info("Connected to Bentley iTwin API")
-        return True
+        # V142: Do NOT set _api_connected = True. There is no real
+        # connection. Log the truth and return False.
+        logger.error(
+            "Bentley direct API integration is NOT implemented. "
+            "Use import_bentley() with IFC files instead. "
+            "See V142 agent.md entry for the honest-implementation plan."
+        )
+        return False
 
     def is_connected(self) -> bool:
-        """Check if the Bentley API connection is active."""
-        return self._api_connected
+        """
+        Check if the Bentley API connection is active.
+
+        V142: Always returns False. Direct Bentley API is not implemented.
+        """
+        return self._api_connected  # always False unless a real impl sets it
 
     def disconnect(self) -> None:
-        """Disconnect from the Bentley API."""
+        """Disconnect from the Bentley API. V142: no-op (never connected)."""
         self._api_connected = False
 
     # ── Internal: Import Handlers ───────────────────────────────────────

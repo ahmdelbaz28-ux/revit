@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+
+# V144: Playwright visual test artifacts (regenerated on each run)
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
+.env
+.env.local
+.env.*.local

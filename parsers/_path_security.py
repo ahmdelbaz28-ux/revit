@@ -214,6 +214,82 @@ def validate_input_path(
     return safe_path
 
 
+def validate_output_path(
+    output_path: str,
+    *,
+    allowed_extensions: frozenset[str] | None = None,
+    parser_name: str = "parser",
+) -> Path:
+    """
+    Validate a user-supplied OUTPUT file path (file may not exist yet).
+
+    V141.4: Added for write_rvt and similar functions that create new
+    files. Uses the same security checks as validate_input_path but
+    does NOT require the file to exist (since we're creating it).
+
+    Checks performed (in order):
+      1. Path is not empty
+      2. Path traversal: resolved path must be inside an allowed base
+      3. Symlink resolution (Path.resolve follows symlinks)
+      4. File extension allowlist (if provided)
+
+    Returns the resolved Path object on success.
+
+    Raises:
+        UnsafePathError: If path traversal or other security violation.
+        ValueError: If path is empty or extension not allowed.
+    """
+    if not output_path or not output_path.strip():
+        raise UnsafePathError(f"{parser_name}: output path is empty")
+
+    output_path_obj = Path(output_path)
+
+    # Resolve symlinks and get canonical absolute path.
+    # strict=False: don't require the file to exist (we're creating it).
+    # lgtm [py/path-injection] — this IS the security validation function.
+    # The resolve() call here is intentional: it follows symlinks so we
+    # can verify the FINAL target is inside an allowed base. CodeQL flags
+    # this as path-injection because output_path is user-provided, but
+    # the whole purpose of this function is to make user-provided paths
+    # safe. Suppressing the false positive.
+    try:
+        safe_path = output_path_obj.resolve(strict=False)  # lgtm [py/path-injection]
+    except (OSError, RuntimeError) as e:
+        raise UnsafePathError(
+            f"{parser_name}: cannot resolve output path '{output_path}' "
+            f"(likely symlink loop or permission error): {e}"
+        )
+
+    # Path traversal: resolved path must be inside an allowed base.
+    allowed_bases = _resolve_allowed_bases()
+    in_allowed = False
+    for base in allowed_bases:
+        try:
+            safe_path.relative_to(base)
+            in_allowed = True
+            break
+        except ValueError:
+            continue
+
+    if not in_allowed:
+        raise UnsafePathError(
+            f"{parser_name}: SECURITY: resolved output path '{safe_path}' "
+            f"is outside allowed directories. Path traversal detected. "
+            f"Allowed bases: {[str(b) for b in allowed_bases]}"
+        )
+
+    # Extension allowlist (if provided)
+    if allowed_extensions:
+        ext = safe_path.suffix.lower()
+        if ext not in allowed_extensions:
+            raise UnsafePathError(
+                f"{parser_name}: output file extension '{ext}' is not "
+                f"allowed. Permitted: {sorted(allowed_extensions)}"
+            )
+
+    return safe_path
+
+
 def validate_file_size(
     safe_path: Path,
     *,

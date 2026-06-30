@@ -393,3 +393,6 @@ htmlcov/
 # Runtime data files (modified by backend, should not be committed
 conversion_history.json
 
+
+# V141.4: Runtime data directories (Mem0, Qdrant, SQLite checkpoints)
+data/
