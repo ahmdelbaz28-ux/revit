@@ -151,10 +151,20 @@ class TestAutoCADFileOperations:
     """Test AutoCAD file operations."""
 
     def test_read_nonexistent_file(self):
-        """Test reading a non-existent file."""
+        """Test reading a non-existent file.
+
+        V141.4.1: Updated to use a path inside allowed bases (/tmp) so the
+        security validator doesn't reject it as path traversal.
+        """
+        import tempfile
         service = AutoCADService()
 
-        result = service.read_dwg("nonexistent.dwg")
+        # Use a path inside /tmp (allowed base) that doesn't exist
+        nonexistent = os.path.join(tempfile.gettempdir(), "nonexistent_fireai_autocad_test.dwg")
+        if os.path.exists(nonexistent):
+            os.unlink(nonexistent)
+
+        result = service.read_dwg(nonexistent)
 
         assert result["success"] is False
         assert "not found" in result["error"]

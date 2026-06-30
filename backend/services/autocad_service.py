@@ -326,16 +326,12 @@ class AutoCADService:
 
         """
         try:
-            # Defense in depth: validate path even if caller already did.
-            # CodeQL: py/path-injection — filepath is validated below.
+            # V141.4.1 FIX (Devin review): validate_input_path does NOT accept
+            # must_exist kwarg. Removed the unsafe fallback too.
+            # validate_input_path is the SOLE authority — fail-closed.
             from parsers._path_security import validate_input_path
-            try:
-                filepath = validate_input_path(filepath, must_exist=True)
-            except Exception:
-                # Fallback: basic sanitization if _path_security unavailable
-                filepath = os.path.realpath(filepath)
-                if ".." in filepath:
-                    raise FileNotFoundError("Path traversal detected")
+            safe_path = validate_input_path(filepath)
+            filepath = str(safe_path)  # convert Path to str for JSON
 
             if not os.path.exists(filepath):
                 raise FileNotFoundError("DWG file not found")  # noqa: S608 - no SQL
@@ -409,15 +405,11 @@ class AutoCADService:
 
         """
         try:
-            # Defense in depth: validate path.
-            # CodeQL: py/path-injection — filepath is validated below.
-            from parsers._path_security import validate_input_path
-            try:
-                filepath = validate_input_path(filepath, must_exist=False)
-            except Exception:
-                filepath = os.path.realpath(filepath)
-                if ".." in filepath:
-                    raise ValueError("Path traversal detected")
+            # V141.4.1 FIX (Devin review): validate_input_path does NOT accept
+            # must_exist kwarg. For output paths, use validate_output_path.
+            from parsers._path_security import validate_output_path
+            safe_path = validate_output_path(filepath, parser_name="autocad_write_dwg")
+            filepath = str(safe_path)
 
             if not self.connected or not self.acad_app:
                 logger.error("AutoCAD service not connected. Cannot write DWG file.")

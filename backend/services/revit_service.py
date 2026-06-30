@@ -461,7 +461,10 @@ class RevitService:
             # Now: if validate_input_path raises, we propagate the error
             # (fail-closed). No fallback that could be exploited.
             from parsers._path_security import validate_input_path
-            filepath = validate_input_path(filepath)
+            # V141.4.1 FIX (Devin review): validate_input_path returns a Path
+            # object. Convert to str for JSON serialization in the return dict.
+            safe_path = validate_input_path(filepath)
+            filepath = str(safe_path)
 
             # After validation, filepath is guaranteed safe (resolved + inside
             # allowed base). CodeQL should recognize the validated path.
@@ -1509,7 +1512,9 @@ class RevitService:
             # Validate path before opening. Previous code called open() on
             # an unvalidated path — path-injection vulnerability.
             from parsers._path_security import validate_input_path
-            json_path = validate_input_path(json_path)
+            # V141.4.1 FIX (Devin review): convert Path to str after validation.
+            safe_path = validate_input_path(json_path)
+            json_path = str(safe_path)
 
             with open(json_path, encoding='utf-8') as f:
                 self._api_data_cache = json.load(f)
