@@ -27,10 +27,7 @@ TEST PHILOSOPHY (agent.md Rule 12 — Safety-First):
 
 from __future__ import annotations
 
-import io
 import json
-import sys
-import threading
 
 import pytest
 
@@ -40,7 +37,6 @@ from fireai.mcp_server.revit_mcp_server import (
     MCP_SERVER_VERSION,
     RevitMCPServer,
 )
-
 
 # ===========================================================================
 # Test fixtures

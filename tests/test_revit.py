@@ -220,7 +220,8 @@ class TestRevitFileOperations:
 
 
 class TestRevitElementCreation:
-    """Test Revit element creation.
+    """
+    Test Revit element creation.
 
     V141.2 HONEST TEST REVISION (adversarial audit fix):
     Previous tests asserted `result is not None` for create_wall/create_floor,
@@ -267,7 +268,8 @@ class TestRevitElementCreation:
         )
 
     def test_create_column(self):
-        """create_column without Revit connection must return None (honest failure).
+        """
+        create_column without Revit connection must return None (honest failure).
 
         V142 FIX (Rule 10 — TEST-AND-FIX LOOP):
         Previous V141.2 test accepted a UUID here because create_column
