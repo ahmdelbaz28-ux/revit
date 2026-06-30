@@ -49,6 +49,18 @@ def server():
     return RevitMCPServer()
 
 
+@pytest.fixture(autouse=True)
+def _no_stdin_in_tests(monkeypatch):
+    """
+    V142 SAFETY: Prevent any MCP test from hanging on stdin read in CI.
+
+    Sets FIREAI_MCP_NO_STDIN=1 for every test in this module. This makes
+    _stdin_loop() a no-op wait on _running instead of a blocking read on
+    sys.stdin (which has no EOF in CI and would hang Gate 2 forever).
+    """
+    monkeypatch.setenv("FIREAI_MCP_NO_STDIN", "1")
+
+
 def _jsonrpc(method: str, params: dict | None = None, *, req_id: int | None = 1) -> str:
     """Build a JSON-RPC 2.0 request line."""
     msg = {"jsonrpc": "2.0", "method": method}
@@ -274,21 +286,11 @@ class TestServerLifecycle:
         """
         start(block=False) starts a daemon thread and returns immediately.
 
-        NOTE: The stdin loop reads from sys.stdin which may be closed
-        immediately in CI (EOF). To make this test deterministic across
-        environments, we patch _stdin_loop to a no-op so the thread
-        stays alive until stop() is called.
+        V142 FIX (Rule 17 root-cause): In CI, sys.stdin may block forever.
+        Set FIREAI_MCP_NO_STDIN=1 so _stdin_loop becomes a no-op wait on
+        _running instead of reading stdin. This makes the test deterministic.
         """
-        # Patch the stdin loop so the daemon thread doesn't exit immediately
-        # when stdin is /dev/null (common in CI).
-        def _idle_loop():
-            import threading
-            event = threading.Event()
-            # Wait until stop() sets _running=False, but cap at 5s for safety
-            while server._running and not event.wait(0.05):
-                pass
-
-        monkeypatch.setattr(server, "_stdin_loop", _idle_loop)
+        monkeypatch.setenv("FIREAI_MCP_NO_STDIN", "1")
 
         server.start(block=False)
         assert server._running is True

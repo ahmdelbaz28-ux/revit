@@ -403,7 +403,27 @@ class RevitMCPServer:
             self._stdin_thread.start()
 
     def _stdin_loop(self) -> None:
-        """Main stdio read loop. Reads JSON-RPC lines until EOF or stop()."""
+        """
+        Main stdio read loop. Reads JSON-RPC lines until EOF or stop().
+
+        V142 FIX (Rule 17 root-cause): In CI environments, sys.stdin may
+        be a non-EOF pipe that blocks `for line in sys.stdin` indefinitely.
+        This caused Gate 2 — Test Suite to hang. Fix: when
+        FIREAI_MCP_NO_STDIN=1 is set (used by tests), the loop becomes a
+        no-op wait on _running instead of reading stdin. Production
+        deployments (Claude Desktop) do not set this var.
+        """
+        import os
+        if os.environ.get("FIREAI_MCP_NO_STDIN") == "1":
+            # Test mode: don't read stdin (which may block in CI).
+            # Just wait until stop() sets _running=False.
+            import threading
+            event = threading.Event()
+            while self._running and not event.wait(0.05):
+                pass
+            logger.info("[MCP SERVER]: test-mode loop exiting (stop() called).")
+            return
+
         # Use sys.stdin directly to keep stdout clean for protocol messages.
         # All logging goes to stderr (configured by logging_setup).
         for line in sys.stdin:
