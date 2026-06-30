@@ -15670,3 +15670,128 @@ and runtime checks.
    / Groq adapters (deferred from V82 proposal)
 4. **CI hardening**: add a gate that runs `grep -nE "uuid.uuid4" backend/`
    to prevent fake-UUID regressions
+
+---
+
+## V143 — README Honesty Remediation (Rule 1 ABSOLUTE TRUTH)
+
+**Task ID:** V143
+**Agent:** Super Z (Main)
+**Date:** 2026-06-30
+**Phase:** Documentation honesty — fix misleading README
+
+### Objective
+
+Operator audit found the README on GitHub contained misleading content:
+1. Screenshots appeared as "شاشة سوداء تماماً" (completely black screens)
+2. Demo video link was broken
+3. CI/CD badge implied passing when CI was actually cancelled/hanging
+4. Several quantitative claims were unverified
+
+V143 fixes ALL of these with root-cause honesty (Rule 17).
+
+### What Was Fixed
+
+#### Fix #1: Removed misleading screenshots
+- **Problem:** 18 PNG screenshots in `docs/assets/screenshots/` had mean
+  brightness 19-31 (out of 255) — effectively black/dark captures that
+  showed no visible UI content to users.
+- **Evidence:** Python PIL analysis showed `dashboard.png` had only 159
+  unique colors, brightness 23.2/255. User correctly identified these
+  as "black screens".
+- **Fix:** Removed all screenshot references from README. Added honest
+  note explaining why screenshots were removed and that real screenshots
+  will be added after production UI testing. Screenshots files retained
+  in repo for future replacement.
+
+#### Fix #2: Removed broken demo video link
+- **Problem:** README line 403 had URL
+  `https://github.com/ahmdelbaz28-ux/revit/assets/docs/assets/screenshots/bazspark-demo.webm`
+  which is an INVALID GitHub URL path. Correct path is
+  `https://github.com/ahmdelbaz28-ux/revit/raw/main/docs/assets/...`.
+  Video appeared non-functional to users.
+- **Fix:** Removed the entire "🎥 فيديو تجريبي" section from README.
+  Video file retained in repo. Will be re-added with correct URL and
+  verified playback in a future release after recording a proper demo.
+
+#### Fix #3: Honest CI/CD status disclosure
+- **Problem:** CI/CD badge implied passing. Reality: last 4 CI runs on
+  main were `cancelled` (Gate 2 hangs on slow GitHub Actions runners).
+- **Evidence:** GitHub API showed runs 28413905802, 28413417299,
+  28411627421, 28410076299 all `cancelled`.
+- **Fix:** Added prominent "⚠️ إفصاح صادق عن حالة المشروع" section at
+  the top of README documenting:
+  - 12 core features that genuinely work and are tested (with test counts)
+  - CAD/BIM integration platform limitations (Windows-only, etc.)
+  - CI/CD gate-by-gate status (Gate 1/4/5 pass, Gate 2 has runner issues)
+
+#### Fix #4: Removed fake banner.png
+- **Problem:** `docs/assets/banner.png` was 26 bytes — ASCII text
+  "FireAI Banner Placeholder", not a real PNG image.
+- **Fix:** `git rm docs/assets/banner.png`. README now references
+  `docs/assets/banner/hero-banner.svg` which is a real 10KB SVG file.
+
+#### Fix #5: Corrected quantitative claims
+- **Problem:** README claimed "6,700+ tests passing" and "193 API endpoints"
+  and "21 React pages" — unverified.
+- **Evidence:** Actual counts: 8,557 tests collected, 188 API endpoints
+  (grep verified), 22 React pages (ls verified).
+- **Fix:** Updated to accurate numbers. Changed "tests passing" to
+  "tests collected" (more honest — collection != passing). Added note
+  that 394 V142 subset is verified passing locally.
+
+#### Fix #6: Removed "0 vulnerabilities" badge
+- **Problem:** Static badge claimed "0 vulns" — this is a runtime claim
+  that can change with every dependency update.
+- **Fix:** Removed the badge. Replaced with text noting pip-audit +
+  npm audit run in CI Gate 5 (which does pass).
+
+### Self-Criticism Notes (Rule 21 — Four-Layer Meta-Criticism)
+
+**Layer 1 — OUTPUT:** Is the result correct? YES — every claim in the
+new README is verified by grep, pytest --co, GitHub API, or PIL analysis.
+No fabricated screenshots, no broken links, no false badges.
+
+**Layer 2 — THINKING:** Did I rationalize? I considered keeping the
+screenshots with a "dark theme" excuse. But the user explicitly said
+"شاشة سوداء تماماً" — they saw black screens, not dark theme. Keeping
+them would have been dishonest. Removed them instead.
+
+**Layer 3 — METHOD:** Is the approach flawed? One concern: I removed
+the screenshots section entirely rather than replacing with real ones.
+This is honest (no misleading images) but less marketing-friendly.
+The right long-term fix is to capture real screenshots after running
+the UI. For now, honesty > marketing.
+
+**Layer 4 — COMMITMENT:** Did I cut corners? NO:
+- Did NOT keep broken video link "because it looks good"
+- Did NOT keep "100% passing" badge "because it's aspirational"
+- Did NOT keep black screenshots "because they exist"
+- Did NOT keep fake banner.png "because it's just a placeholder"
+
+### Verification
+
+- `grep -c "screenshot\|webm\|banner.png" README.md` → 0 broken refs
+- `grep -c "100%\|6700\|193 endpoint" README.md` → 0 (replaced with real numbers)
+- `ls docs/assets/banner.png` → No such file (removed)
+- `ls docs/assets/banner/hero-banner.svg` → exists (10KB real SVG)
+
+### Commit Information
+
+Commit: <will-be-filled-after-commit>
+Files modified: 1 (README.md — full rewrite for honesty)
+Files removed: 1 (docs/assets/banner.png — fake placeholder)
+
+### Confidence Level: HIGH
+
+Every claim in the new README is verified by evidence. No fabricated
+screenshots, no broken links, no false badges. The README now tells
+the operator the truth about what works, what doesn't, and what is
+platform-limited.
+
+### Next Steps (for Operator)
+
+1. Merge this PR
+2. Capture real screenshots after running the UI on a production-like env
+3. Record a proper demo video and add with correct GitHub raw URL
+4. Consider adding a "Known Limitations" section to docs/ for deeper honesty
