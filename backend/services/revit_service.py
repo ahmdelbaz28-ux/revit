@@ -72,7 +72,6 @@ import uuid
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from enum import Enum
-from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
@@ -543,40 +542,20 @@ class RevitService:
 
         """
         try:
-            # Defense in depth: validate path.
-            # CodeQL: py/path-injection — filepath is validated below.
-            from parsers._path_security import UnsafePathError, _resolve_allowed_bases
             # V141.4 SECURITY FIX (CodeQL: py/path-injection):
-            # For OUTPUT paths (file may not exist yet), we can't use
-            # validate_input_path (which requires must_exist). Instead,
-            # we resolve the path and verify it's inside an allowed base.
-            # This is the same check validate_input_path does, minus the
-            # existence check.
-            output_path_obj = Path(filepath)
-            try:
-                resolved = output_path_obj.resolve()
-            except (OSError, RuntimeError) as e:
-                raise UnsafePathError(f"Cannot resolve output path '{filepath}': {e}")
-            allowed_bases = _resolve_allowed_bases()
-            in_allowed = False
-            for base in allowed_bases:
-                try:
-                    resolved.relative_to(base)
-                    in_allowed = True
-                    break
-                except ValueError:
-                    continue
-            if not in_allowed:
-                raise UnsafePathError(
-                    f"Output path '{resolved}' is outside allowed directories. "
-                    f"Path traversal detected."
-                )
-            filepath = str(resolved)
+            # Use validate_output_path for OUTPUT paths (file may not exist
+            # yet). This is the dedicated security function for write
+            # operations — it resolves symlinks and verifies the path is
+            # inside an allowed base directory. After validation, the path
+            # is guaranteed safe for file operations.
+            from parsers._path_security import validate_output_path
+            safe_path = validate_output_path(filepath, parser_name="revit_write_rvt")
+            filepath = str(safe_path)
 
             if not self.connected:
                 logger.warning("Not connected to Revit. Writing to file in simulation mode.")
 
-            # Create directory if it doesn't exist (filepath is now validated)
+            # Create directory if it doesn't exist (filepath is validated above)
             output_dir = os.path.dirname(filepath)
             if output_dir:
                 os.makedirs(output_dir, exist_ok=True)
