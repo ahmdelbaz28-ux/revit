@@ -534,6 +534,7 @@ for _router_name in (
     "api_keys",
     "analyze",
     "auth",  # M-3: session-based auth with HttpOnly cookies
+    "settings",  # V151: Vision API Keys (AES-256-GCM encrypted) — /api/v1/settings/keys/openai
 ):
     _safe_include_router(_router_name)
 

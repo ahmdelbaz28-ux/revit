@@ -16095,3 +16095,336 @@ No fabricated claims. All verification evidence is real pytest output.
 2. **Install `slowapi` and `tenacity`** in CI to clear the 5+27 pre-existing environmental errors (NOT caused by V150)
 3. **Authorize V151**: continue the infinite improvement cycle (Rule 19) — re-audit all 12 fixes with adversarial critique, search for new categories (e.g., exception safety under concurrent failure, memory leak under long-running processes)
 4. **Consider**: add a CI gate that runs `grep -rn "Not thread-safe but acceptable" fireai/` to prevent cop-out comments from returning
+
+---
+
+## V151 — Vision API Keys (AES-256-GCM encrypted) + CUA Loop with OpenCV Fallback
+
+**Task ID:** V151
+**Agent:** Super Z (Main)
+**Date:** 2026-07-01
+**Phase:** New feature — customer-supplied OpenAI Vision API keys for the CUA loop
+
+### Objective
+
+Implement the customer-facing Vision API Keys flow described in the operator
+brief:
+
+  🌐 Flow:
+    1. Customer opens Settings page → sees tab "Vision API Keys"
+    2. Customer enters OpenAI key + base URL + model name
+    3. Frontend POSTs to /api/v1/settings/keys/openai (HF Space backend)
+    4. Backend encrypts key with AES-256-GCM and stores in SQLite
+    5. Backend returns masked key (fe_***...***f4c1)
+    6. CUA Loop reads key from DB (prefers DB over env vars)
+    7. OpenAI Vision analyzes screenshots using the entered key
+
+  🔒 Security:
+    ✅ Key encrypted AES-256-GCM in DB
+    ✅ Not visible in frontend (masked: sk-***...***)
+    ✅ Optional — system works without it (OpenCV fallback)
+    ✅ Customer can add/delete/update anytime
+    ✅ Wrong key → automatic fallback
+
+### State Machine (per agent.md MANDATORY EXECUTION STATE MACHINE)
+
+1. **ANALYZE** — Understood the V151 spec (7-step flow + 5 security guarantees)
+2. **UNDERSTAND_EXISTING_SYSTEM** — Read backend/app.py (router registration),
+   backend/database.py (SQLite + PG schema), backend/api_keys.py (existing
+   bcrypt + HMAC pattern), backend/routers/api_keys.py (RBAC pattern),
+   backend/rbac.py (Role enum + Permission.SYSTEM_CONFIG),
+   backend/security_middleware.py (ApiKeyMiddleware X-API-Key validation),
+   frontend/src/pages/SettingsPage.tsx (existing tabs structure),
+   fireai/infrastructure/mem0_setup.py (existing OpenAI 403 fallback pattern
+   from V78-V82 — reused the "DB → env → fallback" priority chain concept).
+3. **VERIFY_ASSUMPTIONS** — Confirmed:
+   - `cryptography>=41.0.0,<43.0.0` is in requirements.txt
+   - `cryptography.hazmat.primitives.ciphers.aead.AESGCM` is available
+   - `httpx` is installed (via FastAPI dependency) for the OpenAI ping
+   - The `Permission.SYSTEM_CONFIG` permission exists in rbac.py and is
+     granted to ADMIN role only (line 81-84: `*Permission.__members__.values()`)
+   - Existing SettingsPage.tsx uses shadcn Tabs component — adding a new
+     tab is a non-breaking change
+4. **PLAN** — Designed 7 implementation steps:
+   - #1: backend/vision_key_store.py (AES-256-GCM encrypt/decrypt/mask)
+   - #2: vision_api_keys table (SQLite + PG schema + Alembic model)
+   - #3: backend/routers/settings.py (POST/GET/DELETE + test endpoint)
+   - #4: backend/app.py (register settings router)
+   - #5: fireai/vision/cua_loop.py (DB → env → OpenCV fallback)
+   - #6: frontend SettingsPage.tsx VisionApiKeysTab
+   - #7: tests/test_vision_api_keys.py (33 tests across 5 test classes)
+5. **RISK_ANALYSIS** — Identified risks + mitigations:
+   - Plaintext leak in logs → all log calls use `type(e).__name__` only
+   - Plaintext leak in responses → response model uses `masked_key` field
+   - Plaintext leak in DB → AES-256-GCM with random nonce per record
+   - Master key loss → 4-tier fallback (env → env file → default file →
+     ephemeral) with explicit WARNING when ephemeral is used
+   - Tampering → GCM auth tag verifies both ciphertext AND AAD
+   - Key rotation → POST deactivates previous active key atomically
+   - DB unavailable → endpoints return 503, never expose internal state
+   - Wrong key (runtime) → CUA loop falls through to OpenCV automatically
+6. **IMPLEMENT_INCREMENTALLY** — Implemented all 7 components in order
+   (see Files Modified below). Each component was smoke-tested in isolation
+   before integration.
+7. **SELF_REVIEW** — Ran the test suite; found 2 issues:
+   - `description` column missing from schema → fixed by adding to both
+     SQLite and PG schema (was using lazy ALTER TABLE which tests bypassed)
+   - `slowapi` / `tenacity` / `sqlalchemy` not installed in venv →
+     installed via `pip install` (pre-existing environmental issue, also
+     documented in V150 worklog)
+   - Auth middleware rejects TestClient without X-API-Key → fixed by using
+     the FIREAI_API_KEY env var bypass for admin_client and a registered
+     RBAC viewer key for viewer_client
+8. **EXECUTE_VALIDATION** — `pytest tests/test_vision_api_keys.py -v`:
+   33 passed, 0 failed
+9. **ADVERSARIAL_AUDIT** — Searched for plaintext key leakage patterns
+   across all 8 modified files:
+   - No `logger.*api_key` patterns (the one match was a docstring comment)
+   - No `print(api_key)` patterns
+   - No f-strings with api_key/plaintext outside of HTTP Authorization
+     headers (legitimate OpenAI API usage)
+   - Verified encrypt_key is called BEFORE INSERT INTO vision_api_keys
+   - Verified DELETE returns 204 with no body (idempotent — no info leak)
+   - Verified error handlers use `type(e).__name__` (no exception message
+     leak)
+10. **REGRESSION_ANALYSIS** — Ran existing test suites:
+    - `tests/test_security.py + test_auth_security.py + backend/tests/
+      test_routers.py + test_api_endpoints.py`: 271 passed, 0 failed
+    - `backend/tests/` (full): 492 passed, 1 pre-existing failure
+      (test_list_api_keys — fails IN ISOLATION before my code runs;
+      committed db/api_keys.json has 7 keys from previous test runs;
+      NOT caused by V151 per Rule 1 ABSOLUTE TRUTH)
+11. **REVALIDATE** — Re-ran V151 test suite + import smoke test:
+    - 33/33 V151 tests pass
+    - `python3 -c "from backend.vision_key_store import ...; from
+      backend.routers.settings import router; from fireai.vision.cua_loop
+      import ...; import backend.app"` succeeds with no errors
+    - 5 V151 routes registered: POST/GET/DELETE/GET-by-id/POST-test
+12. **DOCUMENT** — This section (per Rule 9).
+13. **FINAL_VERIFICATION** — All 5 gates pass (see Verification Gates below).
+
+### What Was Implemented
+
+#### Backend
+
+**backend/vision_key_store.py** (NEW, 295 lines)
+- `encrypt_key(plaintext)` → AES-256-GCM with random 12-byte nonce per
+  record. Output format: `v1$<base64(nonce)>$<base64(ciphertext+tag)>`.
+  AAD = `b"fireai.vision_api_keys.v1"` (binds ciphertext to this app).
+- `decrypt_key(encrypted)` → verifies GCM auth tag, raises generic
+  ValueError on tamper (no key material in exception message).
+- `mask_key(plaintext)` → `fe_<first2>***...***<last4>`. For keys ≤ 6
+  chars, suffix is hidden to avoid exposing the whole key.
+- `_load_master_key()` → 4-tier fallback chain:
+  1. FIREAI_VISION_KEY_ENCRYPTION_KEY env var (hex/base64/raw)
+  2. FIREAI_VISION_KEY_FILE env var (path to 32-byte file, mode 0600)
+  3. <db_dir>/vision_key_master.key (auto-generated, mode 0600,
+     O_CREAT|O_EXCL atomic create to prevent TOCTOU race)
+  4. Ephemeral random key (WARNING — keys won't survive restart)
+- Thread-safe via `_MASTER_KEY_LOCK` with double-checked locking.
+
+**backend/routers/settings.py** (NEW, 483 lines)
+- `POST /api/v1/settings/keys/openai` — encrypt + persist. Deactivates
+  previous active key atomically. Returns masked form only.
+- `GET /api/v1/settings/keys/openai` — list active keys (masked).
+  Optional `?include_inactive=true` query param.
+- `GET /api/v1/settings/keys/openai/{key_id}` — single key (masked).
+- `DELETE /api/v1/settings/keys/openai/{key_id}` — idempotent (returns
+  204 regardless of existence — no info leak).
+- `POST /api/v1/settings/keys/openai/{key_id}/test` — pings
+  {base_url}/models with the decrypted key. Returns ok/status_code/error.
+  Updates last_used_at. Never auto-deletes on failure (customer decides).
+- All endpoints require `Permission.SYSTEM_CONFIG` (admin only).
+- All error paths return generic messages (no internal state leaked).
+- All log calls use `type(e).__name__` (no exception message leak).
+
+**fireai/vision/cua_loop.py** (NEW, 305 lines)
+- `analyze_screenshot(image_bytes, prompt)` → NEVER raises. Returns a
+  `VisionAnalysisResult` with provider field.
+- Priority chain (deterministic per Rule 5):
+  1. `openai-db` — load active key from vision_api_keys table, decrypt,
+     call OpenAI Vision API. On any failure → fall through.
+  2. `openai-env` — use OPENAI_API_KEY env var. On failure → fall through.
+  3. `opencv` — offline fallback using cv2.Canny edge detection + contour
+     finding. Returns image dimensions, brightness, edge count, detected
+     rectangles (≥16x16px), mean BGR. Always deterministic.
+  4. `none` — total failure (returns ok=False with error message).
+- DB key loader catches all exceptions and returns None (never raises).
+
+**backend/database.py** (MODIFIED)
+- Added `vision_api_keys` table to BOTH `_init_schema` (SQLite) and
+  `_init_schema_pg` (PostgreSQL) — schema must match per the existing
+  comment "schema MUST match _init_schema() (SQLite) exactly".
+- Columns: id, provider, encrypted_key, masked_key, base_url, model_name,
+  is_active, created_at, updated_at, last_used_at, description.
+- Indexes: idx_vision_keys_provider (provider), idx_vision_keys_active
+  (is_active).
+
+**backend/db_models.py** (MODIFIED)
+- Added `VisionApiKey` SQLAlchemy model (for Alembic autogenerate).
+  Matches the SQL schema exactly.
+
+**backend/app.py** (MODIFIED)
+- Added `"settings"` to the `_safe_include_router` list (line 537).
+  The router defines prefix="/settings/keys", so mounting it under
+  "/api/v1" yields paths /api/v1/settings/keys/openai/*.
+
+**requirements.txt** (MODIFIED)
+- Added `httpx>=0.24.0,<1.0.0` (was implicitly available via FastAPI,
+  but made explicit for the OpenAI ping in the test endpoint).
+
+#### Frontend
+
+**frontend/src/pages/SettingsPage.tsx** (MODIFIED)
+- Added "Vision API Keys" tab to the existing Tabs component.
+- New `VisionApiKeysTab` component:
+  - Add/update form: API Key (type="password"), Base URL, Model Name,
+    Description. Save button POSTs to /api/v1/settings/keys/openai.
+    After save, the plaintext is cleared from the form immediately.
+  - Stored keys list: shows masked_key, model_name, base_url, description,
+    last_used_at. Per-key "Test" button (pings backend test endpoint)
+    and "Delete" button (with confirmation).
+  - Security notice card explaining AES-256-GCM encryption, OpenCV
+    fallback, and add/delete/update anytime.
+- Plaintext keys are NEVER stored in localStorage/sessionStorage (only
+  sent via POST body to the backend, which returns only the masked form).
+- The existing `persistSettings` helper already strips sensitive keys
+  (apiKey, api_key, password, token, secret) from localStorage, so the
+  new tab inherits this protection automatically.
+
+#### Tests
+
+**tests/test_vision_api_keys.py** (NEW, 660 lines, 33 tests)
+- `TestEncryption` (9 tests): roundtrip, nonce uniqueness, plaintext not
+  in ciphertext, empty plaintext rejected, tamper detection (ciphertext
+  AND nonce), wrong master key fails, malformed format rejected, invalid
+  base64 rejected.
+- `TestMasking` (5 tests): standard mask, short key, empty key, plaintext
+  never in mask, whitespace stripped.
+- `TestDBSchema` (3 tests): table created (SQLite), all expected columns,
+  both indexes created.
+- `TestCuaLoopFallback` (6 tests): OpenCV fallback when no key, empty
+  image returns none provider, invalid image falls through, DB key
+  preferred over env, corrupted DB key falls through, CUA loop never
+  raises (4 edge-case inputs).
+- `TestSettingsRouter` (10 tests): POST returns masked only, POST then
+  GET returns masked, POST deactivates previous active, DELETE removes
+  key, DELETE non-existent is idempotent, GET non-existent returns 404,
+  VIEWER role rejected (403), short API key rejected (422), plaintext
+  not in logs, DB persists encrypted form (not plaintext).
+
+### Verification Gates
+
+- **[Gate 1] Static Validation** ✅
+  - `python3 -c "from backend.vision_key_store import ...; from
+    backend.routers.settings import router; from fireai.vision.cua_loop
+    import ...; from backend.db_models import VisionApiKey; import
+    backend.app"` succeeds
+  - All 5 V151 routes registered at /api/v1/settings/keys/openai/*
+- **[Gate 2] Runtime Validation** ✅
+  - 33/33 V151 tests pass (`pytest tests/test_vision_api_keys.py -v`)
+- **[Gate 3] Behavioral Validation** ✅
+  - Encryption: tamper detection (ciphertext + nonce), wrong master key
+    rejected, plaintext never in ciphertext — all verified by tests
+  - Masking: never exposes more than 2 prefix + 4 suffix chars — verified
+  - Fallback: DB → env → OpenCV chain works, corrupted DB key falls
+    through silently, CUA loop never raises — verified
+  - RBAC: VIEWER role gets 403, ADMIN role succeeds — verified
+  - Idempotency: DELETE on non-existent id returns 204 — verified
+- **[Gate 4] Regression Validation** ✅
+  - 271/271 security + router + endpoint tests pass (no regressions)
+  - 492/493 backend tests pass (1 pre-existing failure in
+    test_list_api_keys — fails IN ISOLATION before V151 code runs;
+    caused by committed db/api_keys.json having 7 keys from previous
+    test runs; NOT caused by V151 per Rule 1 ABSOLUTE TRUTH)
+- **[Gate 5] Adversarial Audit** ✅
+  - No plaintext key leakage in any log call (verified by
+    `test_plaintext_not_in_logs` + manual grep of all 8 modified files)
+  - encrypt_key always called BEFORE INSERT INTO vision_api_keys
+  - DELETE returns 204 with no body (no info leak on existence)
+  - Error handlers use `type(e).__name__` only (no exception message)
+  - Master key has 4-tier fallback chain with explicit WARNING on
+    ephemeral use
+
+### Self-Criticism Notes (Rule 21 — Four-Layer Meta-Criticism)
+
+**Layer 1 — OUTPUT:** Is the result correct? YES — 33/33 V151 tests pass,
+271/271 regression tests pass. All evidence is real pytest output.
+
+**Layer 2 — THINKING:** Did I rationalize? I considered skipping the
+`test_post_deactivates_previous_active` test when it failed with an
+off-by-one assertion (`endswith("7890cd")` vs actual `endswith("90cd")`).
+But Rule 10 says "tests are NEVER modified." On closer inspection, the
+test assertion was wrong (my typo — mask_key returns last 4 chars per
+spec, not last 6). I fixed the assertion to match the actual spec, not
+to mask a bug. The production code is correct.
+
+**Layer 3 — METHOD:** Is the approach flawed? One concern: the
+`admin_client` fixture uses the FIREAI_API_KEY env var bypass, which
+grants ADMIN role on env var match. This is the SAME mechanism used in
+production (security_middleware.py:430-435). It's not a test-only hack
+— it's the documented admin bypass. The viewer_client uses a real
+registered RBAC key with VIEWER role, going through the full validation
+path. So both auth paths are tested with REAL production code, not
+mocked.
+
+**Layer 4 — COMMITMENT:** Did I cut corners? NO:
+- Did NOT skip writing tests (33 new tests across 5 classes)
+- Did NOT weaken existing tests (271 regression tests still pass)
+- Did NOT use fake defaults (encryption always uses real AES-256-GCM)
+- Did NOT modify tests to mask bugs (only fixed a typo in my own test)
+- Did NOT leave "TODO" or "FIXME" comments
+- Did NOT log plaintext keys (verified by test_plaintext_not_in_logs)
+- Did NOT skip the master key fallback chain (all 4 tiers implemented)
+- Did NOT skip the OpenCV fallback (real cv2.Canny + contour detection)
+
+### Files Modified (8 total)
+
+1. `backend/vision_key_store.py` — NEW (295 lines) — AES-256-GCM
+   encryption primitives + masking + master key management
+2. `backend/routers/settings.py` — NEW (483 lines) — V151 REST endpoints
+3. `fireai/vision/__init__.py` — NEW (empty) — package marker
+4. `fireai/vision/cua_loop.py` — NEW (305 lines) — CUA loop with
+   DB → env → OpenCV fallback
+5. `backend/database.py` — MODIFIED (+27 lines) — vision_api_keys table
+   in both SQLite and PG schemas + 2 indexes
+6. `backend/db_models.py` — MODIFIED (+22 lines) — VisionApiKey ORM
+   model for Alembic autogenerate
+7. `backend/app.py` — MODIFIED (+1 line) — register settings router
+8. `requirements.txt` — MODIFIED (+1 line) — explicit httpx dependency
+9. `frontend/src/pages/SettingsPage.tsx` — MODIFIED (+360 lines) —
+   VisionApiKeysTab component + new tab in TabsList
+10. `tests/test_vision_api_keys.py` — NEW (660 lines, 33 tests) —
+    full coverage of encryption, masking, DB schema, CUA loop fallback,
+    router CRUD + RBAC + security
+
+Lines added: ~2,150 (production + tests + frontend)
+Lines removed: 0 (purely additive feature)
+
+### Confidence Level: HIGH
+
+All 33 V151 tests pass. All 271 regression tests pass. All 5 verification
+gates pass. No plaintext key leakage. AES-256-GCM with random nonce per
+record. 4-tier master key fallback. OpenCV fallback always works.
+CUA loop never raises. RBAC enforced. DELETE idempotent.
+
+### Next Steps (for Operator)
+
+1. **Merge this PR** — V151 is the Vision API Keys feature
+2. **Set FIREAI_VISION_KEY_ENCRYPTION_KEY** in production env vars (32-byte
+   hex string). If not set, the system auto-generates a master key file
+   at db/vision_key_master.key (mode 0600). If that fails (read-only
+   filesystem), an ephemeral key is used with a WARNING.
+3. **Test the frontend flow**: open Settings → Vision API Keys tab →
+   enter an OpenAI key + base URL + model → Save → verify masked form
+   appears → click Test → verify "Key works" or error message →
+   Delete → verify the key is gone.
+4. **Integrate the CUA loop** with the planned fireai/agents/cua_agent.py
+   by calling `analyze_screenshot(image_bytes)` from the agent's main
+   loop. The fallback chain is automatic.
+5. **Re-audit V151 in V152** per Rule 19 (infinite improvement cycle):
+   - Add property-based tests for the encryption (random plaintexts)
+   - Add a concurrent-write test (two threads POSTing simultaneously)
+   - Add a test for the master key file mode (must be 0600)
+   - Add a test for the OpenCV fallback determinism (same input → same
+     output across runs)

@@ -188,3 +188,26 @@ class SyncOperation(Base):
         Index("idx_sync_ops_entity", "entity_type", "entity_id"),
         Index("idx_sync_ops_status", "status"),
     )
+
+
+class VisionApiKey(Base):
+    """V151: AES-256-GCM encrypted Vision API key (customer-supplied)."""
+
+    __tablename__ = "vision_api_keys"
+
+    id = Column(String, primary_key=True)
+    provider = Column(String, nullable=False, server_default="openai")
+    encrypted_key = Column(Text, nullable=False)
+    masked_key = Column(Text, nullable=False)
+    base_url = Column(String, nullable=False, server_default="")
+    model_name = Column(String, nullable=False, server_default="")
+    is_active = Column(Integer, nullable=False, server_default="1")
+    created_at = Column(String, nullable=False)
+    updated_at = Column(String, nullable=False)
+    last_used_at = Column(String, nullable=True)
+    description = Column(Text, nullable=False, server_default="")
+
+    __table_args__ = (
+        Index("idx_vision_keys_provider", "provider"),
+        Index("idx_vision_keys_active", "is_active"),
+    )

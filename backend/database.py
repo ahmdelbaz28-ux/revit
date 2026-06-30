@@ -281,6 +281,35 @@ class Database:
             cur.execute("CREATE INDEX IF NOT EXISTS idx_reports_status ON reports(status)")
             cur.execute("CREATE INDEX IF NOT EXISTS idx_sync_ops_status ON sync_operations(status)")
 
+            # ── V151: Vision API Keys (AES-256-GCM encrypted) ───────────────
+            # Stores customer-supplied OpenAI/Vision API keys for the CUA loop.
+            # The encrypted_key column holds AES-256-GCM ciphertext (never plaintext).
+            # masked_key holds the masked form (e.g. "fe_sk***...***f4c1") so
+            # the GET endpoint can return identification info without decrypting.
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS vision_api_keys (
+                    id TEXT PRIMARY KEY,
+                    provider TEXT NOT NULL DEFAULT 'openai',
+                    encrypted_key TEXT NOT NULL,
+                    masked_key TEXT NOT NULL,
+                    base_url TEXT NOT NULL DEFAULT '',
+                    model_name TEXT NOT NULL DEFAULT '',
+                    is_active INTEGER NOT NULL DEFAULT 1,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    last_used_at TEXT,
+                    description TEXT NOT NULL DEFAULT ''
+                )
+            """)
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_vision_keys_provider "
+                "ON vision_api_keys(provider)"
+            )
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_vision_keys_active "
+                "ON vision_api_keys(is_active)"
+            )
+
         logger.info("PostgreSQL schema initialized successfully (matching SQLite schema)")
 
     def _init_schema(self) -> None:
@@ -395,6 +424,35 @@ class Database:
             cur.execute("CREATE INDEX IF NOT EXISTS idx_devices_type ON devices(type)")
             cur.execute("CREATE INDEX IF NOT EXISTS idx_reports_status ON reports(status)")
             cur.execute("CREATE INDEX IF NOT EXISTS idx_sync_ops_status ON sync_operations(status)")
+
+            # ── V151: Vision API Keys (AES-256-GCM encrypted) ───────────────
+            # Stores customer-supplied OpenAI/Vision API keys for the CUA loop.
+            # encrypted_key holds AES-256-GCM ciphertext (NEVER plaintext).
+            # masked_key holds the masked form so GET can return ID info without
+            # ever decrypting. See backend/vision_key_store.py.
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS vision_api_keys (
+                    id TEXT PRIMARY KEY,
+                    provider TEXT NOT NULL DEFAULT 'openai',
+                    encrypted_key TEXT NOT NULL,
+                    masked_key TEXT NOT NULL,
+                    base_url TEXT NOT NULL DEFAULT '',
+                    model_name TEXT NOT NULL DEFAULT '',
+                    is_active INTEGER NOT NULL DEFAULT 1,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    last_used_at TEXT,
+                    description TEXT NOT NULL DEFAULT ''
+                )
+            """)
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_vision_keys_provider "
+                "ON vision_api_keys(provider)"
+            )
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_vision_keys_active "
+                "ON vision_api_keys(is_active)"
+            )
 
     # ========================================================================
     # Projects CRUD

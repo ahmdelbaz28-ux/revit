@@ -1,5 +1,10 @@
 /**
  * SettingsPage.tsx - Application configuration and user preferences
+ *
+ * V151: Adds "Vision API Keys" tab for managing customer-supplied OpenAI
+ * Vision API keys. Keys are stored AES-256-GCM encrypted on the backend
+ * (HF Space) and only the masked form (e.g. fe_sk***...***f4c1) is ever
+ * returned to this frontend.
  */
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -23,6 +28,11 @@ import {
   XCircle,
   AlertTriangle,
   Calculator,
+  Eye,
+  Loader2,
+  Plus,
+  Trash2,
+  Zap,
 } from 'lucide-react';
 import { useHealth } from '@/hooks/useApi';
 import { api } from '@/services/digitalTwinApi';
@@ -195,6 +205,9 @@ export function SettingsPage() {
             <TabsTrigger value="api" className="data-[state=active]:bg-slate-700 data-[state=active]:text-slate-100">
               <Database className="h-4 w-4 mr-1" /> {t('settings.api')}
             </TabsTrigger>
+            <TabsTrigger value="vision" className="data-[state=active]:bg-slate-700 data-[state=active]:text-slate-100">
+              <Eye className="h-4 w-4 mr-1" /> Vision API Keys
+            </TabsTrigger>
             <TabsTrigger value="reports" className="data-[state=active]:bg-slate-700 data-[state=active]:text-slate-100">
               <Calculator className="h-4 w-4 mr-1" /> {t('settings.reports')}
             </TabsTrigger>
@@ -347,6 +360,11 @@ export function SettingsPage() {
             </Card>
           </TabsContent>
 
+          {/* V151: Vision API Keys */}
+          <TabsContent value="vision">
+            <VisionApiKeysTab />
+          </TabsContent>
+
           {/* Report Settings */}
           <TabsContent value="reports">
             <Card className="border-slate-700 bg-slate-800/80">
@@ -411,5 +429,363 @@ export function SettingsPage() {
         </Tabs>
       </div>
     </div>
+  );
+}
+
+
+// ─── V151: Vision API Keys Tab ──────────────────────────────────────────────
+
+
+interface VisionKeyRecord {
+  id: string;
+  provider: string;
+  masked_key: string;
+  base_url: string;
+  model_name: string;
+  description: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  last_used_at: string | null;
+}
+
+
+/**
+ * VisionApiKeysTab — manage customer-supplied OpenAI Vision API keys.
+ *
+ * Flow:
+ *   1. Customer enters OpenAI key + base URL + model name
+ *   2. Frontend POSTs to /api/v1/settings/keys/openai
+ *   3. Backend encrypts with AES-256, stores in SQLite, returns masked form
+ *   4. UI displays masked key (fe_***...***f4c1) — plaintext never returned
+ *
+ * Security:
+ *   - Plaintext keys are NEVER stored in localStorage / sessionStorage.
+ *   - The input field is type="password" so the plaintext is masked while typing.
+ *   - After successful save, the input field is cleared immediately.
+ *   - The "Test" button pings the OpenAI /models endpoint with the stored key.
+ */
+function VisionApiKeysTab() {
+  const [keys, setKeys] = useState<VisionKeyRecord[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+
+  // Form state
+  const [apiKey, setApiKey] = useState('');
+  const [baseUrl, setBaseUrl] = useState('https://api.openai.com/v1');
+  const [modelName, setModelName] = useState('gpt-4o');
+  const [description, setDescription] = useState('');
+
+  // Per-key testing state
+  const [testingId, setTestingId] = useState<string | null>(null);
+  const [testResult, setTestResult] = useState<Record<string, { ok: boolean; error?: string }>>({});
+
+  const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || '/api/v1';
+  const authToken = typeof sessionStorage !== 'undefined'
+    ? sessionStorage.getItem('fireai_api_key') || ''
+    : '';
+
+  const fetchKeys = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const resp = await fetch(`${API_BASE}/settings/keys/openai`, {
+        headers: authToken ? { 'X-API-Key': authToken } : {},
+      });
+      if (!resp.ok) {
+        throw new Error(`HTTP ${resp.status}`);
+      }
+      const data = await resp.json();
+      setKeys(Array.isArray(data) ? data : []);
+    } catch (e: any) {
+      setError(e.message || 'Failed to load keys');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load on mount
+  useState(() => {
+    fetchKeys();
+  });
+
+  const handleSave = async () => {
+    setError(null);
+    setSuccess(null);
+    if (!apiKey || apiKey.length < 8) {
+      setError('API key must be at least 8 characters');
+      return;
+    }
+    setLoading(true);
+    try {
+      const resp = await fetch(`${API_BASE}/settings/keys/openai`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(authToken ? { 'X-API-Key': authToken } : {}),
+        },
+        body: JSON.stringify({
+          api_key: apiKey,
+          base_url: baseUrl,
+          model_name: modelName,
+          description,
+        }),
+      });
+      if (!resp.ok) {
+        const errBody = await resp.json().catch(() => ({}));
+        throw new Error(errBody.detail || `HTTP ${resp.status}`);
+      }
+      const saved = await resp.json();
+      setSuccess(`Key saved — masked as ${saved.masked_key}`);
+      // Clear the plaintext from the form immediately
+      setApiKey('');
+      setDescription('');
+      await fetchKeys();
+    } catch (e: any) {
+      setError(e.message || 'Failed to save key');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Delete this key? The CUA loop will fall back to OpenCV or the env var.')) {
+      return;
+    }
+    setError(null);
+    setSuccess(null);
+    try {
+      const resp = await fetch(`${API_BASE}/settings/keys/openai/${id}`, {
+        method: 'DELETE',
+        headers: authToken ? { 'X-API-Key': authToken } : {},
+      });
+      if (!resp.ok && resp.status !== 204) {
+        throw new Error(`HTTP ${resp.status}`);
+      }
+      setSuccess('Key deleted');
+      await fetchKeys();
+    } catch (e: any) {
+      setError(e.message || 'Failed to delete key');
+    }
+  };
+
+  const handleTest = async (id: string) => {
+    setTestingId(id);
+    setTestResult((prev) => ({ ...prev, [id]: { ok: false, error: 'Testing...' } }));
+    try {
+      const resp = await fetch(`${API_BASE}/settings/keys/openai/${id}/test`, {
+        method: 'POST',
+        headers: authToken ? { 'X-API-Key': authToken } : {},
+      });
+      if (!resp.ok) {
+        throw new Error(`HTTP ${resp.status}`);
+      }
+      const data = await resp.json();
+      setTestResult((prev) => ({
+        ...prev,
+        [id]: { ok: data.ok, error: data.error || undefined },
+      }));
+    } catch (e: any) {
+      setTestResult((prev) => ({
+        ...prev,
+        [id]: { ok: false, error: e.message || 'Network error' },
+      }));
+    } finally {
+      setTestingId(null);
+    }
+  };
+
+  return (
+    <Card className="border-slate-700 bg-slate-800/80">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-lg text-slate-100 flex items-center gap-2">
+          <Eye className="h-5 w-5 text-blue-400" />
+          Vision API Keys
+          <Badge variant="outline" className="ml-2 text-emerald-400 border-emerald-700 bg-emerald-900/20">
+            AES-256-GCM
+          </Badge>
+        </CardTitle>
+        <CardDescription className="text-slate-400">
+          Add an OpenAI Vision API key to enable AI-powered screenshot analysis.
+          Keys are encrypted at rest and never exposed to the frontend.
+          Optional — the system falls back to OpenCV if no key is set.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {/* Add new key form */}
+        <div className="space-y-4 p-4 rounded-lg border border-slate-700 bg-slate-900/50">
+          <h3 className="font-medium text-slate-200 flex items-center gap-2">
+            <Plus className="h-4 w-4" /> Add / Update OpenAI Vision Key
+          </h3>
+          <div className="space-y-2">
+            <Label className="text-slate-300">API Key</Label>
+            <Input
+              type="password"
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+              placeholder="sk-proj-..."
+              className="bg-slate-900 border-slate-600 text-slate-100 font-mono"
+              autoComplete="off"
+            />
+            <p className="text-xs text-slate-400">
+              Stored AES-256-GCM encrypted. Only the masked form is returned after save.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label className="text-slate-300">Base URL</Label>
+              <Input
+                type="text"
+                value={baseUrl}
+                onChange={(e) => setBaseUrl(e.target.value)}
+                placeholder="https://api.openai.com/v1"
+                className="bg-slate-900 border-slate-600 text-slate-100 font-mono"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-slate-300">Model Name</Label>
+              <Input
+                type="text"
+                value={modelName}
+                onChange={(e) => setModelName(e.target.value)}
+                placeholder="gpt-4o"
+                className="bg-slate-900 border-slate-600 text-slate-100 font-mono"
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label className="text-slate-300">Description (optional)</Label>
+            <Input
+              type="text"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="e.g. Production OpenAI key"
+              maxLength={200}
+              className="bg-slate-900 border-slate-600 text-slate-100"
+            />
+          </div>
+          <div className="flex items-center gap-3 pt-2">
+            <Button
+              className="bg-red-600 hover:bg-red-700 text-white border-none"
+              onClick={handleSave}
+              disabled={loading || !apiKey}
+            >
+              {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+              Save Key (Encrypted)
+            </Button>
+            {success && (
+              <span className="text-sm text-emerald-400 flex items-center gap-1">
+                <CheckCircle2 className="h-4 w-4" /> {success}
+              </span>
+            )}
+            {error && (
+              <span className="text-sm text-red-400 flex items-center gap-1">
+                <AlertTriangle className="h-4 w-4" /> {error}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Existing keys list */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="font-medium text-slate-200">Stored Keys</h3>
+            <Button
+              variant="outline"
+              className="border-slate-600 text-slate-300 hover:bg-slate-800"
+              onClick={fetchKeys}
+              disabled={loading}
+            >
+              {loading ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Activity className="h-4 w-4 mr-1" />}
+              Refresh
+            </Button>
+          </div>
+          {keys.length === 0 ? (
+            <div className="text-sm text-slate-400 p-4 rounded-lg border border-dashed border-slate-700 text-center">
+              No active keys. The CUA loop is using OpenCV fallback.
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {keys.map((k) => (
+                <div
+                  key={k.id}
+                  className="flex items-center justify-between p-3 rounded-lg border border-slate-700 bg-slate-900/50"
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <Key className="h-4 w-4 text-slate-400 flex-shrink-0" />
+                      <code className="text-sm text-slate-200 font-mono truncate">
+                        {k.masked_key}
+                      </code>
+                      {k.is_active && (
+                        <Badge variant="outline" className="text-emerald-400 border-emerald-700 bg-emerald-900/20">
+                          active
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="text-xs text-slate-500 mt-1 flex flex-wrap gap-x-3 gap-y-1">
+                      <span>model: {k.model_name}</span>
+                      <span>base: {k.base_url}</span>
+                      {k.description && <span>desc: {k.description}</span>}
+                      {k.last_used_at && <span>last used: {k.last_used_at}</span>}
+                    </div>
+                    {testResult[k.id] && (
+                      <div
+                        className={`text-xs mt-2 flex items-center gap-1 ${
+                          testResult[k.id].ok ? 'text-emerald-400' : 'text-red-400'
+                        }`}
+                      >
+                        {testResult[k.id].ok ? (
+                          <><CheckCircle2 className="h-3 w-3" /> Key works</>
+                        ) : (
+                          <><XCircle className="h-3 w-3" /> {testResult[k.id].error}</>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1 ml-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="border-slate-600 text-slate-300 hover:bg-slate-800"
+                      onClick={() => handleTest(k.id)}
+                      disabled={testingId === k.id}
+                    >
+                      {testingId === k.id ? (
+                        <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                      ) : (
+                        <Zap className="h-3 w-3 mr-1" />
+                      )}
+                      Test
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="border-red-800 text-red-400 hover:bg-red-900/30"
+                      onClick={() => handleDelete(k.id)}
+                    >
+                      <Trash2 className="h-3 w-3 mr-1" />
+                      Delete
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Security notice */}
+        <div className="text-xs text-slate-500 p-3 rounded-lg border border-slate-800 bg-slate-900/30 flex items-start gap-2">
+          <Shield className="h-4 w-4 flex-shrink-0 mt-0.5" />
+          <div>
+            <strong>Security:</strong> Keys are encrypted with AES-256-GCM at rest.
+            Plaintext is never logged or returned to the frontend. The system
+            works without a key (OpenCV fallback). Wrong keys auto-fallback to
+            OpenCV. You can add, delete, or update keys at any time.
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
