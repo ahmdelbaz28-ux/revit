@@ -167,10 +167,22 @@ class TestRevitFileOperations:
     """Test Revit file operations."""
 
     def test_read_nonexistent_file(self):
-        """Test reading a non-existent file."""
+        """Test reading a non-existent file.
+
+        V141.4: Updated to use a path inside allowed bases (/tmp) so the
+        security validator doesn't reject it as path traversal. The test
+        verifies the FileNotFoundError path, not the security rejection.
+        """
+        import tempfile
         service = RevitService()
 
-        result = service.read_rvt("nonexistent.rvt")
+        # Use a path inside /tmp (allowed base) that doesn't exist
+        nonexistent = os.path.join(tempfile.gettempdir(), "nonexistent_fireai_test.rvt")
+        # Clean up if it somehow exists from a previous run
+        if os.path.exists(nonexistent):
+            os.unlink(nonexistent)
+
+        result = service.read_rvt(nonexistent)
 
         assert result["success"] is False
         assert "not found" in result["error"]

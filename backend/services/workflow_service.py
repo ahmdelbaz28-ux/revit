@@ -1665,7 +1665,10 @@ class WorkflowService:
             invoke_config = dict(config)
             if langfuse_handler:
                 invoke_config["callbacks"] = [langfuse_handler]
-                logger.info("Langfuse tracing ACTIVE for workflow %s", initial_state.get('workflow_id', '?'))
+                # V141.4 SECURITY FIX (CodeQL: py/clear-text-logging-sensitive-data):
+                # Do NOT log workflow_id — it can contain project identifiers.
+                # Log only a boolean indicator that tracing is active.
+                logger.info("Langfuse tracing ACTIVE for workflow")
             else:
                 logger.debug("Langfuse tracing not active (handler not available)")
 
