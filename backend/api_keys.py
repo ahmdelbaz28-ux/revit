@@ -8,6 +8,8 @@ On first startup, creates an admin key from FIREAI_API_KEY env var.
 
 from __future__ import annotations
 
+from typing import Any
+
 import hashlib
 import hmac
 import json
@@ -20,11 +22,14 @@ from pathlib import Path
 
 # Import bcrypt for stronger password hashing
 try:
-    import bcrypt
-    HAS_BCRYPT = True
+    import bcrypt  # type: ignore[reportUnusedImport] — used via local re-imports in guarded blocks
+    _has_bcrypt = True
 except ImportError:
-    HAS_BCRYPT = False
+    _has_bcrypt = False
     logging.warning("bcrypt not available - using SHA-256 for API key hashing (less secure)")
+
+# Backward-compat alias for test files that import HAS_BCRYPT directly
+HAS_BCRYPT = _has_bcrypt
 
 import contextlib
 
@@ -75,7 +80,7 @@ def _normalize_key_for_bcrypt(key: str) -> bytes:
 _DUMMY_BCRYPT_HASH = b"$2b$12$" + b"x" * 53  # invalid-format hash; checkpw returns False fast
 # Better: pre-compute a real bcrypt hash of a random string at startup
 # so the dummy verification takes the full ~250ms.
-_DUMMY_BCRYPT_HASH_REAL: str = ""
+_dummy_bcrypt_hash_real: str = ""
 
 
 def _get_dummy_bcrypt_hash() -> str:
@@ -85,16 +90,17 @@ def _get_dummy_bcrypt_hash() -> str:
     We hash a random string once at first use, then reuse the hash for all
     dummy verifications. bcrypt.checkpw is constant-time for the same hash.
     """
-    global _DUMMY_BCRYPT_HASH_REAL
-    if _DUMMY_BCRYPT_HASH_REAL:
-        return _DUMMY_BCRYPT_HASH_REAL
-    if HAS_BCRYPT:
+    global _dummy_bcrypt_hash_real
+    if _dummy_bcrypt_hash_real:
+        return _dummy_bcrypt_hash_real
+    if _has_bcrypt:
+        import bcrypt  # noqa: F811 — re-import inside guarded block
         # Cost factor 12 — matches the cost used by _hash_key
-        _DUMMY_BCRYPT_HASH_REAL = bcrypt.hashpw(
+        _dummy_bcrypt_hash_real = bcrypt.hashpw(
             b"dummy_value_for_timing_equalization_only",
             bcrypt.gensalt(rounds=12),
         ).decode("utf-8")
-    return _DUMMY_BCRYPT_HASH_REAL
+    return _dummy_bcrypt_hash_real
 
 
 def _timing_safe_dummy_verify(key: str) -> None:
@@ -107,15 +113,16 @@ def _timing_safe_dummy_verify(key: str) -> None:
 
     STRICT FIX F: Uses _normalize_key_for_bcrypt for keys >72 bytes.
     """
-    if not HAS_BCRYPT:
+    if not _has_bcrypt:
         # Without bcrypt, HMAC is fast and constant-time already.
         # Add a tiny delay to avoid trivial timing differences.
         time.sleep(0.001)
         return
+    import bcrypt  # type: ignore[reportUnusedImport] — re-import inside guarded block
     dummy = _get_dummy_bcrypt_hash()
     # This will return False but take ~250ms, matching the valid-key path
     normalized = _normalize_key_for_bcrypt(key)
-    bcrypt.checkpw(normalized, dummy.encode())
+    _ = bcrypt.checkpw(normalized, dummy.encode())
 
 # ── STRESS-TEST FIX #1: fast O(1) lookup index ─────────────────────────────
 # A deterministic HMAC-SHA256 over (server_secret, key) is used as the dict
@@ -131,7 +138,7 @@ _SERVER_SECRET_FILE = os.getenv(
     "FIREAI_API_KEYS_SECRET_FILE",
     os.path.join(os.path.dirname(KEYS_FILE) or ".", "api_keys.secret"),
 )
-_SERVER_SECRET: bytes = b""
+_server_secret: bytes = b""
 
 # ── POSITIVE VALIDATION CACHE ───────────────────────────────────────────────
 # After the first successful bcrypt verification, the APIKeyInfo is cached
@@ -165,23 +172,23 @@ def _load_server_secret() -> bytes:
     file, the second one's open() will fail with EEXIST. We then re-read
     the existing file.
     """
-    global _SERVER_SECRET
-    if _SERVER_SECRET:
-        return _SERVER_SECRET
+    global _server_secret
+    if _server_secret:
+        return _server_secret
     path = Path(_SERVER_SECRET_FILE)
     try:
         if path.exists():
-            _SERVER_SECRET = path.read_bytes().strip()
-            if len(_SERVER_SECRET) >= 32:
-                return _SERVER_SECRET
+            _server_secret = path.read_bytes().strip()
+            if len(_server_secret) >= 32:
+                return _server_secret
         # Generate a new 32-byte secret
         path.parent.mkdir(parents=True, exist_ok=True)
-        _SERVER_SECRET = secrets.token_bytes(32)
+        _server_secret = secrets.token_bytes(32)
         # STRICT FIX D: O_CREAT|O_EXCL — atomic create-or-fail
         try:
             fd = os.open(str(path), os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
             try:
-                os.write(fd, _SERVER_SECRET)
+                _ = os.write(fd, _server_secret)
                 os.fsync(fd)
             finally:
                 os.close(fd)
@@ -189,19 +196,18 @@ def _load_server_secret() -> bytes:
         except FileExistsError:
             # Another process created the file between our check and open.
             # Re-read the existing file.
-            _SERVER_SECRET = path.read_bytes().strip()
-            if len(_SERVER_SECRET) < 32:
+            _server_secret = path.read_bytes().strip()
+            if len(_server_secret) < 32:
                 raise RuntimeError(
-                    f"Server secret file {path} exists but is invalid. "
-                    f"Delete it and restart to regenerate."
+                    f"Server secret file {path} exists but is invalid. Delete it and restart to regenerate."
                 )
             logger.info("Reused existing API-key lookup secret (race avoided)")
     except OSError as e:
         # If we can't persist a secret, generate an ephemeral one. Keys won't
         # survive restart but the system remains functional.
         logger.warning("Could not persist API-key secret (%s); using ephemeral", e)
-        _SERVER_SECRET = secrets.token_bytes(32)
-    return _SERVER_SECRET
+        _server_secret = secrets.token_bytes(32)
+    return _server_secret
 
 
 def _lookup_key(key: str) -> str:
@@ -232,7 +238,8 @@ def _hash_key(key: str) -> str:
     STRICT FIX F: Uses _normalize_key_for_bcrypt to handle keys >72 bytes
     (bcrypt's hard limit). Long keys are pre-hashed with SHA-256.
     """
-    if HAS_BCRYPT:
+    if _has_bcrypt:
+        import bcrypt  # type: ignore[reportUnusedImport] — re-import inside guarded block
         normalized = _normalize_key_for_bcrypt(key)
         return bcrypt.hashpw(normalized, bcrypt.gensalt()).decode('utf-8')
     # Fallback: HMAC-SHA256 with random salt
@@ -254,7 +261,8 @@ def _verify_key(key: str, hashed_key: str) -> bool:
     if not hashed_key:
         return False
     try:
-        if HAS_BCRYPT and hashed_key.startswith('$2'):
+        if _has_bcrypt and hashed_key.startswith('$2'):
+            import bcrypt  # type: ignore[reportUnusedImport] — re-import inside guarded block
             normalized = _normalize_key_for_bcrypt(key)
             return bcrypt.checkpw(normalized, hashed_key.encode())
         if hashed_key.startswith("hmac-sha256$"):
@@ -278,7 +286,7 @@ def _verify_key(key: str, hashed_key: str) -> bool:
         return False
 
 
-def _load_keys() -> dict:
+def _load_keys() -> dict[str, Any]:
     """Load API keys from the JSON file."""
     path = Path(KEYS_FILE)
     if not path.exists():
@@ -291,7 +299,7 @@ def _load_keys() -> dict:
         return {}
 
 
-def _save_keys(keys: dict) -> None:
+def _save_keys(keys: dict[str, Any]) -> None:
     """
     Save API keys to the JSON file.
 
@@ -340,7 +348,7 @@ def _ensure_default_admin_key() -> None:
     # Outside the lock — add_api_key will take the lock itself
     env_key = os.getenv("FIREAI_API_KEY")
     if env_key:
-        add_api_key(env_key, Role.ADMIN, "Default admin key (from FIREAI_API_KEY)")
+        _ = add_api_key(env_key, Role.ADMIN, "Default admin key (from FIREAI_API_KEY)")
         logger.info("Created default admin API key from FIREAI_API_KEY env var")
 
 
@@ -521,11 +529,11 @@ def generate_api_key(role: Role, description: str = "") -> str:
     Returns the plaintext key (show once!).
     """
     key = f"fireai_{secrets.token_urlsafe(32)}"
-    add_api_key(key, role, description)
+    _ = add_api_key(key, role, description)
     return key
 
 
-def list_api_keys() -> list:
+def list_api_keys() -> list[dict[str, Any]]:
     """List all API keys (without the actual key values)."""
     with _keys_lock:
         keys = _load_keys()
@@ -569,7 +577,7 @@ def delete_api_key(key_hash: str) -> bool:
     # immediately (no stale auth for up to _VALIDATED_KEY_CACHE_TTL seconds).
     if deleted:
         with _VALIDATED_KEY_CACHE_LOCK:
-            _VALIDATED_KEY_CACHE.pop(key_hash, None)
+            _ = _VALIDATED_KEY_CACHE.pop(key_hash, None)
     return deleted
 
 
@@ -600,7 +608,7 @@ def update_api_key_role(key_hash: str, role: Role) -> bool:
     # window if an admin downgrades a compromised key.
     if updated:
         with _VALIDATED_KEY_CACHE_LOCK:
-            _VALIDATED_KEY_CACHE.pop(key_hash, None)
+            _ = _VALIDATED_KEY_CACHE.pop(key_hash, None)
     return updated
 
 

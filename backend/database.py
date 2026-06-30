@@ -19,6 +19,7 @@ PostgreSQL uses psycopg2 with connection pooling.
 """
 
 from __future__ import annotations
+from typing import Any, Generator
 
 import json
 import logging
@@ -28,7 +29,6 @@ import threading
 import uuid
 from contextlib import contextmanager, suppress
 from datetime import datetime, timezone
-from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -57,6 +57,11 @@ class Database:
     PostgreSQL mode uses connection pooling (psycopg2.pool) for concurrent access
     and is compatible with multi-instance deployments (K8s, Docker Compose).
     """
+    _conn: sqlite3.Connection | None
+    _pg_pool: object | None
+    _lock: threading.RLock
+    _is_postgres: bool
+    db_path: str
 
     def __init__(self, db_path: str = _DB_PATH) -> None:
         self.db_path = db_path
@@ -72,8 +77,10 @@ class Database:
         """Return the parameter placeholder for the current backend: ? (SQLite) or %s (PostgreSQL)."""
         return "%s" if self._is_postgres else "?"
 
-    def _init_sqlite(self, db_path: str) -> None:
+    def _init_sqlite(self, db_path: str | None = None) -> None:
         """Initialize SQLite connection with performance pragmas."""
+        if db_path is None:
+            db_path = self.db_path
         # V127 SAFETY FIX: guard makedirs for :memory: and empty paths.
         # os.path.dirname(os.path.abspath(':memory:')) returns the CWD, which
         # would trigger an unnecessary makedirs on the project root. Skip
@@ -91,14 +98,15 @@ class Database:
             check_same_thread=False,
             detect_types=sqlite3.PARSE_DECLTYPES,
         )
-        self._conn.execute("PRAGMA foreign_keys=ON")
+        assert self._conn is not None  # just assigned above
+        _ = self._conn.execute("PRAGMA foreign_keys=ON")
         self._conn.row_factory = sqlite3.Row
 
         # Performance pragmas
-        self._conn.execute("PRAGMA journal_mode=WAL")
-        self._conn.execute("PRAGMA synchronous=NORMAL")
-        self._conn.execute("PRAGMA cache_size=-8192")  # 8 MB page cache
-        self._conn.execute("PRAGMA temp_store=MEMORY")
+        _ = self._conn.execute("PRAGMA journal_mode=WAL")
+        _ = self._conn.execute("PRAGMA synchronous=NORMAL")
+        _ = self._conn.execute("PRAGMA cache_size=-8192")  # 8 MB page cache
+        _ = self._conn.execute("PRAGMA temp_store=MEMORY")
 
         self._init_schema()
         logger.info("Digital Twin database initialized (SQLite) at %s", db_path)
@@ -127,10 +135,10 @@ class Database:
         self._init_schema_pg()
 
     @contextmanager
-    def _pg_cursor(self):
+    def _pg_cursor(self) -> Generator[Any, None, None]:
         """Get a cursor from the PostgreSQL connection pool."""
         from psycopg2.extras import RealDictCursor
-        conn = self._pg_pool.getconn()
+        conn = self._pg_pool.getconn()  # type: ignore[reportOptionalMemberAccess] — guarded by _is_postgres
         try:
             conn.autocommit = False
             cur = conn.cursor(cursor_factory=RealDictCursor)
@@ -143,27 +151,22 @@ class Database:
             finally:
                 cur.close()
         finally:
-            self._pg_pool.putconn(conn)
+            self._pg_pool.putconn(conn)  # type: ignore[reportOptionalMemberAccess] — guarded by _is_postgres
 
     @contextmanager
-    def _transaction(self):
-        """
-        Yield a cursor inside a locked, auto-committing transaction.
-
-        Returns a SQLite cursor or PostgreSQL cursor depending on the backend.
-        """
-        if self._is_postgres:
+    def _transaction(self) -> Generator[Any, None, None]:
+        """Provide a transactional context for both SQLite and PostgreSQL."""
+        if _USE_POSTGRES:
             with self._pg_cursor() as cur:
                 yield cur
         else:
-            with self._lock:
-                cur = self._conn.cursor()
-                try:
-                    yield cur
-                    self._conn.commit()
-                except Exception:
-                    self._conn.rollback()
-                    raise
+            # SQLite transaction handling
+            if self._conn is None:
+                self._init_sqlite()
+
+            with self._conn:  # type: ignore[reportOptionalContextManager,reportOptionalMemberAccess] — guarded by _init_sqlite above
+                cur = self._conn.cursor()  # type: ignore[reportOptionalMemberAccess]
+                yield cur
 
     def _init_schema_pg(self) -> None:
         """
@@ -400,7 +403,7 @@ class Database:
     # Projects CRUD
     # ========================================================================
 
-    def create_project(self, project_data: dict) -> dict:
+    def create_project(self, project_data: dict[str, Any]) -> dict[str, Any]:
         """Insert a new project and return it."""
         now = datetime.now(timezone.utc).isoformat()
         project_data.setdefault("id", str(uuid.uuid4()))
@@ -425,9 +428,13 @@ class Database:
                 ),
             )
 
-        return self.get_project(project_data["id"])
+        project = self.get_project(project_data["id"])
+        if project is None:
+            # This should not happen - a project we just created should exist
+            raise RuntimeError(f"Project {project_data['id']} was created but could not be retrieved")
+        return project
 
-    def get_project(self, project_id: str) -> dict | None:
+    def get_project(self, project_id: str) -> dict[str, Any] | None:
         """Get a project by ID, with device and connection counts — single query."""
         with self._transaction() as cur:
             cur.execute(
@@ -463,7 +470,7 @@ class Database:
         limit: int = 20,
         sort: str = "created_at",
         order: str = "desc",
-    ) -> dict:
+    ) -> dict[str, Any]:
         """List projects with pagination — uses JOIN to avoid N+1 counts."""
         # Whitelist sort columns and order direction to prevent SQL injection.
         # CodeQL: py/sql-injection — sort and order are SAFE (whitelisted).
@@ -517,7 +524,7 @@ class Database:
             "totalPages": total_pages,
         }
 
-    def update_project(self, project_id: str, updates: dict) -> dict | None:
+    def update_project(self, project_id: str, updates: dict[str, Any]) -> dict[str, Any] | None:
         """Update a project. Returns updated project or None if not found."""
         existing = self.get_project(project_id)
         if not existing:
@@ -546,7 +553,11 @@ class Database:
                 values,
             )
 
-        return self.get_project(project_id)
+        updated_project = self.get_project(project_id)
+        if updated_project is None:
+            # This should not happen - we just updated a project that existed
+            raise RuntimeError(f"Project {project_id} was updated but could not be retrieved")
+        return updated_project
 
     def delete_project(self, project_id: str) -> bool:
         """Delete a project and all its children (CASCADE)."""
@@ -558,7 +569,7 @@ class Database:
             cur.execute(f"DELETE FROM projects WHERE id = {self._ph()}", (project_id,))
             return cur.rowcount > 0
 
-    def get_global_counts(self) -> dict:
+    def get_global_counts(self) -> dict[str, Any]:
         """
         Get total counts of devices, connections, and active projects.
 
@@ -582,7 +593,7 @@ class Database:
     # Devices CRUD
     # ========================================================================
 
-    def create_device(self, project_id: str, device_data: dict) -> dict:
+    def create_device(self, project_id: str, device_data: dict[str, Any]) -> dict[str, Any]:
         """Insert a new device and return it."""
         now = datetime.now(timezone.utc).isoformat()
         device_data.setdefault("id", str(uuid.uuid4()))
@@ -623,9 +634,13 @@ class Database:
                 ),
             )
 
-        return self.get_device(project_id, device_data["id"])
+        device = self.get_device(project_id, device_data["id"])
+        if device is None:
+            # This should not happen - a device we just created should exist
+            raise RuntimeError(f"Device {device_data['id']} was created but could not be retrieved")
+        return device
 
-    def get_device(self, project_id: str, device_id: str) -> dict | None:
+    def get_device(self, project_id: str, device_id: str) -> dict[str, Any] | None:
         """Get a device by ID within a project."""
         with self._transaction() as cur:
             cur.execute(
@@ -644,7 +659,7 @@ class Database:
         limit: int = 20,
         sort: str = "created_at",
         order: str = "desc",
-    ) -> dict:
+    ) -> dict[str, Any]:
         """List devices in a project with pagination."""
         # Whitelist sort columns and order direction to prevent SQL injection.
         # CodeQL: py/sql-injection — sort and order are SAFE (whitelisted).
@@ -681,7 +696,7 @@ class Database:
             "totalPages": total_pages,
         }
 
-    def update_device(self, project_id: str, device_id: str, updates: dict) -> dict | None:
+    def update_device(self, project_id: str, device_id: str, updates: dict[str, Any]) -> dict[str, Any] | None:
         """Update a device. Returns updated device or None if not found."""
         existing = self.get_device(project_id, device_id)
         if not existing:
@@ -720,7 +735,11 @@ class Database:
                 values,
             )
 
-        return self.get_device(project_id, device_id)
+        updated_device = self.get_device(project_id, device_id)
+        if updated_device is None:
+            # This should not happen - we just updated a device that existed
+            raise RuntimeError(f"Device {device_id} was updated but could not be retrieved")
+        return updated_device
 
     def delete_device(self, project_id: str, device_id: str) -> bool:
         """
@@ -748,7 +767,7 @@ class Database:
             )
             return cur.rowcount > 0
 
-    def get_all_devices_for_project(self, project_id: str) -> list[dict]:
+    def get_all_devices_for_project(self, project_id: str) -> list[dict[str, Any]]:
         """Get ALL devices for a project (no pagination, used for exports)."""
         with self._transaction() as cur:
             cur.execute(
@@ -762,7 +781,7 @@ class Database:
     # Connections CRUD
     # ========================================================================
 
-    def create_connection(self, project_id: str, conn_data: dict) -> dict:
+    def create_connection(self, project_id: str, conn_data: dict[str, Any]) -> dict[str, Any]:
         """
         Insert a new connection and return it.
 
@@ -814,9 +833,13 @@ class Database:
                 ),
             )
 
-        return self.get_connection(project_id, conn_data["id"])
+        connection = self.get_connection(project_id, conn_data["id"])
+        if connection is None:
+            # This should not happen - a connection we just created should exist
+            raise RuntimeError(f"Connection {conn_data['id']} was created but could not be retrieved")
+        return connection
 
-    def get_connection(self, project_id: str, connection_id: str) -> dict | None:
+    def get_connection(self, project_id: str, connection_id: str) -> dict[str, Any] | None:
         """Get a connection by ID within a project."""
         with self._transaction() as cur:
             cur.execute(
@@ -835,7 +858,7 @@ class Database:
         limit: int = 20,
         sort: str = "created_at",
         order: str = "desc",
-    ) -> dict:
+    ) -> dict[str, Any]:
         """List connections in a project with pagination."""
         # Whitelist sort columns and order direction to prevent SQL injection.
         # CodeQL: py/sql-injection — sort and order are SAFE because they are
@@ -882,7 +905,7 @@ class Database:
             )
             return cur.rowcount > 0
 
-    def update_connection(self, project_id: str, connection_id: str, updates: dict) -> dict | None:
+    def update_connection(self, project_id: str, connection_id: str, updates: dict[str, Any]) -> dict[str, Any] | None:
         """
         Update specific fields of a connection.
 
@@ -931,7 +954,7 @@ class Database:
 
         return self.get_connection(project_id, connection_id)
 
-    def get_all_connections_for_project(self, project_id: str) -> list[dict]:
+    def get_all_connections_for_project(self, project_id: str) -> list[dict[str, Any]]:
         """Get ALL connections for a project (used for exports)."""
         with self._transaction() as cur:
             cur.execute(
@@ -945,7 +968,7 @@ class Database:
     # Reports CRUD
     # ========================================================================
 
-    def create_report(self, project_id: str, report_data: dict) -> dict:
+    def create_report(self, project_id: str, report_data: dict[str, Any]) -> dict[str, Any]:
         """Insert a new report and return it."""
         now = datetime.now(timezone.utc).isoformat()
         report_data.setdefault("id", str(uuid.uuid4()))
@@ -977,7 +1000,7 @@ class Database:
 
         return self.get_report(project_id, report_data["id"])
 
-    def get_report(self, project_id: str, report_id: str) -> dict | None:
+    def get_report(self, project_id: str, report_id: str) -> dict[str, Any] | None:
         """Get a report by ID within a project."""
         with self._transaction() as cur:
             cur.execute(
@@ -996,7 +1019,7 @@ class Database:
         limit: int = 20,
         sort: str = "created_at",
         order: str = "desc",
-    ) -> dict:
+    ) -> dict[str, Any]:
         """List reports in a project with pagination."""
         # Whitelist sort columns and order direction to prevent SQL injection.
         # CodeQL: py/sql-injection — sort and order are SAFE (whitelisted).
@@ -1030,7 +1053,7 @@ class Database:
             "totalPages": total_pages,
         }
 
-    def update_report(self, project_id: str, report_id: str, updates: dict) -> dict | None:
+    def update_report(self, project_id: str, report_id: str, updates: dict[str, Any]) -> dict[str, Any] | None:
         """Update a report. Returns updated report or None if not found."""
         set_clauses = []
         values = []
@@ -1065,7 +1088,7 @@ class Database:
     # Sync Status
     # ========================================================================
 
-    def get_sync_status(self, project_id: str) -> dict | None:
+    def get_sync_status(self, project_id: str) -> dict[str, Any] | None:
         """Get sync status for a project."""
         with self._transaction() as cur:
             cur.execute(
@@ -1084,7 +1107,7 @@ class Database:
                 }
         return self._row_to_sync(row)
 
-    def set_sync_status(self, project_id: str, status: dict) -> dict:
+    def set_sync_status(self, project_id: str, status: dict[str, Any]) -> dict[str, Any]:
         """Upsert sync status for a project."""
         with self._transaction() as cur:
             if self._is_postgres:
@@ -1188,7 +1211,7 @@ class Database:
 
         return row_id
 
-    def get_pending_syncs(self, max_retries: int = 3) -> list:
+    def get_pending_syncs(self, max_retries: int = 3) -> list[dict[str, Any]]:
         """
         Get sync operations that need to be retried.
 
@@ -1228,7 +1251,7 @@ class Database:
         row: Any,
         device_count: int = 0,
         connection_count: int = 0,
-    ) -> dict:
+    ) -> dict[str, Any]:
         return {
             "id": row["id"],
             "name": row["name"],
@@ -1242,7 +1265,7 @@ class Database:
         }
 
     @staticmethod
-    def _row_to_device(row: Any) -> dict:
+    def _row_to_device(row: Any) -> dict[str, Any]:
         props = row["properties"]
         if isinstance(props, str):
             try:
@@ -1268,7 +1291,7 @@ class Database:
         }
 
     @staticmethod
-    def _row_to_connection(row: Any) -> dict:
+    def _row_to_connection(row: Any) -> dict[str, Any]:
         return {
             "id": row["id"],
             "projectId": row["project_id"],
@@ -1281,7 +1304,7 @@ class Database:
         }
 
     @staticmethod
-    def _row_to_report(row: Any) -> dict:
+    def _row_to_report(row: Any) -> dict[str, Any]:
         params = row["parameters"]
         if isinstance(params, str):
             try:
@@ -1300,7 +1323,7 @@ class Database:
         }
 
     @staticmethod
-    def _row_to_sync(row: Any) -> dict:
+    def _row_to_sync(row: Any) -> dict[str, Any]:
         return {
             "projectId": row["project_id"],
             "status": row["status"],
@@ -1319,9 +1342,9 @@ class Database:
             if hasattr(self, '_pg_pool') and self._pg_pool:
                 self._pg_pool.closeall()
                 logger.info("PostgreSQL connection pool closed")
-        else:
+        elif self._conn is not None:
             with suppress(Exception):
-                self._conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+                _ = self._conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
             self._conn.close()
 
     def __del__(self) -> None:
