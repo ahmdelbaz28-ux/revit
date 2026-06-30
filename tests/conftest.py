@@ -39,6 +39,15 @@ if str(_PROJECT_ROOT) not in sys.path:
 # Excluding from collection here so the full suite can run without cascade failures.
 collect_ignore = ["test_mip_solver.py"]
 
+# V142 SAFETY: Prevent MCP server tests from hanging on stdin in CI.
+# In CI runners, sys.stdin has no EOF, so _stdin_loop()'s `for line in sys.stdin`
+# blocks forever. Setting FIREAI_MCP_NO_STDIN=1 globally makes _stdin_loop()
+# a no-op wait on _running instead. Production deployments do NOT set this.
+# This MUST be set before any test imports the MCP server module.
+import os as _os
+
+_os.environ.setdefault("FIREAI_MCP_NO_STDIN", "1")
+
 # Clean up namespace pollution from fireai/ subdirectory
 # (V27 fix: Python import machinery re-adds fireai/ to sys.path)
 _fireai_dir = str(_PROJECT_ROOT / "fireai")
