@@ -38,6 +38,9 @@ _DB_PATH = os.environ.get("DIGITAL_TWIN_DB_PATH", os.path.join(_DB_DIR, "digital
 
 # PostgreSQL support: if DATABASE_URL starts with postgres:// or postgresql://,
 # use psycopg2 + connection pooling instead of SQLite.
+# NOTE: These are read at module import-time for backward compat, but the
+# Database class also re-reads them at __init__ time to support late-binding
+# (e.g. Hugging Face Spaces that inject secrets after module import).
 _DATABASE_URL = os.environ.get("DATABASE_URL", "")
 _USE_POSTGRES = _DATABASE_URL.startswith(("postgres://", "postgresql://"))
 
@@ -61,9 +64,14 @@ class Database:
     def __init__(self, db_path: str = _DB_PATH) -> None:
         self.db_path = db_path
         self._lock = threading.RLock()
-        self._is_postgres = _USE_POSTGRES
-
+        # Re-read DATABASE_URL at instantiation time (not just at module import)
+        # so that environment variables injected after module load (e.g. HF Secrets)
+        # are correctly picked up when the singleton is first created.
+        database_url = os.environ.get("DATABASE_URL", "")
+        self._is_postgres = database_url.startswith(("postgres://", "postgresql://"))
         if self._is_postgres:
+            # Store the actual URL on the instance for _init_postgres to use
+            self._database_url = database_url
             self._init_postgres()
         else:
             self._init_sqlite(db_path)
@@ -114,15 +122,16 @@ class Database:
                 "pip install psycopg2-binary  OR  pip install psycopg2"
             )
 
+        db_url = getattr(self, '_database_url', _DATABASE_URL)
         self._pg_pool = pg_pool.ThreadedConnectionPool(
             minconn=2,
             maxconn=20,
-            dsn=_DATABASE_URL,
+            dsn=db_url,
         )
         self._conn = None  # Not used in Postgres mode
         logger.info(
             f"Digital Twin database initialized (PostgreSQL) — "
-            f"pool: 2–20 connections, URL: {_DATABASE_URL.split('@')[-1]}"
+            f"pool: 2–20 connections, URL: {db_url.split('@')[-1]}"
         )
         self._init_schema_pg()
 
