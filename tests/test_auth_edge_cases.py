@@ -129,7 +129,7 @@ class TestConcurrentSessions:
             "/api/v1/auth/login",
             json={"api_key": "test_key_edge_cases"},
         )
-        token1 = resp1.headers.get("set-cookie", "").split("fireai_session=")[1].split(";")[0]
+        resp1.headers.get("set-cookie", "").split("fireai_session=")[1].split(";")[0]
 
         client.cookies.clear()
         client.post(

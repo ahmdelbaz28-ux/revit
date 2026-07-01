@@ -64,7 +64,7 @@ class NECViolationError(CableRoutingError):
 # SECTION 2: DETERMINISTIC GEOMETRIC STRUCTURES
 # =====================================================================
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class Point3D:
     """
     An immutable, hashable, deterministic 3D Coordinate Point structure.

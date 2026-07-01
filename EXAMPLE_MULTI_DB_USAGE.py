@@ -5,7 +5,7 @@ EXAMPLE_MULTI_DB_USAGE.py — Multi-Database Usage Examples
 
 Examples showing how to use the multi-database system with:
 - PostgreSQL (primary database)
-- Qdrant (vector database) 
+- Qdrant (vector database)
 - Neo4j (graph database)
 - Redis (cache/database)
 """

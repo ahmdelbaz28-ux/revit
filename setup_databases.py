@@ -5,7 +5,7 @@ setup_databases.py — Database Configuration Setup Script
 
 Interactive setup script to configure environment variables for:
 - PostgreSQL (primary database)
-- Qdrant (vector database) 
+- Qdrant (vector database)
 - Neo4j (graph database)
 - Redis (cache/database)
 

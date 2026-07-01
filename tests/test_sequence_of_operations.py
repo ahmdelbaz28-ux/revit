@@ -280,7 +280,7 @@ class TestSequenceOfOperationsMatrix:
         result = matrix.generate_matrix(devices)
         # NFPA references may be in the matrix row or in the provenance
         matrix_data = result.value if hasattr(result, "value") else result
-        rows = matrix_data.get("matrix", [])
+        matrix_data.get("matrix", [])
         # At minimum, the result should have some reference data
         assert result is not None
         # Check if references exist somewhere in the result

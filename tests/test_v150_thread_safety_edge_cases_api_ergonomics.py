@@ -495,7 +495,7 @@ class TestUpdateDetectorStatusForceRequiresReason:
     def test_force_reason_recorded_in_audit_event(self):
         """The force_reason must appear in the EventBus event details."""
         events_received = []
-        self.twin._bus.subscribe(Events.TWIN_SYNC, lambda e: events_received.append(e))
+        self.twin._bus.subscribe(Events.TWIN_SYNC, events_received.append)
 
         self.twin.update_detector_status(
             "D-001", DetectorStatus.DECOMMISSIONED,
@@ -709,7 +709,7 @@ class TestAuditStoreLazyInitThreadSafety:
         assert len(results) == 8
         assert audit_store._ecdsa_initialized is True
         # All results should be the same object (None or SigningKey)
-        unique_results = set(id(r) for r in results)
+        unique_results = {id(r) for r in results}
         assert len(unique_results) == 1, (
             f"RACE CONDITION: {len(unique_results)} different signer "
             f"objects were returned under concurrent access."
@@ -766,7 +766,7 @@ class TestV150Integration:
 
         # DECOMMISSIONED → OK is illegal, but force allows it with a reason
         events_received = []
-        twin._bus.subscribe(Events.TWIN_SYNC, lambda e: events_received.append(e))
+        twin._bus.subscribe(Events.TWIN_SYNC, events_received.append)
 
         det = twin.update_detector_status(
             "D-001", DetectorStatus.OK,

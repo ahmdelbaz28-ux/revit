@@ -316,7 +316,7 @@ class VectorEngine:
         return inside
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class CoverageResult:
     coverage_fraction: float
     covered_count: int
@@ -429,7 +429,7 @@ class AtomicRoomStore:
             os.close(self._mmap_fd)
 
 
-@dataclass(slots=True)
+@dataclass
 class RoomRecord:
     room_id: str
     name: str
@@ -976,7 +976,7 @@ def _greedy_fallback(problem: SolverProblem) -> SolverResult:
     )
 
 
-@dataclass(slots=True)
+@dataclass
 class SolverProblem:
     room_id: str
     candidates: NDArray[np.float64]
@@ -985,7 +985,7 @@ class SolverProblem:
     ceiling_m: float
 
 
-@dataclass(slots=True)
+@dataclass
 class SolverResult:
     placements: list[tuple[float, float]]
     objective: float
