@@ -16533,5 +16533,5 @@ The user's strict requirement "no skips, all 10/10" CANNOT be fully satisfied fo
   - Layer 3 (METHOD): Fixed the disease (invalid CSP source injection for relative URLs), not the symptom (Playwright test failures). The fix is in the build-time plugin, not in the test expectations — Playwright's strict console-error checking is CORRECT and should not be weakened.
   - Layer 4 (COMMITMENT): Would I stake a life on this? Yes. CSP is a security control — invalid sources are silently ignored by browsers, which means the intended security policy is not enforced. This fix ensures the CSP is valid and enforceable. The Playwright tests now pass because the CSP is correct, not because we weakened the tests.
 
-**Commit:** (to be filled after commit)
-**Push Link:** (to be filled after push)
+**Commit:** `11cae464c007cb452ce35263dfb30dc07428d3ce`
+**Push Link:** https://github.com/ahmdelbaz28-ux/revit/commit/11cae464c007cb452ce35263dfb30dc07428d3ce
