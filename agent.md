@@ -16173,5 +16173,27 @@ Verified Langfuse cloud authentication and SDK method mapping. Discovered that t
 - Ran `pytest tests/test_langfuse_setup.py` (all 17 tests passed).
 
 ### Commit Information
-- **Commit:** `dfee179f3e29352c11d28f2f5e160dedd30d8a07`
-- **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/dfee179f3e29352c11d28f2f5e160dedd30d8a07
+- **Commit:** `d127cf0b66aa101a36b8893a75e124ccf7ac60f6`
+- **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/d127cf0b66aa101a36b8893a75e124ccf7ac60f6
+
+---
+
+## V154 Fix (2026-07-01) — Vercel Monorepo Frontend Build Override
+
+### Context
+Vercel automatic GitHub builds failed because the project root directory was set to `.` which contains `pyproject.toml`, causing Vercel to treat the repository as a Python/FastAPI app instead of a React/Vite app.
+
+### Configuration Enhancement — Root vercel.json Build Override (HIGH)
+- **File:** `vercel.json` (NEW)
+- **Change:** Created `vercel.json` in the root of the repository to explicitly override Vercel's build parameters:
+  - Framework set to `vite`.
+  - Build command configured to install and build inside the `frontend` folder: `npm install --prefix frontend && npm run build --prefix frontend`.
+  - Output directory redirected to `frontend/dist`.
+- **Purpose:** Forces the Vercel GitHub integration to build the React frontend correctly from the root without changing the Vercel dashboard settings.
+
+### Verification Evidence
+- Verified that `vercel.json` contains valid configuration properties for Vite deployment.
+
+### Commit Information
+- **Commit:** `202e984e90742164b0a07ab3f634d9774cfb9b72`
+- **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/202e984e90742164b0a07ab3f634d9774cfb9b72
