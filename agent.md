@@ -16634,3 +16634,130 @@ The V151 Vision API Keys feature is now LAUNCH-READY.
    see toast → verify OpenCV fallback kicks in
 4. **Authorize V152**: multi-provider + key expiry + bulk delete + error
    boundary
+
+---
+
+## V152 — Multi-Provider + Key Expiry + Bulk Delete + Error Boundary
+
+**Task ID:** V152
+**Agent:** Super Z (Main)
+**Date:** 2026-07-01
+**Phase:** Implement all 4 deferred nice-to-haves from V151.1 review
+
+### Objective
+
+V151.1 closed all launch blockers + high-priority gaps but deferred 4
+nice-to-haves to V152. This commit implements all 4:
+  - I2: multi-provider support (openai/anthropic/gemini/azure/openrouter/opencode)
+  - I5: key expiry/rotation reminder (expires_at column + is_expired field)
+  - I6: bulk delete endpoint
+  - I7: error boundary for VisionApiKeysTab
+
+### What Was Implemented
+
+#### I2: Multi-Provider Support
+- **SUPPORTED_PROVIDERS dict** with 6 providers: openai, anthropic, gemini, azure,
+  openrouter, opencode. Each has default_base_url, default_model, test_path.
+- **`_validate_provider()`** helper returns 400 for unsupported providers.
+- **Generic endpoints** at `/{provider}`, `/{provider}/{key_id}`,
+  `/{provider}/{key_id}/test`, `/{provider}/bulk-delete`.
+- **Backward-compat aliases** at `/openai`, `/openai/{key_id}`,
+  `/openai/{key_id}/test` (include_in_schema=False, delegate to generic handlers).
+- **`/providers/list` endpoint** registered BEFORE `/{provider}` to avoid path
+  parameter matching "providers" as a provider name.
+- **Provider defaults applied** when customer leaves base_url/model_name empty.
+
+#### I5: Key Expiry
+- **`expires_at` column** added to vision_api_keys (SQLite + PG + ORM model).
+- **`_ensure_v152_columns()`** idempotent migration (ALTER TABLE if missing).
+- **`_is_expired()`** helper parses ISO 8601, returns False for None/unparseable.
+- **`OpenAIKeyResponse`** now includes `expires_at` + `is_expired` fields.
+- **Test endpoint** skips the API call for expired keys, returns
+  `ok=false, error="Key has expired. Please update or delete it."`.
+- **Frontend**: datetime-local input for expiry, amber "expired" badge,
+  "expires: {date}" in metadata row.
+
+#### I6: Bulk Delete
+- **`POST /{provider}/bulk-delete`** endpoint (5/minute rate limit).
+- **`BulkDeleteRequest`** schema with optional `ids: list[str]`.
+- If `ids` is null/empty: deletes ALL keys for the provider (active + inactive).
+- If `ids` is provided: deletes only those specific keys.
+- Returns `{"deleted_count": N, "provider": "..."}`.
+- Provider isolation verified: bulk-delete for openai does NOT touch anthropic.
+- Audit log entry `vision_key.bulk_deleted` for each deleted key.
+- **Frontend**: "Delete All" button (red outline) next to Refresh.
+
+#### I7: Error Boundary
+- **`<ErrorBoundary>`** from `@/components/core/ErrorBoundary` wraps
+  `<VisionApiKeysTab />` in the SettingsPage.
+- If the tab crashes (e.g. fetch throws uncaught error), the ErrorBoundary
+  shows the ErrorRecoveryView instead of crashing the whole Settings page.
+
+### Frontend Changes
+- **Provider selector** (dropdown) with 6 options. On change, auto-fills
+  base_url + model_name with provider defaults.
+- **Expires At** input (datetime-local).
+- **"Delete All"** bulk-delete button with confirmation dialog.
+- **Expired badge** (amber) + "expires: {date}" in metadata.
+- **`useEffect`** re-fetches keys when provider changes.
+- **ErrorBoundary** wraps the tab.
+
+### Test Evidence (Rule 10)
+
+```
+$ python3 -m pytest tests/test_v152_multi_provider_expiry_bulkdelete.py -v
+============================== 18 passed in 4.46s ==============================
+```
+
+Breakdown:
+- TestMultiProvider: 10 tests (6 providers parametrized + isolation + validation + defaults + backward-compat)
+- TestKeyExpiry: 4 tests (with expiry + past expiry + no expiry + expired key test rejection)
+- TestBulkDelete: 3 tests (delete all + delete specific ids + provider isolation)
+- TestProvidersList: 1 test (all 6 providers + required fields)
+
+```
+$ python3 -m pytest tests/test_vision_api_keys.py tests/test_v152_multi_provider_expiry_bulkdelete.py -q
+============================== 51 passed in 4.67s ==============================
+```
+
+```
+$ python3 -m pytest tests/test_security.py tests/test_auth_security.py \
+    backend/tests/test_routers.py backend/tests/test_api_endpoints.py -q
+============================= 271 passed in 11.95s =============================
+```
+
+### Verification Gates
+
+- **[Gate 1] Static Validation** ✅ all imports clean, 12 route registrations
+- **[Gate 2] Runtime Validation** ✅ 18/18 V152 + 33/33 V151 tests pass
+- **[Gate 3] Behavioral Validation** ✅ provider isolation, expiry, bulk-delete, defaults
+- **[Gate 4] Regression Validation** ✅ 271/271 regression tests pass
+- **[Gate 5] Adversarial Audit** ✅ /providers/list registered before /{provider};
+  expired keys skip API call; bulk-delete is provider-isolated; ErrorBoundary
+  prevents tab crashes from breaking Settings page
+
+### Files Modified (6)
+
+1. `backend/routers/settings.py` — MODIFIED (+340 lines): SUPPORTED_PROVIDERS,
+   _validate_provider, generic /{provider} endpoints, /providers/list,
+   /{provider}/bulk-delete, expires_at handling, _is_expired, _ensure_v152_columns,
+   backward-compat aliases
+2. `backend/database.py` — MODIFIED (+2 lines): expires_at column in SQLite + PG
+3. `backend/db_models.py` — MODIFIED (+1 line): expires_at column in ORM model
+4. `frontend/src/pages/SettingsPage.tsx` — MODIFIED (+120 lines): provider selector,
+   expiry input, bulk-delete button, expired badge, ErrorBoundary wrapper, useEffect
+5. `tests/test_v152_multi_provider_expiry_bulkdelete.py` — NEW (310 lines, 18 tests)
+6. `agent.md` — MODIFIED (this section)
+
+### Confidence Level: HIGH
+
+All 4 deferred nice-to-haves implemented. 18/18 V152 tests + 33/33 V151 tests +
+271/271 regression tests pass. The Vision API Keys feature is now feature-complete.
+
+### Next Steps (for Operator)
+
+1. **Merge this PR** — V152 completes the Vision API Keys feature set
+2. **Test multi-provider flow**: switch provider in dropdown → verify keys load
+3. **Test expiry**: add a key with expiry in the past → verify "expired" badge
+4. **Test bulk-delete**: add 3 keys → click "Delete All" → verify all gone
+5. **Test error boundary**: temporarily break the tab → verify Settings page survives

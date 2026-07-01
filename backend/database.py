@@ -298,7 +298,8 @@ class Database:
                     created_at TEXT NOT NULL,
                     updated_at TEXT NOT NULL,
                     last_used_at TEXT,
-                    description TEXT NOT NULL DEFAULT ''
+                    description TEXT NOT NULL DEFAULT '',
+                    expires_at TEXT
                 )
             """)
             cur.execute(
@@ -442,7 +443,8 @@ class Database:
                     created_at TEXT NOT NULL,
                     updated_at TEXT NOT NULL,
                     last_used_at TEXT,
-                    description TEXT NOT NULL DEFAULT ''
+                    description TEXT NOT NULL DEFAULT '',
+                    expires_at TEXT
                 )
             """)
             cur.execute(

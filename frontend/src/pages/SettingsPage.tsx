@@ -6,7 +6,7 @@
  * (HF Space) and only the masked form (e.g. fe_sk***...***f4c1) is ever
  * returned to this frontend.
  */
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -37,6 +37,7 @@ import {
 import { useHealth } from '@/hooks/useApi';
 import { api } from '@/services/digitalTwinApi';
 import { toast } from 'sonner';
+import { ErrorBoundary } from '@/components/core/ErrorBoundary';
 
 export function SettingsPage() {
   const { t } = useTranslation();
@@ -363,7 +364,9 @@ export function SettingsPage() {
 
           {/* V151: Vision API Keys */}
           <TabsContent value="vision">
-            <VisionApiKeysTab />
+            <ErrorBoundary>
+              <VisionApiKeysTab />
+            </ErrorBoundary>
           </TabsContent>
 
           {/* Report Settings */}
@@ -448,6 +451,8 @@ interface VisionKeyRecord {
   created_at: string;
   updated_at: string;
   last_used_at: string | null;
+  expires_at?: string | null;
+  is_expired?: boolean;
 }
 
 
@@ -473,10 +478,12 @@ function VisionApiKeysTab() {
   const [success, setSuccess] = useState<string | null>(null);
 
   // Form state
+  const [provider, setProvider] = useState('openai');
   const [apiKey, setApiKey] = useState('');
   const [baseUrl, setBaseUrl] = useState('https://api.openai.com/v1');
   const [modelName, setModelName] = useState('gpt-4o');
   const [description, setDescription] = useState('');
+  const [expiresAt, setExpiresAt] = useState('');
 
   // Per-key testing state
   const [testingId, setTestingId] = useState<string | null>(null);
@@ -524,7 +531,7 @@ function VisionApiKeysTab() {
     setLoading(true);
     setError(null);
     try {
-      const resp = await fetch(`${API_BASE}/settings/keys/openai`, {
+      const resp = await fetch(`${API_BASE}/settings/keys/${provider}`, {
         headers: authToken ? { 'X-API-Key': authToken } : {},
       });
       if (!resp.ok) {
@@ -539,10 +546,10 @@ function VisionApiKeysTab() {
     }
   };
 
-  // Load on mount
-  useState(() => {
+  // V152: re-fetch when provider changes
+  useEffect(() => {
     fetchKeys();
-  });
+  }, [provider]);
 
   const handleSave = async () => {
     setError(null);
@@ -555,7 +562,7 @@ function VisionApiKeysTab() {
     }
     setLoading(true);
     try {
-      const resp = await fetch(`${API_BASE}/settings/keys/openai`, {
+      const resp = await fetch(`${API_BASE}/settings/keys/${provider}`, {
         method: 'POST',
         headers: buildMutationHeaders(true),
         body: JSON.stringify({
@@ -563,6 +570,7 @@ function VisionApiKeysTab() {
           base_url: baseUrl,
           model_name: modelName,
           description,
+          expires_at: expiresAt || null,
         }),
       });
       if (!resp.ok) {
@@ -576,6 +584,7 @@ function VisionApiKeysTab() {
       // Clear the plaintext from the form immediately
       setApiKey('');
       setDescription('');
+      setExpiresAt('');
       await fetchKeys();
     } catch (e: any) {
       const msg = e.message || 'Failed to save key';
@@ -593,7 +602,7 @@ function VisionApiKeysTab() {
     setError(null);
     setSuccess(null);
     try {
-      const resp = await fetch(`${API_BASE}/settings/keys/openai/${id}`, {
+      const resp = await fetch(`${API_BASE}/settings/keys/${provider}/${id}`, {
         method: 'DELETE',
         headers: buildMutationHeaders(),
       });
@@ -610,11 +619,39 @@ function VisionApiKeysTab() {
     }
   };
 
+  // V152: bulk delete — delete all keys for the current provider
+  const handleBulkDelete = async () => {
+    if (!confirm(`Delete ALL keys for provider "${provider}"? This cannot be undone.`)) {
+      return;
+    }
+    setError(null);
+    setSuccess(null);
+    try {
+      const resp = await fetch(`${API_BASE}/settings/keys/${provider}/bulk-delete`, {
+        method: 'POST',
+        headers: buildMutationHeaders(true),
+        body: JSON.stringify({ ids: null }),
+      });
+      if (!resp.ok) {
+        const errBody = await resp.json().catch(() => ({}));
+        throw new Error(errBody.detail || `HTTP ${resp.status}`);
+      }
+      const data = await resp.json();
+      setSuccess(`Deleted ${data.deleted_count} keys`);
+      toast.success(`Bulk-deleted ${data.deleted_count} keys`, { description: `Provider: ${provider}` });
+      await fetchKeys();
+    } catch (e: any) {
+      const msg = e.message || 'Failed to bulk-delete keys';
+      setError(msg);
+      toast.error('Failed to bulk-delete keys', { description: msg });
+    }
+  };
+
   const handleTest = async (id: string) => {
     setTestingId(id);
     setTestResult((prev) => ({ ...prev, [id]: { ok: false, error: 'Testing...' } }));
     try {
-      const resp = await fetch(`${API_BASE}/settings/keys/openai/${id}/test`, {
+      const resp = await fetch(`${API_BASE}/settings/keys/${provider}/${id}/test`, {
         method: 'POST',
         headers: buildMutationHeaders(),
       });
@@ -663,8 +700,40 @@ function VisionApiKeysTab() {
         {/* Add new key form */}
         <div className="space-y-4 p-4 rounded-lg border border-slate-700 bg-slate-900/50">
           <h3 className="font-medium text-slate-200 flex items-center gap-2">
-            <Plus className="h-4 w-4" /> Add / Update OpenAI Vision Key
+            <Plus className="h-4 w-4" /> Add / Update Vision API Key
           </h3>
+          {/* V152: provider selector */}
+          <div className="space-y-2">
+            <Label className="text-slate-300">Provider</Label>
+            <select
+              value={provider}
+              onChange={(e) => {
+                setProvider(e.target.value);
+                // Reset base_url + model to provider defaults on change
+                const defaults: Record<string, { base_url: string; model: string }> = {
+                  openai: { base_url: 'https://api.openai.com/v1', model: 'gpt-4o' },
+                  anthropic: { base_url: 'https://api.anthropic.com/v1', model: 'claude-3-5-sonnet-20241022' },
+                  gemini: { base_url: 'https://generativelanguage.googleapis.com/v1beta', model: 'gemini-2.0-flash' },
+                  azure: { base_url: '', model: 'gpt-4o' },
+                  openrouter: { base_url: 'https://openrouter.ai/api/v1', model: 'openai/gpt-4o' },
+                  opencode: { base_url: 'https://api.opencode.ai/v1', model: 'gpt-4o' },
+                };
+                const d = defaults[e.target.value];
+                if (d) { setBaseUrl(d.base_url); setModelName(d.model); }
+              }}
+              className="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-slate-100"
+            >
+              <option value="openai">OpenAI</option>
+              <option value="anthropic">Anthropic (Claude)</option>
+              <option value="gemini">Google Gemini</option>
+              <option value="azure">Azure OpenAI</option>
+              <option value="openrouter">OpenRouter</option>
+              <option value="opencode">OpenCode</option>
+            </select>
+            <p className="text-xs text-slate-400">
+              Select the Vision API provider. Base URL and model will auto-fill with defaults.
+            </p>
+          </div>
           <div className="space-y-2">
             <Label className="text-slate-300">API Key</Label>
             <Input
@@ -701,16 +770,31 @@ function VisionApiKeysTab() {
               />
             </div>
           </div>
-          <div className="space-y-2">
-            <Label className="text-slate-300">Description (optional)</Label>
-            <Input
-              type="text"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="e.g. Production OpenAI key"
-              maxLength={200}
-              className="bg-slate-900 border-slate-600 text-slate-100"
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label className="text-slate-300">Description (optional)</Label>
+              <Input
+                type="text"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="e.g. Production OpenAI key"
+                maxLength={200}
+                className="bg-slate-900 border-slate-600 text-slate-100"
+              />
+            </div>
+            {/* V152: expiry field */}
+            <div className="space-y-2">
+              <Label className="text-slate-300">Expires At (optional)</Label>
+              <Input
+                type="datetime-local"
+                value={expiresAt}
+                onChange={(e) => setExpiresAt(e.target.value)}
+                className="bg-slate-900 border-slate-600 text-slate-100"
+              />
+              <p className="text-xs text-slate-400">
+                Key auto-disables after this date. Leave empty for no expiry.
+              </p>
+            </div>
           </div>
           <div className="flex items-center gap-3 pt-2">
             <Button
@@ -737,16 +821,31 @@ function VisionApiKeysTab() {
         {/* Existing keys list */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <h3 className="font-medium text-slate-200">Stored Keys</h3>
-            <Button
-              variant="outline"
-              className="border-slate-600 text-slate-300 hover:bg-slate-800"
-              onClick={fetchKeys}
-              disabled={loading}
-            >
-              {loading ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Activity className="h-4 w-4 mr-1" />}
-              Refresh
-            </Button>
+            <h3 className="font-medium text-slate-200">Stored Keys ({provider})</h3>
+            <div className="flex items-center gap-2">
+              {/* V152: bulk delete button */}
+              {keys.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-red-800 text-red-400 hover:bg-red-900/30"
+                  onClick={handleBulkDelete}
+                  disabled={loading}
+                >
+                  <Trash2 className="h-3 w-3 mr-1" />
+                  Delete All
+                </Button>
+              )}
+              <Button
+                variant="outline"
+                className="border-slate-600 text-slate-300 hover:bg-slate-800"
+                onClick={fetchKeys}
+                disabled={loading}
+              >
+                {loading ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Activity className="h-4 w-4 mr-1" />}
+                Refresh
+              </Button>
+            </div>
           </div>
           {loading && keys.length === 0 ? (
             // V151.1 U4: loading skeleton (instead of empty state during initial load)
@@ -777,9 +876,14 @@ function VisionApiKeysTab() {
                       <code className="text-sm text-slate-200 font-mono truncate">
                         {k.masked_key}
                       </code>
-                      {k.is_active && (
+                      {k.is_active && !k.is_expired && (
                         <Badge variant="outline" className="text-emerald-400 border-emerald-700 bg-emerald-900/20">
                           active
+                        </Badge>
+                      )}
+                      {k.is_expired && (
+                        <Badge variant="outline" className="text-amber-400 border-amber-700 bg-amber-900/20">
+                          expired
                         </Badge>
                       )}
                       {/* V151.1 U3: copy-to-clipboard button */}
@@ -802,6 +906,7 @@ function VisionApiKeysTab() {
                       <span>base: {k.base_url}</span>
                       {k.description && <span>desc: {k.description}</span>}
                       {k.last_used_at && <span>last used: {k.last_used_at}</span>}
+                      {k.expires_at && <span>expires: {k.expires_at}</span>}
                     </div>
                     {testResult[k.id] && (
                       <div

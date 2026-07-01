@@ -206,6 +206,7 @@ class VisionApiKey(Base):
     updated_at = Column(String, nullable=False)
     last_used_at = Column(String, nullable=True)
     description = Column(Text, nullable=False, server_default="")
+    expires_at = Column(Text, nullable=True)
 
     __table_args__ = (
         Index("idx_vision_keys_provider", "provider"),
