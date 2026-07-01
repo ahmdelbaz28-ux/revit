@@ -3,18 +3,7 @@
 # Multi-stage Docker build: Frontend (Node) + Python deps + Runtime
 # ═══════════════════════════════════════════════════════════════════════════
 
-# ─── Stage 1: Frontend Build ──────────────────────────────────────────────
-FROM node:22-alpine AS frontend-builder
-
-WORKDIR /build/frontend
-
-COPY frontend/package.json frontend/package-lock.json ./
-RUN npm ci
-
-COPY frontend/ .
-RUN npm run build
-
-# ─── Stage 2: Python Dependencies ─────────────────────────────────────────
+# ─── Stage 1: Python Dependencies ─────────────────────────────────────────
 FROM python:3.12-slim AS python-builder
 
 WORKDIR /build
@@ -28,7 +17,7 @@ RUN pip install --no-cache-dir --upgrade pip setuptools>=68 wheel
 COPY requirements.txt .
 RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 
-# ─── Stage 3: Runtime ─────────────────────────────────────────────────────
+# ─── Stage 2: Runtime ─────────────────────────────────────────────────────
 FROM python:3.12-slim
 
 LABEL maintainer="FireAI Engineering Team"
@@ -48,13 +37,10 @@ COPY --chown=fireai:fireai backend/ backend/
 COPY --chown=fireai:fireai fireai/ fireai/
 COPY --chown=fireai:fireai parsers/ parsers/
 COPY --chown=fireai:fireai integration/ integration/
-COPY --chown=fireai:fireai pyproject.toml setup.py ./
+COPY --chown=fireai:fireai pyproject.toml ./
 COPY --chown=fireai:fireai qomn_conduit/ qomn_conduit/
 COPY --chown=fireai:fireai qomn_fire/ qomn_fire/
 COPY --chown=fireai:fireai facp_system/ facp_system/
-
-# Copy built frontend from stage 1
-COPY --from=frontend-builder --chown=fireai:fireai /build/frontend/dist/ frontend/dist/
 
 # Create data and logs directories
 RUN mkdir -p /app/data /app/logs && \
