@@ -16258,5 +16258,27 @@ Hugging Face Docker build completed, but uvicorn crashed on startup with `Module
 - Verified successful programmatic configuration of secrets and code compilation.
 
 ### Commit Information
-- **Commit:** `1b93d792d97c618bc5647f8f6c280ab244fbfa5f`
-- **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/1b93d792d97c618bc5647f8f6c280ab244fbfa5f
+- **Commit:** `ce6df91fbe54c5e3d74c0c4a4e5a004b7d34101e`
+- **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/ce6df91fbe54c5e3d74c0c4a4e5a004b7d34101e
+
+---
+
+## V158 Fix (2026-07-01) — Dockerfile Empty Folder COPY Removal
+
+### Context
+Hugging Face Docker build failed with `"/validation": not found` because `validation/` is an empty directory at the root of the workspace. Git does not track empty directories, so it was missing from the pushed repository.
+
+### Bug Fixed — Docker Empty Folder Copy Build Error (CRITICAL)
+- **File:** `Dockerfile`, `deploy_to_hf.py`
+- **Change:**
+  - Removed `COPY --chown=fireai:fireai validation/ validation/` from the `Dockerfile`.
+  - Removed `"validation"` from the `to_copy` list in `deploy_to_hf.py`.
+- **Purpose:** Fixes Docker build checksum failure. Real validation package logic is located under `fireai/validation` which is already copied.
+- **Files Modified:** `Dockerfile`, `deploy_to_hf.py`.
+
+### Verification Evidence
+- Verified build logs on Hugging Face.
+
+### Commit Information
+- **Commit:** `98c62b8f2f6e3f718b736f7555c8247eb5240e25`
+- **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/98c62b8f2f6e3f718b736f7555c8247eb5240e25
