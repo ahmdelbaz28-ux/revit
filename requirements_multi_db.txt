@@ -1,0 +1,15 @@
+# Multi-Database Dependencies
+# PostgreSQL
+psycopg2-binary>=2.9.0
+
+# Vector Database
+qdrant-client>=1.9.0
+
+# Graph Database  
+neo4j>=5.0.0
+
+# Cache/In-Memory Database
+redis>=5.0.0
+
+# For async Redis (optional)
+aredis>=2.0.0  # Optional: for async Redis operations

@@ -39,6 +39,8 @@ import time
 from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, Request
+# Import multi-database service
+from backend.multi_db_service import get_multi_db_service, close_multi_db_service
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 from slowapi import _rate_limit_exceeded_handler
@@ -698,6 +700,15 @@ async def general_exception_handler(request: Request, exc: Exception) -> Respons
     )
 
 
+# ── Database health check endpoint ──────────────────────────────────────────
+@app.get("/api/database-health")
+async def database_health():
+    """Check the health of all database connections."""
+    multi_db_service = get_multi_db_service()
+    health_status = multi_db_service.health_check()
+    return {"success": True, "data": health_status}
+
+
 # ═══════════════════════════════════════════════════════════════════════════
 # CACHE MANAGEMENT ENDPOINTS
 # ═══════════════════════════════════════════════════════════════════════════
@@ -760,20 +771,13 @@ async def cache_stats(
 
 
 if __name__ == "__main__":
+    # V129: Bind to loopback only (127.0.0.1), not 0.0.0.0
+    # Production deployments must use a reverse proxy (nginx, traefik, AWS ALB)
     import uvicorn
-    # V129: Bind to 127.0.0.1 (loopback) by default. Production deployments
-    # MUST use a reverse proxy (nginx, traefik, AWS ALB) to terminate TLS and
-    # forward to this loopback address. Binding to 0.0.0.0 exposes the API
-    # directly to the network, bypassing the proxy's rate limiting, TLS,
-    # and request filtering.
-    #
-    # To bind to all interfaces (NOT recommended outside Docker), set
-    # FIREAI_BIND_HOST=0.0.0.0 in the environment.
-    _bind_host = os.getenv("FIREAI_BIND_HOST", "127.0.0.1")
-    if _bind_host == "0.0.0.0":
-        logger.warning(
-            "Binding to 0.0.0.0 — API will be reachable from the network. "
-            "Use a reverse proxy (nginx/traefik) in production. "
-            "Set FIREAI_BIND_HOST=127.0.0.1 to restore loopback-only binding."
-        )
-    uvicorn.run(app, host=_bind_host, port=8000)
+    uvicorn.run(
+        "backend.app:app",
+        host="127.0.0.1",  # V129: loopback only
+        port=8000,
+        reload=True,
+        reload_dirs=["backend"],
+    )
