@@ -28,6 +28,10 @@ services:
       - FIREAI_DATA_DIRS=${FIREAI_DATA_DIRS:-/tmp/fireai_uploads:/data:/uploads}
       - FIREAI_ALLOWED_UPLOAD_DIRS=${FIREAI_ALLOWED_UPLOAD_DIRS:-/tmp:/var/tmp:/var/fireai/uploads}
       - FIREAI_DWG_MAX_FILE_SIZE_BYTES=${FIREAI_DWG_MAX_FILE_SIZE_BYTES:-104857600}
+      - LANGFUSE_PUBLIC_KEY=${LANGFUSE_PUBLIC_KEY:-}
+      - LANGFUSE_SECRET_KEY=${LANGFUSE_SECRET_KEY:-}
+      - LANGFUSE_HOST=${LANGFUSE_HOST:-https://cloud.langfuse.com}
+      - LANGFUSE_ENABLED=${LANGFUSE_ENABLED:-true}
     volumes:
       - fireai-data:/app/data
       - fireai-logs:/app/logs
