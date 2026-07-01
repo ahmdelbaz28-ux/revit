@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="FireAI Digital Twin — Safety-Critical Fire Alarm Engineering Platform" />
+    <meta name="theme-color" content="#0f172a" />
+    
+    <!-- CSRF Token -->
+    <meta name="csrf-token" content="" />
+
+    <!-- Security: Content Security Policy (https://ahmdelbaz28-bazspark.hf.space wss://ahmdelbaz28-bazspark.hf.space injected at build time) -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self';
+               script-src 'self';
+               style-src 'self' 'unsafe-inline';
+               img-src 'self' data: https:;
+               font-src 'self';
+               connect-src 'self' http://localhost:8000 ws://localhost:8000 https://ahmdelbaz28-bazspark.hf.space wss://ahmdelbaz28-bazspark.hf.space;
+               frame-ancestors 'none';
+               base-uri 'self';
+               form-action 'self';"
+    />
+
+    <!-- Security: Prevent MIME-type sniffing -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+
+    <!-- Security: Prevent clickjacking -->
+    <meta http-equiv="X-Frame-Options" content="DENY" />
+
+    <!-- Security: Control referrer information -->
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+
+    <!-- Security: Disable unnecessary browser features -->
+    <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=()" />
+
+    <title>FireAI Digital Twin</title>
+    <style>
+      /* Critical CSS for initial load — prevents FOUC */
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: Inter, system-ui, -apple-system, sans-serif;
+        background-color: #0f172a;
+        color: #e2e8f0;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+      #root {
+        min-height: 100vh;
+      }
+      /* Loading spinner shown before React hydrates */
+      .app-loader {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        background-color: #0f172a;
+        color: #94a3b8;
+        font-family: Inter, system-ui, sans-serif;
+      }
+      .app-loader-spinner {
+        width: 40px;
+        height: 40px;
+        border: 3px solid #1e293b;
+        border-top-color: #ea580c;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      }
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+      .app-loader-text {
+        margin-top: 1rem;
+        font-size: 0.875rem;
+        letter-spacing: 0.05em;
+      }
+    </style>
+    <script type="module" crossorigin src="/assets/index-DeUH5xqE.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/rolldown-runtime-BwKqro0g.js">
+    <link rel="modulepreload" crossorigin href="/assets/vendor-i18n-CwmeDqzi.js">
+    <link rel="modulepreload" crossorigin href="/assets/vendor-react-DvpPJ1O8.js">
+    <link rel="modulepreload" crossorigin href="/assets/vendor-ui-BXJM0bga.js">
+    <link rel="modulepreload" crossorigin href="/assets/vendor-tanstack-DEclerMY.js">
+    <link rel="stylesheet" crossorigin href="/assets/index-edVjpt3x.css">
+  </head>
+  <body>
+    <noscript>
+      <div style="text-align:center;padding:2rem;color:#e2e8f0;background:#0f172a;min-height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;">
+        <h1 style="font-size:1.5rem;margin-bottom:1rem;">FireAI requires JavaScript</h1>
+        <p style="color:#94a3b8;">Please enable JavaScript in your browser settings to use this application.</p>
+      </div>
+    </noscript>
+    <div id="root">
+      <div class="app-loader">
+        <div class="app-loader-spinner"></div>
+        <div class="app-loader-text">Loading FireAI Digital Twin...</div>
+      </div>
+    </div>
+  </body>
+</html>
