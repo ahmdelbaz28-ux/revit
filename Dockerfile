@@ -41,6 +41,8 @@ COPY --chown=fireai:fireai pyproject.toml ./
 COPY --chown=fireai:fireai qomn_conduit/ qomn_conduit/
 COPY --chown=fireai:fireai qomn_fire/ qomn_fire/
 COPY --chown=fireai:fireai facp_system/ facp_system/
+COPY --chown=fireai:fireai core/ core/
+COPY --chown=fireai:fireai validation/ validation/
 
 # Create data and logs directories
 RUN mkdir -p /app/data /app/logs && \
