@@ -1,0 +1,242 @@
+"""
+backend/routers/multi_db.py — Multi-Database API Endpoints
+=========================================================
+
+API endpoints for interacting with the multi-database system:
+- PostgreSQL (primary relational data)
+- Qdrant (vector database for embeddings/RAG)
+- Neo4j (graph database for relationships/topology)
+- Redis (cache and temporary storage)
+
+These endpoints enable advanced BIM/CAD operations leveraging
+multiple database technologies.
+"""
+
+from __future__ import annotations
+
+import logging
+from typing import Dict, List, Optional
+
+from fastapi import APIRouter, HTTPException, Query
+
+from backend.multi_db_service import get_multi_db_service
+from backend.schemas import ApiResponse
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter(prefix="/multi-db", tags=["multi-db"])
+
+
+@router.get("/health", response_model=ApiResponse[Dict[str, bool]])
+async def get_database_health():
+    """Check the health of all database connections."""
+    try:
+        db_service = get_multi_db_service()
+        health = db_service.health_check()
+        return ApiResponse(
+            success=True,
+            data=health,
+            message="Database health check completed successfully"
+        )
+    except Exception as e:
+        logger.error(f"Database health check failed: {e}")
+        raise HTTPException(status_code=500, detail="Database health check failed")
+
+
+@router.get("/redis/get/{key}")
+async def get_from_redis(key: str):
+    """Get a value from Redis cache."""
+    try:
+        db_service = get_multi_db_service()
+        value = db_service.redis_get(key)
+        if value is not None:
+            return ApiResponse(
+                success=True,
+                data={"key": key, "value": value},
+                message="Value retrieved from Redis"
+            )
+        else:
+            raise HTTPException(status_code=404, detail=f"Key '{key}' not found in Redis")
+    except Exception as e:
+        logger.error(f"Redis get failed: {e}")
+        raise HTTPException(status_code=500, detail="Redis operation failed")
+
+
+@router.post("/redis/set")
+async def set_in_redis(key: str, value: str, ttl: Optional[int] = Query(None, description="Time to live in seconds")):
+    """Set a value in Redis cache."""
+    try:
+        db_service = get_multi_db_service()
+        success = db_service.redis_set(key, value, ex=ttl)
+        if success:
+            return ApiResponse(
+                success=True,
+                data={"key": key, "ttl": ttl},
+                message="Value set in Redis successfully"
+            )
+        else:
+            raise HTTPException(status_code=500, detail="Failed to set value in Redis")
+    except Exception as e:
+        logger.error(f"Redis set failed: {e}")
+        raise HTTPException(status_code=500, detail="Redis operation failed")
+
+
+@router.post("/bim/cache-element")
+async def cache_bim_element(element_id: str, element_data: Dict):
+    """Cache BIM element data in Redis for faster access."""
+    try:
+        db_service = get_multi_db_service()
+        success = db_service.cache_bim_element(element_id, element_data)
+        if success:
+            return ApiResponse(
+                success=True,
+                data={"element_id": element_id},
+                message="BIM element cached successfully"
+            )
+        else:
+            raise HTTPException(status_code=500, detail="Failed to cache BIM element")
+    except Exception as e:
+        logger.error(f"BIM element caching failed: {e}")
+        raise HTTPException(status_code=500, detail="BIM element caching failed")
+
+
+@router.get("/bim/get-cached-element/{element_id}")
+async def get_cached_bim_element(element_id: str):
+    """Retrieve cached BIM element data from Redis."""
+    try:
+        db_service = get_multi_db_service()
+        element_data = db_service.get_cached_bim_element(element_id)
+        if element_data:
+            return ApiResponse(
+                success=True,
+                data={"element_id": element_id, "element_data": element_data},
+                message="Cached BIM element retrieved successfully"
+            )
+        else:
+            raise HTTPException(status_code=404, detail=f"Cached BIM element '{element_id}' not found")
+    except Exception as e:
+        logger.error(f"Get cached BIM element failed: {e}")
+        raise HTTPException(status_code=500, detail="Get cached BIM element failed")
+
+
+@router.post("/bim/store-embeddings")
+async def store_element_embeddings(element_id: str, embeddings: List[float]):
+    """Store element embeddings in Qdrant for similarity search."""
+    try:
+        db_service = get_multi_db_service()
+        success = db_service.store_element_embeddings(element_id, embeddings)
+        if success:
+            return ApiResponse(
+                success=True,
+                data={"element_id": element_id},
+                message="Element embeddings stored successfully"
+            )
+        else:
+            raise HTTPException(status_code=500, detail="Failed to store element embeddings")
+    except Exception as e:
+        logger.error(f"Store element embeddings failed: {e}")
+        raise HTTPException(status_code=500, detail="Store element embeddings failed")
+
+
+@router.post("/bim/find-similar")
+async def find_similar_elements(query_embedding: List[float], limit: int = Query(5, ge=1, le=20)):
+    """Find similar BIM elements using vector search."""
+    try:
+        db_service = get_multi_db_service()
+        results = db_service.find_similar_elements(query_embedding, limit)
+        return ApiResponse(
+            success=True,
+            data={"results": results, "query_length": len(query_embedding)},
+            message=f"Found {len(results)} similar elements"
+        )
+    except Exception as e:
+        logger.error(f"Find similar elements failed: {e}")
+        raise HTTPException(status_code=500, detail="Find similar elements failed")
+
+
+@router.post("/bim/create-relationships")
+async def create_element_relationships(
+    element_id: str,
+    related_elements: List[str],
+    relationship_type: str = Query("CONNECTED_TO", description="Type of relationship")
+):
+    """Create relationships between elements in Neo4j."""
+    try:
+        db_service = get_multi_db_service()
+        success = db_service.create_element_relationships(element_id, related_elements, relationship_type)
+        if success:
+            return ApiResponse(
+                success=True,
+                data={
+                    "element_id": element_id,
+                    "related_elements": related_elements,
+                    "relationship_type": relationship_type
+                },
+                message="Element relationships created successfully"
+            )
+        else:
+            raise HTTPException(status_code=500, detail="Failed to create element relationships")
+    except Exception as e:
+        logger.error(f"Create element relationships failed: {e}")
+        raise HTTPException(status_code=500, detail="Create element relationships failed")
+
+
+@router.get("/bim/related-elements/{element_id}")
+async def find_related_elements(
+    element_id: str,
+    relationship_type: str = Query("CONNECTED_TO", description="Type of relationship")
+):
+    """Find elements related to a specific element in Neo4j."""
+    try:
+        db_service = get_multi_db_service()
+        results = db_service.neo4j_find_related_elements(element_id, relationship_type)
+        return ApiResponse(
+            success=True,
+            data={"element_id": element_id, "related_elements": results, "relationship_type": relationship_type},
+            message=f"Found {len(results)} related elements"
+        )
+    except Exception as e:
+        logger.error(f"Find related elements failed: {e}")
+        raise HTTPException(status_code=500, detail="Find related elements failed")
+
+
+@router.get("/neo4j/query")
+async def execute_neo4j_query(query: str, parameters: Optional[str] = Query(None)):
+    """Execute a custom Cypher query against Neo4j."""
+    try:
+        import json
+        params = json.loads(parameters) if parameters else {}
+
+        db_service = get_multi_db_service()
+        results = db_service.neo4j_execute_query(query, params)
+        return ApiResponse(
+            success=True,
+            data={"query": query, "parameters": params, "results": results},
+            message=f"Query executed successfully, returned {len(results)} results"
+        )
+    except Exception as e:
+        logger.error(f"Neo4j query failed: {e}")
+        raise HTTPException(status_code=500, detail="Neo4j query failed")
+
+
+@router.get("/qdrant/collections")
+async def get_qdrant_collections():
+    """Get list of Qdrant collections."""
+    try:
+        db_service = get_multi_db_service()
+        qdrant_client = db_service.get_qdrant()
+
+        if not qdrant_client:
+            raise HTTPException(status_code=500, detail="Qdrant not available")
+
+        collections = qdrant_client.get_collections()
+        collection_names = [col.name for col in collections.collections]
+
+        return ApiResponse(
+            success=True,
+            data={"collections": collection_names, "count": len(collection_names)},
+            message=f"Found {len(collection_names)} Qdrant collections"
+        )
+    except Exception as e:
+        logger.error(f"Get Qdrant collections failed: {e}")
+        raise HTTPException(status_code=500, detail="Get Qdrant collections failed")

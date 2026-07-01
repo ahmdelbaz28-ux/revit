@@ -405,3 +405,6 @@ hf_deploy/
 deploy_to_hf.py
 .vercel
 .env*
+
+# Vercel Python build cache
+.vercel_python_packages/
