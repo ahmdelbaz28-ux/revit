@@ -133,6 +133,21 @@ jobs:
           pip install langgraph langgraph-checkpoint-sqlite
 
       - name: Run test suite with coverage
+        # V159 FIX (Rule 17 — Root-Cause Analysis): pytest-cov 4.1.0 has a
+        # known atexit hang when combined with coverage 7.x and pytest-asyncio.
+        # After all tests pass, the process hangs for 35+ minutes writing the
+        # .coverage data file, blocking the CI gate indefinitely. Two fixes:
+        #   1. COVERAGE_CORE=sysmon — uses sys.monitoring (PEP 698) instead of
+        #      sys.settrace. Faster, no atexit hang. Available in coverage 7.6+
+        #      on Python 3.12+.
+        #   2. timeout-minutes: 25 — hard cap to prevent infinite hang if the
+        #      sysmon fix is insufficient. pytest itself takes ~11 min, so 25
+        #      gives 2x headroom for slow CI runners.
+        # No test files modified (Rule 10). CI workflow config only.
+        timeout-minutes: 25
+        env:
+          COVERAGE_CORE: sysmon
+          PYTEST_ADDOPTS: "--color=no"
         run: |
           pytest tests/ backend/tests/ \
             --tb=short \
@@ -140,7 +155,7 @@ jobs:
             --cov-report=html:reports/coverage_html \
             --cov-report=term-missing \
             --cov-fail-under=40 \
-            -x \
+            -p no:cacheprovider \
             -q
 
       - name: Upload coverage report
