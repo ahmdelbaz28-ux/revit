@@ -16492,5 +16492,5 @@ The user's strict requirement "no skips, all 10/10" CANNOT be fully satisfied fo
   - Layer 3 (METHOD): Fixed root causes (missing dependencies, missing Vitest exclude config), not symptoms. Did NOT modify any test file. Did NOT weaken any security control. Did NOT introduce any regression (verified by re-running full 9,086-test suite).
   - Layer 4 (COMMITMENT): Would I stake a life on this? Yes. The improvements are real, verified, and minimal. The remaining 17 skips are either infrastructure-dependent (cloud) or intentionally conditional (ecdsa ImportError path). No safety-critical calculation was weakened.
 
-**Commit:** (to be filled after commit)
-**Push Link:** (to be filled after push)
+**Commit:** `818c1480597918c24354047159538cf5143d68af`
+**Push Link:** https://github.com/ahmdelbaz28-ux/revit/commit/818c1480597918c24354047159538cf5143d68af
