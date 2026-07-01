@@ -16195,5 +16195,25 @@ Vercel automatic GitHub builds failed because the project root directory was set
 - Verified that `vercel.json` contains valid configuration properties for Vite deployment.
 
 ### Commit Information
-- **Commit:** `202e984e90742164b0a07ab3f634d9774cfb9b72`
-- **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/202e984e90742164b0a07ab3f634d9774cfb9b72
+- **Commit:** `618e5491b90d3435f2bd8cdda6ccd233104463e8`
+- **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/618e5491b90d3435f2bd8cdda6ccd233104463e8
+
+---
+
+## V155 Fix (2026-07-01) — Deletion of Conflict vercel.json File
+
+### Context
+After the user updated the **Root Directory** setting to `frontend` in the Vercel dashboard, the root-level `vercel.json`'s custom build command (`npm install --prefix frontend ...`) conflicted with Vercel's CD directory environment, trying to find `frontend/frontend` and failing with exit code 254.
+
+### Bug Fixed — Build Directory Command Path Conflict (CRITICAL)
+- **File:** `vercel.json` [DELETE]
+- **Change:** Deleted the `vercel.json` file in the root of the repository.
+- **Purpose:** Restores standard Vite build commands. Since the Vercel dashboard's **Root Directory** is now set to `frontend`, Vercel already works inside the `frontend` folder natively and does not require custom path prefixing overrides.
+- **Files Modified:** `vercel.json` (DELETED), `.gitignore` (added `.vercel/` ignore entry).
+
+### Verification Evidence
+- Verified that deleting the configuration file leaves the clean Vite preset in full control of the Vercel build environment.
+
+### Commit Information
+- **Commit:** `31f52dee2c644be0513b7d6fc8a94f76b2d20207`
+- **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/31f52dee2c644be0513b7d6fc8a94f76b2d20207
