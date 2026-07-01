@@ -16095,3 +16095,35 @@ No fabricated claims. All verification evidence is real pytest output.
 2. **Install `slowapi` and `tenacity`** in CI to clear the 5+27 pre-existing environmental errors (NOT caused by V150)
 3. **Authorize V151**: continue the infinite improvement cycle (Rule 19) — re-audit all 12 fixes with adversarial critique, search for new categories (e.g., exception safety under concurrent failure, memory leak under long-running processes)
 4. **Consider**: add a CI gate that runs `grep -rn "Not thread-safe but acceptable" fireai/` to prevent cop-out comments from returning
+
+---
+
+## V151 Fix (2026-07-01) — Docker Compose Validation & Network Definition
+
+### Context
+During deployment planning, identified critical syntax issues in `docker-compose.yml` that prevented it from being parsed by `docker compose config`.
+
+### Bug Fixed — Unquoted Environment Variable in docker-compose.yml (CRITICAL)
+- **File:** `docker-compose.yml`
+- **Bug:** Line 15 (`FIREAI_API_KEY=${FIREAI_API_KEY:?ERROR: FIREAI_API_KEY must be set}`) was unquoted. The YAML parser interpreted the `?` and `:` symbol combination as the start of a nested map rather than a shell interpolation string, causing configuration loading to crash.
+- **Fix Applied:** Wrapped the environment definition in double quotes:
+  ```yaml
+  - "FIREAI_API_KEY=${FIREAI_API_KEY:?ERROR: FIREAI_API_KEY must be set}"
+  ```
+
+### Configuration Enhancement — Missing Top-Level Network Definition (HIGH)
+- **File:** `docker-compose.yml`
+- **Bug:** Services `qdrant` and `neo4j` referenced `networks: - fireai-net`, but `fireai-net` was not defined in the top-level `networks` section, which is a validation error.
+- **Fix Applied:** Added the top-level `networks:` definition block at the bottom of the file:
+  ```yaml
+  networks:
+    fireai-net:
+      driver: bridge
+  ```
+
+### Verification Evidence
+- Ran `docker compose config` with `FIREAI_API_KEY` set. The configuration parsed successfully and generated the fully validated network topology and environment bindings.
+
+### Commit Information
+- **Commit:** `7ff1c0b78d4b0132430d755605c0a9080fd33327`
+- **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/7ff1c0b78d4b0132430d755605c0a9080fd33327
