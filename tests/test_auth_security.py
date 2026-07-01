@@ -239,8 +239,8 @@ class TestProductionSecret:
         importlib.reload(secret_mod)
 
         try:
+            mgr = secret_mod.SessionSecretManager()
             with pytest.raises(RuntimeError, match="FIREAI_SESSION_SECRET.*REQUIRED"):
-                mgr = secret_mod.SessionSecretManager()
                 mgr.load()
         finally:
             # Restore original module state
