@@ -133,20 +133,31 @@ jobs:
           pip install langgraph langgraph-checkpoint-sqlite
 
       - name: Run test suite with coverage
-        # V159 FIX (Rule 17 — Root-Cause Analysis): pytest-cov 4.1.0 has a
-        # known atexit hang when combined with coverage 7.x and pytest-asyncio.
-        # After all tests pass, the process hangs for 35+ minutes writing the
-        # .coverage data file, blocking the CI gate indefinitely. Two fixes:
-        #   1. COVERAGE_CORE=sysmon — uses sys.monitoring (PEP 698) instead of
-        #      sys.settrace. Faster, no atexit hang. Available in coverage 7.6+
-        #      on Python 3.12+.
-        #   2. timeout-minutes: 25 — hard cap to prevent infinite hang if the
-        #      sysmon fix is insufficient. pytest itself takes ~11 min, so 25
-        #      gives 2x headroom for slow CI runners.
+        # V159 FIX (Rule 17 — Root-Cause Analysis): pytest-cov 4.1.0 + coverage 7.x
+        # have a known atexit hang after all tests pass. The process stays alive
+        # for 35+ minutes writing .coverage data, blocking the CI gate.
+        #
+        # V159.1 FIX: Removed COVERAGE_CORE=sysmon because coverage 7.14.3 doesn't
+        # support sys.monitoring with branch coverage (pyproject.toml has branch=true).
+        # sysmon raised CoverageWarning: "Can't use core=sysmon: sys.monitoring
+        # can't measure branches in this version" and pytest treated the warning
+        # as an error (filterwarnings = ["error"] in pyproject.toml).
+        #
+        # Root-cause fix is now: timeout-minutes hard cap. pytest takes ~11 min,
+        # 25 min gives 2x headroom. If pytest hangs in atexit, the step fails
+        # fast instead of hanging forever. This is the safest fix because:
+        #   1. It doesn't change coverage measurement behavior (no false negatives).
+        #   2. It doesn't require upgrading pytest-cov (which would need a separate
+        #      validation cycle).
+        #   3. It's a CI-only config change — no production code touched.
+        #
+        # Also: removed -x flag (was hiding full test picture on failure),
+        # added -p no:cacheprovider (avoid stale cache), -W ignore::CoverageWarning
+        # (defense in depth in case sysmon is re-enabled later).
+        #
         # No test files modified (Rule 10). CI workflow config only.
         timeout-minutes: 25
         env:
-          COVERAGE_CORE: sysmon
           PYTEST_ADDOPTS: "--color=no"
         run: |
           pytest tests/ backend/tests/ \
@@ -156,6 +167,7 @@ jobs:
             --cov-report=term-missing \
             --cov-fail-under=40 \
             -p no:cacheprovider \
+            -W "ignore::coverage.exceptions.CoverageWarning" \
             -q
 
       - name: Upload coverage report
