@@ -16235,5 +16235,28 @@ FastAPI backend requires deployment on Hugging Face Spaces (Docker). The contain
 - Verified that `Dockerfile` uses standard `0.0.0.0` binding suitable for docker cloud providers.
 
 ### Commit Information
-- **Commit:** `bc520223c817aa93e7e3bcbb7319d7d521ce629b`
-- **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/bc520223c817aa93e7e3bcbb7319d7d521ce629b
+- **Commit:** `511ff3f59eb237e9a2cae297e42750cac514505c`
+- **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/511ff3f59eb237e9a2cae297e42750cac514505c
+
+---
+
+## V157 Fix (2026-07-01) — Dockerfile Missing Folders COPY & Deployment Pipeline Fixes
+
+### Context
+Hugging Face Docker build completed, but uvicorn crashed on startup with `ModuleNotFoundError: No module named 'core'` because `core/` and `validation/` directories were not copied in the Dockerfile, and were also missing from the Hugging Face deployment copy script list.
+
+### Bug Fixed — Docker Missing Code Directories & Permission Handling (CRITICAL)
+- **File:** `Dockerfile`, `deploy_to_hf.py`
+- **Change:**
+  - Added COPY commands for `core/` and `validation/` folders in the `Dockerfile`.
+  - Added `"core"` and `"validation"` to `to_copy` list in `deploy_to_hf.py`.
+  - Added an `onexc` permissions handler in `deploy_to_hf.py` to prevent `PermissionError` when deleting read-only git database pack files under Windows.
+  - Set the `FIREAI_API_KEYS_FILE` environment secret to `/app/data/api_keys.json` to bypass read/write permission errors under user `fireai` in `/app/db`.
+- **Purpose:** Resolves startup import crash and write permission errors in cloud container.
+
+### Verification Evidence
+- Verified successful programmatic configuration of secrets and code compilation.
+
+### Commit Information
+- **Commit:** `1b93d792d97c618bc5647f8f6c280ab244fbfa5f`
+- **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/1b93d792d97c618bc5647f8f6c280ab244fbfa5f
