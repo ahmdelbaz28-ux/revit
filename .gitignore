@@ -403,3 +403,5 @@ data/
 # Temporary Hugging Face deployment folder and script
 hf_deploy/
 deploy_to_hf.py
+.vercel
+.env*

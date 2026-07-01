@@ -16304,3 +16304,50 @@ Hugging Face container crashed on startup with `ModuleNotFoundError: No module n
 ### Commit Information
 - **Commit:** `93bad939e8d7b1f0d58d49db325f5ecd4362b90e`
 - **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/93bad939e8d7b1f0d58d49db325f5ecd4362b90e
+
+---
+
+## Fix: IPv4 Database Connection + Multi-DB Config (2026-07-01)
+
+### Context
+- Supabase `db.nrdqdnmyxbbdrrmqxzej.supabase.co:5432` resolves to IPv6 only.
+- Hugging Face Spaces does not support IPv6, causing `Network is unreachable` errors.
+- Switched to IPv4-only Supabase Session Pooler: `aws-0-eu-central-1.pooler.supabase.com:5432`.
+
+### Changes Made
+1. **`.env` (local, gitignored):** Replaced `db.nrdqdnmyxbbdrrmqxzej.supabase.co:5432` with `aws-0-eu-central-1.pooler.supabase.com:5432` for DATABASE_URL.
+2. **`backend/config.py` (new):** Centralized multi-database configuration (PostgreSQL, Qdrant, Neo4j, Redis). Added `try/except` wrapped `load_dotenv()` so `.env` file values are available before any config is read.
+3. **`backend/multi_db_service.py` (new):** Unified service layer for all 4 database backends with connection pooling, health check, and graceful fallback on ImportError.
+4. **`setup_databases.py` (new):** Interactive setup script for .env generation.
+5. **`backend/app.py` (mod):** Added `/api/database-health` endpoint + integrated `multi_db_service`. Refactored `__main__` to use loopback-only binding (127.0.0.1).
+6. **`backend/database.py` (mod):** Changed env var reads to use `config.DATABASE_URL` and `config.DIGITAL_TWIN_DB_PATH`.
+7. **`requirements_multi_db.txt` (new):** Optional dependencies for PostgreSQL, Qdrant, Neo4j, Redis.
+8. **`EXAMPLE_MULTI_DB_USAGE.py`, `MULTI_DATABASE_SETUP.md` (new):** Usage examples and setup guide.
+9. **`README.md`, `.gitignore` (mod):** Arabic database setup documentation + ignore hf_deploy/deploy_to_hf.py.
+
+### Commit Information
+- **Commit:** `b898954e`
+- **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/b898954e
+
+### Commit 2 — Python 3.8 Compatibility Fix
+- **Commit:** `9ca23442`
+- **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/9ca23442
+- **Change:** Added `from __future__ import annotations` to `backend/config.py` for Python 3.8 `list[str]` compatibility.
+- **Result:** Config loads correctly on Python 3.8 (verified).
+
+### Commit 3 — SPA Rewrites via vercel.json
+- **Commit:** `b374f839`
+- **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/b374f839
+- **Change:** Added `frontend/vercel.json` with `{ "source": "/(.*)", "destination": "/index.html" }` rewrite for React Router SPA support on Vercel.
+- **Result:** React Router sub-routes (e.g., `/login`, `/settings`) now served index.html instead of 404.
+
+### Commit 4 — Production Release: CSP Fix, Root vercel.json, New Vercel Project
+- **Commit:** `3480e8dc`
+- **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/3480e8dc
+- **Changes:**
+  1. Moved `vercel.json` from `frontend/` to repo root (SPA rewrites now apply at project level)
+  2. Fixed CSP in `frontend/index.html`: replaced hardcoded `connect-src` with `__CSP_CONNECT_SRC__` placeholder
+  3. Added `cspInjectPlugin()` to `frontend/vite.config.ts`: dynamically injects `VITE_API_URL` origin + WSS into CSP at build time, enabling API calls to Hugging Face backend without CSP violations
+  4. Updated `.gitignore` to exclude `.vercel` and `.env*` files
+  5. Created new Vercel project `revit-frontend` (prj_CijtLj7f2oXRDZUiQHJiT8oa8h6E) with GitHub auto-deploy enabled, `VITE_API_URL` env var set to `https://ahmdelbaz28-bazspark.hf.space`
+- **Result:** Frontend builds with dynamic CSP that allows API calls to production backend; SPA routing works; auto-deployment on push to main via new Vercel project.

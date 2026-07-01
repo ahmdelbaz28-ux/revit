@@ -13,12 +13,33 @@ const basePath = process.env.BASE_PATH || "/";
 const isTest = process.argv.some(arg => arg.includes("vitest"));
 const isProduction = process.env.NODE_ENV === "production";
 
+// Injects the API URL into the CSP connect-src directive at build time
+function cspInjectPlugin(): import("vite").Plugin {
+  return {
+    name: "csp-inject",
+    transformIndexHtml(html) {
+      const apiUrl = process.env.VITE_API_URL || "/api/v1";
+      // Extract origin from the API URL (e.g., "https://ahmdelbaz28-bazspark.hf.space")
+      let origin: string;
+      try {
+        origin = new URL(apiUrl).origin;
+      } catch {
+        origin = apiUrl; // fallback for relative URLs
+      }
+      const wsOrigin = origin.startsWith("https") ? origin.replace("https", "wss") : "";
+      const cspConnect = [origin, wsOrigin].filter(Boolean).join(" ");
+      return html.replace(/__CSP_CONNECT_SRC__/g, cspConnect);
+    },
+  };
+}
+
 export default defineConfig({
   base: basePath,
   plugins: [
     mockupPreviewPlugin(),
     react(),
     !isTest ? tailwindcss() : null,
+    !isTest ? cspInjectPlugin() : null,
   ].filter(Boolean),
   resolve: {
     alias: {

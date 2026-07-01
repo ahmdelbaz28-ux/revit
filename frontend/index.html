@@ -9,7 +9,7 @@
     <!-- CSRF Token -->
     <meta name="csrf-token" content="" />
 
-    <!-- Security: Content Security Policy -->
+    <!-- Security: Content Security Policy (__CSP_CONNECT_SRC__ injected at build time) -->
     <meta
       http-equiv="Content-Security-Policy"
       content="default-src 'self';
@@ -17,7 +17,7 @@
                style-src 'self' 'unsafe-inline';
                img-src 'self' data: https:;
                font-src 'self';
-               connect-src 'self' http://localhost:8000 ws://localhost:8000;
+               connect-src 'self' http://localhost:8000 ws://localhost:8000 __CSP_CONNECT_SRC__;
                frame-ancestors 'none';
                base-uri 'self';
                form-action 'self';"
