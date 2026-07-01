@@ -16341,13 +16341,29 @@ Hugging Face container crashed on startup with `ModuleNotFoundError: No module n
 - **Change:** Added `frontend/vercel.json` with `{ "source": "/(.*)", "destination": "/index.html" }` rewrite for React Router SPA support on Vercel.
 - **Result:** React Router sub-routes (e.g., `/login`, `/settings`) now served index.html instead of 404.
 
-### Commit 4 — Production Release: CSP Fix, Root vercel.json, New Vercel Project
-- **Commit:** `3480e8dc`
-- **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/3480e8dc
+### Commit 4 — Production Release: CSP Fix, Root vercel.json
+- **Commit:** `16bae565`
+- **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/16bae565
 - **Changes:**
   1. Moved `vercel.json` from `frontend/` to repo root (SPA rewrites now apply at project level)
   2. Fixed CSP in `frontend/index.html`: replaced hardcoded `connect-src` with `__CSP_CONNECT_SRC__` placeholder
   3. Added `cspInjectPlugin()` to `frontend/vite.config.ts`: dynamically injects `VITE_API_URL` origin + WSS into CSP at build time, enabling API calls to Hugging Face backend without CSP violations
   4. Updated `.gitignore` to exclude `.vercel` and `.env*` files
-  5. Created new Vercel project `revit-frontend` (prj_CijtLj7f2oXRDZUiQHJiT8oa8h6E) with GitHub auto-deploy enabled, `VITE_API_URL` env var set to `https://ahmdelbaz28-bazspark.hf.space`
-- **Result:** Frontend builds with dynamic CSP that allows API calls to production backend; SPA routing works; auto-deployment on push to main via new Vercel project.
+- **Result:** Frontend builds with dynamic CSP that allows API calls to production backend.
+
+### Commit 5 — Fix: Add framework=vite to vercel.json to prevent Python auto-detection
+- **Commit:** `53a9112c`
+- **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/53a9112c
+- **Changes:**
+  1. Added `"framework": "vite"` to `vercel.json` to prevent Vercel from auto-detecting Python project (pyproject.toml in root)
+- **Result:** Vercel now correctly treats the project as a Vite/frontend project instead of installing Python dependencies.
+
+### Commit 6 — GitHub Pages Deployment with SPA Support
+- **Branch:** `gh-pages`
+- **Commit:** `26afe763`
+- **Link:** https://github.com/ahmdelbaz28-ux/revit/tree/gh-pages
+- **Changes:**
+  1. Built frontend with `VITE_API_URL=https://ahmdelbaz28-bazspark.hf.space` for production
+  2. Created `gh-pages` branch with `index.html`, `assets/`, `404.html` (SPA fallback), `.nojekyll`
+  3. GitHub Pages URL: https://ahmdelbaz28-ux.github.io/revit/
+- **Result:** Site is live with full SPA routing support. Direct URL access to `/login`, `/settings`, etc. works via 404.html fallback. CSP dynamically allows API calls to `wss://ahmdelbaz28-bazspark.hf.space` and `https://ahmdelbaz28-bazspark.hf.space`.
