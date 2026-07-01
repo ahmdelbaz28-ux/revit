@@ -42,6 +42,8 @@ COPY --chown=fireai:fireai qomn_conduit/ qomn_conduit/
 COPY --chown=fireai:fireai qomn_fire/ qomn_fire/
 COPY --chown=fireai:fireai facp_system/ facp_system/
 COPY --chown=fireai:fireai core/ core/
+COPY --chown=fireai:fireai marine/ marine/
+COPY --chown=fireai:fireai adapters/ adapters/
 
 # Create data and logs directories
 RUN mkdir -p /app/data /app/logs && \
