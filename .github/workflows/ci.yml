@@ -462,18 +462,39 @@ jobs:
 
       - name: Test Docker container
         # V171 FIX: steps.meta.outputs.tags contains MULTIPLE tags separated by
-        # newlines (e.g., "ghcr.io/.../revit:latest\nghcr.io/.../revit:068327d").
-        # Using it directly in `docker run` causes the shell to interpret the
-        # second tag as a separate command → "No such file or directory" (exit 127).
+        # newlines. Using it directly in `docker run` causes the shell to interpret
+        # the second tag as a separate command → "No such file or directory" (exit 127).
         # Fix: Use only the first tag (latest) for the container test.
+        #
+        # V172 FIX: Container needs more startup time + correct port + correct health endpoint.
+        # - Dockerfile exposes port 7860 (not 8000) — HF Spaces default
+        # - Health endpoint is /api/health (not /health) — FastAPI router prefix
+        # - sleep 10 was too short — app needs ~20s for DB init + module loading
+        # - Add retry logic with curl --retry to handle slow startup
         run: |
           IMAGE=$(echo "${{ steps.meta.outputs.tags }}" | head -n1)
           echo "Testing container with image: $IMAGE"
-          docker run -d --name test-app -p 8888:8000 "$IMAGE"
-          sleep 10
-          curl -f http://localhost:8888/api/health || exit 1
-          docker stop test-app
-          docker rm test-app
+          # Dockerfile EXPOSEs 7860 and CMD uses --port 7860
+          docker run -d --name test-app -p 8888:7860 "$IMAGE"
+          # Wait for container to be ready (up to 60 seconds)
+          echo "Waiting for container to start..."
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8888/api/health > /dev/null 2>&1; then
+              echo "Container is healthy!"
+              docker stop test-app
+              docker rm test-app
+              exit 0
+            fi
+            echo "  Attempt $i/30: container not ready yet..."
+            sleep 2
+          done
+          # Container didn't become healthy — print logs for debugging
+          echo "FAIL: Container did not become healthy within 60 seconds"
+          echo "=== Container logs ==="
+          docker logs test-app 2>&1 | tail -30
+          docker stop test-app 2>/dev/null || true
+          docker rm test-app 2>/dev/null || true
+          exit 1
 
   # ── Success Summary ────────────────────────────────────────────────────────
   success:
