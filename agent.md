@@ -17779,3 +17779,69 @@ The one limitation: I could not test the live Vercel deployment after the fix be
 - **GitHub push link:** https://github.com/ahmdelbaz28-ux/revit/commit/2f333ac38fdc873bbef6077f68596cb1eb8cf999
 - **Branch:** main (29375655 → 2f333ac3)
 - **Tests:** 72/72 verified passing after V186, 0 regressions, build succeeds
+
+---
+
+## V186.1 Fix (2026-07-03) — Hardcoded strings in Elements/Connections/Conflicts
+
+### Context
+
+After V186 fixed the raw key strings (elements.title, conflicts.title, etc.), operator re-testing of the live deployment revealed that the Elements, Connections, and Conflicts pages still had 30+ hardcoded English strings inside the page bodies that broke Arabic mode (table headers, modal labels, button text, empty states).
+
+### Root Cause Analysis (per Rule 17)
+
+These three pages were written with English text directly in JSX, never migrated to i18n keys. The V186 fix added the missing i18n SECTIONS to en.json/ar.json, but the page components were still using literal strings for everything except the page title. This is a separate category of bug from V186 Category 1 (missing keys) — it's V186 Category 5 (hardcoded strings in page bodies, not just dashboard/settings).
+
+### Fixes Applied
+
+**Elements.tsx** — Replaced 12 hardcoded strings with i18n keys:
+- "Loading..." → t('common.loading')
+- "${data.total} total elements" → t('elements.totalElements', {count})
+- "Create Element" button → t('elements.createElement')
+- "All Types" → t('elements.allTypes')
+- "Failed to load elements..." → t('elements.failedToLoad')
+- Table headers (Name/Type/Area/Version/Modified/Actions) → t('elements.*')
+- Empty state → t('elements.noElements'), t('elements.createFirstElement')
+- Pagination "Page X of Y" → t('common.page') X t('common.of') Y
+- "Previous"/"Next" buttons → t('common.previous') / t('common.next')
+- Delete modal: title/message/Cancel → t('elements.deleteElement') / t('elements.deleteConfirmation', {name}) / t('common.cancel')
+- "Failed to delete: Unknown error" → t('elements.deleteFailed')
+
+**Connections.tsx** — Replaced 14 hardcoded strings with i18n keys:
+- "${total} connections" / "Loading..." → t('connectionsPage.totalConnections') / t('common.loading')
+- "Create Connection" button → t('connectionsPage.createConnection')
+- "Filter by element ID..." placeholder → t('connectionsPage.elementFilter')
+- "Clear" button → t('common.clear')
+- "Failed to load connections." → t('connectionsPage.failedToLoad')
+- Table headers (From/To/Type/Parametric/Actions) → t('connectionsPage.*') + t('common.active')
+- Empty state → t('connectionsPage.noConnections'), t('connectionsPage.createFirst')
+- Delete modal: title/message/Cancel/Delete/Deleting → t('connectionsPage.*') + t('common.*')
+- Create modal: title/labels/Cancel/Create/Creating/Parametric → t('connectionsPage.*') + t('common.*')
+- Added useTranslation() to CreateConnectionModal (was missing)
+
+**Conflicts.tsx** — Replaced 10 hardcoded strings with i18n keys:
+- "X unresolved / Y resolved" → ${X} t('conflicts.unresolved') / ${Y} t('conflicts.resolved')
+- "Loading..." → t('common.loading')
+- "Detected N conflicts" → t('conflicts.detectedConflicts', {count})
+- "Failed to detect conflicts" → t('conflicts.failedToDetect')
+- "Failed to load conflicts." → t('conflicts.failedToLoad')
+- Summary cards: "Total Conflicts"/"Unresolved"/"Resolved" → t('conflicts.*')
+- Table headers (Element/Type/Sources/Status/Timestamp/Actions) → t('conflicts.*') + t('elements.*')
+- Empty state title → t('conflicts.noConflictsDetected')
+- Empty state action label → t('conflicts.detectConflicts')
+- Status badges: "Resolved"/"Unresolved" → t('conflicts.resolved') / t('conflicts.unresolved')
+- Resolve modal: title/message/error → t('conflicts.resolveConflict') / t('conflicts.selectResolutionStrategy') / t('conflicts.resolutionFailed')
+
+### Verification Evidence
+
+- Gate 1 (Static): npx tsc --noEmit → 0 errors
+- Gate 2 (Runtime): npx vitest run → 9 files, 72 tests, all passing
+- Gate 3 (Behavioral): npx vite build → success in 4.79s, 1923 modules
+
+**Tests Modified:** NONE (Rule 10).
+**Production Code Modified:** 3 files (Elements.tsx, Connections.tsx, Conflicts.tsx).
+
+### Commit Information
+- **Commit:** `47d66ed1f2a39b75b628feff0f907bc1cc6110fb`
+- **GitHub push link:** https://github.com/ahmdelbaz28-ux/revit/commit/47d66ed1f2a39b75b628feff0f907bc1cc6110fb
+- **Branch:** main (260eddab → 47d66ed1)
