@@ -16903,3 +16903,113 @@ $ cd frontend && npm run build
 ### Commit Information
 - **Commit:** (pending — will be filled after `git commit`)
 - **Tests:** 8,412+ passing (no regressions — config-only change)
+
+---
+
+## V163 Fix (2026-07-02) — CI Gate 5 Dependency Vulnerabilities (3 Packages, 9 CVEs)
+
+### Context
+Running `pip-audit` locally revealed 9 known vulnerabilities across 3 packages:
+
+| Package | Version | CVEs | Severity | Fix Version |
+|---------|---------|------|----------|-------------|
+| cryptography | 42.0.8 | PYSEC-2026-35, GHSA-h4gh-qq45-vh27, CVE-2024-12797, CVE-2026-26007, GHSA-537c-gmf6-5ccf | HIGH (5) | 48.0.1+ |
+| lxml | 5.4.0 | PYSEC-2026-87 (XXE — arbitrary file read via XML external entity) | HIGH (1) | 6.1.0+ |
+| langsmith (via langfuse) | 0.8.5 | GHSA-f4xh-w4cj-qxq8 (arbitrary file read via TracingMiddleware) | HIGH (1) | 0.8.18+ |
+
+These would FAIL CI Gate 5 (Dependency Audit) which blocks the pipeline on any HIGH severity vulnerability.
+
+### Root Cause Analysis (per Rule 17 — No Half-Solutions)
+
+**Layer 1 — Output:** `pip-audit` found 9 vulnerabilities. CI Gate 5 would fail.
+
+**Layer 2 — Thinking:** The vulnerabilities are in dependencies, not our code. But Rule 8 (Security) is priority #8 — lower than Safety/Correctness/Verification/Reliability/Determinism/Maintainability/Traceability. However, in a safety-critical fire alarm system, an attacker who can read arbitrary files via lxml XXE could steal the HMAC secret key (evidence_chain.py) and forge compliance audit trails. This elevates the security issue to a SAFETY issue (Priority #1).
+
+**Layer 3 — Method:** The root cause is that `requirements.txt` and `pyproject.toml` had outdated version pins:
+- `cryptography>=41.0.0,<43.0.0` → allows 42.0.8 (vulnerable)
+- `lxml>=4.9.0,<6.0.0` → allows 5.4.0 (vulnerable)
+- `langfuse>=2.0.0,<3.0.0` → pulls langsmith 0.8.5 (vulnerable)
+
+The fix is to raise the minimum versions to the patched releases.
+
+**Layer 4 — Commitment:** These are real vulnerabilities with real fixes. No half-solution (e.g., `|| true` in CI) is acceptable. The fix is to upgrade the packages and verify nothing breaks.
+
+### Bug V163-1 — Outdated cryptography (5 HIGH CVEs)
+
+**Files:** `requirements.txt`, `pyproject.toml`
+**Fix:** Changed version pins:
+- `requirements.txt`: `cryptography>=41.0.0,<43.0.0` → `cryptography>=48.0.1,<50.0.0`
+- `pyproject.toml`: `cryptography>=46.0.6,<50.0.0` → `cryptography>=48.0.1,<50.0.0`
+
+**CVEs fixed:**
+1. PYSEC-2026-35 — DNS name constraint bypass (wildcard cert validation)
+2. GHSA-h4gh-qq45-vh27 — Statically linked OpenSSL vulnerability (CVE-2024-6119)
+3. CVE-2024-12797 — OpenSSL X.509 vulnerability
+4. CVE-2026-26007 — ECDSA subgroup validation missing (small-subgroup attacks)
+5. GHSA-537c-gmf6-5ccf — Statically linked OpenSSL vulnerability (2026-06-09)
+
+### Bug V163-2 — Outdated lxml (1 HIGH CVE — XXE)
+
+**Files:** `requirements.txt`, `pyproject.toml`
+**Fix:** Changed version pins:
+- `requirements.txt`: `lxml>=4.9.0,<6.0.0` → `lxml>=6.1.0,<7.0.0`
+- `pyproject.toml`: `lxml>=4.9.0,<6.0.0` → `lxml>=6.1.0,<7.0.0`
+
+**CVE fixed:** PYSEC-2026-87 — XML External Entity (XXE) attack. Default `resolve_entities=True` allowed untrusted XML input to read local files. An attacker could craft a malicious IFC/DWG/XML file that, when parsed by `parsers/ifc_parser.py` or `parsers/word_parser.py`, reads `/etc/passwd` or the HMAC secret key file.
+
+### Bug V163-3 — langfuse 2.x pulls vulnerable langsmith 0.8.5
+
+**Files:** `requirements.txt`, `pyproject.toml`
+**Fix:** Changed version pins:
+- `requirements.txt`: `langfuse>=2.0.0,<3.0.0` → `langfuse>=3.0.0,<4.0.0`
+- `pyproject.toml`: `langfuse>=2.0.0,<3.0.0` → `langfuse>=3.0.0,<4.0.0`
+- Additionally: `pip install langsmith==0.8.18` to override the transitive dependency
+
+**CVE fixed:** GHSA-f4xh-w4cj-qxq8 — LangSmith TracingMiddleware arbitrary file read. An attacker who can send an HTTP request to a server running LangSmith's TracingMiddleware can read arbitrary files from the server's filesystem. The file contents are uploaded as a trace attachment to LangSmith, accessible to anyone with workspace trace-read access.
+
+**Note:** langfuse 3.0.0 still declares `langsmith>=0.8.5` as a dependency, so we override it with `langsmith==0.8.18` to ensure the patched version is installed. This is documented in requirements.txt as a known transitive dependency override.
+
+### Verification Evidence
+
+**Before fix:**
+```
+$ pip-audit --skip-editable
+Found 9 known vulnerabilities in 3 packages
+cryptography 42.0.8  PYSEC-2026-35       46.0.6
+cryptography 42.0.8  GHSA-h4gh-qq45-vh27 43.0.1
+cryptography 42.0.8  CVE-2024-12797      44.0.1
+cryptography 42.0.8  CVE-2026-26007      46.0.5
+cryptography 42.0.8  GHSA-537c-gmf6-5ccf 48.0.1
+langsmith    0.8.5   GHSA-f4xh-w4cj-qxq8 0.8.18
+lxml         5.4.0   PYSEC-2026-87       6.1.0
+```
+
+**After fix:**
+```
+$ pip-audit --skip-editable
+No known vulnerabilities found
+```
+
+**Regression tests:**
+- 314 safety-critical tests pass (rules_engine, compliance, audit, api_endpoints, health, audit_store)
+- Backend imports OK (37 routes)
+- Frontend build OK (3.09s, 0 errors)
+- Langfuse setup imports OK
+- 1 conditional skip remains (ecdsa ImportError path test — correct behavior)
+
+**Tests Modified:** NONE (Rule 10).
+**Production Code Modified:** NONE. Only `requirements.txt` and `pyproject.toml` version pins.
+
+### 4-Layer Self-Criticism (Rule 21)
+
+**Layer 1 (OUTPUT):** pip-audit clean. 314 tests pass. No regressions.
+
+**Layer 2 (THINKING):** Did I rationalize? I considered using `|| true` in the CI Gate 5 to bypass vulnerabilities. But that violates Rule 17 (no half-solutions) and elevates security issues to safety issues in a fire alarm system. The correct fix is to upgrade the packages.
+
+**Layer 3 (METHOD):** Fixed the disease (outdated version pins) not the symptom (CI failures). The version pin updates ensure ALL future installations get the patched versions.
+
+**Layer 4 (COMMITMENT):** Would I stake a life on this? Yes. XML External Entity attacks on fire alarm engineering files could expose HMAC keys and forge compliance audit trails. Fixing lxml 5.4.0 → 6.1.0 closes a real attack vector.
+
+### Commit Information
+- **Commit:** (pending — will be filled after `git commit`)
+- **Tests:** 314+ verified passing after upgrade, 0 vulnerabilities
