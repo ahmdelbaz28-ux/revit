@@ -17500,4 +17500,6 @@ RUN mkdir -p /app/data /app/logs /app/tmp /app/db && \
 **Layer 4 (COMMITMENT):** Would I stake a life on this? Yes. Without this fix, any environment that sets `FIREAI_API_KEY` (which is the production-correct behavior per deploy.yml lines 210, 269) would crash on container startup. The bug was hiding behind HF Spaces not setting FIREAI_API_KEY — a coincidence, not a safety control. This fix makes the container robust to the production configuration.
 
 ### Commit Information
-- **Commit:** (pending — will be filled after `git commit`)
+- **Commit:** `94e61ae093618d94a41064ef41991893a084b4e6`
+- **GitHub push link:** https://github.com/ahmdelbaz28-ux/revit/commit/94e61ae093618d94a41064ef41991893a084b4e6
+- **Branch:** main (c6c77d49 → 94e61ae0)
