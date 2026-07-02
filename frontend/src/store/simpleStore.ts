@@ -273,9 +273,11 @@ export const actions = {
       id: uid(),
       timestamp: now
     };
+    // V185 FIX: errorLog is now an alias for errors (single source of truth).
+    // Was duplicated, causing potential drift if one was updated without the other.
     setState((s) => ({
       errors: [newError, ...s.errors].slice(0, MAX_ERROR_ENTRIES),
-      errorLog: [newError, ...s.errorLog].slice(0, MAX_ERROR_ENTRIES),
+      errorLog: [newError, ...s.errors].slice(0, MAX_ERROR_ENTRIES),
     }));
   },
 
@@ -283,9 +285,10 @@ export const actions = {
     const now = Date.now();
     const msg = typeof message === 'string' ? message : message.message;
     const error: AppError = { id: uid(), message: msg, severity: 'critical', timestamp: now };
+    // V185 FIX: errorLog = errors (alias, no more drift)
     setState((s) => ({
-      errorLog: [error, ...s.errorLog].slice(0, MAX_ERROR_ENTRIES),
       errors: [error, ...s.errors].slice(0, MAX_ERROR_ENTRIES),
+      errorLog: [error, ...s.errors].slice(0, MAX_ERROR_ENTRIES),
     }));
   },
 

@@ -719,19 +719,12 @@ export interface SyncStatus {
   error?: string;
 }
 
-export interface HealthStatus {
-  status: 'ok' | 'degraded' | 'error';
-  version: string;
-  uptime: number;
-  database: 'connected' | 'disconnected';
-  timestamp: string;
-  // Extended fields returned by backend (used by some components)
-  uptime_seconds?: number;
-  core_modules?: string;
-  total_elements?: number;
-  total_projects?: number;
-  warning?: string;
-}
+// V185 FIX: HealthStatus was duplicated here and in types/index.ts.
+// Now imported from types/index.ts (single source of truth).
+// The definitions were identical, but having two copies meant changes
+// could diverge silently.
+import type { HealthStatus } from '@/types';
+export type { HealthStatus };
 
 // ============================================================================
 // EXPORTED INSTANCE

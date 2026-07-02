@@ -24,9 +24,11 @@ import logging
 import os
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect
 
 from backend.api_keys import validate_api_key
+from backend.auth import require_permission
+from backend.rbac import Permission
 from backend.database import get_db
 
 logger = logging.getLogger(__name__)
@@ -172,7 +174,7 @@ def _verify_project(project_id: str) -> None:
         raise HTTPException(status_code=404, detail="Project not found")
 
 
-@router.post("")
+@router.post("", dependencies=[Depends(require_permission(Permission.PROJECT_UPDATE))])
 async def sync_project(project_id: str):
     """Trigger project synchronization."""
     _verify_project(project_id)
@@ -208,7 +210,7 @@ async def sync_project(project_id: str):
     return {"data": sync_status, "success": True}
 
 
-@router.get("")
+@router.get("", dependencies=[Depends(require_permission(Permission.PROJECT_READ))])
 async def get_sync_status(project_id: str):
     """Get the current sync status of a project."""
     _verify_project(project_id)

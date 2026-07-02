@@ -19,6 +19,8 @@ import math
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
+from backend.auth import require_permission
+from backend.rbac import Permission
 from backend.db_service import DatabaseService, get_db_service
 from backend.schemas import (
     ApiResponse,
@@ -34,7 +36,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/connections", tags=["connections-v2"])
 
 
-@router.get("", response_model=ApiResponse[PaginatedData[ConnectionResponse]])
+@router.get("", response_model=ApiResponse[PaginatedData[ConnectionResponse]], dependencies=[Depends(require_permission(Permission.CONNECTION_READ))])
 async def list_connections(
     project_id: str | None = Query(None, description="Filter by project ID"),
     element_id: str | None = Query(None, description="Filter by element ID"),
@@ -69,7 +71,7 @@ async def list_connections(
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@router.post("", response_model=ApiResponse[ConnectionResponse], status_code=201)
+@router.post("", response_model=ApiResponse[ConnectionResponse], status_code=201, dependencies=[Depends(require_permission(Permission.CONNECTION_CREATE))])
 async def create_connection(
     connection_data: ConnectionCreate,
     db: DatabaseService = Depends(get_db_service),
@@ -87,7 +89,7 @@ async def create_connection(
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@router.delete("/{connection_id}", response_model=ApiResponse[None])
+@router.delete("/{connection_id}", response_model=ApiResponse[None], dependencies=[Depends(require_permission(Permission.CONNECTION_DELETE))])
 async def delete_connection(
     connection_id: str,
     db: DatabaseService = Depends(get_db_service),

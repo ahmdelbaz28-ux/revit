@@ -17,8 +17,10 @@ from __future__ import annotations
 import logging
 from typing import Dict, List, Optional
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 
+from backend.auth import require_permission
+from backend.rbac import Permission
 from backend.multi_db_service import get_multi_db_service
 from backend.schemas import ApiResponse
 
@@ -43,7 +45,7 @@ async def get_database_health():
         raise HTTPException(status_code=500, detail="Database health check failed")
 
 
-@router.get("/redis/get/{key}")
+@router.get("/redis/get/{key}", dependencies=[Depends(require_permission(Permission.SYSTEM_CONFIG))])
 async def get_from_redis(key: str):
     """Get a value from Redis cache."""
     try:
@@ -62,7 +64,7 @@ async def get_from_redis(key: str):
         raise HTTPException(status_code=500, detail="Redis operation failed")
 
 
-@router.post("/redis/set")
+@router.post("/redis/set", dependencies=[Depends(require_permission(Permission.SYSTEM_CONFIG))])
 async def set_in_redis(key: str, value: str, ttl: Optional[int] = Query(None, description="Time to live in seconds")):
     """Set a value in Redis cache."""
     try:
@@ -81,7 +83,7 @@ async def set_in_redis(key: str, value: str, ttl: Optional[int] = Query(None, de
         raise HTTPException(status_code=500, detail="Redis operation failed")
 
 
-@router.post("/bim/cache-element")
+@router.post("/bim/cache-element", dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])
 async def cache_bim_element(element_id: str, element_data: Dict):
     """Cache BIM element data in Redis for faster access."""
     try:
@@ -100,7 +102,7 @@ async def cache_bim_element(element_id: str, element_data: Dict):
         raise HTTPException(status_code=500, detail="BIM element caching failed")
 
 
-@router.get("/bim/get-cached-element/{element_id}")
+@router.get("/bim/get-cached-element/{element_id}", dependencies=[Depends(require_permission(Permission.ELEMENT_READ))])
 async def get_cached_bim_element(element_id: str):
     """Retrieve cached BIM element data from Redis."""
     try:
@@ -119,7 +121,7 @@ async def get_cached_bim_element(element_id: str):
         raise HTTPException(status_code=500, detail="Get cached BIM element failed")
 
 
-@router.post("/bim/store-embeddings")
+@router.post("/bim/store-embeddings", dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])
 async def store_element_embeddings(element_id: str, embeddings: List[float]):
     """Store element embeddings in Qdrant for similarity search."""
     try:
@@ -138,7 +140,7 @@ async def store_element_embeddings(element_id: str, embeddings: List[float]):
         raise HTTPException(status_code=500, detail="Store element embeddings failed")
 
 
-@router.post("/bim/find-similar")
+@router.post("/bim/find-similar", dependencies=[Depends(require_permission(Permission.ELEMENT_READ))])
 async def find_similar_elements(query_embedding: List[float], limit: int = Query(5, ge=1, le=20)):
     """Find similar BIM elements using vector search."""
     try:
@@ -154,7 +156,7 @@ async def find_similar_elements(query_embedding: List[float], limit: int = Query
         raise HTTPException(status_code=500, detail="Find similar elements failed")
 
 
-@router.post("/bim/create-relationships")
+@router.post("/bim/create-relationships", dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])
 async def create_element_relationships(
     element_id: str,
     related_elements: List[str],
@@ -181,7 +183,7 @@ async def create_element_relationships(
         raise HTTPException(status_code=500, detail="Create element relationships failed")
 
 
-@router.get("/bim/related-elements/{element_id}")
+@router.get("/bim/related-elements/{element_id}", dependencies=[Depends(require_permission(Permission.ELEMENT_READ))])
 async def find_related_elements(
     element_id: str,
     relationship_type: str = Query("CONNECTED_TO", description="Type of relationship")
@@ -200,7 +202,7 @@ async def find_related_elements(
         raise HTTPException(status_code=500, detail="Find related elements failed")
 
 
-@router.get("/neo4j/query")
+@router.get("/neo4j/query", dependencies=[Depends(require_permission(Permission.SYSTEM_CONFIG))])
 async def execute_neo4j_query(query: str, parameters: Optional[str] = Query(None)):
     """Execute a custom Cypher query against Neo4j."""
     try:
@@ -219,7 +221,7 @@ async def execute_neo4j_query(query: str, parameters: Optional[str] = Query(None
         raise HTTPException(status_code=500, detail="Neo4j query failed")
 
 
-@router.get("/qdrant/collections")
+@router.get("/qdrant/collections", dependencies=[Depends(require_permission(Permission.SYSTEM_CONFIG))])
 async def get_qdrant_collections():
     """Get list of Qdrant collections."""
     try:

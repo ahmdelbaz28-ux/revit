@@ -26,6 +26,7 @@
 import { api as coreApi } from './api';
 import { api as digitalTwinApiClient } from './digitalTwinApi';
 import { getApiKey } from './apiKey';
+import { ApiError } from './api';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -76,8 +77,11 @@ async function apiCall<T>(
 
   if (!response.ok) {
     const errorBody = await response.json().catch(() => ({}));
-    throw new Error(
-      errorBody?.detail || errorBody?.message || `HTTP ${response.status}: ${response.statusText}`
+    // V185 FIX: Throw ApiError (not generic Error) for consistency with api.ts.
+    // Consumers were forced to handle two different error types — now they handle one.
+    throw new ApiError(
+      errorBody?.detail || errorBody?.message || `HTTP ${response.status}: ${response.statusText}`,
+      response.status
     );
   }
 
@@ -91,7 +95,8 @@ async function apiCall<T>(
   // Unwrap {success, data, message} envelope
   if (body && typeof body === 'object' && 'success' in body && 'data' in body) {
     if (!body.success) {
-      throw new Error(body.message || 'API returned success=false');
+      // V185 FIX: ApiError for consistency
+      throw new ApiError(body.message || 'API returned success=false', response.status);
     }
     return body.data as T;
   }
