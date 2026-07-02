@@ -165,6 +165,14 @@ jobs:
         # GitHub Actions runners are slower than local dev machines. The
         # full suite (9000+ tests) takes ~11 min locally but can take 20+
         # min on GHA. The 20 min timeout was causing Gate 2 to fail.
+        #
+        # V166 FIX (root-cause): Add --no-cov to disable pytest-cov's atexit
+        # hook. pytest-cov is installed (via [dev] extras) and registers an
+        # atexit handler EVEN WHEN --cov is not passed. This handler tries
+        # to flush coverage data and hangs for 27+ minutes after pytest
+        # completes successfully (verified: 7198 passed in 193s, then hang
+        # until 30-min timeout). --no-cov explicitly disables coverage
+        # measurement AND the atexit hook.
         timeout-minutes: 30
         env:
           PYTEST_ADDOPTS: "--color=no"
@@ -173,6 +181,7 @@ jobs:
           pytest tests/ backend/tests/ \
             --tb=short \
             -p no:cacheprovider \
+            --no-cov \
             --timeout=60 \
             --timeout-method=signal \
             -q
@@ -209,8 +218,9 @@ jobs:
           pip install pytest pytest-asyncio hypothesis
 
       - name: Run property-based tests
+        # V166 FIX: Add --no-cov to disable pytest-cov atexit hook
         run: |
-          pytest tests/property_based/ -v --tb=short
+          pytest tests/property_based/ -v --tb=short --no-cov -p no:cacheprovider
 
   # ── Gate 4: Frontend Build ────────────────────────────────────────────────
   frontend-build:

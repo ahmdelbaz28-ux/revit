@@ -92,19 +92,28 @@ jobs:
         # concern, not a deployment gate. Local development still uses
         # full coverage (pyproject.toml [tool.coverage] settings preserved).
         #
+        # V166 FIX (root-cause): Add --no-cov to explicitly disable pytest-cov's
+        # atexit hook. pytest-cov is installed (via [dev] extras) and registers
+        # an atexit handler EVEN WHEN --cov is not passed. This handler hangs
+        # for 27+ minutes after pytest completes successfully.
+        #
         # V141 FIX (B5 — Launch Blocker): Removed --ignore=test_workflow_service*.py
         # These tests were previously ignored because they failed due to the
         # aiosqlite 0.22.0+ incompatibility (B1 — conn.is_alive() removed).
         # B1 fixed by pinning aiosqlite<0.22.0 in pyproject.toml. All 108
         # workflow_service tests now pass (40 + 68), so they are included
         # in the deploy gate to prevent regressions.
-        timeout-minutes: 20
+        timeout-minutes: 30
         env:
           PYTEST_ADDOPTS: "--color=no"
         run: |
+          pip install pytest-timeout
           pytest tests/ backend/tests/ \
             --tb=short \
             -p no:cacheprovider \
+            --no-cov \
+            --timeout=60 \
+            --timeout-method=signal \
             -q
 
       - name: Build frontend
