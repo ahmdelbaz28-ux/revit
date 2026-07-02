@@ -104,7 +104,7 @@ export function AutoCADDrawPage() {
         </TabsList>
 
         <TabsContent value="line">
-          <Card className="border-slate-700 bg-slate-800/80">
+          <Card className="border-slate-700 bg-slate-800">
             <CardHeader>
               <CardTitle className="text-slate-100">Draw Line</CardTitle>
               <CardDescription className="text-slate-400">Draw a line between two points</CardDescription>
@@ -133,7 +133,7 @@ export function AutoCADDrawPage() {
         </TabsContent>
 
         <TabsContent value="polyline">
-          <Card className="border-slate-700 bg-slate-800/80">
+          <Card className="border-slate-700 bg-slate-800">
             <CardHeader>
               <CardTitle className="text-slate-100">Draw Polyline</CardTitle>
               <CardDescription className="text-slate-400">Draw a polyline through multiple points</CardDescription>
@@ -156,7 +156,7 @@ export function AutoCADDrawPage() {
         </TabsContent>
 
         <TabsContent value="circle">
-          <Card className="border-slate-700 bg-slate-800/80">
+          <Card className="border-slate-700 bg-slate-800">
             <CardHeader>
               <CardTitle className="text-slate-100">Draw Circle</CardTitle>
               <CardDescription className="text-slate-400">Draw a circle at center with radius</CardDescription>
@@ -185,7 +185,7 @@ export function AutoCADDrawPage() {
         </TabsContent>
 
         <TabsContent value="text">
-          <Card className="border-slate-700 bg-slate-800/80">
+          <Card className="border-slate-700 bg-slate-800">
             <CardHeader>
               <CardTitle className="text-slate-100">Draw Text</CardTitle>
               <CardDescription className="text-slate-400">Insert text at a point</CardDescription>

@@ -28,7 +28,7 @@ export function CablingNetwork() {
         </div>
         
         {/* Ribbon Tools */}
-        <div className="flex-1 flex items-center px-2 space-x-1 bg-slate-800/80 overflow-x-auto">
+        <div className="flex-1 flex items-center px-2 space-x-1 bg-slate-800 overflow-x-auto">
           {/* Outlets */}
           <div className="flex items-center px-2 border-r border-slate-700">
             <RibbonBtn icon={<LayoutGrid className="text-slate-300" />} label="Data Outlet" active />
@@ -141,7 +141,7 @@ export function CablingNetwork() {
               <div className="absolute left-[80%] top-[200px] w-3 h-3 bg-slate-500 border border-slate-400 -translate-x-1/2 -translate-y-1/2"></div>
               
               {/* Labels */}
-              <div className="absolute left-[120px] top-[210px] text-[8px] text-emerald-300 bg-slate-900/80 px-1 font-mono -translate-x-1/2 border border-emerald-500/30 rounded">DA-2-047</div>
+              <div className="absolute left-[120px] top-[210px] text-[8px] text-emerald-300 bg-slate-900 px-1 font-mono -translate-x-1/2 border border-emerald-500/30 rounded">DA-2-047</div>
             </div>
           </div>
         </div>

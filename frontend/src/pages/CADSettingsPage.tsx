@@ -205,7 +205,7 @@ export function CADSettingsPage() {
           {/* AutoCAD Tab */}
           <TabsContent value="autocad" className="space-y-6">
             {/* Connection Status */}
-            <Card className="border-slate-700 bg-slate-800/80">
+            <Card className="border-slate-700 bg-slate-800">
               <CardHeader>
                 <CardTitle className="text-lg text-slate-100 flex items-center justify-between">
                   <span className="flex items-center gap-2">
@@ -262,7 +262,7 @@ export function CADSettingsPage() {
             </Card>
 
             {/* AutoCAD Configuration */}
-            <Card className="border-slate-700 bg-slate-800/80">
+            <Card className="border-slate-700 bg-slate-800">
               <CardHeader>
                 <CardTitle className="text-lg text-slate-100 flex items-center gap-2">
                   <Settings className="h-5 w-5 text-blue-400" />
@@ -368,7 +368,7 @@ export function CADSettingsPage() {
           {/* Revit Tab */}
           <TabsContent value="revit" className="space-y-6">
             {/* Connection Status */}
-            <Card className="border-slate-700 bg-slate-800/80">
+            <Card className="border-slate-700 bg-slate-800">
               <CardHeader>
                 <CardTitle className="text-lg text-slate-100 flex items-center justify-between">
                   <span className="flex items-center gap-2">
@@ -425,7 +425,7 @@ export function CADSettingsPage() {
             </Card>
 
             {/* Revit Configuration */}
-            <Card className="border-slate-700 bg-slate-800/80">
+            <Card className="border-slate-700 bg-slate-800">
               <CardHeader>
                 <CardTitle className="text-lg text-slate-100 flex items-center gap-2">
                   <Wrench className="h-5 w-5 text-blue-400" />

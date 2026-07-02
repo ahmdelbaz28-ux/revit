@@ -205,7 +205,7 @@ export function FireAlarmPage() {
             <SymbolLibrary />
             
             <div className="mt-6">
-              <Card className="border-slate-700 bg-slate-800/80">
+              <Card className="border-slate-700 bg-slate-800">
                 <CardHeader>
                   <CardTitle className="text-lg text-slate-100">{t('fireAlarm.projectInfo')}</CardTitle>
                   <CardDescription className="text-slate-400">

@@ -147,7 +147,7 @@ export function FireAlarmDesigner() {
         </div>
 
         {/* Project Info */}
-        <Card className="border-slate-700 bg-slate-800/80">
+        <Card className="border-slate-700 bg-slate-800">
           <CardHeader className="pb-3">
             <CardTitle className="text-lg text-slate-100">{t('fireAlarm.projectInfo')}</CardTitle>
             <CardDescription className="text-slate-400">
@@ -179,7 +179,7 @@ export function FireAlarmDesigner() {
         </Card>
 
         {/* Toolbar */}
-        <Card className="border-slate-700 bg-slate-800/80">
+        <Card className="border-slate-700 bg-slate-800">
           <CardHeader className="pb-3">
             <CardTitle className="text-lg text-slate-100">{t('fireAlarm.tools')}</CardTitle>
             <CardDescription className="text-slate-400">
@@ -268,7 +268,7 @@ export function FireAlarmDesigner() {
         </Card>
 
         {/* Canvas Editor */}
-        <Card className="border-slate-700 bg-slate-800/80">
+        <Card className="border-slate-700 bg-slate-800">
           <CardHeader className="pb-3">
             <CardTitle className="text-lg text-slate-100">{t('fireAlarm.designCanvas')}</CardTitle>
             <CardDescription className="text-slate-400">
@@ -284,7 +284,7 @@ export function FireAlarmDesigner() {
         </Card>
 
         {/* Detector Stats */}
-        <Card className="border-slate-700 bg-slate-800/80">
+        <Card className="border-slate-700 bg-slate-800">
           <CardHeader className="pb-3">
             <CardTitle className="text-lg text-slate-100">{t('fireAlarm.statistics')}</CardTitle>
             <CardDescription className="text-slate-400">

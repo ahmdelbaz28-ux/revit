@@ -86,7 +86,7 @@ export function RevitPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card className="border-slate-700 bg-slate-800/80">
+        <Card className="border-slate-700 bg-slate-800">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-slate-100"><Power className="h-5 w-5 text-orange-400" /> Connection</CardTitle>
             <CardDescription className="text-slate-400">Connect to Revit instance</CardDescription>
@@ -108,7 +108,7 @@ export function RevitPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-slate-700 bg-slate-800/80">
+        <Card className="border-slate-700 bg-slate-800">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-slate-100"><Activity className="h-5 w-5 text-orange-400" /> Status</CardTitle>
             <CardDescription className="text-slate-400">Current Revit status</CardDescription>
@@ -121,7 +121,7 @@ export function RevitPage() {
         </Card>
       </div>
 
-      <Card className="border-slate-700 bg-slate-800/80">
+      <Card className="border-slate-700 bg-slate-800">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-slate-100"><FileText className="h-5 w-5 text-orange-400" /> Read RVT File</CardTitle>
         </CardHeader>

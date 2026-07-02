@@ -73,7 +73,7 @@ const Sidebar: React.FC<SidebarProps> = ({ compact = false }) => {
 
   return (
     <aside
-      className={`${width} h-full bg-slate-900/90 backdrop-blur-sm border-${
+      className={`${width} h-full bg-slate-900 backdrop-blur-sm border-${
         isRTL ? "l" : "r"
       } border-slate-700/50 flex flex-col transition-all duration-300 ${
         isRTL ? "order-last" : "order-first"
@@ -101,7 +101,7 @@ const Sidebar: React.FC<SidebarProps> = ({ compact = false }) => {
                 to={item.path}
                 className={`flex items-center gap-3 px-3 py-2 mx-1 rounded-xl transition-all duration-200 ${
                   isActive
-                    ? "bg-slate-800/80 border-l-2 border-orange-500 text-orange-400 shadow-lg shadow-orange-500/20"
+                    ? "bg-slate-800 border-l-2 border-orange-500 text-orange-400 shadow-lg shadow-orange-500/20"
                     : "text-slate-400 hover:bg-slate-800/60 hover:text-slate-200"
                 } ${compact && !collapsed ? "py-1.5 text-sm" : ""}`}
                 onMouseEnter={() => setHoveredItem(item.path)}
@@ -123,7 +123,7 @@ const Sidebar: React.FC<SidebarProps> = ({ compact = false }) => {
                 )}
               </Link>
               {collapsed && isHovered && (
-                <div className={`absolute top-1/2 -translate-y-1/2 px-2 py-1 bg-slate-800/90 backdrop-blur-sm text-slate-200 text-xs rounded shadow-lg z-50 whitespace-nowrap ${isRTL ? "right-full mr-2" : "left-full ml-2"}`}>
+                <div className={`absolute top-1/2 -translate-y-1/2 px-2 py-1 bg-slate-800 backdrop-blur-sm text-slate-200 text-xs rounded shadow-lg z-50 whitespace-nowrap ${isRTL ? "right-full mr-2" : "left-full ml-2"}`}>
                   {labelText}
                 </div>
               )}

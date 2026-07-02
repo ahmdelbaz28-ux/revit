@@ -145,7 +145,7 @@ export function ReportsPage() {
         )}
 
         {/* Report Generation Card */}
-        <Card className="border-slate-700 bg-slate-800/80">
+        <Card className="border-slate-700 bg-slate-800">
           <CardHeader className="pb-3">
             <CardTitle className="text-lg text-slate-100">{t('reports.generate')}</CardTitle>
             <CardDescription className="text-slate-400">
@@ -236,7 +236,7 @@ export function ReportsPage() {
         </Card>
 
         {/* Battery Calculation Report Preview */}
-        <Card className="border-slate-700 bg-slate-800/80">
+        <Card className="border-slate-700 bg-slate-800">
           <CardHeader className="pb-3">
             <CardTitle className="text-lg text-slate-100">{t('reports.batteryCalculations')}</CardTitle>
             <CardDescription className="text-slate-400">
@@ -266,7 +266,7 @@ export function ReportsPage() {
         </Card>
 
         {/* Coverage Analysis Report Preview */}
-        <Card className="border-slate-700 bg-slate-800/80">
+        <Card className="border-slate-700 bg-slate-800">
           <CardHeader className="pb-3">
             <CardTitle className="text-lg text-slate-100">{t('reports.coverageAnalysis')}</CardTitle>
             <CardDescription className="text-slate-400">
@@ -296,7 +296,7 @@ export function ReportsPage() {
         </Card>
 
         {/* Report History */}
-        <Card className="border-slate-700 bg-slate-800/80">
+        <Card className="border-slate-700 bg-slate-800">
           <CardHeader className="pb-3">
             <CardTitle className="text-lg text-slate-100">{t('reports.history')}</CardTitle>
             <CardDescription className="text-slate-400">

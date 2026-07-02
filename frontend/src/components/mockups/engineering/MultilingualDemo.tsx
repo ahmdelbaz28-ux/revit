@@ -87,7 +87,7 @@ export function MultilingualDemo() {
                 </span>
               </div>
               {/* Tabs */}
-              <div className="flex text-[10px] font-mono border-b border-slate-800 bg-slate-900/80">
+              <div className="flex text-[10px] font-mono border-b border-slate-800 bg-slate-900">
                 <div className="px-3 py-1.5 border-b-2 border-blue-500 text-blue-400">Errors</div>
                 <div className="px-3 py-1.5 text-slate-500">Warnings</div>
                 <div className="px-3 py-1.5 text-slate-500">Output</div>
@@ -132,7 +132,7 @@ export function MultilingualDemo() {
                 </span>
               </div>
               {/* Tabs */}
-              <div className="flex text-[10px] font-mono border-b border-slate-800 bg-slate-900/80">
+              <div className="flex text-[10px] font-mono border-b border-slate-800 bg-slate-900">
                 <div className="px-3 py-1.5 border-b-2 border-blue-500 text-blue-400">الأخطاء</div>
                 <div className="px-3 py-1.5 text-slate-500">التحذيرات</div>
                 <div className="px-3 py-1.5 text-slate-500">المخرجات</div>
@@ -177,7 +177,7 @@ export function MultilingualDemo() {
                 </span>
               </div>
               {/* Tabs */}
-              <div className="flex text-[10px] font-mono border-b border-slate-800 bg-slate-900/80">
+              <div className="flex text-[10px] font-mono border-b border-slate-800 bg-slate-900">
                 <div className="px-3 py-1.5 border-b-2 border-blue-500 text-blue-400">Erreurs</div>
                 <div className="px-3 py-1.5 text-slate-500">Avertissements</div>
                 <div className="px-3 py-1.5 text-slate-500">Sortie</div>

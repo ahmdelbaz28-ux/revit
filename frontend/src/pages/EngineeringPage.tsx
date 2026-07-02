@@ -212,7 +212,7 @@ export function EngineeringPage() {
 
         {/* Voltage Drop Calculator */}
         {activeTab === 'voltage-drop' && (
-          <Card className="border-slate-700 bg-slate-800/80">
+          <Card className="border-slate-700 bg-slate-800">
             <CardHeader>
               <CardTitle className="text-lg text-slate-100 flex items-center gap-2">
                 <Zap className="h-5 w-5" />
@@ -325,7 +325,7 @@ export function EngineeringPage() {
 
         {/* Cable Sizing Calculator */}
         {activeTab === 'cable-sizing' && (
-          <Card className="border-slate-700 bg-slate-800/80">
+          <Card className="border-slate-700 bg-slate-800">
             <CardHeader>
               <CardTitle className="text-lg text-slate-100 flex items-center gap-2">
                 <Cable className="h-5 w-5" />
@@ -428,7 +428,7 @@ export function EngineeringPage() {
 
         {/* Battery Calculation */}
         {activeTab === 'battery-calc' && (
-          <Card className="border-slate-700 bg-slate-800/80">
+          <Card className="border-slate-700 bg-slate-800">
             <CardHeader>
               <CardTitle className="text-lg text-slate-100 flex items-center gap-2">
                 <Battery className="h-5 w-5" />

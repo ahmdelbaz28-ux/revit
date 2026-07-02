@@ -143,7 +143,7 @@ export function BMSDashboard() {
               </div>
 
               {/* Corridor */}
-              <div className="absolute top-[60%] left-[50%] right-0 h-[40%] bg-slate-800/80 p-2 flex flex-col border-t border-slate-600">
+              <div className="absolute top-[60%] left-[50%] right-0 h-[40%] bg-slate-800 p-2 flex flex-col border-t border-slate-600">
                 <span className="text-xs font-bold text-slate-400">Corridor</span>
                 <div className="mt-auto text-[10px] text-slate-500 font-mono">23.5°C</div>
               </div>

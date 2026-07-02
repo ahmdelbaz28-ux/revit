@@ -73,7 +73,7 @@ export function ConfigEditor({ title, description, loadConfig, saveConfig }: Con
   const hasChanges = configText !== original;
 
   return (
-    <Card className="border-slate-700 bg-slate-800/80">
+    <Card className="border-slate-700 bg-slate-800">
       <CardHeader>
         <CardTitle className="text-slate-100">{title}</CardTitle>
         {description && <CardDescription className="text-slate-400">{description}</CardDescription>}

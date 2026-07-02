@@ -78,7 +78,7 @@ export const DeviceProperties: React.FC<DevicePropertiesProps> = ({
   if (!device) {
     return (
       <div className="fixed top-4 right-4 w-80 bg-slate-800 border border-slate-700 rounded-lg shadow-lg z-50">
-        <Card className="border-slate-700 bg-slate-800/80">
+        <Card className="border-slate-700 bg-slate-800">
           <CardHeader className="pb-3">
             <div className="flex justify-between items-center">
               <CardTitle className="text-lg text-slate-100">{t('fireAlarm.deviceProperties')}</CardTitle>
@@ -97,7 +97,7 @@ export const DeviceProperties: React.FC<DevicePropertiesProps> = ({
   
   return (
     <div className="fixed top-4 right-4 w-80 bg-slate-800 border border-slate-700 rounded-lg shadow-lg z-50">
-      <Card className="border-slate-700 bg-slate-800/80">
+      <Card className="border-slate-700 bg-slate-800">
         <CardHeader className="pb-3">
           <div className="flex justify-between items-center">
             <CardTitle className="text-lg text-slate-100">{t('fireAlarm.deviceProperties')}</CardTitle>

@@ -54,7 +54,7 @@ export function RevitElementsPage() {
           <RefreshCw className="h-4 w-4 mr-2" /> Refresh
         </Button>
       </div>
-      <Card className="border-slate-700 bg-slate-800/80">
+      <Card className="border-slate-700 bg-slate-800">
         <CardHeader>
           <CardTitle className="text-slate-100">Elements ({elements.length})</CardTitle>
         </CardHeader>

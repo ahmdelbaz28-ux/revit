@@ -65,7 +65,7 @@ export function SecuritySystems() {
 
         {/* Central Canvas */}
         <div className="flex-1 bg-[#050914] relative overflow-hidden flex flex-col" style={{ backgroundImage: 'linear-gradient(#1e293b 1px, transparent 1px), linear-gradient(90deg, #1e293b 1px, transparent 1px)', backgroundSize: '40px 40px' }}>
-          <div className="absolute top-4 left-4 z-10 bg-slate-900/80 border border-slate-700 px-3 py-1.5 rounded flex items-center gap-2 backdrop-blur">
+          <div className="absolute top-4 left-4 z-10 bg-slate-900 border border-slate-700 px-3 py-1.5 rounded flex items-center gap-2 backdrop-blur">
             <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
             <span className="text-xs font-mono text-indigo-400">Coverage: 93.4%</span>
             <Separator orientation="vertical" className="h-3 bg-slate-600 mx-1" />
@@ -251,7 +251,7 @@ function CamSymbol({ x, y, label, type, dir = "n", selected = false }: { x: stri
       <div className={`w-5 h-5 rounded-full border-2 bg-slate-800 flex items-center justify-center z-10 ${selected ? 'border-indigo-400 shadow-[0_0_10px_rgba(99,102,241,0.5)]' : 'border-slate-400'}`}>
         <Camera className={`w-2.5 h-2.5 ${selected ? 'text-indigo-400' : 'text-slate-400'}`} />
       </div>
-      <div className={`mt-0.5 text-[8px] font-mono whitespace-nowrap bg-slate-900/90 px-1 py-0.5 rounded border ${selected ? 'border-indigo-500 text-indigo-300' : 'border-slate-700 text-slate-400'}`}>
+      <div className={`mt-0.5 text-[8px] font-mono whitespace-nowrap bg-slate-900 px-1 py-0.5 rounded border ${selected ? 'border-indigo-500 text-indigo-300' : 'border-slate-700 text-slate-400'}`}>
         {label}
       </div>
     </div>

@@ -34,7 +34,7 @@ export function DigitalTwinConfigPage() {
         loadConfig={async () => (await digitalTwinService.getConfig()) as Record<string, unknown>}
         saveConfig={async (config) => { await digitalTwinService.setConfig(config); }}
       />
-      <Card className="border-slate-700 bg-slate-800/80">
+      <Card className="border-slate-700 bg-slate-800">
         <CardHeader>
           <CardTitle className="text-slate-100">Available Mappings ({mappings.length})</CardTitle>
         </CardHeader>

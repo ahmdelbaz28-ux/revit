@@ -141,7 +141,7 @@ export function ProjectsPage() {
 
         {/* Create Project Form */}
         {showCreateForm && (
-          <Card className="border-slate-700 bg-slate-800/80">
+          <Card className="border-slate-700 bg-slate-800">
             <CardHeader>
               <CardTitle className="text-lg text-slate-100">{t('projects.createProject')}</CardTitle>
             </CardHeader>
@@ -231,7 +231,7 @@ export function ProjectsPage() {
         {projectsLoading && (
           <div className="space-y-4">
             {[...Array(3)].map((_, index) => (
-              <Card key={index} className="border-slate-700 bg-slate-800/80">
+              <Card key={index} className="border-slate-700 bg-slate-800">
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
                     <div>
@@ -279,7 +279,7 @@ export function ProjectsPage() {
         {!projectsLoading && filteredProjects && filteredProjects.length > 0 && (
           <div className="space-y-4">
             {filteredProjects.map((project: Project) => (
-              <Card key={project.id} className="border-slate-700 bg-slate-800/80">
+              <Card key={project.id} className="border-slate-700 bg-slate-800">
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">
                     <div>

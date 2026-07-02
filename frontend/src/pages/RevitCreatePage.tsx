@@ -106,7 +106,7 @@ export function RevitCreatePage() {
         </TabsList>
 
         <TabsContent value="wall">
-          <Card className="border-slate-700 bg-slate-800/80"><CardHeader><CardTitle className="text-slate-100">Create Wall</CardTitle><CardDescription className="text-slate-400">Draw a wall between two points</CardDescription></CardHeader>
+          <Card className="border-slate-700 bg-slate-800"><CardHeader><CardTitle className="text-slate-100">Create Wall</CardTitle><CardDescription className="text-slate-400">Draw a wall between two points</CardDescription></CardHeader>
             <CardContent className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <div><Label className="text-slate-300">Start (x,y,z mm)</Label><Input value={wallStart} onChange={(e) => setWallStart(e.target.value)} className={inputClass} /></div>
@@ -123,7 +123,7 @@ export function RevitCreatePage() {
         </TabsContent>
 
         <TabsContent value="floor">
-          <Card className="border-slate-700 bg-slate-800/80"><CardHeader><CardTitle className="text-slate-100">Create Floor</CardTitle><CardDescription className="text-slate-400">Create floor from boundary points</CardDescription></CardHeader>
+          <Card className="border-slate-700 bg-slate-800"><CardHeader><CardTitle className="text-slate-100">Create Floor</CardTitle><CardDescription className="text-slate-400">Create floor from boundary points</CardDescription></CardHeader>
             <CardContent className="space-y-3">
               <div><Label className="text-slate-300">Boundary Points (x,y,z separated by ;)</Label><Input value={floorBoundary} onChange={(e) => setFloorBoundary(e.target.value)} className={inputClass} /></div>
               <div className="grid grid-cols-2 gap-3">
@@ -136,7 +136,7 @@ export function RevitCreatePage() {
         </TabsContent>
 
         <TabsContent value="column">
-          <Card className="border-slate-700 bg-slate-800/80"><CardHeader><CardTitle className="text-slate-100">Create Column</CardTitle><CardDescription className="text-slate-400">Place a structural column</CardDescription></CardHeader>
+          <Card className="border-slate-700 bg-slate-800"><CardHeader><CardTitle className="text-slate-100">Create Column</CardTitle><CardDescription className="text-slate-400">Place a structural column</CardDescription></CardHeader>
             <CardContent className="space-y-3">
               <div><Label className="text-slate-300">Location (x,y,z mm)</Label><Input value={colLocation} onChange={(e) => setColLocation(e.target.value)} className={inputClass} /></div>
               <div className="grid grid-cols-3 gap-3">
@@ -150,7 +150,7 @@ export function RevitCreatePage() {
         </TabsContent>
 
         <TabsContent value="beam">
-          <Card className="border-slate-700 bg-slate-800/80"><CardHeader><CardTitle className="text-slate-100">Create Beam</CardTitle><CardDescription className="text-slate-400">Place a structural beam</CardDescription></CardHeader>
+          <Card className="border-slate-700 bg-slate-800"><CardHeader><CardTitle className="text-slate-100">Create Beam</CardTitle><CardDescription className="text-slate-400">Place a structural beam</CardDescription></CardHeader>
             <CardContent className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <div><Label className="text-slate-300">Start (x,y,z mm)</Label><Input value={beamStart} onChange={(e) => setBeamStart(e.target.value)} className={inputClass} /></div>
@@ -166,7 +166,7 @@ export function RevitCreatePage() {
         </TabsContent>
 
         <TabsContent value="door">
-          <Card className="border-slate-700 bg-slate-800/80"><CardHeader><CardTitle className="text-slate-100">Create Door</CardTitle><CardDescription className="text-slate-400">Place a door in a wall</CardDescription></CardHeader>
+          <Card className="border-slate-700 bg-slate-800"><CardHeader><CardTitle className="text-slate-100">Create Door</CardTitle><CardDescription className="text-slate-400">Place a door in a wall</CardDescription></CardHeader>
             <CardContent className="space-y-3">
               <div><Label className="text-slate-300">Host Wall ID</Label><Input placeholder="Wall element ID" value={doorWall} onChange={(e) => setDoorWall(e.target.value)} className={inputClass} /></div>
               <div><Label className="text-slate-300">Location (x,y,z mm)</Label><Input value={doorLocation} onChange={(e) => setDoorLocation(e.target.value)} className={inputClass} /></div>
@@ -180,7 +180,7 @@ export function RevitCreatePage() {
         </TabsContent>
 
         <TabsContent value="window">
-          <Card className="border-slate-700 bg-slate-800/80"><CardHeader><CardTitle className="text-slate-100">Create Window</CardTitle><CardDescription className="text-slate-400">Place a window in a wall</CardDescription></CardHeader>
+          <Card className="border-slate-700 bg-slate-800"><CardHeader><CardTitle className="text-slate-100">Create Window</CardTitle><CardDescription className="text-slate-400">Place a window in a wall</CardDescription></CardHeader>
             <CardContent className="space-y-3">
               <div><Label className="text-slate-300">Host Wall ID</Label><Input placeholder="Wall element ID" value={winWall} onChange={(e) => setWinWall(e.target.value)} className={inputClass} /></div>
               <div><Label className="text-slate-300">Location (x,y,z mm)</Label><Input value={winLocation} onChange={(e) => setWinLocation(e.target.value)} className={inputClass} /></div>

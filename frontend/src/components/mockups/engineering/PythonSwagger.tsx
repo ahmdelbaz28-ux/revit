@@ -138,7 +138,7 @@ export function PythonSwagger() {
           </ScrollArea>
           
           {/* Packages */}
-          <div className="h-[250px] flex flex-col bg-slate-900/80">
+          <div className="h-[250px] flex flex-col bg-slate-900">
             <div className="p-2 border-b border-slate-800 flex justify-between items-center bg-slate-900/60">
               <span className="font-semibold text-[11px] text-slate-400 uppercase tracking-wider">Installed Packages</span>
               <Package className="w-3 h-3 text-slate-500" />

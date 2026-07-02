@@ -90,7 +90,7 @@ export function AuditTrail() {
 
         {/* Center Column - Audit Log */}
         <div className="flex-1 flex flex-col bg-[#0a0a0f] overflow-hidden">
-          <div className="flex border-b border-slate-800 bg-slate-900/80 text-[11px] uppercase tracking-wider font-semibold text-muted-foreground px-2">
+          <div className="flex border-b border-slate-800 bg-slate-900 text-[11px] uppercase tracking-wider font-semibold text-muted-foreground px-2">
             <button className="px-4 py-2 text-foreground border-b-2 border-blue-500">All Events</button>
             <button className="px-4 py-2 hover:text-foreground">Drawing Changes</button>
             <button className="px-4 py-2 hover:text-foreground">File Operations</button>
@@ -101,7 +101,7 @@ export function AuditTrail() {
           
           <ScrollArea className="flex-1">
             <table className="w-full text-left text-xs whitespace-nowrap">
-              <thead className="bg-slate-800/80 text-slate-400 sticky top-0 z-10 border-b border-slate-700">
+              <thead className="bg-slate-800 text-slate-400 sticky top-0 z-10 border-b border-slate-700">
                 <tr>
                   <th className="px-4 py-2 font-medium w-24">Timestamp</th>
                   <th className="px-4 py-2 font-medium w-32">User</th>

@@ -177,7 +177,7 @@ export function ContextPanel({
               </div>
             ) : (
               <>
-                <section className="rounded-2xl border border-slate-800 bg-slate-900/70 p-4">
+                <section className="rounded-2xl border border-slate-800 bg-slate-900 p-4">
                   <div className="mb-4 flex items-start justify-between gap-3">
                     <div>
                       <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Selected element</p>
@@ -225,7 +225,7 @@ export function ContextPanel({
                   )}
                 </section>
 
-                <section className="rounded-2xl border border-slate-800 bg-slate-900/70 p-4">
+                <section className="rounded-2xl border border-slate-800 bg-slate-900 p-4">
                   <h3 className="mb-3 text-sm font-semibold text-slate-100">Related Help</h3>
                   <p className="mb-4 text-sm leading-6 text-slate-400">
                     Open Smart Help for the current {selected.type} context, including troubleshooting steps and safety warnings.

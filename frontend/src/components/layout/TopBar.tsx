@@ -45,7 +45,7 @@ const TopBar: React.FC<TopBarProps> = ({
   const pageName = routeLabels[location.pathname] || "FireAI";
 
   return (
-    <header className="h-12 bg-slate-900/90 backdrop-blur-sm border-b border-slate-700/50 flex items-center px-4 gap-4 shrink-0">
+    <header className="h-12 bg-slate-900 backdrop-blur-sm border-b border-slate-700/50 flex items-center px-4 gap-4 shrink-0">
       <Flame className="h-5 w-5 text-orange-500 shrink-0 transition-transform duration-300 hover:scale-110" />
       <span className="text-white font-semibold text-sm tracking-wide">
         FireAI
@@ -103,7 +103,7 @@ const TopBar: React.FC<TopBarProps> = ({
           {currentLanguage.toUpperCase()}
         </button>
         {langOpen && (
-          <div className="absolute right-0 top-full mt-1 bg-slate-800/90 backdrop-blur-sm border border-slate-700/50 rounded shadow-lg z-50">
+          <div className="absolute right-0 top-full mt-1 bg-slate-800 backdrop-blur-sm border border-slate-700/50 rounded shadow-lg z-50">
             {["en", "ar"].map((lang) => (
               <button
                 key={lang}

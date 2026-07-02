@@ -52,11 +52,11 @@ export function ErrorRecoveryView({
             </p>
 
             <div className="mt-5 grid gap-3 sm:grid-cols-2">
-              <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-4">
+              <div className="rounded-2xl border border-slate-800 bg-slate-900 p-4">
                 <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Error context ID</p>
                 <p className="mt-2 break-all font-mono text-sm text-slate-200">{errorContextId}</p>
               </div>
-              <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-4">
+              <div className="rounded-2xl border border-slate-800 bg-slate-900 p-4">
                 <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Error type</p>
                 <p className="mt-2 font-mono text-sm text-slate-200">{name}</p>
               </div>

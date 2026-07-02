@@ -183,7 +183,7 @@ export function LoadFlowAnalysis() {
           </svg>
 
           {/* Legend Overlay */}
-          <div className="absolute right-4 bottom-4 bg-slate-900/80 border border-slate-700 p-3 rounded-md backdrop-blur-sm shadow-xl text-xs">
+          <div className="absolute right-4 bottom-4 bg-slate-900 border border-slate-700 p-3 rounded-md backdrop-blur-sm shadow-xl text-xs">
             <div className="font-bold text-slate-300 mb-2">Color Coding</div>
             <div className="flex items-center gap-2 mb-1"><div className="w-3 h-3 bg-emerald-500 rounded-sm"></div> <span className="text-slate-400">Normal (≥0.95 pu / &lt;90%)</span></div>
             <div className="flex items-center gap-2 mb-1"><div className="w-3 h-3 bg-orange-500 rounded-sm"></div> <span className="text-slate-400">Warning (0.90-0.95 / &gt;90%)</span></div>

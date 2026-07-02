@@ -176,7 +176,7 @@ export function ReportGeneratorPage() {
         </div>
 
         {/* Project Selector */}
-        <Card className="border-slate-700 bg-slate-800/80">
+        <Card className="border-slate-700 bg-slate-800">
           <CardHeader className="pb-3">
             <CardTitle className="text-lg text-slate-100">Select Project</CardTitle>
             <CardDescription className="text-slate-400">Choose a project to generate reports for</CardDescription>
@@ -237,7 +237,7 @@ export function ReportGeneratorPage() {
 
             {/* Generate Form - matches PNG design */}
             {showGenerateForm && (
-              <Card className="border-slate-700 bg-slate-800/80">
+              <Card className="border-slate-700 bg-slate-800">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-lg text-slate-100">Generate New Report</CardTitle>
                   <CardDescription className="text-slate-400">Configure and generate your analysis report</CardDescription>
@@ -398,7 +398,7 @@ export function ReportGeneratorPage() {
             )}
 
             {/* Reports List */}
-            <Card className="border-slate-700 bg-slate-800/80">
+            <Card className="border-slate-700 bg-slate-800">
               <CardHeader className="pb-3">
                 <CardTitle className="text-lg text-slate-100">Report History</CardTitle>
                 <CardDescription className="text-slate-400">
@@ -472,7 +472,7 @@ export function ReportGeneratorPage() {
 
         {/* No project selected state */}
         {selectedProjectId === null && (
-          <Card className="border-slate-700 bg-slate-800/80">
+          <Card className="border-slate-700 bg-slate-800">
             <CardContent className="py-16 text-center">
               <FileText className="h-16 w-16 mx-auto mb-4 text-slate-600" />
               <h3 className="text-lg font-medium text-slate-300">Select a Project</h3>

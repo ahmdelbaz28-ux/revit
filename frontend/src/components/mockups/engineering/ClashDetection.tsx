@@ -105,7 +105,7 @@ export function ClashDetection() {
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <div className="relative w-[600px] h-[500px]" style={{ transform: "rotateX(60deg) rotateZ(-45deg)", transformStyle: "preserve-3d" }}>
               {/* Floor Slab */}
-              <div className="absolute inset-0 bg-slate-800/80 border border-slate-600 shadow-[0_0_50px_rgba(0,0,0,0.5)]" style={{ transform: "translateZ(-100px)" }}>
+              <div className="absolute inset-0 bg-slate-800 border border-slate-600 shadow-[0_0_50px_rgba(0,0,0,0.5)]" style={{ transform: "translateZ(-100px)" }}>
                 {/* Grid lines */}
                 <div className="w-full h-full" style={{ backgroundImage: "linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)", backgroundSize: "100px 100px" }}></div>
               </div>

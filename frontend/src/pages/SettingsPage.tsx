@@ -119,7 +119,7 @@ export function SettingsPage() {
         </div>
 
         {/* System Health */}
-        <Card className="border-slate-700 bg-slate-800/80">
+        <Card className="border-slate-700 bg-slate-800">
           <CardHeader className="pb-3">
             <CardTitle className="text-lg text-slate-100 flex items-center gap-2">
               <Activity className="h-5 w-5 text-blue-400" />
@@ -160,7 +160,7 @@ export function SettingsPage() {
         </Card>
 
         {/* Report Generator Quick Access */}
-        <Card className="border-slate-700 bg-slate-800/80">
+        <Card className="border-slate-700 bg-slate-800">
           <CardHeader className="pb-3">
             <CardTitle className="text-lg text-slate-100">Advanced Report Generator</CardTitle>
             <CardDescription className="text-slate-400">
@@ -202,7 +202,7 @@ export function SettingsPage() {
 
           {/* General Settings */}
           <TabsContent value="general">
-            <Card className="border-slate-700 bg-slate-800/80">
+            <Card className="border-slate-700 bg-slate-800">
               <CardHeader className="pb-3">
                 <CardTitle className="text-lg text-slate-100">{t('settings.general')}</CardTitle>
                 <CardDescription className="text-slate-400">
@@ -262,7 +262,7 @@ export function SettingsPage() {
 
           {/* Security Settings */}
           <TabsContent value="security">
-            <Card className="border-slate-700 bg-slate-800/80">
+            <Card className="border-slate-700 bg-slate-800">
               <CardHeader className="pb-3">
                 <CardTitle className="text-lg text-slate-100">{t('settings.security')}</CardTitle>
                 <CardDescription className="text-slate-400">
@@ -305,7 +305,7 @@ export function SettingsPage() {
 
           {/* API Settings */}
           <TabsContent value="api">
-            <Card className="border-slate-700 bg-slate-800/80">
+            <Card className="border-slate-700 bg-slate-800">
               <CardHeader className="pb-3">
                 <CardTitle className="text-lg text-slate-100">{t('settings.api')}</CardTitle>
                 <CardDescription className="text-slate-400">
@@ -349,7 +349,7 @@ export function SettingsPage() {
 
           {/* Report Settings */}
           <TabsContent value="reports">
-            <Card className="border-slate-700 bg-slate-800/80">
+            <Card className="border-slate-700 bg-slate-800">
               <CardHeader className="pb-3">
                 <CardTitle className="text-lg text-slate-100">{t('settings.reports')}</CardTitle>
                 <CardDescription className="text-slate-400">

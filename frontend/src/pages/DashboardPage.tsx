@@ -47,7 +47,7 @@ export function DashboardPage() {
         {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Projects Card */}
-          <Card className="border-slate-700 bg-slate-800/80">
+          <Card className="border-slate-700 bg-slate-800">
             <CardHeader className="pb-3">
               <CardTitle className="text-lg text-slate-100">{t('dashboard.projects')}</CardTitle>
               <CardDescription className="text-slate-400">
@@ -64,7 +64,7 @@ export function DashboardPage() {
           </Card>
 
           {/* Active Projects Card */}
-          <Card className="border-slate-700 bg-slate-800/80">
+          <Card className="border-slate-700 bg-slate-800">
             <CardHeader className="pb-3">
               <CardTitle className="text-lg text-slate-100">{t('dashboard.active')}</CardTitle>
               <CardDescription className="text-slate-400">
@@ -81,7 +81,7 @@ export function DashboardPage() {
           </Card>
 
           {/* Total Devices Card */}
-          <Card className="border-slate-700 bg-slate-800/80">
+          <Card className="border-slate-700 bg-slate-800">
             <CardHeader className="pb-3">
               <CardTitle className="text-lg text-slate-100">{t('dashboard.totalDevices')}</CardTitle>
               <CardDescription className="text-slate-400">
@@ -98,7 +98,7 @@ export function DashboardPage() {
           </Card>
 
           {/* System Health Card */}
-          <Card className="border-slate-700 bg-slate-800/80">
+          <Card className="border-slate-700 bg-slate-800">
             <CardHeader className="pb-3">
               <CardTitle className="text-lg text-slate-100">{t('dashboard.systemHealth')}</CardTitle>
               <CardDescription className="text-slate-400">
@@ -128,7 +128,7 @@ export function DashboardPage() {
         </div>
 
         {/* Status Summary Card */}
-        <Card className="border-slate-700 bg-slate-800/80">
+        <Card className="border-slate-700 bg-slate-800">
           <CardHeader className="pb-3">
             <CardTitle className="text-lg text-slate-100">{t('dashboard.statusSummary')}</CardTitle>
             <CardDescription className="text-slate-400">
@@ -169,7 +169,7 @@ export function DashboardPage() {
         </Card>
 
         {/* System Health Details */}
-        <Card className="border-slate-700 bg-slate-800/80">
+        <Card className="border-slate-700 bg-slate-800">
           <CardHeader className="pb-3">
             <CardTitle className="text-lg text-slate-100">{t('dashboard.systemHealth')}</CardTitle>
             <CardDescription className="text-slate-400">
@@ -205,7 +205,7 @@ export function DashboardPage() {
         </Card>
 
         {/* Report Generator Quick Access */}
-        <Card className="border-slate-700 bg-slate-800/80">
+        <Card className="border-slate-700 bg-slate-800">
           <CardHeader className="pb-3">
             <CardTitle className="text-lg text-slate-100">Advanced Report Generator</CardTitle>
             <CardDescription className="text-slate-400">

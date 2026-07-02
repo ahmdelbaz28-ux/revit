@@ -230,7 +230,7 @@ export function DigitalTwinPage() {
           {/* Convert Tab */}
           <TabsContent value="convert" className="space-y-6">
             {/* File Upload */}
-            <Card className="border-slate-700 bg-slate-800/80">
+            <Card className="border-slate-700 bg-slate-800">
               <CardHeader>
                 <CardTitle className="text-lg text-slate-100 flex items-center gap-2">
                   <FileUp className="h-5 w-5 text-blue-400" />
@@ -277,7 +277,7 @@ export function DigitalTwinPage() {
             </Card>
 
             {/* Conversion Action */}
-            <Card className="border-slate-700 bg-slate-800/80">
+            <Card className="border-slate-700 bg-slate-800">
               <CardHeader>
                 <CardTitle className="text-lg text-slate-100">Start Conversion</CardTitle>
               </CardHeader>
@@ -304,7 +304,7 @@ export function DigitalTwinPage() {
 
             {/* Conversion Result */}
             {conversionResult && (
-              <Card className={`border-slate-700 bg-slate-800/80 ${conversionResult.success ? 'border-emerald-500/50' : 'border-red-500/50'}`}>
+              <Card className={`border-slate-700 bg-slate-800 ${conversionResult.success ? 'border-emerald-500/50' : 'border-red-500/50'}`}>
                 <CardHeader>
                   <CardTitle className="text-lg text-slate-100 flex items-center gap-2">
                     {conversionResult.success ? (
@@ -374,7 +374,7 @@ export function DigitalTwinPage() {
           {/* Settings Tab */}
           <TabsContent value="settings" className="space-y-6">
             {/* Layer Mapping */}
-            <Card className="border-slate-700 bg-slate-800/80">
+            <Card className="border-slate-700 bg-slate-800">
               <CardHeader>
                 <CardTitle className="text-lg text-slate-100">Layer to Category Mapping</CardTitle>
                 <CardDescription className="text-slate-400">
@@ -421,7 +421,7 @@ export function DigitalTwinPage() {
             </Card>
 
             {/* Block to Family Mapping */}
-            <Card className="border-slate-700 bg-slate-800/80">
+            <Card className="border-slate-700 bg-slate-800">
               <CardHeader>
                 <CardTitle className="text-lg text-slate-100">Block to Family Mapping</CardTitle>
                 <CardDescription className="text-slate-400">
@@ -456,7 +456,7 @@ export function DigitalTwinPage() {
             </Card>
 
             {/* Conversion Settings */}
-            <Card className="border-slate-700 bg-slate-800/80">
+            <Card className="border-slate-700 bg-slate-800">
               <CardHeader>
                 <CardTitle className="text-lg text-slate-100">Conversion Settings</CardTitle>
               </CardHeader>
@@ -520,7 +520,7 @@ export function DigitalTwinPage() {
 
           {/* History Tab */}
           <TabsContent value="history">
-            <Card className="border-slate-700 bg-slate-800/80">
+            <Card className="border-slate-700 bg-slate-800">
               <CardHeader>
                 <CardTitle className="text-lg text-slate-100 flex items-center gap-2">
                   <History className="h-5 w-5 text-blue-400" />

@@ -222,7 +222,7 @@ export function CableCalculator() {
             <div className="p-6 max-w-4xl mx-auto space-y-6">
               
               {/* Card 1: Recommended Cable */}
-              <div className="bg-slate-800/80 border border-slate-700 rounded-lg p-5 shadow-lg relative overflow-hidden">
+              <div className="bg-slate-800 border border-slate-700 rounded-lg p-5 shadow-lg relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 blur-3xl rounded-full"></div>
                 <div className="text-xs font-bold text-muted-foreground uppercase mb-2 tracking-wider">Recommended Cable</div>
                 <div className="text-3xl font-bold text-blue-400 mb-1 font-mono tracking-tight">95mm² Cu XLPE/PVC</div>

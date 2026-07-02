@@ -51,7 +51,7 @@ export function HistoryTimeline() {
   };
 
   return (
-    <Card className="border-slate-700 bg-slate-800/80">
+    <Card className="border-slate-700 bg-slate-800">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-slate-100">
           <History className="h-5 w-5 text-orange-400" />
