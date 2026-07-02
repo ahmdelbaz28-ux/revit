@@ -101,7 +101,25 @@ class ApiClient {
       // The pages LOOKED dimmed/empty because the loading skeletons never resolved
       // to real data (every API call failed with 401, which fetchWithRetry treated
       // as an error and returned success:false with no data).
-      const authHeaders: Record<string, string> = { ...this.defaultHeaders, ...options.headers };
+      // V183 FIX: Type-safe header merge.
+      // options.headers can be Headers | string[][] | Record<string,string> | undefined.
+      // Spread directly into a Record<string,string> is unsafe (Headers has numeric
+      // length, array methods, etc.). Convert to plain object first.
+      const callerHeaders: Record<string, string> = {};
+      if (options.headers) {
+        if (options.headers instanceof Headers) {
+          options.headers.forEach((value: string, key: string) => {
+            callerHeaders[key] = value;
+          });
+        } else if (Array.isArray(options.headers)) {
+          for (const [k, v] of options.headers) {
+            callerHeaders[k] = v;
+          }
+        } else {
+          Object.assign(callerHeaders, options.headers);
+        }
+      }
+      const authHeaders: Record<string, string> = { ...this.defaultHeaders, ...callerHeaders };
       const apiKey = this.getApiKey();
       if (apiKey) {
         authHeaders['X-API-Key'] = apiKey;
