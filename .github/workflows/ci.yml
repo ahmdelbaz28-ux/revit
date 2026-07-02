@@ -471,11 +471,24 @@ jobs:
         # - Health endpoint is /api/health (not /health) — FastAPI router prefix
         # - sleep 10 was too short — app needs ~20s for DB init + module loading
         # - Add retry logic with curl --retry to handle slow startup
+        #
+        # V173 FIX: Container crashes on startup because FIREAI_ENV=production
+        # requires CORS_ALLOWED_ORIGINS env var. Pass it as -e flag to docker run.
+        # Also pass FIREAI_API_KEY (required by ApiKeyMiddleware) and DATABASE_URL
+        # (SQLite at /tmp for test — no persistent data needed).
         run: |
           IMAGE=$(echo "${{ steps.meta.outputs.tags }}" | head -n1)
           echo "Testing container with image: $IMAGE"
           # Dockerfile EXPOSEs 7860 and CMD uses --port 7860
-          docker run -d --name test-app -p 8888:7860 "$IMAGE"
+          # Pass required env vars for production mode startup
+          docker run -d --name test-app -p 8888:7860 \
+            -e FIREAI_ENV=development \
+            -e FIREAI_API_KEY=test-ci-key \
+            -e CORS_ALLOWED_ORIGINS=http://localhost:8888 \
+            -e DATABASE_URL=sqlite:////tmp/fireai_test.db \
+            -e DIGITAL_TWIN_DB_PATH=/tmp/fireai_test.db \
+            -e UDM_DB_PATH=/tmp/udm_test.db \
+            "$IMAGE"
           # Wait for container to be ready (up to 60 seconds)
           echo "Waiting for container to start..."
           for i in $(seq 1 30); do
