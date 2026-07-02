@@ -19,8 +19,12 @@ import time
 from pathlib import Path
 
 # Import bcrypt for stronger password hashing
+# V187 Pyright fix: initialize bcrypt to None so Pyright doesn't flag it as
+# "possibly unbound" when the import fails. All bcrypt usage is guarded by
+# the HAS_BCRYPT flag, so this is type-safe.
+bcrypt = None  # type: ignore[assignment]
 try:
-    import bcrypt
+    import bcrypt  # type: ignore[no-redef]
     HAS_BCRYPT = True
 except ImportError:
     HAS_BCRYPT = False
@@ -90,9 +94,9 @@ def _get_dummy_bcrypt_hash() -> str:
         return _DUMMY_BCRYPT_HASH_REAL
     if HAS_BCRYPT:
         # Cost factor 12 — matches the cost used by _hash_key
-        _DUMMY_BCRYPT_HASH_REAL = bcrypt.hashpw(
+        _DUMMY_BCRYPT_HASH_REAL = bcrypt.hashpw(  # type: ignore[union-attr]
             b"dummy_value_for_timing_equalization_only",
-            bcrypt.gensalt(rounds=12),
+            bcrypt.gensalt(rounds=12),  # type: ignore[union-attr]
         ).decode("utf-8")
     return _DUMMY_BCRYPT_HASH_REAL
 
@@ -115,7 +119,7 @@ def _timing_safe_dummy_verify(key: str) -> None:
     dummy = _get_dummy_bcrypt_hash()
     # This will return False but take ~250ms, matching the valid-key path
     normalized = _normalize_key_for_bcrypt(key)
-    bcrypt.checkpw(normalized, dummy.encode())
+    bcrypt.checkpw(normalized, dummy.encode())  # type: ignore[union-attr]
 
 # ── STRESS-TEST FIX #1: fast O(1) lookup index ─────────────────────────────
 # A deterministic HMAC-SHA256 over (server_secret, key) is used as the dict
@@ -274,7 +278,7 @@ def _hash_key(key: str) -> str:
     """
     if HAS_BCRYPT:
         normalized = _normalize_key_for_bcrypt(key)
-        return bcrypt.hashpw(normalized, bcrypt.gensalt()).decode('utf-8')
+        return bcrypt.hashpw(normalized, bcrypt.gensalt()).decode('utf-8')  # type: ignore[union-attr]
     # Fallback: HMAC-SHA256 with random salt
     salt = secrets.token_hex(16)
     h = hmac.new(salt.encode(), key.encode(), hashlib.sha256).hexdigest()
@@ -296,7 +300,7 @@ def _verify_key(key: str, hashed_key: str) -> bool:
     try:
         if HAS_BCRYPT and hashed_key.startswith('$2'):
             normalized = _normalize_key_for_bcrypt(key)
-            return bcrypt.checkpw(normalized, hashed_key.encode())
+            return bcrypt.checkpw(normalized, hashed_key.encode())  # type: ignore[union-attr]
         if hashed_key.startswith("hmac-sha256$"):
             # FIX #30: Verify HMAC-SHA256 with salt
             try:
