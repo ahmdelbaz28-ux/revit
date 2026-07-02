@@ -1152,7 +1152,18 @@
     "fireRatingPlaceholder": "مثال: 2 ساعة",
     "description": "الوصف",
     "descriptionPlaceholder": "وصف اختياري",
-    "loadBearing": "تحمل الحمولة"
+    "loadBearing": "تحمل الحمولة",
+    "noElements": "لا توجد عناصر",
+    "createFirstElement": "أنشئ عنصرك الأول للبدء",
+    "totalElements": "{{count}} إجمالي العناصر",
+    "typeWall": "حائط",
+    "typeDoor": "باب",
+    "typeWindow": "نافذة",
+    "typeRoom": "غرفة",
+    "typeEquipment": "معدات",
+    "typeMechanical": "ميكانيكي",
+    "typeElectrical": "كهربائي",
+    "typeUnknown": "غير معروف"
   },
   "conflicts": {
     "title": "التعارضات",

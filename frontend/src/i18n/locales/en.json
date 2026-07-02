@@ -1239,7 +1239,15 @@
     "loadBearing": "Load Bearing",
     "noElements": "No elements found",
     "createFirstElement": "Create your first element to get started",
-    "totalElements": "{{count}} total elements"
+    "totalElements": "{{count}} total elements",
+    "typeWall": "Wall",
+    "typeDoor": "Door",
+    "typeWindow": "Window",
+    "typeRoom": "Room",
+    "typeEquipment": "Equipment",
+    "typeMechanical": "Mechanical",
+    "typeElectrical": "Electrical",
+    "typeUnknown": "Unknown"
   },
   "conflicts": {
     "title": "Conflicts",

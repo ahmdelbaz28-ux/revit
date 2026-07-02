@@ -18,7 +18,14 @@ import type {
 } from '@/types';
 import { getApiKey } from './apiKey';
 
-const API_BASE = '/api/v1';
+// V187 FIX: Use VITE_API_URL env var (same pattern as digitalTwinApi.ts).
+// Previously this was hardcoded to '/api/v1' (relative), which caused all
+// API requests to go to the Vercel frontend domain instead of the backend.
+// On Vercel, '/api/v1/conflicts/detect' returned 405 (Method Not Allowed)
+// because Vercel serves static files and doesn't accept POST to SPA routes.
+// Now uses the same env var as digitalTwinApi.ts, which is set to the HF
+// Space backend URL in production.
+const API_BASE = import.meta.env.VITE_API_URL || '/api/v1';
 
 /**
  * M-3 FIX: Session-based auth with HttpOnly cookie.

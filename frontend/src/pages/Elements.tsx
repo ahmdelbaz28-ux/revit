@@ -17,15 +17,17 @@ import {
 } from '@/components/ui/select';
 import type { ElementPropertiesCreate, ElementGeometryCreate, Element } from '@/types';
 
+// V187 FIX: ELEMENT_TYPES now includes translation keys so the dropdown
+// shows translated text in Arabic mode instead of hardcoded English.
 const ELEMENT_TYPES = [
-  'wall',
-  'door',
-  'window',
-  'room',
-  'equipment',
-  'mechanical',
-  'electrical',
-  'unknown',
+  { value: 'wall', labelKey: 'elements.typeWall' },
+  { value: 'door', labelKey: 'elements.typeDoor' },
+  { value: 'window', labelKey: 'elements.typeWindow' },
+  { value: 'room', labelKey: 'elements.typeRoom' },
+  { value: 'equipment', labelKey: 'elements.typeEquipment' },
+  { value: 'mechanical', labelKey: 'elements.typeMechanical' },
+  { value: 'electrical', labelKey: 'elements.typeElectrical' },
+  { value: 'unknown', labelKey: 'elements.typeUnknown' },
 ] as const;
 
 const PAGE_SIZE = 20;
@@ -94,8 +96,8 @@ function Elements() {
         >
           <option value="">{t('elements.allTypes')}</option>
           {ELEMENT_TYPES.map((type) => (
-            <option key={type} value={type}>
-              {type.charAt(0).toUpperCase() + type.slice(1)}
+            <option key={type.value} value={type.value}>
+              {t(type.labelKey)}
             </option>
           ))}
         </select>
@@ -372,8 +374,8 @@ function CreateElementModal({
               </SelectTrigger>
               <SelectContent className="bg-slate-800 border-slate-700 text-white">
                 {ELEMENT_TYPES.map((type) => (
-                  <SelectItem key={type} value={type}>
-                    {type.charAt(0).toUpperCase() + type.slice(1)}
+                  <SelectItem key={type.value} value={type.value}>
+                    {t(type.labelKey)}
                   </SelectItem>
                 ))}
               </SelectContent>

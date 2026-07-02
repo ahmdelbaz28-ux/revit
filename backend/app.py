@@ -37,6 +37,7 @@ import sys
 import threading
 import time
 from contextlib import asynccontextmanager
+from typing import Any
 
 from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -662,7 +663,7 @@ app.include_router(health_router_module.router, prefix="/api/v1", tags=["Health-
 # V139 FIX: /health (no /api prefix) — alias to /api/health for backward
 # compatibility with stress tests and deployment probes that hit /health.
 @app.get("/health", tags=["Health"])
-async def health_check_legacy_alias() -> Response:
+async def health_check_legacy_alias() -> dict[str, Any]:
     """
     Legacy /health alias — delegates to the real health check.
 

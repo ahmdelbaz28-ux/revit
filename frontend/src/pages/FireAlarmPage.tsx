@@ -4,7 +4,7 @@
  * V140 Phase 5: Connected to real devices API. Falls back to empty zones
  * when no project is selected or API is unavailable.
  */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -89,36 +89,50 @@ export function FireAlarmPage() {
   const [selectedDevice, setSelectedDevice] = useState<string | null>(null);
   const [showProperties, setShowProperties] = useState(false);
 
-  // V186 FIX: Undo/Redo/Save buttons were non-functional (no onClick handlers).
-  // Added a history stack for undo/redo, and Save persists to localStorage.
-  // This is a minimal root-cause fix: the buttons now actually do something
-  // instead of being inert UI elements that frustrate users.
+  // V187 FIX: Undo/Redo/Save with proper state management.
+  // V186 had a stale state bug: pushHistory(detectors) captured the render-time
+  // value of `detectors`, not the actual previous state. If multiple changes
+  // happened in one tick, history captured wrong snapshots.
+  // V187 fix: use a ref to always have the latest detectors value, and
+  // capture history INSIDE setDetectors so we get the actual previous state.
+  // Also: Save now LOADS from localStorage on mount (V186 only saved, never loaded).
   const [history, setHistory] = useState<Detector[][]>([]);
   const [redoStack, setRedoStack] = useState<Detector[][]>([]);
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
+  const detectorsRef = useRef<Detector[]>(detectors);
+  detectorsRef.current = detectors;
 
   const pushHistory = (snapshot: Detector[]) => {
     setHistory(prev => [...prev.slice(-19), snapshot]);
     setRedoStack([]);
   };
 
+  // V187: setDetectorsWithHistory captures the ACTUAL previous state using
+  // the functional updater pattern, avoiding the stale closure bug.
+  const setDetectorsWithHistory = (next: Detector[] | ((prev: Detector[]) => Detector[])) => {
+    setDetectors(prev => {
+      pushHistory(prev); // capture actual previous state, not stale closure
+      return typeof next === 'function' ? next(prev) : next;
+    });
+  };
+
   const handleUndo = () => {
-    setHistory(prev => {
-      if (prev.length === 0) return prev;
-      const last = prev[prev.length - 1];
-      setRedoStack(r => [...r, detectors]);
+    setHistory(prevHistory => {
+      if (prevHistory.length === 0) return prevHistory;
+      const last = prevHistory[prevHistory.length - 1];
+      setRedoStack(r => [...r, detectorsRef.current]);
       setDetectors(last);
-      return prev.slice(0, -1);
+      return prevHistory.slice(0, -1);
     });
   };
 
   const handleRedo = () => {
-    setRedoStack(prev => {
-      if (prev.length === 0) return prev;
-      const next = prev[prev.length - 1];
-      setHistory(h => [...h, detectors]);
+    setRedoStack(prevRedo => {
+      if (prevRedo.length === 0) return prevRedo;
+      const next = prevRedo[prevRedo.length - 1];
+      setHistory(h => [...h, detectorsRef.current]);
       setDetectors(next);
-      return prev.slice(0, -1);
+      return prevRedo.slice(0, -1);
     });
   };
 
@@ -132,6 +146,21 @@ export function FireAlarmPage() {
       setTimeout(() => setSaveStatus(null), 2500);
     }
   };
+
+  // V187: Load saved detectors from localStorage on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('fireai_firealarm_detectors');
+      if (saved) {
+        const parsed = JSON.parse(saved) as Detector[];
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setDetectors(parsed);
+        }
+      }
+    } catch {
+      // Corrupt localStorage - ignore, use default detectors
+    }
+  }, []);
 
   // V140 Phase 5: Fetch zones from API
   const [zones, setZones] = useState<typeof mockZones>([]);
@@ -196,10 +225,8 @@ export function FireAlarmPage() {
   };
 
   const handleSaveDevice = (updatedDevice: any) => {
-    // V186: push current state to history before mutating
-    pushHistory(detectors);
-    // Update the device in the detectors array
-    setDetectors(prev => prev.map(det => det.id === updatedDevice.id ? updatedDevice : det));
+    // V187: use setDetectorsWithHistory to capture actual previous state
+    setDetectorsWithHistory(prev => prev.map(det => det.id === updatedDevice.id ? updatedDevice : det));
     setShowProperties(false);
   };
 
@@ -263,11 +290,7 @@ export function FireAlarmPage() {
           <div className="flex-1 p-4">
             <CanvasEditor
               detectors={detectors}
-              onDetectorsChange={(next: Detector[] | ((prev: Detector[]) => Detector[])) => {
-                // V186: snapshot current state before each external mutation
-                pushHistory(detectors);
-                setDetectors(next);
-              }}
+              onDetectorsChange={setDetectorsWithHistory}
             />
           </div>
 

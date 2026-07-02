@@ -5,6 +5,7 @@
   "buildCommand": "cd frontend && npm run build",
   "outputDirectory": "frontend/dist",
   "rewrites": [
-    { "source": "/(.*)", "destination": "/" }
+    { "source": "/api/(.*)", "destination": "https://ahmdelbaz28-bazspark.hf.space/api/$1" },
+    { "source": "/((?!api/).*)", "destination": "/" }
   ]
 }
