@@ -17051,3 +17051,41 @@ After V163 fixed dependency vulnerabilities, the deploy.yml workflow was still u
 ### Commit Information
 - **Commit:** `4a9c63ea`
 - **Link:** https://github.com/ahmdelbaz28-ux/revit/commit/4a9c63ea
+
+---
+
+## V165 Fix (2026-07-02) — CI Gate 2 timeout increase + pytest-timeout
+
+### Context
+CI/CD Pipeline Run #739 (V164) was hitting the 20-minute timeout on Gate 2 (Test Suite). The pytest suite has 9000+ tests and takes ~11 min locally but 20+ min on GitHub Actions runners (which are slower). The 20-min timeout was causing Gate 2 to fail before pytest could complete.
+
+### Root Cause Analysis (per Rule 17)
+
+**Layer 1 — Output:** Gate 2 was timing out at 20 min on GitHub Actions.
+
+**Layer 2 — Thinking:** V159.6 set timeout to 20 min based on local execution time (~11 min). But GitHub Actions runners are shared resources with variable performance. The same suite that takes 11 min locally can take 15-25 min on GHA.
+
+**Layer 3 — Method:** The root cause is insufficient timeout margin. The fix is:
+1. Increase `timeout-minutes` from 20 to 30 (50% headroom over worst-case observed)
+2. Add `pytest-timeout` with 60s per-test limit to catch any individual test that hangs
+3. Use `--timeout-method=signal` for reliable timeout enforcement
+
+**Layer 4 — Commitment:** A CI gate that times out on a passing test suite is worse than no gate — it wastes 20 min of CI time and provides no signal. The fix ensures the gate either passes (tests complete) or fails fast (a specific test hangs >60s).
+
+### Bug V165-1 — Gate 2 timeout too short for GitHub Actions runners
+
+**File:** `.github/workflows/ci.yml`
+**Fix Applied:**
+1. `timeout-minutes: 20` → `timeout-minutes: 30` (50% headroom)
+2. Added `pip install pytest-timeout` before pytest
+3. Added `--timeout=60 --timeout-method=signal` to pytest command
+4. Per-test timeout catches any individual hanging test (e.g., network calls, infinite loops)
+
+### Verification Evidence
+- No production code changes
+- No test changes
+- CI workflow config only
+- pytest-timeout is already used in local development (in pyproject.toml)
+
+### Commit Information
+- **Commit:** (pending — will be filled after `git commit`)

@@ -160,13 +160,21 @@ jobs:
         # --cov flags and --cov-fail-under=40.
         #
         # No test files modified (Rule 10). CI workflow config only.
-        timeout-minutes: 20
+        #
+        # V165 FIX: Increase timeout to 30 min + add pytest-timeout (60s/test)
+        # GitHub Actions runners are slower than local dev machines. The
+        # full suite (9000+ tests) takes ~11 min locally but can take 20+
+        # min on GHA. The 20 min timeout was causing Gate 2 to fail.
+        timeout-minutes: 30
         env:
           PYTEST_ADDOPTS: "--color=no"
         run: |
+          pip install pytest-timeout
           pytest tests/ backend/tests/ \
             --tb=short \
             -p no:cacheprovider \
+            --timeout=60 \
+            --timeout-method=signal \
             -q
 
       - name: Upload coverage report
