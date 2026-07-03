@@ -2,7 +2,7 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
-import path from "node:path";
+import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import { mockupPreviewPlugin } from "./mockupPreviewPlugin";
 
@@ -78,10 +78,19 @@ export default defineConfig({
     sourcemap: !isProduction,
     minify: "terser",
     terserOptions: {
+      // SECURITY: Remove console.log and debugger in production using format options
+      format: {
+        comments: false
+      },
+      module: true,
+      toplevel: true,
+      // Use compress options compatible with terser
       compress: {
-        // SECURITY: Remove console.log and debugger in production
         drop_console: isProduction,
         drop_debugger: true,
+        global_defs: {
+          '@console.log': isProduction ? 'undefined' : '@console.log'
+        }
       },
     },
     // Code splitting: separate vendor chunks to reduce initial bundle size
