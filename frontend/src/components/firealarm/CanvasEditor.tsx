@@ -292,8 +292,14 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
             className="absolute inset-0 w-full h-full object-contain"
           />
         ) : (
-          <div className="absolute inset-0 bg-slate-800 flex items-center justify-center">
-            <p className="text-slate-500">{t('fireAlarm.floorPlanPlaceholder')}</p>
+          <div className="absolute inset-0 bg-slate-800 flex items-center justify-center pointer-events-none">
+            {/* V192 FIX: pointer-events-none so clicks pass through to the
+                canvas div's onClick handler (handleCanvasClick). Previously,
+                this div intercepted clicks on empty canvas area, preventing
+                new detectors from being added when no floor plan was loaded. */}
+            <p className="text-slate-500 text-sm select-none">
+              {t('fireAlarm.floorPlanPlaceholder')}
+            </p>
           </div>
         )}
         

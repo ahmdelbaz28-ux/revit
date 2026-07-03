@@ -252,29 +252,51 @@ export function FireAlarmPage() {
         <div className="h-14 flex items-center px-4 border-b border-slate-700 bg-slate-800">
           <h1 className="text-lg font-semibold text-slate-100">{t('fireAlarm.designer')}</h1>
           <div className="ml-auto flex gap-2 items-center">
+            {/* V192 FIX: Consistent button styling for Undo/Redo/Save.
+                Previously Save was red (looked destructive) while Undo/Redo
+                were outline. Now all three use the same size/padding, with
+                Save using the primary orange accent (BAZSpark brand color)
+                to distinguish it as the main action. Undo/Redo stay outline
+                to indicate they're secondary actions. */}
             <Button
               variant="outline"
-              className="border-slate-600 text-slate-300"
+              size="sm"
+              className="border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-slate-100 transition-colors"
               onClick={handleUndo}
               disabled={history.length === 0}
               aria-label={t('common.undo')}
             >
+              <svg className="h-4 w-4 mr-1.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 7v6h6" />
+                <path d="M21 17a9 9 0 0 0-15-6.7L3 13" />
+              </svg>
               {t('common.undo')}
             </Button>
             <Button
               variant="outline"
-              className="border-slate-600 text-slate-300"
+              size="sm"
+              className="border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-slate-100 transition-colors"
               onClick={handleRedo}
               disabled={redoStack.length === 0}
               aria-label={t('common.redo')}
             >
+              <svg className="h-4 w-4 mr-1.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 7v6h-6" />
+                <path d="M3 17a9 9 0 0 1 15-6.7L21 13" />
+              </svg>
               {t('common.redo')}
             </Button>
             <Button
-              className="bg-red-600 hover:bg-red-700 text-white border-none"
+              size="sm"
+              className="bg-orange-600 hover:bg-orange-700 text-white border-none transition-colors"
               onClick={handleSave}
               aria-label={t('common.save')}
             >
+              <svg className="h-4 w-4 mr-1.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                <polyline points="17 21 17 13 7 13 7 21" />
+                <polyline points="7 3 7 8 15 8" />
+              </svg>
               {t('common.save')}
             </Button>
             {saveStatus && (
