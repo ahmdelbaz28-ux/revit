@@ -918,29 +918,48 @@ class DatabaseService:
                 logger.error("Error persisting connection: %s", e)
                 raise RuntimeError(f"Failed to persist connection: {e}")
 
-            # Now persist the updated relationships lists back to the elements
-            # table. update_element() does a JSON merge into the elements row.
-            # If this fails after the relationships row was already inserted,
-            # we have a partial write — but the relationships table is the
-            # authoritative source for connection listings (list_connections
-            # queries it directly), so the connection will still be visible.
-            # The element.relationships tuple is a denormalized cache.
+            # V191 FIX: The V188 code put both update_element calls in ONE
+            # try/except block. If the first raised, the second was SKIPPED —
+            # leaving the cache inconsistent (to_element updated, from_element
+            # not). Root-cause fix: make each update_element call independent
+            # with its own try/except, AND check the return value (update_element
+            # returns False on failure rather than raising).
+            from_success = False
             try:
-                self._data_model.update_element(
+                from_success = self._data_model.update_element(
                     data.from_element_id,
                     {"relationships": from_rels_dicts},
                 )
-                self._data_model.update_element(
+            except Exception as e:
+                logger.warning(
+                    "Connection %s persisted, but from_element %s cache "
+                    "update raised: %s",
+                    connection_id, data.from_element_id, e,
+                )
+            if not from_success:
+                logger.warning(
+                    "Connection %s persisted, but from_element %s cache "
+                    "update returned False (element may have been deleted)",
+                    connection_id, data.from_element_id,
+                )
+
+            to_success = False
+            try:
+                to_success = self._data_model.update_element(
                     data.to_element_id,
                     {"relationships": to_rels_dicts},
                 )
             except Exception as e:
-                # Element update failed but the relationships row was inserted.
-                # Log and continue — the connection itself is persisted.
                 logger.warning(
-                    "Connection %s persisted to relationships table, but "
-                    "failed to update element.relationships cache: %s",
-                    connection_id, e,
+                    "Connection %s persisted, but to_element %s cache "
+                    "update raised: %s",
+                    connection_id, data.to_element_id, e,
+                )
+            if not to_success:
+                logger.warning(
+                    "Connection %s persisted, but to_element %s cache "
+                    "update returned False (element may have been deleted)",
+                    connection_id, data.to_element_id,
                 )
 
             return ConnectionResponse(
@@ -1048,89 +1067,103 @@ class DatabaseService:
         """
         Delete a connection by ID.
 
-        Removes the relationship from the SQL relationships table AND updates
-        the denormalized ``relationships`` JSON field on both affected elements.
+        Returns True if deleted, False if not found.
+        Raises RuntimeError on database errors (NOT silently swallowed).
 
-        V188 FIX (CRITICAL): The previous implementation had TWO bugs:
+        V188 FIX: The previous implementation had TWO bugs:
           1. ``self._data_model.elements.get(from_eid)`` — UniversalDataModel
-             has NO ``elements`` attribute (it stores in SQLite, not a dict).
-             This raised ``AttributeError: elements`` from __getattr__.
-          2. ``from_element.relationships = [...]`` — UniversalElement is a
-             ``@dataclass(frozen=True)``, so attribute assignment raises
-             ``FrozenInstanceError``.
+             has NO ``elements`` attribute → AttributeError.
+          2. ``from_element.relationships = [...]`` — frozen dataclass →
+             FrozenInstanceError.
 
-        Root-cause fix per Rule 17: use ``_data_model.get_element()`` to
-        fetch the current frozen element, filter the relationships tuple
-        immutably, then persist via ``update_element()``.
+        V191 FIX: The V188 fix had a THIRD bug — it caught ALL exceptions
+        in the outer try/except and returned False. This conflated "not
+        found" (legitimate False) with "database error" (should raise).
+        The router then returned 404 for DB errors, hiding real failures.
+
+        Root-cause fix per Rule 17: separate the "not found" case (return
+        False) from the "DB error" case (raise RuntimeError). Only catch
+        exceptions from the SELECT query (for not-found detection), not
+        from the DELETE or cache update.
         """
         with self._service_lock:
+            # Phase 1: Check if the connection exists (may return False)
             try:
                 with self._db_lock:
                     conn = self._db_conn
                 cursor = conn.cursor()
-
-                # Fetch the relationship details before deleting so we can
-                # clean up the denormalized relationships cache on both elements.
                 cursor.execute(
                     "SELECT from_element_id, to_element_id, relationship_type "
                     "FROM relationships WHERE relationship_id=?",
                     (connection_id,),
                 )
                 row = cursor.fetchone()
-                if not row:
-                    return False
+            except sqlite3.Error as e:
+                # V191: DB error on SELECT is NOT "not found" — raise
+                raise RuntimeError(f"Database error checking connection {connection_id}: {e}") from e
 
-                from_eid = row[0]
-                to_eid = row[1]
-                rel_type = row[2]
+            if not row:
+                return False  # Legitimate "not found"
 
-                # Delete from SQL relationships table (authoritative source)
+            from_eid = row[0]
+            to_eid = row[1]
+            rel_type = row[2]
+
+            # Phase 2: Delete from SQL (raise on DB error, don't swallow)
+            try:
                 cursor.execute(
                     "DELETE FROM relationships WHERE relationship_id=?",
                     (connection_id,),
                 )
                 conn.commit()
+            except sqlite3.Error as e:
+                # V191: DB error on DELETE is a real failure — raise, don't return False
+                raise RuntimeError(f"Database error deleting connection {connection_id}: {e}") from e
 
-                # V188 FIX: Update the denormalized relationships cache on
-                # both elements using the immutable update pattern.
-                reverse_type = f"reverse_{rel_type}"
+            # Phase 3: Update the denormalized relationships cache on both
+            # elements. Cache update failures are non-fatal (the relationships
+            # table is authoritative), so we log warnings but don't raise.
+            reverse_type = f"reverse_{rel_type}"
 
-                for eid, src_eid, tgt_eid, rtype in (
-                    (from_eid, from_eid, to_eid, rel_type),
-                    (to_eid,   to_eid,   from_eid, reverse_type),
-                ):
-                    element = self._data_model.get_element(eid)
-                    if element is None:
-                        continue
-                    # Build a NEW tuple excluding the matching relationship.
-                    # Comparison by (from, to, type) triple — same as old code.
-                    new_rels = tuple(
-                        r for r in element.relationships
-                        if not (
-                            r.from_element_id == src_eid
-                            and r.to_element_id == tgt_eid
-                            and r.relationship_type == rtype
-                        )
+            for eid, src_eid, tgt_eid, rtype in (
+                (from_eid, from_eid, to_eid, rel_type),
+                (to_eid,   to_eid,   from_eid, reverse_type),
+            ):
+                element = self._data_model.get_element(eid)
+                if element is None:
+                    continue
+                # Build a NEW tuple excluding the matching relationship.
+                new_rels = tuple(
+                    r for r in element.relationships
+                    if not (
+                        r.from_element_id == src_eid
+                        and r.to_element_id == tgt_eid
+                        and r.relationship_type == rtype
                     )
-                    if len(new_rels) == len(element.relationships):
-                        # No match — nothing to update for this element.
-                        continue
-                    try:
-                        self._data_model.update_element(
-                            eid,
-                            {"relationships": [r.to_dict() for r in new_rels]},
-                        )
-                    except Exception as e:
+                )
+                if len(new_rels) == len(element.relationships):
+                    continue  # No match — nothing to update
+                try:
+                    success = self._data_model.update_element(
+                        eid,
+                        {"relationships": [r.to_dict() for r in new_rels]},
+                    )
+                    # V191: Check return value — update_element returns False
+                    # on failure (element not found, DB error). Log if so.
+                    if not success:
                         logger.warning(
-                            "Deleted relationship %s from SQL table, but failed "
-                            "to update element %s relationships cache: %s",
-                            connection_id, eid, e,
+                            "update_element returned False for element %s "
+                            "while cleaning up deleted connection %s cache",
+                            eid, connection_id,
                         )
+                except Exception as e:
+                    logger.warning(
+                        "Deleted relationship %s from SQL table, but failed "
+                        "to update element %s relationships cache: %s",
+                        connection_id, eid, e,
+                    )
 
-                return True
-            except Exception as e:
-                logger.error("Error deleting connection: %s", e)
-                return False
+            return True
 
     # ──────────────────────────────────────────────────────────────────────────
     # Conflict detection and resolution

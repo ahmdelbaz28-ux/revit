@@ -87,23 +87,44 @@ function camelToSnake(key: string): string {
 }
 
 /**
+ * V191 FIX: Fields that contain FREEFORM user-stored data (dict[str, Any]).
+ * These must NOT have their keys transformed, because the user may have
+ * stored camelCase keys that are semantically meaningful to their code.
+ *
+ * V189's transformer transformed ALL keys recursively, including those
+ * inside `metadata`. This caused SILENT DATA CORRUPTION: if a user stored
+ * `{"cableSize": "2.5mm²"}` in connection metadata, the transformer
+ * renamed it to `{"cable_size": "2.5mm²"}`. User code expecting
+ * `cableSize` would then see `undefined` — a silent, hard-to-debug break.
+ *
+ * Root-cause fix per Rule 17: maintain a set of known freeform field names
+ * (from backend/schemas.py). When the transformer encounters a key in
+ * this set, it transforms the KEY (e.g., changeA → change_a) but does
+ * NOT recurse into the VALUE — preserving the user's original keys.
+ *
+ * These field names are checked in BOTH camelCase and snake_case forms
+ * for robustness (the parent key may already have been transformed).
+ */
+const FREEFORM_DATA_FIELDS = new Set([
+  'metadata',
+  'resolution',
+  'change_a', 'changeA',
+  'change_b', 'changeB',
+]);
+
+/**
  * Deeply transform all object keys from camelCase to snake_case.
  * - Arrays: each element is transformed recursively
  * - Objects: each key is converted, each value is transformed recursively
+ *   EXCEPT for freeform data fields (metadata, resolution, change_a/b)
+ *   whose VALUES are preserved as-is to prevent user-data corruption.
  * - Primitives (string, number, boolean, null): returned as-is
  *
- * IMPORTANT: This transforms ALL keys, including those inside `metadata`.
- * This is correct because metadata from the backend is also serialized
- * through the CamelModel pipeline. If a user stored `{"myKey": "value"}`
- * in metadata, the backend returns `{"myKey": "value"}` as-is (metadata
- * is a freeform dict[str, Any], not a CamelModel). The transformer will
- * convert it to `{"my_key": "value"}`.
- *
- * This is a known trade-off. If a user has camelCase metadata keys that
- * MUST be preserved, they should store them as snake_case in the backend.
- * The alternative (skip transformation for metadata) would require knowing
- * the schema of every response type, defeating the purpose of a generic
- * transformer.
+ * V191 FIX: The V189 transformer recursively transformed ALL nested
+ * objects, including freeform `metadata` dicts. This corrupted
+ * user-stored camelCase keys. Now, freeform data fields have their
+ * KEY transformed (for consistency) but their VALUE is passed through
+ * unchanged, preserving the user's original key names.
  */
 function deepCamelToSnake<T>(value: T): T {
   if (value === null || value === undefined) {
@@ -116,7 +137,14 @@ function deepCamelToSnake<T>(value: T): T {
     const result: Record<string, unknown> = {};
     for (const key of Object.keys(value as Record<string, unknown>)) {
       const snakeKey = camelToSnake(key);
-      result[snakeKey] = deepCamelToSnake((value as Record<string, unknown>)[key]);
+      const val = (value as Record<string, unknown>)[key];
+      // V191 FIX: Don't recurse into freeform data fields — their
+      // keys are user-defined and must be preserved as-is.
+      if (FREEFORM_DATA_FIELDS.has(key) || FREEFORM_DATA_FIELDS.has(snakeKey)) {
+        result[snakeKey] = val;
+      } else {
+        result[snakeKey] = deepCamelToSnake(val);
+      }
     }
     return result as T;
   }

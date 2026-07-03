@@ -803,27 +803,57 @@ class TestConnectionsV2Router:
         assert response.status_code == 200
 
     def test_create_connection_v2(self, client) -> None:
-        """POST /api/connections must create a connection or fail validation.
+        """POST /api/connections must create a connection between real elements.
 
-        V190 FIX: Tightened from (201, 400, 500) to (201, 400). The previous
-        test accepted HTTP 500 as a valid outcome, which hid the V188 bug
-        (tuple-mutation crash) for months. Per Rule 10, we don't modify
-        tests to hide defects — but here we're TIGHTENING the test to
-        EXPOSE defects. 500 means a runtime crash, which is NEVER acceptable.
+        V190 FIX: Tightened from (201, 400, 500) to (201, 400). 500 is never
+        acceptable — it means a runtime crash.
+
+        V191 FIX: The V190 version still used fake element IDs ("elem-001",
+        "elem-002") that never exist, so the endpoint always returned 400.
+        The test NEVER exercised the happy path (201). Per Rule 17 (no
+        half-solutions), this is a half-solution — we tightened the status
+        code but didn't actually test the success case.
+
+        Root-cause fix: create REAL elements first, then test that the
+        connection between them returns 201. This is what
+        TestConnectionsV2RegressionV188 already does, but keeping this
+        test here (now actually useful) provides defense-in-depth.
         """
+        # Create two real elements via the V2 elements router
+        elem_a_resp = client.post(
+            "/api/elements",
+            json={"properties": {"element_type": "wall", "name": "V191-Conn-Wall-A"}},
+        )
+        assert elem_a_resp.status_code in (200, 201), (
+            f"Failed to create element A: {elem_a_resp.status_code} {elem_a_resp.text}"
+        )
+        elem_a_data = elem_a_resp.json().get("data", {})
+        from_id = elem_a_data.get("element_id") or elem_a_data.get("elementId")
+        assert from_id, f"Element A response missing id: {elem_a_data}"
+
+        elem_b_resp = client.post(
+            "/api/elements",
+            json={"properties": {"element_type": "wall", "name": "V191-Conn-Wall-B"}},
+        )
+        assert elem_b_resp.status_code in (200, 201), (
+            f"Failed to create element B: {elem_b_resp.status_code} {elem_b_resp.text}"
+        )
+        elem_b_data = elem_b_resp.json().get("data", {})
+        to_id = elem_b_data.get("element_id") or elem_b_data.get("elementId")
+        assert to_id, f"Element B response missing id: {elem_b_data}"
+
+        # Now create a connection between the REAL elements — must be 201
         response = client.post(
             "/api/connections",
             json={
-                "from_element_id": "elem-001",
-                "to_element_id": "elem-002",
-                "relationship_type": "cable_connection",
+                "from_element_id": from_id,
+                "to_element_id": to_id,
+                "relationship_type": "adjacent",
             },
         )
-        # 400 if elements don't exist (expected — elem-001/002 are fake IDs)
-        # 201 if created
-        # 500 is NEVER acceptable — it means a runtime crash
-        assert response.status_code in (201, 400), (
-            f"Expected 201 or 400, got {response.status_code}: {response.text}"
+        assert response.status_code == 201, (
+            f"Expected 201 Created for valid connection, got "
+            f"{response.status_code}: {response.text}"
         )
 
     def test_delete_connection_v2_nonexistent(self, client) -> None:
@@ -1005,6 +1035,94 @@ class TestConnectionsV2RegressionV188:
         ]
         assert connection_id not in ids, (
             f"Deleted connection {connection_id} still in list: {ids}"
+        )
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# V191 REGRESSION TESTS — metadata preservation + delete_connection error handling
+# ══════════════════════════════════════════════════════════════════════════════
+# V191 FIX: The V189 transformer corrupted metadata camelCase keys. The V188
+# delete_connection conflated "not found" with "DB error". These tests prove
+# the V191 fixes work.
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+class TestV191MetadataPreservation:
+    """V191 regression: connection metadata with camelCase keys must round-trip."""
+
+    def test_connection_metadata_camelcase_roundtrip(self, client) -> None:
+        """Create a connection with camelCase metadata keys, then verify
+        the metadata is returned with the SAME camelCase keys (not converted
+        to snake_case by the frontend transformer).
+
+        V191 FIX: The V189 deepCamelToSnake transformer recursively converted
+        ALL keys including those inside `metadata`. This corrupted user-stored
+        camelCase keys. The V191 fix adds FREEFORM_DATA_FIELDS to skip
+        transformation of metadata values.
+
+        This test verifies the BACKEND preserves metadata keys (the frontend
+        transformer is tested separately in v191_frontend_transform_test.ts).
+        """
+        # Create two elements
+        elem_a = client.post(
+            "/api/elements",
+            json={"properties": {"element_type": "wall", "name": "V191-Meta-A"}},
+        )
+        from_id = elem_a.json().get("data", {}).get("element_id") or \
+                  elem_a.json().get("data", {}).get("elementId")
+        elem_b = client.post(
+            "/api/elements",
+            json={"properties": {"element_type": "wall", "name": "V191-Meta-B"}},
+        )
+        to_id = elem_b.json().get("data", {}).get("element_id") or \
+                elem_b.json().get("data", {}).get("elementId")
+
+        # Create a connection with camelCase metadata keys
+        camel_metadata = {
+            "cableSize": "2.5mm²",
+            "voltageDrop": 1.2,
+            "installerName": "John",
+        }
+        create_resp = client.post(
+            "/api/connections",
+            json={
+                "from_element_id": from_id,
+                "to_element_id": to_id,
+                "relationship_type": "adjacent",
+                "metadata": camel_metadata,
+            },
+        )
+        assert create_resp.status_code == 201, (
+            f"Create failed: {create_resp.status_code} {create_resp.text}"
+        )
+
+        # Verify the metadata is returned with the SAME camelCase keys
+        data = create_resp.json().get("data", {})
+        # The response may use camelCase or snake_case for the metadata field
+        # name itself, but the CONTENTS must preserve camelCase keys
+        returned_metadata = data.get("metadata") or data.get("metadata")
+        assert returned_metadata is not None, f"Response missing metadata: {data}"
+        assert "cableSize" in returned_metadata, (
+            f"camelCase key 'cableSize' was corrupted! Got: {returned_metadata}"
+        )
+        assert "voltageDrop" in returned_metadata, (
+            f"camelCase key 'voltageDrop' was corrupted! Got: {returned_metadata}"
+        )
+        assert "installerName" in returned_metadata, (
+            f"camelCase key 'installerName' was corrupted! Got: {returned_metadata}"
+        )
+
+    def test_delete_connection_returns_404_for_nonexistent(self, client) -> None:
+        """V191 regression: delete_connection must return 404 for nonexistent ID.
+
+        Before V191, delete_connection caught ALL exceptions and returned False,
+        which the router translated to 404. This meant DB errors also returned
+        404 (hiding real failures). V191 separates "not found" (404) from
+        "DB error" (500). This test verifies the not-found case still works.
+        """
+        response = client.delete("/api/connections/nonexistent-v191-test-id")
+        assert response.status_code == 404, (
+            f"Expected 404 for nonexistent connection, got {response.status_code}"
         )
 
 

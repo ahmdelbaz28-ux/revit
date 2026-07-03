@@ -228,7 +228,20 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
         key={detector.id}
         transform={`translate(${detector.x - 12}, ${detector.y - 12})`}
         onMouseDown={(e) => handleMouseDown(detector.id, e)}
-        style={{ cursor: draggingDetector ? 'grabbing' : 'grab' }}
+        // V191 FIX: Stop the click event from bubbling to the canvas div's
+        // onClick handler (handleCanvasClick). Without this, clicking on a
+        // detector selects it (via onMouseDown) AND adds a new detector on
+        // top of it (via the bubbled click). stopPropagation on mousedown
+        // does NOT prevent the separate click event from bubbling.
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          cursor: draggingDetector ? 'grabbing' : 'grab',
+          // V191 FIX: pointerEvents:'auto' overrides the parent SVG's
+          // pointer-events:none, so this <g> receives mouse events for
+          // dragging. Without this, clicks pass through to the canvas div
+          // (which adds a new detector) instead of selecting this one.
+          pointerEvents: 'auto',
+        }}
       >
         {detectorShape}
         {isSelected && (
@@ -300,9 +313,25 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
             Fix: render coverage circles AND detectors inside the same
             <svg> container. This also reduces DOM nodes (one <svg>
             instead of two) and ensures correct z-ordering (coverage
-            under detectors, both over the floor plan). */}
+            under detectors, both over the floor plan).
+
+            V191 FIX: The SVG has pointer-events:none so that clicks on
+            empty canvas area pass THROUGH to the underlying <div>
+            (which calls handleCanvasClick to add new detectors). But
+            this also prevented detector <g> elements from receiving
+            onMouseDown events — making detectors impossible to drag.
+            Root cause: per CSS spec, pointer-events:none on parent
+            means children don't receive events UNLESS they explicitly
+            set pointer-events:auto. The <g> elements didn't, so
+            clicking on a detector added a NEW detector on top instead
+            of selecting/dragging it.
+            Fix: set pointerEvents:'auto' on each detector <g> so it
+            captures mouse events for dragging, while the rest of the
+            SVG remains click-through for adding new detectors. */}
         <svg className="absolute inset-0 pointer-events-none w-full h-full">
-          {/* Coverage circles (rendered first so they appear under detectors) */}
+          {/* Coverage circles (rendered first so they appear under detectors).
+              These stay pointer-events:none (inherited from SVG) — they're
+              visual-only, clicks pass through to the canvas div. */}
           {detectors.map(detector => (
             <circle
               key={`coverage-${detector.id}`}
@@ -314,7 +343,9 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
               strokeWidth="1"
             />
           ))}
-          {/* Detectors (rendered on top of coverage circles) */}
+          {/* Detectors (rendered on top of coverage circles).
+              V191: pointerEvents:'auto' overrides the SVG's pointer-events:none
+              so detectors receive onMouseDown for dragging. */}
           {detectors.map(renderDetector)}
         </svg>
       </div>
