@@ -9,7 +9,43 @@
     <!-- CSRF Token -->
     <meta name="csrf-token" content="" />
 
-    <!-- Security: Content Security Policy (__CSP_CONNECT_SRC__ injected at build time) -->
+    <!--
+      V190 FIX: CSP via <meta> tag.
+      ============================================
+      ROOT CAUSE: The browser console showed two warnings on EVERY page load:
+        1. "The Content Security Policy directive 'frame-ancestors' is ignored
+           when delivered via a <meta> element."
+        2. "X-Frame-Options may only be set via an HTTP header sent along with
+           a document. It may not be set inside <meta>."
+
+      Per the CSP specification (https://www.w3.org/TR/CSP3/):
+        - The following directives are NOT allowed in <meta> tags and MUST be
+          delivered via HTTP header: frame-ancestors, report-uri, sandbox.
+        - X-Frame-Options is an HTTP header by definition — it has no <meta>
+          equivalent.
+
+      Previously these were in the <meta> tag, the browser silently ignored
+      them, so the clickjacking protection was NOT actually enforced.
+
+      ROOT-CAUSE FIX (per Rule 17):
+        1. Remove `frame-ancestors 'none'` from the <meta> CSP (it's ignored).
+        2. Remove the <meta http-equiv="X-Frame-Options"> tag entirely (it's
+           ignored and produces a console warning).
+        3. The Vite dev server already sets X-Frame-Options: DENY as an HTTP
+           header (vite.config.ts:129). For production, the deployment
+           platform (Vercel/HF Space/nginx) must set:
+             - Content-Security-Policy: frame-ancestors 'none'
+             - X-Frame-Options: DENY
+           as HTTP headers.
+        4. The remaining CSP directives (default-src, script-src, style-src,
+           img-src, font-src, connect-src, base-uri, form-action) ARE valid
+           in <meta> tags and remain here. They are honored by the browser.
+
+      This eliminates BOTH console warnings without weakening security —
+      the protections were never actually working via <meta>, so removing
+      them changes nothing functionally. The real protections come from
+      the HTTP headers.
+    -->
     <meta
       http-equiv="Content-Security-Policy"
       content="default-src 'self';
@@ -18,21 +54,25 @@
                img-src 'self' data: https:;
                font-src 'self';
                connect-src 'self' http://localhost:8000 ws://localhost:8000 __CSP_CONNECT_SRC__;
-               frame-ancestors 'none';
                base-uri 'self';
                form-action 'self';"
     />
 
-    <!-- Security: Prevent MIME-type sniffing -->
+    <!-- Security: Prevent MIME-type sniffing (works via <meta>) -->
     <meta http-equiv="X-Content-Type-Options" content="nosniff" />
 
-    <!-- Security: Prevent clickjacking -->
-    <meta http-equiv="X-Frame-Options" content="DENY" />
+    <!--
+      V190 FIX: Removed <meta http-equiv="X-Frame-Options" content="DENY" />
+      (was ignored by browser — X-Frame-Options is HTTP-header-only).
+      The X-Frame-Options: DENY HTTP header is set by:
+        - Vite dev server: vite.config.ts:129
+        - Production: must be set by Vercel/HF Space/nginx config
+    -->
 
-    <!-- Security: Control referrer information -->
+    <!-- Security: Control referrer information (works via <meta>) -->
     <meta name="referrer" content="strict-origin-when-cross-origin" />
 
-    <!-- Security: Disable unnecessary browser features -->
+    <!-- Security: Disable unnecessary browser features (works via <meta>) -->
     <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=()" />
 
     <title>BAZSPARK Digital Twin</title>

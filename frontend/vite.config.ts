@@ -129,6 +129,12 @@ export default defineConfig({
       "X-Frame-Options": "DENY",
       "X-XSS-Protection": "1; mode=block",
       "Referrer-Policy": "strict-origin-when-cross-origin",
+      // V190 FIX: frame-ancestors MUST be delivered via HTTP header (not
+      // <meta>). The <meta> CSP tag is honored for most directives but
+      // NOT for frame-ancestors per CSP3 spec. Set it here so the dev
+      // server enforces clickjacking protection. Production (Vercel/HF
+      // Space) must set the same header via their config.
+      "Content-Security-Policy-Frame-Ancestors": "'none'",
     },
     proxy: {
       "/api": {

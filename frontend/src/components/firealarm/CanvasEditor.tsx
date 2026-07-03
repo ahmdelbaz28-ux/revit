@@ -284,21 +284,37 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
           </div>
         )}
         
-        {/* Coverage circles */}
-        {detectors.map(detector => (
-          <circle
-            key={`coverage-${detector.id}`}
-            cx={detector.x}
-            cy={detector.y}
-            r={detector.coverageRadius * 10} // Scale factor for visualization
-            fill="rgba(167, 139, 250, 0.2)"
-            stroke="rgba(167, 139, 250, 0.5)"
-            strokeWidth="1"
-          />
-        ))}
-        
-        {/* Detectors */}
-        <svg className="absolute inset-0 pointer-events-none">
+        {/* V190 FIX: Wrap ALL SVG elements (circle, rect, g, polygon) inside
+            a single <svg> container. Previously, the coverage <circle>
+            elements were rendered as direct children of the HTML <div>,
+            causing React to render them as unknown HTML tags (not SVG
+            namespace). This produced the console warning:
+              "Warning: The tag <%s> is unrecognized in this browser.
+               If you meant to render a React component, start its name
+               with an uppercase letter.%s circle"
+            The browser then silently dropped the coverage circles,
+            so users never saw the detector coverage visualization.
+            Root cause: SVG elements MUST be inside an <svg> parent to
+            be rendered in the SVG namespace. Without it, the browser
+            treats <circle> as an unknown HTML element (like <foo>).
+            Fix: render coverage circles AND detectors inside the same
+            <svg> container. This also reduces DOM nodes (one <svg>
+            instead of two) and ensures correct z-ordering (coverage
+            under detectors, both over the floor plan). */}
+        <svg className="absolute inset-0 pointer-events-none w-full h-full">
+          {/* Coverage circles (rendered first so they appear under detectors) */}
+          {detectors.map(detector => (
+            <circle
+              key={`coverage-${detector.id}`}
+              cx={detector.x}
+              cy={detector.y}
+              r={detector.coverageRadius * 10}
+              fill="rgba(167, 139, 250, 0.2)"
+              stroke="rgba(167, 139, 250, 0.5)"
+              strokeWidth="1"
+            />
+          ))}
+          {/* Detectors (rendered on top of coverage circles) */}
           {detectors.map(renderDetector)}
         </svg>
       </div>

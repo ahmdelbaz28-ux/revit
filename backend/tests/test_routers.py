@@ -732,7 +732,12 @@ class TestElementsRouter:
         assert response.status_code == 200
 
     def test_create_element(self, client) -> None:
-        """POST /api/elements must create an element."""
+        """POST /api/elements must create an element.
+
+        V190 FIX: Tightened from (200, 201, 500) to (200, 201). 500 hides
+        runtime crashes. The V189 transformer + V188 db_service fixes mean
+        the UDM IS available in tests, so 500 is no longer expected.
+        """
         response = client.post(
             "/api/elements",
             json={
@@ -742,25 +747,42 @@ class TestElementsRouter:
                 },
             },
         )
-        assert response.status_code in (200, 201, 500)  # 500 if UDM not available
+        assert response.status_code in (200, 201), (
+            f"Expected 200 or 201, got {response.status_code}: {response.text}"
+        )
 
     def test_get_element_nonexistent_404(self, client) -> None:
-        """GET /api/elements/{id} for nonexistent element must return 404."""
+        """GET /api/elements/{id} for nonexistent element must return 404.
+
+        V190 FIX: Tightened from (404, 500) to (404). 500 hides crashes.
+        """
         response = client.get("/api/elements/nonexistent-element-id")
-        assert response.status_code in (404, 500)
+        assert response.status_code == 404, (
+            f"Expected 404, got {response.status_code}: {response.text}"
+        )
 
     def test_update_element_nonexistent_404(self, client) -> None:
-        """PUT /api/elements/{id} for nonexistent element must return 404."""
+        """PUT /api/elements/{id} for nonexistent element must return 404.
+
+        V190 FIX: Tightened from (404, 500) to (404). 500 hides crashes.
+        """
         response = client.put(
             "/api/elements/nonexistent-element-id",
             json={"properties": {"name": "Updated"}},
         )
-        assert response.status_code in (404, 500)
+        assert response.status_code == 404, (
+            f"Expected 404, got {response.status_code}: {response.text}"
+        )
 
     def test_delete_element_nonexistent_404(self, client) -> None:
-        """DELETE /api/elements/{id} for nonexistent element must return 404."""
+        """DELETE /api/elements/{id} for nonexistent element must return 404.
+
+        V190 FIX: Tightened from (404, 500) to (404). 500 hides crashes.
+        """
         response = client.delete("/api/elements/nonexistent-element-id")
-        assert response.status_code in (404, 500)
+        assert response.status_code == 404, (
+            f"Expected 404, got {response.status_code}: {response.text}"
+        )
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -781,7 +803,14 @@ class TestConnectionsV2Router:
         assert response.status_code == 200
 
     def test_create_connection_v2(self, client) -> None:
-        """POST /api/connections must create a connection or fail validation."""
+        """POST /api/connections must create a connection or fail validation.
+
+        V190 FIX: Tightened from (201, 400, 500) to (201, 400). The previous
+        test accepted HTTP 500 as a valid outcome, which hid the V188 bug
+        (tuple-mutation crash) for months. Per Rule 10, we don't modify
+        tests to hide defects — but here we're TIGHTENING the test to
+        EXPOSE defects. 500 means a runtime crash, which is NEVER acceptable.
+        """
         response = client.post(
             "/api/connections",
             json={
@@ -790,13 +819,23 @@ class TestConnectionsV2Router:
                 "relationship_type": "cable_connection",
             },
         )
-        # 400 if elements don't exist, 201 if created, 500 if UDM not available
-        assert response.status_code in (201, 400, 500)
+        # 400 if elements don't exist (expected — elem-001/002 are fake IDs)
+        # 201 if created
+        # 500 is NEVER acceptable — it means a runtime crash
+        assert response.status_code in (201, 400), (
+            f"Expected 201 or 400, got {response.status_code}: {response.text}"
+        )
 
     def test_delete_connection_v2_nonexistent(self, client) -> None:
-        """DELETE /api/connections/{id} for nonexistent must return 404."""
+        """DELETE /api/connections/{id} for nonexistent must return 404.
+
+        V190 FIX: Tightened from (404, 500) to (404). Same rationale as
+        test_create_connection_v2 — 500 hides runtime crashes.
+        """
         response = client.delete("/api/connections/nonexistent-conn-id")
-        assert response.status_code in (404, 500)
+        assert response.status_code == 404, (
+            f"Expected 404, got {response.status_code}: {response.text}"
+        )
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -987,17 +1026,27 @@ class TestConflictsRouter:
         assert response.status_code == 200
 
     def test_detect_conflicts(self, client) -> None:
-        """POST /api/conflicts/detect must run conflict detection."""
+        """POST /api/conflicts/detect must run conflict detection.
+
+        V190 FIX: Tightened from (200, 500) to (200,). 500 hides crashes.
+        """
         response = client.post("/api/conflicts/detect")
-        assert response.status_code in (200, 500)
+        assert response.status_code == 200, (
+            f"Expected 200, got {response.status_code}: {response.text}"
+        )
 
     def test_resolve_conflict_nonexistent_404(self, client) -> None:
-        """POST /api/conflicts/{id}/resolve for nonexistent must return 404."""
+        """POST /api/conflicts/{id}/resolve for nonexistent must return 404.
+
+        V190 FIX: Tightened from (404, 500) to (404). 500 hides crashes.
+        """
         response = client.post(
             "/api/conflicts/nonexistent-id/resolve",
             json={"strategy": "SEMANTIC_MERGE"},
         )
-        assert response.status_code in (404, 500)
+        assert response.status_code == 404, (
+            f"Expected 404, got {response.status_code}: {response.text}"
+        )
 
 
 # ══════════════════════════════════════════════════════════════════════════════
