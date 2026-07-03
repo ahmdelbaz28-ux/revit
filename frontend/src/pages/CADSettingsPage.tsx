@@ -18,6 +18,12 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+// FIX (Rule 17 — root cause): Previously these check-connection buttons were TODO mocks
+// that always returned `connected: true` after a fake 1-second delay, giving the user a
+// false sense that AutoCAD/Revit were properly hooked up when in reality no check was
+// performed. We now import the real services and call their getStatus() endpoints.
+import { autocadService } from '@/services/autocadService';
+import { revitService } from '@/services/revitService';
 import { 
   Settings, 
   CheckCircle2, 
@@ -93,25 +99,30 @@ export function CADSettingsPage() {
   const checkAutoCADConnection = async () => {
     setCheckingAcad(true);
     try {
-      // TODO: Implement actual API call to check AutoCAD connection
-      // const response = await api.checkAutoCADConnection();
-      // setAcadStatus(response);
-      
-      // Mock response for now
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // FIX (Rule 17 — root cause): Real API call instead of mock.
+      const response = await autocadService.getStatus() as {
+        success: boolean;
+        data?: { connected?: boolean; version?: string; document?: string };
+        error?: string;
+      };
+      const connected = !!(response?.success && response?.data?.connected);
       setAcadStatus({
-        connected: true,
-        version: 'AutoCAD 2024',
-        document: 'Drawing1.dwg',
+        connected,
+        version: response?.data?.version,
+        document: response?.data?.document,
         lastChecked: new Date().toISOString(),
       });
-      toast.success('AutoCAD connection verified');
+      if (connected) {
+        toast.success('AutoCAD connection verified');
+      } else {
+        toast.error(`AutoCAD not connected: ${response?.error || 'unknown reason'}`);
+      }
     } catch (error) {
       setAcadStatus({
         connected: false,
         lastChecked: new Date().toISOString(),
       });
-      toast.error('AutoCAD connection failed');
+      toast.error(`AutoCAD connection failed: ${error instanceof Error ? error.message : 'Network error'}`);
     } finally {
       setCheckingAcad(false);
     }
@@ -120,25 +131,30 @@ export function CADSettingsPage() {
   const checkRevitConnection = async () => {
     setCheckingRevit(true);
     try {
-      // TODO: Implement actual API call to check Revit connection
-      // const response = await api.checkRevitConnection();
-      // setRevitStatus(response);
-      
-      // Mock response for now
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // FIX (Rule 17 — root cause): Real API call instead of mock.
+      const response = await revitService.getStatus() as {
+        success: boolean;
+        data?: { connected?: boolean; version?: string; document?: string };
+        error?: string;
+      };
+      const connected = !!(response?.success && response?.data?.connected);
       setRevitStatus({
-        connected: true,
-        version: 'Revit 2024',
-        document: 'Project1.rvt',
+        connected,
+        version: response?.data?.version,
+        document: response?.data?.document,
         lastChecked: new Date().toISOString(),
       });
-      toast.success('Revit connection verified');
+      if (connected) {
+        toast.success('Revit connection verified');
+      } else {
+        toast.error(`Revit not connected: ${response?.error || 'unknown reason'}`);
+      }
     } catch (error) {
       setRevitStatus({
         connected: false,
         lastChecked: new Date().toISOString(),
       });
-      toast.error('Revit connection failed');
+      toast.error(`Revit connection failed: ${error instanceof Error ? error.message : 'Network error'}`);
     } finally {
       setCheckingRevit(false);
     }

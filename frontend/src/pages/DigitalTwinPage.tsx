@@ -118,18 +118,31 @@ export function DigitalTwinPage() {
     setConversionResult(null);
 
     try {
-      // TODO: Implement actual API call to backend conversion service
-      // For now, simulate conversion
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      // FIX (Rule 17 — root cause): Previously this was a TODO mock that did
+      // setTimeout(3000) + Math.random() and lied about success. This is a
+      // SAFETY-CRITICAL defect because the user thinks the conversion succeeded
+      // and may proceed to use a non-existent output file in downstream tools.
+      // Now we call the real backend endpoint POST /api/v1/digital-twin/convert.
+      const apiResult = await digitalTwinApi.convert({
+        source_format: conversionType === 'autocad_to_revit' ? 'dwg' : 'rvt',
+        target_format: conversionType === 'autocad_to_revit' ? 'rvt' : 'dwg',
+        file_name: selectedFile.name,
+      }) as { success: boolean; data?: { output_file?: string; elements_converted?: number; errors?: string[]; warnings?: string[]; duration_seconds?: number } };
+
+      if (!apiResult || !apiResult.success) {
+        const errMsg = (apiResult as { error?: string })?.error || 'Conversion rejected by backend';
+        toast.error(`Conversion failed: ${errMsg}`);
+        return;
+      }
 
       const result: ConversionResult = {
         success: true,
         source_file: selectedFile.name,
-        target_file: conversionType === 'autocad_to_revit' ? 'output.rvt' : 'output.dwg',
-        elements_converted: Math.floor(Math.random() * 100) + 50,
-        errors: [],
-        warnings: ['Some entities were skipped due to missing layer mapping'],
-        duration_seconds: 2.5,
+        target_file: apiResult.data?.output_file || (conversionType === 'autocad_to_revit' ? 'output.rvt' : 'output.dwg'),
+        elements_converted: apiResult.data?.elements_converted ?? 0,
+        errors: apiResult.data?.errors ?? [],
+        warnings: apiResult.data?.warnings ?? [],
+        duration_seconds: apiResult.data?.duration_seconds ?? 0,
         timestamp: new Date().toISOString(),
       };
 

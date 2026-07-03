@@ -734,10 +734,13 @@ export const v2Api = {
     detector_type: string;
     constraints?: Record<string, unknown>;
   }) =>
+    // FIX (Rule 17 — root cause): Previously missing the API_V2_BASE argument, so the call
+    // went to /api/v1/generative/design which doesn't exist (404). Now correctly targets
+    // /api/v2/generative/design.
     apiCall('/generative/design', {
       method: 'POST',
       body: JSON.stringify(data),
-    }),
+    }, API_V2_BASE),
 
   /** GET /bim/providers */
   getBimProviders: () => apiCall('/bim/providers', {}, API_V2_BASE),

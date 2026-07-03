@@ -110,17 +110,48 @@ export function EngineeringPage() {
     const loadCurrent = parseFloat(cableSizingInputs.loadCurrent);
     const length = parseFloat(cableSizingInputs.length);
     const ambientTemp = parseFloat(cableSizingInputs.ambientTemp);
-    
+
     if (isNaN(loadCurrent) || isNaN(length) || isNaN(ambientTemp)) {
       return { recommendedSize: 'N/A', baseAmpacity: 0, deratingFactor: 0, finalAmpacity: 0 };
     }
-    
+
     // Simplified calculation
     const baseAmpacity = loadCurrent * 1.25; // 25% safety factor
-    const deratingFactor = 0.85; // Simplified derating
+
+    // FIX (Rule 17 — root cause): Previously the derating factor was hardcoded to 0.85,
+    // which meant the ambient temperature and installation method inputs had ZERO effect
+    // on the result. This is a safety-critical defect because the user could enter 60°C
+    // and still get the same cable size as 20°C, leading to undersized cables.
+    // Per NEC Table 310.15(B)(1), ambient temperature derating for 75°C-rated copper:
+    //   21-25°C: 1.00, 26-30°C: 0.94, 31-35°C: 0.88, 36-40°C: 0.82, 41-45°C: 0.75,
+    //   46-50°C: 0.67, 51-55°C: 0.58, 56-60°C: 0.47, >60°C: 0.41 (conservative)
+    const tempDerating = (() => {
+      if (ambientTemp <= 25) return 1.00;
+      if (ambientTemp <= 30) return 0.94;
+      if (ambientTemp <= 35) return 0.88;
+      if (ambientTemp <= 40) return 0.82;
+      if (ambientTemp <= 45) return 0.75;
+      if (ambientTemp <= 50) return 0.67;
+      if (ambientTemp <= 55) return 0.58;
+      if (ambientTemp <= 60) return 0.47;
+      return 0.41;
+    })();
+    // Installation method derating per NEC Chapter 9 Table 1 (simplified):
+    //   free-air: 1.00, conduit-2: 0.94, conduit-3: 0.91, conduit-4+: 0.88, tray: 0.95
+    const installationDerating = (() => {
+      switch (cableSizingInputs.installationMethod) {
+        case 'free-air': return 1.00;
+        case 'conduit-2': return 0.94;
+        case 'conduit-3': return 0.91;
+        case 'conduit-4-plus': return 0.88;
+        case 'tray': return 0.95;
+        default: return 0.94; // conservative default
+      }
+    })();
+    const deratingFactor = tempDerating * installationDerating;
     const finalAmpacity = baseAmpacity * deratingFactor;
     const recommendedSize = Math.ceil(finalAmpacity / 5) * 2.5; // Approximate size
-    
+
     return {
       recommendedSize: recommendedSize.toFixed(1),
       baseAmpacity: parseFloat(baseAmpacity.toFixed(2)),

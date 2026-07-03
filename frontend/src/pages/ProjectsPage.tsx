@@ -26,7 +26,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useProjects, useCreateProject, useDeleteProject, useSyncProject } from '@/hooks/useApi';
 import { FolderPlus, Loader2, Folder, User, Clock, Link as LinkIcon, Eye, Trash2, RefreshCw } from 'lucide-react';
 import { api } from '@/services/digitalTwinApi';
@@ -70,6 +70,7 @@ const CABLE_SIZES = [
 
 export function ProjectsPage() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { data: projects, loading: projectsLoading, error: projectsError, refetch } = useProjects();
   const { mutate: deleteProject, loading: deleting } = useDeleteProject();
   const { mutate: syncProject, loading: syncing } = useSyncProject();
@@ -346,7 +347,12 @@ export function ProjectsPage() {
                         size="sm"
                         className="border-slate-600 text-slate-300"
                         onClick={() => {
-                          window.location.hash = `/projects/${project.id}`;
+                          // FIX (Rule 17 — root cause): Previously used window.location.hash
+                          // which doesn't work with BrowserRouter (no hash routing) and there's
+                          // no /projects/:id route defined in App.tsx. Now we navigate to the
+                          // Elements page filtered by project, which IS a defined route.
+                          const pid = project.project_id || project.id;
+                          navigate(`/elements?projectId=${encodeURIComponent(pid)}`);
                         }}
                       >
                         <Eye className="h-4 w-4" />

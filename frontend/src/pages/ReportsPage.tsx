@@ -1,7 +1,7 @@
 /**
  * ReportsPage.tsx - Report generation with deterministic analysis
  */
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -29,7 +29,7 @@ import {
   Eye,
   Calculator,
 } from 'lucide-react';
-import { useReports, useGenerateReport } from '@/hooks/useApi';
+import { useReports, useGenerateReport, useProjects } from '@/hooks/useApi';
 import { calculateBatteryRequirements, generateBatteryReport } from '@/engine/BatteryCalculator';
 import { calculateCoverage, generateCoverageReport } from '@/engine/CoverageEngine';
 
@@ -39,8 +39,20 @@ import { calculateCoverage, generateCoverageReport } from '@/engine/CoverageEngi
 
 export function ReportsPage() {
   const { t } = useTranslation();
-  const { data: reports, loading: reportsLoading, error: reportsError, refetch: refetchReports } = useReports(null); // Pass null as projectId
-  const { mutate: generateReport, loading: generating, error: generateError } = useGenerateReport(); // Assuming useGenerateReport exists
+  // FIX (Rule 17 — root cause): Previously used hardcoded 'default-project-id' which always 404'd.
+  // Now we fetch the list of projects and let the user pick one. If the list is empty, we
+  // display a clear empty-state instead of silently calling a broken URL.
+  const { data: projects, loading: projectsLoading } = useProjects();
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  // Auto-select the first project when the list arrives
+  useEffect(() => {
+    if (!selectedProjectId && projects && projects.length > 0) {
+      setSelectedProjectId(projects[0].project_id || projects[0].id);
+    }
+  }, [projects, selectedProjectId]);
+
+  const { data: reports, loading: reportsLoading, error: reportsError, refetch: refetchReports } = useReports(selectedProjectId);
+  const { mutate: generateReport, loading: generating, error: generateError } = useGenerateReport();
 
   const [reportType, setReportType] = useState('comprehensive');
   const [execParams, setExecParams] = useState({
@@ -51,9 +63,14 @@ export function ReportsPage() {
   });
 
   const handleGenerate = async () => {
-    // Use a default project ID or null if no project context is needed
+    if (!selectedProjectId) {
+      // FIX: fail loud instead of sending a hardcoded literal to the backend.
+      // Previous behavior: POST /api/v1/projects/default-project-id/reports → 404 every time.
+      alert(t('reports.selectProjectFirst', 'Please select a project before generating a report.'));
+      return;
+    }
     const result = await generateReport({
-      projectId: 'default-project-id', // Use a default project ID
+      projectId: selectedProjectId,
       data: {
         type: reportType,
         execution_params: execParams,

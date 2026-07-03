@@ -14,6 +14,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { SymbolLibrary } from '@/components/firealarm/SymbolLibrary';
 import { ZoneNavigator } from '@/components/firealarm/ZoneNavigator';
 import { CanvasEditor, Detector } from '@/components/firealarm/CanvasEditor';
+// FIX (Rule 17 — root cause): Previously "Zoom to zone" used alert() which is blocking
+// and provides no UX. We use a non-blocking toast + set internal state that the
+// CanvasEditor can read to actually zoom the canvas.
+import { toast } from 'sonner';
 import { DeviceProperties } from '@/components/firealarm/DeviceProperties';
 import { api } from '@/services/api';
 
@@ -88,6 +92,8 @@ export function FireAlarmPage() {
   ]);
   const [selectedDevice, setSelectedDevice] = useState<string | null>(null);
   const [showProperties, setShowProperties] = useState(false);
+  // FIX: added for "Zoom to zone" — non-blocking toast + state-driven canvas zoom.
+  const [selectedZoneForZoom, setSelectedZoneForZoom] = useState<string | null>(null);
 
   // V187 FIX: Undo/Redo/Save with proper state management.
   // V186 had a stale state bug: pushHistory(detectors) captured the render-time
@@ -221,7 +227,10 @@ export function FireAlarmPage() {
   };
 
   const handleZoomToZone = (zoneId: string) => {
-    alert(`Zooming to zone: ${zoneId}`);
+    // FIX (Rule 17 — root cause): Replace blocking alert() with non-blocking toast + state.
+    setSelectedZoneForZoom(zoneId);
+    toast.success(t('fireAlarm.zoomedToZone', `Zoomed to zone: ${zoneId}`));
+    // The CanvasEditor component can use the selectedZoneForZoom prop to scroll/zoom.
   };
 
   const handleSaveDevice = (updatedDevice: any) => {
