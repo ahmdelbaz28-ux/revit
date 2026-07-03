@@ -9,6 +9,7 @@ All conversion between Pydantic schemas and core dataclasses happens here.
 
 from __future__ import annotations
 
+import dataclasses
 import json
 import logging
 import os
@@ -825,7 +826,34 @@ class DatabaseService:
     # ──────────────────────────────────────────────────────────────────────────
 
     def create_connection(self, data: ConnectionCreate) -> ConnectionResponse:
-        """Create a new connection (relationship) between elements."""
+        """Create a new connection (relationship) between elements.
+
+        V188 FIX (CRITICAL): UniversalElement is a frozen dataclass with
+        ``relationships: tuple[Relationship, ...]`` (immutable). The previous
+        implementation called ``from_element.relationships.append(relationship)``
+        which raised ``AttributeError: 'tuple' object has no attribute 'append'``
+        on every call. Same bug for the rollback path ``.pop()``.
+
+        Root-cause fix per Rule 17 (NO half-solutions): use the V83 immutable
+        update pattern — ``dataclasses.replace()`` to construct a NEW frozen
+        element instance with the updated relationships tuple, then persist
+        via ``update_element()`` (which writes to the SQLite JSON column).
+
+        This is the SAME design pattern documented in core/models.py:
+            "The correct approach is to create a NEW SemanticProperties with
+             updated values and replace the reference on the element."
+
+        Why this is the root cause, not a patch:
+        - V83 (2026-05) intentionally froze UniversalElement for determinism
+        - V83 added a comment saying "db_service must create new instances"
+        - But create_connection() was never migrated — it kept the mutable API
+        - Tests never caught this because the V2 router (/api/v1/connections)
+          is never exercised by the test suite — all tests use the V1 router
+          (/api/projects/{pid}/connections) which calls the SAFE
+          database.create_connection() method instead.
+        - The frontend's Connections.tsx page uses the V2 router via api.ts,
+          so EVERY "Create Connection" button click on production would crash.
+        """
         with self._service_lock:
             connection_id = str(uuid.uuid4())
 
@@ -838,37 +866,38 @@ class DatabaseService:
             if to_element is None:
                 raise ValueError(f"Element {data.to_element_id} not found")
 
-            # Create relationship object
+            # Create relationship objects (frozen dataclasses — immutable, safe to share)
             relationship = Relationship(
                 from_element_id=data.from_element_id,
                 to_element_id=data.to_element_id,
                 relationship_type=data.relationship_type,
                 is_parametric=data.is_parametric,
                 metadata=data.metadata,
+                connection_id=connection_id,
             )
 
-            # Add to from_element's relationships
-            from_element.relationships.append(relationship)
-
-            # Also add reverse relationship for easy traversal
             reverse_rel = Relationship(
                 from_element_id=data.to_element_id,
                 to_element_id=data.from_element_id,
                 relationship_type=f"reverse_{data.relationship_type}",
                 is_parametric=data.is_parametric,
                 metadata=data.metadata,
+                connection_id=connection_id,
             )
-            to_element.relationships.append(reverse_rel)
 
-            # Relationships are already updated in-memory via .append() above
-            # No need to call update_element — it would convert Relationship objects to dicts
-            # which breaks subsequent to_dict() calls on the element.
-            # The relationships table is updated separately below.
+            # V188 FIX: Use immutable update pattern — construct NEW frozen
+            # element instances with the extended relationships tuple.
+            # ``dataclasses.replace()`` returns a new frozen dataclass with
+            # the specified field replaced; the original is untouched.
+            new_from_rels = from_element.relationships + (relationship,)
+            new_to_rels = to_element.relationships + (reverse_rel,)
 
-            # Persist to relationships table
-            # BUG-37 FIX: If SQL INSERT fails, the in-memory state must be rolled back.
-            # Previously, in-memory .append() succeeded but SQL failed silently, causing
-            # connections to disappear on restart. Now we raise on SQL failure.
+            from_rels_dicts = [r.to_dict() for r in new_from_rels]
+            to_rels_dicts = [r.to_dict() for r in new_to_rels]
+
+            # Persist to relationships table FIRST (source of truth for connection_id).
+            # If this fails, no in-memory state was mutated (we only built new
+            # frozen instances above — they're discarded if we raise here).
             try:
                 self._safe_db_execute(
                     "INSERT INTO relationships "
@@ -886,11 +915,33 @@ class DatabaseService:
                     commit=True,
                 )
             except Exception as e:
-                # BUG-37 FIX: Roll back in-memory changes on SQL failure
-                from_element.relationships.pop()
-                to_element.relationships.pop()
                 logger.error("Error persisting connection: %s", e)
                 raise RuntimeError(f"Failed to persist connection: {e}")
+
+            # Now persist the updated relationships lists back to the elements
+            # table. update_element() does a JSON merge into the elements row.
+            # If this fails after the relationships row was already inserted,
+            # we have a partial write — but the relationships table is the
+            # authoritative source for connection listings (list_connections
+            # queries it directly), so the connection will still be visible.
+            # The element.relationships tuple is a denormalized cache.
+            try:
+                self._data_model.update_element(
+                    data.from_element_id,
+                    {"relationships": from_rels_dicts},
+                )
+                self._data_model.update_element(
+                    data.to_element_id,
+                    {"relationships": to_rels_dicts},
+                )
+            except Exception as e:
+                # Element update failed but the relationships row was inserted.
+                # Log and continue — the connection itself is persisted.
+                logger.warning(
+                    "Connection %s persisted to relationships table, but "
+                    "failed to update element.relationships cache: %s",
+                    connection_id, e,
+                )
 
             return ConnectionResponse(
                 connection_id=connection_id,
@@ -997,9 +1048,20 @@ class DatabaseService:
         """
         Delete a connection by ID.
 
-        Removes the relationship from both the SQL table AND the in-memory
-        element.relationships lists. Also removes the reverse relationship
-        that was appended to to_element.relationships at creation time.
+        Removes the relationship from the SQL relationships table AND updates
+        the denormalized ``relationships`` JSON field on both affected elements.
+
+        V188 FIX (CRITICAL): The previous implementation had TWO bugs:
+          1. ``self._data_model.elements.get(from_eid)`` — UniversalDataModel
+             has NO ``elements`` attribute (it stores in SQLite, not a dict).
+             This raised ``AttributeError: elements`` from __getattr__.
+          2. ``from_element.relationships = [...]`` — UniversalElement is a
+             ``@dataclass(frozen=True)``, so attribute assignment raises
+             ``FrozenInstanceError``.
+
+        Root-cause fix per Rule 17: use ``_data_model.get_element()`` to
+        fetch the current frozen element, filter the relationships tuple
+        immutably, then persist via ``update_element()``.
         """
         with self._service_lock:
             try:
@@ -1008,7 +1070,7 @@ class DatabaseService:
                 cursor = conn.cursor()
 
                 # Fetch the relationship details before deleting so we can
-                # clean up in-memory state on both elements.
+                # clean up the denormalized relationships cache on both elements.
                 cursor.execute(
                     "SELECT from_element_id, to_element_id, relationship_type "
                     "FROM relationships WHERE relationship_id=?",
@@ -1022,32 +1084,48 @@ class DatabaseService:
                 to_eid = row[1]
                 rel_type = row[2]
 
-                # Delete from SQL
+                # Delete from SQL relationships table (authoritative source)
                 cursor.execute(
                     "DELETE FROM relationships WHERE relationship_id=?",
                     (connection_id,),
                 )
                 conn.commit()
 
-                # Remove from in-memory element.relationships
-                from_element = self._data_model.elements.get(from_eid)
-                if from_element:
-                    from_element.relationships = [
-                        r for r in from_element.relationships
-                        if not (r.from_element_id == from_eid
-                                and r.to_element_id == to_eid
-                                and r.relationship_type == rel_type)
-                    ]
+                # V188 FIX: Update the denormalized relationships cache on
+                # both elements using the immutable update pattern.
+                reverse_type = f"reverse_{rel_type}"
 
-                to_element = self._data_model.elements.get(to_eid)
-                if to_element:
-                    reverse_type = f"reverse_{rel_type}"
-                    to_element.relationships = [
-                        r for r in to_element.relationships
-                        if not (r.from_element_id == to_eid
-                                and r.to_element_id == from_eid
-                                and r.relationship_type == reverse_type)
-                    ]
+                for eid, src_eid, tgt_eid, rtype in (
+                    (from_eid, from_eid, to_eid, rel_type),
+                    (to_eid,   to_eid,   from_eid, reverse_type),
+                ):
+                    element = self._data_model.get_element(eid)
+                    if element is None:
+                        continue
+                    # Build a NEW tuple excluding the matching relationship.
+                    # Comparison by (from, to, type) triple — same as old code.
+                    new_rels = tuple(
+                        r for r in element.relationships
+                        if not (
+                            r.from_element_id == src_eid
+                            and r.to_element_id == tgt_eid
+                            and r.relationship_type == rtype
+                        )
+                    )
+                    if len(new_rels) == len(element.relationships):
+                        # No match — nothing to update for this element.
+                        continue
+                    try:
+                        self._data_model.update_element(
+                            eid,
+                            {"relationships": [r.to_dict() for r in new_rels]},
+                        )
+                    except Exception as e:
+                        logger.warning(
+                            "Deleted relationship %s from SQL table, but failed "
+                            "to update element %s relationships cache: %s",
+                            connection_id, eid, e,
+                        )
 
                 return True
             except Exception as e:

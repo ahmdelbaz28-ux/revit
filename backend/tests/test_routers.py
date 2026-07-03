@@ -800,6 +800,176 @@ class TestConnectionsV2Router:
 
 
 # ══════════════════════════════════════════════════════════════════════════════
+# V188 REGRESSION TESTS — Connections V2 router (db_service.create_connection)
+# ══════════════════════════════════════════════════════════════════════════════
+# V188 FIX: The previous test_create_connection_v2 accepted HTTP 500 as a
+# valid outcome. That hid a CRITICAL bug: db_service.create_connection()
+# called .append() on a tuple (frozen dataclass), which always raised
+# AttributeError → HTTP 500 on every call. The frontend's Connections.tsx
+# page uses this V2 router, so EVERY "Create Connection" button click in
+# production crashed.
+#
+# These new regression tests prove the fix works end-to-end:
+#   1. Create two elements via the V2 elements router
+#   2. Create a connection between them via POST /api/connections
+#      → MUST return 201 (NOT 500)
+#   3. List connections → MUST include the new connection
+#   4. Delete the connection via DELETE /api/connections/{id}
+#      → MUST return 200 (NOT 500)
+#   5. List again → connection MUST be gone
+#
+# Per agent.md Rule 10 (TEST-AND-FIX LOOP): tests are never modified to
+# hide defects. These new tests are ADDED — they do not modify the
+# existing (weakened) test_create_connection_v2 test.
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+class TestConnectionsV2RegressionV188:
+    """V188 regression: prove db_service.create_connection/delete_connection
+    work end-to-end through the V2 router, not just the V1 router."""
+
+    def _create_element(self, client, name: str) -> str:
+        """Helper: create an element via POST /api/elements, return its id.
+
+        The response uses camelCase keys (elementId, not element_id) because
+        Pydantic's alias generator converts snake_case → camelCase for the
+        JSON response. We accept either form to be robust.
+        """
+        response = client.post(
+            "/api/elements",
+            json={
+                "properties": {
+                    "element_type": "wall",
+                    "name": name,
+                },
+            },
+        )
+        # Must succeed — 500 means UDM not wired up (test setup failure)
+        assert response.status_code in (200, 201), (
+            f"Failed to create element {name!r}: {response.status_code} {response.text}"
+        )
+        body = response.json()
+        data = body.get("data", body)
+        # ElementResponse serializes as camelCase (elementId) — accept both
+        element_id = data.get("element_id") or data.get("elementId") or data.get("id")
+        assert element_id, f"Element response missing element_id: {body}"
+        return element_id
+
+    def test_v2_create_connection_returns_201_not_500(self, client) -> None:
+        """V188 regression: POST /api/connections must return 201, never 500.
+
+        Before V188, this test would fail with 500 because
+        db_service.create_connection() called .append() on a tuple.
+        """
+        from_id = self._create_element(client, "V188-Wall-A")
+        to_id = self._create_element(client, "V188-Wall-B")
+
+        response = client.post(
+            "/api/connections",
+            json={
+                "from_element_id": from_id,
+                "to_element_id": to_id,
+                "relationship_type": "adjacent",
+                "is_parametric": False,
+            },
+        )
+        # MUST be 201 — 500 means the bug is back
+        assert response.status_code == 201, (
+            f"Expected 201 Created, got {response.status_code}: {response.text}"
+        )
+        body = response.json()
+        assert body.get("success") is True, f"Response missing success=true: {body}"
+        data = body.get("data", {})
+        # Response uses camelCase (fromElementId, etc.) — accept both forms
+        from_eid = data.get("from_element_id") or data.get("fromElementId")
+        to_eid = data.get("to_element_id") or data.get("toElementId")
+        rtype = data.get("relationship_type") or data.get("relationshipType")
+        connection_id = data.get("connection_id") or data.get("connectionId")
+        assert from_eid == from_id, f"from mismatch: {from_eid} != {from_id}"
+        assert to_eid == to_id, f"to mismatch: {to_eid} != {to_id}"
+        assert rtype == "adjacent", f"type mismatch: {rtype}"
+        assert connection_id, f"Response missing connection_id: {body}"
+
+    def test_v2_list_connections_after_create(self, client) -> None:
+        """V188 regression: created connection must appear in GET /api/connections."""
+        from_id = self._create_element(client, "V188-List-Wall-A")
+        to_id = self._create_element(client, "V188-List-Wall-B")
+
+        create_resp = client.post(
+            "/api/connections",
+            json={
+                "from_element_id": from_id,
+                "to_element_id": to_id,
+                "relationship_type": "contains",
+            },
+        )
+        assert create_resp.status_code == 201, (
+            f"Setup create failed: {create_resp.status_code} {create_resp.text}"
+        )
+        create_data = create_resp.json()["data"]
+        connection_id = create_data.get("connection_id") or create_data.get("connectionId")
+        assert connection_id, f"Setup create missing connection_id: {create_data}"
+
+        # List with element filter to find our connection
+        list_resp = client.get(f"/api/connections?element_id={from_id}")
+        assert list_resp.status_code == 200, (
+            f"List failed: {list_resp.status_code} {list_resp.text}"
+        )
+        items = list_resp.json().get("data", {}).get("items", [])
+        # Items may use camelCase or snake_case — accept both
+        ids = [
+            item.get("connection_id") or item.get("connectionId")
+            for item in items
+        ]
+        assert connection_id in ids, (
+            f"Created connection {connection_id} not in list: {ids}"
+        )
+
+    def test_v2_delete_connection_returns_200_not_500(self, client) -> None:
+        """V188 regression: DELETE /api/connections/{id} must return 200, never 500.
+
+        Before V188, this test would fail with 500 because
+        db_service.delete_connection() accessed self._data_model.elements
+        (which doesn't exist on UniversalDataModel) and then assigned to
+        a frozen dataclass field.
+        """
+        from_id = self._create_element(client, "V188-Del-Wall-A")
+        to_id = self._create_element(client, "V188-Del-Wall-B")
+
+        create_resp = client.post(
+            "/api/connections",
+            json={
+                "from_element_id": from_id,
+                "to_element_id": to_id,
+                "relationship_type": "supports",
+            },
+        )
+        assert create_resp.status_code == 201
+        create_data = create_resp.json()["data"]
+        connection_id = create_data.get("connection_id") or create_data.get("connectionId")
+        assert connection_id, f"Setup create missing connection_id: {create_data}"
+
+        # Delete — MUST be 200, not 500
+        delete_resp = client.delete(f"/api/connections/{connection_id}")
+        assert delete_resp.status_code == 200, (
+            f"Expected 200 OK on delete, got {delete_resp.status_code}: "
+            f"{delete_resp.text}"
+        )
+
+        # Verify it's actually gone
+        list_resp = client.get(f"/api/connections?element_id={from_id}")
+        assert list_resp.status_code == 200
+        items = list_resp.json().get("data", {}).get("items", [])
+        ids = [
+            item.get("connection_id") or item.get("connectionId")
+            for item in items
+        ]
+        assert connection_id not in ids, (
+            f"Deleted connection {connection_id} still in list: {ids}"
+        )
+
+
+# ══════════════════════════════════════════════════════════════════════════════
 # CONFLICTS ROUTER TESTS
 # ══════════════════════════════════════════════════════════════════════════════
 

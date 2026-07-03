@@ -382,7 +382,7 @@ class Conflict:
 # Allowed keys for update_element() — prevents arbitrary JSON injection (C-3)
 _ELEMENT_UPDATABLE_KEYS = frozenset({
     "properties", "geometry", "source_file", "last_modified_by",
-    "is_deleted", "project_id",
+    "is_deleted", "project_id", "relationships",
 })
 
 
