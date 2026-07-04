@@ -47,6 +47,7 @@ collect_ignore = ["test_mip_solver.py"]
 import os as _os
 
 _os.environ.setdefault("FIREAI_MCP_NO_STDIN", "1")
+_os.environ.setdefault("FIREAI_HMAC_SECRET_KEY", "test_hmac_secret_key_123456")
 
 # Clean up namespace pollution from fireai/ subdirectory
 # (V27 fix: Python import machinery re-adds fireai/ to sys.path)

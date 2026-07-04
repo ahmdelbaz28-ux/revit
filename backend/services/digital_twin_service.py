@@ -781,12 +781,14 @@ class VersionManager:
                         status: str) -> str:
         # Path validation to prevent path traversal (pythonsecurity:S6549)
         from pathlib import Path
+        import tempfile
         cwd = Path.cwd().resolve()
         allowed_roots = [
             cwd,
             Path(os.environ.get("FIREAI_UPLOAD_DIR", str(cwd / "uploads"))),
             Path("/tmp"),  # NOSONAR
             Path("/var/tmp"),  # NOSONAR
+            Path(tempfile.gettempdir()).resolve(),
         ]
 
         def _is_safe(p_str: str | None) -> bool:

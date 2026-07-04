@@ -231,7 +231,7 @@ class TestV83JSONInjection:
         from core.models import _ELEMENT_UPDATABLE_KEYS
 
         expected = {"properties", "geometry", "source_file", "last_modified_by",
-                    "is_deleted", "project_id"}
+                    "is_deleted", "project_id", "relationships"}
         assert frozenset(expected) == _ELEMENT_UPDATABLE_KEYS
 
     def test_universal_element_mandatory_id(self) -> None:

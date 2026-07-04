@@ -1195,6 +1195,9 @@ class KernelCore:
         self._parser = parser
         self._workers = n_workers or os.cpu_count() or 4
         self._pipeline_metrics: dict[str, Any] = {}
+        # V131 Kernel Extensions
+        from fireai.core.v131_kernel_extensions import V131KernelExtension
+        self.v131_extensions = V131KernelExtension(self)
 
     @classmethod
     def create(

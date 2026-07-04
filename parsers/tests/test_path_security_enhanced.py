@@ -180,9 +180,10 @@ class TestResolveAllowedBases:
     def test_custom_env_var(self, monkeypatch):
         """Test that FIREAI_ALLOWED_UPLOAD_DIRS env var is respected."""
         with tempfile.TemporaryDirectory() as td:
+            resolved_td = str(Path(td).resolve())
             monkeypatch.setenv("FIREAI_ALLOWED_UPLOAD_DIRS", td)
             bases = _resolve_allowed_bases()
-            assert any(td in str(b) for b in bases)
+            assert any(resolved_td in str(b.resolve()) for b in bases)
 
     def test_empty_entries_skipped(self, monkeypatch):
         """Test that empty entries in env var are skipped."""

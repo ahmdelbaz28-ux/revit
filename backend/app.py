@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 backend/app.py — FastAPI Application Entry Point.
 ===============================================
@@ -189,7 +191,7 @@ _CACHE_MAX_ENTRIES = int(os.getenv("FIREAI_CACHE_MAX_ENTRIES", "10000"))
 # STRICT FIX C: Max size of a single cached value (1 MB default).
 # Prevents a single entry from consuming excessive memory.
 _CACHE_MAX_VALUE_SIZE = int(os.getenv("FIREAI_CACHE_MAX_VALUE_SIZE", str(1024 * 1024)))
-_cache: _OrderedDict[str, dict] = _OrderedDict()
+_cache: "_OrderedDict[str, dict]" = _OrderedDict()
 _cache_lock = threading.Lock()
 
 # STRICT FIX H: Background reaper configuration

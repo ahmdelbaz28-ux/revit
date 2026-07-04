@@ -987,7 +987,7 @@ class TestNoML:
         import fireai.core.revit_exporter as re_mod
 
         for module in [cr, ce, ip, re_mod]:
-            with open(module.__file__) as f:
+            with open(module.__file__, encoding="utf-8") as f:
                 source = f.read()
             assert "import random" not in source
             assert "numpy.random" not in source
