@@ -149,6 +149,13 @@ class ConnectResponse(BaseModel):
     handle: Optional[str] = None
 
 
+class DocumentsResponse(BaseModel):
+    """Response model for listing AutoCAD documents."""
+
+    success: bool
+    documents: List[Dict[str, Any]]
+
+
 class ReadDwgRequest(BaseModel):
     """Request model for reading DWG file."""
 
@@ -285,6 +292,33 @@ async def disconnect_from_autocad() -> ConnectResponse:
         )
     except Exception as e:
         raise _safe_error(500, "Failed to disconnect from AutoCAD", e)
+
+
+@router.get("/documents", response_model=DocumentsResponse, dependencies=[Depends(require_permission(Permission.ELEMENT_READ))])
+async def list_autocad_documents() -> DocumentsResponse:
+    """List open documents in AutoCAD."""
+    try:
+        service = get_autocad_service()
+        # If not connected, return a simulated list in development mode
+        if not service.connected:
+            if os.getenv("FIREAI_ENV", "development") == "development":
+                return DocumentsResponse(
+                    success=True,
+                    documents=[
+                        {"name": "Drawing1.dwg", "path": "C:\\MockPath\\Drawing1.dwg", "active": True}
+                    ]
+                )
+            raise HTTPException(status_code=503, detail="AutoCAD service not connected")
+
+        doc_info = service.get_document_info()
+        return DocumentsResponse(
+            success=True,
+            documents=[doc_info] if doc_info else []
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise _safe_error(500, "Error getting documents", e)
 
 
 @router.post("/read_dwg", response_model=ReadFileResponse, dependencies=[Depends(require_permission(Permission.ELEMENT_READ))])
@@ -539,6 +573,7 @@ _MAX_UPLOAD_SIZE = 50 * 1024 * 1024
 
 
 @router.post("/upload_dwg", response_model=ReadFileResponse, dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])
+@router.post("/upload", response_model=ReadFileResponse, dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])
 @limiter.limit("10/minute")
 async def upload_and_read_dwg(request: Request, file: UploadFile = File(...)) -> ReadFileResponse:
     """

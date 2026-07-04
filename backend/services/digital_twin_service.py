@@ -795,7 +795,12 @@ class VersionManager:
             if not p_str:
                 return True
             try:
-                p = Path(p_str).resolve()  # NOSONAR
+                p = Path(p_str)
+                # Resolve parent because parent exists and will resolve Windows short names (REPAIR~1 -> Repair SC)
+                if p.parent and p.parent != p:
+                    p = p.parent.resolve() / p.name
+                else:
+                    p = p.resolve()
                 return any(p == r or r in p.parents for r in allowed_roots)
             except Exception:
                 return False

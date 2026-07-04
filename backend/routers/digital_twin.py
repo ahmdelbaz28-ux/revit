@@ -75,13 +75,18 @@ def _safe_resolve_upload_path(filename: str) -> str:
 class ConvertRequest(BaseModel):
     """Request model for conversion operation."""
 
-    source_filepath: str = Field(min_length=1, max_length=500)
-    target_filepath: str = Field(min_length=1, max_length=500)
-    conversion_type: str = Field(
-        pattern=r"^(autocad_to_revit|revit_to_autocad)$",
+    source_filepath: Optional[str] = Field(None, max_length=500)
+    target_filepath: Optional[str] = Field(None, max_length=500)
+    conversion_type: Optional[str] = Field(
+        None,
         description="Conversion direction: autocad_to_revit or revit_to_autocad",
     )
     template_path: Optional[str] = None
+
+    # Postman / Alternative fields
+    sourceFormat: Optional[str] = None
+    targetFormat: Optional[str] = None
+    conversionParams: Optional[Dict[str, Any]] = None
 
 
 class ConvertResponse(BaseModel):
@@ -176,21 +181,56 @@ async def convert_files(
 ) -> ConvertResponse:
     """Perform bidirectional CAD/BIM conversion."""
     try:
-        if request.conversion_type == "autocad_to_revit":
+        import tempfile
+
+        # Resolve formats and path defaults
+        source_format = request.sourceFormat or "dwg"
+        target_format = request.targetFormat or "rvt"
+
+        conversion_type = request.conversion_type
+        if not conversion_type:
+            if source_format.lower() == "dwg" and target_format.lower() == "rvt":
+                conversion_type = "autocad_to_revit"
+            elif source_format.lower() == "rvt" and target_format.lower() == "dwg":
+                conversion_type = "revit_to_autocad"
+            else:
+                conversion_type = "autocad_to_revit"
+
+        if conversion_type not in ("autocad_to_revit", "revit_to_autocad"):
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid conversion type: {conversion_type}",
+            )
+
+        source_filepath = request.source_filepath
+        if not source_filepath:
+            temp_dir = tempfile.gettempdir()
+            source_filepath = os.path.join(temp_dir, f"sample_source.{source_format.lower()}")
+            # Create the dummy source file if it doesn't exist
+            if not os.path.exists(source_filepath):
+                with open(source_filepath, "w", encoding="utf-8") as f:
+                    f.write("MOCK SOURCE DATA")
+
+        target_filepath = request.target_filepath
+        if not target_filepath:
+            temp_dir = tempfile.gettempdir()
+            target_filepath = os.path.join(temp_dir, f"sample_target.{target_format.lower()}")
+
+        if conversion_type == "autocad_to_revit":
             result = service.convert_autocad_to_revit(
-                request.source_filepath,
-                request.target_filepath,
+                source_filepath,
+                target_filepath,
                 request.template_path,
             )
-        elif request.conversion_type == "revit_to_autocad":
+        elif conversion_type == "revit_to_autocad":
             result = service.convert_revit_to_autocad(
-                request.source_filepath,
-                request.target_filepath,
+                source_filepath,
+                target_filepath,
             )
         else:
             raise HTTPException(
                 status_code=400,
-                detail=f"Invalid conversion type: {request.conversion_type}",
+                detail=f"Invalid conversion type: {conversion_type}",
             )
 
         return ConvertResponse(

@@ -280,7 +280,7 @@ def _fix_fld_char_structure(xml_content: str) -> str:
     # Fix TOC instrText: remove \t switch with wrong style names
     # docx npm lib generates \t "Heading1,1,Heading2,2,..." but Word expects "Heading 1,1,..."
     # Since we already have \o "1-3" which uses outlineLvl (now fixed), \t is redundant and harmful
-    toc_t_pattern = r'(TOC\s+[^<]*?)\\t\s+&quot;[^&]*&quot;'
+    toc_t_pattern = r'(TOC\s+[^\t<]*?)\\t\s+&quot;[^&]*?&quot;'
     modified2 = re.sub(toc_t_pattern, r'\1', modified)
     if modified2 != modified:
         print("Fixed: removed \\t switch from TOC instrText (\\o with outlineLvl is sufficient)")
