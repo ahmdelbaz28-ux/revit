@@ -25,7 +25,33 @@ _VERSION = "1.0.0"
 
 
 def _load_json(path: str) -> dict[str, Any]:
-    p = Path(path)
+    # Validate that path does not escape sandbox/workspace restrictions (pythonsecurity:S8707)
+    import os
+    try:
+        p = Path(path).resolve()
+        cwd = Path.cwd().resolve()
+        allowed = False
+        allowed_roots = [
+            cwd,
+            Path(os.environ.get("FIREAI_UPLOAD_DIR", str(cwd / "uploads"))),
+            Path("/tmp"),
+            Path("/var/tmp"),
+        ]
+        for root in allowed_roots:
+            try:
+                resolved_root = root.resolve()
+                if p == resolved_root or resolved_root in p.parents:
+                    allowed = True
+                    break
+            except Exception:
+                continue
+        if not allowed:
+            print(f"[fireai] ERROR: path escapes workspace boundaries: {path}", file=sys.stderr)
+            sys.exit(1)
+    except Exception as e:
+        print(f"[fireai] ERROR: invalid path: {path} ({e})", file=sys.stderr)
+        sys.exit(1)
+
     if not p.exists():
         print(f"[fireai] ERROR: file not found: {path}", file=sys.stderr)
         sys.exit(1)

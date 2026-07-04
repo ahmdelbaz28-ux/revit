@@ -1003,7 +1003,7 @@ class DatabaseService:
                 # Only return forward relationships (NOT starting with "reverse_").
                 query += " AND relationship_type NOT LIKE 'reverse_%'"
 
-                cursor = self._safe_db_execute(query, params)
+                cursor = self._safe_db_execute(query, tuple(params))
                 rows = cursor.fetchall()
 
                 for row in rows:

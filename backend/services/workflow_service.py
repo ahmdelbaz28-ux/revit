@@ -1732,14 +1732,27 @@ class WorkflowService:
                 logger.debug("No Langfuse trace_id available for scoring")
                 return
 
-            log_workflow_scores(
-                trace_id=trace_id,
-                coverage_pct=state.get("coverage_pct", 0.0),
-                nfpa_compliant=state.get("nfpa_compliant", False),
-                conflict_count=state.get("conflict_count", 0),
-                has_critical=state.get("has_critical_conflicts", False),
-                validation_passed=state.get("validation_passed", False),
+            cov_pct = state.get("coverage_pct", 0.0)
+            if cov_pct > 1.0:
+                cov_pct = cov_pct / 100.0
+
+            overall = (
+                state.get("nfpa_compliant", False)
+                and not state.get("has_critical_conflicts", False)
+                and state.get("validation_passed", False)
             )
+
+            result_dict = {
+                "nfpa_coverage_pct": cov_pct,
+                "nfpa_compliant": state.get("nfpa_compliant", False),
+                "conflict_count": state.get("conflict_count", 0),
+                "validation_passed": state.get("validation_passed", False),
+                "safety_gates": {
+                    "overall": overall
+                }
+            }
+
+            log_workflow_scores(result_dict, handler)
             logger.info(
                 f"Langfuse scores logged: coverage={state.get('coverage_pct', 0):.1f}%, "
                 f"compliant={state.get('nfpa_compliant', False)}, "

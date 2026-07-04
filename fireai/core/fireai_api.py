@@ -325,13 +325,20 @@ async def analyse_room(request: Request, body: AnalyseRoomRequest) -> RoomResult
             forced_type = DetectorType(body.forced_detector_type)
         except ValueError:
             raise HTTPException(status_code=422, detail=f"Unknown detector type: {body.forced_detector_type}")
-    result = _expert_system.analyse_room(  # type: ignore[call-arg]
-        room_spec=room_spec, forced_detector_type=forced_type, required_coverage_pct=body.required_coverage_pct
+    
+    if forced_type:
+        room_spec.detector_type = forced_type
+        
+    system = _get_fireai_system()
+    result = system.analyse_room(
+        room_spec=room_spec,
+        user_id="api_user",
+        run_resilience=True,
     )
     _audit_trail.log_placement(
         room_id=result.room_id,
         detector_count=len(result.detector_positions),
-        detector_type=result.detector_type.value,
+        detector_type=result.detector_type.value if hasattr(result.detector_type, "value") else str(result.detector_type),
         coverage_pct=result.coverage_result.coverage_pct if result.coverage_result else 0.0,
         positions=result.detector_positions,
     )

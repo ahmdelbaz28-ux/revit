@@ -605,6 +605,27 @@ def generate_building_report(
 
     """
     import os as _os
+    from pathlib import Path
+    import logging as _logging
+    _logger = _logging.getLogger("fireai.pdf_report")
+
+    # Validate output_path to prevent path traversal (pythonsecurity:S8707)
+    try:
+        cwd = Path.cwd().resolve()
+        allowed_roots = [
+            cwd,
+            Path(_os.environ.get("FIREAI_UPLOAD_DIR", str(cwd / "uploads"))),
+            Path("/tmp"),
+            Path("/var/tmp"),
+        ]
+        resolved_out = Path(output_path).resolve()
+        is_safe = any(resolved_out == r or r in resolved_out.parents for r in allowed_roots)
+        if not is_safe:
+            _logger.error("Path traversal / invalid output path detected in generate_pdf_report: %s", output_path)
+            raise ValueError("Output path escapes file system restrictions")
+    except Exception as e:
+        _logger.error("Path validation failed: %s", e)
+        raise ValueError(f"Invalid output path: {e}")
 
     try:
         # Ensure parent directory exists before building the PDF

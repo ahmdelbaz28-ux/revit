@@ -209,9 +209,9 @@ def calculate_battery_for_panels(
 
     """
     # Per-panel required capacity
-    per_panel_ah = required_battery_capacity_ah(  # type: ignore[call-arg]
-        standby_current_ma=spec.standby_current_ma,
-        alarm_current_ma=spec.alarm_current_ma,
+    per_panel_ah = required_battery_capacity_ah(
+        standby_current_a=spec.standby_current_ma / 1000.0,
+        alarm_current_a=spec.alarm_current_ma / 1000.0,
         standby_hours=spec.standby_hours,
         alarm_minutes=spec.alarm_minutes,
         safety_factor=spec.safety_factor,

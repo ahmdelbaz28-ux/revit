@@ -286,6 +286,11 @@ class RegionService:
 
     async def _fetch_country_info(self, country_code: str) -> dict | None:
         """Fetch country information from REST Countries API."""
+        import re
+        if not re.match(r"^[a-zA-Z]{2,3}$", country_code):
+            logger.error("Invalid country code format for REST Countries API: %r", country_code)
+            return None
+
         client = await self._get_client()
         response = await client.get(f"{self.REST_COUNTRIES_URL}/{country_code}")
         response.raise_for_status()

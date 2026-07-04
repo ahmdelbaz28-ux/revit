@@ -779,7 +779,29 @@ class VersionManager:
     def record_version(self, source_file: str, target_file: str,
                         conversion_type: str, elements_count: int,
                         status: str) -> str:
-        """Record a conversion in version history."""
+        # Path validation to prevent path traversal (pythonsecurity:S6549)
+        from pathlib import Path
+        cwd = Path.cwd().resolve()
+        allowed_roots = [
+            cwd,
+            Path(os.environ.get("FIREAI_UPLOAD_DIR", str(cwd / "uploads"))),
+            Path("/tmp"),
+            Path("/var/tmp"),
+        ]
+
+        def _is_safe(p_str: str | None) -> bool:
+            if not p_str:
+                return True
+            try:
+                p = Path(p_str).resolve()
+                return any(p == r or r in p.parents for r in allowed_roots)
+            except Exception:
+                return False
+
+        if not _is_safe(source_file) or not _is_safe(target_file):
+            logger.error("Path traversal / invalid path in record_version: source=%s, target=%s", source_file, target_file)
+            raise ValueError("Invalid target/source file path")
+
         version_id = str(uuid.uuid4())
 
         version_info = VersionInfo(
@@ -920,17 +942,17 @@ class ConversionConfigManager:
 
     def __init__(self, config_dir: Optional[str] = None) -> None:
         self.config_dir = Path(config_dir or os.getenv("CONVERSION_CONFIG_DIR", "."))
-        self.config_file = self.config_dir / self.CONFIG_FILE
+        self.config_path = self.config_dir / self.CONFIG_FILE
 
     def save_config(self, config: ConversionConfig) -> bool:
         """Save configuration to file."""
         try:
             self.config_dir.mkdir(parents=True, exist_ok=True)
 
-            with open(self.config_file, "w") as f:
+            with open(self.config_path, "w") as f:
                 json.dump(config.to_dict(), f, indent=2)
 
-            logger.info("Configuration saved to %s", self.config_file)
+            logger.info("Configuration saved to %s", self.config_path)
             return True
         except Exception as e:
             logger.error("Failed to save configuration: %s", e)
@@ -938,15 +960,15 @@ class ConversionConfigManager:
 
     def load_config(self) -> ConversionConfig:
         """Load configuration from file."""
-        if not self.config_file.exists():
-            logger.info("Configuration file not found, using default: %s", self.config_file)
+        if not self.config_path.exists():
+            logger.info("Configuration file not found, using default: %s", self.config_path)
             return ConversionConfig()
 
         try:
-            with open(self.config_file) as f:
+            with open(self.config_path) as f:
                 data = json.load(f)
 
-            logger.info("Configuration loaded from %s", self.config_file)
+            logger.info("Configuration loaded from %s", self.config_path)
             return ConversionConfig.from_dict(data)
         except Exception as e:
             logger.error("Failed to load configuration: %s", e)

@@ -232,6 +232,11 @@ async def extract_rooms(req: BIMExtractRoomsRequest) -> dict[str, Any]:
     # CodeQL: py/path-injection — source is validated below with Path.resolve()
     # + is_relative_to() + null byte check + extension whitelist.
     if req.source:  # lgtm[py/path-injection] — validated below
+        if "\x00" in req.source or ".." in req.source:
+            raise HTTPException(
+                status_code=400,
+                detail="Path traversal or invalid characters in source.",
+            )
         import os
         from pathlib import Path
         try:

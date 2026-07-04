@@ -725,7 +725,7 @@ class RevitService:
             logger.error("Error creating wall: %s", e)
             return None
 
-    def create_floor(self, boundary: List[List[float]], level: str = "Level 1",
+    def create_floor(self, boundary: Optional[List[List[float]]] = None, level: str = "Level 1",
                      floor_type: str = "Floor", boundary_points: Optional[List[List[float]]] = None) -> Optional[str]:
         """
         Create a floor in the active Revit document.
@@ -750,6 +750,9 @@ class RevitService:
         """
         # V141.2: Accept boundary_points as alias for boundary (router compat)
         actual_boundary = boundary_points if boundary_points is not None else boundary
+        if not actual_boundary:
+            logger.error("create_floor failed: boundary or boundary_points is required.")
+            return None
 
         # V141.2: Reject simulation mode explicitly — no more fake UUIDs.
         if not self.connected:
@@ -879,9 +882,9 @@ class RevitService:
             logger.error("Error creating floor: %s", e)
             return None
 
-    def create_column(self, location: List[float], height: float = 3000.0,
-                     level: str = "Level 1", column_type: str = "M_Columns",
-                     location_point: Optional[List[float]] = None) -> Optional[str]:
+    def create_column(self, location: Optional[List[float]] = None, height: float = 3000.0,
+                      level: str = "Level 1", column_type: str = "M_Columns",
+                      location_point: Optional[List[float]] = None) -> Optional[str]:
         """
         Create a column in the active Revit document.
 
@@ -936,6 +939,9 @@ class RevitService:
 
         # V140 FIX: Accept location_point as alias for location (router compat)
         actual_location = location_point if location_point is not None else location
+        if not actual_location:
+            logger.error("create_column failed: location or location_point is required.")
+            return None
 
         try:
             # V142: Real Revit API column creation.
@@ -2072,8 +2078,11 @@ class RevitService:
                     "num_results": 30
                 }
 
+                import urllib.parse
+                safe_query = urllib.parse.quote(query)
+
                 async with httpx.AsyncClient() as client:
-                    response = await client.get(f"{base_url}/{query}", params=params)
+                    response = await client.get(f"{base_url}/{safe_query}", params=params)
 
                     if response.status_code == 200:
                         data = response.json()

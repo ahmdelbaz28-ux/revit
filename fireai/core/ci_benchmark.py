@@ -283,6 +283,31 @@ class CIBenchmarkSuite:
     def save_baseline(self, path: str | None = None) -> str:
         """Save current results as baseline for future comparison."""
         path = path or self.BASELINE_FILE
+        # Validate path to prevent path traversal (pythonsecurity:S8707)
+        try:
+            from pathlib import Path
+            p = Path(path).resolve()
+            cwd = Path.cwd().resolve()
+            allowed = False
+            allowed_roots = [
+                cwd,
+                Path(os.environ.get("FIREAI_UPLOAD_DIR", str(cwd / "uploads"))),
+                Path("/tmp"),
+                Path("/var/tmp"),
+            ]
+            for root in allowed_roots:
+                try:
+                    resolved_root = root.resolve()
+                    if p == resolved_root or resolved_root in p.parents:
+                        allowed = True
+                        break
+                except Exception:
+                    continue
+            if not allowed:
+                raise ValueError(f"Path escapes allowed workspace: {path}")
+        except Exception as e:
+            raise ValueError(f"Invalid baseline path: {path} ({e})")
+
         data = {
             "fireai_version": "29.0.0",
             "timestamp": time.time(),
@@ -300,6 +325,31 @@ class CIBenchmarkSuite:
         Fails if any benchmark is >REGRESSION_THRESHOLD% slower.
         """
         path = path or self.BASELINE_FILE
+        # Validate path to prevent path traversal (pythonsecurity:S8707)
+        try:
+            from pathlib import Path
+            p = Path(path).resolve()
+            cwd = Path.cwd().resolve()
+            allowed = False
+            allowed_roots = [
+                cwd,
+                Path(os.environ.get("FIREAI_UPLOAD_DIR", str(cwd / "uploads"))),
+                Path("/tmp"),
+                Path("/var/tmp"),
+            ]
+            for root in allowed_roots:
+                try:
+                    resolved_root = root.resolve()
+                    if p == resolved_root or resolved_root in p.parents:
+                        allowed = True
+                        break
+                except Exception:
+                    continue
+            if not allowed:
+                raise ValueError(f"Path escapes allowed workspace: {path}")
+        except Exception as e:
+            raise ValueError(f"Invalid baseline path: {path} ({e})")
+
         if not os.path.exists(path):
             print(f"No baseline found at {path}. Run with --baseline save first.")
             return True, []  # No baseline = don't fail
