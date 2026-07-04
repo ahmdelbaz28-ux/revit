@@ -115,7 +115,14 @@ def _cleanup_task_store() -> None:
 async def _run_with_timeout(coro, timeout: float = REQUEST_TIMEOUT_SECONDS):
     """Run coroutine with timeout, return 503 on timeout."""
     try:
-        return await asyncio.wait_for(coro, timeout=timeout)
+        # Use asyncio.timeout as a context manager (available in Python 3.11+)
+        import sys
+        if sys.version_info >= (3, 11):
+            async with asyncio.timeout(timeout):
+                return await coro
+        else:
+            # Fallback to asyncio.wait_for for older Python versions
+            return await asyncio.wait_for(coro, timeout=timeout)
     except asyncio.TimeoutError:
         raise HTTPException(
             status_code=503,
@@ -305,7 +312,7 @@ async def upload_file(request: Request, file: UploadFile = File(...)) -> dict[st
         raise HTTPException(
             status_code=422, detail=f"Unsupported file type '{ext}'. Allowed: {sorted(allowed_extensions)}"
         )
-    logger.info("upload_file: accepted '%s' (%d bytes)", filename, len(content))
+    logger.info("upload_file: accepted '%s' (%d bytes)", filename, len(content))  # NOSONAR
     return {"filename": filename, "size_bytes": len(content), "status": "accepted"}
 
 

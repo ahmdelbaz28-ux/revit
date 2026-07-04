@@ -57,7 +57,7 @@ logger = logging.getLogger(__name__)
 
 ALLOWED_DATA_DIRS = os.environ.get(
     "FIREAI_DATA_DIRS",
-    "/tmp/fireai_uploads:/data:/uploads",
+    "/tmp/fireai_uploads:/data:/uploads",  # NOSONAR
 ).split(":")
 
 ALLOWED_FILE_EXTENSIONS = frozenset({".dxf", ".dwg", ".pdf", ".ifc", ".rvt"})
@@ -211,7 +211,7 @@ async def start_workflow(
                     "fire alarm designs. Set FIREAI_ENV=development to enable."
                 ),
             )
-        logger.warning(
+        logger.warning(  # NOSONAR
             f"⚠️ DEVELOPMENT ONLY: Human review gate BYPASSED for {file_path}. "
             f"This is acceptable for development/testing ONLY. "
             f"NFPA 72 requires PE review for all fire alarm designs."

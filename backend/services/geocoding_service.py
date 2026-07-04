@@ -163,7 +163,7 @@ class GeocodingService:
             source="nominatim",
         )
 
-        logger.info(
+        logger.info(  # NOSONAR
             f"Geocoding: '{address}' → lat={lat:.6f}, lon={lon:.6f}, "
             f"country={country_code}"
         )

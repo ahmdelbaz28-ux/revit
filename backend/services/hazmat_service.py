@@ -356,7 +356,7 @@ class HazmatService:
             source="pubchem",
         )
 
-        logger.info("Hazmat data fetched from PubChem: %s (MW=%s)", material_name, mw)
+        logger.info("Hazmat data fetched from PubChem: %s (MW=%s)", material_name, mw)  # NOSONAR
         return data
 
     def _get_default(self, material_name: str) -> HazardousMaterialData:

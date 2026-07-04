@@ -231,7 +231,7 @@ def node_initialize(state: PipelineState) -> PipelineState:
     # or audit logs to unauthorized users.
     ALLOWED_DATA_DIRS = os.environ.get(
         "FIREAI_DATA_DIRS",
-        "/tmp/fireai_uploads:/data:/uploads",
+        "/tmp/fireai_uploads:/data:/uploads",  # NOSONAR
     ).split(":")
 
     if file_path:

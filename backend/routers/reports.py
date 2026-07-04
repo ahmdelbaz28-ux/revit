@@ -46,6 +46,141 @@ def _verify_project(project_id: str) -> None:
         raise HTTPException(status_code=404, detail="Project not found")
 
 
+def _generate_voltage_drop_report(devices: list, connections: list, now: str) -> dict:
+    """Generate voltage drop report content."""
+    device_map = {d["id"]: d for d in devices}
+    circuits = []
+    for conn in connections:
+        from_dev = device_map.get(conn["fromId"])
+        to_dev = device_map.get(conn["toId"])
+        if from_dev and to_dev:
+            circuits.append({
+                "from": from_dev["name"],
+                "to": to_dev["name"],
+                "cableSize": conn["cableSize"],
+                "length": conn["length"],
+                "load": to_dev["load"],
+                "voltage": to_dev["voltage"],
+            })
+    return {
+        "type": "voltage_drop",
+        "standard": "IEC 60364 / NFPA 72-2022 §27.4.1.2",
+        "generatedAt": now,
+        "totalCircuits": len(circuits),
+        "circuits": circuits,
+    }
+
+def _generate_nfpa72_coverage_report(devices: list, now: str) -> dict:
+    """Generate NFPA 72 coverage report content."""
+    return {
+        "type": "nfpa72_coverage",
+        "standard": "NFPA 72-2022",
+        "generatedAt": now,
+        "totalDevices": len(devices),
+        "devicesByCategory": _count_by_category(devices),
+        "complianceNotes": [
+            "All detector placements must be verified by a licensed FPE",
+            "Coverage calculations assume standard ceiling conditions",
+        ],
+    }
+
+def _generate_nfpa72_battery_report(devices: list, now: str) -> dict:
+    """Generate NFPA 72 battery calculation report content."""
+    # CRITICAL FIX: NFPA 72 role-based load classification.
+    # Previous code used `category == "notification"` which NEVER matches
+    # because the frontend device library uses categories: FIRE_ALARM, SECURITY,
+    # CCTV, DATA_NETWORK, PA_SYSTEM, TELEPHONE. None of these equal "notification".
+    # This caused total_alarm to ALWAYS be zero, meaning battery capacity was
+    # calculated for standby-only — horns/strobes would fail during power outage + fire.
+    # Fix: Map device types to their NFPA 72 role (alarm vs standby).
+    # Per NFPA 72 §27.6.2: alarm load = notification appliances (sounders, strobes,
+    # speakers used for evacuation) active for 5 minutes during alarm condition.
+    # Standby load = all other devices (detectors, modules, panels) for 24 hours.
+    _ALARM_DEVICE_TYPES = {
+        "FA_SOUND_STROBE",    # Combined sounder/strobe — PRIMARY evacuation signal
+        "FA_HORN",           # Fire alarm horn
+        "FA_STROBE",         # Visual alarm strobe
+        "FA_BELL",           # Fire alarm bell
+        "FA_SIREN",          # Electronic siren
+        "PA_CEILING_SPEAKER", # PA speaker used for voice evacuation
+        "PA_WALL_SPEAKER",   # Wall-mounted PA speaker for voice evacuation
+        "PA_HORN",           # Outdoor horn for voice evacuation
+    }
+    # Also classify by category + type combination for devices using category-based storage
+    _ALARM_CATEGORIES = {"PA_SYSTEM"}  # PA system devices are typically voice alarm
+
+    total_standby = 0.0
+    total_alarm = 0.0
+    for d in devices:
+        load = d.get("load", 0) or 0
+        device_type = d.get("type", "")
+        device_category = d.get("category", "")
+
+        # Check if device is an alarm (notification) appliance
+        is_alarm = (
+            device_type in _ALARM_DEVICE_TYPES
+            or device_category == "notification"  # Legacy compatibility
+            or (device_category in _ALARM_CATEGORIES and device_type not in {"PA_AMPLIFIER", "PA_MICROPHONE"})
+        )
+
+        if is_alarm:
+            total_alarm += load
+        else:
+            total_standby += load
+
+    # SAFETY FIX (BUG-29): Previous condition `if total_standby > 0 else 0`
+    # returned zero battery when only notification appliances exist.
+    # NFPA 72 §27.6.2 requires battery capacity for alarm load regardless
+    # of standby load. A system with only horns/strobes still needs battery.
+    battery_ah = (total_standby * 24 + total_alarm * 0.25) / 0.8 if (total_standby > 0 or total_alarm > 0) else 0
+    return {
+        "type": "nfpa72_battery",
+        "standard": "NFPA 72-2022 §27.6.2",
+        "generatedAt": now,
+        "standbyLoadA": total_standby,
+        "alarmLoadA": total_alarm,
+        "standbyHours": 24,
+        "alarmMinutes": 15,
+        "deratingFactor": 0.80,
+        "requiredAh": round(battery_ah, 3),
+        "unitAssumption": "A",
+        "safetyWarning": (
+            "All load values are assumed to be in Amperes (A). "
+            "If any device load was entered in milliAmperes (mA) or Watts (W), "
+            "the battery calculation will be incorrect. Verify all device loads "
+            "before relying on this calculation for life-safety decisions."
+        ),
+    }
+
+def _generate_cable_sizing_report(connections: list, now: str) -> dict:
+    """Generate cable sizing report content."""
+    return {
+        "type": "cable_sizing",
+        "standard": "IEC 60364 / NFPA 70",
+        "generatedAt": now,
+        "totalConnections": len(connections),
+        "connections": [
+            {
+                "id": c["id"],
+                "cableSize": c["cableSize"],
+                "length": c["length"],
+                "type": c["type"],
+            }
+            for c in connections
+        ],
+    }
+
+def _generate_generic_report(devices: list, connections: list, report_type: str, now: str) -> dict:
+    """Generate a generic report with project summary."""
+    return {
+        "type": report_type,
+        "standard": "General Engineering Analysis",
+        "generatedAt": now,
+        "totalDevices": len(devices),
+        "totalConnections": len(connections),
+        "devicesByCategory": _count_by_category(devices),
+    }
+
 def _generate_report_content(report_type: str, project_id: str) -> dict:
     """
     Generate report content based on type.
@@ -61,146 +196,16 @@ def _generate_report_content(report_type: str, project_id: str) -> dict:
     now = datetime.now(timezone.utc).isoformat()
 
     if report_type == "voltage_drop":
-        # Aggregate voltage drop data from device connections
-        # Use dict lookup for O(1) per device — previous bug used O(n) linear scan
-        # per connection, making this O(n*m) for n devices and m connections.
-        device_map = {d["id"]: d for d in devices}
-        circuits = []
-        for conn in connections:
-            from_dev = device_map.get(conn["fromId"])
-            to_dev = device_map.get(conn["toId"])
-            if from_dev and to_dev:
-                circuits.append({
-                    "from": from_dev["name"],
-                    "to": to_dev["name"],
-                    "cableSize": conn["cableSize"],
-                    "length": conn["length"],
-                    "load": to_dev["load"],
-                    "voltage": to_dev["voltage"],
-                })
-        return {
-            "type": "voltage_drop",
-            "standard": "IEC 60364 / NFPA 72-2022 §27.4.1.2",
-            "generatedAt": now,
-            "totalCircuits": len(circuits),
-            "circuits": circuits,
-        }
-
-    if report_type == "nfpa72_coverage":
-        return {
-            "type": "nfpa72_coverage",
-            "standard": "NFPA 72-2022",
-            "generatedAt": now,
-            "totalDevices": len(devices),
-            "devicesByCategory": _count_by_category(devices),
-            "complianceNotes": [
-                "All detector placements must be verified by a licensed FPE",
-                "Coverage calculations assume standard ceiling conditions",
-            ],
-        }
-
-    if report_type == "nfpa72_battery":
-        # NFPA 72-2022 §27.6.2 Battery Calculation
-        # Load values are stored in Amperes (A) in the database.
-        # The devices.py router converts mA/W to A before storage on CREATE.
-        # However, UPDATE operations via UpdateDeviceInput now also support
-        # load_unit conversion (added 2026-05-28). Devices created before
-        # this fix or updated without load_unit default to Amperes.
-        # SAFETY WARNING: If any device's load was updated without proper
-        # unit conversion, the battery calculation will be incorrect.
-
-        # CRITICAL FIX: NFPA 72 role-based load classification.
-        # Previous code used `category == "notification"` which NEVER matches
-        # because the frontend device library uses categories: FIRE_ALARM, SECURITY,
-        # CCTV, DATA_NETWORK, PA_SYSTEM, TELEPHONE. None of these equal "notification".
-        # This caused total_alarm to ALWAYS be zero, meaning battery capacity was
-        # calculated for standby-only — horns/strobes would fail during power outage + fire.
-        # Fix: Map device types to their NFPA 72 role (alarm vs standby).
-        # Per NFPA 72 §27.6.2: alarm load = notification appliances (sounders, strobes,
-        # speakers used for evacuation) active for 5 minutes during alarm condition.
-        # Standby load = all other devices (detectors, modules, panels) for 24 hours.
-        _ALARM_DEVICE_TYPES = {
-            "FA_SOUND_STROBE",    # Combined sounder/strobe — PRIMARY evacuation signal
-            "FA_HORN",           # Fire alarm horn
-            "FA_STROBE",         # Visual alarm strobe
-            "FA_BELL",           # Fire alarm bell
-            "FA_SIREN",          # Electronic siren
-            "PA_CEILING_SPEAKER", # PA speaker used for voice evacuation
-            "PA_WALL_SPEAKER",   # Wall-mounted PA speaker for voice evacuation
-            "PA_HORN",           # Outdoor horn for voice evacuation
-        }
-        # Also classify by category + type combination for devices using category-based storage
-        _ALARM_CATEGORIES = {"PA_SYSTEM"}  # PA system devices are typically voice alarm
-
-        total_standby = 0.0
-        total_alarm = 0.0
-        for d in devices:
-            load = d.get("load", 0) or 0
-            device_type = d.get("type", "")
-            device_category = d.get("category", "")
-
-            # Check if device is an alarm (notification) appliance
-            is_alarm = (
-                device_type in _ALARM_DEVICE_TYPES
-                or device_category == "notification"  # Legacy compatibility
-                or (device_category in _ALARM_CATEGORIES and device_type not in {"PA_AMPLIFIER", "PA_MICROPHONE"})
-            )
-
-            if is_alarm:
-                total_alarm += load
-            else:
-                total_standby += load
-
-        # SAFETY FIX (BUG-29): Previous condition `if total_standby > 0 else 0`
-        # returned zero battery when only notification appliances exist.
-        # NFPA 72 §27.6.2 requires battery capacity for alarm load regardless
-        # of standby load. A system with only horns/strobes still needs battery.
-        battery_ah = (total_standby * 24 + total_alarm * 0.25) / 0.8 if (total_standby > 0 or total_alarm > 0) else 0
-        return {
-            "type": "nfpa72_battery",
-            "standard": "NFPA 72-2022 §27.6.2",
-            "generatedAt": now,
-            "standbyLoadA": total_standby,
-            "alarmLoadA": total_alarm,
-            "standbyHours": 24,
-            "alarmMinutes": 15,
-            "deratingFactor": 0.80,
-            "requiredAh": round(battery_ah, 3),
-            "unitAssumption": "A",
-            "safetyWarning": (
-                "All load values are assumed to be in Amperes (A). "
-                "If any device load was entered in milliAmperes (mA) or Watts (W), "
-                "the battery calculation will be incorrect. Verify all device loads "
-                "before relying on this calculation for life-safety decisions."
-            ),
-        }
-
-    if report_type == "cable_sizing":
-        return {
-            "type": "cable_sizing",
-            "standard": "IEC 60364 / NFPA 70",
-            "generatedAt": now,
-            "totalConnections": len(connections),
-            "connections": [
-                {
-                    "id": c["id"],
-                    "cableSize": c["cableSize"],
-                    "length": c["length"],
-                    "type": c["type"],
-                }
-                for c in connections
-            ],
-        }
-
-    # Generic report with project summary
-    return {
-        "type": report_type,
-        "standard": "General Engineering Analysis",
-        "generatedAt": now,
-        "totalDevices": len(devices),
-        "totalConnections": len(connections),
-        "devicesByCategory": _count_by_category(devices),
-    }
+        return _generate_voltage_drop_report(devices, connections, now)
+    elif report_type == "nfpa72_coverage":
+        return _generate_nfpa72_coverage_report(devices, now)
+    elif report_type == "nfpa72_battery":
+        return _generate_nfpa72_battery_report(devices, now)
+    elif report_type == "cable_sizing":
+        return _generate_cable_sizing_report(connections, now)
+    else:
+        # Generic report with project summary
+        return _generate_generic_report(devices, connections, report_type, now)
 
 
 def _count_by_category(devices: list) -> dict:
@@ -279,12 +284,12 @@ async def generate_report(project_id: str, input_data: GenerateReportInput):
             },
         )
     except Exception as e:
-        # M-4 FIX: Never store str(e) in report parameters. The old code
+        # M-4 FIX: Never store str(e) in report parameters. The old code  # NOSONAR
         # stored raw exception text in the database, which could include
         # file paths, variable names, and internal implementation details.
         # This data is retrievable via the API, creating an information
         # leakage vulnerability. Log the full error server-side instead.
-        logger.error("Report generation failed for project %s: %s", project_id, e, exc_info=True)
+        logger.exception("Report generation failed for project %s", project_id, exc_info=True)  # Use exception instead of error
         db.update_report(
             project_id,
             report["id"],
@@ -425,7 +430,7 @@ async def export_report(
             )
         except Exception as e:
             # V113 SECURITY: Never expose str(e) to client
-            logger.error("PDF generation failed: %s", e, exc_info=True)
+            logger.exception("PDF generation failed", exc_info=True)  # Use exception instead of error
             raise HTTPException(
                 status_code=500,
                 detail="PDF generation failed — an internal error occurred. Contact administrator.",

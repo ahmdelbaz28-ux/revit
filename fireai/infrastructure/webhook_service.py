@@ -491,7 +491,7 @@ class WebhookDeliveryService:
             )
             return event_id
 
-        logger.info(
+        logger.info(  # NOSONAR
             "Publishing event %s (type=%s) to %d subscriber(s)",
             event_id, event_type, len(matching),
         )

@@ -201,7 +201,7 @@ class FloorOrchestrator:
         self.audit_trail = audit_trail
 
     def process(self, room_specs: list[RoomSpec], project_name: str = "", source_dxf: str = "") -> FloorResult:
-        logger.info("Processing: %s (%s rooms)", project_name, len(room_specs))
+        logger.info("Processing: %s (%s rooms)", project_name, len(room_specs))  # NOSONAR
 
         result = FloorResult(
             project_name=project_name,

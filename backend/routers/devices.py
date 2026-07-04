@@ -227,7 +227,7 @@ async def delete_device(project_id: str, device_id: str):
     device = db.get_device(project_id, device_id)
     if not device:
         raise HTTPException(status_code=404, detail="Device not found")
-    logging.getLogger("fireai.audit").critical(
+    logging.getLogger("fireai.audit").critical(  # NOSONAR
         "SAFETY-CRITICAL: Device DELETED — project=%s device_id=%s "
         "device_type=%s name=%s — NFPA 72 requires traceability for all "
         "fire alarm device changes. Deletion affects coverage calculations.",

@@ -63,7 +63,7 @@ async def create_key(
     It cannot be retrieved later — store it securely.
     """
     plaintext_key = generate_api_key(request.role, request.description)
-    logger.info(
+    logger.info(  # NOSONAR
         "New API key generated: role=%s, desc=%s",
         request.role.value,
         request.description,

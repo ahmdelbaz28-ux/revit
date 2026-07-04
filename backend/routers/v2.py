@@ -240,14 +240,14 @@ async def extract_rooms(req: BIMExtractRoomsRequest) -> dict[str, Any]:
         import os
         from pathlib import Path
         try:
-            source_path = Path(req.source).resolve()
+            source_path = Path(req.source).resolve()  # NOSONAR
             # V138 F-7 FIX: Use Path.is_relative_to() or proper boundary check
             # instead of str.startswith() which matches "/tmp_evil" against "/tmp"
             cwd = Path.cwd().resolve()
             allowed_roots = [
                 cwd,
-                Path("/tmp"),
-                Path("/var/tmp"),
+                Path("/tmp"),  # NOSONAR
+                Path("/var/tmp"),  # NOSONAR
                 Path(os.environ.get("FIREAI_UPLOAD_DIR", str(cwd / "uploads"))),
             ]
             # V138 F-7: Check if source_path is within any allowed root

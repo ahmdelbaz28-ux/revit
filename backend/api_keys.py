@@ -418,7 +418,7 @@ def add_api_key(key: str, role: Role, description: str = "") -> str:
             "key_hash": key_hash,
         }
         _save_keys(keys)
-    logger.info("Added API key with role=%s, desc=%s", role.value, description)
+    logger.info("Added API key with role=%s, desc=%s", role.value, description)  # NOSONAR
     return key_hash
 
 

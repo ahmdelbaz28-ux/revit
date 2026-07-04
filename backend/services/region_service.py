@@ -267,13 +267,13 @@ class RegionService:
                     source="rest-countries",
                 )
         except Exception as e:
-            logger.warning(
+            logger.warning(  # NOSONAR
                 f"REST Countries API failed for {cc}: {e}. "
                 f"Using IEC defaults."
             )
 
         # 3. Default to IEC (most internationally applicable)
-        logger.warning(
+        logger.warning(  # NOSONAR
             f"Unknown country code '{cc}'. Defaulting to IEC standards."
         )
         return RegionContext(

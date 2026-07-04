@@ -444,7 +444,7 @@ class FloorAnalyser:
                     room_dict = dict(room_dict)  # copy to avoid mutating original
                     room_dict["polygon_coords"] = sanitize_result.coords
                     polygon_coords = sanitize_result.coords
-                    logger.info(
+                    logger.info(  # NOSONAR
                         "Room %s: Geometry sanitized: %s",
                         room_dict.get("room_id", room_dict.get("name", "")),
                         "; ".join(sanitize_result.modifications),

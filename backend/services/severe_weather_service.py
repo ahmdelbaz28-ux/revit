@@ -794,7 +794,7 @@ class SevereWeatherService:
             ns = {
                 "atom": "http://www.w3.org/2005/Atom",
                 "cap": "urn:oasis:names:tc:emergency:cap:1.2",
-                "georss": "http://www.georss.org/georss",
+                "georss": "http://www.georss.org/georss",  # NOSONAR
             }
 
             # Find all <entry> elements

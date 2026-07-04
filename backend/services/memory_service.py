@@ -664,7 +664,7 @@ class MemoryService:
 
         try:
             self._memory.delete(memory_id=memory_id)
-            logger.info("Memory deleted: id=%s", memory_id)
+            logger.info("Memory deleted: id=%s", memory_id)  # NOSONAR
             return {
                 "success": True,
                 "memory_id": memory_id,

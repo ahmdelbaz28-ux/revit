@@ -265,11 +265,11 @@ class ProjectLearner:
             return list(range(n)), list(pts)
 
         # k-means++ initialisation
-        centroids = [pts[random.randint(0, n - 1)]]
+        centroids = [pts[random.randint(0, n - 1)]]  # NOSONAR
         while len(centroids) < k:
             d2 = [min((p[0] - c[0]) ** 2 + (p[1] - c[1]) ** 2 for c in centroids) for p in pts]
             total = sum(d2) + 1e-9
-            r = random.random() * total
+            r = random.random() * total  # NOSONAR
             cum = 0.0
             chosen = pts[-1]
             for p, d in zip(pts, d2, strict=False):

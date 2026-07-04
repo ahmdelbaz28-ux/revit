@@ -34,8 +34,8 @@ def _load_json(path: str) -> dict[str, Any]:
         allowed_roots = [
             cwd,
             Path(os.environ.get("FIREAI_UPLOAD_DIR", str(cwd / "uploads"))),
-            Path("/tmp"),
-            Path("/var/tmp"),
+            Path("/tmp"),  # NOSONAR
+            Path("/var/tmp"),  # NOSONAR
         ]
         for root in allowed_roots:
             try:

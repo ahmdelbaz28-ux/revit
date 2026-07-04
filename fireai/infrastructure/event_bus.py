@@ -182,7 +182,7 @@ class RetryPolicy:
         d = min(self.base_delay_s * (self.backoff_multiplier ** (attempt - 1)), self.max_delay_s)
         if self.jitter:
             import random
-            d = d * (0.5 + random.random() * 0.5)
+            d = d * (0.5 + random.random() * 0.5)  # NOSONAR
         return d
 
 

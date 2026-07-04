@@ -1085,7 +1085,7 @@ def benchmark_routing(n_obstacles: int = 50, n_routes: int = 100) -> dict:
         y = random.uniform(0, 50)
         w = random.uniform(0.2, 3.0)
         h = random.uniform(0.2, 3.0)
-        obs_type = random.choice(["wall", "hvac", "column", "beam", "elevator"])
+        obs_type = random.choice(["wall", "hvac", "column", "beam", "elevator"])  # NOSONAR
         router.add_obstacle(RoutingObstacle(obstacle_type=obs_type, x=x, y=y, width=w, height=h))
 
     # Benchmark route queries

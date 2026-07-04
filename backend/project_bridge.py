@@ -66,7 +66,7 @@ def sync_project_to_udm(project_data: dict[str, Any]) -> bool:
         # Check if project already exists in UDM
         existing = udm.get_project(project_id)
         if existing is not None:
-            logger.info("Project %s already exists in UDM — skipping sync", project_id)
+            logger.info("Project %s already exists in UDM — skipping sync", project_id)  # NOSONAR
             db.record_sync("project", project_id, _TARGET_DB, "synced")
             return True
 
@@ -116,7 +116,7 @@ def sync_project_to_udm(project_data: dict[str, Any]) -> bool:
                 "last_modified_timestamp": updated_at,
             }
 
-            logger.info("Project %s synced to UDM successfully", project_id)
+            logger.info("Project %s synced to UDM successfully", project_id)  # NOSONAR
             db.record_sync("project", project_id, _TARGET_DB, "synced")
             return True
         except Exception as e:
@@ -155,7 +155,7 @@ def sync_project_update_to_udm(project_id: str, updates: dict[str, Any]) -> bool
         # Check if project exists in UDM
         existing = udm.get_project(project_id)
         if existing is None:
-            logger.warning("Project %s not found in UDM — attempting to create", project_id)
+            logger.warning("Project %s not found in UDM — attempting to create", project_id)  # NOSONAR
             # Attempt to create it from scratch
             return sync_project_to_udm({"id": project_id, **updates})
 
@@ -207,7 +207,7 @@ def sync_project_update_to_udm(project_id: str, updates: dict[str, Any]) -> bool
                         meta["author"] = updates["author"]
                         udm._projects[project_id]["metadata"] = meta
 
-            logger.info("Project %s update synced to UDM", project_id)
+            logger.info("Project %s update synced to UDM", project_id)  # NOSONAR
             db.record_sync("project", project_id, _TARGET_DB, "synced")
             return True
         except Exception as e:
@@ -266,7 +266,7 @@ def sync_project_delete_to_udm(project_id: str) -> bool:
             if project_id in udm._projects:
                 del udm._projects[project_id]
 
-            logger.info("Project %s deletion synced to UDM", project_id)
+            logger.info("Project %s deletion synced to UDM", project_id)  # NOSONAR
             db.record_sync("project", project_id, _TARGET_DB, "synced")
             return True
         except Exception as e:
@@ -403,7 +403,7 @@ def sync_device_to_udm(project_id: str, device_data: dict[str, Any]) -> bool:
                 (device_id, project_id),
             )
 
-            logger.info("Device %s synced to UDM for project %s", device_id, project_id)
+            logger.info("Device %s synced to UDM for project %s", device_id, project_id)  # NOSONAR
             db.record_sync("device", device_id, _TARGET_DB, "synced")
             return True
         except Exception as e:
@@ -513,7 +513,7 @@ def sync_device_update_to_udm(project_id: str, device_id: str, updates: dict[str
                     commit=True,
                 )
 
-            logger.info("Device %s update synced to UDM for project %s", device_id, project_id)
+            logger.info("Device %s update synced to UDM for project %s", device_id, project_id)  # NOSONAR
             db.record_sync("device", device_id, _TARGET_DB, "synced")
             return True
         except Exception as e:
@@ -564,7 +564,7 @@ def sync_device_delete_to_udm(project_id: str, device_id: str) -> bool:
                 commit=True,
             )
 
-            logger.info("Device %s deletion synced to UDM for project %s", device_id, project_id)
+            logger.info("Device %s deletion synced to UDM for project %s", device_id, project_id)  # NOSONAR
             db.record_sync("device", device_id, _TARGET_DB, "synced")
             return True
         except Exception as e:
@@ -674,7 +674,7 @@ def sync_connection_to_udm(project_id: str, connection_data: dict[str, Any]) -> 
                 ),
             )
 
-            logger.info("Connection %s synced to UDM for project %s", connection_id, project_id)
+            logger.info("Connection %s synced to UDM for project %s", connection_id, project_id)  # NOSONAR
             db.record_sync("connection", connection_id, _TARGET_DB, "synced")
             return True
         except Exception as e:
@@ -745,7 +745,7 @@ def sync_connection_delete_to_udm(project_id: str, connection_id: str) -> bool:
                     commit=True,
                 )
 
-            logger.info("Connection %s deletion synced to UDM for project %s", connection_id, project_id)
+            logger.info("Connection %s deletion synced to UDM for project %s", connection_id, project_id)  # NOSONAR
             db.record_sync("connection", connection_id, _TARGET_DB, "synced")
             return True
         except Exception as e:

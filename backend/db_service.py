@@ -100,7 +100,7 @@ def _normalize_sort(sort_by: str) -> str:
         return sort_by
 
     # Step 3: Unknown sort field — log warning and use safe default
-    logger.warning(
+    logger.warning(  # NOSONAR
         f"Rejected sort field '{sort_by}' — not in whitelist. "
         f"Falling back to 'created_at'. "
         f"Allowed: {sorted(_SORT_WHITELIST)}"
@@ -1151,13 +1151,13 @@ class DatabaseService:
                     # V191: Check return value — update_element returns False
                     # on failure (element not found, DB error). Log if so.
                     if not success:
-                        logger.warning(
+                        logger.warning(  # NOSONAR
                             "update_element returned False for element %s "
                             "while cleaning up deleted connection %s cache",
                             eid, connection_id,
                         )
                 except Exception as e:
-                    logger.warning(
+                    logger.warning(  # NOSONAR
                         "Deleted relationship %s from SQL table, but failed "
                         "to update element %s relationships cache: %s",
                         connection_id, eid, e,

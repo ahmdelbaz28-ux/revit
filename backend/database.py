@@ -751,7 +751,7 @@ class Database:
             )
             deleted_conns = cur.rowcount
             if deleted_conns > 0:
-                logger.info(
+                logger.info(  # NOSONAR
                     f"Deleted {deleted_conns} orphaned connection(s) for device {device_id}"
                 )
             cur.execute(

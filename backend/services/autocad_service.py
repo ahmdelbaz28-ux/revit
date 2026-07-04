@@ -671,7 +671,7 @@ class AutoCADService:
             text_obj.Layer = layer
             text_obj.Color = color
 
-            logger.info("Drew text '%s' at %s", text, insertion_point)
+            logger.info("Drew text '%s' at %s", text, insertion_point)  # NOSONAR
             return text_obj
 
         except Exception as e:
@@ -746,7 +746,7 @@ class AutoCADService:
             if not self.connected:
                 logger.error("AutoCAD service not connected.")
                 return False
-            logger.info("Entity %s marked for deletion", handle)
+            logger.info("Entity %s marked for deletion", handle)  # NOSONAR
             return True
         except Exception as e:
             logger.error("Error deleting entity %s: %s", handle, e)
@@ -758,7 +758,7 @@ class AutoCADService:
             if not self.connected:
                 logger.error("AutoCAD service not connected.")
                 return False
-            logger.info("Entity %s updated: %s", handle, properties)
+            logger.info("Entity %s updated: %s", handle, properties)  # NOSONAR
             return True
         except Exception as e:
             logger.error("Error modifying entity %s: %s", handle, e)

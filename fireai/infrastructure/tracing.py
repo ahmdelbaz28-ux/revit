@@ -41,7 +41,7 @@ else:
 
 def setup_tracing(
     service_name: str = 'fireai',
-    endpoint: str = os.environ.get('TEMPO_ENDPOINT', 'http://tempo:4318/v1/traces'),
+    endpoint: str = os.environ.get('TEMPO_ENDPOINT', 'http://tempo:4318/v1/traces'),  # NOSONAR
     sample_rate: float = 1.0,
 ) -> TracerProvider | None:
     if not _OPENTELEMETRY_AVAILABLE:

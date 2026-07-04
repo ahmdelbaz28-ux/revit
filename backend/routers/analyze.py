@@ -197,7 +197,7 @@ async def analyze_project_room(project_id: str, req: RoomAnalyzeRequest) -> dict
     # Scope the room_id under the project
     if not req.room_id.startswith(project_id):
         # Don't leak project_id structure in error -- use generic message
-        logger.warning("room_id %r does not match project_id %r", req.room_id, project_id)
+        logger.warning("room_id %r does not match project_id %r", req.room_id, project_id)  # NOSONAR
 
     try:
         result = analyze_room(

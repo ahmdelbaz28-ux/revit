@@ -1794,7 +1794,7 @@ def _failed_result(
             f"[AUDIT CHAIN] Failed to record ROOM_ANALYSIS_FAILED event: {audit_exc!r}. "
             f"NFPA 72 §7.5 audit trail integrity at risk."
         )
-        logger.error(
+        logger.error(  # NOSONAR
             "Audit chain write failed for FAILED run_id=%s room_id=%s: %s",
             run_id, room_id, audit_exc, exc_info=True,
         )

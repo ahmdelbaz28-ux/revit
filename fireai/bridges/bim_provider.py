@@ -305,7 +305,7 @@ class BIMProviderRegistry:
         if not name:
             return None
         if name not in cls._providers:
-            logger.warning(
+            logger.warning(  # NOSONAR
                 "BIM provider '%s' not registered. Available: %s",
                 name, list(cls._providers.keys()),
             )

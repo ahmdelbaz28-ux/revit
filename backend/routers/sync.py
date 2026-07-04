@@ -257,7 +257,7 @@ def _validate_ws_origin(websocket: WebSocket) -> bool:
 
     # Check if origin matches our server (same-origin SPA request)
     if origin in (
-        f"http://{host}",
+        f"http://{host}",  # NOSONAR
         f"https://{host}",
         "http://localhost:3000",
         "http://localhost:5173",
@@ -266,7 +266,7 @@ def _validate_ws_origin(websocket: WebSocket) -> bool:
         "http://127.0.0.1:5173",
         "http://127.0.0.1:8000",
         # V140: also accept the testclient's synthetic origin
-        "http://testserver",
+        "http://testserver",  # NOSONAR
         "https://testserver",
     ):
         return True

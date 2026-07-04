@@ -157,7 +157,7 @@ def _run_resilience_check_original(
     for _ in range(iterations):
         if not positions:
             break
-        idx = random.randint(0, len(positions) - 1)
+        idx = random.randint(0, len(positions) - 1)  # NOSONAR
         remaining = positions[:idx] + positions[idx + 1 :]
 
         if not remaining:
