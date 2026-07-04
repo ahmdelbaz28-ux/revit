@@ -41,6 +41,8 @@ import { EnvironmentContextPage } from './pages/EnvironmentContextPage';
 import { SystemHealthPage } from './pages/SystemHealthPage';
 // Phase 7: Export Manager
 import { ExportManagerPage } from './pages/ExportManagerPage';
+// AI Agent: Chat Interface
+import { AgentChatPage } from './pages/AgentChatPage';
 import './i18n';
 import './styles/globals.css';
 import './styles/typography.css';
@@ -126,6 +128,8 @@ function App() {
     // Phase 7: Export Manager
     { path: '/exports', element: <ExportManagerPage /> },
     // { path: '/audit-trail', element: <AuditTrailPage /> },
+    // AI Agent: Chat Interface
+    { path: '/agent-chat', element: <AgentChatPage /> },
   ];
 
   return (
