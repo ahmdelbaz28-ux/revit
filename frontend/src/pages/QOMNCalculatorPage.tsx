@@ -1,28 +1,16 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Zap, AlertTriangle, ChevronDown } from "lucide-react";
-import PhysicsGuardsMonitor, {
-  GuardRule,
-} from "@/components/engineering/PhysicsGuardsMonitor";
+import { Zap, AlertTriangle, Settings } from "lucide-react";
+import PhysicsGuardsMonitor, { GuardRule } from "@/components/engineering/PhysicsGuardsMonitor";
 import { cn } from "@/lib/utils";
 
-// Calculator tab type
-type CalculatorTab =
-  | "smoke"
-  | "heat"
-  | "battery"
-  | "voltage"
-  | "detectors"
-  | "duct";
+type CalculatorTab = "smoke" | "heat" | "battery" | "voltage" | "detectors" | "duct";
 
-// Smoke Detector Calculator
 const SmokeCalculator: React.FC = () => {
   const [roomArea, setRoomArea] = useState(400);
   const [ceilingHeight, setCeilingHeight] = useState(10);
   const [detectorType, setDetectorType] = useState("standard");
 
-  // NFPA 72: Standard spacing 30 ft, rated 35 ft
-  // Max area per detector: 900 sq ft (30x30)
   const requiredDetectors = Math.ceil(roomArea / 900);
   const spacing = Math.sqrt(roomArea / requiredDetectors);
 
@@ -62,38 +50,32 @@ const SmokeCalculator: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-slate-300 mb-2">
-            Room Area (sq ft)
-          </label>
-          <input
-            type="number"
-            value={roomArea}
-            onChange={(e) => setRoomArea(Number(e.target.value))}
-            className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-slate-100 placeholder-slate-500 focus:border-orange-500 focus:outline-none"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-slate-300 mb-2">
-            Ceiling Height (ft)
-          </label>
-          <input
-            type="number"
-            value={ceilingHeight}
-            onChange={(e) => setCeilingHeight(Number(e.target.value))}
-            className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-slate-100 placeholder-slate-500 focus:border-orange-500 focus:outline-none"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-slate-300 mb-2">
+    <div className="space-y-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {[
+          { label: "Room Area (sq ft)", value: roomArea, onChange: setRoomArea },
+          { label: "Ceiling Height (ft)", value: ceilingHeight, onChange: setCeilingHeight },
+        ].map((field, idx) => (
+          <div key={idx} className="space-y-3">
+            <label className="block text-sm font-semibold text-slate-200">
+              {field.label}
+            </label>
+            <input
+              type="number"
+              value={field.value}
+              onChange={(e) => field.onChange(Number(e.target.value))}
+              className="w-full px-4 py-3 bg-slate-800/50 border border-slate-600/60 rounded-lg text-slate-100 placeholder-slate-500 focus:border-cyan-400 focus:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-cyan-400/20 transition-all"
+            />
+          </div>
+        ))}
+        <div className="space-y-3">
+          <label className="block text-sm font-semibold text-slate-200">
             Detector Type
           </label>
           <select
             value={detectorType}
             onChange={(e) => setDetectorType(e.target.value)}
-            className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-slate-100 focus:border-orange-500 focus:outline-none"
+            className="w-full px-4 py-3 bg-slate-800/50 border border-slate-600/60 rounded-lg text-slate-100 focus:border-cyan-400 focus:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-cyan-400/20 transition-all"
           >
             <option value="standard">Standard</option>
             <option value="rated">High Ceiling Rated</option>
@@ -102,19 +84,17 @@ const SmokeCalculator: React.FC = () => {
         </div>
       </div>
 
-      {/* Results */}
-      <div className="grid grid-cols-2 gap-3">
-        <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-3">
-          <div className="text-3xl font-bold text-orange-400">
-            {requiredDetectors}
-          </div>
-          <div className="text-xs text-orange-300">Required Detectors</div>
+      {/* Results Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-2 gap-6">
+        <div className="bg-gradient-to-br from-cyan-900/40 to-cyan-900/20 border border-cyan-500/40 rounded-xl p-6 backdrop-blur-sm hover:border-cyan-400/60 transition-all">
+          <div className="text-sm font-medium text-cyan-400 mb-2">Required Detectors</div>
+          <div className="text-4xl font-bold text-cyan-300">{requiredDetectors}</div>
+          <div className="text-xs text-cyan-400/70 mt-3">for {roomArea.toLocaleString()} sq ft</div>
         </div>
-        <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-3">
-          <div className="text-3xl font-bold text-orange-400">
-            {spacing.toFixed(1)}
-          </div>
-          <div className="text-xs text-orange-300">Spacing (ft)</div>
+        <div className="bg-gradient-to-br from-blue-900/40 to-blue-900/20 border border-blue-500/40 rounded-xl p-6 backdrop-blur-sm hover:border-blue-400/60 transition-all">
+          <div className="text-sm font-medium text-blue-400 mb-2">Spacing</div>
+          <div className="text-4xl font-bold text-blue-300">{spacing.toFixed(1)}</div>
+          <div className="text-xs text-blue-400/70 mt-3">feet between detectors</div>
         </div>
       </div>
 
@@ -124,18 +104,16 @@ const SmokeCalculator: React.FC = () => {
   );
 };
 
-// Battery Calculator
 const BatteryCalculator: React.FC = () => {
   const [deviceCount, setDeviceCount] = useState(10);
   const [currentDraw, setCurrentDraw] = useState(2);
   const [standbyHours, setStandbyHours] = useState(24);
   const [alarmMinutes, setAlarmMinutes] = useState(15);
 
-  // Calculation: (standby hours + alarm minutes) * current draw / 1000
   const standbyCapacity = (standbyHours * deviceCount * currentDraw) / 1000;
   const alarmCapacity = ((alarmMinutes / 60) * deviceCount * currentDraw) / 1000;
   const totalCapacity = standbyCapacity + alarmCapacity;
-  const withSafetyMargin = totalCapacity * 1.2; // 20% safety margin
+  const withSafetyMargin = totalCapacity * 1.2;
 
   const guards: GuardRule[] = [
     {
@@ -173,73 +151,44 @@ const BatteryCalculator: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-slate-300 mb-2">
-            Device Count
-          </label>
-          <input
-            type="number"
-            value={deviceCount}
-            onChange={(e) => setDeviceCount(Number(e.target.value))}
-            className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-slate-100 placeholder-slate-500 focus:border-orange-500 focus:outline-none"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-slate-300 mb-2">
-            Current Draw (mA)
-          </label>
-          <input
-            type="number"
-            value={currentDraw}
-            onChange={(e) => setCurrentDraw(Number(e.target.value))}
-            className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-slate-100 placeholder-slate-500 focus:border-orange-500 focus:outline-none"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-slate-300 mb-2">
-            Standby (hours)
-          </label>
-          <input
-            type="number"
-            value={standbyHours}
-            onChange={(e) => setStandbyHours(Number(e.target.value))}
-            className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-slate-100 placeholder-slate-500 focus:border-orange-500 focus:outline-none"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-slate-300 mb-2">
-            Alarm Duration (min)
-          </label>
-          <input
-            type="number"
-            value={alarmMinutes}
-            onChange={(e) => setAlarmMinutes(Number(e.target.value))}
-            className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-slate-100 placeholder-slate-500 focus:border-orange-500 focus:outline-none"
-          />
-        </div>
+    <div className="space-y-8">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        {[
+          { label: "Device Count", value: deviceCount, onChange: setDeviceCount },
+          { label: "Current Draw (mA)", value: currentDraw, onChange: setCurrentDraw },
+          { label: "Standby Hours", value: standbyHours, onChange: setStandbyHours },
+          { label: "Alarm Minutes", value: alarmMinutes, onChange: setAlarmMinutes },
+        ].map((field, idx) => (
+          <div key={idx} className="space-y-3">
+            <label className="block text-sm font-semibold text-slate-200">
+              {field.label}
+            </label>
+            <input
+              type="number"
+              value={field.value}
+              onChange={(e) => field.onChange(Number(e.target.value))}
+              className="w-full px-4 py-3 bg-slate-800/50 border border-slate-600/60 rounded-lg text-slate-100 placeholder-slate-500 focus:border-cyan-400 focus:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-cyan-400/20 transition-all"
+            />
+          </div>
+        ))}
       </div>
 
-      {/* Results */}
-      <div className="grid grid-cols-3 gap-3">
-        <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3">
-          <div className="text-2xl font-bold text-blue-400">
-            {standbyCapacity.toFixed(1)}
-          </div>
-          <div className="text-xs text-blue-300">Standby (Ah)</div>
+      {/* Results Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-gradient-to-br from-emerald-900/40 to-emerald-900/20 border border-emerald-500/40 rounded-xl p-6 backdrop-blur-sm hover:border-emerald-400/60 transition-all">
+          <div className="text-sm font-medium text-emerald-400 mb-2">Standby Capacity</div>
+          <div className="text-3xl font-bold text-emerald-300">{standbyCapacity.toFixed(2)}</div>
+          <div className="text-xs text-emerald-400/70 mt-3">Ah</div>
         </div>
-        <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3">
-          <div className="text-2xl font-bold text-blue-400">
-            {alarmCapacity.toFixed(1)}
-          </div>
-          <div className="text-xs text-blue-300">Alarm (Ah)</div>
+        <div className="bg-gradient-to-br from-yellow-900/40 to-yellow-900/20 border border-yellow-500/40 rounded-xl p-6 backdrop-blur-sm hover:border-yellow-400/60 transition-all">
+          <div className="text-sm font-medium text-yellow-400 mb-2">Alarm Capacity</div>
+          <div className="text-3xl font-bold text-yellow-300">{alarmCapacity.toFixed(2)}</div>
+          <div className="text-xs text-yellow-400/70 mt-3">Ah</div>
         </div>
-        <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3">
-          <div className="text-2xl font-bold text-green-400">
-            {withSafetyMargin.toFixed(1)}
-          </div>
-          <div className="text-xs text-green-300">Required (w/ margin)</div>
+        <div className="bg-gradient-to-br from-orange-900/40 to-orange-900/20 border border-orange-500/40 rounded-xl p-6 backdrop-blur-sm hover:border-orange-400/60 transition-all">
+          <div className="text-sm font-medium text-orange-400 mb-2">With Safety Margin</div>
+          <div className="text-3xl font-bold text-orange-300">{withSafetyMargin.toFixed(2)}</div>
+          <div className="text-xs text-orange-400/70 mt-3">Ah (20% margin)</div>
         </div>
       </div>
 
@@ -249,130 +198,65 @@ const BatteryCalculator: React.FC = () => {
   );
 };
 
-// Voltage Drop Calculator
 const VoltageDropCalculator: React.FC = () => {
-  const [current, setCurrent] = useState(5);
-  const [length, setLength] = useState(100);
-  const [cableSize, setCableSize] = useState(10);
-  const [voltage, setVoltage] = useState(24);
+  const [wireLength, setWireLength] = useState(100);
+  const [wireGauge, setWireGauge] = useState(14);
+  const [current, setCurrent] = useState(10);
 
-  // Resistance per 1000 ft for common cable sizes
-  const cableResistance: Record<number, number> = {
-    10: 1.24,
-    12: 1.98,
-    14: 3.16,
-    16: 5.06,
-  };
-
-  const resistance = (cableResistance[cableSize] || 1.24) * (length / 1000);
-  const voltageDrop = current * resistance * 2; // *2 for round trip
-  const dropPercentage = (voltageDrop / voltage) * 100;
+  // Voltage drop formula: V = (2 * R * L * I) / 1000
+  // Simplified for copper wire
+  const resistancePerFoot = { 14: 0.0025, 12: 0.00156, 10: 0.001, 8: 0.000625 }[wireGauge as number] || 0.0025;
+  const voltageDrop = (2 * resistancePerFoot * wireLength * current) / 1000;
+  const percentDrop = (voltageDrop / 12) * 100;
 
   const guards: GuardRule[] = [
     {
-      id: "vdrop-percent",
-      name: "Voltage Drop Percentage",
+      id: "voltage-drop",
+      name: "Voltage Drop (5% max)",
       description: "NFPA 72: Max 5% voltage drop allowed",
       severity: "error",
       category: "voltage",
       min: 0,
       max: 5,
-      currentValue: dropPercentage,
+      currentValue: percentDrop,
       unit: "%",
-      status: dropPercentage <= 5 ? "pass" : dropPercentage <= 7 ? "warn" : "fail",
-    },
-    {
-      id: "vdrop-voltage",
-      name: "Voltage Drop",
-      description: `Max: ${(voltage * 0.05).toFixed(2)}V, Current: ${voltageDrop.toFixed(2)}V`,
-      severity: "error",
-      category: "voltage",
-      status: voltageDrop <= voltage * 0.05 ? "pass" : "warn",
+      status: percentDrop <= 5 ? "pass" : percentDrop <= 7 ? "warn" : "fail",
     },
   ];
 
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-slate-300 mb-2">
-            Current (A)
-          </label>
-          <input
-            type="number"
-            value={current}
-            onChange={(e) => setCurrent(Number(e.target.value))}
-            className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-slate-100 placeholder-slate-500 focus:border-orange-500 focus:outline-none"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-slate-300 mb-2">
-            Cable Length (ft)
-          </label>
-          <input
-            type="number"
-            value={length}
-            onChange={(e) => setLength(Number(e.target.value))}
-            className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-slate-100 placeholder-slate-500 focus:border-orange-500 focus:outline-none"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-slate-300 mb-2">
-            Cable AWG
-          </label>
-          <select
-            value={cableSize}
-            onChange={(e) => setCableSize(Number(e.target.value))}
-            className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-slate-100 focus:border-orange-500 focus:outline-none"
-          >
-            <option value={10}>10 AWG</option>
-            <option value={12}>12 AWG</option>
-            <option value={14}>14 AWG</option>
-            <option value={16}>16 AWG</option>
-          </select>
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-slate-300 mb-2">
-            Voltage (V)
-          </label>
-          <input
-            type="number"
-            value={voltage}
-            onChange={(e) => setVoltage(Number(e.target.value))}
-            className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-slate-100 placeholder-slate-500 focus:border-orange-500 focus:outline-none"
-          />
-        </div>
+    <div className="space-y-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {[
+          { label: "Wire Length (ft)", value: wireLength, onChange: setWireLength },
+          { label: "Wire Gauge (AWG)", value: wireGauge, onChange: setWireGauge },
+          { label: "Current (A)", value: current, onChange: setCurrent },
+        ].map((field, idx) => (
+          <div key={idx} className="space-y-3">
+            <label className="block text-sm font-semibold text-slate-200">
+              {field.label}
+            </label>
+            <input
+              type="number"
+              value={field.value}
+              onChange={(e) => field.onChange(Number(e.target.value))}
+              className="w-full px-4 py-3 bg-slate-800/50 border border-slate-600/60 rounded-lg text-slate-100 placeholder-slate-500 focus:border-cyan-400 focus:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-cyan-400/20 transition-all"
+            />
+          </div>
+        ))}
       </div>
 
-      {/* Results */}
-      <div className="grid grid-cols-2 gap-3">
-        <div
-          className={cn(
-            "rounded-lg p-3 border",
-            dropPercentage <= 5
-              ? "bg-green-500/10 border-green-500/30"
-              : dropPercentage <= 7
-                ? "bg-yellow-500/10 border-yellow-500/30"
-                : "bg-red-500/10 border-red-500/30"
-          )}
-        >
-          <div className="text-3xl font-bold text-orange-400">
-            {dropPercentage.toFixed(2)}%
-          </div>
-          <div className="text-xs text-orange-300">Voltage Drop (%)</div>
+      {/* Results Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-2 gap-6">
+        <div className="bg-gradient-to-br from-purple-900/40 to-purple-900/20 border border-purple-500/40 rounded-xl p-6 backdrop-blur-sm hover:border-purple-400/60 transition-all">
+          <div className="text-sm font-medium text-purple-400 mb-2">Voltage Drop</div>
+          <div className="text-4xl font-bold text-purple-300">{voltageDrop.toFixed(2)}</div>
+          <div className="text-xs text-purple-400/70 mt-3">volts</div>
         </div>
-        <div
-          className={cn(
-            "rounded-lg p-3 border",
-            voltageDrop <= voltage * 0.05
-              ? "bg-green-500/10 border-green-500/30"
-              : "bg-yellow-500/10 border-yellow-500/30"
-          )}
-        >
-          <div className="text-3xl font-bold text-orange-400">
-            {voltageDrop.toFixed(2)}V
-          </div>
-          <div className="text-xs text-orange-300">Voltage Drop</div>
+        <div className={`bg-gradient-to-br ${percentDrop <= 5 ? 'from-green-900/40 to-green-900/20' : 'from-orange-900/40 to-orange-900/20'} border ${percentDrop <= 5 ? 'border-green-500/40' : 'border-orange-500/40'} rounded-xl p-6 backdrop-blur-sm ${percentDrop <= 5 ? 'hover:border-green-400/60' : 'hover:border-orange-400/60'} transition-all`}>
+          <div className={`text-sm font-medium ${percentDrop <= 5 ? 'text-green-400' : 'text-orange-400'} mb-2`}>% Drop</div>
+          <div className={`text-4xl font-bold ${percentDrop <= 5 ? 'text-green-300' : 'text-orange-300'}`}>{percentDrop.toFixed(1)}</div>
+          <div className={`text-xs ${percentDrop <= 5 ? 'text-green-400/70' : 'text-orange-400/70'} mt-3`}>{percentDrop <= 5 ? 'Within limits' : 'Warning: Exceeds limits'}</div>
         </div>
       </div>
 
@@ -382,78 +266,59 @@ const VoltageDropCalculator: React.FC = () => {
   );
 };
 
-// Main Page Component
 export const QOMNCalculatorPage: React.FC = () => {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<CalculatorTab>("smoke");
 
-  const tabs: Array<{ id: CalculatorTab; label: string; description: string }> = [
-    { id: "smoke", label: "Smoke Spacing", description: "NFPA 72 smoke detector spacing" },
-    { id: "heat", label: "Heat Spacing", description: "Heat detector spacing calculations" },
-    { id: "battery", label: "Battery", description: "Battery capacity requirements" },
-    { id: "voltage", label: "Voltage Drop", description: "Cable voltage drop analysis" },
-    { id: "detectors", label: "Detector Layout", description: "Auto-placement diagram" },
-    { id: "duct", label: "Duct Sizing", description: "Duct detector sizing" },
+  const tabs: { id: CalculatorTab; label: string; icon: React.ElementType }[] = [
+    { id: "smoke", label: "Smoke Spacing", icon: AlertTriangle },
+    { id: "heat", label: "Heat Spacing", icon: Zap },
+    { id: "battery", label: "Battery", icon: Zap },
+    { id: "voltage", label: "Voltage Drop", icon: Settings },
+    { id: "detectors", label: "Detectors", icon: AlertTriangle },
+    { id: "duct", label: "Duct Sizing", icon: Settings },
   ];
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-slate-100 flex items-center gap-2">
-          <Zap className="h-8 w-8 text-orange-500" />
-          QOMN Engineering Calculator
-        </h1>
-        <p className="text-slate-400 mt-2">
-          NFPA 72 compliant fire alarm system design and verification
-        </p>
-      </div>
+    <div className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 p-8">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold text-white mb-2">QOMN Calculator</h1>
+          <p className="text-slate-400 text-lg">Engineering calculations for NFPA 72 compliance</p>
+        </div>
 
-      {/* Tabs */}
-      <div className="flex flex-wrap gap-2 border-b border-slate-700">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={cn(
-              "px-4 py-2 border-b-2 font-medium transition-all",
-              activeTab === tab.id
-                ? "border-orange-500 text-orange-400"
-                : "border-transparent text-slate-400 hover:text-slate-300"
-            )}
-            title={tab.description}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+        {/* Tabs */}
+        <div className="flex gap-2 mb-8 overflow-x-auto pb-2 scrollbar-hide">
+          {tabs.map((tab) => {
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={cn(
+                  "flex items-center gap-2 px-6 py-3 rounded-lg font-medium text-sm transition-all whitespace-nowrap",
+                  activeTab === tab.id
+                    ? "bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-lg shadow-cyan-500/20"
+                    : "bg-slate-800/50 text-slate-300 hover:bg-slate-700/50 border border-slate-700/50"
+                )}
+              >
+                <Icon size={18} />
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
 
-      {/* Content */}
-      <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-6">
-        {activeTab === "smoke" && <SmokeCalculator />}
-        {activeTab === "heat" && (
-          <div className="text-slate-400">Heat spacing calculator coming soon...</div>
-        )}
-        {activeTab === "battery" && <BatteryCalculator />}
-        {activeTab === "voltage" && <VoltageDropCalculator />}
-        {activeTab === "detectors" && (
-          <div className="text-slate-400">Detector layout tool coming soon...</div>
-        )}
-        {activeTab === "duct" && (
-          <div className="text-slate-400">Duct detector sizing coming soon...</div>
-        )}
-      </div>
-
-      {/* Info Box */}
-      <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-4">
-        <p className="text-sm text-orange-300 flex items-start gap-2">
-          <AlertTriangle className="h-5 w-5 mt-0.5 shrink-0" />
-          <span>
-            All calculations must be verified by a licensed fire protection engineer
-            before implementation. This tool provides guidance only and does not replace
-            professional engineering judgment.
-          </span>
-        </p>
+        {/* Content */}
+        <div className="bg-slate-800/30 border border-slate-700/50 rounded-xl p-8 backdrop-blur-sm">
+          {activeTab === "smoke" && <SmokeCalculator />}
+          {activeTab === "battery" && <BatteryCalculator />}
+          {activeTab === "voltage" && <VoltageDropCalculator />}
+          {activeTab === "heat" && <div className="text-slate-400 py-12 text-center">Heat Detector Calculator (Coming Soon)</div>}
+          {activeTab === "detectors" && <div className="text-slate-400 py-12 text-center">Detector Placement Tool (Coming Soon)</div>}
+          {activeTab === "duct" && <div className="text-slate-400 py-12 text-center">Duct Detector Sizing (Coming Soon)</div>}
+        </div>
       </div>
     </div>
   );

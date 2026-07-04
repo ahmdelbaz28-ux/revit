@@ -11,18 +11,18 @@ import {
   Cable,
   AlertTriangle,
   Settings,
-  ChevronLeft,
-  ChevronRight,
-  PencilRuler,
-  Building2,
-  ArrowRightLeft,
-  History,
-  Settings2,
   ChevronDown,
   Gauge,
   Zap,
   Database,
   BarChart3,
+  Building2,
+  PencilRuler,
+  ArrowRightLeft,
+  History,
+  Settings2,
+  Menu,
+  X,
 } from "lucide-react";
 
 interface NavItem {
@@ -41,7 +41,6 @@ interface NavGroup {
   items: NavItem[];
 }
 
-// Reorganized navigation with semantic grouping
 const navGroups: NavGroup[] = [
   {
     groupKey: "core",
@@ -104,8 +103,8 @@ const navGroups: NavGroup[] = [
     groupIcon: FileText,
     items: [
       { labelKey: "nav.reports", defaultLabel: "Reports", icon: FileText, path: "/reports", dataOnboarding: "nav-reports" },
-      { labelKey: "nav.exports", defaultLabel: "Export Manager", icon: ArrowRightLeft, path: "/exports" },
-      { labelKey: "nav.auditTrail", defaultLabel: "Audit Trail", icon: History, path: "/audit-trail" },
+      { labelKey: "nav.exports", defaultLabel: "Export Manager", icon: FileText, path: "/exports" },
+      { labelKey: "nav.auditTrail", defaultLabel: "Audit Trail", icon: BarChart3, path: "/audit-trail" },
     ],
   },
   {
@@ -115,7 +114,7 @@ const navGroups: NavGroup[] = [
     groupIcon: BarChart3,
     items: [
       { labelKey: "nav.systemHealth", defaultLabel: "System Health", icon: BarChart3, path: "/system-health" },
-      { labelKey: "nav.agentActivity", defaultLabel: "Agent Activity", icon: Database, path: "/agent-activity" },
+      { labelKey: "nav.agentActivity", defaultLabel: "Agent Activity", icon: Zap, path: "/agent-activity" },
       { labelKey: "nav.securityAlerts", defaultLabel: "Security Alerts", icon: AlertTriangle, path: "/security-alerts" },
     ],
   },
@@ -131,164 +130,142 @@ const navGroups: NavGroup[] = [
   },
 ];
 
-interface EnhancedSidebarProps {
-  compact?: boolean;
+interface SidebarGroupProps {
+  group: NavGroup;
+  isOpen: boolean;
+  onToggle: () => void;
+  currentPath: string;
 }
 
-const EnhancedSidebar: React.FC<EnhancedSidebarProps> = ({ compact = false }) => {
-  const [collapsed, setCollapsed] = useState(false);
-  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(
-    navGroups.reduce((acc, g) => ({ ...acc, [g.groupKey]: true }), {})
-  );
-  const [hoveredItem, setHoveredItem] = useState<string | null>(null);
-  const location = useLocation();
+const SidebarGroup: React.FC<SidebarGroupProps> = ({ group, isOpen, onToggle, currentPath }) => {
   const { t } = useTranslation();
-  const isRTL = document.documentElement.dir === "rtl";
+  const GroupIcon = group.groupIcon;
 
-  const toggleGroup = (groupKey: string) => {
-    setExpandedGroups((prev) => ({ ...prev, [groupKey]: !prev[groupKey] }));
-  };
-
-  const width = collapsed
-    ? compact
-      ? "w-12"
-      : "w-16"
-    : compact
-      ? "w-56"
-      : "w-64";
+  const isGroupActive = group.items.some((item) => currentPath === item.path);
 
   return (
-    <aside
-      className={`${width} h-full bg-slate-900 backdrop-blur-sm border-${
-        isRTL ? "l" : "r"
-      } border-slate-700/50 flex flex-col transition-all duration-300 ${
-        isRTL ? "order-last" : "order-first"
-      }`}
-    >
-      {/* Logo */}
-      <div className="flex items-center gap-2 px-3 py-3 border-b border-slate-700/50">
-        <Flame className="h-6 w-6 text-orange-500 shrink-0 transition-transform duration-300 group-hover:scale-110" />
-        {!collapsed && (
-          <span className="text-white font-bold text-lg tracking-wide">
-            BAZSPARK
-          </span>
-        )}
+    <div className="mb-2">
+      <button
+        onClick={onToggle}
+        className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
+          isGroupActive
+            ? "bg-cyan-500/10 text-cyan-400 border border-cyan-500/20"
+            : "text-slate-400 hover:bg-slate-700/30 hover:text-slate-200"
+        }`}
+      >
+        {GroupIcon && <GroupIcon size={18} className="flex-shrink-0" />}
+        <span className="flex-1 text-left text-sm font-semibold">{t(group.groupLabelKey, group.defaultGroupLabel)}</span>
+        <ChevronDown
+          size={16}
+          className={`flex-shrink-0 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      {isOpen && (
+        <div className="mt-2 ml-4 space-y-1 border-l border-slate-600/30 pl-3">
+          {group.items.map((item) => {
+            const ItemIcon = item.icon;
+            const isActive = currentPath === item.path;
+
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                data-onboarding={item.dataOnboarding}
+                className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-all duration-150 ${
+                  isActive
+                    ? "bg-cyan-500/20 text-cyan-300 font-medium"
+                    : "text-slate-400 hover:text-slate-200 hover:bg-slate-700/20"
+                }`}
+              >
+                <ItemIcon size={16} className="flex-shrink-0" />
+                <span className="truncate">{t(item.labelKey, item.defaultLabel)}</span>
+              </Link>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const EnhancedSidebar: React.FC = () => {
+  const { t } = useTranslation();
+  const location = useLocation();
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
+    core: true,
+    engineering: true,
+  });
+
+  const toggleGroup = (groupKey: string) => {
+    setExpandedGroups((prev) => ({
+      ...prev,
+      [groupKey]: !prev[groupKey],
+    }));
+  };
+
+  const sidebarContent = (
+    <div className="h-full flex flex-col bg-gradient-to-b from-slate-900 to-slate-950 border-r border-slate-700/50">
+      {/* Header */}
+      <div className="px-6 py-5 border-b border-slate-700/30">
+        <h1 className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
+          BAZSPARK
+        </h1>
+        <p className="text-xs text-slate-500 mt-1 font-medium">Fire Safety System</p>
       </div>
 
-      {/* Navigation Groups */}
-      <nav className="flex-1 py-2 overflow-y-auto">
-        {navGroups.map((group) => {
-          const isExpanded = expandedGroups[group.groupKey];
-          const GroupIcon = group.groupIcon || Layers;
-
-          // Check if any item in group is active
-          const isGroupActive = group.items.some(
-            (item) =>
-              location.pathname === item.path ||
-              (item.path !== "/dashboard" && location.pathname.startsWith(item.path + "/"))
-          );
-
-          return (
-            <div key={group.groupKey} className="mb-1">
-              {/* Group Header */}
-              {!collapsed && (
-                <button
-                  onClick={() => toggleGroup(group.groupKey)}
-                  className={`w-full flex items-center gap-2 px-3 py-2 mx-1 rounded-lg transition-all duration-200 ${
-                    isGroupActive
-                      ? "bg-slate-800/80 text-slate-100 border-l-2 border-orange-500"
-                      : "text-slate-400 hover:bg-slate-800/40 hover:text-slate-200"
-                  }`}
-                >
-                  <GroupIcon className="h-4 w-4 shrink-0" />
-                  <span className="flex-1 text-left text-xs font-semibold uppercase tracking-wider truncate">
-                    {t(group.groupLabelKey, group.defaultGroupLabel)}
-                  </span>
-                  <ChevronDown
-                    className={`h-3 w-3 shrink-0 transition-transform duration-200 ${
-                      isExpanded ? "" : isRTL ? "rotate-90" : "-rotate-90"
-                    }`}
-                  />
-                </button>
-              )}
-
-              {/* Group Items */}
-              {!collapsed && isExpanded && (
-                <div className="py-1">
-                  {group.items.map((item) => {
-                    const isActive =
-                      location.pathname === item.path ||
-                      (item.path !== "/dashboard" && location.pathname.startsWith(item.path + "/"));
-                    const isHovered = hoveredItem === item.path;
-                    const labelText = t(item.labelKey, item.defaultLabel);
-
-                    return (
-                      <Link
-                        key={item.path}
-                        to={item.path}
-                        className={`flex items-center gap-3 px-4 py-2 mx-1 rounded-lg transition-all duration-200 text-sm ${
-                          isActive
-                            ? "bg-orange-500/20 border-l-2 border-orange-500 text-orange-400 shadow-lg shadow-orange-500/10"
-                            : "text-slate-400 hover:bg-slate-800/60 hover:text-slate-200"
-                        }`}
-                        onMouseEnter={() => setHoveredItem(item.path)}
-                        onMouseLeave={() => setHoveredItem(null)}
-                        title={isActive ? "" : labelText}
-                        data-onboarding={item.dataOnboarding}
-                      >
-                        <item.icon
-                          className={`h-4 w-4 shrink-0 transition-transform duration-300 ${
-                            isActive ? "text-orange-400 scale-110" : isHovered ? "scale-105 text-orange-300" : ""
-                          }`}
-                        />
-                        <span className="truncate flex-1">{labelText}</span>
-                      </Link>
-                    );
-                  })}
-                </div>
-              )}
-
-              {/* Collapsed Group Icon */}
-              {collapsed && (
-                <div className="flex justify-center py-2">
-                  <button
-                    onClick={() => toggleGroup(group.groupKey)}
-                    className={`p-2 rounded-lg transition-all duration-200 ${
-                      isGroupActive
-                        ? "bg-slate-800 text-orange-400"
-                        : "text-slate-500 hover:bg-slate-800/60 hover:text-slate-300"
-                    }`}
-                    title={t(group.groupLabelKey, group.defaultGroupLabel)}
-                  >
-                    <GroupIcon className="h-5 w-5" />
-                  </button>
-                </div>
-              )}
-            </div>
-          );
-        })}
+      {/* Navigation */}
+      <nav className="flex-1 overflow-y-auto px-4 py-5 space-y-1">
+        {navGroups.map((group) => (
+          <SidebarGroup
+            key={group.groupKey}
+            group={group}
+            isOpen={expandedGroups[group.groupKey] || false}
+            onToggle={() => toggleGroup(group.groupKey)}
+            currentPath={location.pathname}
+          />
+        ))}
       </nav>
 
-      {/* Collapse Button */}
-      <button
-        onClick={() => setCollapsed(!collapsed)}
-        className="flex items-center justify-center py-2 border-t border-slate-700/50 text-slate-500 hover:text-slate-300 transition-all duration-200 hover:bg-slate-800/40"
-        aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-        data-onboarding="sidebar-toggle"
-      >
-        {collapsed ? (
-          isRTL ? (
-            <ChevronLeft className="h-4 w-4 transition-transform duration-200" />
-          ) : (
-            <ChevronRight className="h-4 w-4 transition-transform duration-200" />
-          )
-        ) : isRTL ? (
-          <ChevronRight className="h-4 w-4 transition-transform duration-200" />
-        ) : (
-          <ChevronLeft className="h-4 w-4 transition-transform duration-200" />
-        )}
-      </button>
-    </aside>
+      {/* Footer */}
+      <div className="px-4 py-4 border-t border-slate-700/30">
+        <div className="text-xs text-slate-500 text-center">
+          <p>v1.0.0</p>
+          <p className="mt-1">NFPA 72 Compliant</p>
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <>
+      {/* Desktop Sidebar */}
+      <div className="hidden md:flex w-64 flex-col bg-slate-900">
+        {sidebarContent}
+      </div>
+
+      {/* Mobile Sidebar */}
+      <div className="md:hidden flex items-center justify-between px-4 py-3 bg-slate-900 border-b border-slate-700/50">
+        <h1 className="text-lg font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
+          BAZSPARK
+        </h1>
+        <button
+          onClick={() => setIsMobileOpen(!isMobileOpen)}
+          className="p-2 hover:bg-slate-700/30 rounded-lg transition-colors"
+        >
+          {isMobileOpen ? <X size={24} /> : <Menu size={24} />}
+        </button>
+      </div>
+
+      {isMobileOpen && (
+        <div className="md:hidden fixed inset-0 bg-black/50 z-40" onClick={() => setIsMobileOpen(false)}>
+          <div className="absolute left-0 top-0 w-64 h-screen" onClick={(e) => e.stopPropagation()}>
+            {sidebarContent}
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 
