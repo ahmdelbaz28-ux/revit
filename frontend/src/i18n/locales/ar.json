@@ -10,6 +10,7 @@
     "connections": "التوصيلات",
     "conflicts": "التعارضات",
     "settings": "الإعدادات",
+    "advancedSettings": "الإعدادات المتقدمة",
     "autocad": "أوتوكاد",
     "autocadDraw": "رسم أوتوكاد",
     "revit": "ريفيت",
@@ -17,7 +18,27 @@
     "revitElements": "عناصر ريفيت",
     "dtConvert": "تحويل DT",
     "dtConfig": "إعدادات DT",
-    "dtHistory": "سجل DT"
+    "dtHistory": "سجل DT",
+    "qomn": "حاسبة QOMN",
+    "facp": "مصمم FACP",
+    "physicsGuards": "حراس الفيزياء",
+    "environmentContext": "الطقس والجيوكود",
+    "airQuality": "جودة الهواء",
+    "hazmat": "قاعدة بيانات المواد الخطرة",
+    "exports": "مدير التصدير",
+    "auditTrail": "سجل التدقيق",
+    "systemHealth": "صحة النظام",
+    "agentActivity": "نشاط الوكيل",
+    "securityAlerts": "تنبيهات الأمان",
+    "group": {
+      "core": "الأساسي",
+      "engineering": "الهندسة (حساس من حيث السلامة)",
+      "cad": "تكامل BIM و CAD",
+      "environment": "البيئة والسياق",
+      "reporting": "التقارير والتصدير",
+      "monitoring": "النظام والمراقبة",
+      "settings": "الإعدادات"
+    }
   },
   "common": {
     "create": "إنشاء",

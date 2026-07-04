@@ -1156,6 +1156,7 @@
     "connections": "Connections",
     "conflicts": "Conflicts",
     "settings": "Settings",
+    "advancedSettings": "Advanced Settings",
     "autocad": "AutoCAD",
     "autocadDraw": "ACAD Draw",
     "revit": "Revit",
@@ -1163,7 +1164,27 @@
     "revitElements": "Revit Elements",
     "dtConvert": "DT Convert",
     "dtConfig": "DT Config",
-    "dtHistory": "DT History"
+    "dtHistory": "DT History",
+    "qomn": "QOMN Calculator",
+    "facp": "FACP Designer",
+    "physicsGuards": "Physics Guards",
+    "environmentContext": "Weather & Geocoding",
+    "airQuality": "Air Quality",
+    "hazmat": "HazMat Database",
+    "exports": "Export Manager",
+    "auditTrail": "Audit Trail",
+    "systemHealth": "System Health",
+    "agentActivity": "Agent Activity",
+    "securityAlerts": "Security Alerts",
+    "group": {
+      "core": "Core",
+      "engineering": "Engineering (Safety Critical)",
+      "cad": "BIM & CAD Integration",
+      "environment": "Environment & Context",
+      "reporting": "Reports & Exports",
+      "monitoring": "System & Monitoring",
+      "settings": "Settings"
+    }
   },
   "settings": {
     "title": "Settings",

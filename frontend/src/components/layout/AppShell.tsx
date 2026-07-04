@@ -1,7 +1,8 @@
 import React from "react";
-import Sidebar from "./Sidebar";
+import EnhancedSidebar from "./EnhancedSidebar";
 import TopBar from "./TopBar";
 import StatusBar from "./StatusBar";
+import Breadcrumbs from "./Breadcrumbs";
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -42,7 +43,7 @@ const AppShell: React.FC<AppShellProps> = ({
       className="h-screen w-screen flex overflow-hidden bg-slate-950 relative"
       dir={isRTL ? "rtl" : "ltr"}
     >
-      <Sidebar />
+      <EnhancedSidebar />
 
       <div className="flex-1 flex flex-col min-w-0">
         <TopBar
@@ -52,6 +53,8 @@ const AppShell: React.FC<AppShellProps> = ({
           currentLanguage={currentLanguage}
           onLanguageChange={onLanguageChange}
         />
+
+        <Breadcrumbs />
 
         <main className="flex-1 overflow-auto bg-slate-950 relative">
           <div className="relative z-10">{children}</div>

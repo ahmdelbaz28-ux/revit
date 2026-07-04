@@ -15,17 +15,64 @@ export interface CommandItem {
 }
 
 const COMMANDS: CommandItem[] = [
+  // Navigation - Core
   { id: "cmd-dashboard", label: "Open Dashboard", shortcut: "G D", category: "navigation", path: "/dashboard" },
   { id: "cmd-projects", label: "Open Projects", shortcut: "G P", category: "navigation", path: "/projects" },
-  { id: "cmd-engineering", label: "Open Engineering", shortcut: "G E", category: "navigation", path: "/engineering" },
-  { id: "cmd-fire-alarm-designer", label: "Open Fire Alarm Designer", shortcut: "G F", category: "navigation", path: "/fire-alarm/designer" },
-  { id: "cmd-digital-twin", label: "Open Digital Twin", shortcut: "G T", category: "navigation", path: "/digital-twin" },
+  { id: "cmd-elements", label: "Open Elements", category: "navigation", path: "/elements" },
+  { id: "cmd-connections", label: "Open Connections", category: "navigation", path: "/connections" },
+  { id: "cmd-conflicts", label: "Open Conflicts", category: "navigation", path: "/conflicts" },
+
+  // Navigation - Engineering (Safety Critical)
+  { id: "cmd-engineering", label: "Open Engineering Console", shortcut: "G E", category: "navigation", path: "/engineering" },
+  { id: "cmd-qomn-calc", label: "QOMN Calculator - Smoke/Heat Spacing", category: "navigation", path: "/engineering/qomn" },
+  { id: "cmd-qomn-battery", label: "Battery Requirements Calculation", category: "navigation", path: "/engineering/qomn" },
+  { id: "cmd-qomn-voltage", label: "Voltage Drop Analysis", category: "navigation", path: "/engineering/qomn" },
+  { id: "cmd-qomn-detectors", label: "Detector Placement Tool", category: "navigation", path: "/engineering/qomn" },
+  { id: "cmd-facp-designer", label: "FACP Panel Designer", shortcut: "G F", category: "navigation", path: "/engineering/facp" },
+  { id: "cmd-physics-guards", label: "Physics Guards Monitor", category: "navigation", path: "/engineering/guards" },
+
+  // Navigation - CAD/BIM Integration
+  { id: "cmd-revit", label: "Revit Integration", category: "navigation", path: "/revit" },
+  { id: "cmd-revit-create", label: "Revit - Create Elements", category: "navigation", path: "/revit/create" },
+  { id: "cmd-revit-elements", label: "Revit - Element Browser", category: "navigation", path: "/revit/elements" },
+  { id: "cmd-autocad", label: "AutoCAD Integration", category: "navigation", path: "/autocad" },
+  { id: "cmd-autocad-draw", label: "AutoCAD - Drawing Tools", category: "navigation", path: "/autocad/draw" },
+  { id: "cmd-digital-twin", label: "Digital Twin", shortcut: "G T", category: "navigation", path: "/digital-twin" },
+  { id: "cmd-dt-convert", label: "Digital Twin - Convert", category: "navigation", path: "/digital-twin/convert" },
+  { id: "cmd-dt-config", label: "Digital Twin - Configuration", category: "navigation", path: "/digital-twin/config" },
+  { id: "cmd-dt-history", label: "Digital Twin - History & Rollback", category: "navigation", path: "/digital-twin/history" },
+  { id: "cmd-fire-alarm-designer", label: "Fire Alarm Designer", category: "navigation", path: "/fire-alarm/designer" },
+
+  // Navigation - Environment & Context
+  { id: "cmd-environment-context", label: "Weather & Geocoding", category: "navigation", path: "/environment/context" },
+  { id: "cmd-air-quality", label: "Air Quality Data", category: "navigation", path: "/environment/air-quality" },
+  { id: "cmd-hazmat-db", label: "HazMat Database", category: "navigation", path: "/environment/hazmat" },
+
+  // Navigation - Reports & Exports
   { id: "cmd-reports", label: "Open Reports", shortcut: "G R", category: "navigation", path: "/reports" },
-  { id: "cmd-create-project", label: "Create New Project", shortcut: "N C", category: "action", path: "/projects" },
+  { id: "cmd-export-manager", label: "Export Manager (DXF/Revit/IFC)", category: "navigation", path: "/exports" },
+  { id: "cmd-audit-trail", label: "Audit Trail Viewer", category: "navigation", path: "/audit-trail" },
+
+  // Navigation - System & Monitoring
+  { id: "cmd-system-health", label: "System Health Dashboard", category: "navigation", path: "/system-health" },
+  { id: "cmd-agent-activity", label: "Agent Activity Log", category: "navigation", path: "/agent-activity" },
+  { id: "cmd-security-alerts", label: "Security Alerts", category: "navigation", path: "/security-alerts" },
+
+  // Navigation - Settings
+  { id: "cmd-settings", label: "Settings", shortcut: "G S", category: "navigation", path: "/settings" },
+  { id: "cmd-advanced-settings", label: "Advanced Settings Hub", category: "navigation", path: "/settings/advanced" },
+
+  // Actions
+  { id: "cmd-create-project", label: "Create New Project", category: "action", path: "/projects" },
+  { id: "cmd-new-element", label: "Create New Element", category: "action", path: "/elements" },
+  { id: "cmd-new-connection", label: "Create New Connection", category: "action", path: "/connections" },
   { id: "cmd-generate-report", label: "Generate Report", shortcut: "N R", category: "action", path: "/reports" },
-  { id: "cmd-run-compliance", label: "Run Compliance Check", shortcut: "N C", category: "action", path: "/engineering" },
-  { id: "cmd-settings", label: "Open Settings", shortcut: "G S", category: "navigation", path: "/settings" },
-  { id: "cmd-help", label: "Open Help", shortcut: "?", category: "help", helpTopicId: "dashboard.overview" },
+  { id: "cmd-run-compliance", label: "Run Compliance Check (NFPA 72)", category: "action", path: "/engineering" },
+  { id: "cmd-export-project", label: "Export Project", category: "action", path: "/exports" },
+
+  // Help
+  { id: "cmd-help", label: "Open Help", shortcut: "F1", category: "help", helpTopicId: "dashboard.overview" },
+  { id: "cmd-keyboard-shortcuts", label: "Keyboard Shortcuts", shortcut: "?", category: "help" },
 ];
 
 type CommandPaletteSearchResult = {

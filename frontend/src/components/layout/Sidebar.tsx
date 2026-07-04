@@ -30,12 +30,12 @@ interface NavItem {
 }
 
 // V140 FIX + Phase 6: Use i18n keys + correct paths + new CAD/BIM routes
+// NOTE: This Sidebar is now LEGACY - use EnhancedSidebar instead for grouped navigation
 const navItems: NavItem[] = [
   { labelKey: "nav.dashboard", defaultLabel: "Dashboard", icon: LayoutDashboard, path: "/dashboard", dataOnboarding: "nav-dashboard" },
   { labelKey: "nav.projects", defaultLabel: "Projects", icon: FolderKanban, path: "/projects", dataOnboarding: "nav-projects" },
   { labelKey: "nav.engineering", defaultLabel: "Engineering", icon: Calculator, path: "/engineering", dataOnboarding: "nav-engineering" },
   { labelKey: "nav.fireAlarmDesigner", defaultLabel: "Fire Alarm Designer", icon: Flame, path: "/fire-alarm/designer", dataOnboarding: "nav-fire-alarm-designer" },
-  // V140 Phase 6: New AutoCAD / Revit / Digital Twin routes
   { labelKey: "nav.autocad", defaultLabel: "AutoCAD", icon: PencilRuler, path: "/autocad" },
   { labelKey: "nav.autocadDraw", defaultLabel: "ACAD Draw", icon: PencilRuler, path: "/autocad/draw" },
   { labelKey: "nav.revit", defaultLabel: "Revit", icon: Building2, path: "/revit" },

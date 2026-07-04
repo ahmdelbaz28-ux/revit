@@ -33,6 +33,14 @@ import { RevitElementsPage } from './pages/RevitElementsPage';
 import { DigitalTwinConvertPage } from './pages/DigitalTwinConvertPage';
 import { DigitalTwinConfigPage } from './pages/DigitalTwinConfigPage';
 import { DigitalTwinHistoryPage } from './pages/DigitalTwinHistoryPage';
+// Phase 2: New Engineering pages
+import { QOMNCalculatorPage } from './pages/QOMNCalculatorPage';
+// Phase 4: Environment Pages
+import { EnvironmentContextPage } from './pages/EnvironmentContextPage';
+// Phase 6: System Health Dashboard
+import { SystemHealthPage } from './pages/SystemHealthPage';
+// Phase 7: Export Manager
+import { ExportManagerPage } from './pages/ExportManagerPage';
 import './i18n';
 import './styles/globals.css';
 import './styles/typography.css';
@@ -101,6 +109,23 @@ function App() {
     { path: '/digital-twin/convert', element: <DigitalTwinConvertPage /> },
     { path: '/digital-twin/config', element: <DigitalTwinConfigPage /> },
     { path: '/digital-twin/history', element: <DigitalTwinHistoryPage /> },
+    // Phase 2: New Engineering pages
+    { path: '/engineering/qomn', element: <QOMNCalculatorPage /> },
+    // Phase 3: FACP Designer (coming soon)
+    // { path: '/engineering/facp', element: <FACPDesignerPage /> },
+    // Phase 3: Physics Guards (coming soon)
+    // { path: '/engineering/guards', element: <PhysicsGuardsPage /> },
+    // Phase 4: Environment Pages
+    { path: '/environment/context', element: <EnvironmentContextPage /> },
+    // { path: '/environment/air-quality', element: <AirQualityPage /> },
+    // { path: '/environment/hazmat', element: <HazMatPage /> },
+    // Phase 6: System Health Dashboard
+    { path: '/system-health', element: <SystemHealthPage /> },
+    // { path: '/agent-activity', element: <AgentActivityPage /> },
+    // { path: '/security-alerts', element: <SecurityAlertsPage /> },
+    // Phase 7: Export Manager
+    { path: '/exports', element: <ExportManagerPage /> },
+    // { path: '/audit-trail', element: <AuditTrailPage /> },
   ];
 
   return (
