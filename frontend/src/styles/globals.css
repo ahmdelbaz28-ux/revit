@@ -1,161 +1,166 @@
 @import "tailwindcss";
 
 @layer base {
-  :root {
-    /* Primary - Fire Alarm Red */
-    --color-primary: 185 28 28; /* #B91C1C */
-    --color-primary-foreground: 248 250 252; /* #F8FAFC */
-    
-    /* Status Colors */
-    --color-success: 5 150 105; /* #059669 */
-    --color-warning: 217 119 6; /* #D97706 */
-    --color-danger: 220 38 38; /* #DC2626 */
-    --color-info: 37 99 235; /* #2563EB */
-    
-    /* Background */
-    --color-bg-primary: 15 23 42; /* #0F172A */
-    --color-bg-secondary: 30 41 59; /* #1E293B */
-    --color-bg-tertiary: 51 65 85; /* #334155 */
-    
-    /* Text */
-    --color-text-primary: 248 250 252; /* #F8FAFC */
-    --color-text-secondary: 148 163 184; /* #94A3B8 */
-    --color-text-muted: 100 116 139; /* #64748B */
-    
-    /* Border */
-    --color-border: 51 65 85; /* #334155 */
-    --color-border-hover: 71 85 105; /* #475569 */
-    
-    /* UI Component Colors */
-    --background: 15 23 42 / <alpha-value>;
-    --foreground: 248 250 252 / <alpha-value>;
-    
-    --muted: 30 41 59 / <alpha-value>;
-    --muted-foreground: 148 163 184 / <alpha-value>;
-    
-    --popover: 30 41 59 / <alpha-value>;
-    --popover-foreground: 248 250 252 / <alpha-value>;
-    
-    --card: 30 41 59 / <alpha-value>;
-    --card-foreground: 248 250 252 / <alpha-value>;
-    
-    --border: 51 65 85 / <alpha-value>;
-    --input: 51 65 85 / <alpha-value>;
-    
-    --primary: 185 28 28 / <alpha-value>;
-    --primary-foreground: 248 250 252 / <alpha-value>;
-    
-    --secondary: 30 41 59 / <alpha-value>;
-    --secondary-foreground: 248 250 252 / <alpha-value>;
-    
-    --accent: 51 65 85 / <alpha-value>;
-    --accent-foreground: 248 250 252 / <alpha-value>;
-    
-    --destructive: 220 38 38 / <alpha-value>;
-    --destructive-foreground: 248 250 252 / <alpha-value>;
-    
-    --ring: 185 28 28 / <alpha-value>;
-    
-    --radius: 0.5rem;
-  }
-  
-  .dark {
-    /* Same as light theme since we're using dark theme by default */
-    --color-primary: 185 28 28; /* #B91C1C */
-    --color-primary-foreground: 248 250 252; /* #F8FAFC */
-    
-    /* Status Colors */
-    --color-success: 5 150 105; /* #059669 */
-    --color-warning: 217 119 6; /* #D97706 */
-    --color-danger: 220 38 38; /* #DC2626 */
-    --color-info: 37 99 235; /* #2563EB */
-    
-    /* Background */
-    --color-bg-primary: 15 23 42; /* #0F172A */
-    --color-bg-secondary: 30 41 59; /* #1E293B */
-    --color-bg-tertiary: 51 65 85; /* #334155 */
-    
-    /* Text */
-    --color-text-primary: 248 250 252; /* #F8FAFC */
-    --color-text-secondary: 148 163 184; /* #94A3B8 */
-    --color-text-muted: 100 116 139; /* #64748B */
-    
-    /* Border */
-    --color-border: 51 65 85; /* #334155 */
-    --color-border-hover: 71 85 105; /* #475569 */
-    
-    /* UI Component Colors */
-    --background: 15 23 42 / <alpha-value>;
-    --foreground: 248 250 252 / <alpha-value>;
-    
-    --muted: 30 41 59 / <alpha-value>;
-    --muted-foreground: 148 163 184 / <alpha-value>;
-    
-    --popover: 30 41 59 / <alpha-value>;
-    --popover-foreground: 248 250 252 / <alpha-value>;
-    
-    --card: 30 41 59 / <alpha-value>;
-    --card-foreground: 248 250 252 / <alpha-value>;
-    
-    --border: 51 65 85 / <alpha-value>;
-    --input: 51 65 85 / <alpha-value>;
-    
-    --primary: 185 28 28 / <alpha-value>;
-    --primary-foreground: 248 250 252 / <alpha-value>;
-    
-    --secondary: 30 41 59 / <alpha-value>;
-    --secondary-foreground: 248 250 252 / <alpha-value>;
-    
-    --accent: 51 65 85 / <alpha-value>;
-    --accent-foreground: 248 250 252 / <alpha-value>;
-    
-    --destructive: 220 38 38 / <alpha-value>;
-    --destructive-foreground: 248 250 252 / <alpha-value>;
-    
-    --ring: 185 28 28 / <alpha-value>;
-  }
+	:root {
+		/* Primary - Fire Alarm Red */
+		--color-primary: 185 28 28; /* #B91C1C */
+		--color-primary-foreground: 248 250 252; /* #F8FAFC */
+
+		/* Status Colors */
+		--color-success: 5 150 105; /* #059669 */
+		--color-warning: 217 119 6; /* #D97706 */
+		--color-danger: 220 38 38; /* #DC2626 */
+		--color-info: 37 99 235; /* #2563EB */
+
+		/* Background */
+		--color-bg-primary: 15 23 42; /* #0F172A */
+		--color-bg-secondary: 30 41 59; /* #1E293B */
+		--color-bg-tertiary: 51 65 85; /* #334155 */
+
+		/* Text */
+		--color-text-primary: 248 250 252; /* #F8FAFC */
+		--color-text-secondary: 148 163 184; /* #94A3B8 */
+		--color-text-muted: 100 116 139; /* #64748B */
+
+		/* Border */
+		--color-border: 51 65 85; /* #334155 */
+		--color-border-hover: 71 85 105; /* #475569 */
+
+		/* UI Component Colors */
+		--background: 15 23 42 / <alpha-value>;
+		--foreground: 248 250 252 / <alpha-value>;
+
+		--muted: 30 41 59 / <alpha-value>;
+		--muted-foreground: 148 163 184 / <alpha-value>;
+
+		--popover: 30 41 59 / <alpha-value>;
+		--popover-foreground: 248 250 252 / <alpha-value>;
+
+		--card: 30 41 59 / <alpha-value>;
+		--card-foreground: 248 250 252 / <alpha-value>;
+
+		--border: 51 65 85 / <alpha-value>;
+		--input: 51 65 85 / <alpha-value>;
+
+		--primary: 185 28 28 / <alpha-value>;
+		--primary-foreground: 248 250 252 / <alpha-value>;
+
+		--secondary: 30 41 59 / <alpha-value>;
+		--secondary-foreground: 248 250 252 / <alpha-value>;
+
+		--accent: 51 65 85 / <alpha-value>;
+		--accent-foreground: 248 250 252 / <alpha-value>;
+
+		--destructive: 220 38 38 / <alpha-value>;
+		--destructive-foreground: 248 250 252 / <alpha-value>;
+
+		--ring: 185 28 28 / <alpha-value>;
+
+		--radius: 0.5rem;
+	}
+
+	.dark {
+		/* Same as light theme since we're using dark theme by default */
+		--color-primary: 185 28 28; /* #B91C1C */
+		--color-primary-foreground: 248 250 252; /* #F8FAFC */
+
+		/* Status Colors */
+		--color-success: 5 150 105; /* #059669 */
+		--color-warning: 217 119 6; /* #D97706 */
+		--color-danger: 220 38 38; /* #DC2626 */
+		--color-info: 37 99 235; /* #2563EB */
+
+		/* Background */
+		--color-bg-primary: 15 23 42; /* #0F172A */
+		--color-bg-secondary: 30 41 59; /* #1E293B */
+		--color-bg-tertiary: 51 65 85; /* #334155 */
+
+		/* Text */
+		--color-text-primary: 248 250 252; /* #F8FAFC */
+		--color-text-secondary: 148 163 184; /* #94A3B8 */
+		--color-text-muted: 100 116 139; /* #64748B */
+
+		/* Border */
+		--color-border: 51 65 85; /* #334155 */
+		--color-border-hover: 71 85 105; /* #475569 */
+
+		/* UI Component Colors */
+		--background: 15 23 42 / <alpha-value>;
+		--foreground: 248 250 252 / <alpha-value>;
+
+		--muted: 30 41 59 / <alpha-value>;
+		--muted-foreground: 148 163 184 / <alpha-value>;
+
+		--popover: 30 41 59 / <alpha-value>;
+		--popover-foreground: 248 250 252 / <alpha-value>;
+
+		--card: 30 41 59 / <alpha-value>;
+		--card-foreground: 248 250 252 / <alpha-value>;
+
+		--border: 51 65 85 / <alpha-value>;
+		--input: 51 65 85 / <alpha-value>;
+
+		--primary: 185 28 28 / <alpha-value>;
+		--primary-foreground: 248 250 252 / <alpha-value>;
+
+		--secondary: 30 41 59 / <alpha-value>;
+		--secondary-foreground: 248 250 252 / <alpha-value>;
+
+		--accent: 51 65 85 / <alpha-value>;
+		--accent-foreground: 248 250 252 / <alpha-value>;
+
+		--destructive: 220 38 38 / <alpha-value>;
+		--destructive-foreground: 248 250 252 / <alpha-value>;
+
+		--ring: 185 28 28 / <alpha-value>;
+	}
 }
 
 @layer base {
-  * {
-    border-color: var(--border);
-  }
-  body {
-    background-color: rgb(var(--background));
-    color: rgb(var(--foreground));
-  }
-  
-  /* Custom font styles */
-  h1, h2, h3, h4, h5, h6 {
-    @apply font-bold;
-  }
-  
-  /* Monospace for numbers */
-  .font-mono {
-    font-family: 'JetBrains Mono', monospace;
-  }
+	* {
+		border-color: var(--border);
+	}
+	body {
+		background-color: rgb(var(--background));
+		color: rgb(var(--foreground));
+	}
+
+	/* Custom font styles */
+	h1,
+	h2,
+	h3,
+	h4,
+	h5,
+	h6 {
+		@apply font-bold;
+	}
+
+	/* Monospace for numbers */
+	.font-mono {
+		font-family: "JetBrains Mono", monospace;
+	}
 }
 
 /* RTL support */
 html[dir="rtl"] {
-  text-align: right;
+	text-align: right;
 }
 
 /* Scrollbar styling */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+	width: 8px;
+	height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background-color: #1e293b;
+	background-color: #1e293b;
 }
 
 ::-webkit-scrollbar-thumb {
-  background-color: #475569;
-  border-radius: 0.375rem;
+	background-color: #475569;
+	border-radius: 0.375rem;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background-color: #64748b;
+	background-color: #64748b;
 }

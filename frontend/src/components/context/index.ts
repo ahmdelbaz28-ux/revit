@@ -1,10 +1,10 @@
-export { ContextPanel } from './ContextPanel';
 export type {
-  ContextPanelKind,
-  ContextPanelProps,
-  ContextPanelProperty,
-  ContextPanelSelection,
-  ContextPanelSeverity,
-  ContextPanelStatus,
-  ContextPanelWarning,
-} from './ContextPanel';
+	ContextPanelKind,
+	ContextPanelProperty,
+	ContextPanelProps,
+	ContextPanelSelection,
+	ContextPanelSeverity,
+	ContextPanelStatus,
+	ContextPanelWarning,
+} from "./ContextPanel";
+export { ContextPanel } from "./ContextPanel";

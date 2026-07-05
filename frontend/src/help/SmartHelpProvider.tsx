@@ -5,30 +5,32 @@
  * This file is kept as a stub for backward compatibility with any code that
  * still imports it.
  */
-import { createContext, type ReactNode } from 'react';
-import type { SmartHelpContextValue, HelpTopicId } from './types';
+import { createContext, type ReactNode } from "react";
+import type { HelpTopicId, SmartHelpContextValue } from "./types";
 
-export const SmartHelpContext = createContext<SmartHelpContextValue | null>(null);
+export const SmartHelpContext = createContext<SmartHelpContextValue | null>(
+	null,
+);
 
 const noop = () => {};
 
 const defaultValue: SmartHelpContextValue = {
-  open: false,
-  setOpen: noop,
-  searchQuery: '',
-  setSearchQuery: noop,
-  selectedTopicId: null,
-  setSelectedTopicId: noop,
-  topics: [],
-  categories: [],
-  searchResults: [],
-  navigateToTopic: noop,
+	open: false,
+	setOpen: noop,
+	searchQuery: "",
+	setSearchQuery: noop,
+	selectedTopicId: null,
+	setSelectedTopicId: noop,
+	topics: [],
+	categories: [],
+	searchResults: [],
+	navigateToTopic: noop,
 };
 
 export function SmartHelpProvider({ children }: { children: ReactNode }) {
-  return (
-    <SmartHelpContext.Provider value={defaultValue}>
-      {children}
-    </SmartHelpContext.Provider>
-  );
+	return (
+		<SmartHelpContext.Provider value={defaultValue}>
+			{children}
+		</SmartHelpContext.Provider>
+	);
 }

@@ -4,103 +4,103 @@
 
 /* Headings */
 h1 {
-  @apply text-2xl font-bold text-slate-100;
+	@apply text-2xl font-bold text-slate-100;
 }
 
 h2 {
-  @apply text-xl font-bold text-slate-100;
+	@apply text-xl font-bold text-slate-100;
 }
 
 h3 {
-  @apply text-lg font-semibold text-slate-100;
+	@apply text-lg font-semibold text-slate-100;
 }
 
 h4 {
-  @apply text-base font-semibold text-slate-100;
+	@apply text-base font-semibold text-slate-100;
 }
 
 h5 {
-  @apply text-sm font-semibold text-slate-100;
+	@apply text-sm font-semibold text-slate-100;
 }
 
 h6 {
-  @apply text-xs font-semibold text-slate-100;
+	@apply text-xs font-semibold text-slate-100;
 }
 
 /* Body Text */
 .text-xxs {
-  @apply text-xs;
+	@apply text-xs;
 }
 
 .text-xs {
-  @apply text-xs leading-4;
+	@apply text-xs leading-4;
 }
 
 .text-sm {
-  @apply text-sm leading-5;
+	@apply text-sm leading-5;
 }
 
 .text-base {
-  @apply text-base leading-6;
+	@apply text-base leading-6;
 }
 
 .text-lg {
-  @apply text-lg leading-7;
+	@apply text-lg leading-7;
 }
 
 .text-xl {
-  @apply text-xl leading-8;
+	@apply text-xl leading-8;
 }
 
 .text-2xl {
-  @apply text-2xl leading-9;
+	@apply text-2xl leading-9;
 }
 
 /* Font weights */
 .font-display {
-  @apply font-bold;
+	@apply font-bold;
 }
 
 .font-body {
-  @apply font-normal;
+	@apply font-normal;
 }
 
 .font-caption {
-  @apply font-normal text-xs;
+	@apply font-normal text-xs;
 }
 
 /* Monospace for numbers */
 .number-display {
-  font-family: 'JetBrains Mono', monospace;
-  @apply font-mono;
+	font-family: "JetBrains Mono", monospace;
+	@apply font-mono;
 }
 
 /* Fire Alarm specific text styles */
 .fire-alarm-title {
-  @apply text-lg font-bold text-slate-100;
+	@apply text-lg font-bold text-slate-100;
 }
 
 .fire-alarm-content {
-  @apply text-base text-slate-200;
+	@apply text-base text-slate-200;
 }
 
 .fire-alarm-detail {
-  @apply text-sm text-slate-400;
+	@apply text-sm text-slate-400;
 }
 
 /* Status text colors */
 .status-normal {
-  @apply text-emerald-400;
+	@apply text-emerald-400;
 }
 
 .status-warning {
-  @apply text-amber-400;
+	@apply text-amber-400;
 }
 
 .status-danger {
-  @apply text-red-400;
+	@apply text-red-400;
 }
 
 .status-info {
-  @apply text-blue-400;
+	@apply text-blue-400;
 }

@@ -1,7 +1,7 @@
-export { Header } from "./Header";
-export { StatusGauges } from "./StatusGauges";
+export { AnimatedBar, MiniIndicator, ThermalLegend } from "../ThermalLegend";
 export { ControlPanel } from "./ControlPanel";
 export { EventLog } from "./EventLog";
+export { Header } from "./Header";
 export { HelpDrawer } from "./HelpDrawer";
 export { Scene3D } from "./Scene3D";
-export { ThermalLegend, MiniIndicator, AnimatedBar } from "../ThermalLegend";
+export { StatusGauges } from "./StatusGauges";

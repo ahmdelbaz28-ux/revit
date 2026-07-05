@@ -5,13 +5,13 @@
  * Accepts all legacy props but renders nothing.
  */
 interface SmartHelpDrawerProps {
-  open?: boolean;
-  onOpenChange?: (open: boolean) => void;
-  initialContextId?: string;
-  initialSearch?: string;
-  [key: string]: unknown;
+	open?: boolean;
+	onOpenChange?: (open: boolean) => void;
+	initialContextId?: string;
+	initialSearch?: string;
+	[key: string]: unknown;
 }
 
 export function SmartHelpDrawer(_props: SmartHelpDrawerProps) {
-  return null;
+	return null;
 }

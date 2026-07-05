@@ -2,19 +2,19 @@
 @import "tailwindcss";
 
 :root {
-  --color-background: #0f172a;
-  --color-foreground: #e2e8f0;
-  --color-primary: #ea580c;
-  --color-primary-foreground: #ffffff;
-  --color-muted: #1e293b;
-  --color-muted-foreground: #94a3b8;
-  --color-border: #334155;
-  --color-card: #1e293b;
-  --color-card-foreground: #e2e8f0;
-  --color-destructive: #ef4444;
-  --color-accent: #1e293b;
-  --color-accent-foreground: #e2e8f0;
-  --radius: 0.5rem;
+	--color-background: #0f172a;
+	--color-foreground: #e2e8f0;
+	--color-primary: #ea580c;
+	--color-primary-foreground: #ffffff;
+	--color-muted: #1e293b;
+	--color-muted-foreground: #94a3b8;
+	--color-border: #334155;
+	--color-card: #1e293b;
+	--color-card-foreground: #e2e8f0;
+	--color-destructive: #ef4444;
+	--color-accent: #1e293b;
+	--color-accent-foreground: #e2e8f0;
+	--radius: 0.5rem;
 }
 
 @theme {
@@ -34,21 +34,21 @@
 }
 
 * {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
 }
 
 body {
-  font-family: Inter, system-ui, -apple-system, sans-serif;
-  background-color: var(--color-background);
-  color: var(--color-foreground);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+	font-family: Inter, system-ui, -apple-system, sans-serif;
+	background-color: var(--color-background);
+	color: var(--color-foreground);
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
 }
 
 #root {
-  min-height: 100vh;
+	min-height: 100vh;
 }
 
 /*
@@ -59,91 +59,126 @@ body {
 
 /* Ensure visible focus indicators for keyboard navigation */
 *:focus-visible {
-  outline: 2px solid #6366f1;
-  outline-offset: 2px;
-  border-radius: 4px;
+	outline: 2px solid #6366f1;
+	outline-offset: 2px;
+	border-radius: 4px;
 }
 
 /* Remove default focus ring for mouse users */
 *:focus:not(:focus-visible) {
-  outline: none;
+	outline: none;
 }
 
 /* Scrollbar styling */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+	width: 8px;
+	height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--color-muted);
+	background: var(--color-muted);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--color-border);
-  border-radius: var(--radius);
+	background: var(--color-border);
+	border-radius: var(--radius);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-muted-foreground);
+	background: var(--color-muted-foreground);
 }
 
 /* Custom Animations for Visual Enhancements */
 @keyframes gradient-shift {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+	0% {
+		background-position: 0% 50%;
+	}
+	50% {
+		background-position: 100% 50%;
+	}
+	100% {
+		background-position: 0% 50%;
+	}
 }
 
 .animate-gradient-shift {
-  background-size: 200% 200%;
-  animation: gradient-shift 15s ease infinite;
+	background-size: 200% 200%;
+	animation: gradient-shift 15s ease infinite;
 }
 
 @keyframes pulse-slow {
-  0%, 100% { opacity: 0.3; transform: scale(1); }
-  50% { opacity: 0.5; transform: scale(1.05); }
+	0%,
+	100% {
+		opacity: 0.3;
+		transform: scale(1);
+	}
+	50% {
+		opacity: 0.5;
+		transform: scale(1.05);
+	}
 }
 
 .animate-pulse-slow {
-  animation: pulse-slow 8s ease-in-out infinite;
+	animation: pulse-slow 8s ease-in-out infinite;
 }
 
 @keyframes pulse-slower {
-  0%, 100% { opacity: 0.2; transform: scale(1); }
-  50% { opacity: 0.4; transform: scale(1.08); }
+	0%,
+	100% {
+		opacity: 0.2;
+		transform: scale(1);
+	}
+	50% {
+		opacity: 0.4;
+		transform: scale(1.08);
+	}
 }
 
 .animate-pulse-slower {
-  animation: pulse-slower 12s ease-in-out infinite;
+	animation: pulse-slower 12s ease-in-out infinite;
 }
 
 /* Status pulse animation */
 @keyframes status-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 currentColor; }
-  50% { box-shadow: 0 0 0 4px transparent; }
+	0%,
+	100% {
+		box-shadow: 0 0 0 0 currentColor;
+	}
+	50% {
+		box-shadow: 0 0 0 4px transparent;
+	}
 }
 
 /* Slide in animation for help drawer content */
 @keyframes slide-in-from-right {
-  from { transform: translateX(1rem); opacity: 0; }
-  to { transform: translateX(0); opacity: 1; }
+	from {
+		transform: translateX(1rem);
+		opacity: 0;
+	}
+	to {
+		transform: translateX(0);
+		opacity: 1;
+	}
 }
 
 .animate-in {
-  animation-duration: 500ms;
-  animation-timing-function: ease-out;
+	animation-duration: 500ms;
+	animation-timing-function: ease-out;
 }
 
 .slide-in-from-right-4 {
-  animation-name: slide-in-from-right;
+	animation-name: slide-in-from-right;
 }
 
 .fade-in {
-  animation: fade-in 300ms ease-out;
+	animation: fade-in 300ms ease-out;
 }
 
 @keyframes fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
 }

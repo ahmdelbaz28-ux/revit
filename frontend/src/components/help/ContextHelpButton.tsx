@@ -4,5 +4,5 @@
  * Replaced by shared/ContextualHelpButton.tsx.
  */
 export function ContextHelpButton() {
-  return null;
+	return null;
 }

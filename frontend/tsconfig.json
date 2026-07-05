@@ -1,40 +1,40 @@
 {
-  "compilerOptions": {
-    "target": "ES2022",
-    "useDefineForClassFields": true,
-    "lib": ["es2022", "dom", "dom.iterable"],
-    "module": "ESNext",
+	"compilerOptions": {
+		"target": "ES2022",
+		"useDefineForClassFields": true,
+		"lib": ["es2022", "dom", "dom.iterable"],
+		"module": "ESNext",
 
-    /* Type Safety — strict mode enabled
-     * NOTE: Some existing files have violations that need fixing:
-     * - src/services/digitalTwinApi.ts: null checks needed (strictNullChecks)
-     * - src/pages/EngineeringPage.tsx: unused imports
-     * - src/pages/FireAlarmPage.tsx: missing override keyword
-     * - src/pages/ReportsPage.tsx: unused imports/variables
-     * TODO: Fix these violations and enable noUnusedLocals, noUnusedParameters,
-     * noImplicitOverride, noPropertyAccessFromIndexSignature, noUncheckedIndexedAccess
-     */
-    "strict": true,
-    "noFallthroughCasesInSwitch": true,
+		/* Type Safety — strict mode enabled
+		 * NOTE: Some existing files have violations that need fixing:
+		 * - src/services/digitalTwinApi.ts: null checks needed (strictNullChecks)
+		 * - src/pages/EngineeringPage.tsx: unused imports
+		 * - src/pages/FireAlarmPage.tsx: missing override keyword
+		 * - src/pages/ReportsPage.tsx: unused imports/variables
+		 * TODO: Fix these violations and enable noUnusedLocals, noUnusedParameters,
+		 * noImplicitOverride, noPropertyAccessFromIndexSignature, noUncheckedIndexedAccess
+		 */
+		"strict": true,
+		"noFallthroughCasesInSwitch": true,
 
-    /* skipLibCheck kept true for Vite ecosystem compatibility
-     * (many @types packages have cross-version conflicts) */
-    "skipLibCheck": true,
+		/* skipLibCheck kept true for Vite ecosystem compatibility
+		 * (many @types packages have cross-version conflicts) */
+		"skipLibCheck": true,
 
-    /* Bundler mode */
-    "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "noEmit": true,
-    "jsx": "preserve",
+		/* Bundler mode */
+		"moduleResolution": "bundler",
+		"allowImportingTsExtensions": true,
+		"resolveJsonModule": true,
+		"isolatedModules": true,
+		"noEmit": true,
+		"jsx": "preserve",
 
-    "esModuleInterop": true,
-    "types": ["node", "vite/client"],
-    "paths": {
-      "@/*": ["./src/*"]
-    }
-  },
-  "include": ["src/**/*", "mockupPreviewPlugin.ts", "vite.config.ts"],
-  "exclude": ["node_modules", "build", "dist"]
+		"esModuleInterop": true,
+		"types": ["node", "vite/client"],
+		"paths": {
+			"@/*": ["./src/*"]
+		}
+	},
+	"include": ["src/**/*", "mockupPreviewPlugin.ts", "vite.config.ts"],
+	"exclude": ["node_modules", "build", "dist"]
 }

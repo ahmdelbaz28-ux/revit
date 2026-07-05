@@ -1,40 +1,40 @@
-import { renderHook, act } from "@testing-library/react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { useTelemetryStream } from "../useTelemetryStream";
+import { act, renderHook } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { dataService } from "@/services/dataService";
 import { setState } from "@/store/simpleStore";
+import { useTelemetryStream } from "../useTelemetryStream";
 
 describe("useTelemetryStream", () => {
-  beforeEach(() => {
-    setState({
-      dataMode: 'mock',
-      connectionStatus: 'connected',
-    });
-    vi.clearAllMocks();
-  });
+	beforeEach(() => {
+		setState({
+			dataMode: "mock",
+			connectionStatus: "connected",
+		});
+		vi.clearAllMocks();
+	});
 
-  it("should cleanup resources correctly after 100 mount/unmount cycles", () => {
-    const disconnectSpy = vi.spyOn(dataService, "disconnect");
-    
-    // Set to live to trigger connect/disconnect
-    setState({ dataMode: 'live' });
+	it("should cleanup resources correctly after 100 mount/unmount cycles", () => {
+		const disconnectSpy = vi.spyOn(dataService, "disconnect");
 
-    for (let i = 0; i < 100; i++) {
-      const { unmount } = renderHook(() => useTelemetryStream());
-      unmount();
-    }
+		// Set to live to trigger connect/disconnect
+		setState({ dataMode: "live" });
 
-    // Each unmount should call disconnect.
-    expect(disconnectSpy).toHaveBeenCalledTimes(100);
-  });
+		for (let i = 0; i < 100; i++) {
+			const { unmount } = renderHook(() => useTelemetryStream());
+			unmount();
+		}
 
-  it("should update connectionStatus on disconnect", () => {
-    const { result } = renderHook(() => useTelemetryStream());
-    
-    act(() => {
-      setState({ connectionStatus: 'disconnected' });
-    });
+		// Each unmount should call disconnect.
+		expect(disconnectSpy).toHaveBeenCalledTimes(100);
+	});
 
-    expect(result.current.connectionStatus).toBe('disconnected');
-  });
+	it("should update connectionStatus on disconnect", () => {
+		const { result } = renderHook(() => useTelemetryStream());
+
+		act(() => {
+			setState({ connectionStatus: "disconnected" });
+		});
+
+		expect(result.current.connectionStatus).toBe("disconnected");
+	});
 });
