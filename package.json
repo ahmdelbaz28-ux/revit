@@ -1,9 +1,9 @@
 {
-  "dependencies": {
-    "typescript": "^6.0.3"
-  },
-  "devDependencies": {
-    "@biomejs/biome": "2.5.2",
-    "puppeteer": "^25.2.1"
-  }
+	"dependencies": {
+		"typescript": "^6.0.3"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "2.5.2",
+		"puppeteer": "^25.2.1"
+	}
 }
