@@ -37,6 +37,7 @@ from backend.response import safe_filename as _safe_filename
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/projects/{project_id}/reports", tags=["reports"])
+project_router = APIRouter(prefix="/reports", tags=["reports"])
 
 
 def _verify_project(project_id: str) -> None:
@@ -259,11 +260,14 @@ async def generate_report(project_id: str, input_data: GenerateReportInput):
     _verify_project(project_id)
     db = get_db()
 
+    report_type = input_data.type or input_data.reportType or "summary"
+    parameters = input_data.parameters or input_data.filters or {}
+
     report_data = {
         "id": str(uuid.uuid4()),
-        "type": input_data.type,
-        "name": input_data.name or f"{input_data.type} Report",
-        "parameters": input_data.parameters or {},
+        "type": report_type,
+        "name": input_data.name or f"{report_type} Report",
+        "parameters": parameters,
         "status": "pending",
     }
 
@@ -272,7 +276,7 @@ async def generate_report(project_id: str, input_data: GenerateReportInput):
 
     # Generate report content (synchronously for simplicity)
     try:
-        content = _generate_report_content(input_data.type, project_id)
+        content = _generate_report_content(report_type, project_id)
         now = datetime.now(timezone.utc).isoformat()
         db.update_report(
             project_id,
@@ -302,6 +306,56 @@ async def generate_report(project_id: str, input_data: GenerateReportInput):
     # Return the updated report — success flag reflects the report's ACTUAL status,
     # not just that the endpoint didn't crash. Previous bug: always returned
     # success:true even when the report generation failed.
+    result = db.get_report(project_id, report["id"])
+    report_success = result.get("status") != "failed"
+    return {"data": result, "success": report_success}
+
+
+@project_router.post("/generate", status_code=200, dependencies=[Depends(require_permission(Permission.REPORT_GENERATE))])
+async def generate_global_report(input_data: GenerateReportInput):
+    """Generate a report globally using the first available project for compatibility."""
+    db = get_db()
+    projects = db.list_projects(page=1, limit=1)
+    if not projects or not projects.get("data"):
+        raise HTTPException(status_code=404, detail="No projects found to generate report")
+
+    project_id = projects["data"][0]["id"]
+    report_type = input_data.type or input_data.reportType or "summary"
+    parameters = input_data.parameters or input_data.filters or {}
+
+    report_data = {
+        "id": str(uuid.uuid4()),
+        "type": report_type,
+        "name": input_data.name or f"{report_type} Report",
+        "parameters": parameters,
+        "status": "pending",
+    }
+
+    report = db.create_report(project_id, report_data)
+
+    try:
+        content = _generate_report_content(report_type, project_id)
+        now = datetime.now(timezone.utc).isoformat()
+        db.update_report(
+            project_id,
+            report["id"],
+            {
+                "status": "completed",
+                "completedAt": now,
+                "parameters": {**report.get("parameters", {}), "content": content},
+            },
+        )
+    except Exception as e:
+        logger.exception("Global report generation failed", exc_info=True)
+        db.update_report(
+            project_id,
+            report["id"],
+            {
+                "status": "failed",
+                "parameters": {**report.get("parameters", {}), "error": "Report generation failed. Contact administrator for details."},
+            },
+        )
+
     result = db.get_report(project_id, report["id"])
     report_success = result.get("status") != "failed"
     return {"data": result, "success": report_success}

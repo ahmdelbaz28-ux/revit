@@ -25,6 +25,27 @@ from backend.rbac import Permission
 from backend.response import success
 
 router = APIRouter(prefix="/projects/{project_id}/devices", tags=["devices"])
+project_router = APIRouter(prefix="/devices", tags=["devices"])
+
+
+@project_router.get("", dependencies=[Depends(require_permission(Permission.DEVICE_READ))])
+async def list_global_devices(
+    page: int = Query(1, ge=1),
+    limit: int = Query(20, ge=1, le=100),
+    sort: str = Query("createdAt"),
+    order: str = Query("desc"),
+):
+    """List devices globally or across the first project for compatibility."""
+    if order not in ("asc", "desc"):
+        order = "desc"
+    db = get_db()
+    projects = db.list_projects(page=1, limit=1)
+    if projects and projects.get("data"):
+        project_id = projects["data"][0]["id"]
+        result = db.list_devices(project_id, page=page, limit=limit, sort=_normalize_sort(sort), order=order)
+        validate_paginated(result, item_validator=validate_device)
+        return success(result)
+    return success({"data": [], "total": 0, "page": page, "limit": limit})
 
 
 def _verify_project(project_id: str) -> None:

@@ -268,9 +268,13 @@ class Report(BaseModel):
 class GenerateReportInput(BaseModel):
     """Input for generating a new report."""
 
-    type: str = Field(min_length=1, max_length=255)
+    type: str | None = Field(None, max_length=255)
     name: str | None = Field(default=None, max_length=255)
     parameters: dict | None = Field(default=None)
+
+    # Postman / Compatibility fields
+    reportType: str | None = None
+    filters: dict | None = None
 
     @field_validator("parameters")
     @classmethod

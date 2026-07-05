@@ -583,6 +583,7 @@ async def write_rvt_file(filepath: str, elements: List[Dict[str, Any]]) -> Dict[
 
 
 @router.post("/upload_rvt", tags=["revit"], dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])
+@router.post("/upload", tags=["revit"], dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])
 @limiter.limit("10/minute")
 async def upload_and_read_rvt(request: Request, file: UploadFile = File(...)) -> Dict[str, Any]:
     """
