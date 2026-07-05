@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import logging
 import os
+from typing import Any, Callable, Awaitable
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -73,7 +74,7 @@ class _RoleDevMiddleware(BaseHTTPMiddleware):
     request.state.fireai_role based on the validated API key.
     """
 
-    async def dispatch(self, request: Request, call_next):
+    async def dispatch(self, request: Request, call_next: Callable[[Request], Awaitable[Any]]):  # noqa: ANN401
         env = os.getenv("FIREAI_ENV", "production").lower()
         if env in ("development", "testing"):
             # Only set if not already set by an upstream middleware.
@@ -116,7 +117,7 @@ if _env in ("production", "prod"):
         # Production without explicit CORS_ORIGINS — fail safe.
         # The platform operator must declare trusted origins.
         raise RuntimeError(
-            "CORS_ORIGINS environment variable is REQUIRED in production. "
+            "CORS_ORIGINS environment variable is REQUIRED in production. "  # noqa: ISC001
             "Set it to a comma-separated list of trusted origins, e.g. "
             "'https://app.example.com,https://admin.example.com'. "
             "Wildcards are forbidden in production for life-safety audit reasons."
@@ -197,7 +198,7 @@ if __name__ == "__main__":
     _bind_host = os.getenv("FIREAI_BIND_HOST", "127.0.0.1")
     if _bind_host == "0.0.0.0":
         logger.warning(
-            "Binding to 0.0.0.0 — API will be reachable from the network. "
+            "Binding to 0.0.0.0 — API will be reachable from the network. "  # noqa: ISC001
             "Use a reverse proxy (nginx/traefik) in production. "
             "Set FIREAI_BIND_HOST=127.0.0.1 to restore loopback-only binding."
         )
