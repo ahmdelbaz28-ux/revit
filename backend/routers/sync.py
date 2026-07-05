@@ -28,8 +28,8 @@ from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisco
 
 from backend.api_keys import validate_api_key
 from backend.auth import require_permission
-from backend.rbac import Permission
 from backend.database import get_db
+from backend.rbac import Permission
 
 logger = logging.getLogger(__name__)
 

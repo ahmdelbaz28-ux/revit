@@ -307,24 +307,24 @@ def _validate_input_path(path_str: str) -> Path:
     Validate input path to prevent path traversal attacks.
     """
     path = Path(path_str)
-    
+
     # Resolve the path to handle any '..' or symbolic links
     resolved_path = path.resolve()
-    
+
     # Get the current working directory as the base for allowed paths
     allowed_base = Path.cwd().resolve()
-    
+
     # Check if the resolved path is within the allowed base directory
     try:
         resolved_path.relative_to(allowed_base)
     except ValueError:
         raise ValueError(f"Path '{path_str}' is outside allowed directory. Path traversal detected.")
-    
+
     # Additional check: ensure the path doesn't contain suspicious patterns
     path_str_lower = str(resolved_path).lower()
     if '..' in path_str_lower or any(char in path_str_lower for char in ['\\', '/..', '../']):
         raise ValueError(f"Suspicious path pattern detected in '{path_str}'.")
-    
+
     return path
 
 

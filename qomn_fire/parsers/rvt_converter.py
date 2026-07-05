@@ -23,7 +23,6 @@ from pathlib import Path
 
 from parsers._path_security import (
     UnsafePathError,
-    validate_file_size,
     validate_input_path,
 )
 from qomn_fire.core.errors import ConversionError, Result

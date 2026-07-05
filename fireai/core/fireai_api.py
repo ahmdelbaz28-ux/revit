@@ -332,10 +332,10 @@ async def analyse_room(request: Request, body: AnalyseRoomRequest) -> RoomResult
             forced_type = DetectorType(body.forced_detector_type)
         except ValueError:
             raise HTTPException(status_code=422, detail=f"Unknown detector type: {body.forced_detector_type}")
-    
+
     if forced_type:
         room_spec.detector_type = forced_type
-        
+
     system = _get_fireai_system()
     result = system.analyse_room(
         room_spec=room_spec,

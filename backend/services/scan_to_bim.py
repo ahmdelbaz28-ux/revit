@@ -28,7 +28,6 @@ from __future__ import annotations
 
 import json
 import logging
-import math
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -114,7 +113,7 @@ UNIT_CONVERSION = {
 class BIMRoom:
     """
     Represents a BIM room element extracted from OCR data.
-    
+
     Attributes:
         id: Unique identifier for the room
         name: Human-readable room name
@@ -138,7 +137,7 @@ class BIMRoom:
 class ScanToBIMResult:
     """
     Result of the ScanToBIM process.
-    
+
     Attributes:
         success: Whether the process was successful
         rooms: List of extracted BIM rooms
@@ -158,85 +157,85 @@ class ScanToBIMResult:
 class ScanToBIMService:
     """
     ScanToBIM Service for converting OCR results to BIM-ready room data.
-    
+
     Processes OCR-extracted text and converts it to structured BIM elements
     with proper validation, classification, and audit trails.
-    
+
     Usage:
         scanner = ScanToBIMService()
         result = scanner.process_scan("floor_plan.pdf")
     """
-    
+
     def __init__(self, ocr_service_instance: Optional[OCRService] = None) -> None:
         self.logger = logging.getLogger(f"{__name__}.ScanToBIMService")
         self.ocr_service = ocr_service_instance or ocr_service
-    
+
     def _normalize_room_name(self, name: str) -> str:
         """
         Normalize room names to standard format.
-        
+
         Args:
             name: Raw room name from OCR
-            
+
         Returns:
             Normalized room name
         """
         # Remove special characters and extra whitespace
         normalized = re.sub(r'[^\w\s\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]', ' ', name)
         normalized = ' '.join(normalized.split()).strip()
-        
+
         # Convert to title case for consistency
         if normalized:
             normalized = normalized[0].upper() + normalized[1:].lower()
-        
+
         return normalized
-    
+
     def _classify_room_type(self, room_name: str) -> str:
         """
         Classify room type based on name patterns.
-        
+
         Args:
             room_name: Room name to classify
-            
+
         Returns:
             Classified room type (e.g., 'OFFICE', 'BEDROOM', etc.)
         """
         room_name_lower = room_name.lower()
-        
+
         for room_type, patterns in ROOM_TYPE_PATTERNS.items():
             for pattern in patterns:
                 if pattern.search(room_name_lower):
                     return room_type
-        
+
         # If no specific type found, return 'OTHER'
         return 'OTHER'
-    
+
     def _validate_area(self, area: float, room_name: str) -> Tuple[bool, str]:
         """
         Validate that the area is within reasonable bounds.
-        
+
         Args:
             area: Area value to validate
             room_name: Room name for context
-            
+
         Returns:
             Tuple of (is_valid, reason) where is_valid is True if area is valid
         """
         if area < BIM_MIN_ROOM_AREA:
             return False, f"Area {area}m² too small for room '{room_name}' (minimum: {BIM_MIN_ROOM_AREA}m²)"
-        
+
         if area > BIM_MAX_ROOM_AREA:
             return False, f"Area {area}m² too large for room '{room_name}' (maximum: {BIM_MAX_ROOM_AREA}m²)"
-        
+
         return True, ""
-    
+
     def _convert_units(self, value_str: str) -> Tuple[float, str]:
         """
         Convert area values with units to square meters.
-        
+
         Args:
             value_str: String containing value and unit (e.g., "25.5 m2", "300 sqft")
-            
+
         Returns:
             Tuple of (value_in_square_meters, original_unit)
         """
@@ -244,39 +243,39 @@ class ScanToBIMService:
         match = re.match(r'(\d+\.?\d*)\s*(.*)', value_str.strip())
         if not match:
             return 0.0, ''
-        
+
         value = float(match.group(1))
         unit_part = match.group(2).lower().strip()
-        
+
         # Look for unit in our conversion table
         for unit, factor in UNIT_CONVERSION.items():
             if unit in unit_part:
                 converted_value = value * factor
                 return converted_value, unit
-        
+
         # If no unit found, assume square meters
         return value, 'm2'
-    
+
     def _create_bim_room(self, name: str, area: float, confidence: float) -> BIMRoom:
         """
         Create a BIM room object with validation and classification.
-        
+
         Args:
             name: Room name
             area: Room area in square meters
             confidence: OCR confidence score
-            
+
         Returns:
             BIMRoom object
         """
         normalized_name = self._normalize_room_name(name)
         room_type = self._classify_room_type(normalized_name)
         is_valid, validation_msg = self._validate_area(area, normalized_name)
-        
+
         notes = []
         if not is_valid:
             notes.append(validation_msg)
-        
+
         return BIMRoom(
             id=f"room_{abs(hash(normalized_name + str(area))) % 1000000}",
             name=normalized_name,
@@ -285,22 +284,22 @@ class ScanToBIMService:
             confidence=round(confidence, 2),
             notes=notes
         )
-    
+
     def process_scan(self, file_path: str | Path, lang: str = "eng+ara") -> ScanToBIMResult:
         """
         Process a scanned document to extract BIM-ready room data.
-        
+
         Args:
             file_path: Path to the scanned PDF or image file
             lang: Language codes to use for OCR (default: eng+ara)
-            
+
         Returns:
             ScanToBIMResult with extracted rooms and audit information
         """
         file_path = Path(file_path)
-        
+
         self.logger.info(f"Starting ScanToBIM process for: {file_path}")
-        
+
         # First, perform OCR on the file
         try:
             ocr_result = self.ocr_service.process_file(file_path, lang=lang)
@@ -313,7 +312,7 @@ class ScanToBIMService:
                 audit_trail={'error': str(e), 'file_path': str(file_path)},
                 requires_human_review=True
             )
-        
+
         if not ocr_result['success']:
             return ScanToBIMResult(
                 success=False,
@@ -322,22 +321,22 @@ class ScanToBIMService:
                 audit_trail=ocr_result.get('audit_trail', {}),
                 requires_human_review=True
             )
-        
+
         # Extract room-area pairs from OCR results
         room_area_pairs = ocr_result.get('room_areas', [])
         standalone_areas = ocr_result.get('areas_only', [])
         extracted_text = ocr_result.get('extracted_text', '')
         avg_confidence = ocr_result['statistics']['average_confidence']
-        
+
         # Create BIM rooms from room-area pairs
         bim_rooms = []
         warnings = []
-        
+
         for room_name, area_value in room_area_pairs:
             # Create BIM room with the average confidence from OCR
             bim_room = self._create_bim_room(room_name, area_value, avg_confidence)
             bim_rooms.append(bim_room)
-        
+
         # For standalone areas, try to infer room names from surrounding text
         if standalone_areas and extracted_text:
             # Extract potential room names from the text
@@ -348,7 +347,7 @@ class ScanToBIMService:
             ]:
                 matches = pattern.findall(extracted_text)
                 potential_names.extend(matches)
-            
+
             # Assign standalone areas to potential names
             for i, area_value in enumerate(standalone_areas):
                 if i < len(potential_names):
@@ -356,14 +355,14 @@ class ScanToBIMService:
                 else:
                     # If no names available, create generic name
                     room_name = f"Room_{i+1}"
-                
+
                 bim_room = self._create_bim_room(room_name, area_value, avg_confidence * 0.8)  # Lower confidence for inferred rooms
                 bim_rooms.append(bim_room)
-        
+
         # Generate statistics
         valid_rooms = [room for room in bim_rooms if not room.notes or all('too small' not in note and 'too large' not in note for note in room.notes)]
         invalid_rooms = [room for room in bim_rooms if room.notes and any('too small' in note or 'too large' in note for note in room.notes)]
-        
+
         statistics = {
             'total_rooms_identified': len(bim_rooms),
             'valid_rooms': len(valid_rooms),
@@ -373,12 +372,12 @@ class ScanToBIMService:
             'average_confidence': avg_confidence,
             'room_types_found': list(set(room.room_type for room in bim_rooms)),
         }
-        
+
         # Add warnings for invalid rooms
         for room in invalid_rooms:
             for note in room.notes:
                 warnings.append(f"Room '{room.name}' ({room.area}m²): {note}")
-        
+
         # Prepare audit trail per NFPA 72-2022 §10.6
         audit_trail = {
             'timestamp': __import__('time').time(),
@@ -391,7 +390,7 @@ class ScanToBIMService:
             'invalid_rooms': len(invalid_rooms),
             'processing_notes': 'OCR-derived BIM data requires professional review',
         }
-        
+
         result = ScanToBIMResult(
             success=True,
             rooms=bim_rooms,
@@ -400,23 +399,23 @@ class ScanToBIMService:
             requires_human_review=True,  # OCR results always require human review
             warnings=warnings
         )
-        
+
         self.logger.info(
             f"ScanToBIM process completed for {file_path}. "
             f"Rooms extracted: {len(bim_rooms)} (valid: {len(valid_rooms)}, invalid: {len(invalid_rooms)}). "
             f"Requires review: True"
         )
-        
+
         return result
-    
+
     def export_to_ifc(self, rooms: List[BIMRoom], output_path: str | Path) -> bool:
         """
         Export BIM rooms to IFC format (placeholder implementation).
-        
+
         Args:
             rooms: List of BIM rooms to export
             output_path: Path for the output IFC file
-            
+
         Returns:
             True if export was successful, False otherwise
         """
@@ -424,7 +423,7 @@ class ScanToBIMService:
         # an IFC library like ifcopenshell to create proper IFC entities
         try:
             output_path = Path(output_path)
-            
+
             # Create a simple JSON representation as a placeholder
             ifc_data = {
                 'header': {
@@ -445,24 +444,24 @@ class ScanToBIMService:
                     for room in rooms
                 ]
             }
-            
+
             with open(output_path, 'w', encoding='utf-8') as f:
                 json.dump(ifc_data, f, indent=2, ensure_ascii=False)
-            
+
             self.logger.info(f"Exported {len(rooms)} rooms to IFC-compatible JSON: {output_path}")
             return True
-            
+
         except Exception as e:
             self.logger.error(f"Failed to export to IFC: {e}")
             return False
-    
+
     def validate_bim_data(self, rooms: List[BIMRoom]) -> Dict[str, Any]:
         """
         Validate BIM data for consistency and completeness.
-        
+
         Args:
             rooms: List of BIM rooms to validate
-            
+
         Returns:
             Dictionary with validation results
         """
@@ -472,29 +471,29 @@ class ScanToBIMService:
             'issues': [],
             'summary': {}
         }
-        
+
         for room in rooms:
             # Check for required fields
             if not room.name:
                 validation_results['issues'].append(f"Room {room.id} has no name")
-            
+
             if room.area <= 0:
                 validation_results['issues'].append(f"Room {room.name} has invalid area: {room.area}")
-            
+
             # Check confidence threshold
             if room.confidence < 50:  # Low confidence
                 validation_results['issues'].append(f"Room {room.name} has low confidence: {room.confidence}%")
-            
+
             # If no issues for this room, increment valid counter
             room_issues = [issue for issue in validation_results['issues'] if room.name in issue]
             if not room_issues:
                 validation_results['valid_rooms'] += 1
-        
+
         validation_results['summary'] = {
             'valid_percentage': (validation_results['valid_rooms'] / validation_results['total_rooms']) * 100 if validation_results['total_rooms'] > 0 else 0,
             'has_issues': len(validation_results['issues']) > 0
         }
-        
+
         return validation_results
 
 

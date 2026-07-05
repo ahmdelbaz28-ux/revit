@@ -340,8 +340,10 @@ async def export_ifc(
         )
 
 
-from pydantic import BaseModel
 from typing import Optional
+
+from pydantic import BaseModel
+
 
 class ExportDataInput(BaseModel):
     exportType: str

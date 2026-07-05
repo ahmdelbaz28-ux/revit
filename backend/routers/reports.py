@@ -287,7 +287,7 @@ async def generate_report(project_id: str, input_data: GenerateReportInput):
                 "parameters": {**report.get("parameters", {}), "content": content},
             },
         )
-    except Exception as e:
+    except Exception:
         # M-4 FIX: Never store str(e) in report parameters. The old code  # NOSONAR
         # stored raw exception text in the database, which could include
         # file paths, variable names, and internal implementation details.
@@ -345,7 +345,7 @@ async def generate_global_report(input_data: GenerateReportInput):
                 "parameters": {**report.get("parameters", {}), "content": content},
             },
         )
-    except Exception as e:
+    except Exception:
         logger.exception("Global report generation failed", exc_info=True)
         db.update_report(
             project_id,
@@ -482,7 +482,7 @@ async def export_report(
                 status_code=501,
                 detail="PDF export requires the reportlab package",
             )
-        except Exception as e:
+        except Exception:
             # V113 SECURITY: Never expose str(e) to client
             logger.exception("PDF generation failed", exc_info=True)  # Use exception instead of error
             raise HTTPException(

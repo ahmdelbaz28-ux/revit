@@ -624,28 +624,28 @@ class DWGParser:
                 dir=tempfile.gettempdir()  # Explicitly use secure temp directory
             )
             os.close(temp_fd)
-            
+
             # V122 SECURITY: Use Path operations to ensure no path traversal occurs
             temp_path = Path(temp_path).resolve()
-            
+
             # V122 SECURITY: Explicitly separate command arguments to prevent injection
             # Use "--" to mark the end of options and ensure the path is treated as a positional argument
             cmd = [self.DXF_OUT_CMD, "--", "--file", str(dwg_path), "--output", str(temp_path)]
-            
+
             logger.debug(f"Executing command: {' '.join(cmd)}")
-            
+
             proc = subprocess.run(cmd, capture_output=True, timeout=60)
-            
+
             if proc.returncode != 0:
                 error = proc.stderr.decode() or proc.stdout.decode()
                 raise DWGConversionError(f"dxf-out failed: {error}")
-                
+
             if not temp_path.exists() or temp_path.stat().st_size == 0:
                 raise DWGConversionError("Empty DXF output")
-                
+
             return str(temp_path)
-            
-        except Exception as e:
+
+        except Exception:
             # Clean up temp file on failure
             try:
                 if 'temp_path' in locals():

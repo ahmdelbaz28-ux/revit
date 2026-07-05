@@ -28,15 +28,14 @@ OWASP Coverage:
 from __future__ import annotations
 
 import logging
-import os
 import re
 import tempfile
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 
 import pytesseract
-from PIL import Image
 from pdf2image import convert_from_path
+from PIL import Image
 
 logger = logging.getLogger(__name__)
 
@@ -77,19 +76,19 @@ MALICIOUS_PATTERNS = [
 class OCRService:
     """
     OCR Service for extracting text from PDFs and images.
-    
+
     Handles both scanned documents and image files, with multi-language support
     and pattern matching for BIM-relevant information.
-    
+
     Usage:
         ocr = OCRService()
         result = ocr.process_file("scanned_floor_plan.pdf")
     """
-    
+
     def __init__(self) -> None:
         self.logger = logging.getLogger(f"{__name__}.OCRService")
         self._validate_tesseract_installation()
-    
+
     def _validate_tesseract_installation(self) -> None:
         """Validate that Tesseract is installed and accessible."""
         try:
@@ -102,45 +101,45 @@ class OCRService:
                 "Tesseract OCR is required but not installed. "
                 "Please install Tesseract from https://tesseract-ocr.github.io/"
             ) from e
-    
+
     def _sanitize_extracted_text(self, text: str) -> str:
         """
         Sanitize extracted text to remove potentially malicious content.
-        
+
         Args:
             text: Raw text extracted by OCR
-            
+
         Returns:
             Sanitized text with potentially malicious patterns removed
         """
         # Apply sanitization patterns
         for pattern in MALICIOUS_PATTERNS:
             text = pattern.sub('', text)
-        
+
         # Remove excessive whitespace and normalize
         text = ' '.join(text.split())
-        
+
         return text
-    
+
     def _extract_room_names(self, text: str) -> List[Tuple[str, float]]:
         """
         Extract room names and associated area values from text.
-        
+
         Args:
             text: Text to search for room names and areas
-            
+
         Returns:
             List of tuples (room_name, area_value)
         """
         results = []
-        
+
         # Find all room names
         for pattern in ROOM_NAME_PATTERNS:
             matches = pattern.findall(text)
             for room_name in matches:
                 # Clean up the room name
                 clean_name = room_name.strip().upper()
-                
+
                 # Look for area values near this room name
                 # We'll search in a reasonable window around the match
                 match_pos = pattern.search(text)
@@ -148,7 +147,7 @@ class OCRService:
                     start_pos = max(0, match_pos.start() - 100)
                     end_pos = min(len(text), match_pos.end() + 100)
                     nearby_text = text[start_pos:end_pos]
-                    
+
                     # Find area values in nearby text
                     for area_pattern in AREA_VALUE_PATTERNS:
                         area_matches = area_pattern.findall(nearby_text)
@@ -159,21 +158,21 @@ class OCRService:
                                 break  # Only take the first area value found
                             except ValueError:
                                 continue
-        
+
         return results
-    
+
     def _extract_areas_only(self, text: str) -> List[float]:
         """
         Extract standalone area values from text.
-        
+
         Args:
             text: Text to search for area values
-            
+
         Returns:
             List of area values
         """
         results = []
-        
+
         for pattern in AREA_VALUE_PATTERNS:
             matches = pattern.findall(text)
             for area_str in matches:
@@ -182,17 +181,17 @@ class OCRService:
                     results.append(area_value)
                 except ValueError:
                     continue
-        
+
         return results
-    
+
     def _ocr_image(self, image: Image.Image, lang: str = "eng+ara") -> Dict[str, Any]:
         """
         Perform OCR on a single image.
-        
+
         Args:
             image: PIL Image to OCR
             lang: Language codes to use (default: eng+ara for English + Arabic)
-            
+
         Returns:
             Dictionary with OCR results including text and confidence scores
         """
@@ -201,72 +200,72 @@ class OCRService:
             image = image.convert('RGB')
         elif image.mode == 'RGBA':
             image = image.convert('RGB')
-        
+
         # Perform OCR with data including confidence scores
         data = pytesseract.image_to_data(
-            image, 
-            lang=lang, 
+            image,
+            lang=lang,
             output_type=pytesseract.Output.DICT,
             config='--psm 6'  # Assume single uniform block of text
         )
-        
+
         # Filter out empty text and low confidence results
         filtered_text = []
         total_confidence = 0
         valid_boxes = 0
-        
+
         for i in range(len(data['text'])):
             text_val = data['text'][i].strip()
             conf = int(data['conf'][i])
-            
+
             if text_val and conf >= OCR_MIN_CONFIDENCE:
                 filtered_text.append(text_val)
                 total_confidence += conf
                 valid_boxes += 1
-        
+
         extracted_text = ' '.join(filtered_text)
         avg_confidence = total_confidence / valid_boxes if valid_boxes > 0 else 0
-        
+
         return {
             'text': extracted_text,
             'confidence': avg_confidence,
             'word_count': len(filtered_text),
             'raw_data': data
         }
-    
+
     def process_file(self, file_path: str | Path, lang: str = "eng+ara") -> Dict[str, Any]:
         """
         Process a PDF or image file with OCR.
-        
+
         Args:
             file_path: Path to the PDF or image file to process
             lang: Language codes to use (default: eng+ara for English + Arabic)
-            
+
         Returns:
             Dictionary with OCR results including extracted text, confidence,
             room names, areas, and audit trail information
         """
         file_path = Path(file_path)
-        
+
         # Validate file exists and is within allowed size
         if not file_path.exists():
             raise FileNotFoundError(f"File does not exist: {file_path}")
-        
+
         file_size = file_path.stat().st_size
         if file_size > OCR_MAX_FILE_SIZE:
             raise ValueError(f"File too large ({file_size} bytes), max allowed: {OCR_MAX_FILE_SIZE}")
-        
+
         # Validate file type
         file_ext = file_path.suffix.lower()
         if file_ext not in ['.pdf', '.png', '.jpg', '.jpeg', '.tiff', '.bmp']:
             raise ValueError(f"Unsupported file type: {file_ext}. Supported: .pdf, .png, .jpg, .jpeg, .tiff, .bmp")
-        
+
         self.logger.info(f"Processing OCR for file: {file_path}, size: {file_size} bytes")
-        
+
         extracted_pages = []
         total_confidence = 0
         total_word_count = 0
-        
+
         try:
             if file_ext == '.pdf':
                 # Convert PDF to images
@@ -278,7 +277,7 @@ class OCRService:
                         fmt='png',
                         thread_count=2
                     )
-                    
+
                     for i, page_img in enumerate(pages):
                         page_result = self._ocr_image(page_img, lang=lang)
                         extracted_pages.append({
@@ -301,24 +300,24 @@ class OCRService:
                 })
                 total_confidence = result['confidence']
                 total_word_count = result['word_count']
-        
+
         except Exception as e:
             self.logger.error(f"OCR processing failed for {file_path}: {e}")
             raise
-        
+
         # Combine all extracted text
         combined_text = ' '.join([page['text'] for page in extracted_pages])
-        
+
         # Sanitize the extracted text
         sanitized_text = self._sanitize_extracted_text(combined_text)
-        
+
         # Extract room names and areas
         room_areas = self._extract_room_names(sanitized_text)
         standalone_areas = self._extract_areas_only(sanitized_text)
-        
+
         # Calculate average confidence across all pages
         avg_confidence = total_confidence / len(extracted_pages) if extracted_pages else 0
-        
+
         # Prepare audit trail information (NFPA 72-2022 §10.6)
         audit_info = {
             'timestamp': __import__('time').time(),
@@ -331,7 +330,7 @@ class OCRService:
             'total_word_count': total_word_count,
             'page_count': len(extracted_pages)
         }
-        
+
         result = {
             'success': True,
             'audit_trail': audit_info,
@@ -346,13 +345,13 @@ class OCRService:
                 'total_words_extracted': total_word_count
             }
         }
-        
+
         self.logger.info(
             f"OCR processing completed for {file_path}. "
             f"Rooms found: {len(room_areas)}, Areas found: {len(standalone_areas)}, "
             f"Avg confidence: {avg_confidence:.2f}%, Requires review: True"
         )
-        
+
         return result
 
 

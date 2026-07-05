@@ -20,8 +20,8 @@ from typing import Dict, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from backend.auth import require_permission
-from backend.rbac import Permission
 from backend.multi_db_service import get_multi_db_service
+from backend.rbac import Permission
 from backend.schemas import ApiResponse
 
 logger = logging.getLogger(__name__)

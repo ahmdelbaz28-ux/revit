@@ -780,8 +780,8 @@ class VersionManager:
                         conversion_type: str, elements_count: int,
                         status: str) -> str:
         # Path validation to prevent path traversal (pythonsecurity:S6549)
-        from pathlib import Path
         import tempfile
+        from pathlib import Path
         cwd = Path.cwd().resolve()
         allowed_roots = [
             cwd,

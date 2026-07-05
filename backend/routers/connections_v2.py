@@ -20,8 +20,8 @@ import math
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from backend.auth import require_permission
-from backend.rbac import Permission
 from backend.db_service import DatabaseService, get_db_service
+from backend.rbac import Permission
 from backend.schemas import (
     ApiResponse,
     ConnectionCreate,

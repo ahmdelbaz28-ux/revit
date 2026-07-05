@@ -8,11 +8,7 @@ properly, maintaining the audit trail and security requirements.
 
 from __future__ import annotations
 
-import tempfile
-from pathlib import Path
-from unittest.mock import Mock, patch
-
-import pytest
+from unittest.mock import Mock
 
 from backend.services.ocr_service import OCRService
 from backend.services.scan_to_bim import ScanToBIMService
@@ -20,7 +16,7 @@ from backend.services.scan_to_bim import ScanToBIMService
 
 class TestOCRScanToBIMIntegration:
     """Integration tests for OCR and ScanToBIM services."""
-    
+
     def test_ocr_to_scan_to_bim_flow(self):
         """Test the complete flow from OCR to ScanToBIM processing."""
         # Create mock OCR service that returns predictable results
@@ -44,26 +40,26 @@ class TestOCRScanToBIMIntegration:
                 'total_words_extracted': 8
             }
         }
-        
+
         # Create ScanToBIM service with mock OCR
         scan_service = ScanToBIMService(ocr_service_instance=mock_ocr)
-        
+
         # Process a mock file
         result = scan_service.process_scan("dummy_file.pdf")
-        
+
         # Verify the result
         assert result.success is True
         assert len(result.rooms) >= 1
         assert result.requires_human_review is True  # Should always be True for OCR data
         assert 'OCR-derived BIM data requires professional review' in str(result.audit_trail)
-        
+
         # Verify room was created properly
         room = result.rooms[0]
         assert room.name == "A-101"  # Should be normalized
         assert room.area == 25.0
         assert room.room_type in ["OFFICE", "OTHER"]
         assert room.confidence == 85.0
-    
+
     def test_ocr_failure_handled_by_scan_to_bim(self):
         """Test that ScanToBIM properly handles OCR failures."""
         # Create mock OCR service that returns failure
@@ -72,18 +68,18 @@ class TestOCRScanToBIMIntegration:
             'success': False,
             'audit_trail': {'error': 'Mock OCR error'}
         }
-        
+
         # Create ScanToBIM service with mock OCR
         scan_service = ScanToBIMService(ocr_service_instance=mock_ocr)
-        
+
         # Process a mock file
         result = scan_service.process_scan("dummy_file.pdf")
-        
+
         # Verify the result shows failure
         assert result.success is False
         assert len(result.rooms) == 0
         assert result.requires_human_review is True  # Still requires review even when failed
-    
+
     def test_nfpa_72_audit_trail_compliance(self):
         """Test that audit trail meets NFPA 72-2022 §10.6 requirements."""
         # Create mock OCR service
@@ -107,10 +103,10 @@ class TestOCRScanToBIMIntegration:
                 'total_words_extracted': 6
             }
         }
-        
+
         scan_service = ScanToBIMService(ocr_service_instance=mock_ocr)
         result = scan_service.process_scan("test_file.pdf")
-        
+
         # Verify audit trail compliance
         audit_trail = result.audit_trail
         assert 'timestamp' in audit_trail
@@ -120,7 +116,7 @@ class TestOCRScanToBIMIntegration:
         assert 'requires_human_review' in audit_trail
         assert audit_trail['requires_human_review'] is True
         assert 'processing_notes' in audit_trail
-    
+
     def test_multi_language_support_integration(self):
         """Test that multi-language support flows through both services."""
         # Create mock OCR with Arabic text
@@ -144,16 +140,16 @@ class TestOCRScanToBIMIntegration:
                 'total_words_extracted': 7
             }
         }
-        
+
         scan_service = ScanToBIMService(ocr_service_instance=mock_ocr)
         result = scan_service.process_scan("arabic_test.pdf", lang="ara+eng")
-        
+
         # Should process Arabic text successfully
         assert result.success is True
         assert len(result.rooms) >= 1
         assert result.statistics['total_rooms_identified'] >= 1
         assert result.requires_human_review is True
-    
+
     def test_security_sanitize_integration(self):
         """Test that security sanitization flows through the pipeline."""
         # Create mock OCR with potentially malicious text that should be sanitized
@@ -177,10 +173,10 @@ class TestOCRScanToBIMIntegration:
                 'total_words_extracted': 8
             }
         }
-        
+
         scan_service = ScanToBIMService(ocr_service_instance=mock_ocr)
         result = scan_service.process_scan("security_test.pdf")
-        
+
         # Should process despite potentially malicious text in OCR
         assert result.success is True
         assert result.requires_human_review is True

@@ -604,9 +604,9 @@ def generate_building_report(
         Absolute path to the generated PDF file (or fallback .txt on error).
 
     """
+    import logging as _logging
     import os as _os
     from pathlib import Path
-    import logging as _logging
     _logger = _logging.getLogger("fireai.pdf_report")
 
     # Validate output_path to prevent path traversal (pythonsecurity:S8707)

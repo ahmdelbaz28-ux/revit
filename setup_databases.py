@@ -12,8 +12,8 @@ Interactive setup script to configure environment variables for:
 This script helps generate a .env file with the proper configuration.
 """
 
-from pathlib import Path
 import getpass as _getpass
+from pathlib import Path
 
 
 def prompt_user(message: str, default: str = "", hide_input: bool = False) -> str:

@@ -30,10 +30,8 @@ from backend.basebyright import (
     GoldenTestRunner,
     IdempotencyChecker,
     StateIsolationContext,
-    REQUIRED_SECURITY_HEADERS,
     create_basebyright,
 )
-
 
 # ═══════════════════════════════════════════════════════════════════════════
 # Constants
@@ -57,6 +55,7 @@ def _setup_env() -> None:
 def client():
     """Create a test client without auth (for 401 tests)."""
     from fastapi.testclient import TestClient
+
     from backend.app import app
 
     with TestClient(app) as c:
@@ -74,6 +73,7 @@ def auth_client():
     backend/tests/conftest.py (V138 FIX).
     """
     from fastapi.testclient import TestClient
+
     from backend.app import app
 
     # Ensure the env var is set (conftest sets it at module level,
@@ -339,7 +339,7 @@ class TestIdempotencyChecker:
 
     def _create_v1_project(self, client):
         """Create a project using the /api/v1/projects endpoint.
-        
+
         Tests in backend/basebyright/ do NOT get the URL-rewriting that
         conftest.py provides for backend/tests/. Use /api/v1/ paths directly.
         """
@@ -395,6 +395,7 @@ class TestBaseByRightAssertions:
         """assert_200 must fail for non-200 status."""
         # Use a fresh instance with strict_mode=True
         from fastapi.testclient import TestClient
+
         from backend.app import app
         client = TestClient(app, headers={"X-API-Key": TEST_API_KEY})
         bbr_strict = BaseByRight(client, strict_mode=True)
@@ -456,6 +457,7 @@ class TestBaseByRightAssertions:
     def test_assert_not_500_fails(self) -> None:
         """assert_not_500 must fail for status 500."""
         from fastapi.testclient import TestClient
+
         from backend.app import app
         client = TestClient(app, headers={"X-API-Key": TEST_API_KEY})
         bbr_strict = BaseByRight(client, strict_mode=True)
@@ -496,6 +498,7 @@ class TestBaseByRightSecurityAssertions:
     def test_assert_security_headers_missing(self) -> None:
         """Missing headers must raise with strict_mode=True."""
         from fastapi.testclient import TestClient
+
         from backend.app import app
         client = TestClient(app, headers={"X-API-Key": TEST_API_KEY})
         bbr_strict = BaseByRight(client, strict_mode=True)
@@ -514,6 +517,7 @@ class TestBaseByRightSecurityAssertions:
     def test_assert_has_correlation_id_missing(self) -> None:
         """Missing X-Correlation-ID must fail with strict_mode=True."""
         from fastapi.testclient import TestClient
+
         from backend.app import app
         client = TestClient(app, headers={"X-API-Key": TEST_API_KEY})
         bbr_strict = BaseByRight(client, strict_mode=True)
@@ -534,6 +538,7 @@ class TestBaseByRightSecurityAssertions:
     def test_assert_www_authenticate_on_401_missing(self) -> None:
         """401 without WWW-Authenticate must fail with strict_mode=True."""
         from fastapi.testclient import TestClient
+
         from backend.app import app
         client = TestClient(app, headers={"X-API-Key": TEST_API_KEY})
         bbr_strict = BaseByRight(client, strict_mode=True)
@@ -556,6 +561,7 @@ class TestBaseByRightJsonAssertions:
     def test_assert_json_response_invalid(self) -> None:
         """Invalid JSON must fail with strict_mode=True."""
         from fastapi.testclient import TestClient
+
         from backend.app import app
         client = TestClient(app, headers={"X-API-Key": TEST_API_KEY})
         bbr_strict = BaseByRight(client, strict_mode=True)
@@ -573,6 +579,7 @@ class TestBaseByRightJsonAssertions:
     def test_assert_has_field_missing(self) -> None:
         """Missing field must fail with strict_mode=True."""
         from fastapi.testclient import TestClient
+
         from backend.app import app
         client = TestClient(app, headers={"X-API-Key": TEST_API_KEY})
         bbr_strict = BaseByRight(client, strict_mode=True)

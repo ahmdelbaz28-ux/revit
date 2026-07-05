@@ -13,23 +13,18 @@ This module implements the V131 R&D refactoring with:
 
 from __future__ import annotations
 
-import asyncio
 import hashlib
 import json
 import logging
-import math
 import os
 import time
 import uuid
-from dataclasses import dataclass, field
-from pathlib import Path
-from typing import Any, TYPE_CHECKING, Optional, Union, Dict, List
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 if TYPE_CHECKING:
     from fireai.core.fireai_kernel_v30 import KernelCore
 
-import numpy as np
-from numpy.typing import NDArray
 
 logger = logging.getLogger(__name__)
 
@@ -92,16 +87,16 @@ class GenerativeDesignVariant:
 class GenerativeDesignEngine:
     """
     V131: Generative Design Engine for automatic layout optimization.
-    
+
     Generates multiple design variants with different optimization goals:
     - Cost-minimized layouts
-    - Standard-compliant layouts  
+    - Standard-compliant layouts
     - Safety-maximized layouts
     """
-    
+
     def __init__(self) -> None:
         self.logger = logging.getLogger(f"{__name__}.GenDesignEngine")
-    
+
     async def generate_variants(
         self,
         room_width: float,
@@ -113,7 +108,7 @@ class GenerativeDesignEngine:
     ) -> List[GenerativeDesignVariant]:
         """
         Generate multiple design variants for the given room parameters.
-        
+
         Args:
             room_width: Width of the room in meters
             room_length: Length of the room in meters
@@ -121,24 +116,24 @@ class GenerativeDesignEngine:
             occupancy_type: Type of occupancy (affects safety requirements)
             detector_type: Type of detector ('smoke', 'heat', 'combo')
             num_variants: Number of variants to generate
-            
+
         Returns:
             List of design variants with scores
         """
         variants = []
-        
+
         # Generate different variants based on optimization strategy
         strategies = ["cost_minimized", "standard_compliant", "safety_maximized"]
-        
+
         for i in range(min(num_variants, len(strategies))):
             strategy = strategies[i]
-            
+
             # Create a basic layout based on the strategy
             layout = await self._generate_layout_for_strategy(
-                room_width, room_length, ceiling_height, 
+                room_width, room_length, ceiling_height,
                 occupancy_type, detector_type, strategy
             )
-            
+
             variant = GenerativeDesignVariant(
                 id=f"variant_{i}_{strategy}",
                 name=strategy,
@@ -154,9 +149,9 @@ class GenerativeDesignEngine:
                 }
             )
             variants.append(variant)
-        
+
         return variants
-    
+
     async def _generate_layout_for_strategy(
         self,
         room_width: float,
@@ -169,7 +164,7 @@ class GenerativeDesignEngine:
         """Generate a layout based on the specified strategy."""
         # Calculate base spacing based on ceiling height and detector type
         base_radius = self._get_base_radius(detector_type, ceiling_height)
-        
+
         # Adjust spacing based on strategy
         if strategy == "cost_minimized":
             # Increase spacing slightly to reduce detector count
@@ -179,15 +174,15 @@ class GenerativeDesignEngine:
             spacing_factor = 0.9
         else:  # standard_compliant
             spacing_factor = 1.0
-        
+
         adjusted_radius = base_radius * spacing_factor
         spacing = adjusted_radius * 2 * 0.7  # Conservative spacing
-        
+
         # Generate grid layout
         detectors = []
         x_pos = adjusted_radius
         detector_id = 0
-        
+
         while x_pos < room_width - adjusted_radius:
             y_pos = adjusted_radius
             while y_pos < room_length - adjusted_radius:
@@ -203,9 +198,9 @@ class GenerativeDesignEngine:
                 y_pos += spacing
                 detector_id += 1
             x_pos += spacing
-        
+
         return detectors
-    
+
     def _get_base_radius(self, detector_type: str, ceiling_height: float) -> float:
         """Get base radius based on detector type and ceiling height."""
         if detector_type == "smoke":
@@ -215,25 +210,25 @@ class GenerativeDesignEngine:
         else:  # heat or combo
             table = NFPA72Constants.HEAT_RADIUS_TABLE
             default_radius = NFPA72Constants.HEAT_DEFAULT_RADIUS_M
-        
+
         # Sort table by ceiling height for interpolation
         sorted_heights = sorted(table.keys())
-        
+
         # Find the appropriate radius based on ceiling height
         for height in reversed(sorted_heights):
             if ceiling_height >= height:
                 return table[height]
-        
+
         # If ceiling is lower than minimum, return default
         return default_radius
-    
+
     def _calculate_layout_score(self, layout: List[Dict[str, Any]], strategy: str) -> float:
         """Calculate a score for the layout based on the strategy."""
         if not layout:
             return 0.0
-        
+
         detector_count = len(layout)
-        
+
         if strategy == "cost_minimized":
             # Lower detector count is better for cost minimization
             return 100.0 / (detector_count + 1)
@@ -248,16 +243,16 @@ class GenerativeDesignEngine:
 class WebhookPublisher:
     """
     V131: Cloud Webhook Publisher for external integrations.
-    
+
     Manages publishing events to external cloud services via webhooks.
     Implements security measures and retry logic.
     """
-    
+
     def __init__(self) -> None:
         self.logger = logging.getLogger(f"{__name__}.WebhookPublisher")
         self.session = None  # Will initialize aiohttp session when needed
         self._initialized = False
-    
+
     async def initialize(self) -> None:
         """Initialize the webhook publisher with HTTP session."""
         if not self._initialized:
@@ -270,7 +265,7 @@ class WebhookPublisher:
                 self.logger.info("Webhook publisher initialized successfully")
             except ImportError:
                 self.logger.warning("aiohttp not available, webhook publishing disabled")
-    
+
     async def publish_event(
         self,
         url: str,
@@ -280,28 +275,28 @@ class WebhookPublisher:
     ) -> bool:
         """
         Publish an event to the specified webhook URL.
-        
+
         Args:
             url: Webhook URL to send the event to
             event_type: Type of event being published
             data: Event data payload
             secret: Optional secret for HMAC signature
-            
+
         Returns:
             True if the event was published successfully, False otherwise
         """
         if not self._initialized:
             await self.initialize()
-        
+
         if not self.session:
             self.logger.warning("Webhook publisher not initialized, skipping event")
             return False
-        
+
         # Validate URL
         if not self._validate_url(url):
             self.logger.warning(f"Invalid webhook URL: {url}")
             return False
-        
+
         # Prepare payload
         payload = {
             "event_type": event_type,
@@ -309,7 +304,7 @@ class WebhookPublisher:
             "data": data,
             "event_id": str(uuid.uuid4())
         }
-        
+
         # Add HMAC signature if secret is provided
         if secret:
             signature = self._generate_signature(payload, secret)
@@ -323,14 +318,14 @@ class WebhookPublisher:
                 "Content-Type": "application/json",
                 "X-FireAI-Event-ID": payload["event_id"]
             }
-        
+
         try:
             # Serialize payload safely
             json_payload = self._safe_serialize(payload)
             if not json_payload:
                 self.logger.error("Failed to serialize webhook payload")
                 return False
-            
+
             async with self.session.post(url, data=json_payload, headers=headers) as response:
                 if response.status < 300:
                     self.logger.info(f"Webhook event {event_type} published successfully to {url}")
@@ -341,7 +336,7 @@ class WebhookPublisher:
         except Exception as e:
             self.logger.exception(f"Failed to publish webhook event: {e}")
             return False
-    
+
     def _validate_url(self, url: str) -> bool:
         """Validate the webhook URL."""
         from urllib.parse import urlparse
@@ -355,16 +350,15 @@ class WebhookPublisher:
                 if parsed.hostname and parsed.hostname not in allowed_hosts:
                     self.logger.warning(f"Webhook hostname {parsed.hostname} not in allowed hosts list")
                     return False
-            
+
             return parsed.scheme in ('http', 'https') and len(parsed.netloc) > 0
         except Exception:
             return False
-    
+
     def _generate_signature(self, payload: Dict[str, Any], secret: str) -> str:
         """Generate HMAC signature for the payload."""
         import hmac
-        import hashlib
-        
+
         # Convert payload to JSON string for consistent hashing
         json_str = json.dumps(payload, sort_keys=True, separators=(',', ':'))
         signature = hmac.new(
@@ -372,15 +366,15 @@ class WebhookPublisher:
             json_str.encode('utf-8'),
             hashlib.sha256
         ).hexdigest()
-        
+
         return signature
-    
+
     def _safe_serialize(self, obj: Any, depth: int = 0) -> Optional[str]:
         """Safely serialize an object to JSON, preventing circular references and security issues."""
         if depth > NFPA72Constants.MAX_SERIALIZATION_DEPTH:
             self.logger.error("Serialization depth exceeded maximum allowed")
             return None
-        
+
         try:
             # Implement custom serialization to prevent security issues
             def safe_serializer(item):
@@ -410,7 +404,7 @@ class WebhookPublisher:
                 else:
                     # Convert other types to string representation
                     return str(item)
-            
+
             safe_obj = safe_serializer(obj)
             return json.dumps(safe_obj, separators=(',', ':'))
         except Exception as e:
@@ -421,28 +415,28 @@ class WebhookPublisher:
 class ARHookManager:
     """
     V131: AR Hook Manager for augmented reality integrations.
-    
+
     Manages AR session state, visualization data, and communication with AR clients.
     """
-    
+
     def __init__(self) -> None:
         self.logger = logging.getLogger(f"{__name__}.ARHookManager")
         self.active_sessions: Dict[str, Dict[str, Any]] = {}
         self.visualization_cache: Dict[str, bytes] = {}
-    
+
     async def create_session(self, building_id: str, session_config: Optional[Dict[str, Any]] = None) -> str:
         """
         Create a new AR session for the specified building.
-        
+
         Args:
             building_id: ID of the building to visualize
             session_config: Optional configuration for the AR session
-            
+
         Returns:
             Session ID for the new AR session
         """
         session_id = str(uuid.uuid4())
-        
+
         session_data = {
             "session_id": session_id,
             "building_id": building_id,
@@ -455,77 +449,77 @@ class ARHookManager:
                 "alerts": []
             }
         }
-        
+
         self.active_sessions[session_id] = session_data
         self.logger.info(f"Created AR session {session_id} for building {building_id}")
-        
+
         return session_id
-    
+
     async def update_visualization_data(self, session_id: str, data: Dict[str, Any]) -> bool:
         """
         Update visualization data for the specified AR session.
-        
+
         Args:
             session_id: ID of the AR session
             data: Visualization data to update
-            
+
         Returns:
             True if the update was successful, False otherwise
         """
         if session_id not in self.active_sessions:
             self.logger.warning(f"AR session {session_id} not found")
             return False
-        
+
         session = self.active_sessions[session_id]
-        
+
         # Check if session is expired
         if time.time() > session["expires_at"]:
             await self.end_session(session_id)
             self.logger.warning(f"AR session {session_id} has expired")
             return False
-        
+
         # Update visualization state
         vis_state = session["visualization_state"]
         for key, value in data.items():
             if key in vis_state:
                 vis_state[key] = value
-        
+
         # Update timestamp
         session["last_updated"] = time.time()
-        
+
         return True
-    
+
     async def get_visualization_data(self, session_id: str) -> Optional[Dict[str, Any]]:
         """
         Get visualization data for the specified AR session.
-        
+
         Args:
             session_id: ID of the AR session
-            
+
         Returns:
             Visualization data or None if session not found/expired
         """
         if session_id not in self.active_sessions:
             self.logger.warning(f"AR session {session_id} not found")
             return None
-        
+
         session = self.active_sessions[session_id]
-        
+
         # Check if session is expired
         if time.time() > session["expires_at"]:
             await self.end_session(session_id)
             self.logger.warning(f"AR session {session_id} has expired")
             return None
-        
+
         return session["visualization_state"]
-    
+
     async def end_session(self, session_id: str) -> bool:
         """
         End the specified AR session.
-        
+
         Args:
             session_id: ID of the AR session to end
-            
+
         Returns:
             True if the session was ended successfully, False otherwise
         """
@@ -535,20 +529,20 @@ class ARHookManager:
             cache_key = f"vis_{session_id}"
             if cache_key in self.visualization_cache:
                 del self.visualization_cache[cache_key]
-            
+
             self.logger.info(f"Ended AR session {session_id}")
             return True
-        
+
         return False
-    
+
     async def generate_ar_visualization(self, building_data: Dict[str, Any], format_type: str = "glb") -> Optional[bytes]:
         """
         Generate AR visualization data in the specified format.
-        
+
         Args:
             building_data: Building data to visualize
             format_type: Format for the visualization ('glb', 'usdz', etc.)
-            
+
         Returns:
             Visualization data in the requested format or None if generation failed
         """
@@ -556,10 +550,10 @@ class ARHookManager:
             # This would integrate with the existing AR visualization code
             # For now, return a placeholder based on format
             cache_key = f"vis_{hash(str(building_data))}_{format_type}"
-            
+
             if cache_key in self.visualization_cache:
                 return self.visualization_cache[cache_key]
-            
+
             # Placeholder implementation - would integrate with existing AR code
             if format_type == "glb":
                 # Return a minimal glb header as placeholder
@@ -570,7 +564,7 @@ class ARHookManager:
             else:
                 # Default to JSON representation
                 placeholder_data = json.dumps(building_data, default=str).encode('utf-8')
-            
+
             self.visualization_cache[cache_key] = placeholder_data
             return placeholder_data
         except Exception as e:
@@ -583,17 +577,17 @@ class V131KernelExtension:
     V131: Extension module that adds new functionality to the existing kernel
     while maintaining backward compatibility.
     """
-    
+
     def __init__(self, kernel_core: KernelCore):
         self.kernel_core = kernel_core
         self.generative_engine = GenerativeDesignEngine()
         self.webhook_publisher = WebhookPublisher()
         self.ar_hook_manager = ARHookManager()
-    
+
     async def initialize(self):
         """Initialize the V131 extensions."""
         await self.webhook_publisher.initialize()
-    
+
     async def generate_design_variants(
         self,
         room_width: float,
@@ -604,22 +598,22 @@ class V131KernelExtension:
     ) -> List[GenerativeDesignVariant]:
         """
         V131: Generate multiple design variants for the given room parameters.
-        
+
         Args:
             room_width: Width of the room in meters
             room_length: Length of the room in meters
             ceiling_height: Ceiling height in meters
             occupancy_type: Type of occupancy (affects safety requirements)
             detector_type: Type of detector ('smoke', 'heat', 'combo')
-            
+
         Returns:
             List of design variants with scores
         """
         return await self.generative_engine.generate_variants(
-            room_width, room_length, ceiling_height, 
+            room_width, room_length, ceiling_height,
             occupancy_type, detector_type
         )
-    
+
     async def publish_webhook_event(
         self,
         url: str,
@@ -629,18 +623,18 @@ class V131KernelExtension:
     ) -> bool:
         """
         V131: Publish an event to an external webhook.
-        
+
         Args:
             url: Webhook URL to send the event to
             event_type: Type of event being published
             data: Event data payload
             secret: Optional secret for HMAC signature
-            
+
         Returns:
             True if the event was published successfully, False otherwise
         """
         return await self.webhook_publisher.publish_event(url, event_type, data, secret)
-    
+
     async def create_ar_session(
         self,
         building_id: str,
@@ -648,16 +642,16 @@ class V131KernelExtension:
     ) -> str:
         """
         V131: Create a new AR session for visualization.
-        
+
         Args:
             building_id: ID of the building to visualize
             session_config: Optional configuration for the AR session
-            
+
         Returns:
             Session ID for the new AR session
         """
         return await self.ar_hook_manager.create_session(building_id, session_config)
-    
+
     async def update_ar_visualization(
         self,
         session_id: str,
@@ -665,11 +659,11 @@ class V131KernelExtension:
     ) -> bool:
         """
         V131: Update visualization data for an AR session.
-        
+
         Args:
             session_id: ID of the AR session
             data: Visualization data to update
-            
+
         Returns:
             True if the update was successful, False otherwise
         """
