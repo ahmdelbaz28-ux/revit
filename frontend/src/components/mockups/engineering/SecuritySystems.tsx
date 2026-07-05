@@ -1,19 +1,13 @@
 import {
-	AlertTriangle,
 	Camera,
 	ChevronDown,
 	ChevronRight,
-	Clock,
-	Eye,
 	Lock,
-	Map,
-	Maximize2,
 	Search,
 	Settings,
 	Shield,
 	UserCheck,
 	Video,
-	Zap,
 } from "lucide-react";
 import type React from "react";
 import { useState } from "react";
@@ -23,7 +17,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 
 export function SecuritySystems() {
-	const [activeCam, setActiveCam] = useState("CAM-EXT-01");
+	const [_activeCam, _setActiveCam] = useState("CAM-EXT-01");
 
 	return (
 		<div className="flex flex-col h-screen w-screen overflow-hidden bg-slate-900 text-slate-100 font-sans">

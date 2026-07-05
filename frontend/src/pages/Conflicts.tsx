@@ -4,13 +4,6 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
 import { api } from "@/services/api";
 
 function Conflicts() {

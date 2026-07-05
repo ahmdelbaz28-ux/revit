@@ -1,9 +1,8 @@
 import DxfParser from "dxf-parser";
 import { saveAs } from "file-saver";
-import { AlertCircle, Download, FileCode, Upload } from "lucide-react";
+import { AlertCircle, Download, Upload } from "lucide-react";
 import type React from "react";
 import { useRef } from "react";
-import { actions } from "@/store/simpleStore";
 
 export function ImportExportManager() {
 	const fileInputRef = useRef<HTMLInputElement>(null);
@@ -38,7 +37,7 @@ export function ImportExportManager() {
 				// TODO: Convert DXF Entities (Lines, Circles) to Nexus Devices/Connections
 				// This is a placeholder for the complex conversion logic
 				if (import.meta.env.DEV) console.log("DXF Parsed:", dxfData);
-				if (dxfData && dxfData.entities) {
+				if (dxfData?.entities) {
 					alert(
 						`DXF Imported Successfully!\nFound ${dxfData.entities.length} entities.\n(Conversion to smart objects pending implementation)`,
 					);

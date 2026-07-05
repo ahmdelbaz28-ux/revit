@@ -191,7 +191,7 @@ export function rgbToHex(r: number, g: number, b: number): string {
 		[r, g, b]
 			.map((x) => {
 				const hex = Math.max(0, Math.min(255, x)).toString(16);
-				return hex.length === 1 ? "0" + hex : hex;
+				return hex.length === 1 ? `0${hex}` : hex;
 			})
 			.join("")
 	);
@@ -442,7 +442,7 @@ export function getWarningAnimation(): string {
 /**
  * Get dash animation for active fault
  */
-export function getDashAnimation(speed: number = 1000): string {
+export function getDashAnimation(_speed: number = 1000): string {
 	return `
     @keyframes dashFlow {
       to {

@@ -6,7 +6,7 @@
  * still imports it.
  */
 import { createContext, type ReactNode } from "react";
-import type { HelpTopicId, SmartHelpContextValue } from "./types";
+import type { SmartHelpContextValue } from "./types";
 
 export const SmartHelpContext = createContext<SmartHelpContextValue | null>(
 	null,

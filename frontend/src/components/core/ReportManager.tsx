@@ -1,6 +1,5 @@
-import React from "react";
 import { Button } from "@/components/ui/button";
-import { CanvasElement, useStore } from "@/store/simpleStore";
+import { useStore } from "@/store/simpleStore";
 
 export function ReportManager() {
 	const canvasElements = useStore((s) => s.canvasElements);

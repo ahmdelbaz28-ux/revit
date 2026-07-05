@@ -114,7 +114,7 @@ export function ContextPanel({
 		getDocumentDirection,
 	);
 	const isRtl = documentDirection === "rtl";
-	const helpContextId = useMemo(
+	const _helpContextId = useMemo(
 		() => getHelpContextId(selected, contextId),
 		[selected, contextId],
 	);

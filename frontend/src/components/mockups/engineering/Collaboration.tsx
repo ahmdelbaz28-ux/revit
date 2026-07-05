@@ -1,5 +1,4 @@
 import {
-	AlertCircle,
 	CheckCircle2,
 	Eye,
 	FileEdit,
@@ -7,21 +6,16 @@ import {
 	Link2,
 	MessageSquare,
 	Mic,
-	MicOff,
 	MonitorPlay,
-	MoreHorizontal,
 	MousePointer2,
 	Phone,
-	Play,
 	Send,
 	Settings,
-	Share2,
 	UploadCloud,
 	UserPlus,
 	Users,
 	Video,
 } from "lucide-react";
-import React from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";

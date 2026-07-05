@@ -1,8 +1,6 @@
 import {
-	AlertTriangle,
 	ArrowRightLeft,
 	Cable,
-	CheckCircle2,
 	Layout,
 	LayoutGrid,
 	Mic,
@@ -12,13 +10,11 @@ import {
 	Radio,
 	Search,
 	Server,
-	Settings,
 	Speaker,
 	Volume2,
 	Wifi,
 } from "lucide-react";
 import type React from "react";
-import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";

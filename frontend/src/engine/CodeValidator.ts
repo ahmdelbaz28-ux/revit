@@ -48,8 +48,8 @@ export interface ProtectionResult {
 
 // NFPA 72 - Fire Alarm Detection
 const SMOKE_DETECTOR_MAX_SPACING = 7.5; // meters
-const SMOKE_DETECTOR_MAX_FROM_WALL = 3.75; // meters
-const HEAT_DETECTOR_MAX_SPACING = 10.5; // meters
+const _SMOKE_DETECTOR_MAX_FROM_WALL = 3.75; // meters
+const _HEAT_DETECTOR_MAX_SPACING = 10.5; // meters
 const DETECTOR_COVERAGE_AREA = 80; // m² per detector
 
 // IEC 60598 - Luminaries
@@ -59,13 +59,13 @@ const EMERGENCY_LIGHT_MAX_HEIGHT = 5.0; // meters
 
 // NEC/IEC Protection
 const MIN_CABLE_AMPACITY_RATIO = 1.25; // Cable ampacity must be 125% of load
-const MAX_VOLTAGE_DROP_LIGHTING = 3; // percent
-const MAX_VOLTAGE_DROP_POWER = 5; // percent
+const _MAX_VOLTAGE_DROP_LIGHTING = 3; // percent
+const _MAX_VOLTAGE_DROP_POWER = 5; // percent
 
 // Cable sizing
-const CIRCUIT_MAX_CURRENT_15A = 15; // AWG 14
-const CIRCUIT_MAX_CURRENT_20A = 20; // AWG 12
-const CIRCUIT_MAX_CURRENT_30A = 30; // AWG 10
+const _CIRCUIT_MAX_CURRENT_15A = 15; // AWG 14
+const _CIRCUIT_MAX_CURRENT_20A = 20; // AWG 12
+const _CIRCUIT_MAX_CURRENT_30A = 30; // AWG 10
 
 // ============================================================================
 // SMOKE DETECTOR PLACEMENT VALIDATION (NFPA 72)
@@ -332,7 +332,7 @@ export function validateCableProtection(
 	loadCurrent: number,
 	cableAmpacity: number,
 	circuitBreakerRating: number,
-	circuitType: "lighting" | "power" | "motor",
+	_circuitType: "lighting" | "power" | "motor",
 ): ProtectionResult {
 	const violations: CodeViolation[] = [];
 
@@ -657,7 +657,7 @@ export function validateAllDevices(devices: Device[]): CodeViolation[] {
 
 	// Group by type for validation
 	const smokeDetectors = devices.filter((d) => d.type.includes("SMOKE"));
-	const heatDetectors = devices.filter((d) => d.type.includes("HEAT"));
+	const _heatDetectors = devices.filter((d) => d.type.includes("HEAT"));
 	const emergencyLights = devices.filter((d) => d.type.includes("LIGHT"));
 	const panels = devices.filter((d) => d.type.includes("PANEL"));
 

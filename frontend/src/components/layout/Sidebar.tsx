@@ -191,7 +191,7 @@ const Sidebar: React.FC<SidebarProps> = ({ compact = false }) => {
 					const isActive =
 						location.pathname === item.path ||
 						(item.path !== "/dashboard" &&
-							location.pathname.startsWith(item.path + "/"));
+							location.pathname.startsWith(`${item.path}/`));
 					const isHovered = hoveredItem === item.path;
 					const labelText = t(item.labelKey, item.defaultLabel);
 					return (

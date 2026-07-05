@@ -1,5 +1,3 @@
-import React from "react";
-
 interface ControlPanelProps {
 	isFaulty: (id: string) => boolean;
 	onFaultToggle: (id: string) => void;

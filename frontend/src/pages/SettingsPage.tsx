@@ -4,21 +4,16 @@
 
 import {
 	Activity,
-	AlertTriangle,
 	Calculator,
 	CheckCircle2,
 	Database,
-	Key,
-	Monitor,
 	Settings,
 	Shield,
-	User,
 	XCircle,
 } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -33,7 +28,6 @@ import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useHealth } from "@/hooks/useApi";
-import { api } from "@/services/digitalTwinApi";
 
 export function SettingsPage() {
 	const { t } = useTranslation();
@@ -65,7 +59,7 @@ export function SettingsPage() {
 	const [reportFormat, setReportFormat] = useState("pdf");
 	const [reportQuality, setReportQuality] = useState("high");
 
-	const [saveStatus, setSaveStatus] = useState<string | null>(null);
+	const [_saveStatus, setSaveStatus] = useState<string | null>(null);
 
 	const persistSettings = (key: string, value: Record<string, unknown>) => {
 		// CodeQL: js/clear-text-storage-of-sensitive-data — FALSE POSITIVE.
@@ -368,7 +362,7 @@ export function SettingsPage() {
 										type="number"
 										value={passwordExpiry}
 										onChange={(e) =>
-											setPasswordExpiry(parseInt(e.target.value))
+											setPasswordExpiry(parseInt(e.target.value, 10))
 										}
 										className="bg-slate-900 border-slate-600 text-slate-100"
 									/>
@@ -408,7 +402,9 @@ export function SettingsPage() {
 										<Input
 											type="number"
 											value={apiTimeout}
-											onChange={(e) => setApiTimeout(parseInt(e.target.value))}
+											onChange={(e) =>
+												setApiTimeout(parseInt(e.target.value, 10))
+											}
 											className="bg-slate-900 border-slate-600 text-slate-100"
 										/>
 										<p className="text-xs text-slate-400">
@@ -423,7 +419,7 @@ export function SettingsPage() {
 											type="number"
 											value={retryAttempts}
 											onChange={(e) =>
-												setRetryAttempts(parseInt(e.target.value))
+												setRetryAttempts(parseInt(e.target.value, 10))
 											}
 											className="bg-slate-900 border-slate-600 text-slate-100"
 										/>

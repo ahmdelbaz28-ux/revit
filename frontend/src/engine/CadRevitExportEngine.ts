@@ -71,30 +71,30 @@ export function exportToDXF(project: ExportProject): void {
 		const blockName = device.autocadBlock || device.type;
 		dxf += "0\nINSERT\n";
 		dxf += "8\nDevices\n";
-		dxf += "2\n" + blockName + "\n";
-		dxf += "10\n" + device.x.toFixed(4) + "\n";
-		dxf += "20\n" + device.y.toFixed(4) + "\n";
-		dxf += "30\n" + device.z.toFixed(4) + "\n";
+		dxf += `2\n${blockName}\n`;
+		dxf += `10\n${device.x.toFixed(4)}\n`;
+		dxf += `20\n${device.y.toFixed(4)}\n`;
+		dxf += `30\n${device.z.toFixed(4)}\n`;
 		dxf += "41\n1.0\n42\n1.0\n43\n1.0\n";
-		dxf += "50\n" + device.rotation.toFixed(4) + "\n";
+		dxf += `50\n${device.rotation.toFixed(4)}\n`;
 
 		dxf += "0\nATTRIB\n";
 		dxf += "8\nAnnotations\n";
-		dxf += "10\n" + device.x.toFixed(4) + "\n";
-		dxf += "20\n" + (device.y + 10).toFixed(4) + "\n";
-		dxf += "30\n" + device.z.toFixed(4) + "\n";
+		dxf += `10\n${device.x.toFixed(4)}\n`;
+		dxf += `20\n${(device.y + 10).toFixed(4)}\n`;
+		dxf += `30\n${device.z.toFixed(4)}\n`;
 		dxf += "40\n2.5\n";
-		dxf += "1\n" + device.name + "\n";
+		dxf += `1\n${device.name}\n`;
 		dxf += "2\nDEVICENAME\n";
 		dxf += "70\n0\n";
 
 		dxf += "0\nATTRIB\n";
 		dxf += "8\nAnnotations\n";
-		dxf += "10\n" + device.x.toFixed(4) + "\n";
-		dxf += "20\n" + (device.y + 15).toFixed(4) + "\n";
-		dxf += "30\n" + device.z.toFixed(4) + "\n";
+		dxf += `10\n${device.x.toFixed(4)}\n`;
+		dxf += `20\n${(device.y + 15).toFixed(4)}\n`;
+		dxf += `30\n${device.z.toFixed(4)}\n`;
 		dxf += "40\n2.0\n";
-		dxf += "1\n" + device.load.toFixed(1) + "W\n";
+		dxf += `1\n${device.load.toFixed(1)}W\n`;
 		dxf += "2\nLOAD\n";
 		dxf += "70\n0\n";
 	}
@@ -106,20 +106,20 @@ export function exportToDXF(project: ExportProject): void {
 
 		dxf += "0\nLINE\n";
 		dxf += "8\nWiring\n";
-		dxf += "10\n" + from.x.toFixed(4) + "\n";
-		dxf += "20\n" + from.y.toFixed(4) + "\n";
-		dxf += "30\n" + from.z.toFixed(4) + "\n";
-		dxf += "11\n" + to.x.toFixed(4) + "\n";
-		dxf += "21\n" + to.y.toFixed(4) + "\n";
-		dxf += "31\n" + to.z.toFixed(4) + "\n";
+		dxf += `10\n${from.x.toFixed(4)}\n`;
+		dxf += `20\n${from.y.toFixed(4)}\n`;
+		dxf += `30\n${from.z.toFixed(4)}\n`;
+		dxf += `11\n${to.x.toFixed(4)}\n`;
+		dxf += `21\n${to.y.toFixed(4)}\n`;
+		dxf += `31\n${to.z.toFixed(4)}\n`;
 
 		dxf += "0\nTEXT\n";
 		dxf += "8\nAnnotations\n";
-		dxf += "10\n" + ((from.x + to.x) / 2).toFixed(4) + "\n";
-		dxf += "20\n" + ((from.y + to.y) / 2 + 5).toFixed(4) + "\n";
+		dxf += `10\n${((from.x + to.x) / 2).toFixed(4)}\n`;
+		dxf += `20\n${((from.y + to.y) / 2 + 5).toFixed(4)}\n`;
 		dxf += "30\n0.0\n";
 		dxf += "40\n2.0\n";
-		dxf += "1\n" + conn.cableSize + "\n";
+		dxf += `1\n${conn.cableSize}\n`;
 		dxf += "50\n0\n";
 	}
 
@@ -127,7 +127,7 @@ export function exportToDXF(project: ExportProject): void {
 	dxf += "0\nEOF\n";
 
 	const blob = new Blob([dxf], { type: "application/dxf" });
-	saveAs(blob, project.name.replace(/\s+/g, "_") + ".dxf");
+	saveAs(blob, `${project.name.replace(/\s+/g, "_")}.dxf`);
 }
 
 // ============================================================================
@@ -197,7 +197,7 @@ export function exportToRevitJSON(project: ExportProject): void {
 	const blob = new Blob([JSON.stringify(revitData, null, 2)], {
 		type: "application/json",
 	});
-	saveAs(blob, project.name.replace(/\s+/g, "_") + "_Revit.json");
+	saveAs(blob, `${project.name.replace(/\s+/g, "_")}_Revit.json`);
 }
 
 // ============================================================================
@@ -229,7 +229,7 @@ export function exportToIFC(
 		"'),(''),'Express Data Manager Version 1.0.0','" +
 		schema +
 		"','');\n";
-	ifc += "FILE_SCHEMA(('" + schema + "'));\n";
+	ifc += `FILE_SCHEMA(('${schema}'));\n`;
 	ifc += "ENDSEC;\n";
 	ifc += "DATA;\n";
 
@@ -237,14 +237,14 @@ export function exportToIFC(
 	const idMap: Record<string, number> = {};
 
 	function nextId(): string {
-		return "#" + idCounter++;
+		return `#${idCounter++}`;
 	}
 
 	function getId(key: string): string {
 		if (!idMap[key]) {
 			idMap[key] = idCounter++;
 		}
-		return "#" + idMap[key];
+		return `#${idMap[key]}`;
 	}
 
 	// Application
@@ -343,7 +343,7 @@ export function exportToIFC(
 		const devId = nextId();
 		deviceIds.push(devId);
 		const ifcClass = device.ifcClass || "IfcFlowTerminal";
-		const ifcType = device.ifcType || device.type;
+		const _ifcType = device.ifcType || device.type;
 
 		ifc +=
 			devId +
@@ -354,27 +354,27 @@ export function exportToIFC(
 			"',$,'" +
 			device.name.replace(/'/g, "''") +
 			"',$,$," +
-			getId("placement_" + device.id) +
+			getId(`placement_${device.id}`) +
 			",''," +
-			getId("productDef_" + device.id) +
+			getId(`productDef_${device.id}`) +
 			",'" +
 			generateGUID() +
 			"');\n";
 
 		// Local placement
-		const placementId = getId("placement_" + device.id);
+		const placementId = getId(`placement_${device.id}`);
 		ifc +=
 			placementId +
 			"=IFCLOCALPLACEMENT($," +
-			getId("axis2_" + device.id) +
+			getId(`axis2_${device.id}`) +
 			");\n";
 		ifc +=
-			getId("axis2_" + device.id) +
+			getId(`axis2_${device.id}`) +
 			"=IFCAXIS2PLACEMENT3D(" +
-			getId("point_" + device.id) +
+			getId(`point_${device.id}`) +
 			",$,$);\n";
 		ifc +=
-			getId("point_" + device.id) +
+			getId(`point_${device.id}`) +
 			"=IFCCARTESIANPOINT((" +
 			device.x.toFixed(3) +
 			"," +
@@ -384,23 +384,23 @@ export function exportToIFC(
 			"));\n";
 
 		// Product definition
-		const prodDefId = getId("productDef_" + device.id);
+		const prodDefId = getId(`productDef_${device.id}`);
 		ifc +=
 			prodDefId +
 			"=IFCPRODUCTDEFINITIONSHAPE($,$,(" +
-			getId("shape_" + device.id) +
+			getId(`shape_${device.id}`) +
 			"));\n";
 		ifc +=
-			getId("shape_" + device.id) +
+			getId(`shape_${device.id}`) +
 			"=IFCSHAPEREPRESENTATION(" +
 			getId("context") +
 			",'Body','BoundingBox',(" +
-			getId("bbox_" + device.id) +
+			getId(`bbox_${device.id}`) +
 			"));\n";
 		ifc +=
-			getId("bbox_" + device.id) +
+			getId(`bbox_${device.id}`) +
 			"=IFCBOUNDINGBOX(" +
-			getId("point_" + device.id) +
+			getId(`point_${device.id}`) +
 			",0.5,0.5,0.3);\n";
 
 		// Properties
@@ -446,7 +446,7 @@ export function exportToIFC(
 		"=IFCGEOMETRICREPRESENTATIONCONTEXT($,'Model',3,1.E-05," +
 		getId("direction") +
 		",$);\n";
-	ifc += getId("direction") + "=IFCDIRECTION((1.,0.,0.));\n";
+	ifc += `${getId("direction")}=IFCDIRECTION((1.,0.,0.));\n`;
 
 	// Units
 	const unitId = getId("unit");
@@ -459,9 +459,9 @@ export function exportToIFC(
 		"," +
 		getId("volumeUnit") +
 		"));\n";
-	ifc += getId("lengthUnit") + "=IFCSIUNIT(*,.LENGTHUNIT.,$,.METRE.);\n";
-	ifc += getId("areaUnit") + "=IFCSIUNIT(*,.AREAUNIT.,$,.SQUARE_METRE.);\n";
-	ifc += getId("volumeUnit") + "=IFCSIUNIT(*,.VOLUMEUNIT.,$,.CUBIC_METRE.);\n";
+	ifc += `${getId("lengthUnit")}=IFCSIUNIT(*,.LENGTHUNIT.,$,.METRE.);\n`;
+	ifc += `${getId("areaUnit")}=IFCSIUNIT(*,.AREAUNIT.,$,.SQUARE_METRE.);\n`;
+	ifc += `${getId("volumeUnit")}=IFCSIUNIT(*,.VOLUMEUNIT.,$,.CUBIC_METRE.);\n`;
 
 	// Person/Organization
 	const personId = getId("person");
@@ -475,7 +475,7 @@ export function exportToIFC(
 	ifc += "END-ISO-10303-21;\n";
 
 	const blob = new Blob([ifc], { type: "application/x-step" });
-	saveAs(blob, project.name.replace(/\s+/g, "_") + "_" + schema + ".ifc");
+	saveAs(blob, `${project.name.replace(/\s+/g, "_")}_${schema}.ifc`);
 }
 
 // ============================================================================

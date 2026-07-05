@@ -15,8 +15,6 @@ import {
 	ArrowRightLeft,
 	CheckCircle2,
 	Clock,
-	Download,
-	FileDown,
 	FileUp,
 	History,
 	Loader2,
@@ -45,9 +43,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
 import { digitalTwinApi } from "@/services/fullApi";
 
 interface ConversionResult {
@@ -171,7 +167,7 @@ export function DigitalTwinPage() {
 			// V140 Phase 5: Call real Digital Twin API
 			const history = (await digitalTwinApi.getHistory()) as VersionInfo[];
 			setVersions(Array.isArray(history) ? history : []);
-		} catch (error) {
+		} catch (_error) {
 			// Fallback to empty if API fails (no mock data)
 			setVersions([]);
 			toast.error("Failed to load version history");
@@ -206,7 +202,7 @@ export function DigitalTwinPage() {
 			};
 			localStorage.setItem("digital_twin_settings", JSON.stringify(settings));
 			toast.success("Conversion settings saved");
-		} catch (error) {
+		} catch (_error) {
 			toast.error("Failed to save settings");
 		}
 	};
@@ -557,7 +553,9 @@ export function DigitalTwinPage() {
 										<Input
 											type="number"
 											value={levelHeight}
-											onChange={(e) => setLevelHeight(parseInt(e.target.value))}
+											onChange={(e) =>
+												setLevelHeight(parseInt(e.target.value, 10))
+											}
 											className="bg-slate-900 border-slate-600 text-slate-100"
 										/>
 									</div>

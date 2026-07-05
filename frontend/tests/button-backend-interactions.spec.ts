@@ -67,7 +67,7 @@ function logTestResult(
 /**
  * Helper function to make API requests and capture detailed response
  */
-async function makeApiRequest(
+async function _makeApiRequest(
 	page: Page,
 	endpoint: string,
 	options: RequestInit = {},

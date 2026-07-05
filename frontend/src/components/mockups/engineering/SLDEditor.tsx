@@ -5,8 +5,6 @@ import {
 	Box,
 	Crosshair,
 	Eye,
-	File,
-	Folder,
 	GitCommit,
 	Grid,
 	Layers,
@@ -17,7 +15,6 @@ import {
 	Settings,
 	Triangle,
 	Zap,
-	ZoomIn,
 } from "lucide-react";
 import React from "react";
 import { Badge } from "@/components/ui/badge";

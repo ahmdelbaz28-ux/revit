@@ -6,22 +6,19 @@ import {
 	Cpu,
 	Eye,
 	FileText,
-	GitPullRequest,
 	Mic,
 	Plus,
-	Search,
 	Send,
 	Server,
 	Settings,
 	X,
 	Zap,
 } from "lucide-react";
-import React, { useState } from "react";
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 
 export function AICopilot() {
 	const [isListening, setIsListening] = useState(true);

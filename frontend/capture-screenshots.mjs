@@ -2,10 +2,11 @@
  * Screenshot capture script for FireAI Electron app.
  * Usage: xvfb-run node capture-screenshots.mjs
  */
+
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { app, BrowserWindow } from "electron";
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const OUT = path.resolve(__dirname, "..", "docs", "assets", "screenshots");

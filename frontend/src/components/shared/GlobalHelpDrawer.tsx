@@ -29,7 +29,7 @@ import {
 	SheetTitle,
 } from "@/components/ui/sheet";
 import { HELP_TOPICS } from "@/help/helpTopics";
-import type { HelpTopic, HelpTopicId, HelpTreeNode } from "@/help/types";
+import type { HelpTopic, HelpTopicId } from "@/help/types";
 import { HELP_TREE, ROUTE_HELP_MAP } from "@/help/types";
 
 interface GlobalHelpDrawerProps {

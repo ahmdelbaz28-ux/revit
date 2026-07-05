@@ -1,5 +1,5 @@
 import { HelpCircle, Moon, Shield, Sun, Wifi, WifiOff } from "lucide-react";
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 // ─── Injected CSS for pulsating animation ───────────────────────────────────
 const PULSE_STYLE = `

@@ -63,11 +63,11 @@ class ApiClient {
 	}
 
 	setAuthToken(token: string): void {
-		this.defaultHeaders["Authorization"] = "Bearer " + token;
+		this.defaultHeaders.Authorization = `Bearer ${token}`;
 	}
 
 	clearAuthToken(): void {
-		delete this.defaultHeaders["Authorization"];
+		delete this.defaultHeaders.Authorization;
 	}
 
 	private async fetchWithRetry<T>(
@@ -146,7 +146,7 @@ class ApiClient {
 
 			if (!response.ok) {
 				throw new Error(
-					data?.error || data?.detail || "HTTP " + response.status,
+					data?.error || data?.detail || `HTTP ${response.status}`,
 				);
 			}
 
@@ -213,7 +213,7 @@ class ApiClient {
 		if (params) {
 			const sep = url.includes("?") ? "&" : "?";
 			const qs = Object.entries(params)
-				.map(([k, v]) => encodeURIComponent(k) + "=" + encodeURIComponent(v))
+				.map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
 				.join("&");
 			url += sep + qs;
 		}
@@ -268,7 +268,7 @@ class ApiClient {
 		if (!this.wsCallbacks.has(channel)) {
 			this.wsCallbacks.set(channel, new Set());
 		}
-		this.wsCallbacks.get(channel)!.add(callback);
+		this.wsCallbacks.get(channel)?.add(callback);
 
 		if (
 			!this.wsConnection ||
@@ -327,12 +327,12 @@ class ApiClient {
 					const targetChannel = message.channel;
 					if (targetChannel && this.wsCallbacks.has(targetChannel)) {
 						this.wsCallbacks
-							.get(targetChannel)!
-							.forEach((cb) => cb(message.data));
+							.get(targetChannel)
+							?.forEach((cb) => cb(message.data));
 					}
 					// Also dispatch to wildcard listeners (channel "*")
 					if (this.wsCallbacks.has("*")) {
-						this.wsCallbacks.get("*")!.forEach((cb) => cb(message));
+						this.wsCallbacks.get("*")?.forEach((cb) => cb(message));
 					}
 				} catch {
 					// Ignore parse errors
@@ -509,7 +509,7 @@ class ApiClient {
 	}
 
 	async getProject(id: string): Promise<ApiResponse<Project>> {
-		return this.get<Project>("/projects/" + encodeURIComponent(id));
+		return this.get<Project>(`/projects/${encodeURIComponent(id)}`);
 	}
 
 	async createProject(data: CreateProjectInput): Promise<ApiResponse<Project>> {
@@ -520,11 +520,11 @@ class ApiClient {
 		id: string,
 		data: UpdateProjectInput,
 	): Promise<ApiResponse<Project>> {
-		return this.put<Project>("/projects/" + encodeURIComponent(id), data);
+		return this.put<Project>(`/projects/${encodeURIComponent(id)}`, data);
 	}
 
 	async deleteProject(id: string): Promise<ApiResponse<void>> {
-		return this.delete<void>("/projects/" + encodeURIComponent(id));
+		return this.delete<void>(`/projects/${encodeURIComponent(id)}`);
 	}
 
 	// ============================================================================
@@ -536,7 +536,7 @@ class ApiClient {
 		params?: PaginationParams,
 	): Promise<ApiResponse<PaginatedResponse<Device>>> {
 		return this.get<PaginatedResponse<Device>>(
-			"/projects/" + encodeURIComponent(projectId) + "/devices",
+			`/projects/${encodeURIComponent(projectId)}/devices`,
 			params as Record<string, string>,
 		);
 	}
@@ -558,7 +558,7 @@ class ApiClient {
 		data: CreateDeviceInput,
 	): Promise<ApiResponse<Device>> {
 		return this.post<Device>(
-			"/projects/" + encodeURIComponent(projectId) + "/devices",
+			`/projects/${encodeURIComponent(projectId)}/devices`,
 			data,
 		);
 	}
@@ -598,7 +598,7 @@ class ApiClient {
 		params?: PaginationParams,
 	): Promise<ApiResponse<PaginatedResponse<Connection>>> {
 		return this.get<PaginatedResponse<Connection>>(
-			"/projects/" + encodeURIComponent(projectId) + "/connections",
+			`/projects/${encodeURIComponent(projectId)}/connections`,
 			params as Record<string, string>,
 		);
 	}
@@ -608,7 +608,7 @@ class ApiClient {
 		data: CreateConnectionInput,
 	): Promise<ApiResponse<Connection>> {
 		return this.post<Connection>(
-			"/projects/" + encodeURIComponent(projectId) + "/connections",
+			`/projects/${encodeURIComponent(projectId)}/connections`,
 			data,
 		);
 	}
@@ -634,7 +634,7 @@ class ApiClient {
 		data: GenerateReportInput,
 	): Promise<ApiResponse<Report>> {
 		return this.post<Report>(
-			"/projects/" + encodeURIComponent(projectId) + "/reports",
+			`/projects/${encodeURIComponent(projectId)}/reports`,
 			data,
 		);
 	}
@@ -644,7 +644,7 @@ class ApiClient {
 		params?: PaginationParams,
 	): Promise<ApiResponse<PaginatedResponse<Report>>> {
 		return this.get<PaginatedResponse<Report>>(
-			"/projects/" + encodeURIComponent(projectId) + "/reports",
+			`/projects/${encodeURIComponent(projectId)}/reports`,
 			params as Record<string, string>,
 		);
 	}
@@ -702,7 +702,7 @@ class ApiClient {
 			});
 			clearTimeout(timeoutId);
 			if (!response.ok)
-				throw new Error("Export failed: HTTP " + response.status);
+				throw new Error(`Export failed: HTTP ${response.status}`);
 			return response.blob();
 		} catch (error) {
 			clearTimeout(timeoutId);
@@ -751,13 +751,13 @@ class ApiClient {
 
 	async syncProject(projectId: string): Promise<ApiResponse<SyncStatus>> {
 		return this.post<SyncStatus>(
-			"/projects/" + encodeURIComponent(projectId) + "/sync",
+			`/projects/${encodeURIComponent(projectId)}/sync`,
 		);
 	}
 
 	async getSyncStatus(projectId: string): Promise<ApiResponse<SyncStatus>> {
 		return this.get<SyncStatus>(
-			"/projects/" + encodeURIComponent(projectId) + "/sync",
+			`/projects/${encodeURIComponent(projectId)}/sync`,
 		);
 	}
 
@@ -936,7 +936,7 @@ function getCsrfToken(): string | null {
 }
 
 // Update the API request functions to include CSRF token
-async function apiRequest<T>(
+async function _apiRequest<T>(
 	url: string,
 	options: RequestInit = {},
 ): Promise<ApiResponse<T>> {

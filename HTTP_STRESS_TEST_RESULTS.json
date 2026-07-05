@@ -1,167 +1,167 @@
 [
-  {
-    "test": "health_/health",
-    "status": "PASS",
-    "details": "GET /health → 200 (reachable by probes)"
-  },
-  {
-    "test": "health_/api/v1/health",
-    "status": "PASS",
-    "details": "GET /api/v1/health → 200 (reachable by probes)"
-  },
-  {
-    "test": "health_/api/v2/health",
-    "status": "PASS",
-    "details": "GET /api/v2/health → 200 (reachable by probes)"
-  },
-  {
-    "test": "cache_stats_no_auth",
-    "status": "PASS",
-    "details": "No-auth → 401 (must authenticate — stricter than old 403)"
-  },
-  {
-    "test": "cache_stats_viewer",
-    "status": "PASS",
-    "details": "Viewer → 403 (viewer cannot read cache stats)"
-  },
-  {
-    "test": "cache_stats_engineer",
-    "status": "PASS",
-    "details": "Engineer → 403 (engineer cannot read cache stats)"
-  },
-  {
-    "test": "cache_stats_admin",
-    "status": "PASS",
-    "details": "Admin → 200 (cache stats: 0 keys)"
-  },
-  {
-    "test": "cache_stats_invalid",
-    "status": "PASS",
-    "details": "Invalid key → 401 (doesn't reveal key existence)"
-  },
-  {
-    "test": "header_x-frame-options",
-    "status": "PASS",
-    "details": "x-frame-options: DENY"
-  },
-  {
-    "test": "header_x-content-type-options",
-    "status": "PASS",
-    "details": "x-content-type-options: nosniff"
-  },
-  {
-    "test": "header_referrer-policy",
-    "status": "PASS",
-    "details": "referrer-policy: no-referrer"
-  },
-  {
-    "test": "header_x-xss-protection",
-    "status": "PASS",
-    "details": "x-xss-protection: 0"
-  },
-  {
-    "test": "header_content-security-policy",
-    "status": "PASS",
-    "details": "content-security-policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsaf"
-  },
-  {
-    "test": "header_permissions-policy",
-    "status": "PASS",
-    "details": "permissions-policy: accelerometer=(), camera=(), geolocation=(), gyroscope=(), m"
-  },
-  {
-    "test": "hsts_always_emitted",
-    "status": "PASS",
-    "details": "HSTS emitted: max-age=31536000; includeSubDomains"
-  },
-  {
-    "test": "cid_auto_generated",
-    "status": "PASS",
-    "details": "Auto-generated CID: c2f5c960-48c8-49..."
-  },
-  {
-    "test": "cid_client_provided",
-    "status": "PASS",
-    "details": "Client-provided CID echoed back"
-  },
-  {
-    "test": "cid_log_injection_blocked",
-    "status": "PASS",
-    "details": "Malformed CID (with CRLF) was rejected/replaced"
-  },
-  {
-    "test": "cors_preflight_ok",
-    "status": "PASS",
-    "details": "OPTIONS → 200 (CORS preflight allowed)"
-  },
-  {
-    "test": "cors_aco_header",
-    "status": "PASS",
-    "details": "Access-Control-Allow-Origin: http://localhost:3000"
-  },
-  {
-    "test": "projects_list_viewer",
-    "status": "PASS",
-    "details": "Viewer can list projects"
-  },
-  {
-    "test": "projects_create_viewer",
-    "status": "PASS",
-    "details": "Viewer cannot create projects (403)"
-  },
-  {
-    "test": "projects_create_engineer",
-    "status": "PASS",
-    "details": "Engineer can create projects"
-  },
-  {
-    "test": "projects_create_admin",
-    "status": "PASS",
-    "details": "Admin can create projects"
-  },
-  {
-    "test": "rate_limit_enforced",
-    "status": "WARN",
-    "details": "No 429s in 15 requests — status codes: [403, 403, 403, 403, 403]... (rate limit may apply to authenticated requests only)"
-  },
-  {
-    "test": "health_no_leak",
-    "status": "PASS",
-    "details": "No internal paths/secrets in health response"
-  },
-  {
-    "test": "cache_initial_stats",
-    "status": "INFO",
-    "details": "Initial cache: 0 keys (cap 100)"
-  },
-  {
-    "test": "cache_after_load",
-    "status": "PASS",
-    "details": "After 50 health requests: 0 keys (cap 100)"
-  },
-  {
-    "test": "cache_clear_admin",
-    "status": "PASS",
-    "details": "Admin cleared 0 keys"
-  },
-  {
-    "test": "error_404_safe",
-    "status": "PASS",
-    "details": "404 response is safe: Project not found"
-  },
-  {
-    "test": "concurrent_health",
-    "status": "PASS",
-    "details": "10 workers × 20 requests = 200 requests, 0 errors"
-  },
-  {
-    "test": "api_key_perf",
-    "status": "PASS",
-    "details": "20 requests in 5.05s (avg 252ms/req)"
-  },
-  {
-    "test": "invalid_key_perf",
-    "status": "PASS",
-    "details": "Invalid key: 250.3ms/req (timing-equalized — prevents enumeration)"
-  }
+	{
+		"test": "health_/health",
+		"status": "PASS",
+		"details": "GET /health → 200 (reachable by probes)"
+	},
+	{
+		"test": "health_/api/v1/health",
+		"status": "PASS",
+		"details": "GET /api/v1/health → 200 (reachable by probes)"
+	},
+	{
+		"test": "health_/api/v2/health",
+		"status": "PASS",
+		"details": "GET /api/v2/health → 200 (reachable by probes)"
+	},
+	{
+		"test": "cache_stats_no_auth",
+		"status": "PASS",
+		"details": "No-auth → 401 (must authenticate — stricter than old 403)"
+	},
+	{
+		"test": "cache_stats_viewer",
+		"status": "PASS",
+		"details": "Viewer → 403 (viewer cannot read cache stats)"
+	},
+	{
+		"test": "cache_stats_engineer",
+		"status": "PASS",
+		"details": "Engineer → 403 (engineer cannot read cache stats)"
+	},
+	{
+		"test": "cache_stats_admin",
+		"status": "PASS",
+		"details": "Admin → 200 (cache stats: 0 keys)"
+	},
+	{
+		"test": "cache_stats_invalid",
+		"status": "PASS",
+		"details": "Invalid key → 401 (doesn't reveal key existence)"
+	},
+	{
+		"test": "header_x-frame-options",
+		"status": "PASS",
+		"details": "x-frame-options: DENY"
+	},
+	{
+		"test": "header_x-content-type-options",
+		"status": "PASS",
+		"details": "x-content-type-options: nosniff"
+	},
+	{
+		"test": "header_referrer-policy",
+		"status": "PASS",
+		"details": "referrer-policy: no-referrer"
+	},
+	{
+		"test": "header_x-xss-protection",
+		"status": "PASS",
+		"details": "x-xss-protection: 0"
+	},
+	{
+		"test": "header_content-security-policy",
+		"status": "PASS",
+		"details": "content-security-policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsaf"
+	},
+	{
+		"test": "header_permissions-policy",
+		"status": "PASS",
+		"details": "permissions-policy: accelerometer=(), camera=(), geolocation=(), gyroscope=(), m"
+	},
+	{
+		"test": "hsts_always_emitted",
+		"status": "PASS",
+		"details": "HSTS emitted: max-age=31536000; includeSubDomains"
+	},
+	{
+		"test": "cid_auto_generated",
+		"status": "PASS",
+		"details": "Auto-generated CID: c2f5c960-48c8-49..."
+	},
+	{
+		"test": "cid_client_provided",
+		"status": "PASS",
+		"details": "Client-provided CID echoed back"
+	},
+	{
+		"test": "cid_log_injection_blocked",
+		"status": "PASS",
+		"details": "Malformed CID (with CRLF) was rejected/replaced"
+	},
+	{
+		"test": "cors_preflight_ok",
+		"status": "PASS",
+		"details": "OPTIONS → 200 (CORS preflight allowed)"
+	},
+	{
+		"test": "cors_aco_header",
+		"status": "PASS",
+		"details": "Access-Control-Allow-Origin: http://localhost:3000"
+	},
+	{
+		"test": "projects_list_viewer",
+		"status": "PASS",
+		"details": "Viewer can list projects"
+	},
+	{
+		"test": "projects_create_viewer",
+		"status": "PASS",
+		"details": "Viewer cannot create projects (403)"
+	},
+	{
+		"test": "projects_create_engineer",
+		"status": "PASS",
+		"details": "Engineer can create projects"
+	},
+	{
+		"test": "projects_create_admin",
+		"status": "PASS",
+		"details": "Admin can create projects"
+	},
+	{
+		"test": "rate_limit_enforced",
+		"status": "WARN",
+		"details": "No 429s in 15 requests — status codes: [403, 403, 403, 403, 403]... (rate limit may apply to authenticated requests only)"
+	},
+	{
+		"test": "health_no_leak",
+		"status": "PASS",
+		"details": "No internal paths/secrets in health response"
+	},
+	{
+		"test": "cache_initial_stats",
+		"status": "INFO",
+		"details": "Initial cache: 0 keys (cap 100)"
+	},
+	{
+		"test": "cache_after_load",
+		"status": "PASS",
+		"details": "After 50 health requests: 0 keys (cap 100)"
+	},
+	{
+		"test": "cache_clear_admin",
+		"status": "PASS",
+		"details": "Admin cleared 0 keys"
+	},
+	{
+		"test": "error_404_safe",
+		"status": "PASS",
+		"details": "404 response is safe: Project not found"
+	},
+	{
+		"test": "concurrent_health",
+		"status": "PASS",
+		"details": "10 workers × 20 requests = 200 requests, 0 errors"
+	},
+	{
+		"test": "api_key_perf",
+		"status": "PASS",
+		"details": "20 requests in 5.05s (avg 252ms/req)"
+	},
+	{
+		"test": "invalid_key_perf",
+		"status": "PASS",
+		"details": "Invalid key: 250.3ms/req (timing-equalized — prevents enumeration)"
+	}
 ]

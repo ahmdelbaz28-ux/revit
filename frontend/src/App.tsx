@@ -1,9 +1,8 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { Toaster } from "sonner";
 import CommandPalette from "@/components/command/CommandPalette";
-import { SmartHelpDrawer } from "@/components/help/SmartHelpDrawer";
 import AppShell from "@/components/layout/AppShell";
 import OnboardingTour from "@/components/onboarding/OnboardingTour";
 import { ContextualHelpButton } from "@/components/shared/ContextualHelpButton";

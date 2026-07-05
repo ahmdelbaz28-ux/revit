@@ -680,7 +680,7 @@ function generateReportSections(
 					data: Object.entries(byCategory).map(([cat, load]) => [
 						cat,
 						load.toFixed(2),
-						((load / totalLoad) * 100).toFixed(1) + "%",
+						`${((load / totalLoad) * 100).toFixed(1)}%`,
 					]),
 				},
 				{
@@ -849,7 +849,7 @@ function generateReportSections(
 						"Cores",
 						"Spare Cores",
 					],
-					data: connections.map((c, i) => [
+					data: connections.map((c, _i) => [
 						c.id,
 						c.fromId,
 						c.toId,
@@ -917,7 +917,7 @@ function generateReportSections(
 						d.size,
 						d.cables,
 						d.fillArea,
-						d.fillPercent + "%",
+						`${d.fillPercent}%`,
 						d.status,
 					]),
 				},
@@ -948,7 +948,7 @@ function generateReportSections(
 					data: Object.entries(byCategory).map(([cat, count]) => [
 						cat,
 						count.toString(),
-						((count / devices.length) * 100).toFixed(1) + "%",
+						`${((count / devices.length) * 100).toFixed(1)}%`,
 					]),
 				},
 				{
@@ -1019,8 +1019,8 @@ function generateReportSections(
 						type,
 						`Device - ${type}`,
 						info.count.toString(),
-						"$" + info.unitCost.toFixed(2),
-						"$" + (info.count * info.unitCost).toFixed(2),
+						`$${info.unitCost.toFixed(2)}`,
+						`$${(info.count * info.unitCost).toFixed(2)}`,
 					]),
 				},
 			];
@@ -1184,7 +1184,7 @@ function generateReportSections(
 					type: "summary",
 					data: {
 						targetLux,
-						area: area + " m²",
+						area: `${area} m²`,
 						totalLumens: totalLumens.toFixed(0),
 						estimatedFixtures: Math.ceil(totalLumens / 3000),
 					},
@@ -1216,9 +1216,9 @@ function generateReportSections(
 					title: "Fire Zone Analysis",
 					type: "summary",
 					data: {
-						totalArea: totalArea + " m²",
-						detectorSpacing: spacing + " m",
-						coveragePerDetector: coveragePerDetector + " m²",
+						totalArea: `${totalArea} m²`,
+						detectorSpacing: `${spacing} m`,
+						coveragePerDetector: `${coveragePerDetector} m²`,
 						requiredDetectors,
 						installedDetectors: devices.filter(
 							(d) => d.category === "FIRE_ALARM",
@@ -1254,7 +1254,7 @@ function generateReportSections(
 					type: "summary",
 					data: {
 						type: params.networkType,
-						bandwidth: params.bandwidth + " Mbps",
+						bandwidth: `${params.bandwidth} Mbps`,
 						redundancy: params.redundancy,
 						devices: devices.length,
 					},
@@ -1276,7 +1276,7 @@ function generateReportSections(
 							d.type,
 							`192.168.1.${10 + i}`,
 							"24",
-							params.bandwidth + " Mbps",
+							`${params.bandwidth} Mbps`,
 						]),
 				},
 			];
@@ -1401,9 +1401,9 @@ function generateWarnings(
 
 function generateRecommendations(
 	type: ReportType,
-	devices: DeviceData[],
-	connections: ConnectionData[],
-	params: Record<string, unknown>,
+	_devices: DeviceData[],
+	_connections: ConnectionData[],
+	_params: Record<string, unknown>,
 ): string[] {
 	const recs: string[] = [];
 	if (type === "LOAD_CALCULATION") {
@@ -1445,28 +1445,28 @@ export function exportReport(
 			break;
 		}
 		case "csv": {
-			let csv = "NexusCAD Pro - " + report.name + "\n";
-			csv += "Generated:," + report.timestamp.toISOString() + "\n\n";
-			csv += "SUMMARY\n" + report.summary + "\n\n";
+			let csv = `NexusCAD Pro - ${report.name}\n`;
+			csv += `Generated:,${report.timestamp.toISOString()}\n\n`;
+			csv += `SUMMARY\n${report.summary}\n\n`;
 
 			for (const section of report.sections) {
-				csv += section.title + "\n";
+				csv += `${section.title}\n`;
 				if (section.headers) {
-					csv += section.headers.join(",") + "\n";
+					csv += `${section.headers.join(",")}\n`;
 				}
 				if (Array.isArray(section.data)) {
 					for (const row of section.data) {
-						csv += (Array.isArray(row) ? row.join(",") : String(row)) + "\n";
+						csv += `${Array.isArray(row) ? row.join(",") : String(row)}\n`;
 					}
 				}
 				csv += "\n";
 			}
 
 			if (report.warnings.length > 0) {
-				csv += "WARNINGS\n" + report.warnings.join("\n") + "\n\n";
+				csv += `WARNINGS\n${report.warnings.join("\n")}\n\n`;
 			}
 			if (report.recommendations.length > 0) {
-				csv += "RECOMMENDATIONS\n" + report.recommendations.join("\n") + "\n";
+				csv += `RECOMMENDATIONS\n${report.recommendations.join("\n")}\n`;
 			}
 
 			const blob = new Blob([csv], { type: "text/csv" });
@@ -1477,20 +1477,19 @@ export function exportReport(
 			break;
 		}
 		case "html": {
-			let html =
-				"<!DOCTYPE html><html><head><title>" + report.name + "</title>";
+			let html = `<!DOCTYPE html><html><head><title>${report.name}</title>`;
 			html +=
 				"<style>body{font-family:Arial,sans-serif;margin:40px;color:#333}table{border-collapse:collapse;width:100%;margin:20px 0}th,td{border:1px solid #ddd;padding:8px;text-align:left}th{background:#f5f5f5}h1{color:#1a56db}h2{color:#333;margin-top:30px}.warning{color:#dc2626}.summary{background:#f0f9ff;padding:20px;border-radius:8px}</style>";
 			html += "</head><body>";
-			html += "<h1>" + report.name + "</h1>";
-			html += "<p>Generated: " + report.timestamp.toLocaleString() + "</p>";
+			html += `<h1>${report.name}</h1>`;
+			html += `<p>Generated: ${report.timestamp.toLocaleString()}</p>`;
 			html +=
 				'<div class="summary"><h2>Summary</h2><p>' +
 				report.summary +
 				"</p></div>";
 
 			for (const section of report.sections) {
-				html += "<h2>" + section.title + "</h2>";
+				html += `<h2>${section.title}</h2>`;
 				if (
 					section.type === "table" &&
 					section.headers &&
@@ -1498,32 +1497,32 @@ export function exportReport(
 				) {
 					html +=
 						"<table><tr>" +
-						section.headers.map((h) => "<th>" + h + "</th>").join("") +
+						section.headers.map((h) => `<th>${h}</th>`).join("") +
 						"</tr>";
 					for (const row of section.data) {
 						html +=
 							"<tr>" +
 							(Array.isArray(row)
-								? row.map((c) => "<td>" + c + "</td>").join("")
-								: "<td>" + row + "</td>") +
+								? row.map((c) => `<td>${c}</td>`).join("")
+								: `<td>${row}</td>`) +
 							"</tr>";
 					}
 					html += "</table>";
 				} else if (section.type === "text") {
-					html += "<pre>" + String(section.data) + "</pre>";
+					html += `<pre>${String(section.data)}</pre>`;
 				}
 			}
 
 			if (report.warnings.length > 0) {
 				html +=
 					'<h2 class="warning">Warnings</h2><ul>' +
-					report.warnings.map((w) => "<li>" + w + "</li>").join("") +
+					report.warnings.map((w) => `<li>${w}</li>`).join("") +
 					"</ul>";
 			}
 			if (report.recommendations.length > 0) {
 				html +=
 					"<h2>Recommendations</h2><ul>" +
-					report.recommendations.map((r) => "<li>" + r + "</li>").join("") +
+					report.recommendations.map((r) => `<li>${r}</li>`).join("") +
 					"</ul>";
 			}
 
@@ -1536,15 +1535,15 @@ export function exportReport(
 			break;
 		}
 		case "excel": {
-			let csv = "NexusCAD Pro - " + report.name + "\n";
-			csv += "Generated:," + report.timestamp.toISOString() + "\n\n";
-			csv += "SUMMARY\n" + report.summary + "\n\n";
+			let csv = `NexusCAD Pro - ${report.name}\n`;
+			csv += `Generated:,${report.timestamp.toISOString()}\n\n`;
+			csv += `SUMMARY\n${report.summary}\n\n`;
 			for (const section of report.sections) {
-				csv += section.title + "\n";
-				if (section.headers) csv += section.headers.join("\t") + "\n";
+				csv += `${section.title}\n`;
+				if (section.headers) csv += `${section.headers.join("\t")}\n`;
 				if (Array.isArray(section.data)) {
 					for (const row of section.data) {
-						csv += (Array.isArray(row) ? row.join("\t") : String(row)) + "\n";
+						csv += `${Array.isArray(row) ? row.join("\t") : String(row)}\n`;
 					}
 				}
 				csv += "\n";
@@ -1557,20 +1556,19 @@ export function exportReport(
 			break;
 		}
 		case "pdf": {
-			let html =
-				"<!DOCTYPE html><html><head><title>" + report.name + "</title>";
+			let html = `<!DOCTYPE html><html><head><title>${report.name}</title>`;
 			html +=
 				"<style>@media print{body{margin:0}}body{font-family:Arial,sans-serif;margin:40px;color:#333}table{border-collapse:collapse;width:100%;margin:20px 0}th,td{border:1px solid #ddd;padding:8px}th{background:#f5f5f5}h1{color:#1a56db;border-bottom:2px solid #1a56db;padding-bottom:10px}h2{color:#333;margin-top:30px;page-break-after:avoid}.warning{color:#dc2626}.summary{background:#f0f9ff;padding:20px;border-radius:8px;margin:20px 0}.page-break{page-break-before:always}</style>";
 			html += "</head><body>";
-			html += "<h1>" + report.name + "</h1>";
-			html += "<p>Generated: " + report.timestamp.toLocaleString() + "</p>";
+			html += `<h1>${report.name}</h1>`;
+			html += `<p>Generated: ${report.timestamp.toLocaleString()}</p>`;
 			html +=
 				'<div class="summary"><h2>Summary</h2><p>' +
 				report.summary +
 				"</p></div>";
 
 			for (const section of report.sections) {
-				html += "<h2>" + section.title + "</h2>";
+				html += `<h2>${section.title}</h2>`;
 				if (
 					section.type === "table" &&
 					section.headers &&
@@ -1578,32 +1576,32 @@ export function exportReport(
 				) {
 					html +=
 						"<table><tr>" +
-						section.headers.map((h) => "<th>" + h + "</th>").join("") +
+						section.headers.map((h) => `<th>${h}</th>`).join("") +
 						"</tr>";
 					for (const row of section.data) {
 						html +=
 							"<tr>" +
 							(Array.isArray(row)
-								? row.map((c) => "<td>" + c + "</td>").join("")
-								: "<td>" + row + "</td>") +
+								? row.map((c) => `<td>${c}</td>`).join("")
+								: `<td>${row}</td>`) +
 							"</tr>";
 					}
 					html += "</table>";
 				} else if (section.type === "text") {
-					html += "<pre>" + String(section.data) + "</pre>";
+					html += `<pre>${String(section.data)}</pre>`;
 				}
 			}
 
 			if (report.warnings.length > 0) {
 				html +=
 					'<div class="page-break"><h2 class="warning">Warnings</h2><ul>' +
-					report.warnings.map((w) => "<li>" + w + "</li>").join("") +
+					report.warnings.map((w) => `<li>${w}</li>`).join("") +
 					"</ul></div>";
 			}
 			if (report.recommendations.length > 0) {
 				html +=
 					"<h2>Recommendations</h2><ul>" +
-					report.recommendations.map((r) => "<li>" + r + "</li>").join("") +
+					report.recommendations.map((r) => `<li>${r}</li>`).join("") +
 					"</ul>";
 			}
 

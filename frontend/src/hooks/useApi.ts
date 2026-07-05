@@ -37,7 +37,7 @@ export function useHealth(): UseApiResult<HealthStatus> & {
 	const [data, setData] = useState<HealthStatus | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
-	const [refreshKey, setRefreshKey] = useState(0);
+	const [_refreshKey, setRefreshKey] = useState(0);
 
 	const refetch = useCallback(() => setRefreshKey((k) => k + 1), []);
 
@@ -69,7 +69,7 @@ export function useHealth(): UseApiResult<HealthStatus> & {
 		return () => {
 			cancelled = true;
 		};
-	}, [refreshKey]);
+	}, []);
 
 	return { data, loading, error, refetch, connected: data?.status === "ok" };
 }
@@ -82,7 +82,7 @@ export function useProjects(): UseApiResult<Project[]> {
 	const [data, setData] = useState<Project[] | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
-	const [refreshKey, setRefreshKey] = useState(0);
+	const [_refreshKey, setRefreshKey] = useState(0);
 
 	const refetch = useCallback(() => setRefreshKey((k) => k + 1), []);
 
@@ -114,7 +114,7 @@ export function useProjects(): UseApiResult<Project[]> {
 		return () => {
 			cancelled = true;
 		};
-	}, [refreshKey]);
+	}, []);
 
 	return { data, loading, error, refetch };
 }
@@ -127,7 +127,7 @@ export function useProject(id: string | null): UseApiResult<Project> {
 	const [data, setData] = useState<Project | null>(null);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
-	const [refreshKey, setRefreshKey] = useState(0);
+	const [_refreshKey, setRefreshKey] = useState(0);
 
 	const refetch = useCallback(() => setRefreshKey((k) => k + 1), []);
 
@@ -165,7 +165,7 @@ export function useProject(id: string | null): UseApiResult<Project> {
 		return () => {
 			cancelled = true;
 		};
-	}, [id, refreshKey]);
+	}, [id]);
 
 	return { data, loading, error, refetch };
 }
@@ -178,7 +178,7 @@ export function useDevices(projectId: string | null): UseApiResult<Device[]> {
 	const [data, setData] = useState<Device[] | null>(null);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
-	const [refreshKey, setRefreshKey] = useState(0);
+	const [_refreshKey, setRefreshKey] = useState(0);
 
 	const refetch = useCallback(() => setRefreshKey((k) => k + 1), []);
 
@@ -216,7 +216,7 @@ export function useDevices(projectId: string | null): UseApiResult<Device[]> {
 		return () => {
 			cancelled = true;
 		};
-	}, [projectId, refreshKey]);
+	}, [projectId]);
 
 	return { data, loading, error, refetch };
 }
@@ -231,7 +231,7 @@ export function useConnections(
 	const [data, setData] = useState<Connection[] | null>(null);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
-	const [refreshKey, setRefreshKey] = useState(0);
+	const [_refreshKey, setRefreshKey] = useState(0);
 
 	const refetch = useCallback(() => setRefreshKey((k) => k + 1), []);
 
@@ -269,7 +269,7 @@ export function useConnections(
 		return () => {
 			cancelled = true;
 		};
-	}, [projectId, refreshKey]);
+	}, [projectId]);
 
 	return { data, loading, error, refetch };
 }
@@ -282,7 +282,7 @@ export function useReports(projectId: string | null): UseApiResult<Report[]> {
 	const [data, setData] = useState<Report[] | null>(null);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
-	const [refreshKey, setRefreshKey] = useState(0);
+	const [_refreshKey, setRefreshKey] = useState(0);
 
 	const refetch = useCallback(() => setRefreshKey((k) => k + 1), []);
 
@@ -320,7 +320,7 @@ export function useReports(projectId: string | null): UseApiResult<Report[]> {
 		return () => {
 			cancelled = true;
 		};
-	}, [projectId, refreshKey]);
+	}, [projectId]);
 
 	return { data, loading, error, refetch };
 }
@@ -432,7 +432,7 @@ export function useDeleteProject(): UseMutationResult<string, void> & {
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
-	const mutate = useCallback(async (id: string): Promise<void | null> => {
+	const mutate = useCallback(async (id: string): Promise<undefined | null> => {
 		setLoading(true);
 		setError(null);
 		try {

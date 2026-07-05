@@ -16,7 +16,7 @@ import {
 	getVoltageDropColor,
 } from "@/engine/VisualizationUtils";
 import { actions, type DeviceType, useStore } from "@/store/simpleStore";
-import { AnimatedBar, ThermalLegend } from "./ThermalLegend";
+import { ThermalLegend } from "./ThermalLegend";
 
 // ============================================================================
 // TYPES
@@ -108,7 +108,7 @@ export function EngineeringCanvas({ onItemDrop }: EngineeringCanvasProps) {
 				const dy = to.y - from.y;
 				const lengthPx = Math.sqrt(dx * dx + dy * dy);
 				const lengthM = lengthPx * 0.01; // 1px = 10mm
-				const lengthKm = lengthM / 1000;
+				const _lengthKm = lengthM / 1000;
 
 				// Calculate voltage drop
 				const vd = calculateVoltageDrop(
@@ -408,7 +408,7 @@ export function EngineeringCanvas({ onItemDrop }: EngineeringCanvasProps) {
 
 				{/* Thermal Connections */}
 				{thermalConnections.map((conn) => {
-					const gradientSegments = generateCableGradient(
+					const _gradientSegments = generateCableGradient(
 						Math.sqrt(
 							(conn.toX - conn.fromX) ** 2 + (conn.toY - conn.fromY) ** 2,
 						),

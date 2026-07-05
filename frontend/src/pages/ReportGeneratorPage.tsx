@@ -5,11 +5,8 @@
 import {
 	Activity,
 	Activity as ActivityIcon,
-	AlertTriangle,
 	Battery,
 	Calculator,
-	CheckCircle2,
-	Clock,
 	Download,
 	FileText,
 	FolderKanban,
@@ -17,12 +14,10 @@ import {
 	RefreshCw,
 	Ruler,
 	ShieldAlert,
-	XCircle,
 	Zap,
 } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -31,7 +26,6 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -41,7 +35,6 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
 import { useProjects, useReports } from "@/hooks/useApi";
 import type {
 	GenerateReportInput,

@@ -1,13 +1,4 @@
-import {
-	Activity,
-	AlertCircle,
-	Download,
-	FileText,
-	Layout,
-	Plus,
-	Settings,
-} from "lucide-react";
-import React from "react";
+import { AlertCircle, Download, FileText, Plus, Settings } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";

@@ -4,19 +4,11 @@
  */
 
 import {
-	AlertTriangle,
 	CheckCircle2,
-	Copy,
 	Download,
 	Eye,
 	EyeOff,
-	FileText,
-	Grid3X3,
-	Layers,
-	Minus,
 	Plus,
-	RotateCcw,
-	Ruler,
 	Save,
 	Trash2,
 	Upload,
@@ -28,7 +20,6 @@ import {
 	CanvasEditor,
 	type Detector,
 } from "@/components/firealarm/CanvasEditor";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -62,7 +53,7 @@ export function FireAlarmDesigner() {
 	const [projectDescription, setProjectDescription] = useState("");
 	const [showGrid, setShowGrid] = useState(true);
 	const [snapToGrid, setSnapToGrid] = useState(true);
-	const [zoomLevel, setZoomLevel] = useState(100);
+	const [_zoomLevel, _setZoomLevel] = useState(100);
 	const [units, setUnits] = useState<"metric" | "imperial">("metric");
 
 	// Initialize with sample detectors
@@ -109,14 +100,14 @@ export function FireAlarmDesigner() {
 		setDetectors([...detectors, newDetector]);
 	};
 
-	const handleRemoveDetector = (id: string) => {
+	const _handleRemoveDetector = (id: string) => {
 		setDetectors(detectors.filter((det) => det.id !== id));
 		if (selectedDetector?.id === id) {
 			setSelectedDetector(null);
 		}
 	};
 
-	const handleDetectorUpdate = (updatedDetector: Detector) => {
+	const _handleDetectorUpdate = (updatedDetector: Detector) => {
 		setDetectors(
 			detectors.map((det) =>
 				det.id === updatedDetector.id ? updatedDetector : det,

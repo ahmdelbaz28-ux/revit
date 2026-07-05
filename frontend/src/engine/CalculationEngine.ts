@@ -351,7 +351,7 @@ export function calculateCableSizing(
 	const deratingFactor = installationFactor * tempFactor * simultaneousFactor;
 
 	// Required ampacity before derating
-	const requiredAmpacity = loadCurrent / deratingFactor;
+	const _requiredAmpacity = loadCurrent / deratingFactor;
 
 	// V131 FIX (FE-02): Separate ampacity tables per material per IEC 60364-5-52 Table B.52.4.
 	// Previously a single copper-only table was used for both Cu and Al, causing

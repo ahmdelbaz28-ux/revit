@@ -1,4 +1,4 @@
-import { expect, type Page, test } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 
 test.describe("Complete Button Audit for BazSpark UI", () => {
 	const pages = [
@@ -40,7 +40,7 @@ test.describe("Complete Button Audit for BazSpark UI", () => {
 			const buttonTexts: string[] = [];
 			for (const btn of buttons) {
 				const text = await btn.textContent();
-				if (text && text.trim()) {
+				if (text?.trim()) {
 					buttonTexts.push(text.trim());
 				}
 			}
@@ -53,5 +53,3 @@ test.describe("Complete Button Audit for BazSpark UI", () => {
 		});
 	}
 });
-
-

@@ -48,7 +48,7 @@ export function RevitPage() {
 
 	useEffect(() => {
 		checkStatus();
-	}, []);
+	}, [checkStatus]);
 
 	const handleConnect = async () => {
 		setConnecting(true);

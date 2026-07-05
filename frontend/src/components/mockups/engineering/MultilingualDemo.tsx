@@ -2,19 +2,13 @@ import {
 	ArrowRight,
 	CheckCircle2,
 	ChevronDown,
-	ChevronUp,
 	Download,
-	Globe,
 	Plus,
 	Settings,
-	X,
 } from "lucide-react";
-import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 import {
 	Table,
 	TableBody,
@@ -495,7 +489,7 @@ function LanguageCard({
 					<div className="w-32 h-1 bg-slate-800 rounded-full overflow-hidden">
 						<div
 							className={`h-full ${completion.startsWith("100") ? "bg-emerald-500" : "bg-blue-500"}`}
-							style={{ width: completion.split("%")[0] + "%" }}
+							style={{ width: `${completion.split("%")[0]}%` }}
 						/>
 					</div>
 				</div>

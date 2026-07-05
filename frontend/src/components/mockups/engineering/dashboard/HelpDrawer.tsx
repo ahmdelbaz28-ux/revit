@@ -1,5 +1,4 @@
 import { Book, FileText, LifeBuoy, X } from "lucide-react";
-import React from "react";
 
 interface HelpDrawerProps {
 	helpOpen: boolean;

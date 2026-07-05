@@ -1,4 +1,4 @@
-import { expect, type Page, test } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 
 /**
  * Comprehensive Button and Backend Connection Tests
@@ -638,7 +638,7 @@ test.describe("Engineering Page Button Tests", () => {
 						await expect(button).toBeEnabled();
 						expect(response.status()).toBeGreaterThanOrEqual(200);
 						expect(response.status()).toBeLessThan(400);
-					} catch (e) {
+					} catch (_e) {
 						// If no API response within timeout, log that button was clicked
 						await button.click();
 						logTestResult(
@@ -697,7 +697,7 @@ test.describe("Fire Alarm Page Button Tests", () => {
 						await expect(button).toBeEnabled();
 						expect(response.status()).toBeGreaterThanOrEqual(200);
 						expect(response.status()).toBeLessThan(400);
-					} catch (e) {
+					} catch (_e) {
 						// If no API response within timeout, log that button was clicked
 						await button.click();
 						logTestResult(
@@ -755,7 +755,7 @@ test.describe("CAD Settings Page Button Tests", () => {
 					await expect(button).toBeEnabled();
 					expect(response.status()).toBeGreaterThanOrEqual(200);
 					expect(response.status()).toBeLessThan(400);
-				} catch (e) {
+				} catch (_e) {
 					// If no API response within timeout, log that button was clicked
 					await button.click();
 					logTestResult(

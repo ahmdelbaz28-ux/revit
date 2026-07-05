@@ -1,43 +1,41 @@
 {
-  "mcp": {
-    "servers": {
-"github.com/github/github-mcp-server": {
-        "command": "docker",
-        "args": [
-          "run",
-          "-i",
-          "--rm",
-          "-e",
-          "GITHUB_PERSONAL_ACCESS_TOKEN=${input:github_mcp_pat}",
-          "ghcr.io/github/github-mcp-server"
-        ],
-        "env": {
-          "GITHUB_PERSONAL_ACCESS_TOKEN": "${input:github_mcp_pat}"
-        }
-      },
-      "TestSprite": {
-        "command": "npx",
-        "args": [
-          "@testsprite/testsprite-mcp@latest"
-        ],
-        "env": {
-          "API_KEY": "${input:testsprite_api_key}"
-        }
-      }
-    }
-  },
-  "inputs": [
-    {
-      "type": "promptString",
-      "id": "github_mcp_pat",
-      "description": "GitHub Personal Access Token",
-      "password": true
-    },
-    {
-      "type": "promptString",
-      "id": "testsprite_api_key",
-      "description": "TestSprite API Key (rotate the previously leaked key immediately)",
-      "password": true
-    }
-  ]
+	"mcp": {
+		"servers": {
+			"github.com/github/github-mcp-server": {
+				"command": "docker",
+				"args": [
+					"run",
+					"-i",
+					"--rm",
+					"-e",
+					"GITHUB_PERSONAL_ACCESS_TOKEN=${input:github_mcp_pat}",
+					"ghcr.io/github/github-mcp-server"
+				],
+				"env": {
+					"GITHUB_PERSONAL_ACCESS_TOKEN": "${input:github_mcp_pat}"
+				}
+			},
+			"TestSprite": {
+				"command": "npx",
+				"args": ["@testsprite/testsprite-mcp@latest"],
+				"env": {
+					"API_KEY": "${input:testsprite_api_key}"
+				}
+			}
+		}
+	},
+	"inputs": [
+		{
+			"type": "promptString",
+			"id": "github_mcp_pat",
+			"description": "GitHub Personal Access Token",
+			"password": true
+		},
+		{
+			"type": "promptString",
+			"id": "testsprite_api_key",
+			"description": "TestSprite API Key (rotate the previously leaked key immediately)",
+			"password": true
+		}
+	]
 }

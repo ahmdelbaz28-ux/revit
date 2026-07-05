@@ -156,7 +156,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
 
 	useEffect(() => {
 		setSelectedIndex(0);
-	}, [query]);
+	}, []);
 
 	const execute = (result: PaletteItem) => {
 		if (result.type === "command") {

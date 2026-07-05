@@ -2,7 +2,6 @@ import {
 	ChevronDown,
 	ChevronRight,
 	Cpu,
-	Flame,
 	Folder,
 	FolderOpen,
 	MonitorSpeaker,
@@ -10,7 +9,6 @@ import {
 	Square,
 	Thermometer,
 	Volume2,
-	VolumeX,
 } from "lucide-react";
 import type React from "react";
 import { useState } from "react";

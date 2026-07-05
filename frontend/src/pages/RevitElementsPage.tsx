@@ -2,7 +2,7 @@
  * RevitElementsPage.tsx — View and manage Revit elements
  */
 
-import { Eye, RefreshCw, Trash2 } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { type ElementItem, ElementList } from "@/components/shared/ElementList";

@@ -33,7 +33,7 @@ export function HistoryTimeline() {
 
 	useEffect(() => {
 		fetchHistory();
-	}, []);
+	}, [fetchHistory]);
 
 	const handleRollback = async (versionId: string) => {
 		setRollingBack(versionId);

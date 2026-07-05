@@ -1,5 +1,5 @@
-import { Activity, Factory, Home, MapPin, ShieldAlert } from "lucide-react";
-import React, { useState } from "react";
+import { Activity, Factory, MapPin, ShieldAlert } from "lucide-react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {

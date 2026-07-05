@@ -129,7 +129,7 @@ let allPoints    = [];
 let pointsMesh   = null;
 let ptSize       = 6;
 let zMax         = Infinity;
-let filterSet    = new Set(['REDUNDANT_HYBRID','OPTICAL_ONLY','ACOUSTIC_ONLY','BLIND_SPOT']);
+const filterSet    = new Set(['REDUNDANT_HYBRID','OPTICAL_ONLY','ACOUSTIC_ONLY','BLIND_SPOT']);
 const CLASS_COLOR= {
   REDUNDANT_HYBRID: new THREE.Color('#00AA44'),
   OPTICAL_ONLY:     new THREE.Color('#FFD700'),
@@ -152,7 +152,7 @@ function loadData(json) {
   zSlider.min=0; zSlider.max=100; zSlider.value=100;
   zSlider.oninput = ()=>{
     zMax = zMin2 + (zMax2-zMin2)*(+zSlider.value/100);
-    zSlider.nextSibling.textContent = zSlider.value==100 ? ' all' : ` z<=${zMax.toFixed(1)}m`;
+    zSlider.nextSibling.textContent = zSlider.value===100 ? ' all' : ` z<=${zMax.toFixed(1)}m`;
     rebuildMesh();
   };
   document.getElementById('pt-size').oninput = e=>{
@@ -160,7 +160,7 @@ function loadData(json) {
   };
   ['red','opt','aco','bsp'].forEach((id,i)=>{
     const cls=['REDUNDANT_HYBRID','OPTICAL_ONLY','ACOUSTIC_ONLY','BLIND_SPOT'][i];
-    document.getElementById('f-'+id).onchange=e=>{
+    document.getElementById(`f-${id}`).onchange=e=>{
       e.target.checked ? filterSet.add(cls) : filterSet.delete(cls);
       rebuildMesh();
     };
@@ -235,8 +235,8 @@ renderer.domElement.addEventListener('mousemove', e=>{
     const idx = hits[0].index;
     const pt  = pointsMesh.userData.points[idx];
     tooltip.style.display='block';
-    tooltip.style.left=(e.clientX+14)+'px';
-    tooltip.style.top =(e.clientY-10)+'px';
+    tooltip.style.left=`${e.clientX+14}px`;
+    tooltip.style.top =`${e.clientY-10}px`;
     tooltip.innerHTML=
       `<b>${pt.class.replace(/_/g,' ')}</b><br>`+
       `X:${pt.x.toFixed(2)} Y:${pt.y.toFixed(2)} Z:${pt.z.toFixed(2)}<br>`+
@@ -251,7 +251,7 @@ renderer.domElement.addEventListener('mousemove', e=>{
 function handleFile(file){
   const reader=new FileReader();
   reader.onload=e=>{ try{ loadData(JSON.parse(e.target.result)); }
-                     catch(err){ alert('Invalid JSON: '+err.message); } };
+                     catch(err){ alert(`Invalid JSON: ${err.message}`); } };
   reader.readAsText(file);
 }
 document.getElementById('file-input').onchange=e=>{
@@ -261,7 +261,7 @@ document.body.addEventListener('dragover', e=>e.preventDefault());
 document.body.addEventListener('drop', e=>{
   e.preventDefault();
   const f=e.dataTransfer.files[0];
-  if(f&&f.name.endsWith('.json')) handleFile(f);
+  if(f?.name.endsWith('.json')) handleFile(f);
 });
 
 // Resize

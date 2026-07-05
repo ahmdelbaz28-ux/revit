@@ -124,10 +124,10 @@ export function calculateCableLength(
  * Generate complete cable schedule from canvas elements
  */
 export function generateCableSchedule(
-	canvasElements: CanvasElement[],
+	_canvasElements: CanvasElement[],
 	devices: Device[],
 	connections: Connection[],
-	scale: number = PIXELS_TO_METERS,
+	_scale: number = PIXELS_TO_METERS,
 ): CableScheduleItem[] {
 	const schedule: CableScheduleItem[] = [];
 

@@ -1,5 +1,3 @@
-import React from "react";
-
 interface StatusGaugesProps {
 	liveData: Record<string, unknown>;
 	dataMode: string;

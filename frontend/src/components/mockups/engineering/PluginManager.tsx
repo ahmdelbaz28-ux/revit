@@ -7,7 +7,6 @@ import {
 	ExternalLink,
 	FileCode2,
 	Key,
-	MessageSquare,
 	Puzzle,
 	Search,
 	ShieldCheck,

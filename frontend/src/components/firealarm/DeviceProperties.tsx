@@ -14,7 +14,6 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import type { Detector as CanvasDetector, DetectorType } from "./CanvasEditor";
 
 interface DeviceProperty {

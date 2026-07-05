@@ -11,8 +11,8 @@
  *   4. Copies ../requirements.txt -> electron/requirements.txt
  */
 
-const fs = require("fs");
-const path = require("path");
+const fs = require("node:fs");
+const path = require("node:path");
 
 const ROOT = path.resolve(__dirname, "..");
 const PROJECT_ROOT = path.resolve(ROOT, "..");

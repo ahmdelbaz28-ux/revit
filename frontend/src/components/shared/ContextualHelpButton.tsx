@@ -11,7 +11,7 @@ import { useTranslation } from "react-i18next";
 import { useLocation } from "react-router-dom";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { HELP_TOPICS, HELP_TOPICS as TOPICS } from "@/help/helpTopics";
+import { HELP_TOPICS as TOPICS } from "@/help/helpTopics";
 import { ROUTE_HELP_MAP } from "@/help/types";
 
 interface ContextualHelpButtonProps {
@@ -40,7 +40,7 @@ export function ContextualHelpButton({
 			(a, b) => b.length - a.length,
 		);
 		for (const r of sortedRoutes) {
-			if (currentRoute.startsWith(r + "/") || currentRoute === r) {
+			if (currentRoute.startsWith(`${r}/`) || currentRoute === r) {
 				return ROUTE_HELP_MAP[r];
 			}
 		}

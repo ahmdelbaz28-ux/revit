@@ -5,14 +5,11 @@ import {
 	CheckCircle2,
 	Clock,
 	Database,
-	Folder,
 	Server,
 	XCircle,
 } from "lucide-react";
-import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -21,7 +18,6 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
-import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDevices, useHealth, useProjects } from "@/hooks/useApi";
 

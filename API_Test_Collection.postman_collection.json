@@ -1,605 +1,605 @@
 {
-  "info": {
-    "name": "CAD/BIM Integration Platform API Test Collection",
-    "description": "Comprehensive API test collection for AutoCAD, Revit, Digital Twin, and other integration endpoints",
-    "_postman_id": "6a471e339f84e200019e350e-ecfdb2dd8eaee7a985106e430db0021b22",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
-  },
-  "item": [
-    {
-      "name": "Health Checks",
-      "item": [
-        {
-          "name": "Health Status",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/health",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "health"]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Health Statistics",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/health/statistics",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "health", "statistics"]
-            }
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "Authentication",
-      "item": [
-        {
-          "name": "Get Current User",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "X-API-Key",
-                "value": "{{apiKey}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/auth/me",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "auth", "me"]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Session Login",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/auth/session/login",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "auth", "session", "login"]
-            }
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "Projects",
-      "item": [
-        {
-          "name": "List Projects",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "X-API-Key",
-                "value": "{{apiKey}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/projects",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "projects"]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Create Project",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "X-API-Key",
-                "value": "{{apiKey}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"Test Project\",\n  \"description\": \"Test project for API validation\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/projects",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "projects"]
-            }
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "AutoCAD Integration",
-      "item": [
-        {
-          "name": "Connect to AutoCAD",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "X-API-Key",
-                "value": "{{apiKey}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/autocad/connect",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "autocad", "connect"]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Get AutoCAD Documents",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "X-API-Key",
-                "value": "{{apiKey}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/autocad/documents",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "autocad", "documents"]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Upload DWG File",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "X-API-Key",
-                "value": "{{apiKey}}",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "formdata",
-              "formdata": [
-                {
-                  "key": "file",
-                  "type": "file",
-                  "src": []
-                }
-              ]
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/autocad/upload",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "autocad", "upload"]
-            }
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "Revit Integration",
-      "item": [
-        {
-          "name": "Connect to Revit",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "X-API-Key",
-                "value": "{{apiKey}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/revit/connect",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "revit", "connect"]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Get Revit Elements",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "X-API-Key",
-                "value": "{{apiKey}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/revit/elements",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "revit", "elements"]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Upload RVT File",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "X-API-Key",
-                "value": "{{apiKey}}",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "formdata",
-              "formdata": [
-                {
-                  "key": "file",
-                  "type": "file",
-                  "src": []
-                }
-              ]
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/revit/upload",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "revit", "upload"]
-            }
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "Digital Twin",
-      "item": [
-        {
-          "name": "Convert CAD Files",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "X-API-Key",
-                "value": "{{apiKey}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"sourceFormat\": \"dwg\",\n  \"targetFormat\": \"rvt\",\n  \"conversionParams\": {}\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/digital-twin/convert",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "digital-twin", "convert"]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Get Conversion History",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "X-API-Key",
-                "value": "{{apiKey}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/digital-twin/history",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "digital-twin", "history"]
-            }
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "Devices & Elements",
-      "item": [
-        {
-          "name": "List Devices",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "X-API-Key",
-                "value": "{{apiKey}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/devices",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "devices"]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "List Elements",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "X-API-Key",
-                "value": "{{apiKey}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/elements",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "elements"]
-            }
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "Connections & Conflicts",
-      "item": [
-        {
-          "name": "List Connections",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "X-API-Key",
-                "value": "{{apiKey}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/connections",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "connections"]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Check Conflicts",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "X-API-Key",
-                "value": "{{apiKey}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/conflicts",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "conflicts"]
-            }
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "Reports & Exports",
-      "item": [
-        {
-          "name": "Generate Report",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "X-API-Key",
-                "value": "{{apiKey}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"reportType\": \"summary\",\n  \"filters\": {}\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/reports/generate",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "reports", "generate"]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Export Data",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "X-API-Key",
-                "value": "{{apiKey}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"exportType\": \"excel\",\n  \"dataIds\": []\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/exports",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "exports"]
-            }
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "Monitoring",
-      "item": [
-        {
-          "name": "Get Metrics",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "X-API-Key",
-                "value": "{{apiKey}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/monitor/metrics",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "monitor", "metrics"]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "System Health",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "X-API-Key",
-                "value": "{{apiKey}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/monitor/health",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "monitor", "health"]
-            }
-          },
-          "response": []
-        }
-      ]
-    }
-  ],
-  "event": [
-    {
-      "listen": "prerequest",
-      "script": {
-        "type": "text/javascript",
-        "exec": [
-          "// Pre-request Script",
-          "// Set any variables or configurations before the request"
-        ]
-      }
-    },
-    {
-      "listen": "test",
-      "script": {
-        "type": "text/javascript",
-        "exec": [
-          "// Test Script",
-          "// Validate response and capture data",
-          "pm.test(\"Status code is 200\", function () {",
-          "    pm.response.to.have.status(200);",
-          "});",
-          "",
-          "pm.test(\"Response time is less than 500ms\", function () {",
-          "    pm.expect(pm.response.responseTime).to.be.below(500);",
-          "});",
-          "",
-          "// Capture response time for reporting",
-          "pm.environment.set(\"response_time\", pm.response.responseTime);",
-          "",
-          "// Capture response data for reporting",
-          "pm.environment.set(\"response_body\", pm.response.text());"
-        ]
-      }
-    }
-  ],
-  "variable": [
-    {
-      "id": "baseUrl",
-      "key": "baseUrl",
-      "value": "http://localhost:8000",
-      "type": "string"
-    },
-    {
-      "id": "apiKey",
-      "key": "apiKey",
-      "value": "your-api-key-here",
-      "type": "string"
-    },
-    {
-      "id": "username",
-      "key": "username",
-      "value": "test-user",
-      "type": "string"
-    },
-    {
-      "id": "password",
-      "key": "password",
-      "value": "test-password",
-      "type": "string"
-    }
-  ]
+	"info": {
+		"name": "CAD/BIM Integration Platform API Test Collection",
+		"description": "Comprehensive API test collection for AutoCAD, Revit, Digital Twin, and other integration endpoints",
+		"_postman_id": "6a471e339f84e200019e350e-ecfdb2dd8eaee7a985106e430db0021b22",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Health Checks",
+			"item": [
+				{
+					"name": "Health Status",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/health",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "health"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Health Statistics",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/health/statistics",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "health", "statistics"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Get Current User",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-API-Key",
+								"value": "{{apiKey}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/me",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "auth", "me"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Session Login",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/session/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "auth", "session", "login"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Projects",
+			"item": [
+				{
+					"name": "List Projects",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-API-Key",
+								"value": "{{apiKey}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/projects",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "projects"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Project",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "X-API-Key",
+								"value": "{{apiKey}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Test Project\",\n  \"description\": \"Test project for API validation\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/projects",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "projects"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "AutoCAD Integration",
+			"item": [
+				{
+					"name": "Connect to AutoCAD",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "X-API-Key",
+								"value": "{{apiKey}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/autocad/connect",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "autocad", "connect"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get AutoCAD Documents",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-API-Key",
+								"value": "{{apiKey}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/autocad/documents",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "autocad", "documents"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Upload DWG File",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "X-API-Key",
+								"value": "{{apiKey}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": []
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/autocad/upload",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "autocad", "upload"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Revit Integration",
+			"item": [
+				{
+					"name": "Connect to Revit",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "X-API-Key",
+								"value": "{{apiKey}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/revit/connect",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "revit", "connect"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Revit Elements",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-API-Key",
+								"value": "{{apiKey}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/revit/elements",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "revit", "elements"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Upload RVT File",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "X-API-Key",
+								"value": "{{apiKey}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": []
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/revit/upload",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "revit", "upload"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Digital Twin",
+			"item": [
+				{
+					"name": "Convert CAD Files",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "X-API-Key",
+								"value": "{{apiKey}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"sourceFormat\": \"dwg\",\n  \"targetFormat\": \"rvt\",\n  \"conversionParams\": {}\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/digital-twin/convert",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "digital-twin", "convert"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Conversion History",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-API-Key",
+								"value": "{{apiKey}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/digital-twin/history",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "digital-twin", "history"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Devices & Elements",
+			"item": [
+				{
+					"name": "List Devices",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-API-Key",
+								"value": "{{apiKey}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/devices",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "devices"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List Elements",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-API-Key",
+								"value": "{{apiKey}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/elements",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "elements"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Connections & Conflicts",
+			"item": [
+				{
+					"name": "List Connections",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-API-Key",
+								"value": "{{apiKey}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/connections",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "connections"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Check Conflicts",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-API-Key",
+								"value": "{{apiKey}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/conflicts",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "conflicts"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Reports & Exports",
+			"item": [
+				{
+					"name": "Generate Report",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "X-API-Key",
+								"value": "{{apiKey}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"reportType\": \"summary\",\n  \"filters\": {}\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/reports/generate",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "reports", "generate"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Export Data",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "X-API-Key",
+								"value": "{{apiKey}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"exportType\": \"excel\",\n  \"dataIds\": []\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/exports",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "exports"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Monitoring",
+			"item": [
+				{
+					"name": "Get Metrics",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-API-Key",
+								"value": "{{apiKey}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/monitor/metrics",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "monitor", "metrics"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "System Health",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-API-Key",
+								"value": "{{apiKey}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/monitor/health",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "monitor", "health"]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Pre-request Script",
+					"// Set any variables or configurations before the request"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Test Script",
+					"// Validate response and capture data",
+					"pm.test(\"Status code is 200\", function () {",
+					"    pm.response.to.have.status(200);",
+					"});",
+					"",
+					"pm.test(\"Response time is less than 500ms\", function () {",
+					"    pm.expect(pm.response.responseTime).to.be.below(500);",
+					"});",
+					"",
+					"// Capture response time for reporting",
+					"pm.environment.set(\"response_time\", pm.response.responseTime);",
+					"",
+					"// Capture response data for reporting",
+					"pm.environment.set(\"response_body\", pm.response.text());"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"id": "baseUrl",
+			"key": "baseUrl",
+			"value": "http://localhost:8000",
+			"type": "string"
+		},
+		{
+			"id": "apiKey",
+			"key": "apiKey",
+			"value": "your-api-key-here",
+			"type": "string"
+		},
+		{
+			"id": "username",
+			"key": "username",
+			"value": "test-user",
+			"type": "string"
+		},
+		{
+			"id": "password",
+			"key": "password",
+			"value": "test-password",
+			"type": "string"
+		}
+	]
 }

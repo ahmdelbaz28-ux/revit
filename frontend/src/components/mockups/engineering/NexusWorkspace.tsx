@@ -7,7 +7,7 @@ import {
 	ShieldAlert,
 	TrendingUp,
 } from "lucide-react";
-import React, { useState } from "react";
+import { useState } from "react";
 import { actions, useStore } from "@/store/simpleStore";
 import { EngineeringCanvas } from "./EngineeringCanvas";
 import { EngineeringLibrary } from "./EngineeringLibrary";

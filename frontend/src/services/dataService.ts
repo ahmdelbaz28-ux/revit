@@ -142,7 +142,7 @@ export class DataService {
 				// Send authentication if API key is available
 				// Backend requires first message to be auth when FIREAI_API_KEY is set
 				if (this.apiKey) {
-					this.ws!.send(
+					this.ws?.send(
 						JSON.stringify({
 							action: "auth",
 							apiKey: this.apiKey,
@@ -238,7 +238,7 @@ export class DataService {
 					this.fallbackToMock();
 				}
 			};
-		} catch (error) {
+		} catch (_error) {
 			actions.addLog(
 				"[ERROR] Failed to create WebSocket connection. Falling back to mock data.",
 			);

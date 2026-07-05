@@ -50,7 +50,7 @@ export function AutoCADPage() {
 
 	useEffect(() => {
 		checkStatus();
-	}, []);
+	}, [checkStatus]);
 
 	const handleConnect = async () => {
 		setConnecting(true);

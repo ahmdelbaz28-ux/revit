@@ -31,7 +31,7 @@ export function FileUploader({
 			setDragging(false);
 			const file = e.dataTransfer.files[0];
 			if (file) {
-				const ext = "." + file.name.split(".").pop()?.toLowerCase();
+				const ext = `.${file.name.split(".").pop()?.toLowerCase()}`;
 				if (!accept.includes(ext)) {
 					toast.error(`Invalid file type. Accepted: ${accept}`);
 					return;

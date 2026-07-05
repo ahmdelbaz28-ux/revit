@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { dataService } from "@/services/dataService";
-import { actions, useStore } from "@/store/simpleStore";
+import { useStore } from "@/store/simpleStore";
 
 export function useTelemetryStream() {
 	const dataMode = useStore((s) => s.dataMode);

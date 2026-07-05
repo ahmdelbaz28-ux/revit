@@ -4,10 +4,8 @@ import {
 	ChevronDown,
 	FileText,
 	Save,
-	ShieldCheck,
 	Trash2,
 } from "lucide-react";
-import React, { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

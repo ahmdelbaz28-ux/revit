@@ -1,4 +1,3 @@
-import React from "react";
 import { actions, useStore } from "@/store/simpleStore";
 import {
 	ControlPanel,
@@ -9,7 +8,6 @@ import {
 	StatusGauges,
 } from "./dashboard";
 import { useFaultLogic } from "./hooks/useFaultLogic";
-import { useTelemetryStream } from "./hooks/useTelemetryStream";
 
 export function FaultSimulationWorkspace() {
 	const theme = useStore((s) => s.theme);
@@ -18,7 +16,7 @@ export function FaultSimulationWorkspace() {
 	const liveData = useStore((s) => s.liveData);
 	const dataMode = useStore((s) => s.dataMode);
 	const connectionStatus = useStore((s) => s.connectionStatus);
-	const faults = useStore((s) => s.faults);
+	const _faults = useStore((s) => s.faults);
 
 	const { isFaulty, toggleFault } = useFaultLogic();
 

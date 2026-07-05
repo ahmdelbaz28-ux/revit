@@ -4,30 +4,42 @@
  */
 
 import ZAI from "z-ai-web-dev-sdk";
-import { StockData, AnalysisResult, OutputFormat, Market, Verdict, PositionInfo } from "./types";
 import { validateStockData } from "./dataFetcher";
 import { analyzeDividend, formatDividendMarkdown } from "./dividend";
+import type {
+	AnalysisResult,
+	Market,
+	OutputFormat,
+	PositionInfo,
+	StockData,
+	Verdict,
+} from "./types";
 
-const MARKET_LABEL: Record<Market, string> = { CN: "A股", HK: "港股", US: "美股" };
+const MARKET_LABEL: Record<Market, string> = {
+	CN: "A股",
+	HK: "港股",
+	US: "美股",
+};
 
 // ── 仪表盘 Prompt ─────────────────────────────────────────
 
 function buildDashboardPrompt(
-  data: StockData,
-  position: PositionInfo | undefined,
-  warnings: string[]
+	data: StockData,
+	position: PositionInfo | undefined,
+	warnings: string[],
 ): string {
-  const warningBlock = warnings.length > 0
-    ? `⚠️ 数据预警（必须在报告中体现）：\n${warnings.map((w) => `- ${w}`).join("\n")}\n\n`
-    : "";
+	const warningBlock =
+		warnings.length > 0
+			? `⚠️ 数据预警（必须在报告中体现）：\n${warnings.map((w) => `- ${w}`).join("\n")}\n\n`
+			: "";
 
-  const positionBlock = position
-    ? position.status === "holding"
-      ? `用户持仓：持仓中，成本价 ${position.cost ?? "未知"} 元${position.shares ? `，${position.shares} 股` : ""}。请给出盈亏分析和针对性建议。`
-      : `用户持仓：当前空仓。`
-    : `用户持仓：未提供（请同时给出空仓者和持仓者两套建议）。`;
+	const positionBlock = position
+		? position.status === "holding"
+			? `用户持仓：持仓中，成本价 ${position.cost ?? "未知"} 元${position.shares ? `，${position.shares} 股` : ""}。请给出盈亏分析和针对性建议。`
+			: `用户持仓：当前空仓。`
+		: `用户持仓：未提供（请同时给出空仓者和持仓者两套建议）。`;
 
-  return `${warningBlock}${positionBlock}
+	return `${warningBlock}${positionBlock}
 
 股票数据：
 \`\`\`json
@@ -118,12 +130,16 @@ ${JSON.stringify(data, null, 2)}
 
 // ── 研报 Prompt（PDF/Word）──────────────────────────────
 
-function buildReportPrompt(data: StockData, position: PositionInfo | undefined): string {
-  const positionBlock = position?.status === "holding"
-    ? `用户持仓成本：${position.cost ?? "未知"}`
-    : "用户当前空仓";
+function buildReportPrompt(
+	data: StockData,
+	position: PositionInfo | undefined,
+): string {
+	const positionBlock =
+		position?.status === "holding"
+			? `用户持仓成本：${position.cost ?? "未知"}`
+			: "用户当前空仓";
 
-  return `${positionBlock}
+	return `${positionBlock}
 
 股票数据：
 \`\`\`json
@@ -146,119 +162,141 @@ ${JSON.stringify(data, null, 2)}
 // ── 提取结论 ──────────────────────────────────────────────
 
 function extractVerdict(text: string): Verdict {
-  const patterns = [
-    /结论[：:]\s*[💚🟢🟡🔴⚪]?\s*(强烈买入|买入|观望|卖出)/,
-    /核心结论[：:]\s*[💚🟢🟡🔴⚪]?\s*(强烈买入|买入|观望|卖出)/,
-    /\*\*(强烈买入|买入|观望|卖出)\*\*/,
-  ];
-  for (const p of patterns) {
-    const m = text.match(p);
-    if (m) return m[1] as Verdict;
-  }
-  return "观望";
+	const patterns = [
+		/结论[：:]\s*[💚🟢🟡🔴⚪]?\s*(强烈买入|买入|观望|卖出)/u,
+		/核心结论[：:]\s*[💚🟢🟡🔴⚪]?\s*(强烈买入|买入|观望|卖出)/u,
+		/\*\*(强烈买入|买入|观望|卖出)\*\*/,
+	];
+	for (const p of patterns) {
+		const m = text.match(p);
+		if (m) return m[1] as Verdict;
+	}
+	return "观望";
 }
 
 // ── 核心分析 ──────────────────────────────────────────────
 
 export async function analyzeStock(
-  data: StockData,
-  outputFormat: OutputFormat = "markdown",
-  position?: PositionInfo,
-  includeDividend = false
+	data: StockData,
+	outputFormat: OutputFormat = "markdown",
+	position?: PositionInfo,
+	includeDividend = false,
 ): Promise<AnalysisResult> {
-  const { valid, warnings } = validateStockData(data);
-  const name = data.name ?? data.code;
+	const { valid, warnings } = validateStockData(data);
+	const name = data.name ?? data.code;
 
-  if (!valid) {
-    return {
-      code: data.code, market: data.market, name,
-      verdict: "观望",
-      analysis: `## ⚠️ 数据获取失败\n\n${data.code} 数据无法获取（${data.error ?? "未知错误"}），建议手动核实。`,
-      warnings, outputFormat,
-      generatedAt: new Date().toISOString(),
-    };
-  }
+	if (!valid) {
+		return {
+			code: data.code,
+			market: data.market,
+			name,
+			verdict: "观望",
+			analysis: `## ⚠️ 数据获取失败\n\n${data.code} 数据无法获取（${data.error ?? "未知错误"}），建议手动核实。`,
+			warnings,
+			outputFormat,
+			generatedAt: new Date().toISOString(),
+		};
+	}
 
-  const zai = await ZAI.create();
-  const userPrompt = outputFormat === "markdown"
-    ? buildDashboardPrompt(data, position, warnings)
-    : buildReportPrompt(data, position);
+	const zai = await ZAI.create();
+	const userPrompt =
+		outputFormat === "markdown"
+			? buildDashboardPrompt(data, position, warnings)
+			: buildReportPrompt(data, position);
 
-  let analysisText = "⚠️ LLM 未返回内容，请重试。";
-  try {
-    const completion = await zai.chat.completions.create({
-      messages: [
-        { role: "system", content: `你是一位资深${MARKET_LABEL[data.market]}股票分析师。数据缺失标"暂缺"，严禁捏造。乖离率>5%不得建议买入。结论四选一：强烈买入/买入/观望/卖出。输出语言：中文。` },
-        { role: "user", content: userPrompt },
-      ],
-      thinking: { type: "disabled" },
-    });
-    analysisText = completion.choices[0]?.message?.content ?? analysisText;
-  } catch (err: any) {
-    analysisText = `## ⚠️ 分析失败\n\nLLM 调用出错：${err.message}`;
-  }
+	let analysisText = "⚠️ LLM 未返回内容，请重试。";
+	try {
+		const completion = await zai.chat.completions.create({
+			messages: [
+				{
+					role: "system",
+					content: `你是一位资深${MARKET_LABEL[data.market]}股票分析师。数据缺失标"暂缺"，严禁捏造。乖离率>5%不得建议买入。结论四选一：强烈买入/买入/观望/卖出。输出语言：中文。`,
+				},
+				{ role: "user", content: userPrompt },
+			],
+			thinking: { type: "disabled" },
+		});
+		analysisText = completion.choices[0]?.message?.content ?? analysisText;
+	} catch (err: any) {
+		analysisText = `## ⚠️ 分析失败\n\nLLM 调用出错：${err.message}`;
+	}
 
-  // 美股附加股息分析
-  if (includeDividend && data.market === "US" && outputFormat === "markdown") {
-    try {
-      const dividend = await analyzeDividend(data.code);
-      const dividendMd = formatDividendMarkdown(dividend);
-      analysisText += `\n\n${dividendMd}`;
-    } catch {}
-  }
+	// 美股附加股息分析
+	if (includeDividend && data.market === "US" && outputFormat === "markdown") {
+		try {
+			const dividend = await analyzeDividend(data.code);
+			const dividendMd = formatDividendMarkdown(dividend);
+			analysisText += `\n\n${dividendMd}`;
+		} catch {}
+	}
 
-  return {
-    code: data.code, market: data.market, name,
-    verdict: extractVerdict(analysisText),
-    analysis: analysisText,
-    warnings, outputFormat,
-    generatedAt: new Date().toISOString(),
-  };
+	return {
+		code: data.code,
+		market: data.market,
+		name,
+		verdict: extractVerdict(analysisText),
+		analysis: analysisText,
+		warnings,
+		outputFormat,
+		generatedAt: new Date().toISOString(),
+	};
 }
 
 // ── 批量分析 ──────────────────────────────────────────────
 
 export async function analyzeMultipleStocks(
-  stockDataList: StockData[],
-  outputFormat: OutputFormat = "markdown",
-  positions?: Record<string, PositionInfo>,
-  includeDividend = false
+	stockDataList: StockData[],
+	outputFormat: OutputFormat = "markdown",
+	positions?: Record<string, PositionInfo>,
+	includeDividend = false,
 ): Promise<AnalysisResult[]> {
-  const results: AnalysisResult[] = [];
-  for (const data of stockDataList) {
-    const position = positions?.[data.code];
-    results.push(await analyzeStock(data, outputFormat, position, includeDividend));
-  }
-  return results;
+	const results: AnalysisResult[] = [];
+	for (const data of stockDataList) {
+		const position = positions?.[data.code];
+		results.push(
+			await analyzeStock(data, outputFormat, position, includeDividend),
+		);
+	}
+	return results;
 }
 
 // ── K线图分析（VLM）──────────────────────────────────────
 
 export async function analyzeChartImage(
-  imageUrlOrBase64: string,
-  stockCode: string,
-  isBase64 = false
+	imageUrlOrBase64: string,
+	stockCode: string,
+	isBase64 = false,
 ): Promise<string> {
-  try {
-    const zai = await ZAI.create();
-    const imageContent = isBase64
-      ? { type: "base64" as const, data: imageUrlOrBase64, mediaType: "image/png" as const }
-      : { type: "url" as const, url: imageUrlOrBase64 };
+	try {
+		const zai = await ZAI.create();
+		const imageContent = isBase64
+			? {
+					type: "base64" as const,
+					data: imageUrlOrBase64,
+					mediaType: "image/png" as const,
+				}
+			: { type: "url" as const, url: imageUrlOrBase64 };
 
-    const completion = await zai.chat.completions.create({
-      messages: [
-        { role: "system", content: "你是技术分析专家，擅长K线形态识别。请用中文回答。" },
-        {
-          role: "user",
-          content: [
-            { type: "image", image: imageContent },
-            { type: "text", text: `这是 ${stockCode} 的K线图，请分析：\n1. 当前K线形态\n2. 趋势方向\n3. 关键支撑位和压力位\n4. 成交量配合\n5. 短期操作建议` },
-          ],
-        },
-      ],
-    });
-    return completion.choices[0]?.message?.content ?? "⚠️ VLM 未返回内容";
-  } catch (err: any) {
-    return `K线图分析失败：${err.message}`;
-  }
+		const completion = await zai.chat.completions.create({
+			messages: [
+				{
+					role: "system",
+					content: "你是技术分析专家，擅长K线形态识别。请用中文回答。",
+				},
+				{
+					role: "user",
+					content: [
+						{ type: "image", image: imageContent },
+						{
+							type: "text",
+							text: `这是 ${stockCode} 的K线图，请分析：\n1. 当前K线形态\n2. 趋势方向\n3. 关键支撑位和压力位\n4. 成交量配合\n5. 短期操作建议`,
+						},
+					],
+				},
+			],
+		});
+		return completion.choices[0]?.message?.content ?? "⚠️ VLM 未返回内容";
+	} catch (err: any) {
+		return `K线图分析失败：${err.message}`;
+	}
 }

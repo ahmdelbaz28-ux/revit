@@ -2,18 +2,7 @@
  * ReportsPage.tsx - Report generation with deterministic analysis
  */
 
-import {
-	AlertTriangle,
-	Calculator,
-	Calendar,
-	CheckCircle2,
-	Clock,
-	Download,
-	Eye,
-	FileText,
-	Loader2,
-	XCircle,
-} from "lucide-react";
+import { Calendar, Clock, Download, FileText, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
@@ -34,16 +23,9 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-	calculateBatteryRequirements,
-	generateBatteryReport,
-} from "@/engine/BatteryCalculator";
-import {
-	calculateCoverage,
-	generateCoverageReport,
-} from "@/engine/CoverageEngine";
+import { calculateBatteryRequirements } from "@/engine/BatteryCalculator";
+import { calculateCoverage } from "@/engine/CoverageEngine";
 import { useGenerateReport, useReports } from "@/hooks/useApi";
 
 // ============================================================================

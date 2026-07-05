@@ -41,7 +41,6 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface CADConnectionStatus {
@@ -122,7 +121,7 @@ export function CADSettingsPage() {
 				lastChecked: new Date().toISOString(),
 			});
 			toast.success("AutoCAD connection verified");
-		} catch (error) {
+		} catch (_error) {
 			setAcadStatus({
 				connected: false,
 				lastChecked: new Date().toISOString(),
@@ -149,7 +148,7 @@ export function CADSettingsPage() {
 				lastChecked: new Date().toISOString(),
 			});
 			toast.success("Revit connection verified");
-		} catch (error) {
+		} catch (_error) {
 			setRevitStatus({
 				connected: false,
 				lastChecked: new Date().toISOString(),
@@ -172,7 +171,7 @@ export function CADSettingsPage() {
 			};
 			localStorage.setItem("cad_settings", JSON.stringify(settings));
 			toast.success("AutoCAD settings saved");
-		} catch (error) {
+		} catch (_error) {
 			toast.error("Failed to save settings");
 		}
 	};
@@ -189,7 +188,7 @@ export function CADSettingsPage() {
 			};
 			localStorage.setItem("cad_settings", JSON.stringify(settings));
 			toast.success("Revit settings saved");
-		} catch (error) {
+		} catch (_error) {
 			toast.error("Failed to save settings");
 		}
 	};

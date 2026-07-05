@@ -14,7 +14,6 @@ import type {
 	CableScheduleItem,
 	ConduitScheduleItem,
 	DeviceCountItem,
-	ExcelRow,
 } from "./BomGenerator";
 
 export interface ExcelSheet {
@@ -57,7 +56,7 @@ function generateExcelWorkbook(
 
 	// === SUMMARY SHEET ===
 	csvContent += "BILL OF MATERIALS - SUMMARY\n";
-	csvContent += 'Generated:,="' + new Date().toISOString() + '"\n';
+	csvContent += `Generated:,="${new Date().toISOString()}"\n`;
 	csvContent += "\n";
 	csvContent += "Description,Value,Unit\n";
 	csvContent += `Total Cables,${summary.totalCables},\n`;
@@ -80,7 +79,7 @@ function generateExcelWorkbook(
 	csvContent += "\n";
 
 	// Totals row
-	const totalLength = cableSchedule.reduce((sum, c) => sum + c.length, 0);
+	const _totalLength = cableSchedule.reduce((sum, c) => sum + c.length, 0);
 	const totalWeight = cableSchedule.reduce(
 		(sum, c) => sum + c.estimatedWeight,
 		0,
@@ -221,30 +220,30 @@ function generateDxfContent(
 
 	// CABLES layer
 	dxf += "0\nLAYER\n";
-	dxf += "2\n" + options.layerNames.cables + "\n";
+	dxf += `2\n${options.layerNames.cables}\n`;
 	dxf += "70\n0\n";
-	dxf += "62\n" + options.colors.cables + "\n";
+	dxf += `62\n${options.colors.cables}\n`;
 	dxf += "6\nCONTINUOUS\n";
 
 	// DEVICES layer
 	dxf += "0\nLAYER\n";
-	dxf += "2\n" + options.layerNames.devices + "\n";
+	dxf += `2\n${options.layerNames.devices}\n`;
 	dxf += "70\n0\n";
-	dxf += "62\n" + options.colors.devices + "\n";
+	dxf += `62\n${options.colors.devices}\n`;
 	dxf += "6\nCONTINUOUS\n";
 
 	// CONDUITS layer
 	dxf += "0\nLAYER\n";
-	dxf += "2\n" + options.layerNames.conduits + "\n";
+	dxf += `2\n${options.layerNames.conduits}\n`;
 	dxf += "70\n0\n";
-	dxf += "62\n" + options.colors.conduits + "\n";
+	dxf += `62\n${options.colors.conduits}\n`;
 	dxf += "6\nCONTINUOUS\n";
 
 	// TEXT layer
 	dxf += "0\nLAYER\n";
-	dxf += "2\n" + options.layerNames.text + "\n";
+	dxf += `2\n${options.layerNames.text}\n`;
 	dxf += "70\n0\n";
-	dxf += "62\n" + options.colors.text + "\n";
+	dxf += `62\n${options.colors.text}\n`;
 	dxf += "6\nCONTINUOUS\n";
 
 	dxf += "0\nENDTAB\n";
@@ -255,27 +254,27 @@ function generateDxfContent(
 	dxf += "2\nENTITIES\n";
 
 	// Draw devices as circles/blocks
-	devices.forEach((device, index) => {
+	devices.forEach((device, _index) => {
 		const x = device.x * options.scale;
 		const y = device.y * options.scale;
 		const radius = 50; // Fixed representation size
 
 		// Device circle
 		dxf += "0\nCIRCLE\n";
-		dxf += "8\n" + options.layerNames.devices + "\n";
-		dxf += "10\n" + x.toFixed(4) + "\n";
-		dxf += "20\n" + y.toFixed(4) + "\n";
+		dxf += `8\n${options.layerNames.devices}\n`;
+		dxf += `10\n${x.toFixed(4)}\n`;
+		dxf += `20\n${y.toFixed(4)}\n`;
 		dxf += "30\n0\n";
-		dxf += "40\n" + radius + "\n";
+		dxf += `40\n${radius}\n`;
 
 		// Device label
 		dxf += "0\nTEXT\n";
-		dxf += "8\n" + options.layerNames.text + "\n";
-		dxf += "10\n" + (x + radius + 10).toFixed(4) + "\n";
-		dxf += "20\n" + y.toFixed(4) + "\n";
+		dxf += `8\n${options.layerNames.text}\n`;
+		dxf += `10\n${(x + radius + 10).toFixed(4)}\n`;
+		dxf += `20\n${y.toFixed(4)}\n`;
 		dxf += "30\n0\n";
 		dxf += "40\n20\n";
-		dxf += "1\n" + device.type + "\n";
+		dxf += `1\n${device.type}\n`;
 	});
 
 	// Draw connections as lines
@@ -291,12 +290,12 @@ function generateDxfContent(
 
 			// Cable line
 			dxf += "0\nLINE\n";
-			dxf += "8\n" + options.layerNames.cables + "\n";
-			dxf += "10\n" + x1.toFixed(4) + "\n";
-			dxf += "20\n" + y1.toFixed(4) + "\n";
+			dxf += `8\n${options.layerNames.cables}\n`;
+			dxf += `10\n${x1.toFixed(4)}\n`;
+			dxf += `20\n${y1.toFixed(4)}\n`;
 			dxf += "30\n0\n";
-			dxf += "11\n" + x2.toFixed(4) + "\n";
-			dxf += "21\n" + y2.toFixed(4) + "\n";
+			dxf += `11\n${x2.toFixed(4)}\n`;
+			dxf += `21\n${y2.toFixed(4)}\n`;
 			dxf += "31\n0\n";
 		}
 	});

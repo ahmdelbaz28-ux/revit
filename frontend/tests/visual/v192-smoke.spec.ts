@@ -134,7 +134,7 @@ test("FireAlarm: clicking detector selects it, does NOT add new one", async ({
 	const box = await firstDetector.boundingBox();
 	expect(box, "Detector should have a bounding box").not.toBeNull();
 
-	await page.mouse.click(box!.x + box!.width / 2, box!.y + box!.height / 2);
+	await page.mouse.click(box?.x + box?.width / 2, box?.y + box?.height / 2);
 	await page.waitForTimeout(500);
 
 	const afterClickCount = await page.locator("svg g[transform]").count();

@@ -1,8 +1,7 @@
 import { Box, Trash2 } from "lucide-react";
-import React from "react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { actions, Device, useStore } from "@/store/simpleStore";
+import { actions, useStore } from "@/store/simpleStore";
 
 export function ProjectSidebar() {
 	const devices = useStore((s) => s.devices);

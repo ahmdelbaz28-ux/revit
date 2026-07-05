@@ -3,13 +3,11 @@ import {
 	Check,
 	CheckCircle,
 	ChevronDown,
-	ChevronRight,
 	Download,
 	DownloadCloud,
 	FileDigit,
 	FileText,
 	Play,
-	Plus,
 	Settings,
 	Triangle,
 	Upload,
@@ -19,14 +17,13 @@ import type React from "react";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export function ReportGenerator() {
-	const [progress, setProgress] = useState(65);
+	const [progress, _setProgress] = useState(65);
 
 	return (
 		<div className="flex flex-col h-screen w-screen overflow-hidden bg-background text-foreground dark font-sans">

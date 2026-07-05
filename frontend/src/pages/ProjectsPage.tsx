@@ -15,10 +15,8 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import {
 	Card,
 	CardContent,
@@ -26,18 +24,9 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogHeader,
-	DialogTitle,
-	DialogTrigger,
-} from "@/components/ui/dialog";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
 	Select,
 	SelectContent,
@@ -45,7 +34,6 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
 	useCreateProject,
@@ -53,24 +41,13 @@ import {
 	useProjects,
 	useSyncProject,
 } from "@/hooks/useApi";
-import type {
-	CreateConnectionInput,
-	CreateDeviceInput,
-	Device,
-	Project,
-} from "@/services/digitalTwinApi";
-import { api } from "@/services/digitalTwinApi";
-import type { DeviceCategory, DeviceSpec } from "@/types/deviceLibrary";
-import {
-	DEVICE_CATEGORIES,
-	DEVICE_LIBRARY,
-	getDevicesByCategory,
-} from "@/types/deviceLibrary";
+import type { Project } from "@/services/digitalTwinApi";
+import { DEVICE_CATEGORIES, getDevicesByCategory } from "@/types/deviceLibrary";
 
 // ============================================================================
 // Connection types for the dropdown
 // ============================================================================
-const CONNECTION_TYPES = [
+const _CONNECTION_TYPES = [
 	"power",
 	"signal",
 	"data",
@@ -80,7 +57,7 @@ const CONNECTION_TYPES = [
 	"cable",
 ] as const;
 
-const CABLE_SIZES = [
+const _CABLE_SIZES = [
 	"1.5mm²",
 	"2.5mm²",
 	"4mm²",
@@ -548,7 +525,7 @@ interface DeviceFormState {
 	loadUnit: "A" | "mA" | "W"; // BUG-30 FIX: Track load unit
 }
 
-function getDefaultDeviceForm(): DeviceFormState {
+function _getDefaultDeviceForm(): DeviceFormState {
 	const firstCat = DEVICE_CATEGORIES[0];
 	const firstDevice = getDevicesByCategory(firstCat.id)[0];
 	return {
@@ -573,7 +550,7 @@ interface ConnectionFormState {
 	length: number;
 }
 
-function getDefaultConnectionForm(): ConnectionFormState {
+function _getDefaultConnectionForm(): ConnectionFormState {
 	return {
 		fromDeviceId: "",
 		toDeviceId: "",

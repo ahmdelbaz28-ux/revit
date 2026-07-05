@@ -3,7 +3,6 @@ import {
 	AlertTriangle,
 	ArrowUpRight,
 	BarChart2,
-	CheckCircle,
 	CheckCircle2,
 	Clock,
 	FileDown,
@@ -12,8 +11,6 @@ import {
 	LayoutDashboard,
 	Maximize,
 	MessageSquare,
-	Search,
-	Settings,
 	Share2,
 	ShieldAlert,
 	Users,
@@ -23,7 +20,6 @@ import type React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 
 export function ProjectDashboard() {
 	return (

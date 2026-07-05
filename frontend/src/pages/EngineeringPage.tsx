@@ -5,7 +5,7 @@
  * calculation when API is unavailable (offline mode).
  */
 
-import { Battery, Cable, Calculator, Ruler, Zap } from "lucide-react";
+import { Battery, Cable, Zap } from "lucide-react";
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
@@ -58,8 +58,8 @@ export function EngineeringPage() {
 		alarmMinutes: "5",
 	});
 
-	const [apiLoading, setApiLoading] = useState(false);
-	const [apiError, setApiError] = useState<string | null>(null);
+	const [_apiLoading, setApiLoading] = useState(false);
+	const [_apiError, setApiError] = useState<string | null>(null);
 
 	const calculateVoltageDrop = useCallback(() => {
 		// Local fallback calculation
@@ -68,7 +68,12 @@ export function EngineeringPage() {
 		const cableSize = parseFloat(voltageDropInputs.cableSize);
 		const voltage = parseFloat(voltageDropInputs.voltage);
 
-		if (isNaN(current) || isNaN(length) || isNaN(cableSize) || isNaN(voltage)) {
+		if (
+			Number.isNaN(current) ||
+			Number.isNaN(length) ||
+			Number.isNaN(cableSize) ||
+			Number.isNaN(voltage)
+		) {
 			return { percentage: 0, absolute: 0 };
 		}
 
@@ -85,7 +90,7 @@ export function EngineeringPage() {
 	}, [voltageDropInputs]);
 
 	// V140 Phase 5: Call real QOMN API for voltage drop calculation
-	const calculateVoltageDropViaApi = useCallback(async () => {
+	const _calculateVoltageDropViaApi = useCallback(async () => {
 		setApiLoading(true);
 		setApiError(null);
 		try {
@@ -114,7 +119,11 @@ export function EngineeringPage() {
 		const length = parseFloat(cableSizingInputs.length);
 		const ambientTemp = parseFloat(cableSizingInputs.ambientTemp);
 
-		if (isNaN(loadCurrent) || isNaN(length) || isNaN(ambientTemp)) {
+		if (
+			Number.isNaN(loadCurrent) ||
+			Number.isNaN(length) ||
+			Number.isNaN(ambientTemp)
+		) {
 			return {
 				recommendedSize: "N/A",
 				baseAmpacity: 0,
@@ -139,20 +148,20 @@ export function EngineeringPage() {
 
 	const calculateBatteryRequirements = () => {
 		// Placeholder calculation
-		const standbyDevices = parseInt(batteryCalcInputs.standbyDevices);
+		const standbyDevices = parseInt(batteryCalcInputs.standbyDevices, 10);
 		const standbyCurrent = parseFloat(batteryCalcInputs.standbyCurrent);
-		const alarmDevices = parseInt(batteryCalcInputs.alarmDevices);
+		const alarmDevices = parseInt(batteryCalcInputs.alarmDevices, 10);
 		const alarmCurrent = parseFloat(batteryCalcInputs.alarmCurrent);
 		const standbyHours = parseFloat(batteryCalcInputs.standbyHours);
 		const alarmMinutes = parseFloat(batteryCalcInputs.alarmMinutes);
 
 		if (
-			isNaN(standbyDevices) ||
-			isNaN(standbyCurrent) ||
-			isNaN(alarmDevices) ||
-			isNaN(alarmCurrent) ||
-			isNaN(standbyHours) ||
-			isNaN(alarmMinutes)
+			Number.isNaN(standbyDevices) ||
+			Number.isNaN(standbyCurrent) ||
+			Number.isNaN(alarmDevices) ||
+			Number.isNaN(alarmCurrent) ||
+			Number.isNaN(standbyHours) ||
+			Number.isNaN(alarmMinutes)
 		) {
 			return {
 				totalStandbyCurrent: 0,

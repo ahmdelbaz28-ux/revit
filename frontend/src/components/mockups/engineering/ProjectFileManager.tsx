@@ -4,12 +4,10 @@ import {
 	ArrowRight,
 	ArrowUp,
 	Box,
-	CheckCircle2,
 	ChevronDown,
 	ChevronRight,
 	Clock,
 	Clock3,
-	Download,
 	Eye,
 	File,
 	FileBox,
@@ -24,18 +22,15 @@ import {
 	Plus,
 	RefreshCw,
 	Search,
-	Settings,
-	Share2,
 	Star,
 	TableProperties,
 	Upload,
 	Users,
 	X,
 } from "lucide-react";
-import React, { useState } from "react";
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 

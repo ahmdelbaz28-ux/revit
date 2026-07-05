@@ -1,32 +1,22 @@
 import {
-	Activity,
-	Box,
 	CheckCircle2,
 	ChevronDown,
 	ChevronRight,
-	Code2,
-	Cpu,
-	Database,
 	FileCode2,
 	FolderOpen,
 	Globe,
-	Link2,
 	Lock,
 	Package,
 	Play,
-	PlayCircle,
 	Settings,
-	Share2,
 	Shield,
 	Square,
 	Terminal,
 	Trash2,
-	Zap,
 } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 
@@ -41,7 +31,7 @@ export function PythonSwagger() {
 		Compliance: false,
 		AI: false,
 	});
-	const [scriptExpanded, setScriptExpanded] = useState({
+	const [_scriptExpanded, _setScriptExpanded] = useState({
 		my: true,
 		analysis: true,
 		automation: true,

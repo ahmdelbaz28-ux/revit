@@ -49,8 +49,7 @@ export interface PaginatedResponse<T> {
 // V187 FIX: Use VITE_API_URL env var (same pattern as digitalTwinApi.ts).
 // Previously hardcoded to '/api/v1' which broke POST requests on Vercel.
 const API_BASE = import.meta.env.VITE_API_URL || "/api/v1";
-const API_V2_BASE =
-	(import.meta.env.VITE_API_URL || "/api").replace("/v1", "") + "/v2";
+const API_V2_BASE = `${(import.meta.env.VITE_API_URL || "/api").replace("/v1", "")}/v2`;
 
 // V184: getApiKey() is now imported from ./apiKey (line 28). The local
 // duplicate definition was removed to avoid a redeclaration error.

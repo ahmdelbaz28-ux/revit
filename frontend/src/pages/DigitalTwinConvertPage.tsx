@@ -6,7 +6,6 @@ import { useEffect, useState } from "react";
 import { ConversionPanel } from "@/components/shared/ConversionPanel";
 import { HistoryTimeline } from "@/components/shared/HistoryTimeline";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { digitalTwinService } from "@/services/digitalTwinService";
 
 export function DigitalTwinConvertPage() {

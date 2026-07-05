@@ -1,1591 +1,1544 @@
 {
-  "__inputs": [],
-  "__requires": [
-    {
-      "type": "grafana",
-      "id": "grafana",
-      "name": "Grafana",
-      "version": "10.2.0"
-    },
-    {
-      "type": "prometheus",
-      "id": "prometheus",
-      "name": "Prometheus",
-      "version": "2.48.0"
-    }
-  ],
-  "annotations": {
-    "list": [
-      {
-        "builtIn": 1,
-        "datasource": {
-          "type": "grafana",
-          "uid": "-- Grafana --"
-        },
-        "enable": true,
-        "hide": true,
-        "iconColor": "rgba(0, 211, 255, 1)",
-        "name": "Annotations & Alerts",
-        "target": {
-          "limit": 100,
-          "matchAny": false,
-          "tags": [],
-          "type": "dashboard"
-        },
-        "type": "dashboard"
-      }
-    ]
-  },
-  "editable": true,
-  "fiscalYearStartMonth": 0,
-  "graphTooltip": 0,
-  "id": null,
-  "links": [],
-  "liveNow": false,
-  "panels": [
-    {
-      "collapsed": false,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 0
-      },
-      "id": 50,
-      "panels": [],
-      "title": "Engine Performance",
-      "type": "row"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${datasource}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "gradientMode": "opacity",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "lineInterpolation": "smooth",
-            "lineWidth": 2,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          },
-          "unit": "cps"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 1
-      },
-      "id": 2,
-      "options": {
-        "legend": {
-          "calcs": [
-            "mean",
-            "max"
-          ],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "editorMode": "code",
-          "expr": "rate(fireai_engine_runs_total{status=\"success\"}[5m])",
-          "legendFormat": "success - {{engine}}",
-          "range": true,
-          "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "editorMode": "code",
-          "expr": "rate(fireai_engine_runs_total{status=\"error\"}[5m])",
-          "legendFormat": "error - {{engine}}",
-          "range": true,
-          "refId": "B"
-        }
-      ],
-      "title": "Engine Run Rate (5m window)",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${datasource}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "seconds",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "gradientMode": "opacity",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "lineInterpolation": "smooth",
-            "lineWidth": 2,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          },
-          "unit": "s"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 1
-      },
-      "id": 3,
-      "options": {
-        "legend": {
-          "calcs": [
-            "mean",
-            "max"
-          ],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "editorMode": "code",
-          "expr": "histogram_quantile(0.50, rate(fireai_computation_seconds_bucket[5m]))",
-          "legendFormat": "p50 - {{engine}}",
-          "range": true,
-          "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "editorMode": "code",
-          "expr": "histogram_quantile(0.95, rate(fireai_computation_seconds_bucket[5m]))",
-          "legendFormat": "p95 - {{engine}}",
-          "range": true,
-          "refId": "B"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "editorMode": "code",
-          "expr": "histogram_quantile(0.99, rate(fireai_computation_seconds_bucket[5m]))",
-          "legendFormat": "p99 - {{engine}}",
-          "range": true,
-          "refId": "C"
-        }
-      ],
-      "title": "Engine Computation Latency (p50 / p95 / p99)",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${datasource}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "bars",
-            "fillOpacity": 80,
-            "gradientMode": "opacity",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "normal"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          },
-          "unit": "none"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 8,
-        "x": 0,
-        "y": 9
-      },
-      "id": 4,
-      "options": {
-        "legend": {
-          "calcs": [
-            "sum"
-          ],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "none"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "editorMode": "code",
-          "expr": "sum by(engine, status) (rate(fireai_engine_runs_total[5m]))",
-          "legendFormat": "{{engine}} - {{status}}",
-          "range": true,
-          "refId": "A"
-        }
-      ],
-      "title": "Engine Runs by Status (rate)",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${datasource}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "gradientMode": "opacity",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "lineInterpolation": "smooth",
-            "lineWidth": 2,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          },
-          "unit": "cps"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 8,
-        "x": 8,
-        "y": 9
-      },
-      "id": 5,
-      "options": {
-        "legend": {
-          "calcs": [
-            "mean",
-            "max"
-          ],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "editorMode": "code",
-          "expr": "rate(fireai_errors_total[5m])",
-          "legendFormat": "{{component}} - {{type}}",
-          "range": true,
-          "refId": "A"
-        }
-      ],
-      "title": "Error Rate by Component (5m window)",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${datasource}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [
-            {
-              "options": {
-                "0": {
-                  "color": "red",
-                  "text": "No Active Workflows"
-                }
-              },
-              "type": "value"
-            }
-          ],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "red",
-                "value": null
-              },
-              {
-                "color": "orange",
-                "value": 1
-              },
-              {
-                "color": "green",
-                "value": 5
-              }
-            ]
-          },
-          "unit": "none"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 4,
-        "x": 16,
-        "y": 9
-      },
-      "id": 6,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "textMode": "auto"
-      },
-      "pluginVersion": "10.2.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "editorMode": "code",
-          "expr": "fireai_active_workflows",
-          "legendFormat": "Active Workflows",
-          "range": true,
-          "refId": "A"
-        }
-      ],
-      "title": "Active Workflows",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${datasource}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "orange",
-                "value": 50
-              },
-              {
-                "color": "red",
-                "value": 100
-              }
-            ]
-          },
-          "unit": "none"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 4,
-        "x": 20,
-        "y": 9
-      },
-      "id": 7,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "textMode": "auto"
-      },
-      "pluginVersion": "10.2.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "editorMode": "code",
-          "expr": "sum(fireai_queue_depth)",
-          "legendFormat": "Queue Depth",
-          "range": true,
-          "refId": "A"
-        }
-      ],
-      "title": "Queue Depth",
-      "type": "stat"
-    },
-    {
-      "collapsed": false,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 13
-      },
-      "id": 51,
-      "panels": [],
-      "title": "Coverage Metrics",
-      "type": "row"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${datasource}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "red",
-                "value": null
-              },
-              {
-                "color": "orange",
-                "value": 80
-              },
-              {
-                "color": "green",
-                "value": 90
-              }
-            ]
-          },
-          "unit": "percent"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 6,
-        "w": 4,
-        "x": 0,
-        "y": 14
-      },
-      "id": 8,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "textMode": "auto"
-      },
-      "pluginVersion": "10.2.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "editorMode": "code",
-          "expr": "avg(fireai_coverage_percent{status=\"passing\"})",
-          "legendFormat": "Avg Coverage",
-          "range": true,
-          "refId": "A"
-        }
-      ],
-      "title": "Average Coverage",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${datasource}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "orange",
-                "value": 1
-              }
-            ]
-          },
-          "unit": "none"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 6,
-        "w": 4,
-        "x": 4,
-        "y": 14
-      },
-      "id": 9,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "textMode": "auto"
-      },
-      "pluginVersion": "10.2.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "editorMode": "code",
-          "expr": "count(fireai_coverage_percent{status=\"failing\"})",
-          "legendFormat": "Failing Rooms",
-          "range": true,
-          "refId": "A"
-        }
-      ],
-      "title": "Rooms Failing Coverage",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${datasource}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "gradientMode": "opacity",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "lineInterpolation": "smooth",
-            "lineWidth": 2,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          },
-          "unit": "percent"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 6,
-        "w": 10,
-        "x": 8,
-        "y": 14
-      },
-      "id": 10,
-      "options": {
-        "legend": {
-          "calcs": [
-            "mean",
-            "min",
-            "max"
-          ],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "none"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "editorMode": "code",
-          "expr": "fireai_coverage_percent{status=\"passing\"}",
-          "legendFormat": "room {{room_id}}",
-          "range": true,
-          "refId": "A"
-        }
-      ],
-      "title": "Coverage % by Room",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${datasource}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "gradientMode": "opacity",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "lineInterpolation": "smooth",
-            "lineWidth": 2,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          },
-          "unit": "none"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 6,
-        "w": 6,
-        "x": 18,
-        "y": 14
-      },
-      "id": 11,
-      "options": {
-        "legend": {
-          "calcs": [
-            "sum"
-          ],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "none"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "editorMode": "code",
-          "expr": "sum by(room_type) (fireai_detectors_placed)",
-          "legendFormat": "{{room_type}}",
-          "range": true,
-          "refId": "A"
-        }
-      ],
-      "title": "Detectors Placed by Room Type",
-      "type": "timeseries"
-    },
-    {
-      "collapsed": false,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 20
-      },
-      "id": 52,
-      "panels": [],
-      "title": "System Health",
-      "type": "row"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${datasource}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "gradientMode": "opacity",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "lineInterpolation": "smooth",
-            "lineWidth": 2,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "line"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "orange",
-                "value": 3000000000
-              },
-              {
-                "color": "red",
-                "value": 4000000000
-              }
-            ]
-          },
-          "unit": "bytes"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 8,
-        "x": 0,
-        "y": 21
-      },
-      "id": 12,
-      "options": {
-        "legend": {
-          "calcs": [
-            "mean",
-            "max"
-          ],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "editorMode": "code",
-          "expr": "fireai_memory_bytes",
-          "legendFormat": "{{component}}",
-          "range": true,
-          "refId": "A"
-        }
-      ],
-      "title": "Memory Usage by Component",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${datasource}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "gradientMode": "opacity",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "lineInterpolation": "smooth",
-            "lineWidth": 2,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          },
-          "unit": "none"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 8,
-        "x": 8,
-        "y": 21
-      },
-      "id": 13,
-      "options": {
-        "legend": {
-          "calcs": [
-            "mean",
-            "max"
-          ],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "editorMode": "code",
-          "expr": "fireai_queue_depth",
-          "legendFormat": "{{queue}}",
-          "range": true,
-          "refId": "A"
-        }
-      ],
-      "title": "Queue Depth by Queue",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${datasource}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "gradientMode": "opacity",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "lineInterpolation": "smooth",
-            "lineWidth": 2,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          },
-          "unit": "none"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 8,
-        "x": 16,
-        "y": 21
-      },
-      "id": 14,
-      "options": {
-        "legend": {
-          "calcs": [
-            "mean",
-            "max"
-          ],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "editorMode": "code",
-          "expr": "fireai_active_workflows",
-          "legendFormat": "Active Workflows",
-          "range": true,
-          "refId": "A"
-        }
-      ],
-      "title": "Active Workflows Over Time",
-      "type": "timeseries"
-    },
-    {
-      "collapsed": false,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 29
-      },
-      "id": 53,
-      "panels": [],
-      "title": "API Metrics",
-      "type": "row"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${datasource}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "gradientMode": "opacity",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "lineInterpolation": "smooth",
-            "lineWidth": 2,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          },
-          "unit": "rps"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 8,
-        "x": 0,
-        "y": 30
-      },
-      "id": 15,
-      "options": {
-        "legend": {
-          "calcs": [
-            "mean",
-            "max"
-          ],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "editorMode": "code",
-          "expr": "sum by(endpoint, method) (rate(fireai_api_latency_seconds_count[5m]))",
-          "legendFormat": "{{method}} {{endpoint}}",
-          "range": true,
-          "refId": "A"
-        }
-      ],
-      "title": "API Request Rate (5m window)",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${datasource}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "seconds",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "gradientMode": "opacity",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "lineInterpolation": "smooth",
-            "lineWidth": 2,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          },
-          "unit": "s"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 8,
-        "x": 8,
-        "y": 30
-      },
-      "id": 16,
-      "options": {
-        "legend": {
-          "calcs": [
-            "mean",
-            "max"
-          ],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "editorMode": "code",
-          "expr": "histogram_quantile(0.50, sum by(le, endpoint, method) (rate(fireai_api_latency_seconds_bucket[5m])))",
-          "legendFormat": "p50 - {{method}} {{endpoint}}",
-          "range": true,
-          "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "editorMode": "code",
-          "expr": "histogram_quantile(0.95, sum by(le, endpoint, method) (rate(fireai_api_latency_seconds_bucket[5m])))",
-          "legendFormat": "p95 - {{method}} {{endpoint}}",
-          "range": true,
-          "refId": "B"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "editorMode": "code",
-          "expr": "histogram_quantile(0.99, sum by(le, endpoint, method) (rate(fireai_api_latency_seconds_bucket[5m])))",
-          "legendFormat": "p99 - {{method}} {{endpoint}}",
-          "range": true,
-          "refId": "C"
-        }
-      ],
-      "title": "API Latency (p50 / p95 / p99)",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${datasource}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "gradientMode": "opacity",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "lineInterpolation": "smooth",
-            "lineWidth": 2,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          },
-          "unit": "cps"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 8,
-        "x": 16,
-        "y": 30
-      },
-      "id": 17,
-      "options": {
-        "legend": {
-          "calcs": [
-            "mean",
-            "max"
-          ],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "editorMode": "code",
-          "expr": "rate(fireai_errors_total{component=\"api\"}[5m])",
-          "legendFormat": "{{type}}",
-          "range": true,
-          "refId": "A"
-        }
-      ],
-      "title": "API Error Rate (5m window)",
-      "type": "timeseries"
-    }
-  ],
-  "refresh": "30s",
-  "schemaVersion": 38,
-  "style": "dark",
-  "tags": [
-    "fireai",
-    "observability",
-    "production"
-  ],
-  "templating": {
-    "list": [
-      {
-        "current": {
-          "selected": false,
-          "text": "Prometheus",
-          "value": "prometheus"
-        },
-        "hide": 0,
-        "includeAll": false,
-        "multi": false,
-        "name": "datasource",
-        "options": [],
-        "query": "prometheus",
-        "queryValue": "",
-        "refresh": 1,
-        "regex": "",
-        "skipUrlSync": false,
-        "type": "datasource"
-      }
-    ]
-  },
-  "time": {
-    "from": "now-6h",
-    "to": "now"
-  },
-  "timepicker": {},
-  "timezone": "",
-  "title": "FireAI Overview",
-  "uid": "fireai-overview",
-  "version": 1,
-  "weekStart": ""
+	"__inputs": [],
+	"__requires": [
+		{
+			"type": "grafana",
+			"id": "grafana",
+			"name": "Grafana",
+			"version": "10.2.0"
+		},
+		{
+			"type": "prometheus",
+			"id": "prometheus",
+			"name": "Prometheus",
+			"version": "2.48.0"
+		}
+	],
+	"annotations": {
+		"list": [
+			{
+				"builtIn": 1,
+				"datasource": {
+					"type": "grafana",
+					"uid": "-- Grafana --"
+				},
+				"enable": true,
+				"hide": true,
+				"iconColor": "rgba(0, 211, 255, 1)",
+				"name": "Annotations & Alerts",
+				"target": {
+					"limit": 100,
+					"matchAny": false,
+					"tags": [],
+					"type": "dashboard"
+				},
+				"type": "dashboard"
+			}
+		]
+	},
+	"editable": true,
+	"fiscalYearStartMonth": 0,
+	"graphTooltip": 0,
+	"id": null,
+	"links": [],
+	"liveNow": false,
+	"panels": [
+		{
+			"collapsed": false,
+			"gridPos": {
+				"h": 1,
+				"w": 24,
+				"x": 0,
+				"y": 0
+			},
+			"id": 50,
+			"panels": [],
+			"title": "Engine Performance",
+			"type": "row"
+		},
+		{
+			"datasource": {
+				"type": "prometheus",
+				"uid": "${datasource}"
+			},
+			"fieldConfig": {
+				"defaults": {
+					"color": {
+						"mode": "palette-classic"
+					},
+					"custom": {
+						"axisCenteredZero": false,
+						"axisColorMode": "text",
+						"axisLabel": "",
+						"axisPlacement": "auto",
+						"barAlignment": 0,
+						"drawStyle": "line",
+						"fillOpacity": 10,
+						"gradientMode": "opacity",
+						"hideFrom": {
+							"legend": false,
+							"tooltip": false,
+							"viz": false
+						},
+						"lineInterpolation": "smooth",
+						"lineWidth": 2,
+						"pointSize": 5,
+						"scaleDistribution": {
+							"type": "linear"
+						},
+						"showPoints": "auto",
+						"spanNulls": false,
+						"stacking": {
+							"group": "A",
+							"mode": "none"
+						},
+						"thresholdsStyle": {
+							"mode": "off"
+						}
+					},
+					"mappings": [],
+					"thresholds": {
+						"mode": "absolute",
+						"steps": [
+							{
+								"color": "green",
+								"value": null
+							}
+						]
+					},
+					"unit": "cps"
+				},
+				"overrides": []
+			},
+			"gridPos": {
+				"h": 8,
+				"w": 12,
+				"x": 0,
+				"y": 1
+			},
+			"id": 2,
+			"options": {
+				"legend": {
+					"calcs": ["mean", "max"],
+					"displayMode": "table",
+					"placement": "bottom",
+					"showLegend": true
+				},
+				"tooltip": {
+					"mode": "multi",
+					"sort": "desc"
+				}
+			},
+			"targets": [
+				{
+					"datasource": {
+						"type": "prometheus",
+						"uid": "${datasource}"
+					},
+					"editorMode": "code",
+					"expr": "rate(fireai_engine_runs_total{status=\"success\"}[5m])",
+					"legendFormat": "success - {{engine}}",
+					"range": true,
+					"refId": "A"
+				},
+				{
+					"datasource": {
+						"type": "prometheus",
+						"uid": "${datasource}"
+					},
+					"editorMode": "code",
+					"expr": "rate(fireai_engine_runs_total{status=\"error\"}[5m])",
+					"legendFormat": "error - {{engine}}",
+					"range": true,
+					"refId": "B"
+				}
+			],
+			"title": "Engine Run Rate (5m window)",
+			"type": "timeseries"
+		},
+		{
+			"datasource": {
+				"type": "prometheus",
+				"uid": "${datasource}"
+			},
+			"fieldConfig": {
+				"defaults": {
+					"color": {
+						"mode": "palette-classic"
+					},
+					"custom": {
+						"axisCenteredZero": false,
+						"axisColorMode": "text",
+						"axisLabel": "seconds",
+						"axisPlacement": "auto",
+						"barAlignment": 0,
+						"drawStyle": "line",
+						"fillOpacity": 10,
+						"gradientMode": "opacity",
+						"hideFrom": {
+							"legend": false,
+							"tooltip": false,
+							"viz": false
+						},
+						"lineInterpolation": "smooth",
+						"lineWidth": 2,
+						"pointSize": 5,
+						"scaleDistribution": {
+							"type": "linear"
+						},
+						"showPoints": "auto",
+						"spanNulls": false,
+						"stacking": {
+							"group": "A",
+							"mode": "none"
+						},
+						"thresholdsStyle": {
+							"mode": "off"
+						}
+					},
+					"mappings": [],
+					"thresholds": {
+						"mode": "absolute",
+						"steps": [
+							{
+								"color": "green",
+								"value": null
+							}
+						]
+					},
+					"unit": "s"
+				},
+				"overrides": []
+			},
+			"gridPos": {
+				"h": 8,
+				"w": 12,
+				"x": 12,
+				"y": 1
+			},
+			"id": 3,
+			"options": {
+				"legend": {
+					"calcs": ["mean", "max"],
+					"displayMode": "table",
+					"placement": "bottom",
+					"showLegend": true
+				},
+				"tooltip": {
+					"mode": "multi",
+					"sort": "desc"
+				}
+			},
+			"targets": [
+				{
+					"datasource": {
+						"type": "prometheus",
+						"uid": "${datasource}"
+					},
+					"editorMode": "code",
+					"expr": "histogram_quantile(0.50, rate(fireai_computation_seconds_bucket[5m]))",
+					"legendFormat": "p50 - {{engine}}",
+					"range": true,
+					"refId": "A"
+				},
+				{
+					"datasource": {
+						"type": "prometheus",
+						"uid": "${datasource}"
+					},
+					"editorMode": "code",
+					"expr": "histogram_quantile(0.95, rate(fireai_computation_seconds_bucket[5m]))",
+					"legendFormat": "p95 - {{engine}}",
+					"range": true,
+					"refId": "B"
+				},
+				{
+					"datasource": {
+						"type": "prometheus",
+						"uid": "${datasource}"
+					},
+					"editorMode": "code",
+					"expr": "histogram_quantile(0.99, rate(fireai_computation_seconds_bucket[5m]))",
+					"legendFormat": "p99 - {{engine}}",
+					"range": true,
+					"refId": "C"
+				}
+			],
+			"title": "Engine Computation Latency (p50 / p95 / p99)",
+			"type": "timeseries"
+		},
+		{
+			"datasource": {
+				"type": "prometheus",
+				"uid": "${datasource}"
+			},
+			"fieldConfig": {
+				"defaults": {
+					"color": {
+						"mode": "palette-classic"
+					},
+					"custom": {
+						"axisCenteredZero": false,
+						"axisColorMode": "text",
+						"axisLabel": "",
+						"axisPlacement": "auto",
+						"barAlignment": 0,
+						"drawStyle": "bars",
+						"fillOpacity": 80,
+						"gradientMode": "opacity",
+						"hideFrom": {
+							"legend": false,
+							"tooltip": false,
+							"viz": false
+						},
+						"lineInterpolation": "linear",
+						"lineWidth": 1,
+						"pointSize": 5,
+						"scaleDistribution": {
+							"type": "linear"
+						},
+						"showPoints": "auto",
+						"spanNulls": false,
+						"stacking": {
+							"group": "A",
+							"mode": "normal"
+						},
+						"thresholdsStyle": {
+							"mode": "off"
+						}
+					},
+					"mappings": [],
+					"thresholds": {
+						"mode": "absolute",
+						"steps": [
+							{
+								"color": "green",
+								"value": null
+							}
+						]
+					},
+					"unit": "none"
+				},
+				"overrides": []
+			},
+			"gridPos": {
+				"h": 8,
+				"w": 8,
+				"x": 0,
+				"y": 9
+			},
+			"id": 4,
+			"options": {
+				"legend": {
+					"calcs": ["sum"],
+					"displayMode": "table",
+					"placement": "bottom",
+					"showLegend": true
+				},
+				"tooltip": {
+					"mode": "multi",
+					"sort": "none"
+				}
+			},
+			"targets": [
+				{
+					"datasource": {
+						"type": "prometheus",
+						"uid": "${datasource}"
+					},
+					"editorMode": "code",
+					"expr": "sum by(engine, status) (rate(fireai_engine_runs_total[5m]))",
+					"legendFormat": "{{engine}} - {{status}}",
+					"range": true,
+					"refId": "A"
+				}
+			],
+			"title": "Engine Runs by Status (rate)",
+			"type": "timeseries"
+		},
+		{
+			"datasource": {
+				"type": "prometheus",
+				"uid": "${datasource}"
+			},
+			"fieldConfig": {
+				"defaults": {
+					"color": {
+						"mode": "palette-classic"
+					},
+					"custom": {
+						"axisCenteredZero": false,
+						"axisColorMode": "text",
+						"axisLabel": "",
+						"axisPlacement": "auto",
+						"barAlignment": 0,
+						"drawStyle": "line",
+						"fillOpacity": 10,
+						"gradientMode": "opacity",
+						"hideFrom": {
+							"legend": false,
+							"tooltip": false,
+							"viz": false
+						},
+						"lineInterpolation": "smooth",
+						"lineWidth": 2,
+						"pointSize": 5,
+						"scaleDistribution": {
+							"type": "linear"
+						},
+						"showPoints": "auto",
+						"spanNulls": false,
+						"stacking": {
+							"group": "A",
+							"mode": "none"
+						},
+						"thresholdsStyle": {
+							"mode": "off"
+						}
+					},
+					"mappings": [],
+					"thresholds": {
+						"mode": "absolute",
+						"steps": [
+							{
+								"color": "green",
+								"value": null
+							}
+						]
+					},
+					"unit": "cps"
+				},
+				"overrides": []
+			},
+			"gridPos": {
+				"h": 8,
+				"w": 8,
+				"x": 8,
+				"y": 9
+			},
+			"id": 5,
+			"options": {
+				"legend": {
+					"calcs": ["mean", "max"],
+					"displayMode": "table",
+					"placement": "bottom",
+					"showLegend": true
+				},
+				"tooltip": {
+					"mode": "multi",
+					"sort": "desc"
+				}
+			},
+			"targets": [
+				{
+					"datasource": {
+						"type": "prometheus",
+						"uid": "${datasource}"
+					},
+					"editorMode": "code",
+					"expr": "rate(fireai_errors_total[5m])",
+					"legendFormat": "{{component}} - {{type}}",
+					"range": true,
+					"refId": "A"
+				}
+			],
+			"title": "Error Rate by Component (5m window)",
+			"type": "timeseries"
+		},
+		{
+			"datasource": {
+				"type": "prometheus",
+				"uid": "${datasource}"
+			},
+			"fieldConfig": {
+				"defaults": {
+					"color": {
+						"mode": "thresholds"
+					},
+					"mappings": [
+						{
+							"options": {
+								"0": {
+									"color": "red",
+									"text": "No Active Workflows"
+								}
+							},
+							"type": "value"
+						}
+					],
+					"thresholds": {
+						"mode": "absolute",
+						"steps": [
+							{
+								"color": "red",
+								"value": null
+							},
+							{
+								"color": "orange",
+								"value": 1
+							},
+							{
+								"color": "green",
+								"value": 5
+							}
+						]
+					},
+					"unit": "none"
+				},
+				"overrides": []
+			},
+			"gridPos": {
+				"h": 4,
+				"w": 4,
+				"x": 16,
+				"y": 9
+			},
+			"id": 6,
+			"options": {
+				"colorMode": "value",
+				"graphMode": "area",
+				"justifyMode": "auto",
+				"orientation": "auto",
+				"reduceOptions": {
+					"calcs": ["lastNotNull"],
+					"fields": "",
+					"values": false
+				},
+				"textMode": "auto"
+			},
+			"pluginVersion": "10.2.0",
+			"targets": [
+				{
+					"datasource": {
+						"type": "prometheus",
+						"uid": "${datasource}"
+					},
+					"editorMode": "code",
+					"expr": "fireai_active_workflows",
+					"legendFormat": "Active Workflows",
+					"range": true,
+					"refId": "A"
+				}
+			],
+			"title": "Active Workflows",
+			"type": "stat"
+		},
+		{
+			"datasource": {
+				"type": "prometheus",
+				"uid": "${datasource}"
+			},
+			"fieldConfig": {
+				"defaults": {
+					"color": {
+						"mode": "thresholds"
+					},
+					"mappings": [],
+					"thresholds": {
+						"mode": "absolute",
+						"steps": [
+							{
+								"color": "green",
+								"value": null
+							},
+							{
+								"color": "orange",
+								"value": 50
+							},
+							{
+								"color": "red",
+								"value": 100
+							}
+						]
+					},
+					"unit": "none"
+				},
+				"overrides": []
+			},
+			"gridPos": {
+				"h": 4,
+				"w": 4,
+				"x": 20,
+				"y": 9
+			},
+			"id": 7,
+			"options": {
+				"colorMode": "value",
+				"graphMode": "area",
+				"justifyMode": "auto",
+				"orientation": "auto",
+				"reduceOptions": {
+					"calcs": ["lastNotNull"],
+					"fields": "",
+					"values": false
+				},
+				"textMode": "auto"
+			},
+			"pluginVersion": "10.2.0",
+			"targets": [
+				{
+					"datasource": {
+						"type": "prometheus",
+						"uid": "${datasource}"
+					},
+					"editorMode": "code",
+					"expr": "sum(fireai_queue_depth)",
+					"legendFormat": "Queue Depth",
+					"range": true,
+					"refId": "A"
+				}
+			],
+			"title": "Queue Depth",
+			"type": "stat"
+		},
+		{
+			"collapsed": false,
+			"gridPos": {
+				"h": 1,
+				"w": 24,
+				"x": 0,
+				"y": 13
+			},
+			"id": 51,
+			"panels": [],
+			"title": "Coverage Metrics",
+			"type": "row"
+		},
+		{
+			"datasource": {
+				"type": "prometheus",
+				"uid": "${datasource}"
+			},
+			"fieldConfig": {
+				"defaults": {
+					"color": {
+						"mode": "thresholds"
+					},
+					"mappings": [],
+					"thresholds": {
+						"mode": "absolute",
+						"steps": [
+							{
+								"color": "red",
+								"value": null
+							},
+							{
+								"color": "orange",
+								"value": 80
+							},
+							{
+								"color": "green",
+								"value": 90
+							}
+						]
+					},
+					"unit": "percent"
+				},
+				"overrides": []
+			},
+			"gridPos": {
+				"h": 6,
+				"w": 4,
+				"x": 0,
+				"y": 14
+			},
+			"id": 8,
+			"options": {
+				"colorMode": "value",
+				"graphMode": "area",
+				"justifyMode": "auto",
+				"orientation": "auto",
+				"reduceOptions": {
+					"calcs": ["lastNotNull"],
+					"fields": "",
+					"values": false
+				},
+				"textMode": "auto"
+			},
+			"pluginVersion": "10.2.0",
+			"targets": [
+				{
+					"datasource": {
+						"type": "prometheus",
+						"uid": "${datasource}"
+					},
+					"editorMode": "code",
+					"expr": "avg(fireai_coverage_percent{status=\"passing\"})",
+					"legendFormat": "Avg Coverage",
+					"range": true,
+					"refId": "A"
+				}
+			],
+			"title": "Average Coverage",
+			"type": "stat"
+		},
+		{
+			"datasource": {
+				"type": "prometheus",
+				"uid": "${datasource}"
+			},
+			"fieldConfig": {
+				"defaults": {
+					"color": {
+						"mode": "thresholds"
+					},
+					"mappings": [],
+					"thresholds": {
+						"mode": "absolute",
+						"steps": [
+							{
+								"color": "green",
+								"value": null
+							},
+							{
+								"color": "orange",
+								"value": 1
+							}
+						]
+					},
+					"unit": "none"
+				},
+				"overrides": []
+			},
+			"gridPos": {
+				"h": 6,
+				"w": 4,
+				"x": 4,
+				"y": 14
+			},
+			"id": 9,
+			"options": {
+				"colorMode": "value",
+				"graphMode": "area",
+				"justifyMode": "auto",
+				"orientation": "auto",
+				"reduceOptions": {
+					"calcs": ["lastNotNull"],
+					"fields": "",
+					"values": false
+				},
+				"textMode": "auto"
+			},
+			"pluginVersion": "10.2.0",
+			"targets": [
+				{
+					"datasource": {
+						"type": "prometheus",
+						"uid": "${datasource}"
+					},
+					"editorMode": "code",
+					"expr": "count(fireai_coverage_percent{status=\"failing\"})",
+					"legendFormat": "Failing Rooms",
+					"range": true,
+					"refId": "A"
+				}
+			],
+			"title": "Rooms Failing Coverage",
+			"type": "stat"
+		},
+		{
+			"datasource": {
+				"type": "prometheus",
+				"uid": "${datasource}"
+			},
+			"fieldConfig": {
+				"defaults": {
+					"color": {
+						"mode": "palette-classic"
+					},
+					"custom": {
+						"axisCenteredZero": false,
+						"axisColorMode": "text",
+						"axisLabel": "",
+						"axisPlacement": "auto",
+						"barAlignment": 0,
+						"drawStyle": "line",
+						"fillOpacity": 10,
+						"gradientMode": "opacity",
+						"hideFrom": {
+							"legend": false,
+							"tooltip": false,
+							"viz": false
+						},
+						"lineInterpolation": "smooth",
+						"lineWidth": 2,
+						"pointSize": 5,
+						"scaleDistribution": {
+							"type": "linear"
+						},
+						"showPoints": "auto",
+						"spanNulls": false,
+						"stacking": {
+							"group": "A",
+							"mode": "none"
+						},
+						"thresholdsStyle": {
+							"mode": "off"
+						}
+					},
+					"mappings": [],
+					"thresholds": {
+						"mode": "absolute",
+						"steps": [
+							{
+								"color": "green",
+								"value": null
+							}
+						]
+					},
+					"unit": "percent"
+				},
+				"overrides": []
+			},
+			"gridPos": {
+				"h": 6,
+				"w": 10,
+				"x": 8,
+				"y": 14
+			},
+			"id": 10,
+			"options": {
+				"legend": {
+					"calcs": ["mean", "min", "max"],
+					"displayMode": "table",
+					"placement": "bottom",
+					"showLegend": true
+				},
+				"tooltip": {
+					"mode": "multi",
+					"sort": "none"
+				}
+			},
+			"targets": [
+				{
+					"datasource": {
+						"type": "prometheus",
+						"uid": "${datasource}"
+					},
+					"editorMode": "code",
+					"expr": "fireai_coverage_percent{status=\"passing\"}",
+					"legendFormat": "room {{room_id}}",
+					"range": true,
+					"refId": "A"
+				}
+			],
+			"title": "Coverage % by Room",
+			"type": "timeseries"
+		},
+		{
+			"datasource": {
+				"type": "prometheus",
+				"uid": "${datasource}"
+			},
+			"fieldConfig": {
+				"defaults": {
+					"color": {
+						"mode": "palette-classic"
+					},
+					"custom": {
+						"axisCenteredZero": false,
+						"axisColorMode": "text",
+						"axisLabel": "",
+						"axisPlacement": "auto",
+						"barAlignment": 0,
+						"drawStyle": "line",
+						"fillOpacity": 10,
+						"gradientMode": "opacity",
+						"hideFrom": {
+							"legend": false,
+							"tooltip": false,
+							"viz": false
+						},
+						"lineInterpolation": "smooth",
+						"lineWidth": 2,
+						"pointSize": 5,
+						"scaleDistribution": {
+							"type": "linear"
+						},
+						"showPoints": "auto",
+						"spanNulls": false,
+						"stacking": {
+							"group": "A",
+							"mode": "none"
+						},
+						"thresholdsStyle": {
+							"mode": "off"
+						}
+					},
+					"mappings": [],
+					"thresholds": {
+						"mode": "absolute",
+						"steps": [
+							{
+								"color": "green",
+								"value": null
+							}
+						]
+					},
+					"unit": "none"
+				},
+				"overrides": []
+			},
+			"gridPos": {
+				"h": 6,
+				"w": 6,
+				"x": 18,
+				"y": 14
+			},
+			"id": 11,
+			"options": {
+				"legend": {
+					"calcs": ["sum"],
+					"displayMode": "table",
+					"placement": "bottom",
+					"showLegend": true
+				},
+				"tooltip": {
+					"mode": "multi",
+					"sort": "none"
+				}
+			},
+			"targets": [
+				{
+					"datasource": {
+						"type": "prometheus",
+						"uid": "${datasource}"
+					},
+					"editorMode": "code",
+					"expr": "sum by(room_type) (fireai_detectors_placed)",
+					"legendFormat": "{{room_type}}",
+					"range": true,
+					"refId": "A"
+				}
+			],
+			"title": "Detectors Placed by Room Type",
+			"type": "timeseries"
+		},
+		{
+			"collapsed": false,
+			"gridPos": {
+				"h": 1,
+				"w": 24,
+				"x": 0,
+				"y": 20
+			},
+			"id": 52,
+			"panels": [],
+			"title": "System Health",
+			"type": "row"
+		},
+		{
+			"datasource": {
+				"type": "prometheus",
+				"uid": "${datasource}"
+			},
+			"fieldConfig": {
+				"defaults": {
+					"color": {
+						"mode": "palette-classic"
+					},
+					"custom": {
+						"axisCenteredZero": false,
+						"axisColorMode": "text",
+						"axisLabel": "",
+						"axisPlacement": "auto",
+						"barAlignment": 0,
+						"drawStyle": "line",
+						"fillOpacity": 10,
+						"gradientMode": "opacity",
+						"hideFrom": {
+							"legend": false,
+							"tooltip": false,
+							"viz": false
+						},
+						"lineInterpolation": "smooth",
+						"lineWidth": 2,
+						"pointSize": 5,
+						"scaleDistribution": {
+							"type": "linear"
+						},
+						"showPoints": "auto",
+						"spanNulls": false,
+						"stacking": {
+							"group": "A",
+							"mode": "none"
+						},
+						"thresholdsStyle": {
+							"mode": "line"
+						}
+					},
+					"mappings": [],
+					"thresholds": {
+						"mode": "absolute",
+						"steps": [
+							{
+								"color": "green",
+								"value": null
+							},
+							{
+								"color": "orange",
+								"value": 3000000000
+							},
+							{
+								"color": "red",
+								"value": 4000000000
+							}
+						]
+					},
+					"unit": "bytes"
+				},
+				"overrides": []
+			},
+			"gridPos": {
+				"h": 8,
+				"w": 8,
+				"x": 0,
+				"y": 21
+			},
+			"id": 12,
+			"options": {
+				"legend": {
+					"calcs": ["mean", "max"],
+					"displayMode": "table",
+					"placement": "bottom",
+					"showLegend": true
+				},
+				"tooltip": {
+					"mode": "multi",
+					"sort": "desc"
+				}
+			},
+			"targets": [
+				{
+					"datasource": {
+						"type": "prometheus",
+						"uid": "${datasource}"
+					},
+					"editorMode": "code",
+					"expr": "fireai_memory_bytes",
+					"legendFormat": "{{component}}",
+					"range": true,
+					"refId": "A"
+				}
+			],
+			"title": "Memory Usage by Component",
+			"type": "timeseries"
+		},
+		{
+			"datasource": {
+				"type": "prometheus",
+				"uid": "${datasource}"
+			},
+			"fieldConfig": {
+				"defaults": {
+					"color": {
+						"mode": "palette-classic"
+					},
+					"custom": {
+						"axisCenteredZero": false,
+						"axisColorMode": "text",
+						"axisLabel": "",
+						"axisPlacement": "auto",
+						"barAlignment": 0,
+						"drawStyle": "line",
+						"fillOpacity": 10,
+						"gradientMode": "opacity",
+						"hideFrom": {
+							"legend": false,
+							"tooltip": false,
+							"viz": false
+						},
+						"lineInterpolation": "smooth",
+						"lineWidth": 2,
+						"pointSize": 5,
+						"scaleDistribution": {
+							"type": "linear"
+						},
+						"showPoints": "auto",
+						"spanNulls": false,
+						"stacking": {
+							"group": "A",
+							"mode": "none"
+						},
+						"thresholdsStyle": {
+							"mode": "off"
+						}
+					},
+					"mappings": [],
+					"thresholds": {
+						"mode": "absolute",
+						"steps": [
+							{
+								"color": "green",
+								"value": null
+							}
+						]
+					},
+					"unit": "none"
+				},
+				"overrides": []
+			},
+			"gridPos": {
+				"h": 8,
+				"w": 8,
+				"x": 8,
+				"y": 21
+			},
+			"id": 13,
+			"options": {
+				"legend": {
+					"calcs": ["mean", "max"],
+					"displayMode": "table",
+					"placement": "bottom",
+					"showLegend": true
+				},
+				"tooltip": {
+					"mode": "multi",
+					"sort": "desc"
+				}
+			},
+			"targets": [
+				{
+					"datasource": {
+						"type": "prometheus",
+						"uid": "${datasource}"
+					},
+					"editorMode": "code",
+					"expr": "fireai_queue_depth",
+					"legendFormat": "{{queue}}",
+					"range": true,
+					"refId": "A"
+				}
+			],
+			"title": "Queue Depth by Queue",
+			"type": "timeseries"
+		},
+		{
+			"datasource": {
+				"type": "prometheus",
+				"uid": "${datasource}"
+			},
+			"fieldConfig": {
+				"defaults": {
+					"color": {
+						"mode": "palette-classic"
+					},
+					"custom": {
+						"axisCenteredZero": false,
+						"axisColorMode": "text",
+						"axisLabel": "",
+						"axisPlacement": "auto",
+						"barAlignment": 0,
+						"drawStyle": "line",
+						"fillOpacity": 10,
+						"gradientMode": "opacity",
+						"hideFrom": {
+							"legend": false,
+							"tooltip": false,
+							"viz": false
+						},
+						"lineInterpolation": "smooth",
+						"lineWidth": 2,
+						"pointSize": 5,
+						"scaleDistribution": {
+							"type": "linear"
+						},
+						"showPoints": "auto",
+						"spanNulls": false,
+						"stacking": {
+							"group": "A",
+							"mode": "none"
+						},
+						"thresholdsStyle": {
+							"mode": "off"
+						}
+					},
+					"mappings": [],
+					"thresholds": {
+						"mode": "absolute",
+						"steps": [
+							{
+								"color": "green",
+								"value": null
+							}
+						]
+					},
+					"unit": "none"
+				},
+				"overrides": []
+			},
+			"gridPos": {
+				"h": 8,
+				"w": 8,
+				"x": 16,
+				"y": 21
+			},
+			"id": 14,
+			"options": {
+				"legend": {
+					"calcs": ["mean", "max"],
+					"displayMode": "table",
+					"placement": "bottom",
+					"showLegend": true
+				},
+				"tooltip": {
+					"mode": "multi",
+					"sort": "desc"
+				}
+			},
+			"targets": [
+				{
+					"datasource": {
+						"type": "prometheus",
+						"uid": "${datasource}"
+					},
+					"editorMode": "code",
+					"expr": "fireai_active_workflows",
+					"legendFormat": "Active Workflows",
+					"range": true,
+					"refId": "A"
+				}
+			],
+			"title": "Active Workflows Over Time",
+			"type": "timeseries"
+		},
+		{
+			"collapsed": false,
+			"gridPos": {
+				"h": 1,
+				"w": 24,
+				"x": 0,
+				"y": 29
+			},
+			"id": 53,
+			"panels": [],
+			"title": "API Metrics",
+			"type": "row"
+		},
+		{
+			"datasource": {
+				"type": "prometheus",
+				"uid": "${datasource}"
+			},
+			"fieldConfig": {
+				"defaults": {
+					"color": {
+						"mode": "palette-classic"
+					},
+					"custom": {
+						"axisCenteredZero": false,
+						"axisColorMode": "text",
+						"axisLabel": "",
+						"axisPlacement": "auto",
+						"barAlignment": 0,
+						"drawStyle": "line",
+						"fillOpacity": 10,
+						"gradientMode": "opacity",
+						"hideFrom": {
+							"legend": false,
+							"tooltip": false,
+							"viz": false
+						},
+						"lineInterpolation": "smooth",
+						"lineWidth": 2,
+						"pointSize": 5,
+						"scaleDistribution": {
+							"type": "linear"
+						},
+						"showPoints": "auto",
+						"spanNulls": false,
+						"stacking": {
+							"group": "A",
+							"mode": "none"
+						},
+						"thresholdsStyle": {
+							"mode": "off"
+						}
+					},
+					"mappings": [],
+					"thresholds": {
+						"mode": "absolute",
+						"steps": [
+							{
+								"color": "green",
+								"value": null
+							}
+						]
+					},
+					"unit": "rps"
+				},
+				"overrides": []
+			},
+			"gridPos": {
+				"h": 8,
+				"w": 8,
+				"x": 0,
+				"y": 30
+			},
+			"id": 15,
+			"options": {
+				"legend": {
+					"calcs": ["mean", "max"],
+					"displayMode": "table",
+					"placement": "bottom",
+					"showLegend": true
+				},
+				"tooltip": {
+					"mode": "multi",
+					"sort": "desc"
+				}
+			},
+			"targets": [
+				{
+					"datasource": {
+						"type": "prometheus",
+						"uid": "${datasource}"
+					},
+					"editorMode": "code",
+					"expr": "sum by(endpoint, method) (rate(fireai_api_latency_seconds_count[5m]))",
+					"legendFormat": "{{method}} {{endpoint}}",
+					"range": true,
+					"refId": "A"
+				}
+			],
+			"title": "API Request Rate (5m window)",
+			"type": "timeseries"
+		},
+		{
+			"datasource": {
+				"type": "prometheus",
+				"uid": "${datasource}"
+			},
+			"fieldConfig": {
+				"defaults": {
+					"color": {
+						"mode": "palette-classic"
+					},
+					"custom": {
+						"axisCenteredZero": false,
+						"axisColorMode": "text",
+						"axisLabel": "seconds",
+						"axisPlacement": "auto",
+						"barAlignment": 0,
+						"drawStyle": "line",
+						"fillOpacity": 10,
+						"gradientMode": "opacity",
+						"hideFrom": {
+							"legend": false,
+							"tooltip": false,
+							"viz": false
+						},
+						"lineInterpolation": "smooth",
+						"lineWidth": 2,
+						"pointSize": 5,
+						"scaleDistribution": {
+							"type": "linear"
+						},
+						"showPoints": "auto",
+						"spanNulls": false,
+						"stacking": {
+							"group": "A",
+							"mode": "none"
+						},
+						"thresholdsStyle": {
+							"mode": "off"
+						}
+					},
+					"mappings": [],
+					"thresholds": {
+						"mode": "absolute",
+						"steps": [
+							{
+								"color": "green",
+								"value": null
+							}
+						]
+					},
+					"unit": "s"
+				},
+				"overrides": []
+			},
+			"gridPos": {
+				"h": 8,
+				"w": 8,
+				"x": 8,
+				"y": 30
+			},
+			"id": 16,
+			"options": {
+				"legend": {
+					"calcs": ["mean", "max"],
+					"displayMode": "table",
+					"placement": "bottom",
+					"showLegend": true
+				},
+				"tooltip": {
+					"mode": "multi",
+					"sort": "desc"
+				}
+			},
+			"targets": [
+				{
+					"datasource": {
+						"type": "prometheus",
+						"uid": "${datasource}"
+					},
+					"editorMode": "code",
+					"expr": "histogram_quantile(0.50, sum by(le, endpoint, method) (rate(fireai_api_latency_seconds_bucket[5m])))",
+					"legendFormat": "p50 - {{method}} {{endpoint}}",
+					"range": true,
+					"refId": "A"
+				},
+				{
+					"datasource": {
+						"type": "prometheus",
+						"uid": "${datasource}"
+					},
+					"editorMode": "code",
+					"expr": "histogram_quantile(0.95, sum by(le, endpoint, method) (rate(fireai_api_latency_seconds_bucket[5m])))",
+					"legendFormat": "p95 - {{method}} {{endpoint}}",
+					"range": true,
+					"refId": "B"
+				},
+				{
+					"datasource": {
+						"type": "prometheus",
+						"uid": "${datasource}"
+					},
+					"editorMode": "code",
+					"expr": "histogram_quantile(0.99, sum by(le, endpoint, method) (rate(fireai_api_latency_seconds_bucket[5m])))",
+					"legendFormat": "p99 - {{method}} {{endpoint}}",
+					"range": true,
+					"refId": "C"
+				}
+			],
+			"title": "API Latency (p50 / p95 / p99)",
+			"type": "timeseries"
+		},
+		{
+			"datasource": {
+				"type": "prometheus",
+				"uid": "${datasource}"
+			},
+			"fieldConfig": {
+				"defaults": {
+					"color": {
+						"mode": "palette-classic"
+					},
+					"custom": {
+						"axisCenteredZero": false,
+						"axisColorMode": "text",
+						"axisLabel": "",
+						"axisPlacement": "auto",
+						"barAlignment": 0,
+						"drawStyle": "line",
+						"fillOpacity": 10,
+						"gradientMode": "opacity",
+						"hideFrom": {
+							"legend": false,
+							"tooltip": false,
+							"viz": false
+						},
+						"lineInterpolation": "smooth",
+						"lineWidth": 2,
+						"pointSize": 5,
+						"scaleDistribution": {
+							"type": "linear"
+						},
+						"showPoints": "auto",
+						"spanNulls": false,
+						"stacking": {
+							"group": "A",
+							"mode": "none"
+						},
+						"thresholdsStyle": {
+							"mode": "off"
+						}
+					},
+					"mappings": [],
+					"thresholds": {
+						"mode": "absolute",
+						"steps": [
+							{
+								"color": "green",
+								"value": null
+							}
+						]
+					},
+					"unit": "cps"
+				},
+				"overrides": []
+			},
+			"gridPos": {
+				"h": 8,
+				"w": 8,
+				"x": 16,
+				"y": 30
+			},
+			"id": 17,
+			"options": {
+				"legend": {
+					"calcs": ["mean", "max"],
+					"displayMode": "table",
+					"placement": "bottom",
+					"showLegend": true
+				},
+				"tooltip": {
+					"mode": "multi",
+					"sort": "desc"
+				}
+			},
+			"targets": [
+				{
+					"datasource": {
+						"type": "prometheus",
+						"uid": "${datasource}"
+					},
+					"editorMode": "code",
+					"expr": "rate(fireai_errors_total{component=\"api\"}[5m])",
+					"legendFormat": "{{type}}",
+					"range": true,
+					"refId": "A"
+				}
+			],
+			"title": "API Error Rate (5m window)",
+			"type": "timeseries"
+		}
+	],
+	"refresh": "30s",
+	"schemaVersion": 38,
+	"style": "dark",
+	"tags": ["fireai", "observability", "production"],
+	"templating": {
+		"list": [
+			{
+				"current": {
+					"selected": false,
+					"text": "Prometheus",
+					"value": "prometheus"
+				},
+				"hide": 0,
+				"includeAll": false,
+				"multi": false,
+				"name": "datasource",
+				"options": [],
+				"query": "prometheus",
+				"queryValue": "",
+				"refresh": 1,
+				"regex": "",
+				"skipUrlSync": false,
+				"type": "datasource"
+			}
+		]
+	},
+	"time": {
+		"from": "now-6h",
+		"to": "now"
+	},
+	"timepicker": {},
+	"timezone": "",
+	"title": "FireAI Overview",
+	"uid": "fireai-overview",
+	"version": 1,
+	"weekStart": ""
 }

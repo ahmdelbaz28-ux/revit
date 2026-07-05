@@ -1,13 +1,7 @@
-import {
-	Activity,
-	AlertTriangle,
-	CheckCircle,
-	Wrench,
-	Zap,
-} from "lucide-react";
+import { Activity, AlertTriangle, CheckCircle, Wrench } from "lucide-react";
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { actions, Connection, Device, useStore } from "@/store/simpleStore";
+import { actions, useStore } from "@/store/simpleStore";
 
 interface Issue {
 	id: string;

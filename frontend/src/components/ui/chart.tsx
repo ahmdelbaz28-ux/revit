@@ -85,11 +85,11 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
 					const safeColor = color
 						? color.toString().replace(/[^a-zA-Z0-9#%(),. -]/g, "")
 						: null;
-					return safeColor ? "  --color-" + key + ": " + safeColor + ";" : null;
+					return safeColor ? `  --color-${key}: ${safeColor};` : null;
 				})
 				.filter(Boolean)
 				.join("\n");
-			return safePrefix + " [data-chart=" + id + "] {\n" + rules + "\n}";
+			return `${safePrefix} [data-chart=${id}] {\n${rules}\n}`;
 		})
 		.join("\n");
 

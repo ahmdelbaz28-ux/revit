@@ -1,20 +1,14 @@
 import {
-	Activity,
-	ActivitySquare,
 	AlertTriangle,
 	Bell,
 	Building2,
 	CheckCircle2,
 	ChevronDown,
 	ChevronRight,
-	Droplets,
 	Plus,
 	Settings,
 	Thermometer,
 	User,
-	Wind,
-	XCircle,
-	Zap,
 } from "lucide-react";
 import type React from "react";
 import { useState } from "react";
@@ -26,7 +20,7 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export function BMSDashboard() {
-	const [activeZone, setActiveZone] = useState("Server Room");
+	const [_activeZone, _setActiveZone] = useState("Server Room");
 
 	return (
 		<div className="flex flex-col h-screen w-screen overflow-hidden bg-slate-900 text-slate-100 font-sans">

@@ -22,7 +22,6 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/services/api";
 

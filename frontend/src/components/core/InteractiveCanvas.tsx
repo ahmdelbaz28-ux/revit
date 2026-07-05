@@ -9,7 +9,7 @@ export function InteractiveCanvas() {
 	const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 	const canvasRef = useRef<SVGSVGElement>(null);
 
-	const handleCanvasClick = (e: React.MouseEvent<SVGSVGElement>) => {
+	const handleCanvasClick = (_e: React.MouseEvent<SVGSVGElement>) => {
 		if (drawingFrom) {
 			setDrawingFrom(null);
 			return;

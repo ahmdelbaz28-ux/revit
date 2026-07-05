@@ -49,7 +49,7 @@ export function useSimulation() {
 			}, 3000);
 			return () => clearTimeout(timeout);
 		}
-	}, [faults, connectionStatus]);
+	}, [connectionStatus, isFaulty]);
 
 	return { faults, isFaulty };
 }

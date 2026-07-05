@@ -1,9 +1,9 @@
-import { ChevronDown, ChevronUp, Pin, Trash2, X } from "lucide-react";
-import React, { useState } from "react";
+import { ChevronDown, ChevronUp, Pin, Trash2 } from "lucide-react";
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { AppError, actions, useStore } from "@/store/simpleStore";
+import { actions, useStore } from "@/store/simpleStore";
 
 export function FloatingErrorLog() {
 	const errorLog = useStore((s) => s.errorLog);

@@ -94,7 +94,7 @@ export const OnboardingTour: React.FC = () => {
 	const [isMounted, setIsMounted] = useState(false);
 	const overlayRef = useRef<HTMLDivElement>(null);
 
-	const location = useLocation();
+	const _location = useLocation();
 
 	useEffect(() => {
 		setIsMounted(true);
@@ -131,7 +131,7 @@ export const OnboardingTour: React.FC = () => {
 		const handleResize = () => getTargetPosition();
 		window.addEventListener("resize", handleResize);
 		return () => window.removeEventListener("resize", handleResize);
-	}, [isVisible, currentStep, getTargetPosition, location.pathname]);
+	}, [isVisible, getTargetPosition]);
 
 	const completeTour = useCallback(() => {
 		localStorage.setItem(STORAGE_KEY, "true");

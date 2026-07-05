@@ -1,4 +1,4 @@
-import { ArrowRight, DollarSign, TrendingUp, Zap } from "lucide-react";
+import { ArrowRight, DollarSign, TrendingUp } from "lucide-react";
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { useStore } from "@/store/simpleStore";
@@ -52,7 +52,7 @@ export function SystemOptimizer() {
 
 	React.useEffect(() => {
 		calculateEfficiency();
-	}, [devices, connections]);
+	}, [calculateEfficiency]);
 
 	return (
 		<div className="p-4 space-y-6 h-full overflow-y-auto">

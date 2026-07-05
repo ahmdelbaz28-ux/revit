@@ -3,7 +3,6 @@
  * Shows the thermal color gradient with value ranges
  */
 
-import React from "react";
 import {
 	getLoadColor,
 	getVoltageDropColor,
