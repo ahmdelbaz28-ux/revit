@@ -83,9 +83,9 @@ export function AICopilot() {
 									key={i}
 									className="w-1 bg-primary rounded-full animate-pulse"
 									style={{
-										height: `${Math.random() * 100}%`,
+										height: `${crypto.getRandomValues(new Uint32Array(1))[0] / 0xFFFFFFFF * 100}%`,
 										animationDelay: `${i * 0.05}s`,
-										animationDuration: `${0.5 + Math.random()}s`,
+										animationDuration: `${0.5 + crypto.getRandomValues(new Uint32Array(1))[0] / 0xFFFFFFFF}s`,
 									}}
 								></div>
 							))

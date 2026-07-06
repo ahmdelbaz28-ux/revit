@@ -77,8 +77,7 @@ export function FileUploader({
 				}}
 				onDragLeave={() => setDragging(false)}
 				onDrop={handleDrop}
-				onClick={() => inputRef.current?.click()}
-			>
+				onClick={{() => inputRef.current?.click() onKeyDown={(e) => e.key === "Enter" && {() => inputRef.current?.click()}			>
 				<input
 					ref={inputRef}
 					type="file"
@@ -110,8 +109,7 @@ export function FileUploader({
 					</div>
 					<Button
 						size="sm"
-						onClick={handleUpload}
-						disabled={uploading}
+						onClick={{handleUpload onKeyDown={(e) => e.key === "Enter" && {handleUpload}						disabled={uploading}
 						className="bg-orange-600 hover:bg-orange-700 text-white"
 					>
 						{uploading ? "Uploading..." : "Upload"}
@@ -119,8 +117,7 @@ export function FileUploader({
 					<Button
 						size="sm"
 						variant="ghost"
-						onClick={() => setSelectedFile(null)}
-						disabled={uploading}
+						onClick={{() => setSelectedFile(null) onKeyDown={(e) => e.key === "Enter" && {() => setSelectedFile(null)}						disabled={uploading}
 					>
 						<X className="h-4 w-4" />
 					</Button>

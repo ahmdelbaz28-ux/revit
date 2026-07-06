@@ -104,7 +104,7 @@ def validate_document(doc_path):
         safe_doc_path = validate_input_path(
             str(doc_path),
             allowed_extensions={".docx", ".pptx", ".xlsx"},
-            max_size_bytes=None,  # No size limit for validation
+,  # No size limit for validation
         )
         # Use the validated/sanitized path from here forward
         doc_path = Path(safe_doc_path)

@@ -83,8 +83,7 @@ export function MainWorkspace() {
 								<button
 									key={tab}
 									className={`px-3 py-1 rounded-sm transition-colors ${activeTab === tab ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-muted"}`}
-									onClick={() => setActiveTab(tab)}
-								>
+									onClick={{() => setActiveTab(tab) onKeyDown={(e) => e.key === "Enter" && {() => setActiveTab(tab)}								>
 									{tab}
 								</button>
 							))}
@@ -144,8 +143,7 @@ export function MainWorkspace() {
 							variant="ghost"
 							size="icon"
 							className="h-5 w-5"
-							onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-						>
+							onClick={{() => setIsSidebarCollapsed(!isSidebarCollapsed) onKeyDown={(e) => e.key === "Enter" && {() => setIsSidebarCollapsed(!isSidebarCollapsed)}						>
 							<Menu className="h-3 w-3" />
 						</Button>
 					</div>
@@ -159,20 +157,17 @@ export function MainWorkspace() {
 										title="Single Line Diagram (SLD)"
 										type="dwg"
 										active={activeFile === "SLD"}
-										onClick={() => setActiveFile("SLD")}
-									/>
+										onClick={{() => setActiveFile("SLD") onKeyDown={(e) => e.key === "Enter" && {() => setActiveFile("SLD")}									/>
 									<FileNode
 										title="Cabling Network"
 										type="dwg"
 										active={activeFile === "Cabling"}
-										onClick={() => setActiveFile("Cabling")}
-									/>
+										onClick={{() => setActiveFile("Cabling") onKeyDown={(e) => e.key === "Enter" && {() => setActiveFile("Cabling")}									/>
 									<FileNode
 										title="Connected Devices"
 										type="dwg"
 										active={activeFile === "Devices"}
-										onClick={() => setActiveFile("Devices")}
-									/>
+										onClick={{() => setActiveFile("Devices") onKeyDown={(e) => e.key === "Enter" && {() => setActiveFile("Devices")}									/>
 								</TreeNode>
 								<TreeNode title="Project Elements" defaultOpen>
 									<TreeNode title="SLD Elements">
@@ -189,8 +184,7 @@ export function MainWorkspace() {
 										title="Report Manager"
 										type="xlsx"
 										active={activeFile === "Reports"}
-										onClick={() => setActiveFile("Reports")}
-									/>
+										onClick={{() => setActiveFile("Reports") onKeyDown={(e) => e.key === "Enter" && {() => setActiveFile("Reports")}									/>
 								</TreeNode>
 								<TreeNode title="System Settings" defaultOpen>
 									<FileNode title="Preferences" type="xlsx" />
@@ -202,16 +196,13 @@ export function MainWorkspace() {
 							<div className="flex flex-col items-center gap-4 py-4">
 								<FileText
 									className="h-5 w-5 text-muted-foreground cursor-pointer"
-									onClick={() => setIsSidebarCollapsed(false)}
-								/>
+									onClick={{() => setIsSidebarCollapsed(false) onKeyDown={(e) => e.key === "Enter" && {() => setIsSidebarCollapsed(false)}								/>
 								<Zap
 									className="h-5 w-5 text-muted-foreground cursor-pointer"
-									onClick={() => setIsSidebarCollapsed(false)}
-								/>
+									onClick={{() => setIsSidebarCollapsed(false) onKeyDown={(e) => e.key === "Enter" && {() => setIsSidebarCollapsed(false)}								/>
 								<Layout
 									className="h-5 w-5 text-muted-foreground cursor-pointer"
-									onClick={() => setIsSidebarCollapsed(false)}
-								/>
+									onClick={{() => setIsSidebarCollapsed(false) onKeyDown={(e) => e.key === "Enter" && {() => setIsSidebarCollapsed(false)}								/>
 							</div>
 						)}
 					</ScrollArea>
@@ -247,8 +238,7 @@ export function MainWorkspace() {
 							<div
 								key={file}
 								className={`px-4 py-2 text-xs border-r flex items-center gap-2 cursor-pointer ${activeFile === file ? "bg-[#0f1115] text-primary border-t-2 border-t-primary" : "text-muted-foreground hover:bg-muted"}`}
-								onClick={() => setActiveFile(file)}
-							>
+								onClick={{() => setActiveFile(file) onKeyDown={(e) => e.key === "Enter" && {() => setActiveFile(file)}							>
 								{file.endsWith(".dwg") ? (
 									<Layout className="h-3 w-3" />
 								) : (
@@ -534,9 +524,7 @@ export function MainWorkspace() {
 									size="icon"
 									variant="ghost"
 									className={`absolute right-0 top-0 h-8 w-8 ${isListening ? "text-red-500 animate-pulse" : "text-primary"}`}
-									onClick={() => {
-										setIsListening(!isListening);
-										if (!isListening) {
+									onClick={{{() => {										setIsListening(!isListening);										if (!isListening) {
 											setVoiceCommand("Processing voice command...");
 											setTimeout(
 												() => setVoiceCommand("Show me active clashes"),
@@ -566,9 +554,7 @@ export function MainWorkspace() {
 				{/* Header row (always visible) */}
 				<div
 					className="h-7 flex items-center justify-between px-2 border-b cursor-pointer select-none shrink-0 bg-red-950/10"
-					onClick={() =>
-						!isErrorLogPinned && setIsErrorLogExpanded(!isErrorLogExpanded)
-					}
+					onClick={{{() =>						!isErrorLogPinned && setIsErrorLogExpanded(!isErrorLogExpanded)					}
 				>
 					<div className="flex items-center gap-3">
 						<div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
@@ -595,9 +581,7 @@ export function MainWorkspace() {
 							variant="ghost"
 							size="icon"
 							className={`h-5 w-5 ${isErrorLogPinned ? "text-primary" : "text-muted-foreground"}`}
-							onClick={(e) => {
-								e.stopPropagation();
-								setIsErrorLogPinned(!isErrorLogPinned);
+							onClick={{{(e) => {								e.stopPropagation();								setIsErrorLogPinned(!isErrorLogPinned);
 							}}
 						>
 							<Pin className="h-3 w-3" />
@@ -606,9 +590,7 @@ export function MainWorkspace() {
 							variant="ghost"
 							size="icon"
 							className="h-5 w-5 text-muted-foreground hover:text-foreground"
-							onClick={(e) => {
-								e.stopPropagation();
-							}}
+							onClick={{{(e) => {								e.stopPropagation();							}}
 						>
 							<Trash2 className="h-3 w-3" />
 						</Button>
@@ -807,8 +789,7 @@ function TreeNode({
 		<div className="select-none">
 			<div
 				className="flex items-center gap-1 py-1 hover:bg-muted/50 cursor-pointer rounded px-1"
-				onClick={() => setOpen(!open)}
-			>
+				onClick={{() => setOpen(!open) onKeyDown={(e) => e.key === "Enter" && {() => setOpen(!open)}			>
 				<Triangle
 					className={`h-3 w-3 text-muted-foreground transition-transform ${open ? "rotate-180" : "rotate-90"}`}
 				/>
@@ -843,8 +824,7 @@ function FileNode({
 	return (
 		<div
 			className={`flex items-center gap-2 py-1 px-2 rounded cursor-pointer ${active ? "bg-primary/10 text-primary" : "hover:bg-muted/50 text-muted-foreground"}`}
-			onClick={onClick}
-		>
+			onClick={{onClick onKeyDown={(e) => e.key === "Enter" && {onClick}		>
 			<FileText className={`h-3.5 w-3.5 ${color}`} />
 			<span className={`text-xs truncate ${active ? "font-medium" : ""}`}>
 				{title}

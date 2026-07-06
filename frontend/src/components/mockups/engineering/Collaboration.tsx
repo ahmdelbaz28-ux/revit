@@ -238,7 +238,7 @@ export function Collaboration() {
 												key={i}
 												className="w-1 bg-emerald-500 rounded-t-sm"
 												style={{
-													height: `${Math.max(10, Math.random() * 100)}%`,
+													height: `${Math.max(10, crypto.getRandomValues(new Uint32Array(1))[0] / 0xFFFFFFFF * 100)}%`,
 												}}
 											></div>
 										))}

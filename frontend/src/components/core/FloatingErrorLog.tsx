@@ -31,8 +31,7 @@ export function FloatingErrorLog() {
 			{/* Header */}
 			<div
 				className="h-7 flex items-center justify-between px-2 border-b cursor-pointer select-none shrink-0 bg-red-950/10"
-				onClick={() => !isPinned && setIsExpanded(!isExpanded)}
-			>
+				onClick={{() => !isPinned && setIsExpanded(!isExpanded) onKeyDown={(e) => e.key === "Enter" && {() => !isPinned && setIsExpanded(!isExpanded)}			>
 				<div className="flex items-center gap-3">
 					<div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
 					<span className="text-[11px] font-semibold uppercase tracking-wider text-foreground">
@@ -52,9 +51,7 @@ export function FloatingErrorLog() {
 						variant="ghost"
 						size="icon"
 						className={`h-5 w-5 ${isPinned ? "text-primary" : "text-muted-foreground"}`}
-						onClick={(e) => {
-							e.stopPropagation();
-							setIsPinned(!isPinned);
+						onClick={{{(e) => {							e.stopPropagation();							setIsPinned(!isPinned);
 						}}
 					>
 						<Pin className="h-3 w-3" />
@@ -63,9 +60,7 @@ export function FloatingErrorLog() {
 						variant="ghost"
 						size="icon"
 						className="h-5 w-5 text-muted-foreground hover:text-foreground"
-						onClick={(e) => {
-							e.stopPropagation();
-							handleClear();
+						onClick={{{(e) => {							e.stopPropagation();							handleClear();
 						}}
 					>
 						<Trash2 className="h-3 w-3" />
@@ -94,8 +89,7 @@ export function FloatingErrorLog() {
 							<div
 								key={err.id}
 								className="flex items-center px-4 py-1.5 border-b border-border/30 hover:bg-muted/30 group bg-red-950/20 border-l-2 border-l-red-500 cursor-pointer"
-								onClick={() => handleFocus(err.elementId)}
-							>
+								onClick={{() => handleFocus(err.elementId) onKeyDown={(e) => e.key === "Enter" && {() => handleFocus(err.elementId)}							>
 								<div className="w-[80px] shrink-0 text-muted-foreground">
 									{new Date(err.timestamp).toLocaleTimeString()}
 								</div>

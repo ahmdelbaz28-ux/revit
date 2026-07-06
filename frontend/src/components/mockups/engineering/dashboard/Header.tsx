@@ -72,9 +72,9 @@ export function Header({
 			setUptime(`${hh}:${mm}:${ss}`);
 			setLastUpdate(new Date().toLocaleTimeString());
 			// Realistic jitter: 18–36 ms
-			setLatency(Math.round(18 + Math.random() * 18));
+			setLatency(Math.round(18 + crypto.getRandomValues(new Uint32Array(1))[0] / 0xFFFFFFFF * 18));
 			setPacketLoss(
-				Math.random() < 0.05 ? parseFloat((Math.random() * 0.4).toFixed(1)) : 0,
+				crypto.getRandomValues(new Uint32Array(1))[0] / 0xFFFFFFFF < 0.05 ? parseFloat((crypto.getRandomValues(new Uint32Array(1))[0] / 0xFFFFFFFF * 0.4).toFixed(1)) : 0,
 			);
 		}, 1000);
 

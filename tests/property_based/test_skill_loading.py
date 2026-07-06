@@ -455,7 +455,6 @@ def test_manifest_and_result_json_serialization() -> None:
     # validator's contract is: name must be non-empty AND contain only
     # [a-z0-9-_]. So a "bad" name must either be empty OR contain at least one
     # character outside [a-z0-9-_]. Names starting with a digit are VALID.
-    #
     # V140 FIX 2: The validator strips whitespace (str_strip_whitespace=True)
     # BEFORE checking chars. So '0 ' (zero + space) becomes '0' after strip,
     # which is valid. The filter must check the STRIPPED value, not the raw.

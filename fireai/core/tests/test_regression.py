@@ -423,7 +423,6 @@ class TestV130SmokeFlatSpacing:
         """Smoke spacing at 3m ceiling should be from table."""
         result = get_detector_spacing(3.0, "smoke")
         # The nfpa72_engine uses its own internal table which may differ
-        # from the canonical constants — just verify it's reasonable
         assert result.max_spacing_m > 0
         assert result.coverage_radius_m > 0
 

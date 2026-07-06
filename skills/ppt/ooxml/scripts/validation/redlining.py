@@ -161,12 +161,12 @@ class RedliningValidator:
                     safe_original_file = validate_input_path(
                         str(original_file),
                         allowed_extensions={".txt"},
-                        max_size_bytes=None,
+,
                     )
                     safe_modified_file = validate_input_path(
                         str(modified_file),
                         allowed_extensions={".txt"},
-                        max_size_bytes=None,
+,
                     )
                     
                     # Use validated paths

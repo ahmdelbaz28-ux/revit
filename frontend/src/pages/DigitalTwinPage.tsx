@@ -138,7 +138,7 @@ export function DigitalTwinPage() {
 				source_file: selectedFile.name,
 				target_file:
 					conversionType === "autocad_to_revit" ? "output.rvt" : "output.dwg",
-				elements_converted: Math.floor(Math.random() * 100) + 50,
+				elements_converted: Math.floor(crypto.getRandomValues(new Uint32Array(1))[0] / 0xFFFFFFFF * 100) + 50,
 				errors: [],
 				warnings: ["Some entities were skipped due to missing layer mapping"],
 				duration_seconds: 2.5,

@@ -157,7 +157,6 @@ class DxfParser:
         except Exception as e:
             # BUG-DP1 FIX: Log the ezdxf error instead of silently swallowing it.
             # The original code had bare `except Exception: pass` which meant that
-            # if ezdxf crashed on a corrupted file, no one would know WHY the
             # building model was empty. In a safety-critical system, silent failures
             # are DANGEROUS — a corrupted DXF file would produce a fallback building
             # with no indication that the actual file content was never parsed.

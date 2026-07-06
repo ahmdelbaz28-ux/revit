@@ -87,9 +87,7 @@ const ZoneNode: React.FC<ZoneNodeProps> = ({
 						: ""
 				}`}
 				style={{ paddingLeft: `${level * 20 + 8}px` }}
-				onClick={() => {
-					if (zone.children && zone.children.length > 0) {
-						setExpanded(!expanded);
+				onClick={{{() => {					if (zone.children && zone.children.length > 0) {						setExpanded(!expanded);
 					} else {
 						onZoomToZone(zone.id);
 					}
@@ -135,8 +133,7 @@ const ZoneNode: React.FC<ZoneNodeProps> = ({
 								selectedDevice === device.id ? "bg-slate-700" : ""
 							}`}
 							style={{ paddingLeft: `${(level + 1) * 20 + 8}px` }}
-							onClick={() => onDeviceSelect(device.id)}
-						>
+							onClick={{() => onDeviceSelect(device.id) onKeyDown={(e) => e.key === "Enter" && {() => onDeviceSelect(device.id)}						>
 							<div className="w-4" />
 							{device.type === "smoke" && (
 								<MonitorSpeaker className="h-4 w-4" />

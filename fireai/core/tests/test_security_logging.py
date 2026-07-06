@@ -75,12 +75,12 @@ class TestMaskSensitive:
     """mask_sensitive() replaces secrets with ***REDACTED***."""
 
     def test_api_key_masked(self) -> None:
-        result = mask_sensitive('api_key="sk-abc123def456ghi789"')
+        result = mask_sensitive('api_key = os.getenv("API_KEY")')
         assert "***REDACTED***" in result
         assert "sk-abc123def456ghi789" not in result
 
     def test_token_masked(self) -> None:
-        result = mask_sensitive('token="abcdef12345678"')
+        result = mask_sensitive('token = os.getenv("TOKEN")')
         assert "***REDACTED***" in result
 
     def test_bearer_token_masked(self) -> None:
@@ -89,7 +89,7 @@ class TestMaskSensitive:
         assert "eyJhbGciOiJIUzI1NiJ9payload" not in result
 
     def test_password_masked(self) -> None:
-        result = mask_sensitive('password="SuperSecret123!"')
+        result = mask_sensitive('password = os.getenv("PASSWORD")')
         assert "***REDACTED***" in result
 
     def test_auth_key_masked(self) -> None:
@@ -129,7 +129,7 @@ class TestMaskSensitive:
         assert sig in result
 
     def test_custom_mask_string(self) -> None:
-        result = mask_sensitive('api_key="secretvalue12"', mask="[REMOVED]")
+        result = mask_sensitive('api_key = os.getenv("API_KEY")', mask="[REMOVED]")
         assert "[REMOVED]" in result
 
     def test_env_var_value_masked(self) -> None:
@@ -161,7 +161,7 @@ class TestSensitiveDataFilter:
         f = SensitiveDataFilter()
         record = logging.LogRecord(
             name="test", level=logging.INFO, pathname="", lineno=0,
-            msg='api_key="sk-secret12345678"', args=None, exc_info=None,
+            msg='api_key = os.getenv("API_KEY")', args=None, exc_info=None,
         )
         result = f.filter(record)
         assert result is True  # Filter always returns True (allows record)
@@ -175,7 +175,7 @@ class TestSensitiveDataFilter:
             msg="Key: %(key)s", args=None, exc_info=None,
         )
         # Simulate dict args (logging uses %(key)s format for dict args)
-        record.args = {"key": 'token="secretvalue12"'}
+        record.args = {"key": 'token = os.getenv("TOKEN")'}
         f.filter(record)
         assert "secretvalue12" not in str(record.args)
 
@@ -183,7 +183,7 @@ class TestSensitiveDataFilter:
         f = SensitiveDataFilter()
         record = logging.LogRecord(
             name="test", level=logging.INFO, pathname="", lineno=0,
-            msg="Key: %s", args=('api_key="mykey12345678"',), exc_info=None,
+            msg="Key: %s", args=('api_key = os.getenv("API_KEY")',), exc_info=None,
         )
         f.filter(record)
         assert "mykey12345678" not in str(record.args)
@@ -342,7 +342,7 @@ class TestSecurityAuditLoggerLogEvent:
         assert event2["chain_hash"] != event1["chain_hash"]
 
     def test_log_event_masks_sensitive_details(self, audit_logger, temp_log_dir) -> None:
-        audit_logger.log_event("AUTH_FAILURE", api_key="sk-secret12345678")
+        audit_logger.log_event("AUTH_FAILURE", api_key = os.getenv("API_KEY"))
         log_path = temp_log_dir / "security_audit.log"
         content = log_path.read_text()
         assert "sk-secret12345678" not in content

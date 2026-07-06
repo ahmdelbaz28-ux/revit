@@ -14,7 +14,7 @@ import logging
 import math
 import os
 import pickle
-import random
+import secrets
 import sqlite3
 import uuid
 from dataclasses import asdict, dataclass
@@ -199,7 +199,7 @@ class _RandomForestClassifier:
         n = len(X)
         len(X[0]) if X else 0
         for _ in range(self.n_estimators):
-            indices = [random.randint(0, n - 1) for _ in range(n)]  # NOSONAR
+            indices = [secrets.randbelow(0, n - 1) for _ in range(n)]  # NOSONAR
             X_boot = [X[i] for i in indices]
             y_boot = [y[i] for i in indices]
             tree = self._build_tree(X_boot, y_boot, depth=0)
@@ -273,7 +273,7 @@ class _RandomForestRegressor:
         self.trees = []
         n = len(X)
         for _ in range(self.n_estimators):
-            indices = [random.randint(0, n - 1) for _ in range(n)]  # NOSONAR
+            indices = [secrets.randbelow(0, n - 1) for _ in range(n)]  # NOSONAR
             X_boot = [X[i] for i in indices]
             y_boot = [y[i] for i in indices]
             tree = self._build_tree(X_boot, y_boot, depth=0)

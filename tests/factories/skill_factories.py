@@ -7,7 +7,7 @@ These factories provide easy ways to create valid test data for testing.
 
 from __future__ import annotations
 
-import random
+import secrets
 import string
 from datetime import datetime
 from typing import Any
@@ -39,7 +39,7 @@ class SkillMetadataFactory:
         if name is None:
             name = f"test-skill-{cls._random_suffix()}"
         if version is None:
-            version = f"{random.randint(0, 9)}.{random.randint(0, 9)}.{random.randint(0, 9)}"
+            version = f"{secrets.randbelow(0, 9)}.{secrets.randbelow(0, 9)}.{secrets.randbelow(0, 9)}"
         if author is None:
             author = f"test-author-{cls._random_suffix()}"
 
@@ -103,13 +103,13 @@ class SkillPermissionsFactory:
     ) -> SkillPermissions:
         """Create a SkillPermissions instance with default values."""
         if network is None:
-            network = random.choice([True, False])
+            network = secrets.choice([True, False])
         if filesystem_read is None:
-            filesystem_read = random.choice([True, False])
+            filesystem_read = secrets.choice([True, False])
         if filesystem_write is None:
-            filesystem_write = random.choice([True, False])
+            filesystem_write = secrets.choice([True, False])
         if subprocess is None:
-            subprocess = random.choice([True, False])
+            subprocess = secrets.choice([True, False])
         if env_vars is None:
             env_vars = [f"ENV_VAR_{cls._random_suffix().upper()}"]
 
@@ -140,13 +140,13 @@ class SkillRequirementsFactory:
     ) -> SkillRequirements:
         """Create a SkillRequirements instance with default values."""
         if python_version is None:
-            python_version = f"{random.randint(3, 3)}.{random.randint(8, 11)}"
+            python_version = f"{secrets.randbelow(3, 3)}.{secrets.randbelow(8, 11)}"
         if dependencies is None:
-            dependencies = {f"pkg{cls._random_suffix()}": f">={random.randint(1, 2)}.0.0"}
+            dependencies = {f"pkg{cls._random_suffix()}": f">={secrets.randbelow(1, 2)}.0.0"}
         if permissions is None:
             permissions = SkillPermissionsFactory.create()
         if max_execution_time is None:
-            max_execution_time = random.randint(60, 3600)
+            max_execution_time = secrets.randbelow(60, 3600)
 
         return SkillRequirements(
             python_version=python_version,
@@ -180,7 +180,7 @@ class ExecutionErrorFactory:
         if message is None:
             message = f"Error occurred: {cls._random_suffix()}"
         if can_retry is None:
-            can_retry = random.choice([True, False])
+            can_retry = secrets.choice([True, False])
 
         return ExecutionError(
             error=error,
@@ -211,14 +211,14 @@ class ExecutionResultFactory:
     ) -> ExecutionResult:
         """Create an ExecutionResult instance with default values."""
         if success is None:
-            success = random.choice([True, False])
+            success = secrets.choice([True, False])
 
         # Ensure mutual exclusivity of data and error
         if success:
             if error is not None:
                 error = None
             if data is None:
-                data = {"result": cls._random_suffix(), "value": random.randint(1, 100)}
+                data = {"result": cls._random_suffix(), "value": secrets.randbelow(1, 100)}
         else:
             if data is not None:
                 data = None
@@ -259,7 +259,7 @@ class SkillManifestFactory:
         if requirements is None:
             requirements = SkillRequirementsFactory.create()
         if version_compatibility is None:
-            version_compatibility = f"{random.randint(1, 2)}.{random.randint(0, 9)}"
+            version_compatibility = f"{secrets.randbelow(1, 2)}.{secrets.randbelow(0, 9)}"
         if tags is None:
             tags = [f"tag{cls._random_suffix()[:5]}", f"type{cls._random_suffix()[:5]}"]
 

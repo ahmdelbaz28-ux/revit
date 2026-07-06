@@ -110,7 +110,6 @@ class TestEventBusErrorCountThreadSafety:
         bus.subscribe("test.v150", fail)
 
         # Publish from multiple threads while reading error_count
-        # from the main thread. The property must never return a
         # value greater than the true count (would mean it read a
         # half-incremented value).
         stop = threading.Event()

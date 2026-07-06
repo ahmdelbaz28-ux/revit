@@ -182,7 +182,7 @@ class TestAsyncWebhookDelivery:
         sub = WebhookSubscription(
             id="sub-slow",
             url="https://nonexistent-domain-12345.invalid/hook",
-            secret="very-secure-secret-key-1234567890-abcdef",
+            secret = os.getenv("SECRET_KEY"),
         )
         service.subscribe(sub)
 

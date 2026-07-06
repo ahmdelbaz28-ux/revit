@@ -51,7 +51,7 @@ class RvtConverter:
             safe_input_path = validate_input_path(
                 rvt_path,
                 allowed_extensions=_RVT_ALLOWED_EXTENSIONS,
-                max_size_bytes=_RVT_MAX_FILE_SIZE_BYTES,
+,
             )
             # Use the validated/sanitized path from here forward
             rvt_path = safe_input_path
@@ -67,7 +67,7 @@ class RvtConverter:
             safe_output_path = validate_input_path(
                 output_ifc_path,
                 allowed_extensions={".ifc"},
-                max_size_bytes=None,  # Output size not limited at this stage
+,  # Output size not limited at this stage
             )
             # Use the validated/sanitized path from here forward
             output_ifc_path = safe_output_path

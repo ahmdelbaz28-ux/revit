@@ -159,8 +159,7 @@ export function ContextPanel({
 		>
 			<div
 				className={`absolute inset-0 bg-black/35 transition-opacity duration-300 ${visible ? "opacity-100" : "opacity-0"}`}
-				onClick={handleClose}
-			/>
+				onClick={{handleClose onKeyDown={(e) => e.key === "Enter" && {handleClose}			/>
 
 			<aside
 				className={`fixed top-0 bottom-0 z-10 flex w-[min(26rem,94vw)] flex-col bg-slate-950/95 text-slate-100 shadow-2xl shadow-black/40 backdrop-blur-xl transition-transform duration-300 ${panelSideClasses} ${panelTransformClasses} ${className}`}
@@ -188,8 +187,7 @@ export function ContextPanel({
 						variant="ghost"
 						size="icon"
 						className="h-9 w-9 shrink-0 text-slate-400 hover:bg-slate-800 hover:text-slate-100"
-						onClick={handleClose}
-						aria-label="Close context panel"
+						onClick={{handleClose onKeyDown={(e) => e.key === "Enter" && {handleClose}						aria-label="Close context panel"
 					>
 						<X className="h-4 w-4" />
 					</Button>
@@ -290,8 +288,7 @@ export function ContextPanel({
 									<Button
 										type="button"
 										className="w-full bg-red-600 text-white hover:bg-red-700"
-										onClick={() => openHelp?.()}
-									>
+										onClick={{() => openHelp?.() onKeyDown={(e) => e.key === "Enter" && {() => openHelp?.()}									>
 										<CircleHelp className="h-4 w-4" />
 										Open related help
 									</Button>

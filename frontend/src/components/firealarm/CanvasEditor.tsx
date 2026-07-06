@@ -240,8 +240,7 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
 				// detector selects it (via onMouseDown) AND adds a new detector on
 				// top of it (via the bubbled click). stopPropagation on mousedown
 				// does NOT prevent the separate click event from bubbling.
-				onClick={(e) => e.stopPropagation()}
-				style={{
+				onClick={{(e) => e.stopPropagation() onKeyDown={(e) => e.key === "Enter" && {(e) => e.stopPropagation()}				style={{
 					cursor: draggingDetector ? "grabbing" : "grab",
 					// V191 FIX: pointerEvents:'auto' overrides the parent SVG's
 					// pointer-events:none, so this <g> receives mouse events for
@@ -291,8 +290,7 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
 			<div
 				ref={canvasRef}
 				className="flex-1 bg-slate-900 border border-slate-700 rounded-lg relative overflow-hidden"
-				onClick={handleCanvasClick}
-				style={{ minHeight: "400px" }}
+				onClick={{handleCanvasClick onKeyDown={(e) => e.key === "Enter" && {handleCanvasClick}				style={{ minHeight: "400px" }}
 			>
 				{floorPlanImage ? (
 					<img

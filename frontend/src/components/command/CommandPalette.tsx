@@ -210,8 +210,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
 		<div className="fixed inset-0 z-[200] flex items-start justify-center pt-[20vh]">
 			<div
 				className="absolute inset-0 bg-black/70"
-				onClick={() => onOpenChange(false)}
-			/>
+				onClick={{() => onOpenChange(false) onKeyDown={(e) => e.key === "Enter" && {() => onOpenChange(false)}			/>
 			<div className="relative w-full max-w-xl mx-4 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl overflow-hidden">
 				<div className="flex items-center gap-3 p-4 border-b border-slate-700">
 					<Search className="h-5 w-5 text-slate-400 shrink-0" />
@@ -225,8 +224,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
 						className="flex-1 bg-transparent text-slate-100 text-sm placeholder:text-slate-500 outline-none"
 					/>
 					<button
-						onClick={() => onOpenChange(false)}
-						className="text-xs text-slate-500 border border-slate-700 rounded px-2 py-1 hover:text-slate-300"
+						onClick={{() => onOpenChange(false) onKeyDown={(e) => e.key === "Enter" && {() => onOpenChange(false)}						className="text-xs text-slate-500 border border-slate-700 rounded px-2 py-1 hover:text-slate-300"
 					>
 						ESC
 					</button>
@@ -246,8 +244,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
 										key={result.item.id}
 										role="option"
 										aria-selected={isActive}
-										onClick={() => execute(result)}
-										onMouseEnter={() => setSelectedIndex(index)}
+										onClick={{() => execute(result) onKeyDown={(e) => e.key === "Enter" && {() => execute(result)}										onMouseEnter={() => setSelectedIndex(index)}
 										className={cn(
 											"w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors",
 											isActive
@@ -278,8 +275,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
 									key={result.item.id}
 									role="option"
 									aria-selected={isActive}
-									onClick={() => execute(result)}
-									onMouseEnter={() => setSelectedIndex(index)}
+									onClick={{() => execute(result) onKeyDown={(e) => e.key === "Enter" && {() => execute(result)}									onMouseEnter={() => setSelectedIndex(index)}
 									className={cn(
 										"w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors",
 										isActive

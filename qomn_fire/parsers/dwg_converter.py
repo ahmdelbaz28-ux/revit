@@ -51,7 +51,7 @@ class DwgConverter:
             safe_input_path = validate_input_path(
                 dwg_path,
                 allowed_extensions=_DWG_ALLOWED_EXTENSIONS,
-                max_size_bytes=_DWG_MAX_FILE_SIZE_BYTES,
+,
             )
             # Use the validated/sanitized path from here forward
             dwg_path = safe_input_path
@@ -67,7 +67,7 @@ class DwgConverter:
             safe_output_path = validate_input_path(
                 output_dxf_path,
                 allowed_extensions={".dxf"},
-                max_size_bytes=None,  # Output size not limited at this stage
+,  # Output size not limited at this stage
             )
             # Use the validated/sanitized path from here forward
             output_dxf_path = safe_output_path

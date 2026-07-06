@@ -2,14 +2,12 @@
 # ========================================================
 # Independent Professional Engineer (PE) review of the 10 numerical
 # simulations implemented in the ETAP Expert Skill.
-#
 # Reviewer: FireAI Agent (acting as second PE reviewer per Operator request)
 # Date: 2026-06-24
 # Standards: NFPA 70E-2024, IEEE 1584-2018, IEEE 80-2013, IEEE 519-2014,
 #            IEEE 399, IEEE 835, NEC 2023 (NFPA 70), IEC 60909, IEC 60079,
 #            IEC 60092, IEC 61363
 # PE Seal ID: V131-PE-002 (cumulative review)
-#
 # This review certifies engineering correctness of each simulation's:
 #   1. Formula selection (correct standard reference)
 #   2. Numerical calculation (mathematical accuracy)

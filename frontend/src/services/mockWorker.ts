@@ -22,19 +22,19 @@ self.onmessage = (e) => {
 			const baseCurrent = 10;
 			const peakCurrent = 30;
 			const current =
-				baseCurrent + peakCurrent * loadFactor + (Math.random() - 0.5);
+				baseCurrent + peakCurrent * loadFactor + (crypto.getRandomValues(new Uint32Array(1))[0] / 0xFFFFFFFF - 0.5);
 
 			// Voltage drops slightly with high current (simulation)
 			const baseVoltage = 225;
 			const voltage =
-				baseVoltage - (current - baseCurrent) * 0.5 + (Math.random() - 0.5);
+				baseVoltage - (current - baseCurrent) * 0.5 + (crypto.getRandomValues(new Uint32Array(1))[0] / 0xFFFFFFFF - 0.5);
 
 			// Frequency stays around 50Hz
-			const frequency = 50.0 + (Math.random() - 0.5) * 0.1;
+			const frequency = 50.0 + (crypto.getRandomValues(new Uint32Array(1))[0] / 0xFFFFFFFF - 0.5) * 0.1;
 
 			// Check for simulated faults at peak load
 			let fault = null;
-			if (hour > 11 && hour < 13 && Math.random() > 0.95) {
+			if (hour > 11 && hour < 13 && crypto.getRandomValues(new Uint32Array(1))[0] / 0xFFFFFFFF > 0.95) {
 				fault = "gen-01"; // Overload fault at peak
 			}
 

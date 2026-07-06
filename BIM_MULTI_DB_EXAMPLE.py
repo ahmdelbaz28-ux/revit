@@ -7,7 +7,7 @@ Complete example showing how to use the multi-database system for
 BIM/CAD applications with PostgreSQL, Qdrant, Neo4j, and Redis.
 """
 
-import random
+import secrets
 from typing import Dict, List
 
 from backend.multi_db_service import get_multi_db_service
@@ -20,15 +20,15 @@ def simulate_bim_element_data(element_id: str) -> Dict:
 
     return {
         "element_id": element_id,
-        "type": random.choice(element_types),
-        "category": random.choice(categories),
-        "name": f"{random.choice(element_types)}_{element_id}",
-        "level": f"Level_{random.randint(1, 5)}",
+        "type": secrets.choice(element_types),
+        "category": secrets.choice(categories),
+        "name": f"{secrets.choice(element_types)}_{element_id}",
+        "level": f"Level_{secrets.randbelow(1, 5)}",
         "coordinates": [random.uniform(0, 100), random.uniform(0, 100), random.uniform(0, 30)],
         "dimensions": [random.uniform(1, 20), random.uniform(0.1, 5), random.uniform(2, 10)],
-        "material": random.choice(["Concrete", "Steel", "Wood", "Glass"]),
+        "material": secrets.choice(["Concrete", "Steel", "Wood", "Glass"]),
         "properties": {
-            "fire_rating": random.choice(["1-hour", "2-hour", "3-hour", "non-rated"]),
+            "fire_rating": secrets.choice(["1-hour", "2-hour", "3-hour", "non-rated"]),
             "thermal_resistance": round(random.uniform(0.5, 5.0), 2),
             "cost_per_unit": round(random.uniform(50, 500), 2)
         },
@@ -46,7 +46,7 @@ def simulate_relationships(element_ids: List[str], count: int) -> List[str]:
     relationships = []
     for _ in range(count):
         if len(element_ids) > 1:
-            relationships.append(random.choice(element_ids))
+            relationships.append(secrets.choice(element_ids))
     return list(set(relationships))  # Remove duplicates
 
 

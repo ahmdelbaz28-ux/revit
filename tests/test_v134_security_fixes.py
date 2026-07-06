@@ -30,7 +30,7 @@ class TestSSRFPrevention:
         sub = WebhookSubscription(
             id="sub-1",
             url="https://example.com/hook",
-            secret="very-secure-secret-key-1234567890-abcdef",
+            secret = os.getenv("SECRET_KEY"),
         )
         # Attempting to mutate should raise FrozenInstanceError
         with pytest.raises(Exception):
@@ -88,7 +88,7 @@ class TestSSRFPrevention:
         sub = WebhookSubscription(
             id="sub-test",
             url="https://nonexistent-domain-12345.invalid/hook",
-            secret="very-secure-secret-key-1234567890-abcdef",
+            secret = os.getenv("SECRET_KEY"),
         )
         service.subscribe(sub)
         service.publish_event(

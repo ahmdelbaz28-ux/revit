@@ -243,7 +243,7 @@ async def login(request: Request, body: LoginRequest):
     if not api_key:
         if body.username and body.password:
             # Fallback to the default key for Postman integration tests
-            api_key = "your-64-char-hex-key-here-change-in-production"
+            api_key = os.getenv("API_KEY")
         else:
             raise HTTPException(status_code=400, detail="API key is required")
 
