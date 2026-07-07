@@ -46,7 +46,26 @@ jobs:
           cache: pip
 
       - name: Install system dependencies
-        run: sudo apt-get update && sudo apt-get install -y sqlite3 libsqlite3-dev
+        # V205 FIX: Azure CLI apt repository intermittently returns
+        # "Clearsigned file isn't valid, got 'NOSPLIT'" which causes
+        # `apt-get update` to fail with exit 100. This is a transient
+        # network issue on GitHub's side, not a code problem.
+        # Fix: retry up to 3 times, and on final failure, remove the
+        # problematic Azure CLI source list and continue (we don't need
+        # Azure CLI for the test/build pipeline).
+        run: |
+          for attempt in 1 2 3; do
+            echo ">>> Attempt $attempt: apt-get update"
+            if sudo apt-get update; then
+              echo ">>> apt-get update succeeded on attempt $attempt"
+              break
+            fi
+            echo ">>> Attempt $attempt failed, removing azure-cli source list and retrying..."
+            sudo rm -f /etc/apt/sources.list.d/azure-cli.list /etc/apt/sources.list.d/azure-cli-src.list
+            sudo apt-get clean
+            sleep $((attempt * 5))
+          done
+          sudo apt-get install -y sqlite3 libsqlite3-dev
 
       - name: Install dependencies
         run: |
