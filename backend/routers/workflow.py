@@ -63,7 +63,7 @@ ALLOWED_DATA_DIRS = os.environ.get(
 ALLOWED_FILE_EXTENSIONS = frozenset({".dxf", ".dwg", ".pdf", ".ifc", ".rvt"})
 
 
-def _validate_file_path(file_path: str) -> str:
+def _validate_file_path(file_path: str) -> str:  # NOSONAR — S3516: both branches return `file_path` because this is a validation gate (returns input on success, raises on failure)
     """
     Validate file_path against path traversal and extension whitelist.
 

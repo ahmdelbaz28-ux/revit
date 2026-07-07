@@ -514,7 +514,7 @@ class ARVRVisualizer:
 
         return scene
 
-    def add_annotation(
+    def add_annotation(  # NOSONAR — S3516: both branches return `scene` because this is a fluent API that mutates scene in place
         self,
         scene: Scene,
         device_id: str,

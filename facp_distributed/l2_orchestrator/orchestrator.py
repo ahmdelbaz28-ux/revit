@@ -289,7 +289,7 @@ class Orchestrator:
 
             return False, error_response
 
-    def _should_route_to_engine(self, method: str) -> bool:
+    def _should_route_to_engine(self, method: str) -> bool:  # NOSONAR — S3516: always True is a CONSERVATIVE SAFETY DEFAULT (route to engine when in doubt)
         """Determine if a method should be routed to L3 engine"""
         # Engine methods typically involve calculations, validations, transformations
         engine_indicators = [

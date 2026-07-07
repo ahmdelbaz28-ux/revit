@@ -134,6 +134,20 @@ else:
         "http://localhost:3000,http://localhost:5173,http://localhost:8000",
     ).split(",")
 
+# S8414 fix: Starlette `add_middleware` PREPENDS to the stack, so the LAST
+# call is the OUTERMOST middleware. CORSMiddleware MUST be outermost so it
+# can short-circuit CORS preflight (OPTIONS) requests BEFORE any other
+# middleware tries to authenticate / inspect them. Previous order put CORS
+# innermost, which broke preflight handling under cross-origin browsers.
+# V129: SecurityHeadersMiddleware — runs inside CORS so security headers
+# are still applied to every non-preflight response.
+app.add_middleware(SecurityHeadersMiddleware)
+# V129: CorrelationIdMiddleware — adds X-Correlation-ID to every request
+# for end-to-end audit tracing (NFPA 72 §14.2.4 compliance).
+app.add_middleware(CorrelationIdMiddleware)
+app.add_middleware(_RoleDevMiddleware)
+# S8414: CORSMiddleware MUST be added LAST (= outermost) per SonarCloud
+# S8414 rule. See https://rules.sonarsource.com/python/RSPEC-8414/.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_cors_origins,
@@ -144,14 +158,6 @@ app.add_middleware(
     # requests are unnecessary and would expand the attack surface.
     allow_credentials=False,
 )
-# V129: SecurityHeadersMiddleware — added AFTER CORS so it's the OUTERMOST
-# middleware (runs last on response, can append security headers to every
-# response regardless of which inner middleware handled it).
-app.add_middleware(SecurityHeadersMiddleware)
-# V129: CorrelationIdMiddleware — adds X-Correlation-ID to every request
-# for end-to-end audit tracing (NFPA 72 §14.2.4 compliance).
-app.add_middleware(CorrelationIdMiddleware)
-app.add_middleware(_RoleDevMiddleware)
 
 
 # ----------------------------------------------------------------------------

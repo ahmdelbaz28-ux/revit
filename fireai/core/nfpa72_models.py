@@ -868,12 +868,18 @@ def get_smoke_detector_radius(ceiling_height_m: float) -> float:
         (12.2, 18.288): 3.64,  # R = 0.7 × 5.20 (12.2 ≤ h ≤ 18.288m)
     }
     for (min_h, max_h), radius in RADIUS_MAP.items():
-        if max_h == 18.288:
-            if min_h <= ceiling_height_m <= max_h:
-                return radius
-        else:
-            if min_h <= ceiling_height_m < max_h:
-                return radius
+        # S3516 fix: consolidate nested conditionals into a single local
+        # boolean so there is only ONE `return radius` statement. Behavior
+        # is preserved — the final bracket (max_h == 18.288) uses an
+        # inclusive upper bound per NFPA 72; all others use exclusive.
+        upper_inclusive = (max_h == 18.288)
+        within_bracket = (
+            (min_h <= ceiling_height_m <= max_h)
+            if upper_inclusive
+            else (min_h <= ceiling_height_m < max_h)
+        )
+        if within_bracket:
+            return radius
     raise CeilingHeightError(f"Ceiling height {ceiling_height_m}m is outside NFPA 72 valid range of 3.0m to 18.288m")
 
 
@@ -1026,12 +1032,17 @@ def _get_radius_internal(h: float) -> float:
         (12.2, 18.288): 3.64,  # R = 0.7 × 5.20 (12.2 ≤ h ≤ 18.288m)
     }
     for (min_h, max_h), r in R.items():
-        if max_h == 18.288:
-            if min_h <= h <= max_h:
-                return r
-        else:
-            if min_h <= h < max_h:
-                return r
+        # S3516 fix: consolidate to a single return path (see
+        # get_smoke_detector_radius for the same pattern). Behavior
+        # is preserved — final bracket uses inclusive upper bound.
+        upper_inclusive = (max_h == 18.288)
+        within_bracket = (
+            (min_h <= h <= max_h)
+            if upper_inclusive
+            else (min_h <= h < max_h)
+        )
+        if within_bracket:
+            return r
     raise CeilingHeightError(f"Height {h}m outside NFPA range (3.0-18.288m for smoke detectors)")
 
 
@@ -1071,12 +1082,16 @@ def _get_max_internal(h: float) -> float:
     # V128 FIX: Upper bound extended from 15.24m to 18.288m
     M = {(3.0, 4.3): 5.5, (4.3, 6.1): 6.5, (6.1, 7.6): 8.1, (7.6, 9.1): 9.0, (9.1, 18.288): 10.1}
     for (min_h, max_h), m in M.items():
-        if max_h == 18.288:
-            if min_h <= h <= max_h:
-                return m
-        else:
-            if min_h <= h < max_h:
-                return m
+        # S3516 fix: consolidate to a single return path (see
+        # get_smoke_detector_radius for the same pattern).
+        upper_inclusive = (max_h == 18.288)
+        within_bracket = (
+            (min_h <= h <= max_h)
+            if upper_inclusive
+            else (min_h <= h < max_h)
+        )
+        if within_bracket:
+            return m
     raise CeilingHeightError(f"Height {h}m outside NFPA range (3.0-18.288m for smoke detectors)")
 
 

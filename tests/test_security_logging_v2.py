@@ -337,7 +337,7 @@ class TestSecurityAuditLoggerLogEvent:
 
     def test_sensitive_details_masked(self, security_logger, temp_log_dir):
         """V104 FIX: Sensitive data must be masked before writing."""
-        security_logger.log_event("AUTH_FAILURE", api_key="sk-abc123def456ghi789")
+        security_logger.log_event("AUTH_FAILURE", api_key="sk-abc123def456ghi789")  # NOSONAR: S6418 — synthetic test fixture, not a real secret
         log_path = temp_log_dir / "security_audit.log"
         with open(log_path) as f:
             line = f.readline().strip()

@@ -297,7 +297,7 @@ def test_env(clean_env, monkeypatch):
     monkeypatch.setenv("LOG_LEVEL", "WARNING")
     return {
         "env": "development",
-        "api_key": "test-api-key-for-testing-only",
+        "api_key": "test-api-key-for-testing-only",  # NOSONAR: S6418 — synthetic test fixture, not a real secret
     }
 
 

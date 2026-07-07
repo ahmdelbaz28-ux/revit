@@ -282,9 +282,17 @@ class FlameDetectorAOCRayTrace:
 
     GRID_STEP_M: float = 0.5
 
-    DETECTOR_THRESHOLD: float = 0.1  # Minimum transmittance for coverage
+    # S1845 fix: renamed from `DETECTOR_THRESHOLD` to avoid case-only clash
+    # with the instance attribute `self.detector_threshold` (Python attribute
+    # lookup is case-sensitive but the case-only difference is a readability
+    # trap and SonarCloud flags it as a maintenance hazard).
+    DEFAULT_DETECTOR_THRESHOLD: float = 0.1  # Minimum transmittance for coverage
 
-    def __init__(self, grid_step_m: float = 0.5, detector_threshold: float = 0.1) -> None:
+    def __init__(
+        self,
+        grid_step_m: float = GRID_STEP_M,
+        detector_threshold: float = DEFAULT_DETECTOR_THRESHOLD,
+    ) -> None:
         self.grid_step = grid_step_m
         self._spatial_index = None
         self._rtree_available = False

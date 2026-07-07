@@ -217,9 +217,12 @@ class TestInputValidation:
 
     def test_wrong_content_type(self, client: TestClient) -> None:
         """Wrong content type should return 422."""
+        # S8405 fix: use `content=` (not `data=`) when passing raw str/bytes
+        # to HTTPX/Starlette TestClient. `data=` is for form-encoded dicts;
+        # raw text bodies must use `content=` to avoid being mis-encoded.
         resp = client.post(
             "/api/v1/auth/login",
-            data="api_key=test",
+            content="api_key=test",
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
         assert resp.status_code == 422

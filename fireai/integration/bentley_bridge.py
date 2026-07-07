@@ -356,7 +356,7 @@ class BentleyBridge:
 
     # ── Connection Management ───────────────────────────────────────────
 
-    def connect_api(self, credentials: dict[str, str]) -> bool:
+    def connect_api(self, credentials: dict[str, str]) -> bool:  # NOSONAR — S3516 intentional (V142 honesty contract: always False)
         """
         Connect to the Bentley iTwin API.
 
@@ -399,12 +399,19 @@ class BentleyBridge:
 
         # V142: Do NOT set _api_connected = True. There is no real
         # connection. Log the truth and return False.
+        # S3516 (always-False return) is INTENTIONAL here: this method
+        # is the explicit honesty contract — direct Bentley API is not
+        # implemented, and faking a connection would violate agent.md
+        # Rule 17 (no fabrication). Removing the False return would
+        # require removing the credentials validation above and would
+        # regress V142's safety contract. Marked noqa to keep the
+        # audit-visible intent.
         logger.error(
             "Bentley direct API integration is NOT implemented. "
             "Use import_bentley() with IFC files instead. "
             "See V142 agent.md entry for the honest-implementation plan."
         )
-        return False
+        return False  # noqa: S3516 — intentional honesty contract (V142)
 
     def is_connected(self) -> bool:
         """

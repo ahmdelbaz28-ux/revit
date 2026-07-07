@@ -721,8 +721,8 @@ class TestSecurityAuditLoggerChainIntegrity:
         """Sensitive values in event details should be masked."""
         audit_logger.log_event(
             SecurityEventType.AUTH_SUCCESS,
-            api_key="sk-1234567890abcdef1234567890abcdef",
-            token="bearer_token_12345678",
+            api_key="sk-1234567890abcdef1234567890abcdef",  # NOSONAR: S6418 — synthetic test fixture, not a real secret
+            token="bearer_token_12345678",  # NOSONAR: S6418 — synthetic test fixture, not a real secret
         )
 
         log_path = audit_logger._log_path
