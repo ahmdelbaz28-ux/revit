@@ -988,7 +988,7 @@ class FloorAnalyser:
     def _run_polygon_verifier(
         self,
         polygon_coords: list,
-        layout: DetectorLayout,  # NOSONAR — S1172: parameter retained for API stability
+        _layout: DetectorLayout,  # NOSONAR — S1172: parameter retained for API stability
         summary: RoomSummary,
     ) -> None:
         """

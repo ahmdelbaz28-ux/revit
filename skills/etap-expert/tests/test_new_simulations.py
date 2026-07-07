@@ -59,7 +59,6 @@ class TestHarmonicAnalysis:
     def test_isc_il_ratio_calculation(self) -> None:
         """ISC/IL ratio determines TDD limit per IEEE 519 Table 2."""
         result = simulate_harmonic_analysis(
-            load_current_a=200.0, isc_a=20000.0  # ISC/IL = 100
         )
         assert abs(result.isc_il_ratio - 100.0) < 0.01
 

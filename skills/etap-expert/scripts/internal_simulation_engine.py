@@ -822,9 +822,7 @@ class TransientStabilityResult:
     """Result of transient stability analysis (Equal Area Criterion)."""
 
     mechanical_power_pu: float
-    electrical_power_max_pu: float  # P_e_max = E×V/X
     initial_rotor_angle_rad: float  # δ_0
-    max_rotor_angle_rad: float  # δ_max = π - δ_0
     critical_clearing_angle_rad: float  # δ_cc
     critical_clearing_time_s: float  # CCT (calculated from δ_cc)
     h_constant_s: float  # Generator inertia constant (PEP8 lowercase)
@@ -836,7 +834,6 @@ class TransientStabilityResult:
 
 def simulate_transient_stability(
     mechanical_power_pu: float = 0.8,  # P_m in per-unit
-    electrical_power_max_pu: float = 1.5,  # P_e_max = E×V/X in per-unit
     h_constant_s: float = 4.0,  # Inertia constant H (typical 3-7s for steam)
     system_frequency_hz: float = 60.0,
     actual_clearing_time_s: float = 0.1,  # Fault clearing time to evaluate

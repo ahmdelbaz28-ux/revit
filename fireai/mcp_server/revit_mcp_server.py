@@ -293,7 +293,7 @@ class RevitMCPServer:
             )
 
     def _handle_hazard_class_query(
-        self, request: MCPRequest, params: dict[str, Any]  # NOSONAR — S1172: parameter retained for API stability
+        self, request: MCPRequest, _params: dict[str, Any]  # NOSONAR — S1172: parameter retained for API stability
     ) -> MCPResponse:
         """Handle a hazard class query (read-only)."""
         from fireai.core.hazard_override import MANDATORY_HAZARD_OVERRIDES

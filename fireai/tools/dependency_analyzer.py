@@ -292,7 +292,7 @@ def _find_circular_imports(graph: dict[str, set[str]]) -> list[CircularImport]:
 
 def _find_dead_code(
     collectors: list[ImportCollector],
-    root: Path,  # NOSONAR — S1172: parameter retained for API stability
+    _root: Path,  # NOSONAR — S1172: parameter retained for API stability
 ) -> list[DeadCodeIssue]:
     """Find dead code issues: unused imports and unreachable code."""
     issues: list[DeadCodeIssue] = []
@@ -326,7 +326,7 @@ def _find_dead_code(
 
 def _find_unused_public_modules(
     graph: dict[str, set[str]],
-    root: Path,  # NOSONAR — S1172: parameter retained for API stability
+    _root: Path,  # NOSONAR — S1172: parameter retained for API stability
 ) -> list[str]:
     """Find modules that are never imported by any other module."""
     all_modules = set(graph.keys())
@@ -421,7 +421,6 @@ def _print_report(report: DependencyReport, root: Path) -> int:  # NOSONAR — S
     return 1 if has_critical else 0
 
 
-# ═══════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # Main
 # ═══════════════════════════════════════════════════════════════════════════════
 

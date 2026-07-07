@@ -999,7 +999,7 @@ def vapor_density_tier(molecular_weight: float) -> ElevationTier:
 
 
 def room_purge_time(
-    room_volume_m3: float,  # NOSONAR — S1172: parameter retained for API stability
+    _room_volume_m3: float,  # NOSONAR — S1172: parameter retained for API stability
     ach: float,
     target_fraction: float = 0.01,
 ) -> float:
@@ -1079,7 +1079,7 @@ def room_concentration_at_time(
 def burgess_wheeler_lfl(
     lfl_25c: float,
     ambient_temp_c: float,
-    heat_of_combustion_kj_mol: float | None = None,  # NOSONAR — S1172: parameter retained for API stability
+    _heat_of_combustion_kj_mol: float | None = None,  # NOSONAR — S1172: parameter retained for API stability
     lfl_floor_ratio: float | None = 0.5,
 ) -> float:
     """

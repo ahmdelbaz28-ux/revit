@@ -264,7 +264,6 @@ def check_text_overflow(doc, result):
         blocks = page.get_text("blocks")
 
         for b in blocks:
-            # b = (x0, y0, x1, y1, text, block_no, block_type)
             if b[2] > rect.width + 2 or b[3] > rect.height + 2:  # 2px tolerance
                 overflow_pages.append(i + 1)
                 break

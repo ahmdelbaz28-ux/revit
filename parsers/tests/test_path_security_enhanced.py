@@ -78,7 +78,7 @@ class TestValidateInputPathExtension:
         """Test that files with disallowed extensions are rejected."""
         test_file = tmp_path / "malware.exe"
         test_file.write_text("malware")
-        with pytest.raises(UnsafePathError, match="extension"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(UnsafePathError, match="extension"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             validate_input_path(str(test_file), allowed_extensions=frozenset({".dxf", ".dwg"}))
 
     def test_allowed_extension_accepted(self, tmp_path):
@@ -99,14 +99,14 @@ class TestValidateInputPathExtension:
         """Test that .py files are rejected when extensions are specified."""
         test_file = tmp_path / "script.py"
         test_file.write_text("script")
-        with pytest.raises(UnsafePathError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(UnsafePathError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             validate_input_path(str(test_file), allowed_extensions=frozenset({".dxf"}))
 
     def test_sh_extension_rejected(self, tmp_path):
         """Test that .sh files are rejected when extensions are specified."""
         test_file = tmp_path / "script.sh"
         test_file.write_text("#!/bin/bash")
-        with pytest.raises(UnsafePathError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(UnsafePathError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             validate_input_path(str(test_file), allowed_extensions=frozenset({".dxf", ".dwg"}))
 
 
@@ -152,7 +152,7 @@ class TestValidateFileSize:
         """Test that oversized files are rejected."""
         test_file = tmp_path / "big.dxf"
         test_file.write_text("x" * 100)
-        with pytest.raises(UnsafePathError, match="exceeds limit"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(UnsafePathError, match="exceeds limit"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             validate_file_size(Path(str(test_file)), max_size_bytes=50)
 
     def test_nonexistent_file_raises(self, tmp_path):

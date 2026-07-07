@@ -32,7 +32,6 @@ from fireai.core.pathway_survivability_engine import (
     SurvivabilityResult,
 )
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # Fixtures
 # ─────────────────────────────────────────────────────────────────────────────
 

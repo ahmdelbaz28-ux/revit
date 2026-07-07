@@ -32,7 +32,6 @@ from fireai.core.evidence_chain import (
     _sha256_payload,
 )
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # Fixtures
 # ─────────────────────────────────────────────────────────────────────────────
 

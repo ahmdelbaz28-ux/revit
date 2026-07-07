@@ -551,7 +551,7 @@ def run_compliance_on_ifc(ifc_path: str) -> dict:
 
     # Basic compliance verification: check NFPA 72 spacing
     class _ComplianceOracle:
-        def verify_truth(self, room, devices, obstructions):  # NOSONAR — S1172: parameter retained for API stability
+        def verify_truth(self, room, devices):  # NOSONAR — S1172: parameter retained for API stability
             violations = []
             # Stub: check each device is within room
             for d in devices:

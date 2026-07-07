@@ -95,15 +95,15 @@ class TestPoint3D:
         assert p.z == pytest.approx(3.0)
 
     def test_nan_x_raises(self):
-        with pytest.raises(ValueError, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             Point3D(float("nan"), 0, 0)
 
     def test_inf_y_raises(self):
-        with pytest.raises(ValueError, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             Point3D(0, float("inf"), 0)
 
     def test_neg_inf_z_raises(self):
-        with pytest.raises(ValueError, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             Point3D(0, 0, float("-inf"))
 
     def test_distance_zero(self):
@@ -116,7 +116,6 @@ class TestPoint3D:
         assert a.distance_to(b) == pytest.approx(5.0)
 
     def test_distance_3d(self):
-        # sqrt(1^2 + 2^2 + 2^2) = sqrt(9) = 3  # NOSONAR — S125: commented-out code kept for historical reference
         assert Point3D(0,0,0).distance_to(Point3D(1,2,2)) == pytest.approx(3.0)
 
     def test_manhattan_admissible(self):

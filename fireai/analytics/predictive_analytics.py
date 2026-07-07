@@ -352,7 +352,7 @@ class PredictiveAnalyticsEngine:
             confidence_upper=[round(v, 4) for v in upper_values],
         )
 
-    def _simulate_recent_coverage(self, room_id: str) -> list[float]:  # NOSONAR — S1172: parameter retained for API stability
+    def _simulate_recent_coverage(self, _room_id: str) -> list[float]:  # NOSONAR — S1172: parameter retained for API stability
         return [0.95, 0.94, 0.93, 0.91, 0.90, 0.89, 0.88, 0.86, 0.85, 0.83]
 
     def predict_capacity(self, system_id: str, load_profile: LoadProfile) -> CapacityPrediction:

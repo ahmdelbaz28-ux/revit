@@ -36,7 +36,6 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # Initialization
 # ─────────────────────────────────────────────────────────────────────────────
 

@@ -246,7 +246,7 @@ class TestAcousticsEngineAudibleCoverage:
 
     def test_empty_speakers_raises(self, engine):
         """No speakers → cannot compute SPL → ValueError."""
-        with pytest.raises(ValueError, match="at least one Speaker"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="at least one Speaker"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             engine.check_coverage(
                 room_id="R-103",
                 occ_type="business",
@@ -257,7 +257,7 @@ class TestAcousticsEngineAudibleCoverage:
 
     def test_empty_checkpoints_raises(self, engine):
         """No check points → cannot verify coverage → ValueError."""
-        with pytest.raises(ValueError, match="at least one CheckPoint"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="at least one CheckPoint"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             engine.check_coverage(
                 room_id="R-104",
                 occ_type="business",
@@ -267,7 +267,7 @@ class TestAcousticsEngineAudibleCoverage:
             )
 
     def test_invalid_mode_raises(self, engine):
-        with pytest.raises(ValueError, match="Invalid mode"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="Invalid mode"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             engine.check_coverage(
                 room_id="R-105",
                 occ_type="business",

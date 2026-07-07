@@ -132,7 +132,6 @@ class TestWallDistances:
         assert "wall_max_m" in result
         # wall_min_m = 0.1016m (dead air)
         assert result["wall_min_m"] == pytest.approx(0.1016, rel=1e-3)
-        # wall_max_m = S/2  # NOSONAR — S125: commented-out code kept for historical reference
         assert result["wall_max_m"] == pytest.approx(0.5 * result["listed_spacing_m"], rel=1e-4)
 
     def test_calculate_max_wall_distance_is_s_over_2(self):

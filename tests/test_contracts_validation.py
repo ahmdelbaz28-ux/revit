@@ -70,7 +70,6 @@ class TestContractViolation:
         assert math.isnan(exc.value)
 
 
-# ═══════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # _has_nan_inf
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -174,7 +173,6 @@ class TestHasNanInf:
         assert _has_nan_inf(False) == []
 
 
-# ═══════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # _validate_polygon
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -238,7 +236,6 @@ class TestValidatePolygon:
         assert len(result) >= 2
 
 
-# ═══════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # _compute_area_from_polygon
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -277,7 +274,6 @@ class TestComputeAreaFromPolygon:
         # L-shaped polygon (counterclockwise)
         #   (0,0) → (6,0) → (6,2) → (2,2) → (2,4) → (0,4)
         polygon = [[0, 0], [6, 0], [6, 2], [2, 2], [2, 4], [0, 4]]
-        # Area = 6*4 - 4*2 = 24 - 8 = 16  # NOSONAR — S125: commented-out code kept for historical reference
         assert _compute_area_from_polygon(polygon) == pytest.approx(16.0)
 
     def test_pentagon(self):

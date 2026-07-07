@@ -36,7 +36,6 @@ if str(_PROJECT_ROOT) not in sys.path:
 from parsers._path_security import UnsafePathError
 from parsers.dwg_parser import DWGConversionError, DWGParser, DWGParseResult
 
-# ═══════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # Fixtures
 # ═══════════════════════════════════════════════════════════════════════════════
 

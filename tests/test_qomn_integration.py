@@ -87,13 +87,13 @@ class TestQOMNKernelLayer0PhysicsGuards:
     def test_nan_ceiling_rejected(self, kernel):
         """NaN inputs are caught per IEEE-754-2008 §7."""
         from fireai.core.qomn_kernel import PhysicsGuardError
-        with pytest.raises(PhysicsGuardError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(PhysicsGuardError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             kernel.smoke_detector_spacing(float("nan"))
 
     def test_inf_ceiling_rejected(self, kernel):
         """Inf inputs are caught per IEEE-754-2008 §7.4."""
         from fireai.core.qomn_kernel import PhysicsGuardError
-        with pytest.raises(PhysicsGuardError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(PhysicsGuardError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             kernel.smoke_detector_spacing(float("inf"))
 
     def test_negative_area_rejected(self):
@@ -326,7 +326,7 @@ class TestDevicePlacement:
         """Duct velocity < 60fpm (0.305m/s) must be rejected."""
         from fireai.core.device_placement import DuctDetectorSpec, place_duct_detector
         from fireai.core.qomn_kernel import PhysicsGuardError
-        with pytest.raises(PhysicsGuardError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(PhysicsGuardError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             place_duct_detector(DuctDetectorSpec("D1", 0.6, 0.4, 0.1))
 
     def test_duct_detector_single_narrow(self):

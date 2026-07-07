@@ -236,7 +236,7 @@ class ClusterCommunicator:
         finally:
             conn.close()
 
-    def _handle_incoming_message(self, message: Dict[str, Any], conn: socket.socket, addr):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def _handle_incoming_message(self, message: Dict[str, Any], _conn: socket.socket, addr):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """Handle an incoming message from another node"""
         with self.lock:
             self.stats["messages_received"] += 1
@@ -702,7 +702,7 @@ class DistributedClusterCommunicator(ClusterCommunicator):
             # If no leader, broadcast to all
             self.broadcast_message(config_exchange_msg)
 
-    def handle_config_exchange(self, config_data: Dict[str, Any], sender_node_id: str):  # NOSONAR — S1172: parameter retained for API stability
+    def handle_config_exchange(self, config_data: Dict[str, Any], _sender_node_id: str):  # NOSONAR — S1172: parameter retained for API stability
         """Handle configuration exchange message"""
         # Merge configurations
         self.cluster_config.update(config_data.get("config", {}))

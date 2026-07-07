@@ -181,11 +181,11 @@ class TestCalculateHeatDetectorResponse:
             calculate_heat_detector_response(fire_hrr_kw=0.0, ceiling_height_m=3.0, distance_to_fire_m=2.0)
 
     def test_nan_hrr_raises(self):
-        with pytest.raises(ValueError, match="positive finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="positive finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             calculate_heat_detector_response(fire_hrr_kw=float("nan"), ceiling_height_m=3.0, distance_to_fire_m=2.0)
 
     def test_inf_hrr_raises(self):
-        with pytest.raises(ValueError, match="positive finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="positive finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             calculate_heat_detector_response(fire_hrr_kw=float("inf"), ceiling_height_m=3.0, distance_to_fire_m=2.0)
 
     def test_negative_ceiling_height_raises(self):
@@ -197,7 +197,7 @@ class TestCalculateHeatDetectorResponse:
             calculate_heat_detector_response(fire_hrr_kw=500.0, ceiling_height_m=0.0, distance_to_fire_m=2.0)
 
     def test_nan_ceiling_height_raises(self):
-        with pytest.raises(ValueError, match="positive finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="positive finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             calculate_heat_detector_response(fire_hrr_kw=500.0, ceiling_height_m=float("nan"), distance_to_fire_m=2.0)
 
     def test_negative_distance_raises(self):
@@ -205,7 +205,7 @@ class TestCalculateHeatDetectorResponse:
             calculate_heat_detector_response(fire_hrr_kw=500.0, ceiling_height_m=3.0, distance_to_fire_m=-1.0)
 
     def test_nan_distance_raises(self):
-        with pytest.raises(ValueError, match="non-negative"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="non-negative"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             calculate_heat_detector_response(fire_hrr_kw=500.0, ceiling_height_m=3.0, distance_to_fire_m=float("nan"))
 
     def test_zero_rti_raises(self):
@@ -217,14 +217,14 @@ class TestCalculateHeatDetectorResponse:
             calculate_heat_detector_response(fire_hrr_kw=500.0, ceiling_height_m=3.0, distance_to_fire_m=2.0, rti=-10.0)
 
     def test_nan_activation_temp_raises(self):
-        with pytest.raises(ValueError, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             calculate_heat_detector_response(
                 fire_hrr_kw=500.0, ceiling_height_m=3.0, distance_to_fire_m=2.0,
                 activation_temp_c=float("nan"),
             )
 
     def test_nan_ambient_temp_raises(self):
-        with pytest.raises(ValueError, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             calculate_heat_detector_response(
                 fire_hrr_kw=500.0, ceiling_height_m=3.0, distance_to_fire_m=2.0,
                 ambient_temp_c=float("nan"),
@@ -308,11 +308,11 @@ class TestCalculateSmokeDetectorResponse:
             calculate_smoke_detector_response(0.0, 3.0, 2.0)
 
     def test_nan_hrr_raises(self):
-        with pytest.raises(ValueError, match="positive finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="positive finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             calculate_smoke_detector_response(float("nan"), 3.0, 2.0)
 
     def test_inf_hrr_raises(self):
-        with pytest.raises(ValueError, match="positive finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="positive finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             calculate_smoke_detector_response(float("inf"), 3.0, 2.0)
 
     def test_negative_ceiling_raises(self):
@@ -324,7 +324,7 @@ class TestCalculateSmokeDetectorResponse:
             calculate_smoke_detector_response(500.0, 0.0, 2.0)
 
     def test_nan_ceiling_raises(self):
-        with pytest.raises(ValueError, match="positive finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="positive finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             calculate_smoke_detector_response(500.0, float("nan"), 2.0)
 
     def test_negative_distance_raises(self):
@@ -332,11 +332,11 @@ class TestCalculateSmokeDetectorResponse:
             calculate_smoke_detector_response(500.0, 3.0, -1.0)
 
     def test_nan_distance_raises(self):
-        with pytest.raises(ValueError, match="non-negative"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="non-negative"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             calculate_smoke_detector_response(500.0, 3.0, float("nan"))
 
     def test_inf_distance_raises(self):
-        with pytest.raises(ValueError, match="non-negative"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="non-negative"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             calculate_smoke_detector_response(500.0, 3.0, float("inf"))
 
     def test_zero_distance_directly_above_fire(self):

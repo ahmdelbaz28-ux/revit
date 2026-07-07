@@ -109,7 +109,6 @@ NFPA72_DEFAULT_CEILING_M = 3.0
 NFPA72_MAX_SPACING_M = 9.1
 
 
-# ═══════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # Enums
 # ═══════════════════════════════════════════════════════════════════════
 
@@ -441,7 +440,6 @@ class SimulationResult:
         return asdict(self)
 
 
-# ═══════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # TwinDriftAnalyzer
 # ═══════════════════════════════════════════════════════════════════════
 
@@ -527,7 +525,6 @@ class TwinDriftAnalyzer:
         return "low"
 
 
-# ═══════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # TwinSimulator
 # ═══════════════════════════════════════════════════════════════════════
 
@@ -719,7 +716,6 @@ class TwinSimulator:
         return round(len(covered) / len(rooms) * 100, 2) if rooms else 0.0
 
 
-# ═══════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # TwinSerializer
 # ═══════════════════════════════════════════════════════════════════════
 
@@ -2000,7 +1996,6 @@ class DigitalTwin:
         return result
 
 
-# ═══════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # Self-Test
 # ═══════════════════════════════════════════════════════════════════════
 

@@ -334,7 +334,7 @@ class WeightedCircuitBreaker:
         self._total_errors: int = 0  # [v4.0 NEW] العدد الكلي للأخطاء (لا يُمسح)
         self._lock = threading.RLock()
 
-    def register(self, error_type: str, weight: int = 1) -> bool:  # NOSONAR — S1172: parameter retained for API stability
+    def register(self, _error_type: str, weight: int = 1) -> bool:  # NOSONAR — S1172: parameter retained for API stability
         now = time.time()
 
         with self._lock:
@@ -1565,22 +1565,22 @@ class TestQomnFireV4FailLoud(unittest.TestCase):
     # ----------------------------------------------------------
     def test_nan_fallback_is_rejected(self) -> None:
         """NaN كقيمة افتراضية = ValueError."""
-        with pytest.raises(ValueError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             _validate_fallback(float('nan'), "test")
 
     def test_inf_fallback_is_rejected(self) -> None:
         """Infinity كقيمة افتراضية = ValueError."""
-        with pytest.raises(ValueError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             _validate_fallback(float('inf'), "test")
 
     def test_negative_inf_fallback_is_rejected(self) -> None:
         """Negative infinity كقيمة افتراضية = ValueError."""
-        with pytest.raises(ValueError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             _validate_fallback(float('-inf'), "test")
 
     def test_list_with_nan_fallback_is_rejected(self) -> None:
         """قائمة تحتوي NaN = ValueError."""
-        with pytest.raises(ValueError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             _validate_fallback([1.0, float('nan'), 3.0], "test")
 
     # ----------------------------------------------------------

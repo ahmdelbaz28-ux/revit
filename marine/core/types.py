@@ -339,7 +339,6 @@ class ShipElectricalSpec:
     emergency_supply_voltage: float = 230.0      # V AC
     ups_capacity_ah: float = 0.0                 # Battery capacity (Ah)
     ups_autonomy_min: float = 30.0               # SOLAS: ≥30 min for fire systems
-    redundancy_level: int = 2                    # 1=main, 2=main+emergency, 3=+UPS  # NOSONAR — S125: commented-out code kept for historical reference
     insulation_monitoring: bool = True           # IEC 60092-504 mandatory
     standard_reference: str = "IEC 60092-502 + SOLAS II-2/5.1.3"
 

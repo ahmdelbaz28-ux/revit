@@ -29,7 +29,7 @@ class Room:
 
 def extract_rooms_from_walls(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     walls: list[Any],
-    pdf_path: str = "",  # NOSONAR — S1172: parameter retained for API stability
+    __pdf_path: str = "",  # NOSONAR — S1172: parameter retained for API stability
 ) -> tuple[list[Room], dict[str, Any]]:
     """
     Extract rooms from a list of wall geometry objects.

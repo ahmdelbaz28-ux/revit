@@ -1006,7 +1006,7 @@ class Document:
             # Copy from template
             shutil.copy(TEMPLATE_DIR / "people.xml", path)
 
-    def _add_content_type_for_people(self, path):
+    def _add_content_type_for_people(self):
         """Add people.xml content type to [Content_Types].xml if not already present."""
         editor = self["[Content_Types].xml"]
 
@@ -1018,7 +1018,7 @@ class Document:
         override_xml = '<Override PartName="/word/people.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.people+xml"/>'
         editor.append_to(root, override_xml)
 
-    def _add_relationship_for_people(self, path):
+    def _add_relationship_for_people(self):
         """Add people.xml relationship to document.xml.rels if not already present."""
         editor = self["word/_rels/document.xml.rels"]
 
@@ -1034,7 +1034,7 @@ class Document:
         rel_xml = f'<{prefix}Relationship Id="{next_rid}" Type="http://schemas.microsoft.com/office/2011/relationships/people" Target="people.xml"/>'
         editor.append_to(root, rel_xml)
 
-    def _update_settings(self, path, track_revisions=False, update_fields=True):
+    def _update_settings(self, track_revisions=False, update_fields=True):
         """
         Add RSID and optionally enable track revisions and update fields in settings.xml.
 
@@ -1143,7 +1143,7 @@ class Document:
     # ==================== Private: XML File Creation ====================
 
     def _add_to_comments_xml(
-        self, comment_id, para_id, text, author, initials, timestamp
+        self, comment_id, para_id, text, _timestamp
     ):
         """Add a single comment to comments.xml."""
         if not self.comments_path.exists():

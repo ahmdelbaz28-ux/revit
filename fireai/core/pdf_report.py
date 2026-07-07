@@ -164,7 +164,7 @@ def _build_doc(output_path: str) -> BaseDocTemplate:
 # ---------------------------------------------------------------------------
 
 
-def _base_table_style(col_count: int) -> TableStyle:  # NOSONAR — S1172: parameter retained for API stability
+def _base_table_style(_col_count: int) -> TableStyle:  # NOSONAR — S1172: parameter retained for API stability
     return TableStyle(
         [
             ("BACKGROUND", (0, 0), (-1, 0), C_BLUE_DARK),
@@ -624,7 +624,7 @@ def generate_building_report(
             _logger.error("Path traversal / invalid output path detected in generate_pdf_report: %s", output_path)
             raise ValueError("Output path escapes file system restrictions")
     except Exception as e:
-        _logger.error("Path validation failed: %s", e)  # NOSONAR — acceptable in this context  # NOSONAR — acceptable in this context
+        _logger.exception("Path validation failed: %s", e)  # NOSONAR — acceptable in this context  # NOSONAR — acceptable in this context
         raise ValueError(f"Invalid output path: {e}")
 
     try:

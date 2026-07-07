@@ -721,7 +721,7 @@ class TestNaNInfSafety:
             compute_smoke_detector_spacing,
         )
 
-        with pytest.raises(PhysicsGuardError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(PhysicsGuardError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             compute_smoke_detector_spacing(float('nan'))
 
     def test_smoke_spacing_rejects_inf(self):
@@ -731,7 +731,7 @@ class TestNaNInfSafety:
             compute_smoke_detector_spacing,
         )
 
-        with pytest.raises(PhysicsGuardError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(PhysicsGuardError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             compute_smoke_detector_spacing(float('inf'))
 
     def test_smoke_spacing_rejects_negative(self):
@@ -760,7 +760,7 @@ class TestNaNInfSafety:
             calculate_coverage_radius_from_height,
         )
 
-        with pytest.raises((ValueError, TypeError)):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises((ValueError, TypeError)):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             calculate_coverage_radius_from_height(float('nan'))
 
     def test_coverage_radius_rejects_inf(self):
@@ -769,7 +769,7 @@ class TestNaNInfSafety:
             calculate_coverage_radius_from_height,
         )
 
-        with pytest.raises(ValueError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             calculate_coverage_radius_from_height(float('inf'))
 
     def test_heat_spacing_rejects_nan_height(self):
@@ -779,7 +779,7 @@ class TestNaNInfSafety:
             compute_heat_detector_spacing,
         )
 
-        with pytest.raises(PhysicsGuardError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(PhysicsGuardError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             compute_heat_detector_spacing(float('nan'), 100.0)
 
     def test_battery_rejects_nan_current(self):
@@ -789,7 +789,7 @@ class TestNaNInfSafety:
             compute_battery_capacity_ah,
         )
 
-        with pytest.raises(PhysicsGuardError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(PhysicsGuardError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             compute_battery_capacity_ah(float('nan'), 1.5)
 
 

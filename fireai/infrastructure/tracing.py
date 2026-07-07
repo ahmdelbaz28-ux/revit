@@ -40,9 +40,9 @@ else:
 
 
 def setup_tracing(
-    service_name: str = 'fireai',  # NOSONAR — S1172: parameter retained for API stability
+    _service_name: str = 'fireai',  # NOSONAR — S1172: parameter retained for API stability
     endpoint: str = os.environ.get('TEMPO_ENDPOINT', 'http://tempo:4318/v1/traces'),  # NOSONAR
-    sample_rate: float = 1.0,  # NOSONAR — S1172: parameter retained for API stability
+    _sample_rate: float = 1.0,  # NOSONAR — S1172: parameter retained for API stability
 ) -> TracerProvider | None:
     if not _OPENTELEMETRY_AVAILABLE:
         # Tracing is optional; return None when the library is missing.

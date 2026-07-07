@@ -340,23 +340,23 @@ class TestDigitalTwinRegisterDetectorEdgeCases:
 
     def test_nan_x_rejected(self):
         """NaN x-coordinate must be rejected — it would corrupt distance calcs."""
-        with pytest.raises(ValueError, match="must be finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="must be finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             self.twin.register_detector("R-01", "D-001", x=float("nan"), y=0, z=0)
 
     def test_nan_y_rejected(self):
-        with pytest.raises(ValueError, match="must be finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="must be finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             self.twin.register_detector("R-01", "D-001", x=0, y=float("nan"), z=0)
 
     def test_nan_z_rejected(self):
-        with pytest.raises(ValueError, match="must be finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="must be finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             self.twin.register_detector("R-01", "D-001", x=0, y=0, z=float("nan"))
 
     def test_inf_x_rejected(self):
-        with pytest.raises(ValueError, match="must be finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="must be finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             self.twin.register_detector("R-01", "D-001", x=float("inf"), y=0, z=0)
 
     def test_neg_inf_x_rejected(self):
-        with pytest.raises(ValueError, match="must be finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="must be finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             self.twin.register_detector("R-01", "D-001", x=float("-inf"), y=0, z=0)
 
     def test_non_numeric_x_rejected(self):
@@ -392,13 +392,13 @@ class TestDigitalTwinRegisterDetectorEdgeCases:
             )
 
     def test_nan_coverage_radius_rejected(self):
-        with pytest.raises(ValueError, match="coverage_radius must be finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="coverage_radius must be finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             self.twin.register_detector(
                 "R-01", "D-001", x=0, y=0, z=0, coverage_radius=float("nan")
             )
 
     def test_inf_coverage_radius_rejected(self):
-        with pytest.raises(ValueError, match="coverage_radius must be finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="coverage_radius must be finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             self.twin.register_detector(
                 "R-01", "D-001", x=0, y=0, z=0, coverage_radius=float("inf")
             )
@@ -420,7 +420,7 @@ class TestDigitalTwinRegisterDetectorEdgeCases:
     def test_failed_validation_leaves_twin_clean(self):
         """A failed registration must not leave partial state behind."""
         # Try to register with NaN — must fail
-        with pytest.raises(ValueError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             self.twin.register_detector("R-01", "D-001", x=float("nan"), y=0, z=0)
 
         # Twin must still be empty

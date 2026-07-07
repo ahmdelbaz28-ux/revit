@@ -33,13 +33,11 @@ from backend.basebyright import (
     create_basebyright,
 )
 
-# ═══════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # Constants
 # ═══════════════════════════════════════════════════════════════════════════
 
 TEST_API_KEY = "test-api-key-for-testing-only"
 
-# ═══════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # Fixtures
 # ═══════════════════════════════════════════════════════════════════════════
 

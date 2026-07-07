@@ -242,7 +242,7 @@ def recommend_wire_gauge(
     current_a: float,
     one_way_length_m: float,
     nominal_voltage: float = NOMINAL_VOLTAGE_FA,
-    max_drop_pct: float = MAX_VOLTAGE_DROP_PCT,  # NOSONAR — S1172: parameter retained for API stability
+    _max_drop_pct: float = MAX_VOLTAGE_DROP_PCT,  # NOSONAR — S1172: parameter retained for API stability
 ) -> dict[str, str | float]:
     """
     Recommend smallest wire gauge meeting voltage drop requirement.

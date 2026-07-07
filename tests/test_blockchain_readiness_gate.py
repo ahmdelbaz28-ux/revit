@@ -33,7 +33,6 @@ from fireai.core.blockchain_readiness_gate import (
     _sha256_hex,
 )
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # Constants
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -80,7 +79,6 @@ class TestHelperFunctions:
         assert h == expected
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # MerkleProof
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -127,7 +125,6 @@ class TestMerkleProof:
         assert tampered.verify() is False
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # MerkleTree
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -218,7 +215,6 @@ class TestMerkleTree:
             assert proof.verify() is True
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # BlockchainReadinessGate
 # ─────────────────────────────────────────────────────────────────────────────
 

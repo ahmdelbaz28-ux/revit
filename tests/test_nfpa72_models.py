@@ -65,7 +65,6 @@ from fireai.core.nfpa72_models import (
     validate_ceiling_height,
 )
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # Constants
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -91,7 +90,6 @@ class TestConstants:
         assert "LEGAL DISCLAIMER" in DISCLAIMER
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # sanitize_string
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -157,7 +155,6 @@ class TestSanitizeString:
             sanitize_string("room\ttab")
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # Enums
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -201,7 +198,6 @@ class TestCeilingTypeReexport:
         assert CeilingType.GABLE is not None
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # Exceptions
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -223,7 +219,6 @@ class TestExceptions:
         assert "2.0m" in str(exc_info.value)
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # CeilingSpec
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -360,7 +355,6 @@ class TestCeilingSpecCreateSafe:
         assert spec.was_clamped is False
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # HVACDuct
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -380,7 +374,6 @@ class TestHVACDuct:
         assert duct.width_m == 0.6  # NOSONAR — S1244: import retained for re-export / API surface
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # RoomSpec
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -541,7 +534,6 @@ class TestRoomSpec:
         assert room.area_sqm == pytest.approx(80.0)
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # SmokeDetectorSpec
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -567,7 +559,6 @@ class TestSmokeDetectorSpec:
         assert spec.detector_type == DetectorType.SMOKE
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # HeatDetectorSpec
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -600,7 +591,6 @@ class TestHeatDetectorSpec:
         assert spec.detector_type == DetectorType.HEAT
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # DetectorPlacement
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -641,7 +631,6 @@ class TestDetectorPlacement:
         assert dp.ceiling_height_m == 3.0  # NOSONAR — S1244: import retained for re-export / API surface
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # CoverageResult
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -670,7 +659,6 @@ class TestCoverageResult:
         assert result.uncovered_areas == []
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # NFPAComplianceResult
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -707,7 +695,6 @@ class TestNFPAComplianceResult:
         assert result.is_compliant is False
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # FireAlarmPanel
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -816,7 +803,6 @@ class TestGetSmokeDetectorRadius:
         assert r_3 > r_6 > r_12
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # get_smoke_detector_coverage_max
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -845,7 +831,6 @@ class TestGetSmokeDetectorCoverageMax:
         assert get_smoke_detector_coverage_max(2.0) == pytest.approx(10.1)
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # validate_ceiling_height
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -923,7 +908,6 @@ class TestGetSmokeDetectorRadiusSafe:
         assert r == pytest.approx(3.64, abs=0.01)
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # get_smoke_detector_coverage_max_safe
 # ─────────────────────────────────────────────────────────────────────────────
 

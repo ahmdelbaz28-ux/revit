@@ -37,7 +37,6 @@ from fireai.core.nfpa72_engine import (
     temperature_corrected_resistance,
 )
 
-# ═══════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # Fixtures
 # ═══════════════════════════════════════════════════════════════════════════════
 

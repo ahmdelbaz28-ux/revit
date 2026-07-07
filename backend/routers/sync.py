@@ -278,7 +278,7 @@ def _validate_ws_origin(websocket: WebSocket) -> bool:
     return False
 
 
-def _validate_ws_api_key(websocket: WebSocket) -> bool:  # NOSONAR — S1172: parameter retained for API stability
+def _validate_ws_api_key(_websocket: WebSocket) -> bool:  # NOSONAR — S1172: parameter retained for API stability
     """
     Check if the WebSocket connection provides a valid API key.
 

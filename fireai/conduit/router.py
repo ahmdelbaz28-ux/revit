@@ -137,7 +137,6 @@ class BoundingBox:
         )
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # A* node
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -245,8 +244,8 @@ class ConduitRouter:
         self,
         start: Point3D,
         end: Point3D,
-        conduit_type: ConduitType = ConduitType.EMT,  # NOSONAR — S1172: parameter retained for API stability
-        trade_size: TradeSize = TradeSize.HALF,  # NOSONAR — S1172: parameter retained for API stability
+        _conduit_type: ConduitType = ConduitType.EMT,  # NOSONAR — S1172: parameter retained for API stability
+        _trade_size: TradeSize = TradeSize.HALF,  # NOSONAR — S1172: parameter retained for API stability
     ) -> Result[RoutePath, RoutingError | PhysicsError]:
         """
         Find shortest NEC-compliant conduit path from start to end.

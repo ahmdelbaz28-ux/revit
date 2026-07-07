@@ -118,11 +118,11 @@ class TestAtmosphericAttenuation:
     # V65: NaN/Inf input validation
 
     def test_nan_frequency_raises(self):
-        with pytest.raises(ValueError, match="positive and finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="positive and finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             atmospheric_attenuation_db_per_m(float("nan"))
 
     def test_inf_frequency_raises(self):
-        with pytest.raises(ValueError, match="positive and finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="positive and finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             atmospheric_attenuation_db_per_m(float("inf"))
 
     def test_zero_frequency_raises(self):
@@ -134,11 +134,11 @@ class TestAtmosphericAttenuation:
             atmospheric_attenuation_db_per_m(-40_000.0)
 
     def test_nan_temperature_raises(self):
-        with pytest.raises(ValueError, match="finite and in range"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="finite and in range"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             atmospheric_attenuation_db_per_m(40_000, temp_c=float("nan"))
 
     def test_inf_temperature_raises(self):
-        with pytest.raises(ValueError, match="finite and in range"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="finite and in range"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             atmospheric_attenuation_db_per_m(40_000, temp_c=float("inf"))
 
     def test_temperature_below_minus_40_raises(self):
@@ -150,7 +150,7 @@ class TestAtmosphericAttenuation:
             atmospheric_attenuation_db_per_m(40_000, temp_c=100.0)
 
     def test_nan_humidity_raises(self):
-        with pytest.raises(ValueError, match="finite and in range"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="finite and in range"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             atmospheric_attenuation_db_per_m(40_000, relative_humidity_pct=float("nan"))
 
     def test_negative_humidity_raises(self):

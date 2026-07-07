@@ -1119,7 +1119,6 @@ def benchmark_routing(n_obstacles: int = 50, n_routes: int = 100) -> dict:
     }
 
 
-# ════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # Self-Test
 # ════════════════════════════════════════════════════════════════════════════
 

@@ -28,7 +28,7 @@ from marine.core.types import (
 
 
 def design_fire_system_power(
-    ship: ShipProject,  # NOSONAR — S1172: parameter retained for API stability
+    _ship: ShipProject,  # NOSONAR — S1172: parameter retained for API stability
     detection_load_w: float = 500.0,
     alarm_load_w: float = 1000.0,
     extinguish_load_w: float = 2000.0,

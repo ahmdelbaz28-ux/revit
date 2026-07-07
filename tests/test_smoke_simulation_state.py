@@ -71,19 +71,19 @@ class TestSmokeDensityPoint:
         assert p.density_kg_m3 == pytest.approx(0.025)
 
     def test_nan_x_rejected(self):
-        with pytest.raises(ValueError, match="must be finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="must be finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             SmokeDensityPoint(x=float("nan"), y=0, z=0, density_kg_m3=0.01)
 
     def test_nan_y_rejected(self):
-        with pytest.raises(ValueError, match="must be finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="must be finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             SmokeDensityPoint(x=0, y=float("nan"), z=0, density_kg_m3=0.01)
 
     def test_nan_z_rejected(self):
-        with pytest.raises(ValueError, match="must be finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="must be finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             SmokeDensityPoint(x=0, y=0, z=float("nan"), density_kg_m3=0.01)
 
     def test_nan_density_rejected(self):
-        with pytest.raises(ValueError, match="must be finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="must be finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             SmokeDensityPoint(x=0, y=0, z=0, density_kg_m3=float("nan"))
 
     def test_negative_density_rejected(self):
@@ -91,7 +91,7 @@ class TestSmokeDensityPoint:
             SmokeDensityPoint(x=0, y=0, z=0, density_kg_m3=-0.01)
 
     def test_inf_density_rejected(self):
-        with pytest.raises(ValueError, match="must be finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="must be finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             SmokeDensityPoint(x=0, y=0, z=0, density_kg_m3=float("inf"))
 
     def test_tenability_threshold_detection(self):
@@ -128,7 +128,7 @@ class TestVisibilityGradient:
         assert len(g.visibility_at_height) == 2
 
     def test_nan_height_rejected(self):
-        with pytest.raises(ValueError, match="Invalid height"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="Invalid height"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             VisibilityGradient(room_id="R", visibility_at_height={float("nan"): 5.0})
 
     def test_negative_height_rejected(self):
@@ -136,7 +136,7 @@ class TestVisibilityGradient:
             VisibilityGradient(room_id="R", visibility_at_height={-1.0: 5.0})
 
     def test_nan_visibility_rejected(self):
-        with pytest.raises(ValueError, match="Invalid visibility"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="Invalid visibility"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             VisibilityGradient(room_id="R", visibility_at_height={1.7: float("nan")})
 
     def test_negative_visibility_rejected(self):
@@ -363,7 +363,7 @@ class TestFDSIntegrationConfig:
             FDSIntegrationConfig(mesh_resolution_m=0.0)
 
     def test_invalid_mesh_resolution_nan_rejected(self):
-        with pytest.raises(ValueError, match="mesh_resolution_m must be positive"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="mesh_resolution_m must be positive"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             FDSIntegrationConfig(mesh_resolution_m=float("nan"))
 
     def test_invalid_simulation_duration_rejected(self):

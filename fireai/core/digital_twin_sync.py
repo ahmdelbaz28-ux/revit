@@ -1308,7 +1308,7 @@ class DigitalTwinSync:
     def _detect_cross_drift(
         self,
         design_detectors: list[dict[str, Any]],
-        correlation_id: str,  # NOSONAR — S1172: parameter retained for API stability
+        _correlation_id: str,  # NOSONAR — S1172: parameter retained for API stability
     ) -> list[DriftRecord]:
         """
         Detect missing, extra, and type-mismatch drifts by comparing

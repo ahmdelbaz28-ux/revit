@@ -668,7 +668,6 @@ class TestAcousticSPLCalculator:
             speakers=[Speaker(x=5, y=5, rating_dba=95)],
             check_points=[CheckPoint(x=5, y=5)],
         )
-        # Required = 75 + 15 = 90  # NOSONAR — S125: commented-out code kept for historical reference
         assert result.required_dba == 90.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_speaker_at_same_point_as_checkpoint(self):

@@ -29,7 +29,6 @@ from fireai.core.bim_input_sanitizer import (
     validate_numeric_parameter,
 )
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # sanitize_bim_parameter
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -160,7 +159,6 @@ class TestSanitizeBIMParameter:
             sanitize_bim_parameter("; import subprocess; subprocess.run(['ls'])")
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # sanitize_room_name
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -255,7 +253,6 @@ class TestSanitizeRoomName:
             sanitize_room_name("../../etc/passwd")
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # sanitize_file_path
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -319,7 +316,6 @@ class TestSanitizeFilePath:
         assert "_" in result
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # validate_numeric_parameter
 # ─────────────────────────────────────────────────────────────────────────────
 

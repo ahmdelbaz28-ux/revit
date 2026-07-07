@@ -69,12 +69,12 @@ class TestARSceneNode:
         assert node.x_ray_enabled is False
 
     def test_node_nan_position_rejected(self):
-        with pytest.raises(ValueError, match="not finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="not finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             ARSceneNode(id="test", name="test", node_type="detector",
                         position=(float("nan"), 0, 0))
 
     def test_node_nan_rotation_rejected(self):
-        with pytest.raises(ValueError, match="not finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="not finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             ARSceneNode(id="test", name="test", node_type="detector",
                         rotation=(float("nan"), 0, 0, 1))
 

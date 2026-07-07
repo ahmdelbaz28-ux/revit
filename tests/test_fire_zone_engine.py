@@ -26,7 +26,6 @@ from fireai.core.fire_zone_engine import (
     ZoneReport,
 )
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # ZoneConstraints
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -65,7 +64,6 @@ class TestZoneConstraints:
         assert c.max_rooms_per_zone == 0
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # FireZone
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -96,7 +94,6 @@ class TestFireZone:
         assert z.zone_type == "supervisory"
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # ZoneReport
 # ─────────────────────────────────────────────────────────────────────────────
 

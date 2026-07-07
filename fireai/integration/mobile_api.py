@@ -260,7 +260,7 @@ class MobileAPI:
 
     # ── Projects ────────────────────────────────────────────────────────
 
-    def get_projects(self, user_id: str) -> list[ProjectSummary]:  # NOSONAR — S1172: parameter retained for API stability
+    def get_projects(self, _user_id: str) -> list[ProjectSummary]:  # NOSONAR — S1172: parameter retained for API stability
         return list(self._projects.values())
 
     def add_project(self, project: ProjectSummary) -> None:
@@ -341,7 +341,7 @@ class MobileAPI:
     # ── Offline Sync ────────────────────────────────────────────────────
 
     def get_offline_sync(
-        self, user_id: str, since: datetime  # NOSONAR — S1172: parameter retained for API stability
+        self, user_id: str, _since: datetime  # NOSONAR — S1172: parameter retained for API stability
     ) -> SyncPackage:
         try:
             user_tasks = self.get_field_tasks(user_id)

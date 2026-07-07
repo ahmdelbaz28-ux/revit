@@ -944,7 +944,7 @@ class ConstraintEngine:
         cable_length_m: float,
         wire_gauge: WireGauge,
         num_bends: int = 0,
-        num_elevation_changes: int = 0,  # NOSONAR — S1172: parameter retained for API stability
+        _num_elevation_changes: int = 0,  # NOSONAR — S1172: parameter retained for API stability
         min_electrical_separation_mm: float = 300.0,
         ps_voltage: float = 24.0,
         alarm_current_a: float = 0.0,

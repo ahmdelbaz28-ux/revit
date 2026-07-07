@@ -42,7 +42,6 @@ from fireai.core.circuit_topology import (
     CircuitType,
 )
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # Fixtures
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -347,7 +346,6 @@ class TestCableRoutingEngine3DDistance:
         assert d == pytest.approx(5.0)
 
     def test_full_3d(self):
-        # sqrt(3^2 + 4^2 + 0^2) = 5  # NOSONAR — S125: commented-out code kept for historical reference
         d = CableRoutingEngine.calculate_3d_distance((1, 1, 1), (4, 5, 1))
         assert d == pytest.approx(5.0)
 

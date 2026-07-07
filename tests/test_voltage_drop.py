@@ -173,12 +173,12 @@ class TestCalculateVoltageDrop:
 
     def test_nan_current_rejected(self):
         """NaN current must be rejected per safety-critical requirements."""
-        with pytest.raises(ValueError, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             calculate_voltage_drop(float("nan"), 100.0, "14", 24.0)
 
     def test_nan_length_rejected(self):
         """NaN length must be rejected per safety-critical requirements."""
-        with pytest.raises(ValueError, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             calculate_voltage_drop(1.0, float("nan"), "14", 24.0)
 
     def test_inf_nominal_voltage_not_checked(self):

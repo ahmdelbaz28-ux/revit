@@ -52,7 +52,6 @@ class TestConfidenceLevel:
         assert levels[-1] == ConfidenceLevel.UNCERTAIN
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # ConfidenceScore
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -96,7 +95,6 @@ class TestConfidenceScore:
             cs.value = 0.9
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # RuleApplied
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -132,7 +130,6 @@ class TestRuleApplied:
             r.result = "FAIL"
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # Violation
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -169,7 +166,6 @@ class TestViolation:
             v.severity = "LOW"
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # DecisionProvenance
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -308,7 +304,6 @@ class TestDecisionProvenance:
         assert dp.computation_hash == expected
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # ProvenanceStore
 # ─────────────────────────────────────────────────────────────────────────────
 

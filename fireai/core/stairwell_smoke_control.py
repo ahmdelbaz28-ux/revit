@@ -1022,7 +1022,7 @@ class StairwellSmokeControlIntegrator:
         self,
         stair: dict[str, Any],
         zone_id: str,
-        name: str,  # NOSONAR — S1172: parameter retained for API stability
+        _name: str,  # NOSONAR — S1172: parameter retained for API stability
     ) -> SmokeControlResult | None:
         """
         Delegate smoke control assessment to evaluate_smoke_control().
@@ -1470,7 +1470,7 @@ class StairwellSmokeControlIntegrator:
         self,
         stair: dict[str, Any],
         zone_id: str,
-        name: str,  # NOSONAR — S1172: parameter retained for API stability
+        _name: str,  # NOSONAR — S1172: parameter retained for API stability
         floors_served: list[str],
     ) -> list[PressurizationInjection]:
         """

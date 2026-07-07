@@ -211,27 +211,26 @@ class TestIFCParserSecurity:
         return IFCParser(path)
 
     def test_leading_dash_rejected(self):
-        with pytest.raises(ValueError, match="SECURITY"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="SECURITY"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             self._make("--evil.ifc").parse()
 
     def test_null_byte_rejected(self):
-        with pytest.raises(ValueError, match="SECURITY"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="SECURITY"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             self._make("/tmp/x\x00.ifc").parse()  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
 
     def test_wrong_extension_rejected(self):
         p = _make_temp(".txt")
         try:
-            with pytest.raises(ValueError, match="SECURITY"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+            with pytest.raises(ValueError, match="SECURITY"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
                 self._make(p).parse()
         finally:
             os.unlink(p)
 
     def test_missing_file_raises_ValueError(self):
-        with pytest.raises(ValueError, match="not found"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="not found"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             self._make("/tmp/v125_ifc_missing.ifc").parse()  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
 
 
-# ═══════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # Rule #23 enforcement: each parser MUST use the shared helper
 # ═══════════════════════════════════════════════════════════════════════════════
 

@@ -38,7 +38,6 @@ from fireai.core.routing_engine_v10 import (
 )
 from fireai.version import FIREAI_VERSION
 
-# ════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # Helpers
 # ════════════════════════════════════════════════════════════════════════════
 
@@ -54,7 +53,6 @@ def _shapely_available() -> bool:
 HAS_SHAPELY = _shapely_available()
 
 
-# ════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # Fixtures
 # ════════════════════════════════════════════════════════════════════════════
 
@@ -170,7 +168,6 @@ class TestObstacleType:
         assert ObstacleType.CUSTOM.value == "custom"
 
 
-# ════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # RoutingObstacle
 # ════════════════════════════════════════════════════════════════════════════
 
@@ -285,7 +282,6 @@ class TestRoutingObstacle:
             assert obs.to_shapely_with_clearance(0.5) is None
 
 
-# ════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # RoutingConstraint
 # ════════════════════════════════════════════════════════════════════════════
 
@@ -358,7 +354,6 @@ class TestRoutingConstraint:
                 delattr(mod, "get_production_config")
 
 
-# ════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # RouteResult
 # ════════════════════════════════════════════════════════════════════════════
 
@@ -402,7 +397,6 @@ class TestRouteResult:
         assert result.version == FIREAI_VERSION
 
 
-# ════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # _ObstacleIndex
 # ════════════════════════════════════════════════════════════════════════════
 
@@ -1066,7 +1060,6 @@ class TestRoutingEngineV10SegmentCost:
         assert cost >= engine.constraints.vertical_penalty
 
 
-# ════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # ArchitecturalWall
 # ════════════════════════════════════════════════════════════════════════════
 
@@ -1108,7 +1101,6 @@ class TestArchitecturalWall:
         assert wall.geometry is not None
 
 
-# ════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # EliteClassARouter
 # ════════════════════════════════════════════════════════════════════════════
 
@@ -1265,7 +1257,6 @@ class TestEliteClassARouter:
         """_measure_len computes correct path length."""
         router = EliteClassARouter(width=10.0, length=10.0)
         path = [(0, 0), (3, 0), (3, 4)]
-        expected = 3.0 + 4.0  # 3 + 4 = 7  # NOSONAR — S125: commented-out code kept for historical reference
         assert abs(router._measure_len(path) - expected) < 0.01
 
     def test_measure_len_empty(self) -> None:
@@ -1274,7 +1265,6 @@ class TestEliteClassARouter:
         assert router._measure_len([(5, 5)]) == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
 
 
-# ════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # RouteSegment
 # ════════════════════════════════════════════════════════════════════════════
 
@@ -1296,7 +1286,6 @@ class TestRouteSegment:
         assert seg.length_m == 10.0  # NOSONAR — S1244: import retained for re-export / API surface
 
 
-# ════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # benchmark_routing
 # ════════════════════════════════════════════════════════════════════════════
 

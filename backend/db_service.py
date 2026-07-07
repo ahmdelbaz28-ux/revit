@@ -1268,7 +1268,6 @@ class DatabaseService:
                 resolved=result.resolved,
             )
 
-    # ──────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
     # Statistics and export
     # ──────────────────────────────────────────────────────────────────────────
 
@@ -1396,7 +1395,6 @@ class DatabaseService:
                 "statistics": self._data_model.get_statistics(),
             }
 
-    # ──────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
     # Lifecycle
     # ──────────────────────────────────────────────────────────────────────────
 

@@ -93,7 +93,7 @@ class TestValidateInputPath:
         """Disallowed extension → UnsafePathError."""
         p = self._make_temp(suffix=".txt")
         try:
-            with pytest.raises(UnsafePathError, match="extension"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+            with pytest.raises(UnsafePathError, match="extension"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
                 validate_input_path(
                     p,
                     allowed_extensions=frozenset({".dwg", ".dxf"}),
@@ -139,7 +139,7 @@ class TestValidateFileSize:
         try:
             os.write(fd, b"X" * 2048)
             os.close(fd)
-            with pytest.raises(UnsafePathError, match="exceeds limit"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+            with pytest.raises(UnsafePathError, match="exceeds limit"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
                 validate_file_size(Path(path), max_size_bytes=1024,
                                    parser_name="test")
         finally:
@@ -231,7 +231,7 @@ class TestDWGParserSecurity:
             os.close(fd)
             # Direct call with a tiny cap (the parser does the same call,
             # just with the env-configured cap value).
-            with pytest.raises(UnsafePathError, match="exceeds limit"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+            with pytest.raises(UnsafePathError, match="exceeds limit"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
                 validate_file_size(
                     Path(path),
                     max_size_bytes=100,

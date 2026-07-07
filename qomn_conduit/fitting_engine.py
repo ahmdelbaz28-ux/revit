@@ -42,7 +42,6 @@ from qomn_conduit.types import (
     TradeSize,
 )
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # Constants
 # ─────────────────────────────────────────────────────────────────────────────
 

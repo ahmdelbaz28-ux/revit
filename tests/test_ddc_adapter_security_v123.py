@@ -62,7 +62,7 @@ class TestV123BackwardCompatibility:
         outside.write_bytes(b"x")
         try:
             adapter = DDCAdapter()
-            with pytest.raises((ValueError, DDCNotAvailableError)) as exc_info:  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+            with pytest.raises((ValueError, DDCNotAvailableError)) as exc_info:  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
                 adapter.convert(str(outside))
             # If we got a ValueError, it MUST be the security one
             if isinstance(exc_info.value, ValueError):

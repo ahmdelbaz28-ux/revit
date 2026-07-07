@@ -482,7 +482,7 @@ class DistributedEventProcessor(EventProcessor):
         # Forward to another node
         return self._forward_to_cluster_node(event_data, priority)
 
-    def _should_process_locally(self, event_data: Dict[str, Any]) -> bool:  # NOSONAR — S1172: parameter retained for API stability
+    def _should_process_locally(self, _event_data: Dict[str, Any]) -> bool:  # NOSONAR — S1172: parameter retained for API stability
         """Determine if an event should be processed locally"""
         if not self.task_distribution_enabled:
             return True
@@ -515,7 +515,7 @@ class DistributedEventProcessor(EventProcessor):
         # No suitable node found, process locally
         return super().submit_event(event_data, priority)
 
-    def _select_target_node(self, event_data: Dict[str, Any]) -> Optional[str]:  # NOSONAR — S1172: parameter retained for API stability
+    def _select_target_node(self, _event_data: Dict[str, Any]) -> Optional[str]:  # NOSONAR — S1172: parameter retained for API stability
         """Select a target node for event processing"""
         if not self.cluster_communicator:
             return None

@@ -55,7 +55,6 @@ from typing import NamedTuple
 
 logger = logging.getLogger(__name__)
 
-# ═══════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # CONSTANTS
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -79,7 +78,6 @@ class SecretInfo(NamedTuple):
     is_primary: bool
 
 
-# ═══════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # VALIDATION
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -363,7 +361,6 @@ class SessionSecretManager:
         }
 
 
-# ═══════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # SINGLETON
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -380,7 +377,6 @@ def get_secret_manager() -> SessionSecretManager:
     return _secret_manager
 
 
-# ═══════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # CLI
 # ═══════════════════════════════════════════════════════════════════════════════
 

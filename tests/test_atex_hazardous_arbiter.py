@@ -49,7 +49,6 @@ from fireai.core.models_v21 import (
     ZoneType,
 )
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # Fixtures
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -59,7 +58,6 @@ def arbiter():
     return ATEXHazardousArbiter()
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # Enums
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -231,7 +229,6 @@ class TestZoneHazardConsistency:
         assert len(warnings) >= 1
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # ATEXHazardousArbiter.arbitrate_v21
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -454,7 +451,6 @@ class TestArbitrateV21:
         assert result.space_id == "PUMP-ROOM-A"
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # ATEXHazardousArbiter.validate_equipment
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -534,7 +530,6 @@ class TestValidateEquipment:
         assert not result.is_compliant
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # _epl_sufficient
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -560,7 +555,6 @@ class TestEPLSufficient:
         assert arbiter._epl_sufficient(EquipmentProtectionLevel.Da, EquipmentProtectionLevel.Db) is True
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # _recommend_protection
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -618,7 +612,6 @@ class TestSelectTempClass:
         assert _TEMP_CLASS_MAP[result] < 135.0
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # ATEXArbitrationResult
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -647,7 +640,6 @@ class TestATEXArbitrationResult:
             result.space_id = "MUTATED"
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # ATEXValidationResult
 # ─────────────────────────────────────────────────────────────────────────────
 

@@ -34,7 +34,6 @@ from fireai.core.circuit_topology import (
     CircuitType,
 )
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # Constants
 # ─────────────────────────────────────────────────────────────────────────────
 

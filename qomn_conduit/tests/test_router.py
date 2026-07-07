@@ -104,7 +104,7 @@ class TestRouterPhysicsErrors:
     def test_nan_start_coordinate(self):
         """NaN start coordinate → PhysicsError."""
         # Point3D rejects NaN in __post_init__ before router sees it
-        with pytest.raises(ValueError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             Point3D(0.0, 0.0, float('nan'))
 
     def test_start_inside_obstacle(self):

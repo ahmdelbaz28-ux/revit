@@ -52,7 +52,6 @@ from fireai.core.qomn_kernel import (
     guard_ceiling_height_m,
 )
 
-# ═══════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # ENUMERATIONS
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -468,7 +467,7 @@ class DetectorPlacementEngine:
         """Check if point is within room bounds."""
         return 0 <= x <= room.width_m and 0 <= y <= room.length_m
 
-    def _check_beam_obstructions(self, room: RoomSpec, spacing_m: float) -> int:  # NOSONAR — S1172: parameter retained for API stability
+    def _check_beam_obstructions(self, room: RoomSpec, _spacing_m: float) -> int:  # NOSONAR — S1172: parameter retained for API stability
         """
         Check for beam obstructions that divide detector zones.
 

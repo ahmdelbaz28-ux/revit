@@ -228,7 +228,6 @@ def grid_polygon_verify(  # NOSONAR — S3776: cognitive complexity is inherent 
     return proof_valid, coverage_pct
 
 
-# ═══════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # ConsensusEngineV2
 # ═══════════════════════════════════════════════════════════════════════════════
 

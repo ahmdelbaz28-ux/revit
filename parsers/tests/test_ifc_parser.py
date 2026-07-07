@@ -38,7 +38,6 @@ if str(_PROJECT_ROOT) not in sys.path:
 
 from parsers.ifc_parser import IFCAnalysis, IFCParser, parse_ifc
 
-# ═══════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # Fixtures
 # ═══════════════════════════════════════════════════════════════════════════════
 

@@ -264,7 +264,6 @@ class TestWeightTolerance:
         with pytest.raises(ValueError, match="must sum to 1.0"):
             GenerativeLayoutAgent(
                 coverage_weight=0.4,
-                compliance_weight=0.3,
                 redundancy_weight=0.2,
                 cost_weight=0.099,  # Total = 0.999  # NOSONAR — S125: commented-out code kept for historical reference
             )

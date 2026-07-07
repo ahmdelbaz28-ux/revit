@@ -50,7 +50,6 @@ from fireai.core.constraint_engine import (
     _resolve_wire_gauge,
 )
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # Fixtures
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -91,7 +90,6 @@ class TestConstraintSource:
         assert '3/4"' in ConstraintSource.PROJECT_SPEC_CONDUIT.value
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # Constants
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -205,7 +203,6 @@ class TestConstraintResult:
         assert r.formula == ""
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # RoutingConstraintSet
 # ─────────────────────────────────────────────────────────────────────────────
 

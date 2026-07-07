@@ -365,7 +365,7 @@ class SelfImprovementEngine:
 
         return best
 
-    def _evaluate_param(self, design: Any, param: str, value: float, gaps: dict[str, float]) -> float:  # NOSONAR — S1172: parameter retained for API stability
+    def _evaluate_param(self, _design: Any, param: str, _value: float, gaps: dict[str, float]) -> float:  # NOSONAR — S1172: parameter retained for API stability
         gap = abs(gaps.get(param, 0))
         if gap < 0.01:
             return 0.5

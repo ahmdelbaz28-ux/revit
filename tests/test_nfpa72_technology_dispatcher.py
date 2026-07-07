@@ -33,7 +33,6 @@ from fireai.core.nfpa72_technology_dispatcher import (
     dispatch_detector_technology,
 )
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # Constants
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -128,7 +127,6 @@ class TestTechnologyDecision:
         assert d.fallback_technology == DetectorTechnology.POINT_SMOKE
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # EliteTechnologyDispatcher.select_technology
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -232,7 +230,6 @@ class TestSelectTechnology:
         assert any("§17.7.3" in ref for ref in d.nfpa_references)
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # EliteTechnologyDispatcher._get_smoke_spacing
 # ─────────────────────────────────────────────────────────────────────────────
 

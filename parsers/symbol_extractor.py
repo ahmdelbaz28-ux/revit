@@ -145,7 +145,6 @@ class SymbolExtractor:
                         symbols.append(SymbolElement(
                             symbol_type=sym_type,
                             bbox=bbox,
-                            confidence=ConfidenceLevel.MODERATE,  # Text-only = MODERATE  # NOSONAR — S125: commented-out code kept for historical reference
                             text=text,
                             page=self.page_number,
                             raw={"word": word}

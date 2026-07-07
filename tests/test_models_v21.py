@@ -318,7 +318,7 @@ class TestHACResult:
             "Mandatory engineering review required. "
             "[IEC 60079-10-1 §6.3]"
         )
-        with pytest.raises(ValidationError, match="CRITICAL"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValidationError, match="CRITICAL"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             HACResult(
                 zone=ZoneType.ZONE_0, extent=self._make_extent(),
                 ventilation=VentilationLevel.POOR, hazard_type=HazardType.GAS,
@@ -410,7 +410,6 @@ class TestSelectTempClassWithMargin:
 
     def test_zone20_strict_margin(self):
         result = _select_temp_class_with_margin(200.0, ZoneType.ZONE_20)
-        # t_safe = 200 - max(10, 10) = 190; T3A(180) < 190  # NOSONAR — S125: commented-out code kept for historical reference
         assert _T_CLASS_MAX[result.value] <= 190.0
 
     def test_no_safe_class_raises(self):
@@ -1107,7 +1106,6 @@ class TestVolumetricMedium:
                 medium_id="flat",
                 medium_type="SMOKE",
                 bbox_min=[0.0, 0.0, 0.0],
-                bbox_max=[0.0, 10.0, 3.0],  # dx=0  # NOSONAR — S125: commented-out code kept for historical reference
             )
 
     def test_get_alpha_with_defaults(self):

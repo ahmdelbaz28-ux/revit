@@ -433,7 +433,7 @@ class Orchestrator:
             "node_affinity": self.node_id
         })
 
-    def update_policy(self, policy_name: str, policy_config: Dict[str, Any]):  # NOSONAR — S1172: parameter retained for API stability
+    def update_policy(self, policy_name: str, _policy_config: Dict[str, Any]):  # NOSONAR — S1172: parameter retained for API stability
         """Update a specific policy (placeholder for future implementation)"""
         self.logger.info("Policy update requested: %s", policy_name)
         # Implementation would depend on policy management system

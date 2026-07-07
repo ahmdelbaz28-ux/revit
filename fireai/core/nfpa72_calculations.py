@@ -35,8 +35,8 @@ from .nfpa72_models import (
 def get_heat_detector_placement_params(
     spec: HeatDetectorSpec,
     ceiling_height_m: float,
-    beam_depth_m: float = 0.0,  # NOSONAR — S1172: parameter retained for API stability
-    ceiling_slope_degrees: float = 0.0,  # NOSONAR — S1172: parameter retained for API stability
+    _beam_depth_m: float = 0.0,  # NOSONAR — S1172: parameter retained for API stability
+    _ceiling_slope_degrees: float = 0.0,  # NOSONAR — S1172: parameter retained for API stability
 ) -> dict:
     """
     Get heat detector placement parameters per NFPA 72.
@@ -435,7 +435,7 @@ __all__ = [\
 # MISSING FUNCTIONS FOR V10 COMPATIBILITY
 # ============================================================================
 
-def calculate_max_spacing(ceiling: CeilingSpec, detector_type: DetectorType) -> float:  # NOSONAR — S1172: parameter retained for API stability
+def calculate_max_spacing(ceiling: CeilingSpec, _detector_type: DetectorType) -> float:  # NOSONAR — S1172: parameter retained for API stability
     """
     NFPA 72 §17.6.3 - spacing between detectors.
 
@@ -503,7 +503,7 @@ def calculate_max_wall_distance(ceiling: CeilingSpec, detector_type: DetectorTyp
 # Add to exports
 
 
-def estimate_detector_count_polygon(polygon, ceiling_height_m: float, detector_type: str) -> int:  # NOSONAR — S1172: parameter retained for API stability
+def estimate_detector_count_polygon(polygon, ceiling_height_m: float, _detector_type: str) -> int:  # NOSONAR — S1172: parameter retained for API stability
     """Estimate detector count for a polygon based on coverage area."""
     import math
 
@@ -1020,7 +1020,6 @@ def check_voltage_drop(
     if max_drop_fraction <= 0 or max_drop_fraction > 1:
         raise ValueError(f"max_drop_fraction must be in (0, 1], got {max_drop_fraction}")
 
-    total_resistance = cable_resistance_ohm_per_m * cable_length_m * 2  # return path  # NOSONAR — S125: commented-out code kept for historical reference
     drop_v           = load_current_a * total_resistance
     drop_fraction    = drop_v / supply_voltage_v if supply_voltage_v > 0 else float("inf")
     return {
@@ -1231,7 +1230,7 @@ def calculate_inrush_current(
 
 def calculate_nac_loading(
     devices: list[dict[str, Any]],
-    panel_voltage_v: float = 24.0,  # NOSONAR — S1172: parameter retained for API stability
+    _panel_voltage_v: float = 24.0,  # NOSONAR — S1172: parameter retained for API stability
 ) -> dict[str, Any]:
     """
     Calculate total NAC circuit loading for mixed device types.

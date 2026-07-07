@@ -111,11 +111,11 @@ class TestNFPA72Input:
             NFPA72Input(spacing_m=31.0, ceiling_height_m=3.0)
 
     def test_reject_nan_spacing(self):
-        with pytest.raises(ValidationError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValidationError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             NFPA72Input(spacing_m=float("nan"), ceiling_height_m=3.0)
 
     def test_reject_inf_spacing(self):
-        with pytest.raises(ValidationError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValidationError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             NFPA72Input(spacing_m=float("inf"), ceiling_height_m=3.0)
 
     def test_reject_zero_ceiling_height(self):
@@ -132,11 +132,11 @@ class TestNFPA72Input:
             NFPA72Input(spacing_m=9.1, ceiling_height_m=19.0)
 
     def test_reject_nan_ceiling_height(self):
-        with pytest.raises(ValidationError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValidationError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             NFPA72Input(spacing_m=9.1, ceiling_height_m=float("nan"))
 
     def test_reject_inf_ceiling_height(self):
-        with pytest.raises(ValidationError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValidationError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             NFPA72Input(spacing_m=9.1, ceiling_height_m=float("inf"))
 
     def test_reject_negative_hvac_velocity(self):
@@ -362,7 +362,7 @@ class TestVoltageDropInput:
             )
 
     def test_reject_nan_supply_voltage(self):
-        with pytest.raises(ValidationError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValidationError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             VoltageDropInput(
                 supply_voltage_v=float("nan"),
                 load_current_a=0.5,
@@ -371,7 +371,7 @@ class TestVoltageDropInput:
             )
 
     def test_reject_inf_load_current(self):
-        with pytest.raises(ValidationError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValidationError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             VoltageDropInput(
                 supply_voltage_v=24.0,
                 load_current_a=float("inf"),

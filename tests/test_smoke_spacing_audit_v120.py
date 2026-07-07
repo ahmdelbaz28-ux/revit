@@ -214,12 +214,12 @@ class TestV120ExistingGuardsPreserved:
 
     def test_nan_still_rejected(self):
         from fireai.core.qomn_kernel import PhysicsGuardError
-        with pytest.raises(PhysicsGuardError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(PhysicsGuardError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             compute_smoke_detector_spacing(float("nan"))
 
     def test_inf_still_rejected(self):
         from fireai.core.qomn_kernel import PhysicsGuardError
-        with pytest.raises(PhysicsGuardError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(PhysicsGuardError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             compute_smoke_detector_spacing(float("inf"))
 
     def test_negative_still_rejected(self):

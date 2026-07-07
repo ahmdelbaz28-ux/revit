@@ -464,7 +464,7 @@ def calculate_battery(  # NOSONAR — S3776: cognitive complexity is inherent to
     standby_hours: float = 24.0,
     alarm_minutes: float = 5.0,
     safety_margin: float = 0.20,
-    ps_voltage: float = 24.0,  # NOSONAR — S1172: parameter retained for API stability
+    _ps_voltage: float = 24.0,  # NOSONAR — S1172: parameter retained for API stability
 ) -> BatteryResult:
     """
     Calculate required battery capacity per NFPA 72 §10.6.7.

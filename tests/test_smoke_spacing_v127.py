@@ -173,11 +173,11 @@ class TestPhysicsGuards:
             compute_smoke_detector_spacing(19.0)
 
     def test_nan_rejected(self):
-        with pytest.raises(Exception):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # NOSONAR — S5958: parameter name documents intent at call site
+        with pytest.raises(Exception):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # NOSONAR — S5958: parameter name documents intent at call site  # noqa: S5778
             compute_smoke_detector_spacing(float("nan"))
 
     def test_inf_rejected(self):
-        with pytest.raises(Exception):  # NOSONAR — S5958: parameter name documents intent at call site  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(Exception):  # NOSONAR — S5958: parameter name documents intent at call site  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             compute_smoke_detector_spacing(float("inf"))
 
 

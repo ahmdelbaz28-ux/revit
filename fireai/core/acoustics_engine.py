@@ -552,7 +552,7 @@ class AcousticsEngine:
         barriers: list[Barrier] | None = None,
         mode: str = "public",
         room_absorption_m2: float | None = None,
-        room_volume_m3: float | None = None,  # NOSONAR — S1172: parameter retained for API stability
+        _room_volume_m3: float | None = None,  # NOSONAR — S1172: parameter retained for API stability
     ) -> AcousticCoverageResult:
         """
         Verify NFPA 72 §18.4 audible notification coverage.

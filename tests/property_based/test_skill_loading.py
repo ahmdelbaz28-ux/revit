@@ -544,7 +544,7 @@ def test_invalid_max_execution_time_rejected(max_execution_time: int) -> None:
     ).filter(lambda value: not is_two_part_numeric_version(value)),
 )
 def test_invalid_version_compatibility_rejected(bad_version_compatibility: str) -> None:
-    with pytest.raises(ValueError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+    with pytest.raises(ValueError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
         SkillManifest(
             metadata=SkillMetadata(name="test_skill", version="1.0.0", author="test_author"),
             description=SkillDescription(

@@ -412,7 +412,7 @@ def evaluate_fire_pump(
     has_running_signal: bool = False,
     has_power_monitor: bool = False,
     has_phase_reversal: bool = False,
-    has_suction_pressure: bool = False,  # NOSONAR — S1172: parameter retained for API stability
+    _has_suction_pressure: bool = False,  # NOSONAR — S1172: parameter retained for API stability
 ) -> FirePumpResult:
     """
     Evaluate fire pump monitoring per NFPA 20 / NFPA 72 §21.8.

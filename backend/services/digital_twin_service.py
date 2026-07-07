@@ -293,7 +293,7 @@ class SemanticMapper:
             "category": category,
         }
 
-    def _map_circle_to_revit(self, entity: Dict[str, Any], category: str) -> Dict[str, Any]:  # NOSONAR — S1172: parameter retained for API stability
+    def _map_circle_to_revit(self, entity: Dict[str, Any], _category: str) -> Dict[str, Any]:  # NOSONAR — S1172: parameter retained for API stability
         """Map AutoCAD circle to Revit element."""
         center = entity.get("center", [0, 0, 0])
         radius = entity.get("radius", 1000.0)
@@ -565,7 +565,7 @@ class DigitalTwinEngine:
         self.version_manager = VersionManager()
 
     def convert_autocad_to_revit(self, dwg_filepath: str, rvt_filepath: str,
-                                  template_path: Optional[str] = None) -> ConversionResult:  # NOSONAR — S1172: parameter retained for API stability
+                                  _template_path: Optional[str] = None) -> ConversionResult:  # NOSONAR — S1172: parameter retained for API stability
         """
         Convert AutoCAD DWG to Revit RVT.
 

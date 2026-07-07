@@ -208,7 +208,6 @@ def _record_failed_attempt(client_ip: str) -> None:
     _FAILED_ATTEMPTS[client_ip].append(time.time())
 
 
-# ═══════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # ENDPOINTS
 # ═══════════════════════════════════════════════════════════════════════════════
 

@@ -526,7 +526,6 @@ def _check_rate_limit(request: Request) -> None:
         raise HTTPException(status_code=429, detail="Rate limit exceeded. Dashboard endpoints are limited to 120 requests per minute.")  # NOSONAR — S8415: assignment kept for readability / debuggability
 
 
-# ════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # Endpoints
 # ════════════════════════════════════════════════════════════════════════════
 

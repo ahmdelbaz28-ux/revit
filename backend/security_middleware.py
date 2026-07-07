@@ -97,7 +97,7 @@ _STATIC_SECURITY_HEADERS: dict[str, str] = {
 _HSTS_HEADER = "max-age=31536000; includeSubDomains"
 
 
-def _should_emit_hsts(scope: Scope) -> bool:  # NOSONAR — S1172: parameter retained for API stability
+def _should_emit_hsts(_scope: Scope) -> bool:  # NOSONAR — S1172: parameter retained for API stability
     """
     Decide whether to emit HSTS on this response.
 
@@ -144,7 +144,7 @@ def _is_production_env() -> bool:
     return os.getenv("FIREAI_ENV", "production").lower() in ("production", "prod")
 
 
-def _build_csp(scope: Scope) -> str:  # NOSONAR — S1172: parameter retained for API stability
+def _build_csp(_scope: Scope) -> str:  # NOSONAR — S1172: parameter retained for API stability
     """
     Build the Content-Security-Policy header value.
 

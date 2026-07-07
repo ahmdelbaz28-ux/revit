@@ -93,12 +93,12 @@ class TestDuctSpec:
 
     def test_nan_length_raises(self):
         """V50 FIX: NaN length must raise ValueError."""
-        with pytest.raises(ValueError, match="invalid"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="invalid"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             DuctSpec(duct_id="D1", length_m=float("nan"), width_m=0.3)
 
     def test_inf_length_raises(self):
         """Infinite length is not valid."""
-        with pytest.raises(ValueError, match="invalid"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="invalid"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             DuctSpec(duct_id="D1", length_m=float("inf"), width_m=0.3)
 
     def test_negative_length_raises(self):
@@ -108,7 +108,7 @@ class TestDuctSpec:
 
     def test_nan_width_raises(self):
         """NaN width must raise ValueError."""
-        with pytest.raises(ValueError, match="invalid"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="invalid"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             DuctSpec(duct_id="D1", length_m=5.0, width_m=float("nan"))
 
     def test_negative_width_raises(self):
@@ -118,7 +118,7 @@ class TestDuctSpec:
 
     def test_nan_airflow_cfm_raises(self):
         """NaN airflow_cfm must raise ValueError."""
-        with pytest.raises(ValueError, match="invalid"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="invalid"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             DuctSpec(duct_id="D1", length_m=5.0, width_m=0.3, airflow_cfm=float("nan"))
 
     def test_negative_airflow_cfm_raises(self):
@@ -138,7 +138,7 @@ class TestDuctSpec:
 
     def test_nan_height_raises(self):
         """NaN height_m is not valid."""
-        with pytest.raises(ValueError, match="invalid"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="invalid"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             DuctSpec(duct_id="D1", length_m=5.0, width_m=0.3, height_m=float("nan"))
 
     def test_negative_height_raises(self):
@@ -553,7 +553,6 @@ class TestDuctWarnings:
         assert len(mismatch_warns) == 0
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # analyse_ducts and total_duct_detectors
 # ─────────────────────────────────────────────────────────────────────────────
 

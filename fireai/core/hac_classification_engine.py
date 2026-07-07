@@ -399,7 +399,6 @@ def _iec_annex_b_extent(  # NOSONAR — S3776: cognitive complexity is inherent 
     n_ach = _VENT_ACH.get(ventilation.value, 6.0)
     n_per_s = n_ach / 3600.0  # air changes per second (1/s)
     effective_dilution_rate = f * n_per_s  # effective dilution rate (1/s)
-    Vz_diluted_m3 = Vz_source_m3_s / (effective_dilution_rate + 1e-12)  # (m³/s)/(1/s) = m³  # NOSONAR — S125: commented-out code kept for historical reference
 
     # Convert to zone radius
     if is_indoor:

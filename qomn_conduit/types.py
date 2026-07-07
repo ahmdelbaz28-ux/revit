@@ -140,7 +140,6 @@ class TradeSize(enum.Enum):
         return f"TradeSize.{self.name}({self.value!r})"
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # FittingType
 # ─────────────────────────────────────────────────────────────────────────────
 

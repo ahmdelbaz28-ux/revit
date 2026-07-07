@@ -116,15 +116,15 @@ class TestValidateFinite:
         _validate_finite(-5.0, "test")
 
     def test_nan_rejected(self):
-        with pytest.raises(ContractViolation, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ContractViolation, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             _validate_finite(float("nan"), "test_field")
 
     def test_inf_rejected(self):
-        with pytest.raises(ContractViolation, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ContractViolation, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             _validate_finite(float("inf"), "test_field")
 
     def test_negative_inf_rejected(self):
-        with pytest.raises(ContractViolation, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ContractViolation, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             _validate_finite(float("-inf"), "test_field")
 
     def test_string_rejected(self):
@@ -149,11 +149,11 @@ class TestValidatePositive:
             _validate_positive(-1.0, "length_m")
 
     def test_nan_rejected(self):
-        with pytest.raises(ContractViolation, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ContractViolation, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             _validate_positive(float("nan"), "length_m")
 
     def test_inf_rejected(self):
-        with pytest.raises(ContractViolation, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ContractViolation, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             _validate_positive(float("inf"), "length_m")
 
 
@@ -218,7 +218,7 @@ class TestValidateHorizontalCable:
             validate_horizontal_cable(-5.0)
 
     def test_nan_length_rejected(self):
-        with pytest.raises(ContractViolation, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ContractViolation, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             validate_horizontal_cable(float("nan"))
 
     def test_negative_patch_cord_rejected(self):
@@ -295,7 +295,7 @@ class TestValidateFiberLink:
             validate_fiber_link(0.0)
 
     def test_nan_length_rejected(self):
-        with pytest.raises(ContractViolation, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ContractViolation, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             validate_fiber_link(float("nan"))
 
     def test_negative_margin_rejected(self):
@@ -366,7 +366,7 @@ class TestCalculateCCTVCoverage:
             calculate_cctv_coverage(10.0, 10.0, height_m=-1.0)
 
     def test_nan_lens_rejected(self):
-        with pytest.raises(ContractViolation, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ContractViolation, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             calculate_cctv_coverage(10.0, 10.0, lens_mm=float("nan"))
 
     def test_overlap_stored(self):
@@ -470,7 +470,7 @@ class TestValidateAccessControl:
             result.is_compliant = True
 
     def test_nan_reader_height_rejected(self):
-        with pytest.raises(ContractViolation, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ContractViolation, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             validate_access_control(reader_height_m=float("nan"))
 
     def test_boundary_reader_height_low(self):

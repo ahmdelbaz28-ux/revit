@@ -148,11 +148,11 @@ class TestCalculateNACLoad:
             calculate_nac_load([], nac_rating_a=0.0)
 
     def test_nan_nac_rating_raises(self):
-        with pytest.raises(ValueError, match="positive finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="positive finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             calculate_nac_load([], nac_rating_a=float("nan"))
 
     def test_inf_nac_rating_raises(self):
-        with pytest.raises(ValueError, match="positive finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="positive finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             calculate_nac_load([], nac_rating_a=float("inf"))
 
     def test_device_negative_current_raises(self):
@@ -258,11 +258,11 @@ class TestCalculateSPL:
     # --- Invalid inputs ---
 
     def test_nan_horn_rating_raises(self):
-        with pytest.raises(ValueError, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             calculate_spl(float("nan"), 10.0)
 
     def test_inf_horn_rating_raises(self):
-        with pytest.raises(ValueError, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             calculate_spl(float("inf"), 10.0)
 
     def test_zero_distance_raises(self):
@@ -274,7 +274,7 @@ class TestCalculateSPL:
             calculate_spl(95.0, -5.0)
 
     def test_nan_ambient_raises(self):
-        with pytest.raises(ValueError, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             calculate_spl(95.0, 10.0, ambient_dba=float("nan"))
 
     # --- NFPA reference ---
@@ -393,7 +393,7 @@ class TestCalculateStrobeCandela:
             calculate_strobe_candela(0.0)
 
     def test_nan_area_raises(self):
-        with pytest.raises(ValueError, match="positive finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="positive finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             calculate_strobe_candela(float("nan"))
 
     def test_negative_ceiling_raises(self):
@@ -476,7 +476,7 @@ class TestCalculateCorridorStrobes:
             calculate_corridor_strobes(0.0)
 
     def test_nan_length_raises(self):
-        with pytest.raises(ValueError, match="positive finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="positive finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             calculate_corridor_strobes(float("nan"))
 
     # --- NFPA reference ---

@@ -904,7 +904,6 @@ class AnalysisPipeline:
             result.timing["twin_sync"] = 0.0
             logger.info("  TWIN_SYNC: Skipped (enable_twin_sync=False)")
 
-        # ═══════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
         # FINALIZE
         # ═══════════════════════════════════════════════════════════════
         result.stage_reached = PipelineStage.COMPLETE

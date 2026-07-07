@@ -89,7 +89,7 @@ class DesignSystemGenerator:
 
         return {}
 
-    def _apply_reasoning(self, category: str, search_results: dict) -> dict:
+    def _apply_reasoning(self, category: str, _search_results: dict) -> dict:
         """Apply reasoning rules to search results."""
         rule = self._find_reasoning_rule(category)
 
@@ -917,7 +917,7 @@ def format_page_override_md(design_system: dict, page_name: str, page_query: Opt
     return "\n".join(lines)
 
 
-def _generate_intelligent_overrides(page_name: str, page_query: str, design_system: dict) -> dict:
+def _generate_intelligent_overrides(page_name: str, page_query: str, _design_system: dict) -> dict:
     """
     Generate intelligent overrides based on page type using layered search.
 

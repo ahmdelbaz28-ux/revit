@@ -105,7 +105,6 @@ except ImportError as _import_err:
         TIMING_CONFLICT = "timing_conflict"
 
 
-# ═══════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # GEOMETRY
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -291,7 +290,6 @@ class SemanticProperties:
         }
 
 
-# ═══════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # RELATIONSHIP
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -337,7 +335,6 @@ class Relationship:
         }
 
 
-# ═══════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # CONFLICT
 # ═══════════════════════════════════════════════════════════════════════════════
 

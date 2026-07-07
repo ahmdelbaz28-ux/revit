@@ -21,7 +21,6 @@ from fireai.core.monte_carlo_pipeline import (
     MCPipelineAdapter,
 )
 
-# ═══════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # Fixtures
 # ═══════════════════════════════════════════════════════════════════════════════
 

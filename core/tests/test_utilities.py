@@ -65,27 +65,27 @@ class TestPoint3D:
 
     def test_reject_nan_x(self) -> None:
         """Test that NaN in x coordinate raises ValueError."""
-        with pytest.raises(ValueError, match="must be finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="must be finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             Point3D(x=float("nan"), y=0.0, z=0.0)
 
     def test_reject_nan_y(self) -> None:
         """Test that NaN in y coordinate raises ValueError."""
-        with pytest.raises(ValueError, match="must be finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="must be finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             Point3D(x=0.0, y=float("nan"), z=0.0)
 
     def test_reject_nan_z(self) -> None:
         """Test that NaN in z coordinate raises ValueError."""
-        with pytest.raises(ValueError, match="must be finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="must be finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             Point3D(x=0.0, y=0.0, z=float("nan"))
 
     def test_reject_inf_x(self) -> None:
         """Test that +Inf in x coordinate raises ValueError."""
-        with pytest.raises(ValueError, match="must be finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="must be finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             Point3D(x=float("inf"), y=0.0, z=0.0)
 
     def test_reject_negative_inf_y(self) -> None:
         """Test that -Inf in y coordinate raises ValueError."""
-        with pytest.raises(ValueError, match="must be finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="must be finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             Point3D(x=0.0, y=float("-inf"), z=0.0)
 
     def test_frozen_immutability(self) -> None:
@@ -352,12 +352,12 @@ class TestSemanticProperties:
 
     def test_reject_nan_height(self) -> None:
         """Test that NaN height raises ValueError."""
-        with pytest.raises(ValueError, match="must be finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="must be finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             SemanticProperties(element_type=ElementType.WALL, height=float("nan"))
 
     def test_reject_inf_height(self) -> None:
         """Test that Inf height raises ValueError."""
-        with pytest.raises(ValueError, match="must be finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="must be finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             SemanticProperties(element_type=ElementType.WALL, height=float("inf"))
 
     def test_reject_negative_height(self) -> None:
@@ -367,7 +367,7 @@ class TestSemanticProperties:
 
     def test_reject_nan_width(self) -> None:
         """Test that NaN width raises ValueError."""
-        with pytest.raises(ValueError, match="must be finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="must be finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             SemanticProperties(element_type=ElementType.WALL, width=float("nan"))
 
     def test_reject_negative_width(self) -> None:

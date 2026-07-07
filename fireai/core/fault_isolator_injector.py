@@ -163,7 +163,7 @@ def inject_fault_isolators(  # NOSONAR — S3776: cognitive complexity is inhere
         index: int,
         position: tuple[float, float],
         reason: str,
-        zone_before: str | None,  # NOSONAR — S1172: parameter retained for API stability
+        _zone_before: str | None,  # NOSONAR — S1172: parameter retained for API stability
         zone_after: str | None,
     ) -> dict[str, Any]:
         """Create a fault isolator device dict."""

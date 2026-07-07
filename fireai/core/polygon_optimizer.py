@@ -400,7 +400,7 @@ class PolygonDensityOptimizer:
         self,
         room: PolygonRoom,
         radius: float,
-        spec: CoverageSpec,  # NOSONAR — S1172: parameter retained for API stability
+        _spec: CoverageSpec,  # NOSONAR — S1172: parameter retained for API stability
     ) -> PolygonRoomSummary:
         """Delegate rectangular rooms to the proven DensityOptimizer."""
         width, length, min_x, min_y = bounding_rect_dimensions(room.polygon)
@@ -437,7 +437,7 @@ class PolygonDensityOptimizer:
         self,
         room: PolygonRoom,
         radius: float,
-        spec: CoverageSpec,  # NOSONAR — S1172: parameter retained for API stability
+        _spec: CoverageSpec,  # NOSONAR — S1172: parameter retained for API stability
     ) -> PolygonRoomSummary:
         """
         Greedy Set Cover placement for non-rectangular polygons.

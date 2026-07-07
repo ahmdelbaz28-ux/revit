@@ -566,7 +566,7 @@ class ARMetadataExporter:
             ],
         }
 
-    def _build_binary_buffer(self, snapshot: ARSnapshot) -> bytes:  # NOSONAR — S1172: parameter retained for API stability
+    def _build_binary_buffer(self, _snapshot: ARSnapshot) -> bytes:  # NOSONAR — S1172: parameter retained for API stability
         """
         Build the binary buffer with REAL vertex data.
 

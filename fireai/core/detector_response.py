@@ -30,7 +30,6 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 
-# ═══════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # CONSTANTS
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -103,7 +102,7 @@ def calculate_heat_detector_response(  # NOSONAR — S3776: cognitive complexity
     rti: float = _RTI_SPOT_HEAT_MED,
     activation_temp_c: float = 57.0,
     ambient_temp_c: float = _AMBIENT_TEMP_C,
-    fire_growth_rate: str = "medium",  # NOSONAR — S1172: parameter retained for API stability
+    _fire_growth_rate: str = "medium",  # NOSONAR — S1172: parameter retained for API stability
 ) -> DetectorResponseResult:
     """
     Estimate heat detector activation time using Alpert's ceiling jet model.
@@ -230,8 +229,8 @@ def calculate_smoke_detector_response(
     fire_hrr_kw: float,
     ceiling_height_m: float,
     distance_to_fire_m: float,
-    smoke_obscuration_pct_per_m: float = 1.0,  # NOSONAR — S1172: parameter retained for API stability
-    ambient_temp_c: float = _AMBIENT_TEMP_C,  # NOSONAR — S1172: parameter retained for API stability
+    _smoke_obscuration_pct_per_m: float = 1.0,  # NOSONAR — S1172: parameter retained for API stability
+    _ambient_temp_c: float = _AMBIENT_TEMP_C,  # NOSONAR — S1172: parameter retained for API stability
 ) -> DetectorResponseResult:
     """
     Estimate smoke detector activation time using plume transport model.

@@ -22,7 +22,6 @@ from fireai.core.monte_carlo import (
     run_resilience_check,
 )
 
-# ═══════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # Fixtures
 # ═══════════════════════════════════════════════════════════════════════════════
 

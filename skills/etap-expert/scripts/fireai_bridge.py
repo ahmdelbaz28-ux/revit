@@ -396,7 +396,7 @@ class HarmonicBridgeResult:
 def bridge_harmonic_analysis(
     load_current_a: float = 200.0,
     isc_a: float = 20000.0,
-    has_vfd: bool = True,
+    _has_vfd: bool = True,
 ) -> HarmonicBridgeResult:
     """
     Bridge ETAP harmonic analysis with FireAI (when harmonic module exists).

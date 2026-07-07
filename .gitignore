@@ -425,3 +425,6 @@ revit/
 nul
 .kilo/
 postman_collection*.json
+# Backup files
+*.sonarbak
+*.bak

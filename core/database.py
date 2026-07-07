@@ -447,7 +447,7 @@ class UniversalDataModel:
                 logger.exception("HIGH: Error getting elements: %s", e)
                 return []
 
-    def update_element(self, element_id: str, updates: dict[str, Any], source: ChangeSource | None = None) -> bool:  # NOSONAR — S1172: parameter retained for API stability
+    def update_element(self, element_id: str, updates: dict[str, Any], _source: ChangeSource | None = None) -> bool:  # NOSONAR — S1172: parameter retained for API stability
         """
         Update an element with the given field values.
 
@@ -514,7 +514,7 @@ class UniversalDataModel:
                 logger.exception("HIGH: Error updating element %s: %s", element_id, e)
                 return False
 
-    def delete_element(self, element_id: str, source: ChangeSource | None = None) -> bool:  # NOSONAR — S1172: parameter retained for API stability
+    def delete_element(self, element_id: str, _source: ChangeSource | None = None) -> bool:  # NOSONAR — S1172: parameter retained for API stability
         """
         Soft-delete an element.
 

@@ -391,7 +391,7 @@ class IfcFirePipeline:
 
     # ── L3: ATEX Arbitration ──────────────────────────────────────
 
-    def _run_l3(self, l2: dict, space: dict, warnings: list[str]) -> dict:  # NOSONAR — S1172: parameter retained for API stability
+    def _run_l3(self, l2: dict, _space: dict, warnings: list[str]) -> dict:  # NOSONAR — S1172: parameter retained for API stability
         """
         L3 using the REAL ATEXHazardousArbiter.arbitrate_v21() API.
         Parameters: zone, hazard_type, autoignition_c, ...

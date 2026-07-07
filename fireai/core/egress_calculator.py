@@ -28,7 +28,6 @@ import math
 from dataclasses import dataclass
 from typing import Any
 
-# ═══════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # CONSTANTS
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -169,7 +168,6 @@ def calculate_egress_time(
     # Total travel time is the max of individual travel and flow
     total_travel = max(travel_time, flow_time)
 
-    # RSET = Pre-movement + Travel  # NOSONAR — S125: commented-out code kept for historical reference
     rset = premovement_time_s + total_travel
 
     # Safety factor

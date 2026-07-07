@@ -199,9 +199,9 @@ def calculate_aset(  # NOSONAR — S3776: cognitive complexity is inherent to th
     room_height_m: float = 3.0,
     # Simplified inputs when no time-series data available
     smoke_fill_time_s: float | None = None,
-    fire_growth_rate: str | None = None,  # NOSONAR — S1172: parameter retained for API stability
-    fire_heat_release_kw: float | None = None,  # NOSONAR — S1172: parameter retained for API stability
-    room_volume_m3: float | None = None,  # NOSONAR — S1172: parameter retained for API stability
+    _fire_growth_rate: str | None = None,  # NOSONAR — S1172: parameter retained for API stability
+    _fire_heat_release_kw: float | None = None,  # NOSONAR — S1172: parameter retained for API stability
+    _room_volume_m3: float | None = None,  # NOSONAR — S1172: parameter retained for API stability
 ) -> ASETResult:
     """
     Calculate Available Safe Egress Time (ASET).

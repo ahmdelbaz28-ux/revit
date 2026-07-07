@@ -37,7 +37,6 @@ from fireai.core.geometry_utils import (
     validate_polygon,
 )
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # _ensure_closed
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -305,7 +304,6 @@ class TestValidatePolygon:
         assert any("simplification" in w for w in result.warnings)
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # Winding & Orientation
 # ─────────────────────────────────────────────────────────────────────────────
 

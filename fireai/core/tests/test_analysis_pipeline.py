@@ -46,7 +46,6 @@ from fireai.core.spatial_engine.proof_certificate import (
     ProofCertificateGenerator,
 )
 
-# ═══════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # Fixtures
 # ═══════════════════════════════════════════════════════════════════════════════
 

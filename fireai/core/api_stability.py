@@ -294,7 +294,7 @@ class FireAIPluginAPI:
         building_id: str,
         rooms: list[PluginRoom],
         *,
-        generate_pdf: bool = False,  # NOSONAR — S1172: parameter retained for API stability
+        _generate_pdf: bool = False,  # NOSONAR — S1172: parameter retained for API stability
     ) -> PluginBuildingResult:
         """Analyse full building. Stable API."""
         layouts = self.analyse_rooms_batch(rooms)

@@ -32,7 +32,6 @@ sys.path.insert(0, str(SKILL_ROOT / "scripts"))
 # Import classifier from production code (Rule 10: tests never modified, only code)
 from classifier import classify_request  # noqa: E402
 
-# ═══════════════════════════════════════════════════════════════════════════
 # TESTS
 # ═══════════════════════════════════════════════════════════════════════════
 

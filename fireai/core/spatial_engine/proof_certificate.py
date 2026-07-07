@@ -67,7 +67,6 @@ class ProofCertificate:
     # ── Proof Parameters ──────────────────────────────────────────────
     proof_method: str = "delta_conservative_grid"
     grid_step_m: float = 0.20  # δ = cell size
-    effective_radius_m: float = 0.0  # R_eff = R - δ√2/2  # NOSONAR — S125: commented-out code kept for historical reference
     delta_margin_m: float = 0.0  # δ√2/2
     max_spacing_m: float = 0.0  # S (detector spacing)
     wall_min_m: float = 0.10  # Minimum wall distance

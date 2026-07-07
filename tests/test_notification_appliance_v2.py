@@ -188,7 +188,7 @@ class TestSPLExtended:
 
     def test_inf_distance_raises(self):
         """Infinite distance is not finite."""
-        with pytest.raises(ValueError, match="positive finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="positive finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             calculate_spl(95.0, float("inf"))
 
     def test_negative_ambient_not_finite_passes(self):
@@ -283,22 +283,22 @@ class TestStrobeCandelaExtended:
 
     def test_inf_ceiling_raises(self):
         """Infinite ceiling height is not valid."""
-        with pytest.raises(ValueError, match="positive finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="positive finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             calculate_strobe_candela(50.0, float("inf"))
 
     def test_nan_ceiling_raises(self):
         """NaN ceiling height is not valid."""
-        with pytest.raises(ValueError, match="positive finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="positive finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             calculate_strobe_candela(50.0, float("nan"))
 
     def test_nan_installed_candela_raises(self):
         """NaN installed candela is not valid."""
-        with pytest.raises(ValueError, match="non-negative finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="non-negative finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             calculate_strobe_candela(50.0, 3.0, installed_candela=float("nan"))
 
     def test_inf_installed_candela_compliant(self):
         """Infinite installed candela — not finite, should raise."""
-        with pytest.raises(ValueError, match="non-negative finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="non-negative finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             calculate_strobe_candela(50.0, 3.0, installed_candela=float("inf"))
 
     def test_installed_candela_zero_non_compliant(self):
@@ -346,7 +346,7 @@ class TestCorridorStrobesExtended:
 
     def test_inf_length_raises(self):
         """Infinite corridor length is not valid."""
-        with pytest.raises(ValueError, match="positive finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="positive finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             calculate_corridor_strobes(float("inf"))
 
     def test_very_short_corridor_one_strobe(self):

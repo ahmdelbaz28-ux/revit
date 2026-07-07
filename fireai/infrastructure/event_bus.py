@@ -282,7 +282,6 @@ class EventBus(ABC):
         ...
 
 
-# ════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # InMemoryEventBus
 # ════════════════════════════════════════════════════════════════════════════
 
@@ -432,7 +431,6 @@ class InMemoryEventBus(EventBus):
         return self._schema_registry
 
 
-# ════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # RedisEventBus
 # ════════════════════════════════════════════════════════════════════════════
 
@@ -601,7 +599,6 @@ class RedisEventBus(EventBus):
         return count
 
 
-# ════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # KafkaEventBus
 # ════════════════════════════════════════════════════════════════════════════
 

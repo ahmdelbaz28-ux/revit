@@ -1103,7 +1103,7 @@ class AutoDraftingEngine:
                 dxfattribs={"height": size * 0.6, "color": 7},
             ).set_placement((0, -size * 0.3))
 
-    def _draw_title_block(self, msp: Any, doc: Any) -> None:  # NOSONAR — S1172: parameter retained for API stability
+    def _draw_title_block(self, msp: Any, _doc: Any) -> None:  # NOSONAR — S1172: parameter retained for API stability
         """Draw title block with project information."""
         # Title block border
         tb_x, tb_y = 0, -5
@@ -1139,7 +1139,7 @@ class AutoDraftingEngine:
             dxfattribs={"layer": "FA-TITLEBLOCK", "height": 0.25},
         ).set_placement((tb_x + 15, tb_y + 1.5))
 
-    def _draw_legend(self, msp: Any, doc: Any) -> None:  # NOSONAR — S1172: parameter retained for API stability
+    def _draw_legend(self, msp: Any, _doc: Any) -> None:  # NOSONAR — S1172: parameter retained for API stability
         """Draw legend showing all device symbols."""
         legend_x, legend_y = 35, 0
 

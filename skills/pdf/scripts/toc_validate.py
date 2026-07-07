@@ -1397,7 +1397,7 @@ def fix_docx(docx_path: str, output_path: Optional[str] = None) -> Dict[str, Any
 
     # Step 3: Build TOC paragraphs as OxmlElements and insert them
 
-    def _make_toc_paragraph(text: str, level: int, lang: str, page_num: str = '1', bookmark_name: str = '') -> Any:
+    def _make_toc_paragraph(text: str, level: int, _lang: str, page_num: str = '1', bookmark_name: str = '') -> Any:
         """Create a TOC entry paragraph with HYPERLINK + PAGEREF for clickable links and auto page numbers."""
         p = OxmlElement('w:p')
         pPr = OxmlElement('w:pPr')

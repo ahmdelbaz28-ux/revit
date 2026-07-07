@@ -34,7 +34,6 @@ from parsers.dwg_parser import DWGParser, DWGParseResult
 from parsers.dxf_parser import DXFParser
 from parsers.ifc_parser import IFCParser, parse_ifc
 
-# ═══════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # Fixtures
 # ═══════════════════════════════════════════════════════════════════════════════
 

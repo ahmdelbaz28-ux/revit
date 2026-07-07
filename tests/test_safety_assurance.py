@@ -34,7 +34,6 @@ from fireai.core.safety_assurance import (
     tier_requires_fpe_review,
 )
 
-# ═══════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # CONSTANTS
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -82,7 +81,6 @@ class TestSafetyTier:
         assert actual == expected
 
 
-# ═══════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # classify_safety_tier
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -258,7 +256,6 @@ class TestClassifySafetyTier:
         assert result == SafetyTier.PROOF_VERIFIED
 
 
-# ═══════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # apply_fail_safe
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -338,7 +335,6 @@ class TestApplyFailSafe:
         assert len(error_actions) == 0
 
 
-# ═══════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # tier_requires_fpe_review
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -359,7 +355,6 @@ class TestTierRequiresFpeReview:
         assert tier_requires_fpe_review(SafetyTier.REJECTED) is False
 
 
-# ═══════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # tier_can_submit
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -480,7 +475,6 @@ class TestOverrideRecord:
             record.override_id = "CHANGED"
 
 
-# ═══════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # EngineeringEvidencePackage
 # ═══════════════════════════════════════════════════════════════════════════════
 

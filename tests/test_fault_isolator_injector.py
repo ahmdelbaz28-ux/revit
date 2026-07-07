@@ -383,7 +383,6 @@ class TestPositionExtraction:
         assert result.secure_loop[0]["position"] == (0.0, 0.0)
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # verify_isolator_compliance
 # ─────────────────────────────────────────────────────────────────────────────
 

@@ -616,7 +616,7 @@ class MEPSyncInjector:
     def _process_suppression(
         self,
         elem: MEPElement,
-        warnings: list[str],  # NOSONAR — S1172: parameter retained for API stability
+        _warnings: list[str],  # NOSONAR — S1172: parameter retained for API stability
     ) -> list[MEPInterfaceModule]:
         """Process sprinkler/suppression system per NFPA 72 §21.4."""
         module = MEPInterfaceModule(
@@ -665,7 +665,7 @@ class MEPSyncInjector:
     def _process_damper(
         self,
         elem: MEPElement,
-        warnings: list[str],  # NOSONAR — S1172: parameter retained for API stability
+        _warnings: list[str],  # NOSONAR — S1172: parameter retained for API stability
     ) -> list[MEPInterfaceModule]:
         """Process smoke/fire damper per NFPA 72 §21.7."""
         module = MEPInterfaceModule(
@@ -686,7 +686,7 @@ class MEPSyncInjector:
     def _process_duct(
         self,
         elem: MEPElement,
-        warnings: list[str],  # NOSONAR — S1172: parameter retained for API stability
+        _warnings: list[str],  # NOSONAR — S1172: parameter retained for API stability
     ) -> list[MEPInterfaceModule]:
         """Process duct element per NFPA 90A §5.3."""
         module = MEPInterfaceModule(

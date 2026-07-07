@@ -94,15 +94,15 @@ class TestGuardFinite:
         assert _guard_finite(-10.0, "test") == -10.0
 
     def test_nan_rejected(self):
-        with pytest.raises(PhysicsGuardError, match="NaN"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(PhysicsGuardError, match="NaN"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             _guard_finite(float("nan"), "test_field")
 
     def test_inf_rejected(self):
-        with pytest.raises(PhysicsGuardError, match="Infinity"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(PhysicsGuardError, match="Infinity"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             _guard_finite(float("inf"), "test_field")
 
     def test_negative_inf_rejected(self):
-        with pytest.raises(PhysicsGuardError, match="Infinity"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(PhysicsGuardError, match="Infinity"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             _guard_finite(float("-inf"), "test_field")
 
     def test_string_rejected(self):
@@ -118,7 +118,7 @@ class TestGuardFinite:
             _guard_finite([1.0], "test_field")  # NOSONAR — S5655: intentional wrong-type arg (test verifies rejection)
 
     def test_error_has_field_and_reason(self):
-        with pytest.raises(PhysicsGuardError) as exc_info:  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(PhysicsGuardError) as exc_info:  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             _guard_finite(float("nan"), "my_field")
         err = exc_info.value
         assert err.field == "my_field"
@@ -147,11 +147,11 @@ class TestGuardAreaM2:
             guard_area_m2(300.0)
 
     def test_nan_rejected(self):
-        with pytest.raises(PhysicsGuardError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(PhysicsGuardError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             guard_area_m2(float("nan"))
 
     def test_inf_rejected(self):
-        with pytest.raises(PhysicsGuardError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(PhysicsGuardError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             guard_area_m2(float("inf"))
 
 
@@ -177,7 +177,7 @@ class TestGuardCeilingHeightM:
             guard_ceiling_height_m(20.0)
 
     def test_nan_rejected(self):
-        with pytest.raises(PhysicsGuardError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(PhysicsGuardError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             guard_ceiling_height_m(float("nan"))
 
 
@@ -203,11 +203,11 @@ class TestGuardCurrentA:
         assert guard_current_a(15.0, 15.0, "14") == 15.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_nan_current_rejected(self):
-        with pytest.raises(PhysicsGuardError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(PhysicsGuardError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             guard_current_a(float("nan"), 15.0, "14")
 
     def test_nan_ampacity_rejected(self):
-        with pytest.raises(PhysicsGuardError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(PhysicsGuardError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             guard_current_a(5.0, float("nan"), "14")
 
 
@@ -250,7 +250,7 @@ class TestGuardTemperatureC:
             guard_temperature_c(60.0, 57.0)
 
     def test_nan_rejected(self):
-        with pytest.raises(PhysicsGuardError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(PhysicsGuardError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             guard_temperature_c(float("nan"), 57.0)
 
 
@@ -276,7 +276,7 @@ class TestGuardEfficiency:
             guard_efficiency(1.1)
 
     def test_nan_rejected(self):
-        with pytest.raises(PhysicsGuardError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(PhysicsGuardError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             guard_efficiency(float("nan"))
 
 

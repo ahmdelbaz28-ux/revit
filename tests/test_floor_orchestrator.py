@@ -31,7 +31,6 @@ from fireai.core.floor_orchestrator import (
     RoomResult,
 )
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # Fixtures
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -92,7 +91,6 @@ def error_room_result():
     )
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # InvalidInputError
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -113,7 +111,6 @@ class TestInvalidInputError:
             raise InvalidInputError("caught by ValueError")
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # RoomResult
 # ─────────────────────────────────────────────────────────────────────────────
 

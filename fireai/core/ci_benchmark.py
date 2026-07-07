@@ -42,7 +42,6 @@ class BenchResult:
     n_iterations: int
     std_dev_pct: float  # % standard deviation (lower = more stable)
     passed: bool = True
-    regression_pct: float = 0.0  # negative = improvement  # NOSONAR — S125: commented-out code kept for historical reference
     is_stub: bool = False  # True when real benchmark couldn't run (import failure)
 
     def to_dict(self) -> dict[str, Any]:

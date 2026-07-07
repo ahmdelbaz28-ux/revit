@@ -502,7 +502,7 @@ class DistributedEngineController(EngineController):
         # Forward to another node
         return self._forward_request(request_data, source_node)
 
-    def _should_process_locally(self, request_data: Dict[str, Any]) -> bool:  # NOSONAR — S1172: parameter retained for API stability
+    def _should_process_locally(self, _request_data: Dict[str, Any]) -> bool:  # NOSONAR — S1172: parameter retained for API stability
         """Determine if request should be processed locally"""
         if self.task_distribution_policy == "local_first":
             return True  # Always prefer local processing

@@ -1287,7 +1287,7 @@ class QAEngine:
     # ── Internal: Architecture Conformance Checks ──────────────────────
 
     def _check_design_patterns(
-        self, design: DesignData  # NOSONAR — S1172: parameter retained for API stability
+        self, _design: DesignData  # NOSONAR — S1172: parameter retained for API stability
     ) -> list[PatternCheck]:
         return [
             PatternCheck(
@@ -1347,7 +1347,7 @@ class QAEngine:
         ]
 
     def _check_architectural_rules(
-        self, design: DesignData  # NOSONAR — S1172: parameter retained for API stability
+        self, _design: DesignData  # NOSONAR — S1172: parameter retained for API stability
     ) -> list[RuleCheck]:
         return [
             RuleCheck(

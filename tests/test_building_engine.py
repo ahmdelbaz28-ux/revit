@@ -33,7 +33,6 @@ from fireai.core.building_engine import (
 from fireai.core.fire_zone_engine import ZoneConstraints
 from fireai.core.spatial_engine.density_optimizer import DensityOptimizer
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # Fixtures
 # ─────────────────────────────────────────────────────────────────────────────
 

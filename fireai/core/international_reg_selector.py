@@ -222,7 +222,6 @@ _ZONE_SYSTEM = {
     RegulatoryFramework.NEC_US: "DIVISION",
 }
 
-# Fix #2: Division-to-Zone conversion with hazard class distinction  # NOSONAR — S125: commented-out code kept for historical reference
 # Fix #4: CLASS_III (fibers) has no IEC equivalent
 _DIVISION_TO_ZONE: dict[tuple[str, str], str | None] = {
     # Gas (CLASS_I)

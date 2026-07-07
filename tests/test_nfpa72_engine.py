@@ -252,17 +252,17 @@ class TestGetDetectorSpacing:
 
     def test_nan_ceiling_height(self):
         """V96 FIX: NaN ceiling height raises ValueError (fail-safe)."""
-        with pytest.raises(ValueError, match="ceiling_height_m"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="ceiling_height_m"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             get_detector_spacing(float("nan"), "smoke")
 
     def test_inf_ceiling_height(self):
         """V96 FIX: Infinity ceiling height raises ValueError (fail-safe)."""
-        with pytest.raises(ValueError, match="ceiling_height_m"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="ceiling_height_m"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             get_detector_spacing(float("inf"), "smoke")
 
     def test_negative_inf_ceiling_height(self):
         """V96 FIX: Negative infinity ceiling height raises ValueError (fail-safe)."""
-        with pytest.raises(ValueError, match="ceiling_height_m"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="ceiling_height_m"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             get_detector_spacing(float("-inf"), "smoke")
 
     # --- NFPA section reference ---
@@ -554,27 +554,27 @@ class TestCalculateBattery:
 
     def test_nan_standby_raises(self):
         """NaN standby current must raise ValueError."""
-        with pytest.raises(ValueError, match="non-negative finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="non-negative finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             calculate_battery(float("nan"), 1.0)
 
     def test_nan_alarm_raises(self):
         """NaN alarm current must raise ValueError."""
-        with pytest.raises(ValueError, match="non-negative finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="non-negative finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             calculate_battery(1.0, float("nan"))
 
     def test_inf_standby_raises(self):
         """Inf standby current must raise ValueError."""
-        with pytest.raises(ValueError, match="non-negative finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="non-negative finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             calculate_battery(float("inf"), 1.0)
 
     def test_inf_alarm_raises(self):
         """Inf alarm current must raise ValueError."""
-        with pytest.raises(ValueError, match="non-negative finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="non-negative finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             calculate_battery(1.0, float("inf"))
 
     def test_negative_inf_standby_raises(self):
         """Negative Inf standby current must raise ValueError."""
-        with pytest.raises(ValueError, match="non-negative finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="non-negative finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             calculate_battery(float("-inf"), 1.0)
 
     # --- Custom standby/alarm durations ---
@@ -800,22 +800,22 @@ class TestCalculateVoltageDrop:
 
     def test_nan_current_raises(self):
         """NaN current must raise ValueError."""
-        with pytest.raises(ValueError, match="non-negative finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="non-negative finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             calculate_voltage_drop(float("nan"), 100.0, "14")
 
     def test_inf_current_raises(self):
         """Inf current must raise ValueError."""
-        with pytest.raises(ValueError, match="non-negative finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="non-negative finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             calculate_voltage_drop(float("inf"), 100.0, "14")
 
     def test_nan_length_raises(self):
         """NaN length must raise ValueError."""
-        with pytest.raises(ValueError, match="non-negative finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="non-negative finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             calculate_voltage_drop(1.0, float("nan"), "14")
 
     def test_inf_length_raises(self):
         """Inf length must raise ValueError."""
-        with pytest.raises(ValueError, match="non-negative finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="non-negative finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             calculate_voltage_drop(1.0, float("inf"), "14")
 
     # --- Custom parameters ---

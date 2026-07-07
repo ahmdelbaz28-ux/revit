@@ -227,7 +227,6 @@ class TestV192ConflictDetection:
         assert resp.status_code == 404, f"Expected 404, got {resp.status_code}: {resp.text}"
 
 
-# ══════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # HEALTH & STATISTICS
 # ══════════════════════════════════════════════════════════════════════════════
 

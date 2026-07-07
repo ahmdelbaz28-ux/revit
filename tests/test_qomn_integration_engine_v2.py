@@ -308,15 +308,15 @@ class TestSmokeDetectorBoundary:
         assert len(verts) == 8
 
     def test_zero_radius_rejected(self):
-        with pytest.raises(HatchPlacementError, match="> 0"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(HatchPlacementError, match="> 0"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             HatchPlacementEngine.generate_smoke_detector_boundary(Point3D(0, 0, 0), 0.0)
 
     def test_negative_radius_rejected(self):
-        with pytest.raises(HatchPlacementError, match="> 0"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(HatchPlacementError, match="> 0"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             HatchPlacementEngine.generate_smoke_detector_boundary(Point3D(0, 0, 0), -5.0)
 
     def test_too_few_sides_rejected(self):
-        with pytest.raises(HatchPlacementError, match=">= 4"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(HatchPlacementError, match=">= 4"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             HatchPlacementEngine.generate_smoke_detector_boundary(Point3D(0, 0, 0), 5.0, num_sides=3)
 
     def test_vertices_on_circle(self):
@@ -389,11 +389,11 @@ class TestCableHatchIntegrator:
         assert integrator.grid_map.is_blocked(gp)
 
     def test_negative_radius_rejected(self, integrator):
-        with pytest.raises(ValueError, match="> 0"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="> 0"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             integrator.add_smoke_detector("SD-1", Point3D(5, 5, 3), -1.0)
 
     def test_zero_radius_rejected(self, integrator):
-        with pytest.raises(ValueError, match="> 0"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="> 0"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             integrator.add_smoke_detector("SD-1", Point3D(5, 5, 3), 0.0)
 
     def test_place_cable_with_hatch(self, integrator):

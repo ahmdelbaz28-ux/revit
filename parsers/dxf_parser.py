@@ -405,7 +405,6 @@ class DXFParser:
 
         overlap_ratio = intersection.area / min_area
 
-        # 90% overlap = duplicate  # NOSONAR — S125: commented-out code kept for historical reference
         return overlap_ratio > 0.9
 
     def _remove_duplicates(self, polygons: List[Polygon]) -> List[Polygon]:

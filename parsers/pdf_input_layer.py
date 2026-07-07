@@ -406,7 +406,7 @@ class PDFInputLayer:
         return self._deduplicate_devices(devices)
 
     def _extract_coordinates_near(self, text: str, position: int,
-                              page_width: float, page_height: float) -> Tuple[float, float]:  # NOSONAR — S1172: parameter retained for API stability
+                              _page_width: float, _page_height: float) -> Tuple[float, float]:  # NOSONAR — S1172: parameter retained for API stability
         """Try to extract coordinates near match position."""
         # Look at text window around match
         window = text[max(0, position-30):position+30]
@@ -447,7 +447,7 @@ class PDFInputLayer:
 
         return None
 
-    def _extract_rooms(self, page, page_num: int) -> List[RoomBoundary]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    def _extract_rooms(self, page, _page_num: int) -> List[RoomBoundary]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """Extract room boundaries from page."""
         rooms = []
         text = page.get_text()

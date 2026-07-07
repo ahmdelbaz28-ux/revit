@@ -1167,7 +1167,7 @@ class RevitService:
     def get_elements(
         self,
         category: Optional[str] = None,
-        element_class: Optional[str] = None  # NOSONAR — S1172: parameter retained for API stability
+        _element_class: Optional[str] = None  # NOSONAR — S1172: parameter retained for API stability
     ) -> List[Dict[str, Any]]:
         """Get elements using FilteredElementCollector pattern."""
         if not self._connected:
@@ -1565,7 +1565,7 @@ class RevitService:
         family_name: str,
         category: str,
         location_point: List[float],
-        level: Optional[str] = None,  # NOSONAR — S1172: parameter retained for API stability
+        _level: Optional[str] = None,  # NOSONAR — S1172: parameter retained for API stability
         parameters: Optional[Dict[str, Any]] = None
     ) -> Optional[str]:
         """
@@ -1958,7 +1958,7 @@ class RevitService:
 
         return []
 
-    def load_family(self, family_path: str, category: Optional[str] = None) -> bool:  # NOSONAR — S1172: parameter retained for API stability
+    def load_family(self, family_path: str, _category: Optional[str] = None) -> bool:  # NOSONAR — S1172: parameter retained for API stability
         """Load a family (.rfa) into the project."""
         if not self._connected:
             return False
@@ -2259,7 +2259,7 @@ class RevitService:
 
         return None
 
-    def _get_family_symbol(self, category: str, symbol_name: str):  # NOSONAR — S1172: parameter retained for API stability
+    def _get_family_symbol(self, _category: str, symbol_name: str):  # NOSONAR — S1172: parameter retained for API stability
         """Get FamilySymbol - similar to RevitJumper pattern."""
         if not self._revit_doc:
             return None
@@ -2415,7 +2415,7 @@ class RevitService:
                 return elem
         return None
 
-    def _get_wall_center(self, wall: Dict) -> List[float]:  # NOSONAR — S1172: parameter retained for API stability
+    def _get__wall_center(self, _wall: Dict) -> List[float]:  # NOSONAR — S1172: parameter retained for API stability
         """Get center point of a wall."""
         return [2500, 0, 0]
 

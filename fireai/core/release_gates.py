@@ -253,12 +253,12 @@ def verify_and_evaluate(  # NOSONAR — S3776: cognitive complexity is inherent 
     input_payload: dict | None = None,
     nfpa_results: dict | None = None,
     evidence_envelope: Any | None = None,
-    drift_records: list[dict] | None = None,  # NOSONAR — S1172: parameter retained for API stability
+    _drift_records: list[dict] | None = None,  # NOSONAR — S1172: parameter retained for API stability
     loop_data: dict | None = None,
-    aset_rset_result: dict | None = None,  # NOSONAR — S1172: parameter retained for API stability
+    _aset_rset_result: dict | None = None,  # NOSONAR — S1172: parameter retained for API stability
     battery_result: dict | None = None,
-    stale_detector_ids: list[str] | None = None,  # NOSONAR — S1172: parameter retained for API stability
-    evidence_secret_key: str | None = None,  # NOSONAR — S1172: parameter retained for API stability
+    _stale_detector_ids: list[str] | None = None,  # NOSONAR — S1172: parameter retained for API stability
+    _evidence_secret_key: str | None = None,  # NOSONAR — S1172: parameter retained for API stability
 ) -> dict[str, Any]:
     """
     Evaluate all 8 release gates.

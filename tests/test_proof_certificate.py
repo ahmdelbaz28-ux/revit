@@ -176,7 +176,6 @@ class TestProofCertificateGenerator:
         assert gen.S == 7.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_delta_margin_calculation(self):
-        """delta_margin = delta * sqrt(2) / 2."""  # NOSONAR — S125: commented-out code kept for historical reference
         gen = ProofCertificateGenerator(grid_step=0.20)
         expected = 0.20 * math.sqrt(2) / 2
         assert gen.delta_margin == pytest.approx(expected, abs=0.001)

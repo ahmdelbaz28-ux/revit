@@ -89,7 +89,6 @@ class TestSafeFmt:
         assert result == "99.9"
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # RoomVerificationRecord
 # ─────────────────────────────────────────────────────────────────────────────
 

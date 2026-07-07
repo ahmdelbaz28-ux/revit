@@ -472,7 +472,6 @@ class DensityOptimizerV2:
 DensityOptimizerBatch = DensityOptimizerV2
 
 
-# ════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # Self-Test
 # ════════════════════════════════════════════════════════════════════════════
 

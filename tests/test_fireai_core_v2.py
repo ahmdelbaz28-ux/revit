@@ -207,7 +207,7 @@ class TestFireAISystem:
             system.analyse_floor([])
 
     def test_analyse_floor_too_many_rooms(self, system):
-        with pytest.raises(ValueError, match="Maximum 500"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="Maximum 500"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             system.analyse_floor([MagicMock()] * 501)
 
     def test_get_audit_trail(self, system):

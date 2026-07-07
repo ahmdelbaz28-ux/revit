@@ -375,7 +375,6 @@ class TestValidateHVACExclusionZones:
         det = [(0.5, 0.0)]
         diff = [(float("inf"), 0.0)]
         violations = validate_hvac_exclusion_zones(det, diff)
-        assert len(violations) == 0  # dist = inf > 0.9144  # NOSONAR — S125: commented-out code kept for historical reference
 
     def test_negative_positions(self):
         det = [(-0.5, 0.0)]

@@ -42,7 +42,6 @@ from fireai.core.security_logging import (
     mask_sensitive,
 )
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # Fixtures
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -59,7 +58,6 @@ def security_logger(temp_log_dir):
     return SecurityAuditLogger(log_dir=temp_log_dir)
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # mask_sensitive
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -150,7 +148,6 @@ class TestMaskSensitive:
         assert "***REDACTED***" in result
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # SensitiveDataFilter
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -194,7 +191,6 @@ class TestSensitiveDataFilter:
         assert "sk-abc123def456ghi789" not in str(record.args)
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # SecurityEventType
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -218,7 +214,6 @@ class TestSecurityEventType:
         assert SecurityEventType.PERMISSION_DENIED == "PERMISSION_DENIED"
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # _SECURITY_GENESIS
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -233,7 +228,6 @@ class TestSecurityGenesis:
         assert _SECURITY_GENESIS == "0" * 64
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # _compute_chain_hash
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -510,7 +504,6 @@ class TestThreadSafety:
         assert result["entries_checked"] == 15
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # configure_log_rotation
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -536,7 +529,6 @@ class TestConfigureLogRotation:
             logger.handlers.clear()
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # configure_timed_rotation
 # ─────────────────────────────────────────────────────────────────────────────
 

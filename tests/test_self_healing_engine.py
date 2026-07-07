@@ -152,9 +152,6 @@ class TestWeightedCircuitBreaker(unittest.TestCase):
     def test_weighted_scoring_critical_trips_faster(self):
         """Critical errors (weight=5) should trip the breaker faster than transient (weight=1)."""
         # With threshold=10 and CRITICAL weight=5, should trip after 3 errors
-        result1 = self.cb.register_healing_event("ZeroDivisionError")  # weight=5, sum=5  # NOSONAR — S125: commented-out code kept for historical reference
-        result2 = self.cb.register_healing_event("ZeroDivisionError")  # weight=5, sum=10  # NOSONAR — S125: commented-out code kept for historical reference
-        result3 = self.cb.register_healing_event("ZeroDivisionError")  # weight=5, sum=15 > 10  # NOSONAR — S125: commented-out code kept for historical reference
 
         self.assertTrue(result1)   # Still CLOSED
         self.assertTrue(result2)   # Still CLOSED (10.0 > 10.0 is False)
@@ -164,23 +161,19 @@ class TestWeightedCircuitBreaker(unittest.TestCase):
         """Transient errors (weight=1) should require more events to trip."""
         # With threshold=10 and TRANSIENT weight=1, should trip after 11 errors
         for i in range(10):
-            result = self.cb.register_healing_event("IndexError")  # weight=1  # NOSONAR — S125: commented-out code kept for historical reference
             self.assertTrue(result, f"Should be CLOSED at event {i+1}")
 
-        result11 = self.cb.register_healing_event("IndexError")  # weight=1, sum=11  # NOSONAR — S125: commented-out code kept for historical reference
         self.assertFalse(result11)  # TRIPPED
 
     def test_deque_o1_pruning(self):
         """Verify O(1) deque correctly prunes expired events."""
         cb = WeightedCircuitBreaker(threshold=100.0, window_seconds=0.5, cooldown_seconds=1.0)
-        cb.register_healing_event("ZeroDivisionError")  # weight=5  # NOSONAR — S125: commented-out code kept for historical reference
         self.assertEqual(len(cb._events), 1)
 
         # Wait for window to expire
         time.sleep(0.6)
 
         # Next event should prune the expired one
-        cb.register_healing_event("IndexError")  # weight=1  # NOSONAR — S125: commented-out code kept for historical reference
         self.assertEqual(len(cb._events), 1)  # Only the new event remains
 
     def test_backward_compatible_register(self):
@@ -190,7 +183,6 @@ class TestWeightedCircuitBreaker(unittest.TestCase):
 
     def test_health_includes_weighted_metrics(self):
         """V53 FIX (BUG 9) preserved: health() method works with weighted metrics."""
-        self.cb.register_healing_event("ZeroDivisionError")  # weight=5  # NOSONAR — S125: commented-out code kept for historical reference
         health = self.cb.health()
 
         self.assertEqual(health["state"], "CLOSED")
@@ -213,9 +205,7 @@ class TestHalfOpenRecovery(unittest.TestCase):
     def test_cooldown_transitions_to_half_open(self):
         """After cooldown period, breaker should transition to HALF_OPEN."""
         # Trip the breaker
-        self.cb.register_healing_event("ZeroDivisionError")  # weight=5, sum=5  # NOSONAR — S125: commented-out code kept for historical reference
         # Need another event to exceed threshold (5.0 > 5.0 is False)
-        self.cb.register_healing_event("IndexError")  # weight=1, sum=6 > 5  # NOSONAR — S125: commented-out code kept for historical reference
 
         self.assertEqual(self.cb.state, "OPEN")
 
@@ -614,7 +604,6 @@ class TestCircuitBreakerBackwardCompat(unittest.TestCase):
         """reset() method should work as before."""
         cb = WeightedCircuitBreaker(threshold=5.0)
         cb.register_healing_event("ZeroDivisionError")
-        cb.register_healing_event("IndexError")  # sum=6 > 5, trips  # NOSONAR — S125: commented-out code kept for historical reference
         self.assertEqual(cb.state, "OPEN")
 
         cb.reset()
@@ -773,8 +762,6 @@ class TestV66VulnerabilityFixes(unittest.TestCase):
         self.assertEqual(state, "CLOSED")
 
         # Trip the breaker
-        cb.register_healing_event("ZeroDivisionError")  # weight=5  # NOSONAR — S125: commented-out code kept for historical reference
-        cb.register_healing_event("IndexError")  # weight=1, sum=6 > 5  # NOSONAR — S125: commented-out code kept for historical reference
 
         # When OPEN
         is_open, state = cb.check_and_cooldown()

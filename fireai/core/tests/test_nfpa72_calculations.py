@@ -489,11 +489,11 @@ class TestCalculateCoverageRadiusFromHeight:
             calculate_coverage_radius_from_height(-1.0)
 
     def test_nan_height_raises_valueerror(self) -> None:
-        with pytest.raises(ValueError, match="finite number"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="finite number"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             calculate_coverage_radius_from_height(float("nan"))
 
     def test_inf_height_raises_valueerror(self) -> None:
-        with pytest.raises(ValueError, match="finite number"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="finite number"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             calculate_coverage_radius_from_height(float("inf"))
 
     def test_high_ceiling_produces_warning(self) -> None:
@@ -572,7 +572,7 @@ class TestBeamPocketCorrectionFactor:
         assert factor < 1.0  # 0.5/3.0 = 16.7% > 10%
 
     def test_nan_beam_depth_raises(self) -> None:
-        with pytest.raises(ValueError, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             beam_pocket_correction_factor(float("nan"), 3.0)
 
     def test_negative_beam_depth_raises(self) -> None:
@@ -584,7 +584,7 @@ class TestBeamPocketCorrectionFactor:
             beam_pocket_correction_factor(0.3, 0.0)
 
     def test_nan_ceiling_height_raises(self) -> None:
-        with pytest.raises(ValueError, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             beam_pocket_correction_factor(0.3, float("nan"))
 
     def test_minimum_factor_is_0_25(self) -> None:
@@ -611,11 +611,11 @@ class TestCalculateCorridorSpacing:
         assert spacing > 0
 
     def test_nan_width_raises(self) -> None:
-        with pytest.raises(ValueError, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             calculate_corridor_spacing(_flat_ceiling(), DetectorType.SMOKE, float("nan"))
 
     def test_negative_width_raises(self) -> None:
-        with pytest.raises(ValueError, match="positive"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="positive"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             calculate_corridor_spacing(_flat_ceiling(), DetectorType.SMOKE, -1.0)
 
 
@@ -670,7 +670,6 @@ class TestCheckVoltageDrop:
 
     def test_drop_fraction_calculation(self) -> None:
         result = check_voltage_drop(24.0, 1.0, 0.01, 50.0)
-        expected_drop = 1.0 * 0.01 * 50.0 * 2  # return path  # NOSONAR — S125: commented-out code kept for historical reference
         assert abs(result["drop_v"] - expected_drop) < 0.01
 
     def test_nan_input_raises(self) -> None:
@@ -704,7 +703,6 @@ class TestRequiredBatteryCapacityAh:
 
     def test_standard_calculation(self) -> None:
         capacity = required_battery_capacity_ah(0.5, 1.0)
-        # (0.5 * 24 + 1.0 * 5/60) * 1.2 = (12 + 0.0833) * 1.2 = 14.5  # NOSONAR — S125: commented-out code kept for historical reference
         assert capacity > 0
 
     def test_minimum_standby_24h(self) -> None:

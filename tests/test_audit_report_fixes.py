@@ -107,13 +107,13 @@ class TestHazenWilliamsFrictionLoss:
     def test_nan_input_raises_error(self):
         """NaN inputs bypass all safety checks — must be caught."""
         from fireai.core.hydraulic_solver import calculate_friction_loss
-        with pytest.raises(ValueError, match="Non-finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="Non-finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             calculate_friction_loss(float('nan'), 120.0, 2.067, 100.0)
 
     def test_inf_input_raises_error(self):
         """Infinite inputs cause overflow — must be caught."""
         from fireai.core.hydraulic_solver import calculate_friction_loss
-        with pytest.raises(ValueError, match="Non-finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="Non-finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             calculate_friction_loss(100.0, 120.0, 2.067, float('inf'))
 
     def test_double_precision_used(self):
@@ -407,13 +407,13 @@ class TestUnitConversion:
     def test_nan_input_raises_error(self):
         """NaN inputs must be caught."""
         from fireai.core.unit_converter import revit_internal_to_metres
-        with pytest.raises(ValueError, match="non-finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="non-finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             revit_internal_to_metres(float('nan'))
 
     def test_inf_input_raises_error(self):
         """Infinite inputs must be caught."""
         from fireai.core.unit_converter import revit_internal_to_metres
-        with pytest.raises(ValueError, match="non-finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError, match="non-finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             revit_internal_to_metres(float('inf'))
 
     def test_polygon_conversion(self):

@@ -1026,7 +1026,7 @@ class TestIntegrationPipeline(unittest.TestCase):
     # ── BUG-1 FIX TEST: Result cannot hold both value and error ──
     def test_result_cannot_hold_both_value_and_error(self):
         """BUG-1 FIX: Result with both value and error raises ValueError."""
-        with pytest.raises(ValueError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
+        with pytest.raises(ValueError):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             Result(value=42, error=GeometryError(message="test", code_ref="r", remedy="f"))
 
     # ── BUG-30+36 FIX TEST: Building hash includes wall geometry and openings ──

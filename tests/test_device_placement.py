@@ -46,7 +46,6 @@ from fireai.core.device_placement import (
 )
 from fireai.core.qomn_kernel import PhysicsGuardError
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # Fixtures
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -142,7 +141,6 @@ class TestCeilingTypeEnum:
         assert DPCeilingType.BEAM.value == "beam"
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # BeamObstruction
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -162,7 +160,6 @@ class TestBeamObstruction:
         assert beam.y_end_m == 5.0  # NOSONAR — S1244: import retained for re-export / API surface
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # ExitDoor
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -224,7 +221,6 @@ class TestDPRoomSpec:
             room.validate()
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # PlacedDevice
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -244,7 +240,6 @@ class TestPlacedDevice:
         assert dev.x_m == 5.0  # NOSONAR — S1244: import retained for re-export / API surface
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # PlacementResult
 # ─────────────────────────────────────────────────────────────────────────────
 

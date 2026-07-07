@@ -58,7 +58,6 @@ from fireai.core.revit_exporter import (
     RevitExporter,
 )
 
-# ═══════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # FIXTURES
 # ═══════════════════════════════════════════════════════════════════════════════
 

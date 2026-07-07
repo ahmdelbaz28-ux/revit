@@ -378,7 +378,7 @@ class PDFParser:
         # This is approximate - real coordinates need PDF layout analysis
         return (0.0, 0.0)
 
-    def _extract_layout_devices(self, page, page_num: int) -> List[PDFDevice]:  # NOSONAR — S1172: parameter retained for API stability
+    def _extract_layout_devices(self, _page_num: int) -> List[PDFDevice]:  # NOSONAR — S1172: parameter retained for API stability
         """Extract devices from PDF layout (images/shapes)."""
         devices = []
 

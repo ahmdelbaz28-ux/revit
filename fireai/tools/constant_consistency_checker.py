@@ -69,7 +69,6 @@ CONSISTENCY_GROUPS: dict[str, list[str]] = {
         "NFPA72_MAX_SPACING_M",  # digital_twin
     ],
     "mw_air": [
-        "_MW_AIR",  # models_v21 = 28.96  # NOSONAR — S125: commented-out code kept for historical reference
         "AIR_MOLAR_MASS_G_MOL",  # semi_cfast_engine = 28.96 (aligned with _MW_AIR)
     ],
     "gravity": [

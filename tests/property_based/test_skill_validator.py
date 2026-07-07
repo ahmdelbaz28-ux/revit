@@ -23,7 +23,6 @@ from skills.skill_validator import (
     validate_version_compatibility,
 )
 
-# ═══════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # STRATEGIES
 # ═══════════════════════════════════════════════════════════════════════════
 

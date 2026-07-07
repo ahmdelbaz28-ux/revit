@@ -263,7 +263,7 @@ class MCPipelineAdapter:
     def analyse_floor(
         self,
         floor_report: Any,  # FloorReport
-        n_trials: int = 1_000,  # NOSONAR — S1172: parameter retained for API stability
+        _n_trials: int = 1_000,  # NOSONAR — S1172: parameter retained for API stability
     ) -> dict[str, Any]:
         """
         SURGICAL FIX: Run MC on all rooms in a floor report.

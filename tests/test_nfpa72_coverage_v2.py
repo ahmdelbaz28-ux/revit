@@ -51,7 +51,6 @@ from fireai.core.nfpa72_models import (
     RoomSpec,
 )
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # Fixtures
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -81,7 +80,6 @@ def l_shaped_polygon() -> Polygon:
     ])
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # Constants
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -275,7 +273,6 @@ class TestValidateHVACExclusionZones:
         assert len(v2) >= 1
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # compute_hvac_safe_zone
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -310,7 +307,6 @@ class TestComputeHVACSafeZone:
         assert safe.area < room.area
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # suggest_duct_detectors
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -349,7 +345,6 @@ class TestSuggestDuctDetectors:
         assert devices[0].detector_type == "heat"
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # create_room_polygon / is_point_in_room
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -387,7 +382,6 @@ class TestRoomPolygon:
         assert isinstance(result, bool)
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # check_coverage_polygon
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -448,7 +442,6 @@ class TestCheckCoveragePolygon:
         assert isinstance(result.uncovered_areas, list)
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # calculate_voronoi_coverage
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -475,7 +468,6 @@ class TestVoronoiCoverage:
         assert len(regions) == 1
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # check_voronoi_coverage
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -542,7 +534,6 @@ class TestRidgeZoneCompliance:
         assert isinstance(result, NFPAComplianceResult)
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # create_l_shaped_polygon
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -564,7 +555,6 @@ class TestCreateLShapedPolygon:
         assert poly.is_valid
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # check_l_shaped_coverage
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -595,7 +585,6 @@ class TestCheckLShapedCoverage:
         assert result.coverage_percentage == pytest.approx(0.0, abs=0.1)
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # check_nfpa72_compliance
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -622,7 +611,6 @@ class TestCheckNFPA72Compliance:
         assert result.detector_count == 2
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # verify_full_coverage
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -669,7 +657,6 @@ class TestVerifyFullCoverage:
             assert key in result, f"Missing key: {key}"
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # get_sloped_ceiling_constraints
 # ─────────────────────────────────────────────────────────────────────────────
 

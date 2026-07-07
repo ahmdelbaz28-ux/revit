@@ -38,7 +38,6 @@ from fireai.core.security_logging import (
     mask_sensitive,
 )
 
-# ═══════════════════════════════════════════════════════════════════════════════  # NOSONAR — S125: commented-out code kept for historical reference
 # Fixtures
 # ═══════════════════════════════════════════════════════════════════════════════
 

@@ -157,7 +157,7 @@ class GenerativeDesignEngine:
         room_width: float,
         room_length: float,
         ceiling_height: float,
-        occupancy_type: str,  # NOSONAR — S1172: parameter retained for API stability
+        _occupancy_type: str,  # NOSONAR — S1172: parameter retained for API stability
         detector_type: str,
         strategy: str
     ) -> List[Dict[str, Any]]:

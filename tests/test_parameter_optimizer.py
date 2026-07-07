@@ -34,7 +34,6 @@ from fireai.core.spatial_engine.density_optimizer import (
     Room,
 )
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # Fixtures
 # ─────────────────────────────────────────────────────────────────────────────
 

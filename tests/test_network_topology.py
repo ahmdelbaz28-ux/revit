@@ -41,7 +41,6 @@ from fireai.core.network_topology import (
     PanelNode,
 )
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # Fixtures / Helpers
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -105,7 +104,6 @@ def _make_daisy_chain_network():
     return panels, links
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # Constants
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -116,7 +114,6 @@ class TestConstants:
         assert REQUIRED_TOPOLOGY == "ring"
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # PanelNode & NetworkLink
 # ─────────────────────────────────────────────────────────────────────────────
 

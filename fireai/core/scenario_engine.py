@@ -243,7 +243,6 @@ class ScenarioResult:
     # Compliance
     nfpa_time_limit_s: float
     compliant: bool  # first_detection_time_s <= nfpa_time_limit_s
-    margin_s: float | None  # positive = margin, negative = overrun  # NOSONAR — S125: commented-out code kept for historical reference
 
     # Performance
     detectors_tested: int
@@ -504,7 +503,6 @@ class FirePhysics:
         """
         t_burn = _BURN_DURATION.get(occupancy.lower(), _BURN_DURATION["default"])
         total_mj = fire_load_mj_m2 * area_m2
-        return (total_mj * 1000.0) / t_burn  # kJ / s = kW  # NOSONAR — S125: commented-out code kept for historical reference
 
     @staticmethod
     def ceiling_jet_temp_rise(
@@ -603,7 +601,6 @@ class FirePhysics:
         # (kg_soot/kg_fuel) * kW, which is NOT kg/s.
         # Correct: s_rate = y_s * Q / ΔH_c  where ΔH_c = heat of combustion.
         # Using ΔH_c ≈ 13.1 MJ/kg (cellulosic fuel, SFPE Handbook Table 3-4.14).
-        HEAT_OF_COMBUSTION_KW_S_PER_KG = 13100.0  # kJ/kg = kW·s/kg  # NOSONAR — S125: commented-out code kept for historical reference
         s_rate = y_s * q_kw / HEAT_OF_COMBUSTION_KW_S_PER_KG
 
         # Ceiling jet layer depth (Alpert: ~5-12% of H, use 10%)

@@ -24,7 +24,6 @@ import pytest
 
 from fireai.core.safe_building_engine import SafeBuildingEngine
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # Initialization
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -54,7 +53,6 @@ class TestSafeBuildingEngineInit:
         assert isinstance(engine.global_c_level_lock, type(threading.RLock()))
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # _solve_mip_safe
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -120,7 +118,6 @@ class TestSolveMIPSafe:
         assert "room_id" in result
 
 
-# ─────────────────────────────────────────────────────────────────────────────  # NOSONAR — S125: commented-out code kept for historical reference
 # run_multi_floor_safety_analysis
 # ─────────────────────────────────────────────────────────────────────────────
 
