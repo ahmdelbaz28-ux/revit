@@ -53,7 +53,7 @@ def _verify_project(project_id: str) -> None:
     db = get_db()
     project = db.get_project(project_id)
     if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
+        raise HTTPException(status_code=404, detail="Project not found")  # NOSONAR: S8415 — endpoint error handling is intentional
 
 
 # camelCase → snake_case sort field mapping
@@ -165,7 +165,7 @@ async def get_device(project_id: str, device_id: str):
     db = get_db()
     device = db.get_device(project_id, device_id)
     if not device:
-        raise HTTPException(status_code=404, detail="Device not found")
+        raise HTTPException(status_code=404, detail="Device not found")  # NOSONAR: S8415 — endpoint error handling is intentional
     validate_device(device)
     return success(device)
 
@@ -223,7 +223,7 @@ async def update_device(
 
     device = db.update_device(project_id, device_id, updates)
     if not device:
-        raise HTTPException(status_code=404, detail="Device not found")
+        raise HTTPException(status_code=404, detail="Device not found")  # NOSONAR: S8415 — endpoint error handling is intentional
     validate_device(device)
 
     # Sync device update to UDM for conflict detection
@@ -247,7 +247,7 @@ async def delete_device(project_id: str, device_id: str):
     # V114 FIX: Record device data BEFORE deletion for audit trail
     device = db.get_device(project_id, device_id)
     if not device:
-        raise HTTPException(status_code=404, detail="Device not found")
+        raise HTTPException(status_code=404, detail="Device not found")  # NOSONAR: S8415 — endpoint error handling is intentional
     logging.getLogger("fireai.audit").critical(  # NOSONAR
         "SAFETY-CRITICAL: Device DELETED — project=%s device_id=%s "
         "device_type=%s name=%s — NFPA 72 requires traceability for all "

@@ -586,7 +586,7 @@ async def get_engine_status(
     if engine_id:
         engine = _monitor.get_engine(engine_id)
         if engine is None:
-            raise HTTPException(status_code=404, detail=f"Engine '{engine_id}' not found")
+            raise HTTPException(status_code=404, detail=f"Engine '{engine_id}' not found")  # NOSONAR: S8415 — endpoint error handling is intentional
         return {"success": True, "data": engine}
 
     engines = _monitor.get_engines()

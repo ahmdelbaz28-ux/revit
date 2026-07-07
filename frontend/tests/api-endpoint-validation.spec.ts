@@ -64,7 +64,7 @@ test.describe("API Endpoint Validation Tests", () => {
 		await page.waitForLoadState("networkidle");
 
 		// Wait for any dashboard API calls to complete
-		await page.waitForTimeout(1000);
+		await page.waitForLoadState("networkidle");  // S2925: sync on condition, not fixed wait
 
 		// Validate that dashboard made expected API calls
 		const dashboardCalls = apiCallLogs.filter(
@@ -387,7 +387,7 @@ test.describe("API Call Validation Summary", () => {
 		// This test runs after all other tests and validates the collected API calls
 
 		// Wait a bit to ensure all API calls are captured
-		await page.waitForTimeout(1000);
+		await page.waitForLoadState("networkidle");  // S2925: sync on condition, not fixed wait
 
 		// Filter to only include actual API calls
 		const apiCalls = apiCallLogs.filter((call) => call.url.includes("/api/"));

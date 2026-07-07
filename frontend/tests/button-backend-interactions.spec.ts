@@ -216,7 +216,7 @@ test.describe("Dashboard Page Button Tests", () => {
 				await expect(button).toBeEnabled();
 
 				// Wait a bit for any async operations
-				await page.waitForTimeout(500);
+				await page.waitForLoadState("networkidle");  // S2925: sync on condition, not fixed wait
 			}
 		}
 	});
@@ -323,7 +323,7 @@ test.describe("Projects Page Button Tests", () => {
 				await expect(button).toBeEnabled();
 
 				// Wait for potential modal or navigation
-				await page.waitForTimeout(500);
+				await page.waitForLoadState("networkidle");  // S2925: sync on condition, not fixed wait
 
 				// If it was a delete button, cancel or confirm appropriately
 				if (buttonText.toLowerCase().includes("delete")) {
@@ -380,7 +380,7 @@ test.describe("AutoCAD Page Button Tests", () => {
 			await expect(connectButton).toBeEnabled();
 
 			// Wait for connection status update
-			await page.waitForTimeout(1000);
+			await page.waitForLoadState("networkidle");  // S2925: sync on condition, not fixed wait
 		} else {
 			test.skip(true, "No AutoCAD connect button found");
 		}
@@ -415,7 +415,7 @@ test.describe("AutoCAD Page Button Tests", () => {
 			await expect(uploadButton).toBeEnabled();
 
 			// Wait for potential file dialog (though Playwright handles this differently)
-			await page.waitForTimeout(500);
+			await page.waitForLoadState("networkidle");  // S2925: sync on condition, not fixed wait
 		} else {
 			test.skip(true, "No AutoCAD upload button found");
 		}
@@ -463,7 +463,7 @@ test.describe("AutoCAD Page Button Tests", () => {
 					await button.click();
 					await expect(button).toBeEnabled();
 
-					await page.waitForTimeout(300);
+					await page.waitForLoadState("networkidle");  // S2925: sync on condition, not fixed wait
 				}
 			}
 		}
@@ -503,7 +503,7 @@ test.describe("Revit Page Button Tests", () => {
 			await expect(connectButton).toBeEnabled();
 
 			// Wait for connection status update
-			await page.waitForTimeout(1000);
+			await page.waitForLoadState("networkidle");  // S2925: sync on condition, not fixed wait
 		} else {
 			test.skip("No Revit connect button found");
 		}
@@ -538,7 +538,7 @@ test.describe("Revit Page Button Tests", () => {
 			await expect(uploadButton).toBeEnabled();
 
 			// Wait for potential file dialog
-			await page.waitForTimeout(500);
+			await page.waitForLoadState("networkidle");  // S2925: sync on condition, not fixed wait
 		} else {
 			test.skip("No Revit upload button found");
 		}
@@ -579,7 +579,7 @@ test.describe("Revit Page Button Tests", () => {
 				await button.click();
 				await expect(button).toBeEnabled();
 
-				await page.waitForTimeout(300);
+				await page.waitForLoadState("networkidle");  // S2925: sync on condition, not fixed wait
 			}
 		}
 	});
@@ -618,7 +618,7 @@ test.describe("Digital Twin Page Button Tests", () => {
 			await expect(convertButton).toBeEnabled();
 
 			// Wait for conversion process to start
-			await page.waitForTimeout(1000);
+			await page.waitForLoadState("networkidle");  // S2925: sync on condition, not fixed wait
 		} else {
 			test.skip(true, "No digital twin convert button found");
 		}
@@ -659,7 +659,7 @@ test.describe("Digital Twin Page Button Tests", () => {
 				await button.click();
 				await expect(button).toBeEnabled();
 
-				await page.waitForTimeout(500);
+				await page.waitForLoadState("networkidle");  // S2925: sync on condition, not fixed wait
 			}
 		}
 	});
@@ -704,7 +704,7 @@ test.describe("Elements Page Button Tests", () => {
 				await button.click();
 				await expect(button).toBeEnabled();
 
-				await page.waitForTimeout(500);
+				await page.waitForLoadState("networkidle");  // S2925: sync on condition, not fixed wait
 			}
 		}
 	});
@@ -744,7 +744,7 @@ test.describe("Elements Page Button Tests", () => {
 				await button.click();
 				await expect(button).toBeEnabled();
 
-				await page.waitForTimeout(500);
+				await page.waitForLoadState("networkidle");  // S2925: sync on condition, not fixed wait
 			}
 		}
 	});
@@ -782,7 +782,7 @@ test.describe("Connections Page Button Tests", () => {
 			await createButton.click();
 			await expect(createButton).toBeEnabled();
 
-			await page.waitForTimeout(500);
+			await page.waitForLoadState("networkidle");  // S2925: sync on condition, not fixed wait
 		} else {
 			test.skip("No connections create button found");
 		}
@@ -824,7 +824,7 @@ test.describe("Connections Page Button Tests", () => {
 				await button.click();
 				await expect(button).toBeEnabled();
 
-				await page.waitForTimeout(500);
+				await page.waitForLoadState("networkidle");  // S2925: sync on condition, not fixed wait
 			}
 		}
 	});
@@ -862,7 +862,7 @@ test.describe("Conflicts Page Button Tests", () => {
 			await resolveButton.click();
 			await expect(resolveButton).toBeEnabled();
 
-			await page.waitForTimeout(500);
+			await page.waitForLoadState("networkidle");  // S2925: sync on condition, not fixed wait
 		} else {
 			test.skip(true, "No conflicts resolve button found");
 		}
@@ -896,7 +896,7 @@ test.describe("Conflicts Page Button Tests", () => {
 			await checkButton.click();
 			await expect(checkButton).toBeEnabled();
 
-			await page.waitForTimeout(500);
+			await page.waitForLoadState("networkidle");  // S2925: sync on condition, not fixed wait
 		} else {
 			test.skip(true, "No conflicts check button found");
 		}
@@ -935,7 +935,7 @@ test.describe("Reports Page Button Tests", () => {
 			await generateButton.click();
 			await expect(generateButton).toBeEnabled();
 
-			await page.waitForTimeout(1000);
+			await page.waitForLoadState("networkidle");  // S2925: sync on condition, not fixed wait
 		} else {
 			test.skip(true, "No reports generate button found");
 		}
@@ -976,7 +976,7 @@ test.describe("Reports Page Button Tests", () => {
 				await button.click();
 				await expect(button).toBeEnabled();
 
-				await page.waitForTimeout(500);
+				await page.waitForLoadState("networkidle");  // S2925: sync on condition, not fixed wait
 			}
 		}
 	});
@@ -1014,7 +1014,7 @@ test.describe("Settings Page Button Tests", () => {
 			await saveButton.click();
 			await expect(saveButton).toBeEnabled();
 
-			await page.waitForTimeout(500);
+			await page.waitForLoadState("networkidle");  // S2925: sync on condition, not fixed wait
 		} else {
 			test.skip(true, "No settings save button found");
 		}
@@ -1056,7 +1056,7 @@ test.describe("Settings Page Button Tests", () => {
 				await button.click();
 				await expect(button).toBeEnabled();
 
-				await page.waitForTimeout(1000);
+				await page.waitForLoadState("networkidle");  // S2925: sync on condition, not fixed wait
 			}
 		}
 	});

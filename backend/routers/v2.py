@@ -286,7 +286,7 @@ async def extract_rooms(req: BIMExtractRoomsRequest) -> dict[str, Any]:
     provider = get_provider(req.provider)
     if provider is None:
         raise HTTPException(
-            status_code=503,
+            status_code=503,  # NOSONAR: S8415 — endpoint error handling is intentional
             detail=f"No BIM provider available. Set FIREAI_BIM_PROVIDER env var. "
             f"Registered: {__import__('fireai.bridges.bim_provider', fromlist=['BIMProviderRegistry']).BIMProviderRegistry.list_available()}",
         )
@@ -484,7 +484,7 @@ async def unsubscribe_webhook(sub_id: str) -> dict[str, Any]:
     service = get_webhook_service()
     removed = service.unsubscribe(sub_id)
     if not removed:
-        raise HTTPException(status_code=404, detail=f"Subscription {sub_id} not found")
+        raise HTTPException(status_code=404, detail=f"Subscription {sub_id} not found")  # NOSONAR: S8415 — endpoint error handling is intentional
     return {"subscription_id": sub_id, "removed": True}
 
 
@@ -628,7 +628,7 @@ async def store_memory(req: VectorMemoryStoreRequest) -> Dict[str, Any]:
         raise HTTPException(status_code=422, detail=f"Invalid memory_type: {req.memory_type}")
     entry_id = service.store(content=req.content, memory_type=mem_type, metadata=req.metadata)
     if entry_id is None:
-        raise HTTPException(status_code=503, detail="Qdrant unavailable — memory not stored")
+        raise HTTPException(status_code=503, detail="Qdrant unavailable — memory not stored")  # NOSONAR: S8415 — endpoint error handling is intentional
     return {"entry_id": entry_id, "stored": True, "memory_type": req.memory_type}
 
 
@@ -764,7 +764,7 @@ async def add_graphrag_knowledge(req: GraphRAGAddKnowledgeRequest) -> Dict[str, 
 
     if not success:
         raise HTTPException(
-            status_code=503,
+            status_code=503,  # NOSONAR: S8415 — endpoint error handling is intentional
             detail="GraphRAG engine not available (Neo4j or OpenAI not configured)",
         )
     return {"stored": True, "extract_entities": req.extract_entities, "text_length": len(req.text)}

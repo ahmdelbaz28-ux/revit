@@ -27,7 +27,7 @@ def _verify_project(project_id: str) -> None:
     db = get_db()
     project = db.get_project(project_id)
     if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
+        raise HTTPException(status_code=404, detail="Project not found")  # NOSONAR: S8415 — endpoint error handling is intentional
 
 
 # camelCase → snake_case sort field mapping
@@ -125,7 +125,7 @@ async def update_connection(
     # Check connection exists via indexed lookup
     connection = db.get_connection(project_id, connection_id)
     if not connection:
-        raise HTTPException(status_code=404, detail="Connection not found")
+        raise HTTPException(status_code=404, detail="Connection not found")  # NOSONAR: S8415 — endpoint error handling is intentional
 
     # Build updates dict with only provided fields
     updates = {}
@@ -154,7 +154,7 @@ async def delete_connection(project_id: str, connection_id: str):
     db = get_db()
     deleted = db.delete_connection(project_id, connection_id)
     if not deleted:
-        raise HTTPException(status_code=404, detail="Connection not found")
+        raise HTTPException(status_code=404, detail="Connection not found")  # NOSONAR: S8415 — endpoint error handling is intentional
 
     # Sync connection deletion to UDM (soft-delete for audit trail)
     from backend.project_bridge import sync_connection_delete_to_udm

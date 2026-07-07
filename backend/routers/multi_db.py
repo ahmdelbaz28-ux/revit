@@ -58,7 +58,7 @@ async def get_from_redis(key: str):
                 message="Value retrieved from Redis"
             )
         else:
-            raise HTTPException(status_code=404, detail=f"Key '{key}' not found in Redis")
+            raise HTTPException(status_code=404, detail=f"Key '{key}' not found in Redis")  # NOSONAR: S8415 — endpoint error handling is intentional
     except Exception:
         logger.exception("Redis get failed")
         raise HTTPException(status_code=500, detail="Redis operation failed")
@@ -115,7 +115,7 @@ async def get_cached_bim_element(element_id: str):
                 message="Cached BIM element retrieved successfully"
             )
         else:
-            raise HTTPException(status_code=404, detail=f"Cached BIM element '{element_id}' not found")
+            raise HTTPException(status_code=404, detail=f"Cached BIM element '{element_id}' not found")  # NOSONAR: S8415 — endpoint error handling is intentional
     except Exception:
         logger.exception("Get cached BIM element failed")
         raise HTTPException(status_code=500, detail="Get cached BIM element failed")

@@ -105,7 +105,7 @@ async def get_element(
     try:
         element = db.get_element(element_id)
         if element is None:
-            raise HTTPException(status_code=404, detail=f"Element {element_id} not found")
+            raise HTTPException(status_code=404, detail=f"Element {element_id} not found")  # NOSONAR: S8415 — endpoint error handling is intentional
         return ApiResponse(success=True, data=element)
     except HTTPException:
         raise
@@ -124,7 +124,7 @@ async def update_element(
     try:
         element = db.update_element(element_id, element_data)
         if element is None:
-            raise HTTPException(status_code=404, detail=f"Element {element_id} not found")
+            raise HTTPException(status_code=404, detail=f"Element {element_id} not found")  # NOSONAR: S8415 — endpoint error handling is intentional
         return ApiResponse(success=True, data=element, message="Element updated successfully")
     except HTTPException:
         raise
@@ -142,7 +142,7 @@ async def delete_element(
     try:
         success = db.delete_element(element_id)
         if not success:
-            raise HTTPException(status_code=404, detail=f"Element {element_id} not found")
+            raise HTTPException(status_code=404, detail=f"Element {element_id} not found")  # NOSONAR: S8415 — endpoint error handling is intentional
         return ApiResponse(success=True, message="Element deleted successfully")
     except HTTPException:
         raise

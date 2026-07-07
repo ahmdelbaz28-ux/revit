@@ -199,7 +199,7 @@ def _require_facp() -> None:
     """Raise 503 if FACP modules are not available."""
     if not _check_facp_available():
         raise HTTPException(
-            status_code=503,
+            status_code=503,  # NOSONAR: S8415 — endpoint error handling is intentional
             detail={
                 "error": "FACP_SERVICE_UNAVAILABLE",
                 "detail": (

@@ -25,7 +25,7 @@ test.describe("Complete Button Audit for BazSpark UI", () => {
 		}) => {
 			await page.goto(pageInfo.path);
 			await page.waitForLoadState("networkidle");
-			await page.waitForTimeout(1000);
+			await page.waitForLoadState("networkidle");  // S2925: sync on condition, not fixed wait
 
 			await page.screenshot({
 				path: `test-results/screenshot-${pageInfo.name}.png`,

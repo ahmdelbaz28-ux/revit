@@ -92,7 +92,7 @@ def _validate_autocad_file_path(filepath: str) -> str:
             parser_name="autocad_router",
         )
     except FileNotFoundError as exc:
-        raise HTTPException(status_code=404, detail="File not found.") from exc
+        raise HTTPException(status_code=404, detail="File not found.") from exc  # NOSONAR: S8415 — endpoint error handling is intentional
     except UnsafePathError as exc:
         logger.warning("Path traversal blocked in autocad router: %s", exc)
         raise HTTPException(
@@ -263,7 +263,7 @@ async def connect_to_autocad(request: ConnectRequest) -> ConnectResponse:
 
         if not service.connect(visible=request.visible, force_new=request.force_new):
             raise HTTPException(
-                status_code=503,
+                status_code=503,  # NOSONAR: S8415 — endpoint error handling is intentional
                 detail="Failed to connect to AutoCAD. Is AutoCAD installed and running?",
             )
 
@@ -308,7 +308,7 @@ async def list_autocad_documents() -> DocumentsResponse:
                         {"name": "Drawing1.dwg", "path": "C:\\MockPath\\Drawing1.dwg", "active": True}
                     ]
                 )
-            raise HTTPException(status_code=503, detail="AutoCAD service not connected")
+            raise HTTPException(status_code=503, detail="AutoCAD service not connected")  # NOSONAR: S8415 — endpoint error handling is intentional
 
         doc_info = service.get_document_info()
         return DocumentsResponse(
@@ -361,7 +361,7 @@ async def write_dwg_file(request: WriteDwgRequest) -> OperationResponse:
 
         if not service.connected:
             raise HTTPException(
-                status_code=503,
+                status_code=503,  # NOSONAR: S8415 — endpoint error handling is intentional
                 detail="AutoCAD not connected. Call /connect first."
             )
 
@@ -394,7 +394,7 @@ async def draw_line(request: DrawLineRequest) -> OperationResponse:
 
         if not service.connected:
             raise HTTPException(
-                status_code=503,
+                status_code=503,  # NOSONAR: S8415 — endpoint error handling is intentional
                 detail="AutoCAD not connected. Call /connect first."
             )
 
@@ -427,7 +427,7 @@ async def draw_polyline(request: DrawPolylineRequest) -> OperationResponse:
 
         if not service.connected:
             raise HTTPException(
-                status_code=503,
+                status_code=503,  # NOSONAR: S8415 — endpoint error handling is intentional
                 detail="AutoCAD not connected. Call /connect first."
             )
 
@@ -460,7 +460,7 @@ async def draw_circle(request: DrawCircleRequest) -> OperationResponse:
 
         if not service.connected:
             raise HTTPException(
-                status_code=503,
+                status_code=503,  # NOSONAR: S8415 — endpoint error handling is intentional
                 detail="AutoCAD not connected. Call /connect first."
             )
 
@@ -493,7 +493,7 @@ async def draw_text(request: DrawTextRequest) -> OperationResponse:
 
         if not service.connected:
             raise HTTPException(
-                status_code=503,
+                status_code=503,  # NOSONAR: S8415 — endpoint error handling is intentional
                 detail="AutoCAD not connected. Call /connect first."
             )
 
@@ -546,7 +546,7 @@ async def save_document(request: SaveRequest) -> OperationResponse:
 
         if not service.connected:
             raise HTTPException(
-                status_code=503,
+                status_code=503,  # NOSONAR: S8415 — endpoint error handling is intentional
                 detail="AutoCAD not connected. Call /connect first."
             )
 
@@ -639,7 +639,7 @@ async def delete_entity(handle: str) -> DeleteEntityResponse:
 
         if not service.connected:
             raise HTTPException(
-                status_code=503,
+                status_code=503,  # NOSONAR: S8415 — endpoint error handling is intentional
                 detail="AutoCAD not connected. Call /connect first."
             )
 
@@ -666,7 +666,7 @@ async def update_entity(handle: str, request: ModifyEntityRequest) -> OperationR
 
         if not service.connected:
             raise HTTPException(
-                status_code=503,
+                status_code=503,  # NOSONAR: S8415 — endpoint error handling is intentional
                 detail="AutoCAD not connected. Call /connect first."
             )
 

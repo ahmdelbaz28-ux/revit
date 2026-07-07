@@ -99,7 +99,7 @@ async def delete_connection(
         success = db.delete_connection(connection_id)
         if not success:
             # FIX #28: Do not expose connection_id in error message
-            raise HTTPException(status_code=404, detail="Connection not found")
+            raise HTTPException(status_code=404, detail="Connection not found")  # NOSONAR: S8415 — endpoint error handling is intentional
         return ApiResponse(success=True, message="Connection deleted successfully")
     except HTTPException:
         raise

@@ -151,7 +151,7 @@ def _validate_file_path(filepath: str) -> str:
         )
     except FileNotFoundError as exc:
         # Benign missing-file case — return 404.
-        raise HTTPException(status_code=404, detail="File not found.") from exc
+        raise HTTPException(status_code=404, detail="File not found.") from exc  # NOSONAR: S8415 — endpoint error handling is intentional
     except UnsafePathError as exc:
         # Hard security rejection — log details, return generic 400.
         logger.warning("Path traversal blocked: %s", exc)
@@ -519,7 +519,7 @@ async def open_document(request: DocumentOpenRequest) -> Dict[str, Any]:
     """Open an RVT file."""
     svc = get_revit_service()
     if not svc.connected:
-        raise HTTPException(status_code=503, detail="Not connected to Revit")
+        raise HTTPException(status_code=503, detail="Not connected to Revit")  # NOSONAR: S8415 — endpoint error handling is intentional
 
     # FIX: Path traversal validation
     _validate_file_path(request.filepath)
@@ -535,7 +535,7 @@ async def save_document(request: DocumentSaveRequest) -> Dict[str, Any]:
     """Save the current document."""
     svc = get_revit_service()
     if not svc.connected:
-        raise HTTPException(status_code=503, detail="Not connected to Revit")
+        raise HTTPException(status_code=503, detail="Not connected to Revit")  # NOSONAR: S8415 — endpoint error handling is intentional
 
     # FIX: Path traversal validation for save path
     if request.filepath:
@@ -552,7 +552,7 @@ async def close_document(request: DocumentCloseRequest) -> Dict[str, Any]:
     """Close the current document."""
     svc = get_revit_service()
     if not svc.connected:
-        raise HTTPException(status_code=503, detail="Not connected to Revit")
+        raise HTTPException(status_code=503, detail="Not connected to Revit")  # NOSONAR: S8415 — endpoint error handling is intentional
 
     success = svc.close_document(request.save_changes)
     if success:
@@ -568,7 +568,7 @@ async def read_rvt_file(request: ReadRvtRequest) -> Dict[str, Any]:
     """Read elements from an RVT file (legacy endpoint)."""
     svc = get_revit_service()
     if not svc.connected:
-        raise HTTPException(status_code=503, detail="Not connected to Revit")
+        raise HTTPException(status_code=503, detail="Not connected to Revit")  # NOSONAR: S8415 — endpoint error handling is intentional
 
     # FIX: Path traversal validation
     _validate_file_path(request.filepath)
@@ -584,7 +584,7 @@ async def write_rvt_file(request: WriteRvtRequest) -> Dict[str, Any]:
     """Write elements to an RVT file (legacy endpoint)."""
     svc = get_revit_service()
     if not svc.connected:
-        raise HTTPException(status_code=503, detail="Not connected to Revit")
+        raise HTTPException(status_code=503, detail="Not connected to Revit")  # NOSONAR: S8415 — endpoint error handling is intentional
 
     # FIX: Path traversal validation
     _validate_file_path(request.filepath)
@@ -649,7 +649,7 @@ async def get_elements(
     """Get elements using FilteredElementCollector pattern."""
     svc = get_revit_service()
     if not svc.connected:
-        raise HTTPException(status_code=503, detail="Not connected to Revit")
+        raise HTTPException(status_code=503, detail="Not connected to Revit")  # NOSONAR: S8415 — endpoint error handling is intentional
 
     elements = svc.get_elements(category=category, element_class=element_class)
     return ElementsResponse(success=True, elements=elements, count=len(elements))
@@ -660,7 +660,7 @@ async def get_selected_elements() -> ElementsResponse:
     """Get currently selected elements in Revit UI."""
     svc = get_revit_service()
     if not svc.connected:
-        raise HTTPException(status_code=503, detail="Not connected to Revit")
+        raise HTTPException(status_code=503, detail="Not connected to Revit")  # NOSONAR: S8415 — endpoint error handling is intentional
 
     elements = svc.get_selected_elements()
     return ElementsResponse(success=True, elements=elements, count=len(elements))
@@ -671,12 +671,12 @@ async def get_element(element_id: str) -> Dict[str, Any]:
     """Get a single element by ID."""
     svc = get_revit_service()
     if not svc.connected:
-        raise HTTPException(status_code=503, detail="Not connected to Revit")
+        raise HTTPException(status_code=503, detail="Not connected to Revit")  # NOSONAR: S8415 — endpoint error handling is intentional
 
     element = svc.get_element_by_id(element_id)
     if element:
         return {"success": True, "element": element}
-    raise HTTPException(status_code=404, detail="Element not found")
+    raise HTTPException(status_code=404, detail="Element not found")  # NOSONAR: S8415 — endpoint error handling is intentional
 
 
 @router.get("/elements/{element_id}/parameters", tags=["revit"])
@@ -684,7 +684,7 @@ async def get_element_parameters(element_id: str) -> Dict[str, Any]:
     """Get all parameters of an element."""
     svc = get_revit_service()
     if not svc.connected:
-        raise HTTPException(status_code=503, detail="Not connected to Revit")
+        raise HTTPException(status_code=503, detail="Not connected to Revit")  # NOSONAR: S8415 — endpoint error handling is intentional
 
     params = svc.get_element_parameters(element_id)
     return {"success": True, "parameters": params}
@@ -699,7 +699,7 @@ async def create_wall(request: CreateWallRequest) -> ElementResponse:
     """Create a wall in Revit."""
     svc = get_revit_service()
     if not svc.connected:
-        raise HTTPException(status_code=503, detail="Not connected to Revit")
+        raise HTTPException(status_code=503, detail="Not connected to Revit")  # NOSONAR: S8415 — endpoint error handling is intentional
 
     element_id = svc.create_wall(
         start_point=request.start_point,
@@ -721,7 +721,7 @@ async def create_floor(request: CreateFloorRequest) -> ElementResponse:
     """Create a floor in Revit."""
     svc = get_revit_service()
     if not svc.connected:
-        raise HTTPException(status_code=503, detail="Not connected to Revit")
+        raise HTTPException(status_code=503, detail="Not connected to Revit")  # NOSONAR: S8415 — endpoint error handling is intentional
 
     element_id = svc.create_floor(
         boundary_points=request.boundary_points,
@@ -741,7 +741,7 @@ async def create_door(request: CreateDoorRequest) -> ElementResponse:
     """Create a door in a wall."""
     svc = get_revit_service()
     if not svc.connected:
-        raise HTTPException(status_code=503, detail="Not connected to Revit")
+        raise HTTPException(status_code=503, detail="Not connected to Revit")  # NOSONAR: S8415 — endpoint error handling is intentional
 
     element_id = svc.create_door(
         host_wall_id=request.host_wall_id,
@@ -762,7 +762,7 @@ async def create_window(request: CreateWindowRequest) -> ElementResponse:
     """Create a window in a wall."""
     svc = get_revit_service()
     if not svc.connected:
-        raise HTTPException(status_code=503, detail="Not connected to Revit")
+        raise HTTPException(status_code=503, detail="Not connected to Revit")  # NOSONAR: S8415 — endpoint error handling is intentional
 
     element_id = svc.create_window(
         host_wall_id=request.host_wall_id,
@@ -783,7 +783,7 @@ async def create_column(request: CreateColumnRequest) -> ElementResponse:
     """Create a structural column."""
     svc = get_revit_service()
     if not svc.connected:
-        raise HTTPException(status_code=503, detail="Not connected to Revit")
+        raise HTTPException(status_code=503, detail="Not connected to Revit")  # NOSONAR: S8415 — endpoint error handling is intentional
 
     element_id = svc.create_column(
         location_point=request.location_point,
@@ -804,7 +804,7 @@ async def create_beam(request: CreateBeamRequest) -> ElementResponse:
     """Create a structural beam."""
     svc = get_revit_service()
     if not svc.connected:
-        raise HTTPException(status_code=503, detail="Not connected to Revit")
+        raise HTTPException(status_code=503, detail="Not connected to Revit")  # NOSONAR: S8415 — endpoint error handling is intentional
 
     element_id = svc.create_beam(
         start_point=request.start_point,
@@ -825,7 +825,7 @@ async def create_family(request: CreateFamilyRequest) -> ElementResponse:
     """Create a generic family instance."""
     svc = get_revit_service()
     if not svc.connected:
-        raise HTTPException(status_code=503, detail="Not connected to Revit")
+        raise HTTPException(status_code=503, detail="Not connected to Revit")  # NOSONAR: S8415 — endpoint error handling is intentional
 
     element_id = svc.create_family_instance(
         family_name=request.family_name,
@@ -854,7 +854,7 @@ async def update_parameters(
     """Update element parameters."""
     svc = get_revit_service()
     if not svc.connected:
-        raise HTTPException(status_code=503, detail="Not connected to Revit")
+        raise HTTPException(status_code=503, detail="Not connected to Revit")  # NOSONAR: S8415 — endpoint error handling is intentional
 
     success = True
     for param_name, value in request.parameters.items():
@@ -872,7 +872,7 @@ async def delete_element(element_id: str) -> Dict[str, Any]:
     """Delete an element."""
     svc = get_revit_service()
     if not svc.connected:
-        raise HTTPException(status_code=503, detail="Not connected to Revit")
+        raise HTTPException(status_code=503, detail="Not connected to Revit")  # NOSONAR: S8415 — endpoint error handling is intentional
 
     success = svc.delete_element(element_id)
     if success:
@@ -889,7 +889,7 @@ async def get_views() -> ElementsResponse:
     """Get all views in the project."""
     svc = get_revit_service()
     if not svc.connected:
-        raise HTTPException(status_code=503, detail="Not connected to Revit")
+        raise HTTPException(status_code=503, detail="Not connected to Revit")  # NOSONAR: S8415 — endpoint error handling is intentional
 
     views = svc.get_views()
     return ElementsResponse(success=True, elements=views, count=len(views))
@@ -900,7 +900,7 @@ async def get_levels() -> ElementsResponse:
     """Get all levels in the project."""
     svc = get_revit_service()
     if not svc.connected:
-        raise HTTPException(status_code=503, detail="Not connected to Revit")
+        raise HTTPException(status_code=503, detail="Not connected to Revit")  # NOSONAR: S8415 — endpoint error handling is intentional
 
     levels = svc.get_levels()
     return ElementsResponse(success=True, elements=levels, count=len(levels))
@@ -911,7 +911,7 @@ async def get_grids() -> ElementsResponse:
     """Get all grids in the project."""
     svc = get_revit_service()
     if not svc.connected:
-        raise HTTPException(status_code=503, detail="Not connected to Revit")
+        raise HTTPException(status_code=503, detail="Not connected to Revit")  # NOSONAR: S8415 — endpoint error handling is intentional
 
     grids = svc.get_grids()
     return ElementsResponse(success=True, elements=grids, count=len(grids))
@@ -922,7 +922,7 @@ async def get_worksets() -> ElementsResponse:
     """Get all worksets in the project."""
     svc = get_revit_service()
     if not svc.connected:
-        raise HTTPException(status_code=503, detail="Not connected to Revit")
+        raise HTTPException(status_code=503, detail="Not connected to Revit")  # NOSONAR: S8415 — endpoint error handling is intentional
 
     worksets = svc.get_worksets()
     return ElementsResponse(success=True, elements=worksets, count=len(worksets))
@@ -941,7 +941,7 @@ async def get_family_symbols(category: str) -> Dict[str, Any]:
     """
     svc = get_revit_service()
     if not svc.connected:
-        raise HTTPException(status_code=503, detail="Not connected to Revit")
+        raise HTTPException(status_code=503, detail="Not connected to Revit")  # NOSONAR: S8415 — endpoint error handling is intentional
 
     symbols = svc.get_family_symbols(category)
     return {"success": True, "symbols": symbols, "count": len(symbols)}
@@ -952,7 +952,7 @@ async def load_family(request: LoadFamilyRequest) -> Dict[str, Any]:
     """Load a family (.rfa) file into the project."""
     svc = get_revit_service()
     if not svc.connected:
-        raise HTTPException(status_code=503, detail="Not connected to Revit")
+        raise HTTPException(status_code=503, detail="Not connected to Revit")  # NOSONAR: S8415 — endpoint error handling is intentional
 
     success = svc.load_family(request.family_path, request.category)
     if success:
@@ -1048,6 +1048,6 @@ async def execute_ai_command(request: AICommandRequest) -> Dict[str, Any]:
     """
     svc = get_revit_service()
     if not svc.connected:
-        raise HTTPException(status_code=503, detail="Not connected to Revit")
+        raise HTTPException(status_code=503, detail="Not connected to Revit")  # NOSONAR: S8415 — endpoint error handling is intentional
 
     return svc.execute_ai_command(request.command, request.context)

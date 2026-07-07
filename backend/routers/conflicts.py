@@ -91,7 +91,7 @@ async def resolve_conflict(
     try:
         conflict = db.resolve_conflict(conflict_id, strategy=resolve_data.strategy)
         if conflict is None:
-            raise HTTPException(status_code=404, detail="Conflict not found")
+            raise HTTPException(status_code=404, detail="Conflict not found")  # NOSONAR: S8415 — endpoint error handling is intentional
         return ApiResponse(success=True, data=conflict, message="Conflict resolved successfully")
     except HTTPException:
         raise

@@ -72,7 +72,7 @@ for (const { route, name, criticalElements } of PAGES) {
 		});
 
 		await page.goto(route, { waitUntil: "domcontentloaded", timeout: 15000 });
-		await page.waitForTimeout(1500);
+		await page.waitForLoadState("networkidle");  // S2925: sync on condition, not fixed wait
 
 		// Verify critical elements exist
 		for (const selector of criticalElements) {
@@ -92,7 +92,7 @@ for (const { route, name, criticalElements } of PAGES) {
 
 	test(`${name} page has no broken images`, async ({ page }) => {
 		await page.goto(route, { waitUntil: "domcontentloaded", timeout: 15000 });
-		await page.waitForTimeout(1000);
+		await page.waitForLoadState("networkidle");  // S2925: sync on condition, not fixed wait
 
 		const images = await page.locator("img").all();
 		for (const img of images) {
@@ -113,7 +113,7 @@ test("FireAlarm: clicking detector selects it, does NOT add new one", async ({
 		waitUntil: "domcontentloaded",
 		timeout: 15000,
 	});
-	await page.waitForTimeout(1500);
+	await page.waitForLoadState("networkidle");  // S2925: sync on condition, not fixed wait
 
 	// Count initial detectors
 	const initialCount = await page.locator("svg g[transform]").count();
@@ -121,7 +121,7 @@ test("FireAlarm: clicking detector selects it, does NOT add new one", async ({
 	// Click on empty canvas to add a detector
 	const canvas = page.locator(".bg-slate-900.border.border-slate-700");
 	await canvas.click({ position: { x: 300, y: 200 } });
-	await page.waitForTimeout(500);
+	await page.waitForLoadState("networkidle");  // S2925: sync on condition, not fixed wait
 
 	const afterAddCount = await page.locator("svg g[transform]").count();
 	expect(
@@ -135,7 +135,7 @@ test("FireAlarm: clicking detector selects it, does NOT add new one", async ({
 	expect(box, "Detector should have a bounding box").not.toBeNull();
 
 	await page.mouse.click(box?.x + box?.width / 2, box?.y + box?.height / 2);
-	await page.waitForTimeout(500);
+	await page.waitForLoadState("networkidle");  // S2925: sync on condition, not fixed wait
 
 	const afterClickCount = await page.locator("svg g[transform]").count();
 	expect(
@@ -151,11 +151,11 @@ test("Connections: create connection modal opens with form fields", async ({
 		waitUntil: "domcontentloaded",
 		timeout: 15000,
 	});
-	await page.waitForTimeout(1000);
+	await page.waitForLoadState("networkidle");  // S2925: sync on condition, not fixed wait
 
 	// Click "Create Connection" button
 	await page.getByRole("button", { name: /create connection/i }).click();
-	await page.waitForTimeout(500);
+	await page.waitForLoadState("networkidle");  // S2925: sync on condition, not fixed wait
 
 	// Verify modal is open with form fields
 	await expect(page.locator("text=Source Element")).toBeVisible({
@@ -174,7 +174,7 @@ test("Dashboard: no React key warnings", async ({ page }) => {
 	});
 
 	await page.goto("/", { waitUntil: "domcontentloaded", timeout: 15000 });
-	await page.waitForTimeout(1500);
+	await page.waitForLoadState("networkidle");  // S2925: sync on condition, not fixed wait
 
 	expect(errors, "Dashboard should not have React key warnings").toEqual([]);
 });

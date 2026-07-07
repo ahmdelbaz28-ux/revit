@@ -101,7 +101,7 @@ async function expectNoConsoleErrors(page: Page, route: string) {
 	await page.goto(route);
 	await page.waitForLoadState("networkidle");
 	// Give React time to render
-	await page.waitForTimeout(500);
+	await page.waitForLoadState("networkidle");  // S2925: sync on condition, not fixed wait
 	return errors;
 }
 
@@ -201,7 +201,7 @@ test("dashboard renders on mobile viewport", async ({ page }) => {
 	await page.setViewportSize({ width: 375, height: 667 }); // iPhone SE
 	await page.goto("/dashboard");
 	await page.waitForLoadState("networkidle");
-	await page.waitForTimeout(500);
+	await page.waitForLoadState("networkidle");  // S2925: sync on condition, not fixed wait
 
 	const root = page.locator("#root");
 	await expect(root).toBeVisible();
@@ -216,7 +216,7 @@ test("dashboard renders in dark color scheme", async ({ page }) => {
 	await page.emulateMedia({ colorScheme: "dark" });
 	await page.goto("/dashboard");
 	await page.waitForLoadState("networkidle");
-	await page.waitForTimeout(500);
+	await page.waitForLoadState("networkidle");  // S2925: sync on condition, not fixed wait
 
 	await captureForReview(page, "06-dashboard-dark");
 

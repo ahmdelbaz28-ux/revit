@@ -88,7 +88,7 @@ test.describe("AutoCAD Page Button Tests", () => {
 			await expect(connectButton).toBeEnabled();
 
 			// Wait for connection status update
-			await page.waitForTimeout(1000);
+			await page.waitForLoadState("networkidle");  // S2925: sync on condition, not fixed wait
 		} else {
 			test.skip(true, "No AutoCAD connect button found");
 		}

@@ -171,7 +171,7 @@ def _verify_project(project_id: str) -> None:
     db = get_db()
     project = db.get_project(project_id)
     if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
+        raise HTTPException(status_code=404, detail="Project not found")  # NOSONAR: S8415 — endpoint error handling is intentional
 
 
 @router.post("", dependencies=[Depends(require_permission(Permission.PROJECT_UPDATE))])

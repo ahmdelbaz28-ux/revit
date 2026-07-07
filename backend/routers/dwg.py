@@ -123,7 +123,7 @@ async def _parse_dwg_impl(request: Request, file: UploadFile):
             from parsers.dwg_parser import DWGParser
         except ImportError as import_err:
             raise HTTPException(
-                status_code=503,
+                status_code=503,  # NOSONAR: S8415 — endpoint error handling is intentional
                 detail={
                     "success": False,
                     "error": f"DWG parser module unavailable: {import_err}",

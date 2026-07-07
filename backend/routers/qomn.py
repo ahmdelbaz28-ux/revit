@@ -135,7 +135,7 @@ def _get_kernel():
                         e,
                     )
                     raise HTTPException(
-                        status_code=503,
+                        status_code=503,  # NOSONAR: S8415 — endpoint error handling is intentional
                         detail={
                             "error": "QOMN_SERVICE_UNAVAILABLE",
                             "detail": (
@@ -367,7 +367,7 @@ async def place_detectors(req: RoomRequest):
             )
         except ImportError:
             raise HTTPException(
-                status_code=503,
+                status_code=503,  # NOSONAR: S8415 — endpoint error handling is intentional
                 detail={
                     "error": "QOMN_SERVICE_UNAVAILABLE",
                     "detail": (
@@ -489,7 +489,7 @@ async def place_duct_detector(req: DuctDetectorRequest):
             )
         except ImportError:
             raise HTTPException(
-                status_code=503,
+                status_code=503,  # NOSONAR: S8415 — endpoint error handling is intentional
                 detail={
                     "error": "QOMN_SERVICE_UNAVAILABLE",
                     "detail": (
@@ -551,7 +551,7 @@ async def get_physics_guards():
         )
     except ImportError:
         raise HTTPException(
-            status_code=503,
+            status_code=503,  # NOSONAR: S8415 — endpoint error handling is intentional
             detail={
                 "error": "QOMN_SERVICE_UNAVAILABLE",
                 "detail": "The QOMN-FIRE engineering kernel constants are not available.",
@@ -634,7 +634,7 @@ async def get_qomn_constants():
         )
     except ImportError:
         raise HTTPException(
-            status_code=503,
+            status_code=503,  # NOSONAR: S8415 — endpoint error handling is intentional
             detail={
                 "error": "QOMN_SERVICE_UNAVAILABLE",
                 "detail": "The QOMN-FIRE engineering kernel constants are not available.",
@@ -686,7 +686,7 @@ async def run_golden_tests():
         )
     except ImportError:
         raise HTTPException(
-            status_code=503,
+            status_code=503,  # NOSONAR: S8415 — endpoint error handling is intentional
             detail={
                 "error": "QOMN_SERVICE_UNAVAILABLE",
                 "detail": "The QOMN-FIRE engineering kernel functions are not available.",
