@@ -98,7 +98,11 @@ jobs:
           # ── Step 2: copy each whitelisted path from GitHub checkout ──────
           for p in "${RUNTIME_PATHS[@]}"; do
             if [ -e "${{ github.workspace }}/${p}" ]; then
-              # Use rsync with junk-file exclusions to avoid pushing cache/build artifacts
+              # IMPORTANT: trailing slash on source matters for rsync semantics!
+              #   rsync -a "src/"  "dst/"   →  copies CONTENTS of src/ into dst/
+              #   rsync -a "src"   "dst/"   →  copies src/ itself into dst/ (creating dst/src/)
+              # We want the former (contents), so the HF tree mirrors GitHub exactly.
+              # For files (non-directories), trailing slash is a no-op — still safe.
               rsync -a \
                 --exclude='node_modules/' \
                 --exclude='__pycache__/' \
@@ -115,8 +119,8 @@ jobs:
                 --exclude='.mypy_cache/' \
                 --exclude='.ruff_cache/' \
                 --exclude='.git/' \
-                "${{ github.workspace }}/${p}" "hf_space/${p}"
-              echo "  + synced: ${p}"
+                "${{ github.workspace }}/${p}/" "hf_space/${p}/"
+              echo "  + synced: ${p}/"
             else
               echo "  ! skipped (not in repo): ${p}"
             fi
