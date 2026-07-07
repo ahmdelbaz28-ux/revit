@@ -182,10 +182,28 @@ jobs:
         # The `timeout --signal=KILL` sends SIGKILL (cannot be caught)
         # which kills the process immediately. We then check if pytest
         # output contains "passed" to determine success.
+        #
+        # V207 FIX: Added FIREAI_SESSION_SECRET + FIREAI_API_KEY + CORS +
+        # DATABASE_URL env vars. Backend tests (test_auth_edge_cases.py,
+        # test_v192_lifecycle.py, etc.) require these to start the FastAPI app
+        # via TestClient lifespan. Without them, tests fail with RuntimeError
+        # at app startup. Matches the env vars already set in ci-build-gate.yml.
         timeout-minutes: 15
         env:
           PYTEST_ADDOPTS: "--color=no"
+          FIREAI_SESSION_SECRET: ${{ secrets.FIREAI_SESSION_SECRET_CI }}
+          FIREAI_API_KEY: ci-test-admin-key
+          CORS_ALLOWED_ORIGINS: "http://localhost:3000,http://localhost:5173"
+          DATABASE_URL: "sqlite:////tmp/fireai_ci_test.db"
+          DIGITAL_TWIN_DB_PATH: "/tmp/fireai_ci_test.db"
+          UDM_DB_PATH: "/tmp/udm_ci_test.db"
         run: |
+          # If FIREAI_SESSION_SECRET_CI secret is not set, generate one for this run.
+          # This allows the workflow to function even before the secret is configured.
+          if [ -z "$FIREAI_SESSION_SECRET" ]; then
+            export FIREAI_SESSION_SECRET=$(python -c 'import secrets; print(secrets.token_urlsafe(64))')
+            echo "Generated ephemeral FIREAI_SESSION_SECRET for this run"
+          fi
           pip install pytest-timeout
           # Run pytest with timeout, capture output to file
           OUTPUT_FILE=$(mktemp)
@@ -476,6 +494,9 @@ jobs:
         # requires CORS_ALLOWED_ORIGINS env var. Pass it as -e flag to docker run.
         # Also pass FIREAI_API_KEY (required by ApiKeyMiddleware) and DATABASE_URL
         # (SQLite at /tmp for test — no persistent data needed).
+        # V207 FIX: Added FIREAI_SESSION_SECRET — required by backend/app.py
+        # lifespan startup check (V193). Without it, the container crashes with
+        # RuntimeError on startup and the health check never passes.
         run: |
           IMAGE=$(echo "${{ steps.meta.outputs.tags }}" | head -n1)
           echo "Testing container with image: $IMAGE"
@@ -484,6 +505,7 @@ jobs:
           docker run -d --name test-app -p 8888:7860 \
             -e FIREAI_ENV=development \
             -e FIREAI_API_KEY=test-ci-key \
+            -e FIREAI_SESSION_SECRET=$(python -c 'import secrets; print(secrets.token_urlsafe(64))') \
             -e CORS_ALLOWED_ORIGINS=http://localhost:8888 \
             -e DATABASE_URL=sqlite:////tmp/fireai_test.db \
             -e DIGITAL_TWIN_DB_PATH=/tmp/fireai_test.db \

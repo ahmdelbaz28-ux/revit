@@ -93,7 +93,7 @@ _FAILED_ATTEMPT_WINDOW = 300  # 5 minutes
 
 class LoginRequest(BaseModel):
     """Request body for POST /auth/login."""
-    api_key: str | None = Field(None, description="FireAI API key")
+    api_key: str | None = Field(None, min_length=1, description="FireAI API key (must be non-empty if provided)")
     username: str | None = None
     password: str | None = None
 

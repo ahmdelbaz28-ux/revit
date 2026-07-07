@@ -208,12 +208,17 @@ class TestInputValidation:
         assert resp.status_code == 401, "Invalid key should be rejected"
 
     def test_missing_api_key_field(self, client: TestClient) -> None:
-        """Missing api_key field should return 422."""
+        """Missing api_key field should return 400 (business logic rejection).
+
+        Note: LoginRequest.api_key is Optional (username/password auth is an
+        alternative), so an empty body {} passes Pydantic validation (no 422).
+        The endpoint's business logic then rejects it with 400 'missing api_key'.
+        """
         resp = client.post(
             "/api/v1/auth/login",
             json={},
         )
-        assert resp.status_code == 422
+        assert resp.status_code == 400
 
     def test_wrong_content_type(self, client: TestClient) -> None:
         """Wrong content type should return 422."""

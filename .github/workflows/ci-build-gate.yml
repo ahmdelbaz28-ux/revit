@@ -106,7 +106,15 @@ jobs:
         run: echo "FIREAI_SESSION_SECRET=$(python -c 'import secrets; print(secrets.token_urlsafe(64))')" >> $GITHUB_ENV
 
       - name: Run pytest
+        # V207 FIX: Added CORS_ALLOWED_ORIGINS + DATABASE_URL + DIGITAL_TWIN_DB_PATH +
+        # UDM_DB_PATH env vars. Backend tests (test_auth_edge_cases.py, test_v192_lifecycle.py,
+        # test_api_endpoints.py, etc.) require these to start the FastAPI app via TestClient
+        # lifespan. Without them, tests fail with RuntimeError at app startup.
         env:
           FIREAI_SESSION_SECRET: ${{ env.FIREAI_SESSION_SECRET }}
           FIREAI_API_KEY: ci-test-admin-key
+          CORS_ALLOWED_ORIGINS: "http://localhost:3000,http://localhost:5173"
+          DATABASE_URL: "sqlite:////tmp/fireai_buildgate_test.db"
+          DIGITAL_TWIN_DB_PATH: "/tmp/fireai_buildgate_test.db"
+          UDM_DB_PATH: "/tmp/udm_buildgate_test.db"
         run: pytest backend/tests/ -v --tb=short

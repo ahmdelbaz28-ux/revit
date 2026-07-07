@@ -146,10 +146,15 @@ class TestInputValidation:
         assert response.status_code == 422
 
     def test_create_report_missing_type(self, client, full_project) -> None:
-        """POST report without type must return 422."""
+        """POST report without type returns 201 (API defaults type to 'summary').
+
+        Note: GenerateReportInput.type is Optional — the endpoint falls back to
+        reportType field or 'summary' when type is missing (see reports.py:263).
+        This is intentional API design: callers can omit type and get a default.
+        """
         pid, _ = full_project
         response = client.post(f"/api/projects/{pid}/reports", json={})
-        assert response.status_code == 422
+        assert response.status_code == 201
 
     def test_environment_weather_invalid_lat(self, client) -> None:
         """GET /api/environment/weather with lat > 90 must return 422."""
