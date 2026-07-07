@@ -615,7 +615,7 @@ class AutoCADBridge:
                     io.StringIO(content)  # type: ignore[arg-type]
                 )
             except Exception as exc:
-                logger.error(
+                logger.exception(
                     "ezdxf parsing failed: %s", exc
                 )
                 return {}

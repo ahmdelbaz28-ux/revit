@@ -250,7 +250,7 @@ class RevitService:
             logger.error("Unknown method: %s", method)
             return False
         except Exception as e:
-            logger.error("Connection failed: %s", e)
+            logger.exception("Connection failed: %s", e)
             return False
 
     def _connect_via_api(self) -> bool:
@@ -265,7 +265,7 @@ class RevitService:
             self._connection_method = ConnectionMethod.API
             return True
         except Exception as e:
-            logger.error("API connection failed: %s", e)
+            logger.exception("API connection failed: %s", e)
             return self._connect_simulation()
 
     def _connect_via_macro(self) -> bool:
@@ -294,7 +294,7 @@ class RevitService:
             logger.info("Disconnected from Revit")
             return True
         except Exception as e:
-            logger.error("Disconnect error: %s", e)
+            logger.exception("Disconnect error: %s", e)
             return False
 
     def _extract_element_data(self, element) -> Dict[str, Any]:
@@ -429,7 +429,7 @@ class RevitService:
             return element_data
 
         except Exception as e:
-            logger.error("Error extracting element data: %s", e)
+            logger.exception("Error extracting element data: %s", e)
             return {
                 "id": "unknown",
                 "name": "error_extraction",
@@ -515,7 +515,7 @@ class RevitService:
             }
 
         except FileNotFoundError:
-            logger.error("RVT file not found: %s", filepath)
+            logger.exception("RVT file not found: %s", filepath)
             return {
                 "success": False,
                 "error": f"RVT file not found: {filepath}",
@@ -523,7 +523,7 @@ class RevitService:
                 "count": 0
             }
         except Exception as e:
-            logger.error("Error reading RVT file %s: %s", filepath, e)
+            logger.exception("Error reading RVT file %s: %s", filepath, e)
             return {
                 "success": False,
                 "error": str(e),
@@ -590,7 +590,7 @@ class RevitService:
             return True
 
         except Exception as e:
-            logger.error("Error writing RVT file %s: %s", filepath, e)
+            logger.exception("Error writing RVT file %s: %s", filepath, e)
             return False
 
     def create_wall(self, start_point: List[float], end_point: List[float],
@@ -711,18 +711,18 @@ class RevitService:
 
             except Exception as create_err:
                 tx.RollBack()
-                logger.error("create_wall failed during Wall.Create(): %s", create_err)
+                logger.exception("create_wall failed during Wall.Create(): %s", create_err)
                 return None
 
         except ImportError as ie:
-            logger.error(
+            logger.exception(
                 "create_wall failed: Revit API imports unavailable (%s). "
                 "Wall creation requires Windows + pythonnet + Revit installed.",
                 ie,
             )
             return None
         except Exception as e:
-            logger.error("Error creating wall: %s", e)
+            logger.exception("Error creating wall: %s", e)
             return None
 
     def create_floor(self, boundary: Optional[List[List[float]]] = None, level: str = "Level 1",
@@ -868,18 +868,18 @@ class RevitService:
 
             except Exception as create_err:
                 tx.RollBack()
-                logger.error("create_floor failed during Floor.Create(): %s", create_err)
+                logger.exception("create_floor failed during Floor.Create(): %s", create_err)
                 return None
 
         except ImportError as ie:
-            logger.error(
+            logger.exception(
                 "create_floor failed: Revit API imports unavailable (%s). "
                 "Floor creation requires Windows + pythonnet + Revit installed.",
                 ie,
             )
             return None
         except Exception as e:
-            logger.error("Error creating floor: %s", e)
+            logger.exception("Error creating floor: %s", e)
             return None
 
     def create_column(self, location: Optional[List[float]] = None, height: float = 3000.0,
@@ -1018,10 +1018,10 @@ class RevitService:
                 return element_id
             except Exception as create_err:
                 tx.RollBack()
-                logger.error("create_column failed during creation: %s", create_err)
+                logger.exception("create_column failed during creation: %s", create_err)
                 return None
         except Exception as e:
-            logger.error("Error creating column: %s", e)
+            logger.exception("Error creating column: %s", e)
             return None
 
     def get_document_info(self) -> Dict[str, Any]:
@@ -1053,7 +1053,7 @@ class RevitService:
                 "units": "millimeters"
             }
         except Exception as e:
-            logger.error("Error getting document info: %s", e)
+            logger.exception("Error getting document info: %s", e)
             return {}
 
     def save(self, filepath: str) -> bool:
@@ -1085,7 +1085,7 @@ class RevitService:
             return True
 
         except Exception as e:
-            logger.error("Error saving document to %s: %s", filepath, e)
+            logger.exception("Error saving document to %s: %s", filepath, e)
             return False
 
     # =========================================================================
@@ -1104,7 +1104,7 @@ class RevitService:
         try:
             return True
         except Exception as e:
-            logger.error("Failed to open: %s", e)
+            logger.exception("Failed to open: %s", e)
             return False
 
     def save_document(self, filepath: Optional[str] = None) -> bool:
@@ -1123,7 +1123,7 @@ class RevitService:
                 self._revit_doc.Save()
             return True
         except Exception as e:
-            logger.error("Save failed: %s", e)
+            logger.exception("Save failed: %s", e)
             return False
 
     def close_document(self, save_changes: bool = True) -> bool:
@@ -1140,7 +1140,7 @@ class RevitService:
             self._revit_doc = None
             return True
         except Exception as e:
-            logger.error("Close failed: %s", e)
+            logger.exception("Close failed: %s", e)
             return False
 
     # V140 FIX (Rule 17 — Root-Cause Analysis): Removed the two legacy duplicate
@@ -1192,7 +1192,7 @@ class RevitService:
                     elements.append(self._extract_element_data(elem))
 
         except Exception as e:
-            logger.error("Failed to get elements: %s", e)
+            logger.exception("Failed to get elements: %s", e)
 
         return elements
 
@@ -1238,7 +1238,7 @@ class RevitService:
                 if elem:
                     return self._extract_element_data(elem)
         except Exception as e:
-            logger.error("Failed to get element: %s", e)
+            logger.exception("Failed to get element: %s", e)
 
         return None
 
@@ -1259,7 +1259,7 @@ class RevitService:
 
             return elements
         except Exception as e:
-            logger.error("Failed to get selected: %s", e)
+            logger.exception("Failed to get selected: %s", e)
             return []
 
     def get_element_parameters(self, element_id: str) -> Dict[str, Any]:
@@ -1286,7 +1286,7 @@ class RevitService:
 
                 return params
         except Exception as e:
-            logger.error("Failed to get parameters: %s", e)
+            logger.exception("Failed to get parameters: %s", e)
 
         return {}
 
@@ -1401,10 +1401,10 @@ class RevitService:
                 return element_id
             except Exception as create_err:
                 t.RollBack()
-                logger.error("create_door failed during creation: %s", create_err)
+                logger.exception("create_door failed during creation: %s", create_err)
                 return None
         except Exception as e:
-            logger.error("Failed to create door: %s", e)
+            logger.exception("Failed to create door: %s", e)
             return None
 
     def create_window(
@@ -1554,10 +1554,10 @@ class RevitService:
                 return element_id
             except Exception as create_err:
                 tx.RollBack()
-                logger.error("create_beam failed during creation: %s", create_err)
+                logger.exception("create_beam failed during creation: %s", create_err)
                 return None
         except Exception as e:
-            logger.error("Error creating beam: %s", e)
+            logger.exception("Error creating beam: %s", e)
             return None
 
     def create_family_instance(
@@ -1646,10 +1646,10 @@ class RevitService:
                 return str(new_instance.Id)
             except Exception as create_err:
                 t.RollBack()
-                logger.error("create_family_instance failed during creation: %s", create_err)
+                logger.exception("create_family_instance failed during creation: %s", create_err)
                 return None
         except Exception as e:
-            logger.error("Failed to create family: %s", e)
+            logger.exception("Failed to create family: %s", e)
             return None
 
     # =========================================================================
@@ -1679,7 +1679,7 @@ class RevitService:
 
                 t.RollBack()
         except Exception as e:
-            logger.error("Failed to set parameter: %s", e)
+            logger.exception("Failed to set parameter: %s", e)
 
         return False
 
@@ -1706,7 +1706,7 @@ class RevitService:
 
                 t.RollBack()
         except Exception as e:
-            logger.error("Failed to delete: %s", e)
+            logger.exception("Failed to delete: %s", e)
 
         return False
 
@@ -1817,10 +1817,10 @@ class RevitService:
                 return element_id
             except Exception as create_err:
                 tx.RollBack()
-                logger.error("create_view failed during creation: %s", create_err)
+                logger.exception("create_view failed during creation: %s", create_err)
                 return None
         except Exception as e:
-            logger.error("Error creating view: %s", e)
+            logger.exception("Error creating view: %s", e)
             return None
 
     def get_levels(self) -> List[Dict[str, Any]]:
@@ -1902,10 +1902,10 @@ class RevitService:
                 return element_id
             except Exception as create_err:
                 tx.RollBack()
-                logger.error("create_level failed during creation: %s", create_err)
+                logger.exception("create_level failed during creation: %s", create_err)
                 return None
         except Exception as e:
-            logger.error("Error creating level: %s", e)
+            logger.exception("Error creating level: %s", e)
             return None
 
     def get_grids(self) -> List[Dict[str, Any]]:
@@ -1954,7 +1954,7 @@ class RevitService:
                 return symbols
 
         except Exception as e:
-            logger.error("Failed to get symbols: %s", e)
+            logger.exception("Failed to get symbols: %s", e)
 
         return []
 
@@ -1980,7 +1980,7 @@ class RevitService:
                 return result
 
         except Exception as e:
-            logger.error("Failed to load family: %s", e)
+            logger.exception("Failed to load family: %s", e)
 
         return False
 
@@ -2007,7 +2007,7 @@ class RevitService:
             return True
 
         except Exception as e:
-            logger.error("Failed to load API data: %s", e)
+            logger.exception("Failed to load API data: %s", e)
             return False
 
     def search_api_data(
@@ -2097,7 +2097,7 @@ class RevitService:
                             ))
 
         except Exception as e:
-            logger.error("Search failed: %s", e)
+            logger.exception("Search failed: %s", e)
 
         return results
 
@@ -2193,7 +2193,7 @@ class RevitService:
                 }
 
         except Exception as e:
-            logger.error("AI command failed: %s", e)
+            logger.exception("AI command failed: %s", e)
             result = {"success": False, "message": f"Error: {e!s}"}
 
         return result
@@ -2287,7 +2287,7 @@ class RevitService:
             return collector.FirstElement()
 
         except Exception as e:
-            logger.error("Failed to get family symbol: %s", e)
+            logger.exception("Failed to get family symbol: %s", e)
             return None
 
     def _get_builtin_category(self, category_name: str):

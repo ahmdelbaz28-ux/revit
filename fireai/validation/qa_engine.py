@@ -219,7 +219,7 @@ class QAEngine:
                 result = check_func(design)
                 checks.append(result)
             except Exception as exc:
-                logger.error(
+                logger.exception(
                     "QA check %s failed: %s",
                     check_func.__name__,
                     exc,

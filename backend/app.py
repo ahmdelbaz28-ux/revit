@@ -247,7 +247,7 @@ def _ensure_cache_reaper_started() -> None:
                     # F5 FIX: Log reaper errors instead of silently swallowing
                     # them. In a safety-critical system, silent failures are
                     # more dangerous than noisy ones.
-                    logger.error("Cache reaper error: %s", exc)
+                    logger.exception("Cache reaper error: %s", exc)
 
         t = threading.Thread(target=_reaper_loop, daemon=True, name="cache-reaper")
         t.start()
@@ -578,7 +578,7 @@ def _safe_include_router(module_name: str, prefix: str = "/api/v1", tag: str = "
         # Any other exception (ValueError, RuntimeError, etc.) on a
         # CRITICAL router = launch blocker. Re-raise so the app fails fast.
         if module_name in CRITICAL_ROUTERS:
-            logger.error(
+            logger.exception(
                 "CRITICAL router '%s' failed to register: %s — aborting startup. "
                 "This router is mission-critical; the app cannot function safely without it. "
                 "Fix the underlying issue (likely FIREAI_SESSION_SECRET is missing or too short — "

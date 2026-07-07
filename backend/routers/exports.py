@@ -333,7 +333,7 @@ async def export_ifc(
         # server paths (/home/...), Python class names, internal state.
         # In a safety-critical system, this information helps attackers
         # craft targeted exploits. Log internally only.
-        logger.error("IFC export failed: %s", e, exc_info=True)
+        logger.exception("IFC export failed: %s", e)
         raise HTTPException(
             status_code=500,
             detail="IFC export failed — an internal error occurred. Contact administrator.",

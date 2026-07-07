@@ -339,7 +339,7 @@ def node_parse(state: PipelineState) -> PipelineState:
             parse_warnings.append(f"Unsupported file type: {file_type}")
 
     except Exception as e:
-        logger.error("Parse failed: %s", e, exc_info=True)
+        logger.exception("Parse failed: %s", e)
         parse_warnings.append(f"Parse error: {type(e).__name__}: {e}")
 
     # Fail-safe: empty rooms = no protection = FAILED
@@ -1699,7 +1699,7 @@ class WorkflowService:
 
             return result if result else initial_state
         except Exception as e:
-            logger.error("Workflow execution failed: %s", e, exc_info=True)
+            logger.exception("Workflow execution failed: %s", e)
             return {
                 **initial_state,
                 "status": WorkflowStatus.FAILED.value,
@@ -1942,7 +1942,7 @@ class WorkflowService:
                 "report_sha256": result.get("report_sha256", "") if result else "",
             }
         except Exception as e:
-            logger.error("Workflow resume failed: %s", e, exc_info=True)
+            logger.exception("Workflow resume failed: %s", e)
             return {
                 "error": f"Resume failed: {type(e).__name__}: {e}",
                 "workflow_id": workflow_id,
@@ -2133,10 +2133,9 @@ class WorkflowService:
             return None
 
         except Exception as e:
-            logger.error(
+            logger.exception(
                 f"Crash recovery failed for workflow {workflow_id}: "
                 f"{type(e).__name__}: {e}",
-                exc_info=True,
             )
             return {
                 "workflow_id": workflow_id,

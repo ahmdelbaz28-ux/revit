@@ -186,7 +186,7 @@ def _check_facp_available() -> bool:
             logger.info("FACP system modules loaded successfully")
         except ImportError as e:
             _facp_available = False
-            logger.error(
+            logger.exception(
                 "FACP system modules not available: %s. "
                 "FACP endpoints will return 503. "
                 "Ensure facp_system/ package is in the Python path.",
@@ -285,7 +285,7 @@ async def select_facp(req: FACPSelectionRequest):
             },
         )
     except Exception as exc:
-        logger.error("FACP selection unexpected error: %s", exc, exc_info=True)
+        logger.exception("FACP selection unexpected error: %s", exc)
         raise HTTPException(
             status_code=500,
             detail={
@@ -363,7 +363,7 @@ async def verify_facp(req: FACPVerificationRequest):
             },
         }
     except Exception as exc:
-        logger.error("FACP verification error: %s", exc, exc_info=True)
+        logger.exception("FACP verification error: %s", exc)
         raise HTTPException(
             status_code=500,
             detail={
@@ -423,7 +423,7 @@ async def generate_facp_schedule(req: FACPScheduleRequest):
             },
         }
     except Exception as exc:
-        logger.error("FACP schedule generation error: %s", exc, exc_info=True)
+        logger.exception("FACP schedule generation error: %s", exc)
         raise HTTPException(
             status_code=500,
             detail={
@@ -496,7 +496,7 @@ async def generate_facp_spec(req: FACPSpecRequest):
             },
         }
     except Exception as exc:
-        logger.error("FACP spec generation error: %s", exc, exc_info=True)
+        logger.exception("FACP spec generation error: %s", exc)
         raise HTTPException(
             status_code=500,
             detail={
@@ -560,7 +560,7 @@ async def list_available_panels():
             },
         }
     except Exception as exc:
-        logger.error("FACP panel listing error: %s", exc, exc_info=True)
+        logger.exception("FACP panel listing error: %s", exc)
         raise HTTPException(
             status_code=500,
             detail={

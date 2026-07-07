@@ -200,7 +200,7 @@ def ocr_image(image_bytes: bytes) -> Optional[List[OCRPageResult]]:
         return results
 
     except Exception as e:
-        logger.error("DocTR OCR failed: %s", e)
+        logger.exception("DocTR OCR failed: %s", e)
         return None
 
 
@@ -265,7 +265,7 @@ def segment_image(image_bytes: bytes) -> Optional[List[SegmentationResult]]:
         return results
 
     except Exception as e:
-        logger.error("YOLO segmentation failed: %s", e)
+        logger.exception("YOLO segmentation failed: %s", e)
         return None
 
 
@@ -369,7 +369,7 @@ def render_pdf_page_to_image(pdf_path: str, page_num: int = 0, dpi: int = 200) -
         logger.warning("PyMuPDF (fitz) not installed — cannot render PDF pages")
         return None
     except Exception as e:
-        logger.error("PDF page rendering failed: %s", e)
+        logger.exception("PDF page rendering failed: %s", e)
         return None
 
 
@@ -397,7 +397,7 @@ def render_all_pdf_pages(pdf_path: str, dpi: int = 200) -> List[bytes]:
         logger.info("Rendered %d/%d pages from %s", len(images), page_count, pdf_path)
         return images
     except Exception as e:
-        logger.error("Failed to render PDF pages: %s", e)
+        logger.exception("Failed to render PDF pages: %s", e)
         return []
 
 

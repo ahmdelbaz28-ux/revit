@@ -461,7 +461,7 @@ class SmitheryMCPClient:
             rooms = provider.extract_rooms(source=source)
             return [r.to_fireai_room_dict() for r in rooms]
         except Exception as exc:
-            logger.error("Failed to read rooms from BIM: %s", exc)
+            logger.exception("Failed to read rooms from BIM: %s", exc)
             return []
 
     # ------------------------------------------------------------------
@@ -646,9 +646,9 @@ class SmitheryMCPClient:
             action.enqueue_status = "failed"
             action.enqueue_error = str(exc)
 
-            logger.error(
+            logger.exception(
                 "Failed to enqueue proposed action %s: %s",
-                action.id, exc, exc_info=True,
+                action.id, exc,
             )
             self._record_audit(action, success=False, error=str(exc))
 

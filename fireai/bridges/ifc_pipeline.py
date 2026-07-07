@@ -166,7 +166,7 @@ class IfcFirePipeline:
                 self._warnings.append(
                     f"Space {space.get('name', '?')} ({space.get('guid', '?')}): analysis failed — {exc}"
                 )
-                logger.error("Space analysis failed: %s", exc, exc_info=True)
+                logger.exception("Space analysis failed: %s", exc)
 
         # ── Write back to IFC ──────────────────────────────────────
         bridge.push_fire_alarm_design(all_devices, self.cfg.ifc_output_path)

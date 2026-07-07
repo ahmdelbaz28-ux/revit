@@ -553,7 +553,7 @@ class IoTPipeline:
                 except asyncio.CancelledError:
                     break
                 except Exception as exc:
-                    logger.error(
+                    logger.exception(
                         "Comm loss monitor error: %s", exc
                     )
                     await asyncio.sleep(interval_seconds)
@@ -644,7 +644,7 @@ class IoTPipeline:
             self._mqtt_client = client
             return True
         except Exception as exc:
-            logger.error("MQTT connection failed: %s", exc)
+            logger.exception("MQTT connection failed: %s", exc)
             return False
 
     async def _connect_mqtt_simulated(
@@ -677,7 +677,7 @@ class IoTPipeline:
             self._opcua_client = client
             return True
         except Exception as exc:
-            logger.error("OPC-UA connection failed: %s", exc)
+            logger.exception("OPC-UA connection failed: %s", exc)
             return False
 
     async def _connect_opcua_simulated(

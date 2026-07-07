@@ -1173,7 +1173,7 @@ class SevereWeatherService:
                 self._set_cached(latitude, longitude, default)
                 return default
             except Exception as e:
-                logger.error(
+                logger.exception(
                     f"Unexpected error fetching NWS severe weather for "
                     f"lat={latitude:.4f}, lon={longitude:.4f}: "
                     f"{type(e).__name__}: {e}. Using defaults."
@@ -1240,7 +1240,7 @@ class SevereWeatherService:
                     self._set_cached(latitude, longitude, default)
                     return default
             except Exception as e:
-                logger.error(
+                logger.exception(
                     f"Unexpected error fetching MeteoAlarm severe weather for "
                     f"lat={latitude:.4f}, lon={longitude:.4f}: "
                     f"{type(e).__name__}: {e}. Using defaults."
@@ -1255,7 +1255,7 @@ class SevereWeatherService:
             self._set_cached(latitude, longitude, data)
             return data
         except Exception as e:
-            logger.error(
+            logger.exception(
                 f"Open-Meteo alert check failed for lat={latitude:.4f}, "
                 f"lon={longitude:.4f}: {type(e).__name__}: {e}. "
                 f"Using defaults (no alerts)."

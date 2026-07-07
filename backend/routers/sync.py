@@ -490,5 +490,5 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
     except WebSocketDisconnect:
         manager.disconnect(websocket)
     except Exception as e:
-        logger.error("WebSocket error: %s", e)
+        logger.exception("WebSocket error: %s", e)
         manager.disconnect(websocket)

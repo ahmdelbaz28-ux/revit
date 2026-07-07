@@ -464,7 +464,7 @@ def verify_ecdsa_signature(record: dict[str, Any], public_key_pem: str) -> bool:
     try:
         vk = VerifyingKey.from_pem(public_key_pem)
     except Exception as e:
-        logger.error("Invalid ECDSA public key: %s", e)
+        logger.exception("Invalid ECDSA public key: %s", e)
         return False
 
     # Check for ECDSA signature

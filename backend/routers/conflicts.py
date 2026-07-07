@@ -60,7 +60,7 @@ async def list_conflicts(
             ),
         )
     except Exception as e:
-        logger.error("list_conflicts failed: %s", e, exc_info=True)
+        logger.exception("list_conflicts failed: %s", e)
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
@@ -77,7 +77,7 @@ async def detect_conflicts(
             message=f"Detected {len(conflicts)} conflicts",
         )
     except Exception as e:
-        logger.error("detect_conflicts failed: %s", e, exc_info=True)
+        logger.exception("detect_conflicts failed: %s", e)
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
@@ -97,8 +97,8 @@ async def resolve_conflict(
         raise
     except RuntimeError as e:
         # Don't expose internal error details to client.
-        logger.error("resolve_conflict RuntimeError: %s", e, exc_info=True)
+        logger.exception("resolve_conflict RuntimeError: %s", e)
         raise HTTPException(status_code=422, detail="Conflict resolution failed — check server logs for details")
     except Exception as e:
-        logger.error("resolve_conflict failed: %s", e, exc_info=True)
+        logger.exception("resolve_conflict failed: %s", e)
         raise HTTPException(status_code=500, detail="Internal server error")

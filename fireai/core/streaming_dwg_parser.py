@@ -351,7 +351,7 @@ class StreamingDXFParser:
             # V44 FIX: Previously, exceptions were silently swallowed without logging.
             # In fire protection software, a parse error that drops rooms means missing
             # fire detectors — a life-safety failure. Now we log the error.
-            logger.error("DWG parse error at line %s: %s", stats.lines_parsed, exc)
+            logger.exception("DWG parse error at line %s: %s", stats.lines_parsed, exc)
 
         stats.elapsed_s = time.perf_counter() - t0
         return stats

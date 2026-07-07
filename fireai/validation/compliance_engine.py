@@ -209,7 +209,7 @@ class ComplianceEngine:
                     logger.warning(violation_msg)
                     violations.append(violation_msg)
             except Exception as e:
-                logger.error("Error during validation of rule %s: %s", rule.clause_id, e)
+                logger.exception("Error during validation of rule %s: %s", rule.clause_id, e)
                 violations.append(
                     f"[{rule.severity}] VALIDATION ERROR [{rule.clause_id}]: Could not validate - {e}"
                 )

@@ -335,9 +335,8 @@ def _generate_variant_worker(args: tuple[str, dict[str, Any]]) -> dict[str, Any]
 
     except Exception as exc:
         generation_ms = (time.perf_counter() - t_start) * 1000.0
-        logger.error(
-            "Variant %s generation failed: %s", variant.value, exc, exc_info=True
-        )
+        logger.exception(
+            "Variant %s generation failed: %s", variant.value, exc)
         # Return a failed-layout result (never crash the whole batch)
         failed_layout = DetectorLayout(
             room=room, detectors=[], coverage_pct=0.0,
@@ -925,10 +924,10 @@ class GenerativeLayoutAgent:
 
         except Exception as exc:
             # Per fail-safe principle: audit failure MUST NOT block generation
-            logger.error(
+            logger.exception(
                 "Failed to record GENERATIVE_ATTEMPT audit event for "
                 "run_id=%s variant=%s: %s",
-                run_id, variant.value, exc, exc_info=True,
+                run_id, variant.value, exc,
             )
             return None
 

@@ -290,7 +290,7 @@ class EnterpriseOrchestrator:
                 elif isinstance(acoustic_result, dict):
                     acoustic_compliant = acoustic_result.get("compliant", False)
             except Exception as e:
-                logger.error("Acoustic check failed: %s", e)
+                logger.exception("Acoustic check failed: %s", e)
                 all_violations.append(
                     {
                         "module": "acoustic",
@@ -311,7 +311,7 @@ class EnterpriseOrchestrator:
                 elif isinstance(battery_result, dict):
                     battery_compliant = battery_result.get("is_adequate", False)
             except Exception as e:
-                logger.error("Battery check failed: %s", e)
+                logger.exception("Battery check failed: %s", e)
                 all_violations.append(
                     {
                         "module": "battery",
@@ -332,7 +332,7 @@ class EnterpriseOrchestrator:
                 elif isinstance(tenability_result, dict):
                     tenability_compliant = tenability_result.get("is_safe", False)
             except Exception as e:
-                logger.error("Tenability check failed: %s", e)
+                logger.exception("Tenability check failed: %s", e)
                 all_violations.append(
                     {
                         "module": "tenability",

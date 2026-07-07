@@ -293,7 +293,7 @@ class StreamProcessor:
                             return
                         current = result
                     except Exception as e:
-                        logger.error(
+                        logger.exception(
                             f"StreamProcessor '{self._name}': transform '{name}' "
                             f"raised error on event {event.id}: {e}"
                         )
@@ -314,7 +314,7 @@ class StreamProcessor:
                             )
                             return
                     except Exception as e:
-                        logger.error(
+                        logger.exception(
                             f"StreamProcessor '{self._name}': filter '{name}' "
                             f"raised error on event {event.id}: {e}"
                         )
@@ -331,7 +331,7 @@ class StreamProcessor:
                         try:
                             agg.add(agg_key, agg_value, current.timestamp)
                         except Exception as e:
-                            logger.error(
+                            logger.exception(
                                 f"StreamProcessor '{self._name}': aggregator '{agg_name}' "
                                 f"error on event {event.id}: {e}"
                             )
@@ -350,7 +350,7 @@ class StreamProcessor:
                 with self._metrics_lock:
                     self._events_errored += 1
                     self._last_error = str(e)
-                logger.error(
+                logger.exception(
                     f"StreamProcessor '{self._name}': unhandled error processing "
                     f"event {event.id}: {e}"
                 )
@@ -362,7 +362,7 @@ class StreamProcessor:
         try:
             await sink_fn(event)
         except Exception as e:
-            logger.error(
+            logger.exception(
                 f"StreamProcessor '{self._name}': sink '{name}' failed "
                 f"on event {event.id}: {e}"
             )

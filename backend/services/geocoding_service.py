@@ -205,7 +205,7 @@ class GeocodingService:
             )
             return None
         except Exception as e:
-            logger.error(
+            logger.exception(
                 f"Unexpected geocoding error for '{address}': "
                 f"{type(e).__name__}: {e}"
             )

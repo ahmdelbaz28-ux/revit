@@ -194,7 +194,7 @@ async def generate_design_variants(req: GenerativeDesignRequest) -> dict[str, An
         safe_msg = str(e)[:200] if "Traceback" not in str(e) else "Validation error"
         raise HTTPException(status_code=422, detail=safe_msg) from e
     except Exception as e:
-        logger.error("Generative design failed: %s", e, exc_info=True)
+        logger.exception("Generative design failed: %s", e)
         # CodeQL: py/stack-trace-exposure — never expose internal errors to client
         raise HTTPException(status_code=500, detail="Generation failed. Check server logs for details.") from e
 

@@ -530,11 +530,11 @@ class RedisEventBus(EventBus):
                                 await self._deliver(event)
                                 await r.xack(stream_key, self._consumer_group, msg_id)
                     except Exception as e:
-                        logger.error("Redis poll error for %s: %s", stream_key, e)
+                        logger.exception("Redis poll error for %s: %s", stream_key, e)
             except asyncio.CancelledError:
                 break
             except Exception as e:
-                logger.error("Redis poll loop error: %s", e)
+                logger.exception("Redis poll loop error: %s", e)
                 await asyncio.sleep(1)
 
     async def _deliver(self, event: Event) -> None:
@@ -596,7 +596,7 @@ class RedisEventBus(EventBus):
                 await self._deliver(event)
                 count += 1
             except Exception as e:
-                logger.error("Failed to replay DLQ event: %s", e)
+                logger.exception("Failed to replay DLQ event: %s", e)
         logger.info("Replayed %s events from Redis DLQ", count)
         return count
 
@@ -701,12 +701,12 @@ class KafkaEventBus(EventBus):
                     event = Event.from_dict(json.loads(msg.value.decode("utf-8")))
                     await self._deliver(event)
                 except Exception as e:
-                    logger.error("Failed to process Kafka message: %s", e)
+                    logger.exception("Failed to process Kafka message: %s", e)
                     dlq_topic = f"{msg.topic}{self._dlq_topic_suffix}"
                     producer = await self._get_producer()
                     await producer.send_and_wait(dlq_topic, msg.value)
         except Exception as e:
-            logger.error("Kafka consume loop error: %s", e)
+            logger.exception("Kafka consume loop error: %s", e)
 
     async def _deliver(self, event: Event) -> None:
         handlers = list(self._handlers.get(event.type, []))
@@ -785,7 +785,7 @@ class KafkaEventBus(EventBus):
                     count += 1
                 await dlq_consumer.stop()
             except Exception as e:
-                logger.error("Kafka DLQ replay error for %s: %s", dlq_topic, e)
+                logger.exception("Kafka DLQ replay error for %s: %s", dlq_topic, e)
         logger.info("Replayed %s events from Kafka DLQ", count)
         return count
 

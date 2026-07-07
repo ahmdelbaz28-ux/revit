@@ -328,9 +328,9 @@ class BIMProviderRegistry:
             try:
                 cls._instances[cache_key] = cls._providers[name](**kwargs)
             except Exception as exc:
-                logger.error(
+                logger.exception(
                     "Failed to instantiate BIM provider '%s': %s",
-                    name, exc, exc_info=True,
+                    name, exc,
                 )
                 return None
         return cls._instances[cache_key]
@@ -431,9 +431,8 @@ class LocalRevitProvider:
                     room.source = "local_revit"
             return rooms
         except Exception as exc:
-            logger.error(
-                "LocalRevitProvider.extract_rooms failed: %s", exc, exc_info=True
-            )
+            logger.exception(
+                "LocalRevitProvider.extract_rooms failed: %s", exc)
             return []
 
     def read_devices(
@@ -594,9 +593,9 @@ class IfcFileProvider:
                 rooms.append(room)
             return rooms
         except Exception as exc:
-            logger.error(
+            logger.exception(
                 "IfcFileProvider.extract_rooms failed for '%s': %s",
-                source, exc, exc_info=True,
+                source, exc,
             )
             return []
 
@@ -626,7 +625,7 @@ class IfcFileProvider:
                     })
             return devices
         except Exception as exc:
-            logger.error("IfcFileProvider.read_devices failed: %s", exc)
+            logger.exception("IfcFileProvider.read_devices failed: %s", exc)
             return []
 
     def write_devices(

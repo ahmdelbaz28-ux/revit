@@ -311,7 +311,7 @@ class BentleyBridge:
                 completed_at=datetime.now(timezone.utc).isoformat(),
             )
             self._sync_history[project_id] = status
-            logger.error("Bentley sync failed: %s", exc)
+            logger.exception("Bentley sync failed: %s", exc)
             return status
 
     # ── Asset Queries ───────────────────────────────────────────────────
@@ -444,7 +444,7 @@ class BentleyBridge:
                 "returning IFC file metadata only"
             )
         except Exception as exc:
-            logger.error("IFC import failed: %s", exc)
+            logger.exception("IFC import failed: %s", exc)
 
         return DesignData(
             source_file=path,

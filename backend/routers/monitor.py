@@ -546,7 +546,7 @@ async def get_health(request: Request):
         _monitor.evaluate_alert_rules()
         health["active_alerts"] = len(_monitor.get_active_alerts())
     except Exception as e:
-        logger.error("Alert evaluation failed: %s", e)
+        logger.exception("Alert evaluation failed: %s", e)
 
     return {
         "success": True,
@@ -711,7 +711,7 @@ async def get_alerts(request: Request):
     try:
         active_alerts = _monitor.evaluate_alert_rules()
     except Exception as e:
-        logger.error("Alert rule evaluation failed: %s", e)
+        logger.exception("Alert rule evaluation failed: %s", e)
         active_alerts = _monitor.get_active_alerts()
 
     rules = _monitor.get_alert_rules()
@@ -751,6 +751,6 @@ async def start_metric_collector(interval_seconds: int = 15) -> None:
                         "memory_mb": round(random.uniform(10.0, 200.0), 1),
                     })
         except Exception as e:
-            logger.error("Metric collector error: %s", e)
+            logger.exception("Metric collector error: %s", e)
 
         await asyncio.sleep(interval_seconds)

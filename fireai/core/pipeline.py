@@ -193,7 +193,7 @@ def _run_stage(name: str, fn, *args, **kwargs) -> StageResult:
         )
     except ContractViolation as exc:
         ms = (time.perf_counter() - t0) * 1000.0
-        logger.error("Stage %s CONTRACT VIOLATION: %s", name, exc)
+        logger.exception("Stage %s CONTRACT VIOLATION: %s", name, exc)
         return StageResult(
             stage_name=name,
             success=False,
@@ -202,7 +202,7 @@ def _run_stage(name: str, fn, *args, **kwargs) -> StageResult:
         )
     except Exception as exc:
         ms = (time.perf_counter() - t0) * 1000.0
-        logger.error("Stage %s FAILED: %s\n%s", name, exc, traceback.format_exc())
+        logger.exception("Stage %s FAILED: %s\n%s", name, exc, traceback.format_exc())
         return StageResult(
             stage_name=name,
             success=False,
@@ -1327,9 +1327,9 @@ def analyze_room(
             f"[AUDIT CHAIN] Failed to record ROOM_ANALYSIS event: {audit_exc!r}. "
             f"NFPA 72 §7.5 audit trail integrity at risk — investigate AuditStore."
         )
-        logger.error(
+        logger.exception(
             "Audit chain write failed for run_id=%s room_id=%s: %s",
-            run_id, room_id, audit_exc, exc_info=True,
+            run_id, room_id, audit_exc,
         )
 
     return PipelineResult(
@@ -1794,9 +1794,9 @@ def _failed_result(
             f"[AUDIT CHAIN] Failed to record ROOM_ANALYSIS_FAILED event: {audit_exc!r}. "
             f"NFPA 72 §7.5 audit trail integrity at risk."
         )
-        logger.error(  # NOSONAR
+        logger.exception(  # NOSONAR
             "Audit chain write failed for FAILED run_id=%s room_id=%s: %s",
-            run_id, room_id, audit_exc, exc_info=True,
+            run_id, room_id, audit_exc,
         )
 
     return PipelineResult(

@@ -254,7 +254,7 @@ class StandardValidator(ABC):
                 value_expected=rule.get("value_expected"),
             )
         except Exception as e:
-            logger.error(
+            logger.exception(
                 f"Error applying rule {rule['rule_id']} for {self._standard.value}: {e}"
             )
             return RuleApplication(

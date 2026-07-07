@@ -381,7 +381,7 @@ class MobileAPI:
             )
 
         except Exception as exc:
-            logger.error("Offline sync failed for user %s: %s", user_id, exc)
+            logger.exception("Offline sync failed for user %s: %s", user_id, exc)
             raise
 
     # ── User Management ─────────────────────────────────────────────────

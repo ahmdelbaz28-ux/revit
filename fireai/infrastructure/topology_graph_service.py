@@ -305,7 +305,7 @@ class TopologyGraphService:
                 )
             return True
         except Exception as exc:
-            logger.error("Failed to add element: %s", exc)
+            logger.exception("Failed to add element: %s", exc)
             return False
 
     def add_connection(self, connection: NetworkConnection) -> bool:
@@ -337,7 +337,7 @@ class TopologyGraphService:
                 )
             return True
         except Exception as exc:
-            logger.error("Failed to add connection: %s", exc)
+            logger.exception("Failed to add connection: %s", exc)
             return False
 
     # ------------------------------------------------------------------
@@ -410,7 +410,7 @@ class TopologyGraphService:
 
         except Exception as exc:
             elapsed_ms = (time.perf_counter() - t_start) * 1000.0
-            logger.error("Impact analysis failed: %s", exc)
+            logger.exception("Impact analysis failed: %s", exc)
             return ImpactAnalysisResult(
                 breaker_id=breaker_id,
                 analysis_ms=elapsed_ms,
@@ -529,7 +529,7 @@ class TopologyGraphService:
                 return elements
 
         except Exception as exc:
-            logger.error("Get downstream failed: %s", exc)
+            logger.exception("Get downstream failed: %s", exc)
             return []
 
     # ------------------------------------------------------------------

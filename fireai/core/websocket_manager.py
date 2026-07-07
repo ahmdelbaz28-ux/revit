@@ -71,7 +71,7 @@ class ConnectionManager:
                 await websocket.send_text(message)
                 return True
             except Exception as e:
-                logger.error("Failed to send message to %s: %s", client_id, e)
+                logger.exception("Failed to send message to %s: %s", client_id, e)
                 self.disconnect(websocket)
         return False
 
@@ -82,7 +82,7 @@ class ConnectionManager:
                 await websocket.send_text(message)
                 sent_count += 1
             except Exception as e:
-                logger.error("Failed to broadcast to %s: %s", client_id, e)
+                logger.exception("Failed to broadcast to %s: %s", client_id, e)
                 self.disconnect(websocket)
         return sent_count
 

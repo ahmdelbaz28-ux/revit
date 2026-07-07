@@ -1033,7 +1033,7 @@ class WebhookDeliveryService:
             return False
 
         except Exception as exc:
-            logger.error("DLQ entry %s replay error: %s", entry.event_id, exc, exc_info=True)
+            logger.exception("DLQ entry %s replay error: %s", entry.event_id, exc)
             with self._lock:
                 self._dlq.insert(min(dlq_index, len(self._dlq)), entry)
             return False

@@ -305,7 +305,7 @@ class PDFInputLayer:
             full_tb = traceback.format_exc()
             result.errors.append(f"Data extraction failed: {e}")
             result.errors.append(f"Traceback: {full_tb}")
-            logger.error("Extraction error: %s\n%s", e, full_tb)
+            logger.exception("Extraction error: %s\n%s", e, full_tb)
 
         return result
 

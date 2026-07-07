@@ -441,7 +441,7 @@ class MemoryService:
             }
 
         except Exception as e:
-            logger.error("Memory add failed: %s", e, exc_info=True)
+            logger.exception("Memory add failed: %s", e)
             return {
                 "success": False,
                 "error": str(e),
@@ -520,7 +520,7 @@ class MemoryService:
             )
 
         except Exception as e:
-            logger.error("Memory search failed: %s", e, exc_info=True)
+            logger.exception("Memory search failed: %s", e)
             return MemorySearchResponse(
                 results=[],
                 query=request.query,
@@ -633,9 +633,8 @@ class MemoryService:
                 }
 
             except Exception as e2:
-                logger.error(
+                logger.exception(
                     f"Memory get_all failed with BOTH v1 and v2 APIs: {e2}",
-                    exc_info=True,
                 )
                 return {
                     "success": False,
@@ -645,7 +644,7 @@ class MemoryService:
                 }
 
         except Exception as e:
-            logger.error("Memory get_all failed: %s", e, exc_info=True)
+            logger.exception("Memory get_all failed: %s", e)
             return {
                 "success": False,
                 "error": str(e),
@@ -672,7 +671,7 @@ class MemoryService:
             }
 
         except Exception as e:
-            logger.error("Memory delete failed: %s", e, exc_info=True)
+            logger.exception("Memory delete failed: %s", e)
             return {
                 "success": False,
                 "error": str(e),
@@ -702,7 +701,7 @@ class MemoryService:
             }
 
         except Exception as e:
-            logger.error("Memory history failed: %s", e, exc_info=True)
+            logger.exception("Memory history failed: %s", e)
             return {
                 "success": False,
                 "error": str(e),

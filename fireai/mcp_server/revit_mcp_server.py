@@ -441,7 +441,7 @@ class RevitMCPServer:
                     sys.stdout.flush()
             except Exception as e:
                 # Never crash the server on a malformed request — log and continue.
-                logger.error("[MCP SERVER] Error handling request: %s", e)
+                logger.exception("[MCP SERVER] Error handling request: %s", e)
                 error_response = {
                     "jsonrpc": "2.0",
                     "id": None,
@@ -526,7 +526,7 @@ class RevitMCPServer:
 
         except Exception as e:
             if is_notification:
-                logger.error("[MCP SERVER] Notification %s failed: %s", method, e)
+                logger.exception("[MCP SERVER] Notification %s failed: %s", method, e)
                 return None
             return {
                 "jsonrpc": "2.0",

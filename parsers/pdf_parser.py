@@ -322,7 +322,7 @@ class PDFParser:
             logger.warning("pytesseract not installed")
             return ""
         except Exception as e:
-            logger.error("OCR failed: %s", e)
+            logger.exception("OCR failed: %s", e)
             return ""
 
     def _find_devices(self, text: str, page: int) -> List[PDFDevice]:

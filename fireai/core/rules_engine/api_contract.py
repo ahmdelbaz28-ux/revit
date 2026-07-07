@@ -232,7 +232,7 @@ class ContractValidator:
             if self.severity == ContractSeverity.STRICT:
                 raise
 
-            logger.error("Contract violation on %s: %s. Returning unvalidated response (severity=LOG).", key, e.errors())
+            logger.exception("Contract violation on %s: %s. Returning unvalidated response (severity=LOG).", key, e.errors())
             return data
 
     def validate_request(
@@ -262,7 +262,7 @@ class ContractValidator:
                 actual_value=data,
             )
             self._violation_log.append(violation)
-            logger.error("Request validation failed on %s:%s: %s", method, endpoint, e.errors())
+            logger.exception("Request validation failed on %s:%s: %s", method, endpoint, e.errors())
             raise
 
     def get_violations(self) -> list[ContractViolationDetail]:

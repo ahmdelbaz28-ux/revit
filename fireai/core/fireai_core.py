@@ -260,7 +260,7 @@ class FireAISystem:
                 ceiling_height=room_spec.ceiling_spec.height_at_low_point_m if room_spec.ceiling_spec else 3.0,
             )
         except Exception as e:
-            logger.error("Analysis engine failed for room %s: %s", room_spec.room_id, e)
+            logger.exception("Analysis engine failed for room %s: %s", room_spec.room_id, e)
             return EnhancedRoomResult(
                 room_id=room_spec.room_id,
                 errors=[f"Analysis engine error: {e}"],
@@ -525,7 +525,7 @@ class FireAISystem:
         try:
             return self.learning.get_summary()  # type: ignore[attr-defined]
         except Exception as exc:
-            logger.error("Failed to get memory summary: %s", exc)
+            logger.exception("Failed to get memory summary: %s", exc)
             return {"error": str(exc)}
 
     # ──────────────────────────────────────────────────────────────────────

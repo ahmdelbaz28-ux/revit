@@ -332,7 +332,7 @@ class VectorMemoryService:
             return entry_id
 
         except Exception as exc:
-            logger.error("Failed to store memory: %s", exc, exc_info=True)
+            logger.exception("Failed to store memory: %s", exc)
             return None
 
     # ------------------------------------------------------------------
@@ -413,7 +413,7 @@ class VectorMemoryService:
             )
 
         except Exception as exc:
-            logger.error("Memory search failed: %s", exc, exc_info=True)
+            logger.exception("Memory search failed: %s", exc)
             return SearchResult(query=query, results=[], total=0, collection="error")
 
     # ------------------------------------------------------------------
@@ -442,7 +442,7 @@ class VectorMemoryService:
             logger.info("Deleted memory: type=%s id=%s", memory_type.value, entry_id)
             return True
         except Exception as exc:
-            logger.error("Failed to delete memory: %s", exc)
+            logger.exception("Failed to delete memory: %s", exc)
             return False
 
     # ------------------------------------------------------------------

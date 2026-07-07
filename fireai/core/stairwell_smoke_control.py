@@ -993,7 +993,7 @@ class StairwellSmokeControlIntegrator:
                     violations=all_violations if all_violations else None,
                 )
             except Exception as exc:
-                logger.error("Failed to record stairwell smoke control decision audit: %s", exc)
+                logger.exception("Failed to record stairwell smoke control decision audit: %s", exc)
 
         return {
             "decision_type": "stairwell_smoke_control",

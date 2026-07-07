@@ -426,7 +426,7 @@ class HazmatService:
                 f"{type(e).__name__}: {e}. Using defaults."
             )
         except Exception as e:
-            logger.error(
+            logger.exception(
                 f"Unexpected error fetching hazmat data for '{material_name}': "
                 f"{type(e).__name__}: {e}. Using defaults."
             )

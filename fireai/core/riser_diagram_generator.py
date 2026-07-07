@@ -337,7 +337,7 @@ class RiserDiagramGenerator:
 
         except Exception as exc:
             result.errors.append(f"Riser diagram generation failed: {exc}")
-            logger.error("RiserDiagram error: %s", exc)
+            logger.exception("RiserDiagram error: %s", exc)
 
         return result
 

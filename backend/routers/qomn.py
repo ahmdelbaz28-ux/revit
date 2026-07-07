@@ -128,7 +128,7 @@ def _get_kernel():
                     from fireai.core.qomn_kernel import QOMNKernel
                     _kernel = QOMNKernel()
                 except ImportError as e:
-                    logger.error(
+                    logger.exception(
                         "QOMNKernel import failed: %s. "
                         "All /api/qomn endpoints will return 503. "
                         "Ensure fireai.core.qomn_kernel is available in the Python path.",

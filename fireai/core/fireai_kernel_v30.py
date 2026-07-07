@@ -496,14 +496,14 @@ class StreamingParser:
                         yield walls
         except Exception as e:
             self._errors.append(f"DXF stream error: {e}")
-            logger.error("DXF stream error at %s: %s", path, e)
+            logger.exception("DXF stream error at %s: %s", path, e)
 
     async def parse_pdf_stream(self, path: Path) -> AsyncIterator[list[NDArray[np.float64]]]:
         """Stream PDF page-by-page → yield wall arrays."""
         try:
             import _fitz_compat as fitz
         except ImportError:
-            logger.error("PyMuPDF not installed")
+            logger.exception("PyMuPDF not installed")
             return
 
         def _extract_page(doc_path: str, page_num: int) -> list[NDArray]:
@@ -537,7 +537,7 @@ class StreamingParser:
                     yield walls
         except Exception as e:
             self._errors.append(f"PDF stream error: {e}")
-            logger.error("PDF stream error: %s", e)
+            logger.exception("PDF stream error: %s", e)
 
     @staticmethod
     def _parse_dxf_chunk(lines: list[str]) -> list[NDArray[np.float64]]:
@@ -711,7 +711,7 @@ class AdaptivePipeline:
             except Exception as e:
                 metrics.errors += 1
                 error_window.append(1)
-                logger.error("Stage '%s' error: %s", name, e)
+                logger.exception("Stage '%s' error: %s", name, e)
                 if len(error_window) == 100 and sum(error_window) / 100 >= self.ERROR_RATE_TRIP:
                     circuit_open = True
                     logger.warning("Stage '%s' circuit breaker OPEN", name)
@@ -887,7 +887,7 @@ class ConcurrentSolver:
             try:
                 results.append(f.result(timeout=60))
             except Exception as e:
-                logger.error("Solver future error: %s", e)
+                logger.exception("Solver future error: %s", e)
                 results.append(SolverResult([], 0.0, False, str(e)))
         return results
 

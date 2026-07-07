@@ -396,7 +396,7 @@ class DDCAdapter:
                 duration_s=300.0,
             )
         except Exception as e:
-            logger.error("DDC convert error: %s", e, exc_info=True)
+            logger.exception("DDC convert error: %s", e)
             return DDCConversionResult(
                 success=False,
                 source_file=str(input_path),
@@ -454,7 +454,7 @@ class DDCAdapter:
 
             wb.close()
         except Exception as e:
-            logger.error("DDC XLSX room extraction failed: %s", e, exc_info=True)
+            logger.exception("DDC XLSX room extraction failed: %s", e)
 
         return rooms
 
@@ -482,7 +482,7 @@ class DDCAdapter:
 
             wb.close()
         except Exception as e:
-            logger.error("DDC XLSX element extraction failed: %s", e, exc_info=True)
+            logger.exception("DDC XLSX element extraction failed: %s", e)
 
         return elements
 
@@ -509,7 +509,7 @@ class DDCAdapter:
                         }
                     )
         except Exception as e:
-            logger.error("xlrd extraction failed: %s", e, exc_info=True)
+            logger.exception("xlrd extraction failed: %s", e)
         return rooms
 
 

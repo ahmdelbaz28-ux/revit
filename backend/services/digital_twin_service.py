@@ -654,7 +654,7 @@ class DigitalTwinEngine:
             )
 
         except Exception as e:
-            logger.error("Conversion failed: %s", e)
+            logger.exception("Conversion failed: %s", e)
             return ConversionResult(
                 success=False,
                 source_file=dwg_filepath,
@@ -752,7 +752,7 @@ class DigitalTwinEngine:
             )
 
         except Exception as e:
-            logger.error("Conversion failed: %s", e)
+            logger.exception("Conversion failed: %s", e)
             return ConversionResult(
                 success=False,
                 source_file=rvt_filepath,
@@ -828,7 +828,7 @@ class VersionManager:
                 shutil.copy2(target_file, backup_path)
                 logger.info("Created backup: %s", backup_path)  # NOSONAR
             except Exception as e:
-                logger.error("Failed to create backup: %s", e)
+                logger.exception("Failed to create backup: %s", e)
 
         # Load existing history
         history = self._load_history()
@@ -866,7 +866,7 @@ class VersionManager:
                         logger.info("Restored version %s to %s", version_id, target_file)
                         return True
                     except Exception as e:
-                        logger.error("Failed to restore backup: %s", e)
+                        logger.exception("Failed to restore backup: %s", e)
                         return False
                 else:
                     logger.error("Backup file not found: %s", backup_path)
@@ -884,7 +884,7 @@ class VersionManager:
             with open(self.history_file) as f:
                 return json.load(f)
         except json.JSONDecodeError:
-            logger.error("History file corrupted: %s", self.history_file)
+            logger.exception("History file corrupted: %s", self.history_file)
             return []
 
     def _save_history(self, history: List[Dict[str, Any]]) -> None:
@@ -962,7 +962,7 @@ class ConversionConfigManager:
             logger.info("Configuration saved to %s", self.config_path)
             return True
         except Exception as e:
-            logger.error("Failed to save configuration: %s", e)
+            logger.exception("Failed to save configuration: %s", e)
             return False
 
     def load_config(self) -> ConversionConfig:
@@ -978,7 +978,7 @@ class ConversionConfigManager:
             logger.info("Configuration loaded from %s", self.config_path)
             return ConversionConfig.from_dict(data)
         except Exception as e:
-            logger.error("Failed to load configuration: %s", e)
+            logger.exception("Failed to load configuration: %s", e)
             return ConversionConfig()
 
     def update_mapping(self, layer: str, category: str, direction: str = "autocad_to_revit") -> bool:
@@ -1003,7 +1003,7 @@ class ConversionConfigManager:
 
             return self.save_config(config)
         except Exception as e:
-            logger.error("Failed to update mapping: %s", e)
+            logger.exception("Failed to update mapping: %s", e)
             return False
 
     def get_available_mappings(self) -> Dict[str, Any]:

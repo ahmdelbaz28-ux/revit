@@ -451,7 +451,7 @@ class AirQualityService:
             )
             return self._get_default(latitude, longitude)
         except Exception as e:
-            logger.error(
+            logger.exception(
                 f"Unexpected error fetching air quality for lat={latitude:.4f}, "
                 f"lon={longitude:.4f}: {type(e).__name__}: {e}. "
                 f"Using conservative defaults."

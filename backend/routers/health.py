@@ -151,7 +151,7 @@ async def get_health_statistics():
         # H-3 FIX: Never expose str(e) to the client — Python exceptions can
         # include file paths, DB connection strings, and internal variable names.
         # In a fire protection system, this information could help attackers.
-        logger.error("Statistics endpoint error: %s", e, exc_info=True)
+        logger.exception("Statistics endpoint error: %s", e)
         from backend.response import error
         return error("Statistics unavailable — check server logs", {
             "total_elements": 0,

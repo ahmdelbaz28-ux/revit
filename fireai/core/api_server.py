@@ -436,7 +436,7 @@ def memory_summary():
     try:
         return _get_system().get_memory_summary()
     except Exception as e:
-        logger.error("Memory summary failed: %s", e)
+        logger.exception("Memory summary failed: %s", e)
         raise HTTPException(status_code=500, detail="Internal error")
 
 
@@ -454,7 +454,7 @@ def analyse_room(req: RoomRequest):
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc))
     except Exception as exc:
-        logger.error("Room analysis failed: %s", exc, exc_info=True)
+        logger.exception("Room analysis failed: %s", exc)
         raise HTTPException(status_code=500, detail="Analysis failed")
 
 
@@ -471,7 +471,7 @@ def analyse_floor(rooms: list[RoomRequest]):
         results = [_get_system().analyse_room(spec, user_id="api") for spec in specs]
         return [_to_response(r) for r in results]
     except Exception as exc:
-        logger.error("Floor analysis failed: %s", exc, exc_info=True)
+        logger.exception("Floor analysis failed: %s", exc)
         raise HTTPException(status_code=500, detail="Floor analysis failed")
 
 
@@ -492,7 +492,7 @@ def audit_verify():
             "message": "Audit chain is valid" if is_valid else "AUDIT CHAIN MAY BE COMPROMISED",
         }
     except Exception as exc:
-        logger.error("Audit verification failed: %s", exc, exc_info=True)
+        logger.exception("Audit verification failed: %s", exc)
         raise HTTPException(status_code=500, detail="Verification failed")
 
 
@@ -559,7 +559,7 @@ def run_integration(req: IntegrationRequest):
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc))
     except Exception as exc:
-        logger.error("Integration pipeline failed: %s", exc, exc_info=True)
+        logger.exception("Integration pipeline failed: %s", exc)
         raise HTTPException(status_code=500, detail="Integration pipeline failed")
 
 
@@ -580,7 +580,7 @@ def hashchain_report():
             "message": "Hash chain audit not yet initialized. Run an analysis first.",
         }
     except Exception as exc:
-        logger.error("Hash chain report failed: %s", exc, exc_info=True)
+        logger.exception("Hash chain report failed: %s", exc)
         raise HTTPException(status_code=500, detail="Hash chain report failed")
 
 

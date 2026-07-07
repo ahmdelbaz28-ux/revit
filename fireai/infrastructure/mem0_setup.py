@@ -717,7 +717,7 @@ def create_mem0_instance() -> Any:
     try:
         mem0_instance = Memory.from_config(config)
     except Exception as e:
-        logger.error("Mem0 initialization failed: %s", e)
+        logger.exception("Mem0 initialization failed: %s", e)
         raise RuntimeError(
             f"Failed to initialize Mem0: {e}. Check your provider configuration and connectivity."
         ) from e

@@ -139,9 +139,9 @@ def record_audit_write(
 
     except Exception as exc:
         # Per fail-safe principle: audit failure MUST NOT block the operation
-        logger.error(
+        logger.exception(
             "Failed to record audit write for %s on %s: %s",
-            operation, table, exc, exc_info=True,
+            operation, table, exc,
         )
         return None
 

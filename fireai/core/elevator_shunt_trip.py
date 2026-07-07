@@ -240,7 +240,7 @@ class ElevatorShuntTripAuditor:
                 spk_temp = float(sprinkler.get("temp_rating_C", 68.3))
                 spk_rti = float(sprinkler.get("rti", DEFAULT_SPRINKLER_RTI))
             except (ValueError, TypeError) as e:
-                logger.error(
+                logger.exception(
                     f"Non-numeric data in sprinkler '{spk_id}': {e}. "
                     f"Skipping this device — cannot verify thermal response."
                 )

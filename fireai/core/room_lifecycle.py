@@ -373,7 +373,7 @@ class RoomLifecycle:
         except Exception as exc:
             # Event publishing failure must NOT break the state machine.
             # Log the error but continue — the transition is already recorded.
-            logger.error(
+            logger.exception(
                 "Failed to publish lifecycle event for room %s: %s",
                 self._room_id,
                 exc,

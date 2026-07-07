@@ -155,7 +155,7 @@ class SafeBuildingEngine:
                     "calc_time_sec": elapsed,
                 }
         except Exception as ex:
-            logger.error("Safe Solver Failure upon %s: %s", room_spec.get("room_id", "UNK"), ex)
+            logger.exception("Safe Solver Failure upon %s: %s", room_spec.get("room_id", "UNK"), ex)
             return {"room_id": room_spec.get("room_id", "UNK"), "success": False, "status": "ERROR", "error": str(ex)}
 
     def run_multi_floor_safety_analysis(self, floor_spec_registry: list[dict[str, Any]]) -> list[dict]:
@@ -210,6 +210,6 @@ class SafeBuildingEngine:
                     res_payload = w.result(timeout=180)
                     results.append(res_payload)
                 except Exception:
-                    logger.error("Task timeout or death on thread assigned to: %s", room_trace)
+                    logger.exception("Task timeout or death on thread assigned to: %s", room_trace)
                     results.append({"room_id": room_trace, "success": False, "status": "CRASH"})
         return results

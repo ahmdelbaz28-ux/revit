@@ -205,9 +205,8 @@ class Rule:
         try:
             return self.condition(fact)
         except Exception as e:
-            logger.error(
+            logger.exception(
                 f"Rule {self.rule_id} condition error on fact {fact.fact_id}: {e}",
-                exc_info=True,
             )
             # SAFETY: On condition error, do NOT fire the rule.
             # Conservative = safer.
@@ -572,9 +571,8 @@ class RulesEngine:
                     self._fired_combinations.add(combo_key)
 
                 except Exception as e:
-                    logger.error(
+                    logger.exception(
                         f"Rule {rule.rule_id} action error: {e}",
-                        exc_info=True,
                     )
                     audit.fired = False
                     audit.reason = f"Action error: {e}"
@@ -660,9 +658,8 @@ class RulesEngine:
                             if join_pred(f1, f2):
                                 join_results.append((rule, [f1, f2]))
                         except Exception as e:
-                            logger.error(
+                            logger.exception(
                                 f"Join condition error in rule {rule.rule_id}: {e}",
-                                exc_info=True,
                             )
 
         return join_results

@@ -342,7 +342,7 @@ class UniversalDataModel:
             except (sqlite3.Error, json.JSONDecodeError) as e:
                 # V83 FIX (H-5): Only catch expected exceptions. Classify:
                 # MEDIUM — database/serialization error, not data corruption.
-                logger.error("MEDIUM: Error adding element %s: %s", element_id if 'element_id' in dir() else '?', e)
+                logger.exception("MEDIUM: Error adding element %s: %s", element_id if 'element_id' in dir() else '?', e)
                 return False
 
     def add_elements_batch(self, elements: list[_ElementLike]) -> int:
@@ -381,7 +381,7 @@ class UniversalDataModel:
             except MemoryError:
                 raise
             except (sqlite3.Error, json.JSONDecodeError) as e:
-                logger.error("MEDIUM: Error in batch add: %s", e)
+                logger.exception("MEDIUM: Error in batch add: %s", e)
                 return count
 
     def get_element(self, element_id: str) -> UniversalElement | None:
@@ -408,7 +408,7 @@ class UniversalDataModel:
             except MemoryError:
                 raise
             except (sqlite3.Error, json.JSONDecodeError) as e:
-                logger.error("HIGH: Error getting element %s: %s", element_id, e)
+                logger.exception("HIGH: Error getting element %s: %s", element_id, e)
                 return None
 
     def get_all_elements(self, include_deleted: bool = True) -> list[UniversalElement]:
@@ -444,7 +444,7 @@ class UniversalDataModel:
             except MemoryError:
                 raise
             except (sqlite3.Error, json.JSONDecodeError) as e:
-                logger.error("HIGH: Error getting elements: %s", e)
+                logger.exception("HIGH: Error getting elements: %s", e)
                 return []
 
     def update_element(self, element_id: str, updates: dict[str, Any], source: ChangeSource | None = None) -> bool:
@@ -511,7 +511,7 @@ class UniversalDataModel:
             except MemoryError:
                 raise
             except (sqlite3.Error, json.JSONDecodeError) as e:
-                logger.error("HIGH: Error updating element %s: %s", element_id, e)
+                logger.exception("HIGH: Error updating element %s: %s", element_id, e)
                 return False
 
     def delete_element(self, element_id: str, source: ChangeSource | None = None) -> bool:
@@ -541,7 +541,7 @@ class UniversalDataModel:
             except MemoryError:
                 raise
             except sqlite3.Error as e:
-                logger.error("HIGH: Error deleting element %s: %s", element_id, e)
+                logger.exception("HIGH: Error deleting element %s: %s", element_id, e)
                 return False
 
     # ── Efficient indexed queries (V129 FIX) ─────────────────────────────
@@ -585,7 +585,7 @@ class UniversalDataModel:
             except MemoryError:
                 raise
             except (sqlite3.Error, json.JSONDecodeError) as e:
-                logger.error("HIGH: Error getting elements by type: %s", e)
+                logger.exception("HIGH: Error getting elements by type: %s", e)
                 return []
 
     def get_elements_by_project(self, project_id: str, include_deleted: bool = False) -> list[UniversalElement]:
@@ -627,7 +627,7 @@ class UniversalDataModel:
             except MemoryError:
                 raise
             except (sqlite3.Error, json.JSONDecodeError) as e:
-                logger.error("HIGH: Error getting elements by project: %s", e)
+                logger.exception("HIGH: Error getting elements by project: %s", e)
                 return []
 
     def detect_conflicts(self) -> list:
@@ -690,7 +690,7 @@ class UniversalDataModel:
             except MemoryError:
                 raise
             except Exception as e:
-                logger.error("MEDIUM: Error detecting conflicts: %s", e)
+                logger.exception("MEDIUM: Error detecting conflicts: %s", e)
             return conflicts
 
     def resolve_conflict(self, conflict_id: str, strategy: str = "SEMANTIC_MERGE") -> Any | None:
@@ -738,7 +738,7 @@ class UniversalDataModel:
             except MemoryError:
                 raise
             except Exception as e:
-                logger.error("HIGH: Error resolving conflict %s: %s", conflict_id, e)
+                logger.exception("HIGH: Error resolving conflict %s: %s", conflict_id, e)
                 return None
 
     def get_statistics(self) -> Any:
@@ -784,7 +784,7 @@ class UniversalDataModel:
             except MemoryError:
                 raise
             except Exception as e:
-                logger.error("HIGH: Error getting statistics: %s", e)
+                logger.exception("HIGH: Error getting statistics: %s", e)
                 from dataclasses import dataclass
                 @dataclass
                 class _StatsFallback:  # V131 FIX: Renamed to avoid no-redef
@@ -897,5 +897,5 @@ class UniversalDataModel:
         except MemoryError:
             raise
         except Exception as e:
-            logger.error("CRITICAL: Error deserializing element: %s", e)
+            logger.exception("CRITICAL: Error deserializing element: %s", e)
             return None

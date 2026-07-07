@@ -127,7 +127,7 @@ class AutoCADService:
                         self.acad_app.Visible = visible  # Make it visible to user
                         logger.info("Launched new AutoCAD instance (visible=%s)", visible)
                     except Exception as e:
-                        logger.error("Could not launch AutoCAD: %s", e)
+                        logger.exception("Could not launch AutoCAD: %s", e)
                         if os.getenv("FIREAI_ENV", "development") == "development":
                             logger.info("Falling back to SIMULATION mode for AutoCAD in development")
                             self.connected = True
@@ -140,7 +140,7 @@ class AutoCADService:
                     self.acad_app.Visible = visible
                     logger.info("Launched new AutoCAD instance (force_new=True, visible=%s)", visible)
                 except Exception as e:
-                    logger.error("Could not launch AutoCAD: %s", e)
+                    logger.exception("Could not launch AutoCAD: %s", e)
                     if os.getenv("FIREAI_ENV", "development") == "development":
                         logger.info("Falling back to SIMULATION mode for AutoCAD in development")
                         self.connected = True
@@ -159,7 +159,7 @@ class AutoCADService:
             return True
 
         except Exception as e:
-            logger.error("Error connecting to AutoCAD: %s", e)
+            logger.exception("Error connecting to AutoCAD: %s", e)
             if os.getenv("FIREAI_ENV", "development") == "development":
                 logger.info("Falling back to SIMULATION mode for AutoCAD in development (outer)")
                 self.connected = True
@@ -193,7 +193,7 @@ class AutoCADService:
             return True
 
         except Exception as e:
-            logger.error("Error disconnecting from AutoCAD: %s", e)
+            logger.exception("Error disconnecting from AutoCAD: %s", e)
             return False
 
     def initialize(self) -> bool:
@@ -330,7 +330,7 @@ class AutoCADService:
             return entity_data
 
         except Exception as e:
-            logger.error("Error extracting entity data: %s", e)
+            logger.exception("Error extracting entity data: %s", e)
             return {
                 "handle": getattr(entity, 'Handle', ''),
                 "object_name": getattr(entity, 'ObjectName', ''),
@@ -431,7 +431,7 @@ class AutoCADService:
             }
 
         except Exception as e:
-            logger.error("Error reading DWG file %s: %s", filepath, e)
+            logger.exception("Error reading DWG file %s: %s", filepath, e)
             return {
                 "success": False,
                 "error": str(e),
@@ -588,7 +588,7 @@ class AutoCADService:
             return True
 
         except Exception as e:
-            logger.error("Error writing DWG file %s: %s", filepath, e)
+            logger.exception("Error writing DWG file %s: %s", filepath, e)
             return False
 
     def draw_line(self, start_point: List[float], end_point: List[float],
@@ -626,7 +626,7 @@ class AutoCADService:
             return line_obj
 
         except Exception as e:
-            logger.error("Error drawing line: %s", e)
+            logger.exception("Error drawing line: %s", e)
             return None
 
     def draw_polyline(self, vertices: List[List[float]],
@@ -671,7 +671,7 @@ class AutoCADService:
             return polyline_obj
 
         except Exception as e:
-            logger.error("Error drawing polyline: %s", e)
+            logger.exception("Error drawing polyline: %s", e)
             return None
 
     def draw_circle(self, center: List[float], radius: float,
@@ -709,7 +709,7 @@ class AutoCADService:
             return circle_obj
 
         except Exception as e:
-            logger.error("Error drawing circle: %s", e)
+            logger.exception("Error drawing circle: %s", e)
             return None
 
     def draw_text(self, text: str, insertion_point: List[float], height: float = 0.2,
@@ -748,7 +748,7 @@ class AutoCADService:
             return text_obj
 
         except Exception as e:
-            logger.error("Error drawing text: %s", e)
+            logger.exception("Error drawing text: %s", e)
             return None
 
     def get_document_info(self) -> Dict[str, Any]:
@@ -798,7 +798,7 @@ class AutoCADService:
                 }
             }
         except Exception as e:
-            logger.error("Error getting document info: %s", e)
+            logger.exception("Error getting document info: %s", e)
             return {}
 
     def save(self, filepath: str) -> bool:
@@ -836,7 +836,7 @@ class AutoCADService:
             return True
 
         except Exception as e:
-            logger.error("Error saving document to %s: %s", filepath, e)
+            logger.exception("Error saving document to %s: %s", filepath, e)
             return False
 
     def delete_entity(self, handle: str) -> bool:
@@ -848,7 +848,7 @@ class AutoCADService:
             logger.info("Entity %s marked for deletion", handle)  # NOSONAR
             return True
         except Exception as e:
-            logger.error("Error deleting entity %s: %s", handle, e)
+            logger.exception("Error deleting entity %s: %s", handle, e)
             return False
 
     def modify_entity(self, handle: str, properties: Dict[str, Any]) -> bool:
@@ -860,5 +860,5 @@ class AutoCADService:
             logger.info("Entity %s updated: %s", handle, properties)  # NOSONAR
             return True
         except Exception as e:
-            logger.error("Error modifying entity %s: %s", handle, e)
+            logger.exception("Error modifying entity %s: %s", handle, e)
             return False

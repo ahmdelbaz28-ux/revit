@@ -120,7 +120,7 @@ def sync_project_to_udm(project_data: dict[str, Any]) -> bool:
             db.record_sync("project", project_id, _TARGET_DB, "synced")
             return True
         except Exception as e:
-            logger.error("Failed to sync project %s to UDM: %s", project_id, e)
+            logger.exception("Failed to sync project %s to UDM: %s", project_id, e)
             db.record_sync("project", project_id, _TARGET_DB, "error", str(e))
             return False
 
@@ -211,7 +211,7 @@ def sync_project_update_to_udm(project_id: str, updates: dict[str, Any]) -> bool
             db.record_sync("project", project_id, _TARGET_DB, "synced")
             return True
         except Exception as e:
-            logger.error("Failed to sync project %s update to UDM: %s", project_id, e)
+            logger.exception("Failed to sync project %s update to UDM: %s", project_id, e)
             db.record_sync("project", project_id, _TARGET_DB, "error", str(e))
             return False
 
@@ -270,7 +270,7 @@ def sync_project_delete_to_udm(project_id: str) -> bool:
             db.record_sync("project", project_id, _TARGET_DB, "synced")
             return True
         except Exception as e:
-            logger.error("Failed to sync project %s deletion to UDM: %s", project_id, e)
+            logger.exception("Failed to sync project %s deletion to UDM: %s", project_id, e)
             db.record_sync("project", project_id, _TARGET_DB, "error", str(e))
             return False
 
@@ -407,7 +407,7 @@ def sync_device_to_udm(project_id: str, device_data: dict[str, Any]) -> bool:
             db.record_sync("device", device_id, _TARGET_DB, "synced")
             return True
         except Exception as e:
-            logger.error("Failed to sync device %s to UDM: %s", device_id, e)
+            logger.exception("Failed to sync device %s to UDM: %s", device_id, e)
             db.record_sync("device", device_id, _TARGET_DB, "error", str(e))
             return False
 
@@ -517,7 +517,7 @@ def sync_device_update_to_udm(project_id: str, device_id: str, updates: dict[str
             db.record_sync("device", device_id, _TARGET_DB, "synced")
             return True
         except Exception as e:
-            logger.error("Failed to sync device %s update to UDM: %s", device_id, e)
+            logger.exception("Failed to sync device %s update to UDM: %s", device_id, e)
             db.record_sync("device", device_id, _TARGET_DB, "error", str(e))
             return False
 
@@ -568,7 +568,7 @@ def sync_device_delete_to_udm(project_id: str, device_id: str) -> bool:
             db.record_sync("device", device_id, _TARGET_DB, "synced")
             return True
         except Exception as e:
-            logger.error("Failed to sync device %s deletion to UDM: %s", device_id, e)
+            logger.exception("Failed to sync device %s deletion to UDM: %s", device_id, e)
             db.record_sync("device", device_id, _TARGET_DB, "error", str(e))
             return False
 
@@ -678,7 +678,7 @@ def sync_connection_to_udm(project_id: str, connection_data: dict[str, Any]) -> 
             db.record_sync("connection", connection_id, _TARGET_DB, "synced")
             return True
         except Exception as e:
-            logger.error("Failed to sync connection %s to UDM: %s", connection_id, e)
+            logger.exception("Failed to sync connection %s to UDM: %s", connection_id, e)
             db.record_sync("connection", connection_id, _TARGET_DB, "error", str(e))
             return False
 
@@ -749,7 +749,7 @@ def sync_connection_delete_to_udm(project_id: str, connection_id: str) -> bool:
             db.record_sync("connection", connection_id, _TARGET_DB, "synced")
             return True
         except Exception as e:
-            logger.error("Failed to sync connection %s deletion to UDM: %s", connection_id, e)
+            logger.exception("Failed to sync connection %s deletion to UDM: %s", connection_id, e)
             db.record_sync("connection", connection_id, _TARGET_DB, "error", str(e))
             return False
 

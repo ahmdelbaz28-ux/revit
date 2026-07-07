@@ -194,7 +194,7 @@ def _optimize_room_worker(args: tuple) -> tuple[str, Any]:
         return (room_id, result)
 
     except Exception as e:
-        log.error(f"Worker error for room {room_id}: {e}")
+        log.exception(f"Worker error for room {room_id}: {e}")
         return (room_id, {"error": str(e)})
 
 
@@ -355,7 +355,7 @@ class DensityOptimizerV2:
             except Exception as e:
                 failed += 1
                 results[room_id] = {"error": str(e)}
-                log.error(f"Room {room_id}: {e}")
+                log.exception(f"Room {room_id}: {e}")
 
         elapsed = time.perf_counter() - t0
         rps = len(room_specs) / elapsed if elapsed > 0 else 0
@@ -403,7 +403,7 @@ class DensityOptimizerV2:
                 try:
                     worker_results = async_results.get(timeout=self.timeout_per_room_s * len(work_items))
                 except multiprocessing.TimeoutError:
-                    log.error(f"Batch optimization timed out after {self.timeout_per_room_s * len(work_items)}s")
+                    log.exception(f"Batch optimization timed out after {self.timeout_per_room_s * len(work_items)}s")
                     worker_results = []
 
                 for room_id, result in worker_results:
@@ -414,7 +414,7 @@ class DensityOptimizerV2:
                     results[room_id] = result
 
         except Exception as e:
-            log.error(f"Multiprocessing pool error: {e}")
+            log.exception(f"Multiprocessing pool error: {e}")
             # Fallback to sequential for remaining rooms
             log.warning("Falling back to sequential processing")
             for room_id, spec in room_specs.items():

@@ -266,7 +266,7 @@ class GraphRAGEngine:
             logger.info("GraphRAG: Stored text chunk (%d chars)", len(text))
             return True
         except Exception as exc:
-            logger.error("GraphRAG: Failed to store text: %s", exc)
+            logger.exception("GraphRAG: Failed to store text: %s", exc)
             return False
 
     # ------------------------------------------------------------------
@@ -316,7 +316,7 @@ class GraphRAGEngine:
             return True
 
         except Exception as exc:
-            logger.error("GraphRAG: Failed to add knowledge: %s", exc, exc_info=True)
+            logger.exception("GraphRAG: Failed to add knowledge: %s", exc)
             return False
 
     # ------------------------------------------------------------------
@@ -349,7 +349,7 @@ class GraphRAGEngine:
                 return result.get("result", str(result))
             return str(result)
         except Exception as exc:
-            logger.error("GraphRAG: Query failed: %s", exc, exc_info=True)
+            logger.exception("GraphRAG: Query failed: %s", exc)
             return f"GraphRAG query failed: {exc}"
 
     # ------------------------------------------------------------------
@@ -378,7 +378,7 @@ class GraphRAGEngine:
                 for doc, score in docs
             ]
         except Exception as exc:
-            logger.error("GraphRAG: Search failed: %s", exc)
+            logger.exception("GraphRAG: Search failed: %s", exc)
             return []
 
     # ------------------------------------------------------------------

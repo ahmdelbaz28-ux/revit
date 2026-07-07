@@ -477,7 +477,7 @@ class AnalysisPipeline:
             elapsed = round(time.monotonic() - t0, 4)
             result.timing["optimization"] = elapsed
             result.errors.append(f"OPTIMIZATION FAILED: {type(exc).__name__}: {exc}")
-            logger.error("  OPTIMIZATION FAILED for %s: %s", room_id, exc)
+            logger.exception("  OPTIMIZATION FAILED for %s: %s", room_id, exc)
             # Cannot continue without a layout
             return result
 
@@ -1025,7 +1025,7 @@ class AnalysisPipeline:
 
             except Exception as exc:
                 # Non-critical: Record failure and continue with other rooms
-                logger.error(
+                logger.exception(
                     f"Room {room_id} failed with {type(exc).__name__}: {exc}. Continuing with remaining rooms."
                 )
                 results.append(

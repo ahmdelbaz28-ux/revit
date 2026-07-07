@@ -705,7 +705,7 @@ class DigitalTwinSync:
                 synced += 1
             except Exception as exc:
                 errors.append((det_id, f"Registration failed: {exc}"))
-                logger.error(
+                logger.exception(
                     "Failed to register detector %s: %s",
                     det_id,
                     exc,

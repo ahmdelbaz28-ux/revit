@@ -244,7 +244,7 @@ class CLIFireAIEngine:
                 success=True,
             )
         except UnknownCountryError as exc:
-            logger.error("Layer 1 FAILED: %s", exc)
+            logger.exception("Layer 1 FAILED: %s", exc)
             return Layer1Result(
                 country_code=country_code,
                 framework="UNKNOWN",
@@ -316,7 +316,7 @@ class CLIFireAIEngine:
                 success=True,
             )
         except Exception as exc:
-            logger.error("Layer 2 FAILED: %s", exc)
+            logger.exception("Layer 2 FAILED: %s", exc)
             return Layer2Result(
                 zone=ZoneType.UNCLASSIFIED,
                 horizontal_m=0.0,
@@ -372,7 +372,7 @@ class CLIFireAIEngine:
                 success=atex_result.is_valid,
             )
         except Exception as exc:
-            logger.error("Layer 3 FAILED: %s", exc)
+            logger.exception("Layer 3 FAILED: %s", exc)
             return Layer3Result(
                 epl="Gc",
                 atex_category="3G",
@@ -435,7 +435,7 @@ class CLIFireAIEngine:
                 success=True,
             )
         except Exception as exc:
-            logger.error("Layer 5 FAILED: %s", exc)
+            logger.exception("Layer 5 FAILED: %s", exc)
             return Layer5Result(
                 total_points=len(target_grid),
                 covered_points=0,
@@ -486,7 +486,7 @@ class CLIFireAIEngine:
                 success=report.is_pass,
             )
         except Exception as exc:
-            logger.error("Layer 6 FAILED: %s", exc)
+            logger.exception("Layer 6 FAILED: %s", exc)
             return Layer6Result(
                 audit_status="FAIL",
                 total_checks=0,

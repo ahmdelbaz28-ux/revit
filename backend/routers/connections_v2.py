@@ -67,7 +67,7 @@ async def list_connections(
             ),
         )
     except Exception as e:
-        logger.error("list_connections failed: %s", e, exc_info=True)
+        logger.exception("list_connections failed: %s", e)
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
@@ -85,7 +85,7 @@ async def create_connection(
         logger.warning("Connection creation ValueError: %s", e)
         raise HTTPException(status_code=400, detail="Invalid connection data. Please check the input parameters.")
     except Exception as e:
-        logger.error("create_connection failed: %s", e, exc_info=True)
+        logger.exception("create_connection failed: %s", e)
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
@@ -104,5 +104,5 @@ async def delete_connection(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("delete_connection failed: %s", e, exc_info=True)
+        logger.exception("delete_connection failed: %s", e)
         raise HTTPException(status_code=500, detail="Internal server error")

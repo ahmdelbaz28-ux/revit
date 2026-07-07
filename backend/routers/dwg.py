@@ -164,9 +164,8 @@ async def _parse_dwg_impl(request: Request, file: UploadFile):
     except HTTPException:
         raise  # Re-raise HTTPExceptions (400, 422, 503) — don't convert to 500
     except Exception as exc:
-        logger.error(
+        logger.exception(
             "DWG parse request failed: %s: %s", type(exc).__name__, exc,
-            exc_info=True,
         )
         raise HTTPException(
             status_code=500,

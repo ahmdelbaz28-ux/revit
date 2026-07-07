@@ -306,7 +306,7 @@ def configure_log_rotation(
                     masked_msg = mask_sensitive(msg)
                     _loguru_logger.opt(depth=0).info(masked_msg)
                 except Exception as exc:
-                    logger.error("LoguruBridge.emit failed — security log message dropped: %s", exc)
+                    logger.exception("LoguruBridge.emit failed — security log message dropped: %s", exc)
 
         bridge = _LoguruBridge()
         bridge.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s"))
@@ -376,7 +376,7 @@ def configure_timed_rotation(
                     masked_msg = mask_sensitive(msg)
                     _loguru_logger.opt(depth=0).info(masked_msg)
                 except Exception as exc:
-                    logger.error("LoguruBridgeTimed.emit failed — security log message dropped: %s", exc)
+                    logger.exception("LoguruBridgeTimed.emit failed — security log message dropped: %s", exc)
 
         bridge = _LoguruBridgeTimed()
         bridge.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s"))
