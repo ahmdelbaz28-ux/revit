@@ -4,7 +4,7 @@
  * Runs continuous adversarial cycles until no new failures in 3 consecutive cycles.
  */
 
-import { FormalVerifier, type AttackScenario, type VerificationResult } from './formalVerifier';
+import { FormalVerifier } from './formalVerifier';
 import { ATTACK_SCENARIOS } from './attackScenarios';
 
 export type CycleResult = {

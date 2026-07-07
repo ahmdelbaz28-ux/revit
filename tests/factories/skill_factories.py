@@ -39,7 +39,7 @@ class SkillMetadataFactory:
         if name is None:
             name = f"test-skill-{cls._random_suffix()}"
         if version is None:
-            version = f"{secrets.randbelow(0, 9)}.{secrets.randbelow(0, 9)}.{secrets.randbelow(0, 9)}"
+            version = f"{secrets.randbelow(9)}.{secrets.randbelow(9)}.{secrets.randbelow(9)}"
         if author is None:
             author = f"test-author-{cls._random_suffix()}"
 
@@ -140,13 +140,13 @@ class SkillRequirementsFactory:
     ) -> SkillRequirements:
         """Create a SkillRequirements instance with default values."""
         if python_version is None:
-            python_version = f"{secrets.randbelow(3, 3)}.{secrets.randbelow(8, 11)}"
+            python_version = f"{3}.{8 + secrets.randbelow(3)}"
         if dependencies is None:
-            dependencies = {f"pkg{cls._random_suffix()}": f">={secrets.randbelow(1, 2)}.0.0"}
+            dependencies = {f"pkg{cls._random_suffix()}": f">={1}.0.0"}
         if permissions is None:
             permissions = SkillPermissionsFactory.create()
         if max_execution_time is None:
-            max_execution_time = secrets.randbelow(60, 3600)
+            max_execution_time = 60 + secrets.randbelow(3540)
 
         return SkillRequirements(
             python_version=python_version,
@@ -218,7 +218,7 @@ class ExecutionResultFactory:
             if error is not None:
                 error = None
             if data is None:
-                data = {"result": cls._random_suffix(), "value": secrets.randbelow(1, 100)}
+                data = {"result": cls._random_suffix(), "value": 1 + secrets.randbelow(99)}
         else:
             if data is not None:
                 data = None
@@ -259,7 +259,7 @@ class SkillManifestFactory:
         if requirements is None:
             requirements = SkillRequirementsFactory.create()
         if version_compatibility is None:
-            version_compatibility = f"{secrets.randbelow(1, 2)}.{secrets.randbelow(0, 9)}"
+            version_compatibility = f"{1}.{secrets.randbelow(9)}"
         if tags is None:
             tags = [f"tag{cls._random_suffix()[:5]}", f"type{cls._random_suffix()[:5]}"]
 

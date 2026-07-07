@@ -472,7 +472,7 @@ class DWGParser:
             # V122 SECURITY: Also validate file size (DoS protection)
             validate_file_size(
                 safe_path,
-,
+                max_size_bytes=_DWG_MAX_FILE_SIZE_BYTES,
                 parser_name="DWGParser",
             )
         except FileNotFoundError as e:
@@ -580,7 +580,7 @@ class DWGParser:
         )
         validate_file_size(
             safe_path,
-,
+            max_size_bytes=_DWG_MAX_FILE_SIZE_BYTES,
             parser_name="DWGParser.parse_dwg",
         )
 

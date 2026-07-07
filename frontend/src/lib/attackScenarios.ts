@@ -5,7 +5,7 @@
  * System is valid only if it rejects, isolates, or recovers from all attacks.
  */
 
-import type { Action, AttackScenario } from './formalVerifier';
+import { AttackScenario } from './formalVerifier';
 
 export const ATTACK_SCENARIOS: AttackScenario[] = [
   {

@@ -23,7 +23,7 @@ def simulate_bim_element_data(element_id: str) -> Dict:
         "type": secrets.choice(element_types),
         "category": secrets.choice(categories),
         "name": f"{secrets.choice(element_types)}_{element_id}",
-        "level": f"Level_{secrets.randbelow(1, 5)}",
+        "level": f"Level_{1 + secrets.randbelow(4)}",
         "coordinates": [random.uniform(0, 100), random.uniform(0, 100), random.uniform(0, 30)],
         "dimensions": [random.uniform(1, 20), random.uniform(0.1, 5), random.uniform(2, 10)],
         "material": secrets.choice(["Concrete", "Steel", "Wood", "Glass"]),

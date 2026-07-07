@@ -219,4 +219,7 @@ test("dashboard renders in dark color scheme", async ({ page }) => {
 	await page.waitForTimeout(500);
 
 	await captureForReview(page, "06-dashboard-dark");
+
+	// V196: Add assertion (SonarCloud S2699 — test case without assertion)
+	await expect(page).toHaveTitle(/BAZSPARK|Digital Twin/i);
 });
