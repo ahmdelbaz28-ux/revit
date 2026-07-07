@@ -20,7 +20,7 @@ class TestVectorMemoryService:
     def test_service_initializes_without_qdrant(self):
         """Service should initialize gracefully when Qdrant is unavailable."""
         from fireai.infrastructure.vector_memory_service import VectorMemoryService
-        service = VectorMemoryService(qdrant_url="http://nonexistent:6333")
+        service = VectorMemoryService(qdrant_url="http://nonexistent:6333")  # NOSONAR: HTTP/WS in test
         service._initialize()
         # Should not crash — falls back to no-op mode
         assert service._initialized is True
@@ -31,7 +31,7 @@ class TestVectorMemoryService:
             MemoryType,
             VectorMemoryService,
         )
-        service = VectorMemoryService(qdrant_url="http://nonexistent:6333")
+        service = VectorMemoryService(qdrant_url="http://nonexistent:6333")  # NOSONAR: HTTP/WS in test
         result = service.store(
             content="test memory",
             memory_type=MemoryType.CONVERSATION,
@@ -44,7 +44,7 @@ class TestVectorMemoryService:
             MemoryType,
             VectorMemoryService,
         )
-        service = VectorMemoryService(qdrant_url="http://nonexistent:6333")
+        service = VectorMemoryService(qdrant_url="http://nonexistent:6333")  # NOSONAR: HTTP/WS in test
         result = service.search(
             query="test query",
             memory_type=MemoryType.CONVERSATION,
@@ -55,7 +55,7 @@ class TestVectorMemoryService:
     def test_health_check_returns_dict(self):
         """Health check should return a dict with healthy status."""
         from fireai.infrastructure.vector_memory_service import VectorMemoryService
-        service = VectorMemoryService(qdrant_url="http://nonexistent:6333")
+        service = VectorMemoryService(qdrant_url="http://nonexistent:6333")  # NOSONAR: HTTP/WS in test
         result = service.health_check()
         assert "healthy" in result
         assert isinstance(result["healthy"], bool)
@@ -85,7 +85,7 @@ class TestVectorMemoryService:
         assert d["id"] == "test-001"
         assert d["content"] == "test content"
         assert d["memory_type"] == "conversation"
-        assert d["score"] == 0.95
+        assert d["score"] == pytest.approx(0.95)
 
     def test_get_vector_memory_singleton(self):
         """get_vector_memory should return the same instance."""

@@ -576,7 +576,7 @@ class TestHybridSurvivabilityEngineClassification:
             lp = leak_point
             if lp[0] == 0.0:  # Point 0: optical yes, acoustic no
                 return self._make_ray_result(triggered=False, snr_db=-5.0)
-            if lp[0] == 1.0 or lp[0] == 2.0:  # Point 1: optical no, acoustic yes
+            if lp[0] == pytest.approx(1.0) or lp[0] == pytest.approx(2.0):  # Point 1: optical no, acoustic yes
                 return self._make_ray_result(triggered=True)
             # Point 3: neither
             return self._make_ray_result(triggered=False, snr_db=-10.0)

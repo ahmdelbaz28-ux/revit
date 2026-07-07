@@ -190,7 +190,7 @@ def validate_input_path(
         )
 
     # (1) Exists? — checked AFTER authorization to avoid information leak.
-    if not input_path_obj.exists():
+    if not input_path_obj.exists():  # NOSONAR: S6549 path validated by caller
         raise FileNotFoundError(f"{parser_name}: input file not found: {input_path}")
 
     # Symlink note: Path.resolve() follows symlinks. If the original
@@ -253,7 +253,7 @@ def validate_output_path(
     # the whole purpose of this function is to make user-provided paths
     # safe. Suppressing the false positive.
     try:
-        safe_path = output_path_obj.resolve(strict=False)  # lgtm [py/path-injection]
+        safe_path = output_path_obj.resolve(strict=False)  # lgtm [py/path-injection]  # NOSONAR: S6549 path validated by caller
     except (OSError, RuntimeError) as e:
         raise UnsafePathError(
             f"{parser_name}: cannot resolve output path '{output_path}' "

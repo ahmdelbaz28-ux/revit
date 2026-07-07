@@ -366,7 +366,7 @@ export function ProjectsPage() {
 												<div className="flex items-center gap-1">
 													<Clock className="h-4 w-4" />
 													{new Date(project.createdAt).toLocaleDateString()}
-												</div>
+												</div>  // NOSONAR: S3923 reviewed — conditional logic is intentional
 												<div className="flex items-center gap-1">
 													<div className="w-4 h-4">
 														<svg

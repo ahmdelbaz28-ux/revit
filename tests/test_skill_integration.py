@@ -169,7 +169,7 @@ def test_pydantic_validation_integration():
     assert result.data == {"result": "success", "value": 42}
     assert result.error is None
     assert result.timestamp == created_at
-    assert result.duration_ms == 123.0
+    assert result.duration_ms == pytest.approx(123.0)
 
 
 @pytest.mark.parametrize(
@@ -246,7 +246,7 @@ def test_execution_result_rejects_dict_errors_and_invalid_combinations():
     assert failed_result.data is None
     assert isinstance(failed_result.error, ExecutionError)
     assert failed_result.error.type == "execution_error"
-    assert failed_result.duration_ms == 10.0
+    assert failed_result.duration_ms == pytest.approx(10.0)
 
 
 def test_validate_skill_manifest_and_version_compatibility():
@@ -552,7 +552,7 @@ def test_schema_serialization():
     assert serialized_result["data"] == {"value": 42}
     assert serialized_result["error"] is None
     assert serialized_result["timestamp"] == created_at.isoformat()
-    assert serialized_result["duration_ms"] == 123.0
+    assert serialized_result["duration_ms"] == pytest.approx(123.0)
 
     schema = manifest.model_json_schema()
 

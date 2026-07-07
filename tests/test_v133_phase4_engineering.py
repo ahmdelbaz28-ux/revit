@@ -208,18 +208,18 @@ class TestBIMUnitDetection:
     def test_unit_system_scale_factors(self):
         """Verify scale-to-metres factors are correct (NIST)."""
         from fireai.bridges.bim_unit_detector import UnitSystem
-        assert UnitSystem.METRES.scale_to_metres == 1.0
-        assert UnitSystem.CENTIMETRES.scale_to_metres == 0.01
-        assert UnitSystem.MILLIMETRES.scale_to_metres == 0.001
-        assert UnitSystem.FEET.scale_to_metres == 0.3048
-        assert UnitSystem.INCHES.scale_to_metres == 0.0254
+        assert UnitSystem.METRES.scale_to_metres == pytest.approx(1.0)
+        assert UnitSystem.CENTIMETRES.scale_to_metres == pytest.approx(0.01)
+        assert UnitSystem.MILLIMETRES.scale_to_metres == pytest.approx(0.001)
+        assert UnitSystem.FEET.scale_to_metres == pytest.approx(0.3048)
+        assert UnitSystem.INCHES.scale_to_metres == pytest.approx(0.0254)
 
     def test_detect_nonexistent_file(self):
         """Non-existent file should return default (metres)."""
         from fireai.bridges.bim_unit_detector import UnitSystem, detect_bim_unit
         result = detect_bim_unit("/nonexistent/file.ifc")
         assert result.unit == UnitSystem.UNKNOWN
-        assert result.scale_to_metres == 1.0  # Default to metres
+        assert result.scale_to_metres == pytest.approx(1.0)
 
     def test_detect_dxf_with_insunits(self, tmp_path):
         """DXF file with $INSUNITS should be detected correctly."""
@@ -243,7 +243,7 @@ ENDSEC
         result = detect_bim_unit(str(dxf_file))
         assert result.unit == UnitSystem.MILLIMETRES
         assert result.source == "dxf_insunits"
-        assert result.confidence == 1.0
+        assert result.confidence == pytest.approx(1.0)
 
     def test_detect_ifc_with_metre_unit(self, tmp_path):
         """IFC file with IFCSIUNIT(.METRE.) should be detected."""
@@ -267,7 +267,7 @@ END-ISO-10303-21;
         result = detect_bim_unit(str(ifc_file))
         assert result.unit == UnitSystem.METRES
         assert result.source == "ifc_header"
-        assert result.confidence == 1.0
+        assert result.confidence == pytest.approx(1.0)
 
     def test_detect_ifc_with_millimetre_unit(self, tmp_path):
         """IFC file with IFCSIUNIT(.MILLI.,.METRE.) should be detected."""
@@ -327,8 +327,8 @@ class TestDarcyWeisbach:
             flow_rate_kg_s=0.0,
             fluid_type=FluidType.WATER,
         )
-        assert result.head_loss_m == 0.0
-        assert result.pressure_loss_pa == 0.0
+        assert result.head_loss_m == pytest.approx(0.0)
+        assert result.pressure_loss_pa == pytest.approx(0.0)
         assert result.flow_regime == "no_flow"
 
     def test_nan_pipe_length_rejected(self):

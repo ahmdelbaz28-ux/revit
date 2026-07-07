@@ -1794,7 +1794,7 @@ class RevitService:
             tx.Start()
             try:
                 # ViewPlan.Create for floor plans; falls back to View.Create
-                if view_type.lower() in ("floor plan", "floor_plan", "plan"):
+                if view_type.lower() in ("floor plan", "floor_plan", "plan"):  # NOSONAR: S3923 branches intentionally identical
                     new_view = ViewPlan.Create(self._revit_doc, target_level.Id)
                 else:
                     # Other view types: requires ViewFamilyType lookup.

@@ -6,6 +6,7 @@ and Smithery MCP (read-only + human-approved writes).
 """
 
 from __future__ import annotations
+import pytest
 
 # ---------------------------------------------------------------------------
 # LangWatch Integration Tests (PHASE 2 — Corrected Target)
@@ -42,7 +43,7 @@ class TestLangWatchIntegration:
         )
         assert result["is_hallucination"] is False
         assert result["confidence"] > 0.0
-        assert result["max_allowed_m"] == 9.1
+        assert result["max_allowed_m"] == pytest.approx(9.1)
 
     def test_hallucination_check_violating_spacing(self):
         """Spacing exceeding NFPA 72 limits should be flagged as hallucination."""
@@ -52,7 +53,7 @@ class TestLangWatchIntegration:
             detector_type="smoke",
         )
         assert result["is_hallucination"] is True
-        assert result["confidence"] == 0.0
+        assert result["confidence"] == pytest.approx(0.0)
         assert "HALLUCINATION DETECTED" in result["warning"]
 
     def test_hallucination_check_heat_detector(self):
@@ -63,7 +64,7 @@ class TestLangWatchIntegration:
             detector_type="heat",
         )
         assert result["is_hallucination"] is True
-        assert result["max_allowed_m"] == 6.1
+        assert result["max_allowed_m"] == pytest.approx(6.1)
 
     def test_hallucination_check_nan_spacing(self):
         """NaN spacing should be flagged as hallucination."""
@@ -103,8 +104,8 @@ class TestLangWatchIntegration:
             NFPA72_MAX_HEAT_SPACING_M,
             NFPA72_MAX_SMOKE_SPACING_M,
         )
-        assert NFPA72_MAX_SMOKE_SPACING_M == 9.1  # 30 ft
-        assert NFPA72_MAX_HEAT_SPACING_M == 6.1   # 20 ft
+        assert NFPA72_MAX_SMOKE_SPACING_M == pytest.approx(9.1)  # 30 ft
+        assert NFPA72_MAX_HEAT_SPACING_M == pytest.approx(6.1)   # 20 ft
 
 
 # ---------------------------------------------------------------------------

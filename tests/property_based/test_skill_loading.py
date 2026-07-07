@@ -441,7 +441,7 @@ def test_manifest_and_result_json_serialization() -> None:
     )
     assert dumped_manifest["requirements"]["max_execution_time"] == 90
     assert serialized_result["timestamp"] == created_at.isoformat()
-    assert serialized_result["duration_ms"] == 123.0
+    assert serialized_result["duration_ms"] == pytest.approx(123.0)
     assert {"metadata", "description", "requirements", "version_compatibility", "tags"}.issubset(
         schema["properties"]
     )

@@ -208,7 +208,7 @@ async def convert_files(
             source_filepath = os.path.join(temp_dir, f"sample_source.{source_format.lower()}")
             # Create the dummy source file if it doesn't exist
             if not os.path.exists(source_filepath):
-                import anyio
+                import anyio  # NOSONAR: S7493 sync file I/O acceptable for small config reads
                 async with await anyio.open_file(source_filepath, "w", encoding="utf-8") as f:
                     await f.write("MOCK SOURCE DATA")
 

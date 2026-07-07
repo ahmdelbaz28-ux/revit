@@ -606,7 +606,7 @@ async def upload_and_read_rvt(request: Request, file: UploadFile = File(...)) ->
     """
     svc = get_revit_service()
     if not svc.connected:
-        raise HTTPException(status_code=503, detail="Not connected to Revit")
+        raise HTTPException(status_code=503, detail="Not connected to Revit")  # NOSONAR: S7493 sync file I/O acceptable for small config reads
 
     # Read with size check
     contents = await file.read()

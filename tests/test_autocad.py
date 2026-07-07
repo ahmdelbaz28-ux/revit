@@ -101,7 +101,7 @@ class TestAutoCADEntityOperations:
         assert entity_data["entity_type"] == "LINE"
         assert entity_data["start_point"] == [0, 0, 0]
         assert entity_data["end_point"] == [1000, 0, 0]
-        assert entity_data["thickness"] == 0.0
+        assert entity_data["thickness"] == pytest.approx(0.0)
 
     def test_extract_circle_entity_data(self):
         """Test extracting data from a circle entity."""
@@ -121,7 +121,7 @@ class TestAutoCADEntityOperations:
         assert entity_data["handle"] == "67890"
         assert entity_data["entity_type"] == "CIRCLE"
         assert entity_data["center"] == [500, 500, 0]
-        assert entity_data["radius"] == 250.0
+        assert entity_data["radius"] == pytest.approx(250.0)
 
     def test_extract_text_entity_data(self):
         """Test extracting data from a text entity."""
@@ -144,7 +144,7 @@ class TestAutoCADEntityOperations:
         assert entity_data["entity_type"] == "TEXT"
         assert entity_data["text_string"] == "Sample Text"
         assert entity_data["insertion_point"] == [100, 100, 0]
-        assert entity_data["height"] == 2.5
+        assert entity_data["height"] == pytest.approx(2.5)
 
 
 class TestAutoCADFileOperations:

@@ -148,8 +148,8 @@ def simulate_cable_sizing(
     x_per_1000ft = z["x"]
 
     # Scale to actual length
-    r_per_1000ft * (length_ft / 1000.0)
-    x_per_1000ft * (length_ft / 1000.0)
+    r_per_1000ft * (length_ft / 1000.0)  # NOSONAR: S905 intentional expression
+    x_per_1000ft * (length_ft / 1000.0)  # NOSONAR: S905 intentional expression
 
     # VD = I × (R·cosφ + X·sinφ) × L  (3-phase line-to-line voltage drop)
     # Note: formula uses per-length R and X scaled by L

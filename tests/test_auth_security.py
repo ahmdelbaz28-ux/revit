@@ -71,7 +71,7 @@ class TestRateLimiting:
         # Successful login
         resp = client.post(
             "/api/v1/auth/login",
-            json={"api_key": "test_key_for_security_audit"},
+            json={"api_key": "test_key_for_security_audit"},  # NOSONAR: hard-coded secret in test fixture
         )
         assert resp.status_code == 200
 
@@ -88,7 +88,7 @@ class TestCookieSecurity:
         """The cookie value must NOT be the API key itself."""
         resp = client.post(
             "/api/v1/auth/login",
-            json={"api_key": "test_key_for_security_audit"},
+            json={"api_key": "test_key_for_security_audit"},  # NOSONAR: hard-coded secret in test fixture
         )
         assert resp.status_code == 200
 
@@ -110,7 +110,7 @@ class TestCookieSecurity:
         """Cookie must have HttpOnly flag (XSS protection)."""
         resp = client.post(
             "/api/v1/auth/login",
-            json={"api_key": "test_key_for_security_audit"},
+            json={"api_key": "test_key_for_security_audit"},  # NOSONAR: hard-coded secret in test fixture
         )
         set_cookie = resp.headers.get("set-cookie", "").lower()
         assert "httponly" in set_cookie, "Cookie missing HttpOnly flag"
@@ -119,7 +119,7 @@ class TestCookieSecurity:
         """Cookie must have SameSite=Strict (CSRF protection)."""
         resp = client.post(
             "/api/v1/auth/login",
-            json={"api_key": "test_key_for_security_audit"},
+            json={"api_key": "test_key_for_security_audit"},  # NOSONAR: hard-coded secret in test fixture
         )
         set_cookie = resp.headers.get("set-cookie", "").lower()
         assert "samesite=strict" in set_cookie, "Cookie missing SameSite=Strict"
@@ -128,7 +128,7 @@ class TestCookieSecurity:
         """Login response must have Cache-Control: no-store."""
         resp = client.post(
             "/api/v1/auth/login",
-            json={"api_key": "test_key_for_security_audit"},
+            json={"api_key": "test_key_for_security_audit"},  # NOSONAR: hard-coded secret in test fixture
         )
         cache_control = resp.headers.get("cache-control", "").lower()
         assert "no-store" in cache_control, "Missing Cache-Control: no-store"
@@ -142,7 +142,7 @@ class TestTamperedCookie:
         # Login to get valid cookie
         client.post(
             "/api/v1/auth/login",
-            json={"api_key": "test_key_for_security_audit"},
+            json={"api_key": "test_key_for_security_audit"},  # NOSONAR: hard-coded secret in test fixture
         )
 
         # Clear ALL cookies then set tampered one
@@ -181,7 +181,7 @@ class TestSessionRevocation:
         # Login
         login_resp = client.post(
             "/api/v1/auth/login",
-            json={"api_key": "test_key_for_security_audit"},
+            json={"api_key": "test_key_for_security_audit"},  # NOSONAR: hard-coded secret in test fixture
         )
         assert login_resp.status_code == 200
 
@@ -201,14 +201,14 @@ class TestSessionRevocation:
         # First login
         resp1 = client.post(
             "/api/v1/auth/login",
-            json={"api_key": "test_key_for_security_audit"},
+            json={"api_key": "test_key_for_security_audit"},  # NOSONAR: hard-coded secret in test fixture
         )
         token1 = resp1.headers.get("set-cookie", "").split("fireai_session=")[1].split(";")[0]
 
         # Second login (should create new session, not reuse)
         resp2 = client.post(
             "/api/v1/auth/login",
-            json={"api_key": "test_key_for_security_audit"},
+            json={"api_key": "test_key_for_security_audit"},  # NOSONAR: hard-coded secret in test fixture
         )
         token2 = resp2.headers.get("set-cookie", "").split("fireai_session=")[1].split(";")[0]
 

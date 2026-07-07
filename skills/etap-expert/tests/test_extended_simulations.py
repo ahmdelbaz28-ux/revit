@@ -85,11 +85,11 @@ class TestMotorStarting:
 
     def test_voltage_dip_limits_per_skill_table(self):
         """Verify voltage dip limits match skill Section 7.3 table."""
-        assert VOLTAGE_DIP_LIMITS["lighting"] == 5.0  # IEEE 141
-        assert VOLTAGE_DIP_LIMITS["computers"] == 10.0  # ITIC
-        assert VOLTAGE_DIP_LIMITS["motors_running"] == 15.0  # NEMA MG-1
-        assert VOLTAGE_DIP_LIMITS["motors_starting"] == 20.0  # IEEE 399
-        assert VOLTAGE_DIP_LIMITS["process_control"] == 10.0  # ISA
+        assert VOLTAGE_DIP_LIMITS["lighting"] == pytest.approx(5.0)
+        assert VOLTAGE_DIP_LIMITS["computers"] == pytest.approx(10.0)
+        assert VOLTAGE_DIP_LIMITS["motors_running"] == pytest.approx(15.0)
+        assert VOLTAGE_DIP_LIMITS["motors_starting"] == pytest.approx(20.0)
+        assert VOLTAGE_DIP_LIMITS["process_control"] == pytest.approx(10.0)
 
     def test_acceleration_time_calculated(self):
         """Acceleration time = J × ω / (T_motor - T_load)."""
@@ -162,7 +162,7 @@ class TestCablePulling:
     def test_no_sidewall_pressure_without_bends(self):
         """Without bends, sidewall pressure = 0."""
         result = simulate_cable_pulling(conduit_bends_deg=0.0)
-        assert result.sidewall_pressure_lb_per_ft == 0.0
+        assert result.sidewall_pressure_lb_per_ft == pytest.approx(0.0)
 
     def test_warning_when_tension_exceeds_limit(self):
         """Excessive tension must trigger warning."""
@@ -217,11 +217,11 @@ class TestGroundGrid:
 
     def test_body_resistance_is_1000_ohm(self):
         """IEEE 80 standard body resistance = 1000Ω."""
-        assert BODY_RESISTANCE_OHM == 1000.0
+        assert BODY_RESISTANCE_OHM == pytest.approx(1000.0)
 
     def test_foot_radius_is_8cm(self):
         """IEEE 80 standard foot equivalent radius = 8cm."""
-        assert FOOT_RADIUS_M == 0.08
+        assert FOOT_RADIUS_M == pytest.approx(0.08)
 
     def test_touch_voltage_limit_less_than_step_voltage_limit(self):
         """Touch V limit < Step V limit (step has 2× foot resistance)."""

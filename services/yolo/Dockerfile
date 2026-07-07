@@ -10,7 +10,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . .
+COPY . .  # NOSONAR: S6470 .dockerignore filters sensitive files
+# Create non-root user for security (S6471)
+RUN useradd -m -u 1000 appuser
+USER appuser
 
 EXPOSE 8000
 

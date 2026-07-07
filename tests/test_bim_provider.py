@@ -249,7 +249,7 @@ class TestIfcFileProvider:
         """V135 F-10: write_devices now raises NotImplementedError (was silent stub)."""
         p = IfcFileProvider()
         with pytest.raises(NotImplementedError, match="not yet implemented"):
-            p.write_devices([{"device_id": "TEST"}], target="/tmp/test.ifc")
+            p.write_devices([{"device_id": "TEST"}], target="/tmp/test.ifc")  # NOSONAR: publicly writable dir in test
 
     def test_health_check_returns_dict(self):
         p = IfcFileProvider()
@@ -333,7 +333,7 @@ class TestBIMRoom:
             source="test",
         )
         assert room.room_id == "TEST-001"
-        assert room.area_m2 == 25.0
+        assert room.area_m2 == pytest.approx(25.0)
 
     def test_bim_room_bounding_box(self):
         room = BIMRoom(
@@ -358,8 +358,8 @@ class TestBIMRoom:
             polygon=[(0, 0), (10, 0), (10, 5), (0, 5)],
             source="test",
         )
-        assert room.width == 10.0
-        assert room.length == 5.0
+        assert room.width == pytest.approx(10.0)
+        assert room.length == pytest.approx(5.0)
 
     def test_bim_room_to_fireai_room_dict(self):
         """to_fireai_room_dict produces a dict usable by FireAI pipeline."""
@@ -374,7 +374,7 @@ class TestBIMRoom:
         )
         d = room.to_fireai_room_dict()
         assert d["room_id"] == "TEST-004"
-        assert d["ceiling_height"] == 3.0
+        assert d["ceiling_height"] == pytest.approx(3.0)
         assert d["source"] == "local_revit"
 
 

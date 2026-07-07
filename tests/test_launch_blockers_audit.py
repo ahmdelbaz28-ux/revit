@@ -401,8 +401,8 @@ class TestCrossModuleConsistency:
         from fireai.constants import WALL_MIN_DISTANCE_M as init_val
         from fireai.constants.nfpa72 import WALL_MIN_DISTANCE_M as canonical
 
-        assert canonical == 0.1016
-        assert init_val == 0.1016
+        assert canonical == pytest.approx(0.1016)
+        assert init_val == pytest.approx(0.1016)
 
 
 # ============================================================================

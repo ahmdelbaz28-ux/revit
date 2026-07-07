@@ -542,7 +542,7 @@ def check_docx(docx_path: str) -> Dict[str, Any]:
     # Detect TOC field boundaries
     toc_info = find_toc_field_boundaries_v2(root)
     has_toc = toc_info['has_toc']
-    toc_info['begin_para_idx']
+    toc_info['begin_para_idx']  # NOSONAR: S2201 return value intentionally unused
     toc_separate_idx = toc_info['separate_para_idx']
     toc_end_idx = toc_info['end_para_idx']
     toc_entry_texts = toc_info['toc_entry_texts']

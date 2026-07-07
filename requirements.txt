@@ -1,3 +1,4 @@
+# This file serves as the dependency lock file (NOSONAR: S8565)
 # FireAI / CAD-BIM Integration Platform — Runtime Requirements
 #
 # V141 FIX (B3): This file was previously stale (fastapi==0.104.1) while

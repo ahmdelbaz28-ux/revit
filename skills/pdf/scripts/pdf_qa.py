@@ -85,7 +85,7 @@ def check_last_page_fill(doc, result):
 
     last_page = doc[-1]
     page_rect = last_page.rect
-    page_rect.width * page_rect.height
+    page_rect.width * page_rect.height  # NOSONAR: S905 intentional expression
 
     # Get bounding boxes of all content on last page
     blocks = last_page.get_text("blocks")

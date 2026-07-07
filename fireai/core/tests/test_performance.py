@@ -205,7 +205,7 @@ class TestModelCreationPerformance:
             geoms.append(Geometry(points=pts, polyline_closed=True))
         elapsed = time.perf_counter() - t0
         assert len(geoms) == 1000
-        assert all(g.area == 100.0 for g in geoms)
+        assert all(g.area == pytest.approx(100.0) for g in geoms)
         assert elapsed < 2.0, f"Creating 1k Geometry took {elapsed:.3f}s"
 
     def test_create_1000_universal_elements(self) -> None:

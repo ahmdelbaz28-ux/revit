@@ -296,11 +296,11 @@ class TestDXFEdgeCases:
         # A 10x10 room has area=100m² which passes min_area=50
         # But with min_area=200, it would be skipped
         small_parser = DXFParser(min_area=200.0)
-        assert small_parser.min_area == 200.0
+        assert small_parser.min_area == pytest.approx(200.0)
 
     def test_oversized_room_skipped(self, dxf_parser):
         """V78 FIX: Rooms above max_area are skipped."""
-        assert dxf_parser.max_area == 50000.0
+        assert dxf_parser.max_area == pytest.approx(50000.0)
         # A room with area > 50000 would indicate a unit conversion error
 
     def test_insunits_all_codes_valid(self, dxf_parser):

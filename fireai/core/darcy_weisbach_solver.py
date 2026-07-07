@@ -299,7 +299,7 @@ def calculate_darcy_weisbach_friction_loss(
     warnings = []
 
     # ── Edge Case: Zero flow ──
-    if flow_rate_kg_s == 0.0:
+    if abs(flow_rate_kg_s) < 1e-12:  # S1244: float equality check replaced with tolerance
         return DarcyWeisbachResult(
             head_loss_m=0.0,
             pressure_loss_pa=0.0,

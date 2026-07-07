@@ -284,7 +284,7 @@ class TestAuditTrail:
         # Should have at least 3 events (one per variant)
         # May be None if AuditStore init failed (graceful degradation)
         valid_events = [e for e in result.audit_events if e is not None]
-        assert len(valid_events) >= 0  # At minimum, no crash
+        assert len(valid_events) > 0  # S3981: length is always >= 0, use > 0 for meaningful check  # At minimum, no crash
 
     def test_audit_does_not_block_generation(self, sequential_agent, small_office):
         """Even if audit fails, generation must complete."""
@@ -348,7 +348,7 @@ class TestSafetyMaximized:
     def test_safety_maximized_uses_reduced_spacing(self):
         """SAFETY_MAXIMIZED_SPACING_FACTOR must be < 1.0 (reduced spacing)."""
         assert SAFETY_MAXIMIZED_SPACING_FACTOR < 1.0
-        assert SAFETY_MAXIMIZED_SPACING_FACTOR == 0.85
+        assert SAFETY_MAXIMIZED_SPACING_FACTOR == pytest.approx(0.85)
 
     def test_safety_maximized_produces_layout(self, sequential_agent, small_office):
         """Safety-Maximized variant must produce a valid DetectorLayout."""

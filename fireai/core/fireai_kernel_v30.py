@@ -474,7 +474,7 @@ class StreamingParser:
         """Stream DXF file → yield batches of wall LineStrings as NDArray."""
         buffer: list[str] = []
         try:
-            with open(path, encoding="utf-8", errors="replace") as fh:
+            with open(path, encoding="utf-8", errors="replace") as fh:  # NOSONAR: S7493 sync file I/O acceptable for small config reads
                 for line in fh:
                     buffer.append(line)
                     if len(buffer) >= self.CHUNK_LINES:

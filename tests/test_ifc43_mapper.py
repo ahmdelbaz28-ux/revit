@@ -182,7 +182,7 @@ class TestIFC43Mapper:
         """Room must include FireAI design parameters."""
         result = mapper.map_room(sample_room)
         assert PSET_FIREAI_DESIGN in result.property_sets
-        assert result.property_sets[PSET_FIREAI_DESIGN]["Area"] == 25.0
+        assert result.property_sets[PSET_FIREAI_DESIGN]["Area"] == pytest.approx(25.0)
 
     def test_map_building_returns_ifc_building(self, mapper):
         """map_building must return IfcBuilding."""

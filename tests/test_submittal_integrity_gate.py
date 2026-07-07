@@ -57,7 +57,7 @@ class TestHashRecord:
         )
         assert record.file_path == "/test/file.dxf"
         assert record.sha256_hex == "abc123"
-        assert record.recorded_at_epoch_ms == 1000.0
+        assert record.recorded_at_epoch_ms == pytest.approx(1000.0)
         assert record.phase == "pre_calculation"
 
     def test_is_frozen(self) -> None:

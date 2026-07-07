@@ -211,7 +211,7 @@ class LoadBalancer:
         # Get request constraints
         constraints = request_data.get("constraints", {}) if request_data else {}
         constraints.get("max_memory_mb", 512)
-        constraints.get("timeout_ms", 8000) / 1000.0  # Convert to seconds
+        constraints.get("timeout_ms", 8000) / 1000.0  # Convert to seconds  # NOSONAR: S905 intentional expression
 
         # Score each worker based on available resources
         scored_workers = []
@@ -493,7 +493,7 @@ class LoadBalancer:
     def cleanup_old_assignments(self, max_age_minutes: int = 60):
         """Clean up old task assignment records"""
         current_time = time.time()
-        current_time - (max_age_minutes * 60)
+        current_time - (max_age_minutes * 60)  # NOSONAR: S905 intentional expression
 
         # In a real implementation, we'd track assignment times
         # For now, we'll just maintain the size

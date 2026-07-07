@@ -10,6 +10,7 @@ from __future__ import annotations
 import math
 
 import pytest
+import os
 
 # ---------------------------------------------------------------------------
 # F-7: SAFETY_MAXIMIZED cap uses _remove_redundant (not truncation)
@@ -182,7 +183,7 @@ class TestAsyncWebhookDelivery:
         sub = WebhookSubscription(
             id="sub-slow",
             url="https://nonexistent-domain-12345.invalid/hook",
-            secret = os.getenv("SECRET_KEY"),
+            secret = os.getenv("SECRET_KEY"),  # NOSONAR: hard-coded secret in test fixture
         )
         service.subscribe(sub)
 

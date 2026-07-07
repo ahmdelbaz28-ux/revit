@@ -190,8 +190,8 @@ class TestMarineBridge:
         from fireai_bridge import bridge_marine_power_fire_safety
 
         result = bridge_marine_power_fire_safety()
-        assert result.ship_power_mw == 7.5
-        assert result.ship_voltage_v == 690.0
+        assert result.ship_power_mw == pytest.approx(7.5)
+        assert result.ship_voltage_v == pytest.approx(690.0)
         assert result.generator_count == 3
         assert result.solas_compliance_required
 

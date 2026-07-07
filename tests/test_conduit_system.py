@@ -90,9 +90,9 @@ class TestResult:
 class TestPoint3D:
     def test_valid_construction(self):
         p = Point3D(1.0, 2.0, 3.0)
-        assert p.x == 1.0
-        assert p.y == 2.0
-        assert p.z == 3.0
+        assert p.x == pytest.approx(1.0)
+        assert p.y == pytest.approx(2.0)
+        assert p.z == pytest.approx(3.0)
 
     def test_nan_x_raises(self):
         with pytest.raises(ValueError, match="finite"):

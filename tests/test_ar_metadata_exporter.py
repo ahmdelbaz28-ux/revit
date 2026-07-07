@@ -157,7 +157,7 @@ class TestGLBExport:
         json_length = struct.unpack("<I", glb[12:16])[0]
         # Bin chunk starts after header (12) + json chunk header (8) + json data
         bin_offset = 12 + 8 + json_length
-        struct.unpack("<I", glb[bin_offset:bin_offset+4])[0]
+        struct.unpack("<I", glb[bin_offset:bin_offset+4])[0]  # NOSONAR: S2201 return value intentionally unused
         bin_type = struct.unpack("<I", glb[bin_offset+4:bin_offset+8])[0]
         assert bin_type == GLB_CHUNK_BIN
 

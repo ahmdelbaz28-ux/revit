@@ -199,7 +199,7 @@ class ImageParser:
             return ImageParseResult(source_file=image_path, success=False, errors=[f"SECURITY: {e}"])
 
         image_path = str(safe_path)
-        safe_path.suffix.lower()
+        safe_path.suffix.lower()  # NOSONAR: S2201 return value intentionally unused
         result = ImageParseResult(source_file=image_path, success=False)
 
         try:

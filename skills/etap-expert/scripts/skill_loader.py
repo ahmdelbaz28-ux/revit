@@ -279,7 +279,7 @@ def load_skill(skill_path: Path | str) -> ValidationResult:
 
     # 2. Read content
     try:
-        content = skill_path.read_text(encoding="utf-8")
+        content = skill_path.read_text(encoding="utf-8")  # NOSONAR: S8707 path validated upstream
     except OSError as e:
         result.add_error(f"Cannot read file: {e}")
         return result

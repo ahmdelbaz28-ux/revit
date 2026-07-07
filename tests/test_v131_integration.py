@@ -93,7 +93,7 @@ class TestV131Integration:
         # but should not crash the system)
         try:
             await kernel.v131_extensions.publish_webhook_event(
-                url="http://invalid-url-for-test.com/webhook",
+                url="http://invalid-url-for-test.com/webhook",  # NOSONAR: HTTP/WS in test
                 event_type="test_event",
                 data={"test": "data"},
                 secret="test_secret"

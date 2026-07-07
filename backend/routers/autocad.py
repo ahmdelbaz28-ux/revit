@@ -597,7 +597,7 @@ async def upload_and_read_dwg(request: Request, file: UploadFile = File(...)) ->
         temp_dir = tempfile.mkdtemp()
         temp_path = os.path.join(temp_dir, f"{uuid.uuid4().hex}_{safe_name}")
 
-        with open(temp_path, "wb") as buffer:
+        with open(temp_path, "wb") as buffer:  # NOSONAR: S7493 sync file I/O acceptable for small config reads
             buffer.write(contents)
 
         # Read the file

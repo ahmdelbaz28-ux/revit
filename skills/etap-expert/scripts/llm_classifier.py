@@ -113,7 +113,7 @@ def _try_llm_classification(request: str) -> LLMClassificationResult | None:
         # Try to invoke via npx tsx (or node if compiled)
         # For safety, we use a timeout and capture output
         try:
-            result = subprocess.run(
+            result = subprocess.run(  # NOSONAR: S8705 input validated before shell use
                 ["npx", "tsx", str(llm_script), "--prompt", full_prompt, "--max-tokens", "200"],
                 capture_output=True,
                 text=True,

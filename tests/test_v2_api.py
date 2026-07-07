@@ -236,7 +236,7 @@ class TestWebhookEndpoints:
     def test_subscribe_creates_subscription(self, client, auth_headers):
         r = client.post("/api/v2/webhooks/subscribe", json={
             "url": "https://example.com/webhook",
-            "secret": "very-secure-secret-key-1234567890",
+            "secret": "very-secure-secret-key-1234567890",  # NOSONAR: hard-coded secret in test fixture
             "event_types": ["DESIGN_COMPLETED"],
         }, headers=auth_headers)
         assert r.status_code == 200
@@ -257,7 +257,7 @@ class TestWebhookEndpoints:
         # First subscribe
         client.post("/api/v2/webhooks/subscribe", json={
             "url": "https://example.com/hook2",
-            "secret": "very-secure-secret-key-1234567890",
+            "secret": "very-secure-secret-key-1234567890",  # NOSONAR: hard-coded secret in test fixture
             "event_types": [],
         }, headers=auth_headers)
         # Then list
@@ -270,7 +270,7 @@ class TestWebhookEndpoints:
         # First subscribe
         r = client.post("/api/v2/webhooks/subscribe", json={
             "url": "https://example.com/hook3",
-            "secret": "very-secure-secret-key-1234567890",
+            "secret": "very-secure-secret-key-1234567890",  # NOSONAR: hard-coded secret in test fixture
             "event_types": [],
         }, headers=auth_headers)
         sub_id = r.json()["subscription_id"]

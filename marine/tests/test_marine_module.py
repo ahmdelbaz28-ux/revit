@@ -235,7 +235,7 @@ class TestExtinguishingSizing:
         )
         design = size_system(zone, tanker)
         assert design.system_type == ExtinguishingSystem.INERT_GAS
-        assert design.design_concentration_pct == 8.0  # O2 ≤ 8%
+        assert design.design_concentration_pct == pytest.approx(8.0)
 
     def test_sprinkler_for_passenger_accommodation(self, passenger_ship, accommodation_zone):
         design = size_system(accommodation_zone, passenger_ship)

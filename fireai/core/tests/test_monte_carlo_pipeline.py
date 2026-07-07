@@ -184,12 +184,12 @@ class TestDetectorFailureModel:
         """All defaults should match NFPA 72 typical values."""
         fm = DetectorFailureModel(detector_id="D1")
         assert fm.detector_id == "D1"
-        assert fm.annual_failure_rate == 0.005
-        assert fm.common_cause_beta == 0.02
-        assert fm.test_interval_months == 6.0
-        assert fm.p_false_alarm == 0.001
-        assert fm.p_stuck_alarm == 0.0005
-        assert fm.p_blind == 0.003
+        assert fm.annual_failure_rate == pytest.approx(0.005)
+        assert fm.common_cause_beta == pytest.approx(0.02)
+        assert fm.test_interval_months == pytest.approx(6.0)
+        assert fm.p_false_alarm == pytest.approx(0.001)
+        assert fm.p_stuck_alarm == pytest.approx(0.0005)
+        assert fm.p_blind == pytest.approx(0.003)
 
     def test_custom_values(self) -> None:
         """Custom values should be stored correctly."""
@@ -203,12 +203,12 @@ class TestDetectorFailureModel:
             p_blind=0.02,
         )
         assert fm.detector_id == "custom"
-        assert fm.annual_failure_rate == 0.1
-        assert fm.common_cause_beta == 0.5
-        assert fm.test_interval_months == 12.0
-        assert fm.p_false_alarm == 0.01
-        assert fm.p_stuck_alarm == 0.005
-        assert fm.p_blind == 0.02
+        assert fm.annual_failure_rate == pytest.approx(0.1)
+        assert fm.common_cause_beta == pytest.approx(0.5)
+        assert fm.test_interval_months == pytest.approx(12.0)
+        assert fm.p_false_alarm == pytest.approx(0.01)
+        assert fm.p_stuck_alarm == pytest.approx(0.005)
+        assert fm.p_blind == pytest.approx(0.02)
 
     def test_is_dataclass(self) -> None:
         """DetectorFailureModel should be a dataclass with 7 fields."""
@@ -238,14 +238,14 @@ class TestDetectorFailureModel:
 
     def test_zero_failure_rate(self, zero_failure_model) -> None:
         """Zero failure rate model should have zero rates."""
-        assert zero_failure_model.annual_failure_rate == 0.0
-        assert zero_failure_model.common_cause_beta == 0.0
-        assert zero_failure_model.p_blind == 0.0
+        assert zero_failure_model.annual_failure_rate == pytest.approx(0.0)
+        assert zero_failure_model.common_cause_beta == pytest.approx(0.0)
+        assert zero_failure_model.p_blind == pytest.approx(0.0)
 
     def test_high_failure_rate(self, high_failure_model) -> None:
         """High failure rate model for stress testing."""
-        assert high_failure_model.annual_failure_rate == 0.95
-        assert high_failure_model.p_blind == 0.95
+        assert high_failure_model.annual_failure_rate == pytest.approx(0.95)
+        assert high_failure_model.p_blind == pytest.approx(0.95)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -304,10 +304,10 @@ class TestSimulatorHelpers:
         """_empty_result returns dict with expected keys and zero/falsy values."""
         result = DetectorReliabilitySimulator._empty_result()
         assert result["n_trials"] == 0
-        assert result["mean_coverage_pct"] == 0.0
-        assert result["p_full_coverage"] == 0.0
-        assert result["cvar_5pct"] == 0.0
-        assert result["worst_coverage_pct"] == 0.0
+        assert result["mean_coverage_pct"] == pytest.approx(0.0)
+        assert result["p_full_coverage"] == pytest.approx(0.0)
+        assert result["cvar_5pct"] == pytest.approx(0.0)
+        assert result["worst_coverage_pct"] == pytest.approx(0.0)
         assert result["is_reliable"] is False
 
     def test_empty_result_is_dict(self) -> None:
@@ -337,9 +337,9 @@ class TestSimulatorHelpers:
         # We just test that it yields the start value at least
         gen = DetectorReliabilitySimulator._frange(1.0, 2.0, 0.0)
         # First value should be 1.0
-        assert next(gen) == 1.0
+        assert next(gen) == pytest.approx(1.0)
         # Second value would still be 1.0 (infinite loop if consumed fully)
-        assert next(gen) == 1.0
+        assert next(gen) == pytest.approx(1.0)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -358,7 +358,7 @@ class TestSimulateRoomReliability:
             detectors=[], room_width=10.0, room_length=8.0,
         )
         assert result["n_trials"] == 0
-        assert result["mean_coverage_pct"] == 0.0
+        assert result["mean_coverage_pct"] == pytest.approx(0.0)
         assert result["is_reliable"] is False
 
     # --- Result structure ---
@@ -402,7 +402,7 @@ class TestSimulateRoomReliability:
             detectors=single_detector, room_width=10.0, room_length=8.0,
             time_horizon_yr=5.0,
         )
-        assert result["time_horizon_yr"] == 5.0
+        assert result["time_horizon_yr"] == pytest.approx(5.0)
 
     # --- Coverage bounds ---
 
@@ -521,9 +521,9 @@ class TestSimulateRoomReliability:
             detectors=many_detectors, room_width=12.0, room_length=10.0,
             failure_model=guaranteed_common_cause_model,
         )
-        assert result["mean_coverage_pct"] == 0.0
-        assert result["p_full_coverage"] == 0.0
-        assert result["worst_coverage_pct"] == 0.0
+        assert result["mean_coverage_pct"] == pytest.approx(0.0)
+        assert result["p_full_coverage"] == pytest.approx(0.0)
+        assert result["worst_coverage_pct"] == pytest.approx(0.0)
         assert result["is_reliable"] is False
 
     # --- Redundancy helps ---
@@ -584,7 +584,7 @@ class TestSimulateRoomReliability:
         result = simulator_fast.simulate_room_reliability(
             detectors=single_detector, room_width=10.0, room_length=8.0,
         )
-        assert result["time_horizon_yr"] == 1.0
+        assert result["time_horizon_yr"] == pytest.approx(1.0)
 
     # --- Custom failure model parameter ---
 
@@ -715,7 +715,7 @@ class TestMCPipelineAdapterInit:
         """Default constructor should create a simulator with n_trials=1000."""
         adapter = MCPipelineAdapter()
         assert adapter._sim.n_trials == 1_000
-        assert adapter._threshold == 0.95
+        assert adapter._threshold == pytest.approx(0.95)
 
     def test_custom_init(self) -> None:
         """Custom parameters should be forwarded correctly."""
@@ -723,7 +723,7 @@ class TestMCPipelineAdapterInit:
             n_trials=5000, reliability_threshold=0.99, seed=7,
         )
         assert adapter._sim.n_trials == 5_000
-        assert adapter._threshold == 0.99
+        assert adapter._threshold == pytest.approx(0.99)
 
     def test_simulator_is_created(self) -> None:
         """Adapter should create a DetectorReliabilitySimulator instance."""
@@ -976,7 +976,7 @@ class TestEnrichLayout:
         ) as mock_sim:
             adapter_fast.enrich_layout(layout, MagicMock())
             _, kwargs = mock_sim.call_args
-            assert kwargs["coverage_radius"] == 3.0
+            assert kwargs["coverage_radius"] == pytest.approx(3.0)
 
     def test_warning_contains_threshold(self, adapter_fast) -> None:
         """Warning message should contain the threshold value."""
@@ -1466,7 +1466,7 @@ class TestIntegration:
             failure_model=fm,
         )
         # Every trial: active starts with all detectors, then CCF zeroes them
-        assert result["mean_coverage_pct"] == 0.0
+        assert result["mean_coverage_pct"] == pytest.approx(0.0)
 
     def test_frange_generates_coverage_grid(self) -> None:
         """The _frange function should generate grid points for the room."""

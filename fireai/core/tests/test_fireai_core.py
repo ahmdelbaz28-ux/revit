@@ -178,9 +178,9 @@ class TestPlacementProof:
     def test_default_values(self) -> None:
         """PlacementProof should have sensible defaults."""
         proof = PlacementProof()
-        assert proof.coverage_fraction == 0.0
+        assert proof.coverage_fraction == pytest.approx(0.0)
         assert proof.proof_valid is False
-        assert proof.max_gap_m == 0.0
+        assert proof.max_gap_m == pytest.approx(0.0)
 
     def test_custom_values(self) -> None:
         """PlacementProof should accept custom values."""
@@ -189,20 +189,20 @@ class TestPlacementProof:
             proof_valid=True,
             max_gap_m=1.2,
         )
-        assert proof.coverage_fraction == 0.95
+        assert proof.coverage_fraction == pytest.approx(0.95)
         assert proof.proof_valid is True
-        assert proof.max_gap_m == 1.2
+        assert proof.max_gap_m == pytest.approx(1.2)
 
     def test_zero_coverage(self) -> None:
         """PlacementProof can represent zero coverage."""
         proof = PlacementProof(coverage_fraction=0.0, proof_valid=False)
-        assert proof.coverage_fraction == 0.0
+        assert proof.coverage_fraction == pytest.approx(0.0)
         assert proof.proof_valid is False
 
     def test_full_coverage(self) -> None:
         """PlacementProof can represent full coverage."""
         proof = PlacementProof(coverage_fraction=1.0, proof_valid=True)
-        assert proof.coverage_fraction == 1.0
+        assert proof.coverage_fraction == pytest.approx(1.0)
         assert proof.proof_valid is True
 
 
@@ -218,9 +218,9 @@ class TestResilienceResult:
         """ResilienceResult should have sensible defaults."""
         result = ResilienceResult()
         assert result.resilient is False
-        assert result.pass_rate == 0.0
+        assert result.pass_rate == pytest.approx(0.0)
         assert result.failure_detail == ""
-        assert result.min_coverage_seen == 0.0
+        assert result.min_coverage_seen == pytest.approx(0.0)
 
     def test_resilient_result(self) -> None:
         """ResilienceResult should capture a passing resilience check."""
@@ -231,8 +231,8 @@ class TestResilienceResult:
             min_coverage_seen=0.90,
         )
         assert result.resilient is True
-        assert result.pass_rate == 0.95
-        assert result.min_coverage_seen == 0.90
+        assert result.pass_rate == pytest.approx(0.95)
+        assert result.min_coverage_seen == pytest.approx(0.90)
 
     def test_failed_result_with_detail(self) -> None:
         """ResilienceResult should capture a failed resilience check."""
@@ -242,7 +242,7 @@ class TestResilienceResult:
             failure_detail="Single detector: no redundancy (MC fallback)",
         )
         assert result.resilient is False
-        assert result.pass_rate == 0.3
+        assert result.pass_rate == pytest.approx(0.3)
         assert "no redundancy" in result.failure_detail
 
 
@@ -261,7 +261,7 @@ class TestEnhancedRoomResult:
         assert result.detector_positions == []
         assert result.detector_type == DetectorType.SMOKE
         assert result.confidence == ConfidenceLevel.MEDIUM
-        assert result.confidence_score == 0.0
+        assert result.confidence_score == pytest.approx(0.0)
         assert result.wall_violations == []
         assert result.warnings == []
         assert result.errors == []
@@ -311,7 +311,7 @@ class TestEnhancedRoomResult:
         cr = result.coverage_result
         assert isinstance(cr, CoverageResult)
         assert cr.is_covered is False
-        assert cr.coverage_percentage == 0.0
+        assert cr.coverage_percentage == pytest.approx(0.0)
 
     def test_safe_to_submit_true(self) -> None:
         """safe_to_submit should be True when compliant and not UNSAFE."""
@@ -1324,7 +1324,7 @@ class TestEdgeCases:
 
             result = fireai_system.analyse_room(sample_room_spec, run_resilience=False)
             # coverage of 0.85 is < 1, so used as-is as fraction
-            assert result.placement_proof.coverage_fraction == 0.85
+            assert result.placement_proof.coverage_fraction == pytest.approx(0.85)
 
 
 # ============================================================================
@@ -1781,7 +1781,7 @@ class TestCoverageFractionEdgeCases:
             mock_get.return_value = mock_expert
 
             result = fireai_system.analyse_room(sample_room_spec, run_resilience=False)
-            assert result.placement_proof.coverage_fraction == 1.0
+            assert result.placement_proof.coverage_fraction == pytest.approx(1.0)
             assert result.confidence == ConfidenceLevel.HIGH
 
     def test_coverage_zero(self, fireai_system, sample_room_spec) -> None:
@@ -1799,7 +1799,7 @@ class TestCoverageFractionEdgeCases:
             mock_get.return_value = mock_expert
 
             result = fireai_system.analyse_room(sample_room_spec, run_resilience=False)
-            assert result.placement_proof.coverage_fraction == 0.0
+            assert result.placement_proof.coverage_fraction == pytest.approx(0.0)
             assert result.confidence == ConfidenceLevel.UNSAFE
 
     def test_analysis_without_layout(self, fireai_system, sample_room_spec) -> None:

@@ -173,8 +173,8 @@ class TestScanToBIMService:
 
         assert isinstance(room, BIMRoom)
         assert room.name == "Test-101"  # Should be normalized
-        assert room.area == 25.0
-        assert room.confidence == 85.0
+        assert room.area == pytest.approx(25.0)
+        assert room.confidence == pytest.approx(85.0)
         assert room.room_type in ["OFFICE", "OTHER"]  # Should be classified
 
     def test_requires_human_review_always_true(self):
@@ -268,7 +268,7 @@ class TestScanToBIMService:
         # Should have valid room
         assert validation['total_rooms'] == 1
         assert validation['valid_rooms'] == 1
-        assert validation['summary']['valid_percentage'] == 100.0
+        assert validation['summary']['valid_percentage'] == pytest.approx(100.0)
         assert validation['summary']['has_issues'] is False
 
 

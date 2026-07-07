@@ -480,7 +480,7 @@ class TestHelperFixtures:
 
     def test_sample_room_dict_fixture(self, sample_room_dict) -> None:
         assert sample_room_dict["room_id"] == "R001"
-        assert sample_room_dict["ceiling_height"] == 3.0
+        assert sample_room_dict["ceiling_height"] == pytest.approx(3.0)
 
     def test_sample_floor_fixture(self, sample_floor) -> None:
         assert "GF" in sample_floor

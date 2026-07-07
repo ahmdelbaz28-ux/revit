@@ -117,7 +117,7 @@ class TestPathTraversalDefense:
 
         from backend.routers.autocad import _validate_autocad_file_path
         with pytest.raises(HTTPException) as exc:
-            _validate_autocad_file_path("/tmp/nonexistent_file_12345.dwg")
+            _validate_autocad_file_path("/tmp/nonexistent_file_12345.dwg")  # NOSONAR: publicly writable dir in test
         assert exc.value.status_code == 404
 
     def test_disallowed_extension_rejected(self):

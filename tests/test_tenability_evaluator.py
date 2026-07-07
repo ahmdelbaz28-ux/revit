@@ -261,11 +261,11 @@ class TestResultStructure:
             radiant_flux_kw_m2=0.5,
         )
         assert isinstance(result, TenabilityResult)
-        assert result.temperature_c == 25.0
-        assert result.visibility_m == 30.0
-        assert result.co_ppm == 10.0
-        assert result.co2_ppm == 400.0
-        assert result.radiant_flux_kw_m2 == 0.5
+        assert result.temperature_c == pytest.approx(25.0)
+        assert result.visibility_m == pytest.approx(30.0)
+        assert result.co_ppm == pytest.approx(10.0)
+        assert result.co2_ppm == pytest.approx(400.0)
+        assert result.radiant_flux_kw_m2 == pytest.approx(0.5)
         assert isinstance(result.violations, tuple)
         assert isinstance(result.nfpa_references, tuple)
 
@@ -286,9 +286,9 @@ class TestResultStructure:
             temperature_c=25.0,
             visibility_m=30.0,
         )
-        assert result.co_ppm == 0.0
-        assert result.co2_ppm == 0.0
-        assert result.radiant_flux_kw_m2 == 0.0
+        assert result.co_ppm == pytest.approx(0.0)
+        assert result.co2_ppm == pytest.approx(0.0)
+        assert result.radiant_flux_kw_m2 == pytest.approx(0.0)
 
 
 class TestSafetyMargin:

@@ -337,7 +337,7 @@ class TestSLCLoopDataclass:
         assert loop.device_addresses == []
         assert loop.floors_served == set()
         assert loop.panel_id == ""
-        assert loop.cable_length_m == 0.0
+        assert loop.cable_length_m == pytest.approx(0.0)
         assert loop.voltage_drop_compliant is False  # Fail-safe
         assert loop.warnings == []
         assert loop.nfpa_reference == "NFPA 72-2022 §21.2.2"
@@ -356,33 +356,33 @@ class TestSLCLoopDataclass:
         assert loop.device_count == 100
         assert loop.max_devices == 200
         assert loop.panel_id == "FACP-2"
-        assert loop.cable_length_m == 150.0
+        assert loop.cable_length_m == pytest.approx(150.0)
 
     def test_utilization_pct_zero_devices(self) -> None:
         loop = SLCLoop(loop_id="SLC-1", device_count=0, max_devices=250)
-        assert loop.utilization_pct == 0.0
+        assert loop.utilization_pct == pytest.approx(0.0)
 
     def test_utilization_pct_half(self) -> None:
         loop = SLCLoop(loop_id="SLC-1", device_count=125, max_devices=250)
-        assert loop.utilization_pct == 50.0
+        assert loop.utilization_pct == pytest.approx(50.0)
 
     def test_utilization_pct_full(self) -> None:
         loop = SLCLoop(loop_id="SLC-1", device_count=250, max_devices=250)
-        assert loop.utilization_pct == 100.0
+        assert loop.utilization_pct == pytest.approx(100.0)
 
     def test_utilization_pct_over_capacity(self) -> None:
         loop = SLCLoop(loop_id="SLC-1", device_count=300, max_devices=250)
-        assert loop.utilization_pct == 120.0
+        assert loop.utilization_pct == pytest.approx(120.0)
 
     def test_utilization_pct_zero_max_devices(self) -> None:
         """Edge case: max_devices=0 should return 0.0 to avoid division by zero."""
         loop = SLCLoop(loop_id="SLC-1", device_count=10, max_devices=0)
-        assert loop.utilization_pct == 0.0
+        assert loop.utilization_pct == pytest.approx(0.0)
 
     def test_utilization_pct_rounding(self) -> None:
         loop = SLCLoop(loop_id="SLC-1", device_count=1, max_devices=3)
         # 100 * 1/3 = 33.333... → rounds to 33.3
-        assert loop.utilization_pct == 33.3
+        assert loop.utilization_pct == pytest.approx(33.3)
 
     def test_is_compliant_within_limit(self) -> None:
         loop = SLCLoop(loop_id="SLC-1", device_count=250, max_devices=250)
@@ -416,7 +416,7 @@ class TestVerticalZoneDataclass:
         assert zone.floor_ids == []
         assert zone.floors_per_zone == OTHER_FLOORS_PER_ZONE
         assert zone.occupancy_type == "business"
-        assert zone.total_area_sqm == 0.0
+        assert zone.total_area_sqm == pytest.approx(0.0)
         assert zone.total_devices == 0
         assert zone.area_compliant is False  # Fail-safe
         assert zone.warnings == []
@@ -434,7 +434,7 @@ class TestVerticalZoneDataclass:
         )
         assert zone.zone_id == "VZ-02"
         assert zone.floor_ids == ["GF", "L1"]
-        assert zone.total_area_sqm == 1000.0
+        assert zone.total_area_sqm == pytest.approx(1000.0)
         assert zone.total_devices == 50
 
     def test_is_compliant_both_pass(self) -> None:
@@ -490,13 +490,13 @@ class TestFloorAssignmentDataclass:
         fa = FloorAssignment(floor_id="GF")
         assert fa.floor_id == "GF"
         assert fa.floor_index == 0
-        assert fa.elevation_m == 0.0
+        assert fa.elevation_m == pytest.approx(0.0)
         assert fa.room_results == []
         assert fa.total_devices == 0
         assert fa.total_detectors == 0
         assert fa.total_notification == 0
         assert fa.total_modules == 0
-        assert fa.area_sqm == 0.0
+        assert fa.area_sqm == pytest.approx(0.0)
         assert fa.occupancy_type == "business"
         assert fa.slc_loops == []
         assert fa.vertical_zone_id == ""
@@ -516,9 +516,9 @@ class TestFloorAssignmentDataclass:
         )
         assert fa.floor_id == "L3"
         assert fa.floor_index == 3
-        assert fa.elevation_m == 10.5
+        assert fa.elevation_m == pytest.approx(10.5)
         assert fa.total_devices == 30
-        assert fa.area_sqm == 800.0
+        assert fa.area_sqm == pytest.approx(800.0)
         assert fa.occupancy_type == "assembly"
 
 
@@ -530,7 +530,7 @@ class TestSmokeSpreadResultDataclass:
         assert result.pathway == SmokeSpreadPathway.STAIRWELL
         assert result.source_floor == ""
         assert result.affected_floors == []
-        assert result.propagation_time_s == 0.0
+        assert result.propagation_time_s == pytest.approx(0.0)
         assert result.pressurization_required is False
         assert result.duct_detection_required is False
         assert result.barrier_rating_required_h == MIN_SMOKE_BARRIER_RATING_H
@@ -550,7 +550,7 @@ class TestSmokeSpreadResultDataclass:
         assert result.pathway == SmokeSpreadPathway.ELEVATOR_SHAFT
         assert result.source_floor == "L2"
         assert result.affected_floors == ["L2", "L3", "L4"]
-        assert result.propagation_time_s == 15.0
+        assert result.propagation_time_s == pytest.approx(15.0)
         assert result.pressurization_required is True
         assert result.duct_detection_required is True
 
@@ -599,9 +599,9 @@ class TestRiserRoutingResultDataclass:
         result = RiserRoutingResult()
         assert result.from_floor == ""
         assert result.to_floor == ""
-        assert result.cable_length_m == 0.0
+        assert result.cable_length_m == pytest.approx(0.0)
         assert result.wire_gauge == "14"
-        assert result.voltage_drop_pct == 0.0
+        assert result.voltage_drop_pct == pytest.approx(0.0)
         assert result.voltage_drop_compliant is False  # Fail-safe
         assert result.route_valid is False  # Fail-safe
         assert result.violations == []
@@ -619,9 +619,9 @@ class TestRiserRoutingResultDataclass:
         )
         assert result.from_floor == "GF"
         assert result.to_floor == "L1"
-        assert result.cable_length_m == 25.5
+        assert result.cable_length_m == pytest.approx(25.5)
         assert result.wire_gauge == "12"
-        assert result.voltage_drop_pct == 3.2
+        assert result.voltage_drop_pct == pytest.approx(3.2)
         assert result.voltage_drop_compliant is True
         assert result.route_valid is True
 
@@ -644,7 +644,7 @@ class TestBuildingAnalysisDataclass:
         assert analysis.total_slc_loops == 0
         assert analysis.total_vertical_zones == 0
         assert analysis.compliant is False  # Fail-safe
-        assert analysis.analysis_time_s == 0.0
+        assert analysis.analysis_time_s == pytest.approx(0.0)
         assert analysis.warnings == []
         assert analysis.errors == []
 
@@ -694,10 +694,10 @@ class TestConstants:
         assert DEFAULT_RECALL_FLOOR == "GF"
 
     def test_stack_effect_velocity(self) -> None:
-        assert STACK_EFFECT_VELOCITY_MPS == 3.0
+        assert STACK_EFFECT_VELOCITY_MPS == pytest.approx(3.0)
 
     def test_min_smoke_barrier_rating(self) -> None:
-        assert MIN_SMOKE_BARRIER_RATING_H == 1.0
+        assert MIN_SMOKE_BARRIER_RATING_H == pytest.approx(1.0)
 
 
 # ============================================================================
@@ -712,9 +712,9 @@ class TestMultiFloorOrchestratorInit:
         mo = MultiFloorOrchestrator()
         assert mo.slc_loop_class == SLCLoopClass.CLASS_B
         assert mo.max_slc_devices == MAX_SLC_DEVICES_PER_LOOP
-        assert mo.building_height_m == 0.0
+        assert mo.building_height_m == pytest.approx(0.0)
         assert mo.panel_id == "FACP-1"
-        assert mo.grid_res == 0.25
+        assert mo.grid_res == pytest.approx(0.25)
         assert isinstance(mo.floor_orchestrator, FloorOrchestrator)
 
     def test_custom_init(self, floor_orchestrator) -> None:
@@ -729,9 +729,9 @@ class TestMultiFloorOrchestratorInit:
         assert mo.floor_orchestrator is floor_orchestrator
         assert mo.slc_loop_class == SLCLoopClass.CLASS_A
         assert mo.max_slc_devices == 200
-        assert mo.building_height_m == 50.0
+        assert mo.building_height_m == pytest.approx(50.0)
         assert mo.panel_id == "FACP-2"
-        assert mo.grid_res == 0.5
+        assert mo.grid_res == pytest.approx(0.5)
 
     def test_invalid_max_slc_devices_zero(self) -> None:
         with pytest.raises(ValueError, match="max_slc_devices=0 must be >= 1"):
@@ -802,7 +802,7 @@ class TestOrchestrate:
         """Floor elevations should be propagated to floor assignments."""
         result = orchestrator.orchestrate(**sample_building_spec)
         elev_map = {fa.floor_id: fa.elevation_m for fa in result.floor_assignments}
-        assert elev_map["GF"] == 0.0
+        assert elev_map["GF"] == pytest.approx(0.0)
         assert elev_map["L1"] == 3.5
         assert elev_map["L2"] == 7.0
 

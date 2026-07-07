@@ -463,7 +463,7 @@ class DxfParser:
                 if sz and ez:
                     s_z = sz[2] if len(sz) > 2 else 0.0
                     e_z = ez[2] if len(ez) > 2 else 0.0
-                    if s_z != 0.0 or e_z != 0.0:
+                    if abs(s_z) > 1e-12 or abs(e_z) > 1e-12:  # S1244: float equality check replaced with tolerance
                         z_values.append(abs(e_z - s_z))
             if z_values:
                 # The most common non-zero Z difference is likely the floor height

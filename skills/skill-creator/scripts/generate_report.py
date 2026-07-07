@@ -17,7 +17,7 @@ from pathlib import Path
 def generate_html(data: dict, auto_refresh: bool = False, skill_name: str = "") -> str:
     """Generate HTML report from loop output data. If auto_refresh is True, adds a meta refresh tag."""
     history = data.get("history", [])
-    data.get("holdout", 0)
+    _ = data.get("holdout", 0)  # NOSONAR: S2201 return value intentionally unused
     title_prefix = html.escape(skill_name + " \u2014 ") if skill_name else ""
 
     # Get all unique queries from train and test sets, with should_trigger info
@@ -155,7 +155,7 @@ def generate_html(data: dict, auto_refresh: bool = False, skill_name: str = "") 
 
     # Summary section
     best_test_score = data.get('best_test_score')
-    data.get('best_train_score')
+    _ = data.get('best_train_score')  # NOSONAR: S2201 return value intentionally unused
     html_parts.append(f"""
     <div class="summary">
         <p><strong>Original:</strong> {html.escape(data.get('original_description', 'N/A'))}</p>

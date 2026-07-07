@@ -69,7 +69,7 @@ class TestExtremeCeilingHeights:
     def test_ceiling_at_table_boundary(self) -> None:
         """Height exactly at table boundary (3.0m)."""
         result = get_detector_spacing(3.0, "smoke")
-        assert result.max_spacing_m == 9.10
+        assert result.max_spacing_m == pytest.approx(9.10)
 
     def test_just_above_table_boundary(self) -> None:
         """Height just above a table boundary (3.1m)."""
@@ -155,12 +155,12 @@ class TestNegativeZeroDimensions:
     def test_semantic_properties_zero_height_allowed(self) -> None:
         """Zero height is allowed (e.g., a floor slab)."""
         props = SemanticProperties(element_type=ElementType.WALL, height=0.0)
-        assert props.height == 0.0
+        assert props.height == pytest.approx(0.0)
 
     def test_semantic_properties_zero_width_allowed(self) -> None:
         """Zero width is allowed (e.g., a membrane)."""
         props = SemanticProperties(element_type=ElementType.WALL, width=0.0)
-        assert props.width == 0.0
+        assert props.width == pytest.approx(0.0)
 
     def test_semantic_properties_none_height_allowed(self) -> None:
         """None height is allowed (unknown dimension)."""
@@ -313,14 +313,14 @@ class TestEmptyRoomLists:
     def test_geometry_zero_points(self) -> None:
         """Geometry with no points has zero area and perimeter."""
         geom = Geometry(points=(), polyline_closed=False)
-        assert geom.area == 0.0
-        assert geom.perimeter == 0.0
+        assert geom.area == pytest.approx(0.0)
+        assert geom.perimeter == pytest.approx(0.0)
 
     def test_geometry_single_point(self) -> None:
         """Geometry with 1 point has zero area and perimeter."""
         geom = Geometry(points=(Point3D(x=0.0, y=0.0),), polyline_closed=False)
-        assert geom.area == 0.0
-        assert geom.perimeter == 0.0
+        assert geom.area == pytest.approx(0.0)
+        assert geom.perimeter == pytest.approx(0.0)
 
     def test_geometry_two_points_open(self) -> None:
         """Open polyline with 2 points has perimeter but no area."""
@@ -328,8 +328,8 @@ class TestEmptyRoomLists:
             points=(Point3D(x=0.0, y=0.0), Point3D(x=10.0, y=0.0)),
             polyline_closed=False,
         )
-        assert geom.area == 0.0
-        assert geom.perimeter == 10.0
+        assert geom.area == pytest.approx(0.0)
+        assert geom.perimeter == pytest.approx(10.0)
 
     def test_geometry_two_points_closed(self) -> None:
         """V83 FIX: Closed polyline with 2 points includes round-trip edge."""
@@ -337,7 +337,7 @@ class TestEmptyRoomLists:
             points=(Point3D(x=0.0, y=0.0), Point3D(x=10.0, y=0.0)),
             polyline_closed=True,
         )
-        assert geom.perimeter == 20.0  # 10 out + 10 back
+        assert geom.perimeter == pytest.approx(20.0)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -372,8 +372,8 @@ class TestSingleDetectorRooms:
         """NFPA 72-2022: smoke detector spacing is flat 9.1m at all ceiling heights."""
         low = get_detector_spacing(3.0, "smoke")
         high = get_detector_spacing(9.0, "smoke")
-        assert low.max_spacing_m == 9.1
-        assert high.max_spacing_m == 9.1
+        assert low.max_spacing_m == pytest.approx(9.1)
+        assert high.max_spacing_m == pytest.approx(9.1)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -411,23 +411,23 @@ class TestPoint3DEdgeCases:
 
     def test_origin(self) -> None:
         p = Point3D(x=0.0, y=0.0, z=0.0)
-        assert p.x == 0.0
-        assert p.y == 0.0
-        assert p.z == 0.0
+        assert p.x == pytest.approx(0.0)
+        assert p.y == pytest.approx(0.0)
+        assert p.z == pytest.approx(0.0)
 
     def test_default_z_is_zero(self) -> None:
         p = Point3D(x=1.0, y=2.0)
-        assert p.z == 0.0
+        assert p.z == pytest.approx(0.0)
 
     def test_very_large_coordinates(self) -> None:
         """Very large but finite coordinates are accepted."""
         p = Point3D(x=1e10, y=1e10, z=1e10)
-        assert p.x == 1e10
+        assert p.x == pytest.approx(1e10)
 
     def test_very_small_coordinates(self) -> None:
         """Very small coordinates are accepted."""
         p = Point3D(x=1e-15, y=1e-15, z=1e-15)
-        assert p.x == 1e-15
+        assert p.x == pytest.approx(1e-15)
 
     def test_negative_coordinates_allowed(self) -> None:
         """Negative coordinates are valid (e.g., below ground level)."""
@@ -456,7 +456,7 @@ class TestGeometryEdgeCases:
             Point3D(x=10.0, y=0.0),
         )
         geom = Geometry(points=pts, polyline_closed=True)
-        assert geom.area == 0.0
+        assert geom.area == pytest.approx(0.0)
 
     def test_open_polyline_no_area(self) -> None:
         """Open polyline has zero area regardless of shape."""
@@ -466,7 +466,7 @@ class TestGeometryEdgeCases:
             Point3D(x=10.0, y=10.0),
         )
         geom = Geometry(points=pts, polyline_closed=False)
-        assert geom.area == 0.0
+        assert geom.area == pytest.approx(0.0)
 
     def test_l_shaped_room_area(self) -> None:
         """L-shaped polygon area calculation."""
@@ -605,4 +605,4 @@ class TestTemperatureCorrectionEdgeCases:
     def test_zero_resistance(self) -> None:
         """Zero resistance is accepted (superconductor edge case)."""
         r = temperature_corrected_resistance(0.0, 75.0)
-        assert r == 0.0
+        assert r == pytest.approx(0.0)

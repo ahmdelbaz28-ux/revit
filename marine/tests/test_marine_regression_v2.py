@@ -197,7 +197,7 @@ class TestAssignSpaceCategoriesRegression:
             "category reassignment — safety-relevant data corruption."
         )
         # ventilation_rate_ach MUST be preserved.
-        assert updated[0].ventilation_rate_ach == 8.0
+        assert updated[0].ventilation_rate_ach == pytest.approx(8.0)
         # The category MUST be the new one.
         assert updated[0].space_category == SpaceCategory.CONTROL_STATION
 

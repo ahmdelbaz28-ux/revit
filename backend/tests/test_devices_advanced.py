@@ -122,7 +122,7 @@ class TestDeviceLoadUnitConversion:
         assert resp.status_code == 201
         data = resp.json().get("data", resp.json())
         props = data.get("properties", {})
-        assert props.get("load_original_value") == 300.0
+        assert props.get("load_original_value") == pytest.approx(300.0)
         assert props.get("load_original_unit") == "mA"
 
     def test_create_device_watts_stores_amperes(self, client, test_project) -> None:
@@ -163,7 +163,7 @@ class TestDeviceLoadUnitConversion:
         assert resp.status_code == 201
         data = resp.json().get("data", resp.json())
         props = data.get("properties", {})
-        assert props.get("load_original_value") == 24.0
+        assert props.get("load_original_value") == pytest.approx(24.0)
         assert props.get("load_original_unit") == "W"
 
     def test_create_device_watts_zero_voltage_fails(self, client, test_project) -> None:
@@ -233,7 +233,7 @@ class TestDeviceLoadUnitConversion:
         )
         assert resp.status_code == 201
         data = resp.json().get("data", resp.json())
-        assert data.get("load", 0) == 0.0
+        assert data.get("load", 0) == pytest.approx(0.0)
 
 
 # ══════════════════════════════════════════════════════════════════════════════

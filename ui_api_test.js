@@ -8,7 +8,7 @@ const CONFIG = {
 	apiUrl: process.env.API_URL || "http://localhost:8000",
 	apiKey: process.env.API_KEY || "your-api-key-here",
 	username: process.env.USERNAME || "test-user",
-	password: process.env.PASSWORD || "test-password",
+	password: process.env.PASSWORD || "test-password",  // NOSONAR: S2068 test fixture password
 	timeout: 30000,
 };
 

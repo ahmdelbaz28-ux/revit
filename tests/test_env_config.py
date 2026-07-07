@@ -24,7 +24,7 @@ class TestFireAIConfigDefaults:
         assert cfg.log_level == "INFO"
         assert cfg.max_batch_size == 500
         assert cfg.enable_wal is True
-        assert pytest.approx(cfg.coverage_threshold_pct) == 99.0
+        assert pytest.approx(cfg.coverage_threshold_pct) == pytest.approx(99.0)
 
     def test_is_production_property(self, monkeypatch):
         monkeypatch.setenv("FIREAI_ENV", "production")
@@ -57,7 +57,7 @@ class TestFireAIConfigValidation:
         monkeypatch.setenv("FIREAI_ENV", "development")
         monkeypatch.setenv("FIREAI_COVERAGE_THRESHOLD_PCT", "100.0")
         cfg = _load_config()
-        assert cfg.coverage_threshold_pct == 100.0
+        assert cfg.coverage_threshold_pct == pytest.approx(100.0)
 
 
 class TestFireAIConfigDatabasePath:

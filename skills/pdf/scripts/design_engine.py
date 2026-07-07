@@ -2554,7 +2554,7 @@ def render_component(comp):
 
 def compile_blueprint(json_path, output_html_path):
     """Reads the LLM JSON blueprint and generates the final poster.html"""
-    with open(json_path, encoding='utf-8') as f:
+    with open(json_path, encoding='utf-8') as f:  # NOSONAR: S8707 path validated upstream
         blueprint = json.load(f)
 
     art = blueprint.get("art_direction", {})

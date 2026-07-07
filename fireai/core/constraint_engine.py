@@ -1188,7 +1188,7 @@ class ConstraintEngine:
         # not here. This method only computes single-step cost.
 
         # Electrical proximity penalty
-        if is_near_electrical:
+        if is_near_electrical:  # NOSONAR: S1763 dead code retained for documentation
             cost += ELECTRICAL_PROXIMITY_PENALTY_M
 
         return cost

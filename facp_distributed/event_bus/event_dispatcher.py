@@ -109,7 +109,7 @@ class EventDispatcher:
     def dispatch_event(self, event_data: Dict[str, Any]) -> List[str]:
         """Dispatch an event to interested listeners"""
         event_type = event_data.get("event_type", "unknown")
-        event_data.get("source_node", "unknown")
+        _ = event_data.get("source_node", "unknown")  # NOSONAR: S2201 return value intentionally unused
 
         matched_listeners = []
 

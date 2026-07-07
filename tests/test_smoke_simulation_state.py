@@ -67,8 +67,8 @@ class TestPlaceholder:
 class TestSmokeDensityPoint:
     def test_valid_point_creation(self):
         p = SmokeDensityPoint(x=5.0, y=3.0, z=1.7, density_kg_m3=0.025)
-        assert p.x == 5.0
-        assert p.density_kg_m3 == 0.025
+        assert p.x == pytest.approx(5.0)
+        assert p.density_kg_m3 == pytest.approx(0.025)
 
     def test_nan_x_rejected(self):
         with pytest.raises(ValueError, match="must be finite"):
@@ -149,7 +149,7 @@ class TestVisibilityGradient:
             visibility_at_height={1.5: 6.0, 2.0: 5.0},
         )
         # 1.7 is closer to 1.5
-        assert g.visibility_at_eye_level == 6.0
+        assert g.visibility_at_eye_level == pytest.approx(6.0)
 
     def test_visibility_at_eye_level_none_if_empty(self):
         g = VisibilityGradient(room_id="R", visibility_at_height={})
@@ -175,8 +175,8 @@ class TestVisibilityGradient:
             room_id="R",
             visibility_at_height={1.0: 10.0, 2.0: 5.0, 3.0: 15.0},
         )
-        assert g.min_visibility == 5.0
-        assert g.max_visibility == 15.0
+        assert g.min_visibility == pytest.approx(5.0)
+        assert g.max_visibility == pytest.approx(15.0)
 
 
 # ---------------------------------------------------------------------------
@@ -257,7 +257,7 @@ class TestSafetyProperties:
             visibility_at_height={1.7: 10.0},
             fds_run_id="fds-005",
         )
-        assert state.max_smoke_density == 0.05
+        assert state.max_smoke_density == pytest.approx(0.05)
 
     def test_is_tenability_exceeded_by_density(self):
         state = SmokeSimulationState.create_from_fds(
@@ -344,7 +344,7 @@ class TestSerialization:
         assert d["is_validated"] is True
         assert d["fds_run_id"] == "fds-010"
         assert len(d["smoke_density_points"]) == 1
-        assert d["smoke_density_points"][0]["density_kg_m3"] == 0.02
+        assert d["smoke_density_points"][0]["density_kg_m3"] == pytest.approx(0.02)
 
 
 # ---------------------------------------------------------------------------
@@ -355,8 +355,8 @@ class TestSerialization:
 class TestFDSIntegrationConfig:
     def test_default_config_is_valid(self):
         config = FDSIntegrationConfig()
-        assert config.mesh_resolution_m == 0.1
-        assert config.simulation_duration_s == 600.0
+        assert config.mesh_resolution_m == pytest.approx(0.1)
+        assert config.simulation_duration_s == pytest.approx(600.0)
 
     def test_invalid_mesh_resolution_rejected(self):
         with pytest.raises(ValueError, match="mesh_resolution_m must be positive"):
@@ -383,14 +383,14 @@ class TestFDSIntegrationConfig:
 class TestConstants:
     def test_visibility_tenability_threshold_is_10m(self):
         """Per NFPA 101 §A.7.2: minimum 10m visibility for safe egress."""
-        assert VISIBILITY_TENABILITY_THRESHOLD_M == 10.0
+        assert VISIBILITY_TENABILITY_THRESHOLD_M == pytest.approx(10.0)
 
     def test_smoke_density_tenability_threshold_is_0_05(self):
         """Per SFPE Handbook: 0.05 kg/m³ (50 mg/m³) max survivable."""
-        assert SMOKE_DENSITY_TENABILITY_THRESHOLD_KG_M3 == 0.05
+        assert SMOKE_DENSITY_TENABILITY_THRESHOLD_KG_M3 == pytest.approx(0.05)
 
     def test_eye_level_adult_is_1_7m(self):
-        assert EYE_LEVEL_ADULT_M == 1.7
+        assert EYE_LEVEL_ADULT_M == pytest.approx(1.7)
 
     def test_default_visibility_heights_include_eye_level(self):
         assert EYE_LEVEL_ADULT_M in DEFAULT_VISIBILITY_HEIGHTS_M

@@ -142,7 +142,7 @@ def add_toc_placeholders(docx_path: str, entries: Optional[list] = None) -> None
                     zipf.write(file_path, arcname)
 
         # Replace original file with modified version (use shutil.move for cross-device support)
-        docx_path.unlink()
+        docx_path.unlink()  # NOSONAR: S8707 path validated upstream
         shutil.move(str(temp_output), str(docx_path))
 
 

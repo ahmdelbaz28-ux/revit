@@ -49,9 +49,9 @@ class TestSmokeFlatSpacingConstants:
         """Heat column in COMBINED_HEIGHT_SPACING_TABLE must have reduction."""
         from fireai.constants.nfpa72 import COMBINED_HEIGHT_SPACING_TABLE
         # At h<=3.0m: heat = 6.10m (no reduction)
-        assert COMBINED_HEIGHT_SPACING_TABLE[0][2] == 6.10
+        assert COMBINED_HEIGHT_SPACING_TABLE[0][2] == pytest.approx(6.10)
         # At h<=12.2m: heat = 3.70m (reduced per Table 17.6.3.5.1)
-        assert COMBINED_HEIGHT_SPACING_TABLE[-1][2] == 3.70
+        assert COMBINED_HEIGHT_SPACING_TABLE[-1][2] == pytest.approx(3.70)
         # Verify reduction is progressive (decreasing)
         heat_values = [heat for _, _, heat in COMBINED_HEIGHT_SPACING_TABLE]
         for i in range(1, len(heat_values)):
@@ -71,12 +71,12 @@ class TestSmokeFlatSpacingConstants:
     def test_heat_spacing_fallback_is_3_5(self):
         """HEAT_SPACING_FALLBACK_M must remain 3.50m (conservative extrapolation)."""
         from fireai.constants.nfpa72 import HEAT_SPACING_FALLBACK_M
-        assert HEAT_SPACING_FALLBACK_M == 3.50
+        assert HEAT_SPACING_FALLBACK_M == pytest.approx(3.50)
 
     def test_smoke_coverage_radius(self):
         """Smoke coverage radius = 0.7 × 9.1 = 6.37m."""
         from fireai.constants.nfpa72 import SMOKE_COVERAGE_RADIUS_M
-        assert SMOKE_COVERAGE_RADIUS_M == 6.37
+        assert SMOKE_COVERAGE_RADIUS_M == pytest.approx(6.37)
 
 
 # ============================================================================
@@ -302,19 +302,19 @@ class TestSSoTConsistency:
         """All modules must agree on SMOKE_MAX_SPACING_M = 9.1."""
         from fireai.constants import SMOKE_MAX_SPACING_M as reexported
         from fireai.constants.nfpa72 import SMOKE_MAX_SPACING_M as canonical
-        assert canonical == reexported == 9.1
+        assert canonical == reexported == pytest.approx(9.1)
 
     def test_all_modules_agree_on_smoke_coverage_radius(self):
         """All modules must agree on SMOKE_COVERAGE_RADIUS_M = 6.37."""
         from fireai.constants import SMOKE_COVERAGE_RADIUS_M as reexported
         from fireai.constants.nfpa72 import SMOKE_COVERAGE_RADIUS_M as canonical
-        assert canonical == reexported == 6.37
+        assert canonical == reexported == pytest.approx(6.37)
 
     def test_qomn_kernel_imports_from_canonical(self):
         """qomn_kernel must use the canonical SMOKE_MAX_SPACING_M."""
         from fireai.constants.nfpa72 import SMOKE_MAX_SPACING_M
         from fireai.core.qomn_kernel import NFPA72_SMOKE_MAX_SPACING_M
-        assert NFPA72_SMOKE_MAX_SPACING_M == SMOKE_MAX_SPACING_M == 9.1
+        assert NFPA72_SMOKE_MAX_SPACING_M == SMOKE_MAX_SPACING_M == pytest.approx(9.1)
 
 
 # ============================================================================

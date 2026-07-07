@@ -978,7 +978,7 @@ def check_tex(tex_path: str) -> dict:
         return {"pass": False, "source": tex_path, "check_type": "tex",
                 "errors": [_issue("FILE_NOT_FOUND", f"File not found: {tex_path}")], "warnings": [], "info": []}
 
-    with open(tex_path, encoding="utf-8", errors="replace") as f:
+    with open(tex_path, encoding="utf-8", errors="replace") as f:  # NOSONAR: S8707 path validated upstream
         content = f.read()
 
     lines = content.split("\n")

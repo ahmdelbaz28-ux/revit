@@ -160,7 +160,7 @@ def review_transformer_sizing() -> SimulationReview:
     )
 
     # Safety: NEC 215.2 125% continuous load factor applied
-    safety_ok = result.safety_factor == 1.25
+    safety_ok = abs(result.safety_factor - 1.25) < 1e-9  # S1244: float equality tolerance
 
     # Standard: standard size selected
     standard_ok = result.recommended_size_kva in [1000, 1250, 1500, 2000, 2500, 3000, 5000]
@@ -200,7 +200,7 @@ def review_protection_coordination() -> SimulationReview:
     numerical_ok = (
         abs(result.motor_fla_a - 62.0) < 1.0
         and result.ct_ratio_primary == 100
-        and result.relay_51_pickup_secondary_a == 3.5
+        and abs(result.relay_51_pickup_secondary_a - 3.5) < 1e-9
         and result.relay_50_pickup_secondary_a == 25
     )
 
@@ -366,7 +366,7 @@ def review_harmonic_analysis() -> SimulationReview:
 
     # Standard: IEEE 519 Table 1 (V) and Table 2 (I)
     standard_ok = (
-        result.voltage_limit_pct == 5.0  # ≤69 kV
+        abs(result.voltage_limit_pct - 5.0) < 1e-9  # ≤69 kV
         and result.tdd_limit_pct in [5.0, 8.0, 12.0, 15.0, 20.0]
     )
 
@@ -568,7 +568,7 @@ def review_ground_grid() -> SimulationReview:
 
     # Standard: IEEE 80 body resistance 1000Ω, foot radius 8cm
     standard_ok = (
-        result.body_resistance_ohm == 1000.0
+        abs(result.body_resistance_ohm - 1000.0) < 1e-9
         and result.foot_resistance_ohm > 0
     )
 

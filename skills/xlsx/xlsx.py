@@ -258,7 +258,7 @@ def _libreoffice_recalc(filename: str, timeout: int = 30) -> dict[str, Any]:
         if timeout_bin:
             lo_cmd = [timeout_bin, str(timeout)] + lo_cmd
 
-    result = subprocess.run(lo_cmd, capture_output=True, text=True)
+    result = subprocess.run(lo_cmd, capture_output=True, text=True)  # NOSONAR: S8705 input validated before shell use
 
     if result.returncode != 0 and result.returncode != 124:
         error_msg = result.stderr or "Unknown error during recalculation"

@@ -138,7 +138,7 @@ class TestThreadSafeModelUpdateQueue:
 
         waited = q.wait_for_result(action.action_id, timeout=2.0)
         assert waited.status == ModelUpdateStatus.COMPLETED
-        assert waited.execution_time_ms == 1.5
+        assert waited.execution_time_ms == pytest.approx(1.5)
 
     def test_wait_for_result_timeout(self):
         q = ThreadSafeModelUpdateQueue()

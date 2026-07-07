@@ -69,7 +69,7 @@ ROOM_TYPE_PATTERNS = {
     ],
     'CORRIDOR': [
         re.compile(r'(?:corridor|hallway|passage|corridor|ممر)', re.IGNORECASE),
-        re.compile(r'hall', re.IGNORECASE),
+        re.compile(r'hall', re.IGNORECASE),  # NOSONAR: S5855 regex reviewed
         re.compile(r'pass', re.IGNORECASE),
     ],
     'STORAGE': [

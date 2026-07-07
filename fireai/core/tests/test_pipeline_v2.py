@@ -221,7 +221,7 @@ class TestStage0Contract:
     def test_valid_payload(self, valid_payload) -> None:
         result = _stage0_contract(valid_payload)
         assert result["validated_room_id"] == "R-101"
-        assert result["ceiling_height_m"] == 3.0
+        assert result["ceiling_height_m"] == pytest.approx(3.0)
         assert result["detector_type"] == "smoke"
         assert "validated_payload" in result
 
@@ -375,16 +375,16 @@ class TestPointInPolygon:
 
 class TestEstimateCoverage:
     def test_no_positions(self) -> None:
-        assert _estimate_coverage([], RECT_POLYGON, 6.3) == 0.0
+        assert _estimate_coverage([], RECT_POLYGON, 6.3) == pytest.approx(0.0)
 
     def test_no_polygon(self) -> None:
-        assert _estimate_coverage([(5, 4)], [], 6.3) == 0.0
+        assert _estimate_coverage([(5, 4)], [], 6.3) == pytest.approx(0.0)
 
     def test_full_coverage(self) -> None:
         # Single detector in the center of a small room
         positions = [(5, 4)]
         pct = _estimate_coverage(positions, RECT_POLYGON, 20.0)
-        assert pct == 100.0  # Radius 20 > room diagonal
+        assert pct == pytest.approx(100.0)
 
     def test_partial_coverage(self) -> None:
         positions = [(2, 2)]
@@ -1025,7 +1025,7 @@ class TestFailedResult:
         assert pr.success is False
         assert pr.release_status == "blocked"
         assert pr.safety_tier == "REJECTED"
-        assert pr.coverage_pct == 0.0
+        assert pr.coverage_pct == pytest.approx(0.0)
         assert pr.detector_count == 0
         assert pr.errors == ["err1"]
 
@@ -1290,7 +1290,7 @@ class TestCableRoutingPathA:
                 result = analyze_room(valid_payload)
         # cable_routing should be populated from Stage 7
         if result.cable_routing is not None:
-            assert result.cable_routing["total_cable_length_m"] == 25.0
+            assert result.cable_routing["total_cable_length_m"] == pytest.approx(25.0)
             assert result.cable_routing["all_compliant"] is True
 
     def test_cable_routing_non_compliant_warning(self, valid_payload) -> None:

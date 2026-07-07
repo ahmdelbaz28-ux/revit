@@ -89,7 +89,7 @@ class TestMaskSensitive:
         assert "eyJhbGciOiJIUzI1NiJ9payload" not in result
 
     def test_password_masked(self) -> None:
-        result = mask_sensitive('password = os.getenv("PASSWORD")')
+        result = mask_sensitive('password = os.getenv("PASSWORD")')  # NOSONAR: S2068 test fixture password
         assert "***REDACTED***" in result
 
     def test_auth_key_masked(self) -> None:
@@ -342,7 +342,7 @@ class TestSecurityAuditLoggerLogEvent:
         assert event2["chain_hash"] != event1["chain_hash"]
 
     def test_log_event_masks_sensitive_details(self, audit_logger, temp_log_dir) -> None:
-        audit_logger.log_event("AUTH_FAILURE", api_key = os.getenv("API_KEY"))
+        audit_logger.log_event("AUTH_FAILURE", api_key = os.getenv("API_KEY"))  # NOSONAR: hard-coded secret in test fixture
         log_path = temp_log_dir / "security_audit.log"
         content = log_path.read_text()
         assert "sk-secret12345678" not in content

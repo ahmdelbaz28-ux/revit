@@ -162,7 +162,7 @@ class TestGetDetectorSpacing:
         """
         result = get_detector_spacing(4.0, "smoke")
         # M-10 FIX: Smoke spacing is flat 9.10m at ALL heights
-        assert result.max_spacing_m == 9.10
+        assert result.max_spacing_m == pytest.approx(9.10)
         assert result.coverage_radius_m == round(0.7 * 9.10, 4)
 
     def test_smoke_at_7_5m(self):
@@ -172,7 +172,7 @@ class TestGetDetectorSpacing:
         """
         result = get_detector_spacing(7.5, "smoke")
         # M-10 FIX: Smoke spacing is flat 9.10m at ALL heights
-        assert result.max_spacing_m == 9.10
+        assert result.max_spacing_m == pytest.approx(9.10)
         assert result.coverage_radius_m == round(0.7 * 9.10, 4)
 
     def test_smoke_at_12_2m(self):
@@ -182,7 +182,7 @@ class TestGetDetectorSpacing:
         """
         result = get_detector_spacing(12.2, "smoke")
         # M-10 FIX: Smoke spacing is flat 9.10m at ALL heights
-        assert result.max_spacing_m == 9.10
+        assert result.max_spacing_m == pytest.approx(9.10)
         assert result.coverage_radius_m == round(0.7 * 9.10, 4)
         assert result.table_row_used == "≤12.2m"
 
@@ -192,13 +192,13 @@ class TestGetDetectorSpacing:
         M-10 FIX: Flat 9.10m at all heights, even beyond table.
         """
         result = get_detector_spacing(15.0, "smoke")
-        assert result.max_spacing_m == 9.10  # Flat spacing fallback
+        assert result.max_spacing_m == pytest.approx(9.10)
         assert result.coverage_radius_m == round(0.7 * 9.10, 4)
 
     def test_smoke_at_100m_exceeds_table(self):
         """Very high ceiling — flat 9.10m fallback."""
         result = get_detector_spacing(100.0, "smoke")
-        assert result.max_spacing_m == 9.10
+        assert result.max_spacing_m == pytest.approx(9.10)
 
     # --- Heat detector ---
 
@@ -211,13 +211,13 @@ class TestGetDetectorSpacing:
     def test_heat_at_4m(self):
         """Heat detector at 4.0m — ≤4.6m row."""
         result = get_detector_spacing(4.0, "heat")
-        assert result.max_spacing_m == 5.50
+        assert result.max_spacing_m == pytest.approx(5.50)
         assert result.coverage_radius_m == round(0.7 * 5.50, 4)
 
     def test_heat_at_9m_exceeds_table(self):
         """Heat detector at 9.1m — ≤9.1m row of heat table."""
         result = get_detector_spacing(9.1, "heat")
-        assert result.max_spacing_m == 4.30
+        assert result.max_spacing_m == pytest.approx(4.30)
 
     def test_heat_at_15m_exceeds_table(self):
         """Heat detector at 15m — exceeds heat table, conservative default."""
@@ -1192,7 +1192,7 @@ class TestCrossCutting:
         # Smoke table: spacing is FLAT at 9.10m (no height reduction)
         smoke_spacings = [s for _, s in _SMOKE_SPACING_TABLE]
         for s in smoke_spacings:
-            assert s == 9.10, f"smoke spacing must be flat 9.10m, got {s}"
+            assert s == pytest.approx(9.10), f"smoke spacing must be flat 9.10m, got {s}"
 
     def test_smoke_spacing_always_ge_heat_spacing(self):
         """At the same ceiling height, smoke detectors allow larger spacing."""

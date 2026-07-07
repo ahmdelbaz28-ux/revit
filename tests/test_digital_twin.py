@@ -32,7 +32,7 @@ class TestConversionConfig:
         assert "Walls" in config.layer_to_category
         assert config.layer_to_category["Walls"] == "Walls"
         assert config.default_level == "Level 1"
-        assert config.level_height == 3000.0
+        assert config.level_height == pytest.approx(3000.0)
 
     def test_config_serialization(self):
         """Test that configuration can be serialized and deserialized."""
@@ -66,7 +66,7 @@ class TestSemanticMapper:
         assert revit_spec is not None
         assert revit_spec["element_type"] == "Wall"
         assert revit_spec["level"] == "Level 1"
-        assert revit_spec["height"] == 3000.0
+        assert revit_spec["height"] == pytest.approx(3000.0)
 
     def test_map_furniture_block_to_family(self):
         """Test mapping AutoCAD block named Furniture to Revit family."""

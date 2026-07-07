@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import secrets
 import string
+import random
 from datetime import datetime
 from typing import Any
 
@@ -39,7 +40,7 @@ class SkillMetadataFactory:
         if name is None:
             name = f"test-skill-{cls._random_suffix()}"
         if version is None:
-            version = f"{secrets.randbelow(9)}.{secrets.randbelow(9)}.{secrets.randbelow(9)}"
+            version = f"{secrets.randbelow(9)}.{secrets.randbelow(9)}.{secrets.randbelow(9)}"  # NOSONAR: weak random in test/example
         if author is None:
             author = f"test-author-{cls._random_suffix()}"
 
@@ -54,7 +55,7 @@ class SkillMetadataFactory:
     @staticmethod
     def _random_suffix(length: int = 6) -> str:
         """Generate a random suffix for test data."""
-        return "".join(random.choices(string.ascii_lowercase + string.digits, k=length))
+        return "".join(random.choices(string.ascii_lowercase + string.digits, k=length))  # NOSONAR: weak random in test/example
 
 
 class SkillDescriptionFactory:
@@ -86,7 +87,7 @@ class SkillDescriptionFactory:
     @staticmethod
     def _random_suffix(length: int = 6) -> str:
         """Generate a random suffix for test data."""
-        return "".join(random.choices(string.ascii_lowercase + string.digits, k=length))
+        return "".join(random.choices(string.ascii_lowercase + string.digits, k=length))  # NOSONAR: weak random in test/example
 
 
 class SkillPermissionsFactory:
@@ -103,13 +104,13 @@ class SkillPermissionsFactory:
     ) -> SkillPermissions:
         """Create a SkillPermissions instance with default values."""
         if network is None:
-            network = secrets.choice([True, False])
+            network = secrets.choice([True, False])  # NOSONAR: weak random in test/example
         if filesystem_read is None:
-            filesystem_read = secrets.choice([True, False])
+            filesystem_read = secrets.choice([True, False])  # NOSONAR: weak random in test/example
         if filesystem_write is None:
-            filesystem_write = secrets.choice([True, False])
+            filesystem_write = secrets.choice([True, False])  # NOSONAR: weak random in test/example
         if subprocess is None:
-            subprocess = secrets.choice([True, False])
+            subprocess = secrets.choice([True, False])  # NOSONAR: weak random in test/example
         if env_vars is None:
             env_vars = [f"ENV_VAR_{cls._random_suffix().upper()}"]
 
@@ -124,7 +125,7 @@ class SkillPermissionsFactory:
     @staticmethod
     def _random_suffix(length: int = 6) -> str:
         """Generate a random suffix for test data."""
-        return "".join(random.choices(string.ascii_uppercase + string.digits, k=length))
+        return "".join(random.choices(string.ascii_uppercase + string.digits, k=length))  # NOSONAR: weak random in test/example
 
 
 class SkillRequirementsFactory:
@@ -140,13 +141,13 @@ class SkillRequirementsFactory:
     ) -> SkillRequirements:
         """Create a SkillRequirements instance with default values."""
         if python_version is None:
-            python_version = f"{3}.{8 + secrets.randbelow(3)}"
+            python_version = f"{3}.{8 + secrets.randbelow(3)}"  # NOSONAR: weak random in test/example
         if dependencies is None:
-            dependencies = {f"pkg{cls._random_suffix()}": f">={1}.0.0"}
+            dependencies = {f"pkg{cls._random_suffix()}": f">={1}.0.0"}  # NOSONAR: weak random in test/example
         if permissions is None:
             permissions = SkillPermissionsFactory.create()
         if max_execution_time is None:
-            max_execution_time = 60 + secrets.randbelow(3540)
+            max_execution_time = 60 + secrets.randbelow(3540)  # NOSONAR: weak random in test/example
 
         return SkillRequirements(
             python_version=python_version,
@@ -158,7 +159,7 @@ class SkillRequirementsFactory:
     @staticmethod
     def _random_suffix(length: int = 6) -> str:
         """Generate a random suffix for test data."""
-        return "".join(random.choices(string.ascii_lowercase + string.digits, k=length))
+        return "".join(random.choices(string.ascii_lowercase + string.digits, k=length))  # NOSONAR: weak random in test/example
 
 
 class ExecutionErrorFactory:
@@ -180,7 +181,7 @@ class ExecutionErrorFactory:
         if message is None:
             message = f"Error occurred: {cls._random_suffix()}"
         if can_retry is None:
-            can_retry = secrets.choice([True, False])
+            can_retry = secrets.choice([True, False])  # NOSONAR: weak random in test/example
 
         return ExecutionError(
             error=error,
@@ -194,7 +195,7 @@ class ExecutionErrorFactory:
     @staticmethod
     def _random_suffix(length: int = 6) -> str:
         """Generate a random suffix for test data."""
-        return "".join(random.choices(string.ascii_uppercase + string.digits, k=length))
+        return "".join(random.choices(string.ascii_uppercase + string.digits, k=length))  # NOSONAR: weak random in test/example
 
 
 class ExecutionResultFactory:
@@ -211,14 +212,14 @@ class ExecutionResultFactory:
     ) -> ExecutionResult:
         """Create an ExecutionResult instance with default values."""
         if success is None:
-            success = secrets.choice([True, False])
+            success = secrets.choice([True, False])  # NOSONAR: weak random in test/example
 
         # Ensure mutual exclusivity of data and error
         if success:
             if error is not None:
                 error = None
             if data is None:
-                data = {"result": cls._random_suffix(), "value": 1 + secrets.randbelow(99)}
+                data = {"result": cls._random_suffix(), "value": 1 + secrets.randbelow(99)}  # NOSONAR: weak random in test/example
         else:
             if data is not None:
                 data = None
@@ -236,7 +237,7 @@ class ExecutionResultFactory:
     @staticmethod
     def _random_suffix(length: int = 6) -> str:
         """Generate a random suffix for test data."""
-        return "".join(random.choices(string.ascii_lowercase + string.digits, k=length))
+        return "".join(random.choices(string.ascii_lowercase + string.digits, k=length))  # NOSONAR: weak random in test/example
 
 
 class SkillManifestFactory:
@@ -259,7 +260,7 @@ class SkillManifestFactory:
         if requirements is None:
             requirements = SkillRequirementsFactory.create()
         if version_compatibility is None:
-            version_compatibility = f"{1}.{secrets.randbelow(9)}"
+            version_compatibility = f"{1}.{secrets.randbelow(9)}"  # NOSONAR: weak random in test/example
         if tags is None:
             tags = [f"tag{cls._random_suffix()[:5]}", f"type{cls._random_suffix()[:5]}"]
 
@@ -274,7 +275,7 @@ class SkillManifestFactory:
     @staticmethod
     def _random_suffix(length: int = 6) -> str:
         """Generate a random suffix for test data."""
-        return "".join(random.choices(string.ascii_lowercase + string.digits, k=length))
+        return "".join(random.choices(string.ascii_lowercase + string.digits, k=length))  # NOSONAR: weak random in test/example
 
 
 # Convenience functions for common test scenarios

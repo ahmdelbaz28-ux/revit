@@ -15,6 +15,7 @@ These tests verify the 6 CRITICAL fixes from the V134 adversarial audit:
 from __future__ import annotations
 
 import pytest
+import os
 
 # ---------------------------------------------------------------------------
 # F-1/F-2: SSRF Prevention Tests
@@ -30,11 +31,11 @@ class TestSSRFPrevention:
         sub = WebhookSubscription(
             id="sub-1",
             url="https://example.com/hook",
-            secret = os.getenv("SECRET_KEY"),
+            secret = os.getenv("SECRET_KEY"),  # NOSONAR: hard-coded secret in test fixture
         )
         # Attempting to mutate should raise FrozenInstanceError
         with pytest.raises(Exception):
-            sub.url = "http://evil.com"
+            sub.url = "http://evil.com"  # NOSONAR: HTTP/WS in test
 
     def test_ssrf_check_blocks_localhost(self):
         """_check_ssrf_url should block localhost."""
@@ -51,7 +52,7 @@ class TestSSRFPrevention:
         from fireai.infrastructure.webhook_service import WebhookDeliveryService
         service = WebhookDeliveryService(allow_http=True)
         # Direct IP URL — 10.0.0.1 is private
-        error = service._check_ssrf_url("http://10.0.0.1/hook")
+        error = service._check_ssrf_url("http://10.0.0.1/hook")  # NOSONAR: HTTP/WS in test
         assert error is not None
         assert "internal" in error.lower() or "private" in error.lower()
 
@@ -75,7 +76,7 @@ class TestSSRFPrevention:
         from fireai.infrastructure.webhook_service import WebhookDeliveryService
         service = WebhookDeliveryService(allow_http=True)
         # 8.8.8.8 is Google DNS (public)
-        error = service._check_ssrf_url("http://8.8.8.8/hook")
+        error = service._check_ssrf_url("http://8.8.8.8/hook")  # NOSONAR: HTTP/WS in test
         assert error is None  # Public IP → no error
 
     def test_no_redirect_following_in_delivery(self):
@@ -88,7 +89,7 @@ class TestSSRFPrevention:
         sub = WebhookSubscription(
             id="sub-test",
             url="https://nonexistent-domain-12345.invalid/hook",
-            secret = os.getenv("SECRET_KEY"),
+            secret = os.getenv("SECRET_KEY"),  # NOSONAR: hard-coded secret in test fixture
         )
         service.subscribe(sub)
         service.publish_event(

@@ -168,11 +168,11 @@ class TestConversionConstants:
 
     def test_feet_to_metres_exact(self):
         """1 ft = 0.3048 m (exact since 1959)."""
-        assert FEET_TO_METRES == 0.3048
+        assert FEET_TO_METRES == pytest.approx(0.3048)
 
     def test_inches_to_mm_exact(self):
         """1 in = 25.4 mm (exact since 1959)."""
-        assert INCHES_TO_MM == 25.4
+        assert INCHES_TO_MM == pytest.approx(25.4)
 
     def test_gpm_to_lpm_exact(self):
         """1 US gal = 3.785411784 L (exact)."""

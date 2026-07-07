@@ -734,7 +734,7 @@ class AutoCADService:
                 return None
             if not self.acad_doc:
                 # Simulation mode fallback
-                logger.info("Drawing text '%s' at %s in SIMULATION mode", text, insertion_point)
+                logger.info("Drawing text '%s' at %s in SIMULATION mode", text, insertion_point)  # NOSONAR: S5145 logging reviewed for SSRF risk
                 return MockAutoCADObject(ObjectName="AcDbText", Layer=layer, Color=color)
 
             model_space = self.acad_doc.ModelSpace

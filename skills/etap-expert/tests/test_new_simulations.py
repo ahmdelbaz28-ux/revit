@@ -66,19 +66,19 @@ class TestHarmonicAnalysis:
     def test_tdd_limit_lookup_correct(self) -> None:
         """IEEE 519 Table 2 TDD limits by ISC/IL ratio."""
         # ISC/IL < 20 → 5%
-        assert get_tdd_limit(15) == 5.0
+        assert get_tdd_limit(15) == pytest.approx(5.0)
         # 20 ≤ ISC/IL < 50 → 8%
-        assert get_tdd_limit(30) == 8.0
+        assert get_tdd_limit(30) == pytest.approx(8.0)
         # 50 ≤ ISC/IL < 100 → 12%
-        assert get_tdd_limit(75) == 12.0
+        assert get_tdd_limit(75) == pytest.approx(12.0)
         # 100 ≤ ISC/IL < 1000 → 15%
-        assert get_tdd_limit(500) == 15.0
+        assert get_tdd_limit(500) == pytest.approx(15.0)
         # ISC/IL ≥ 1000 → 20%
-        assert get_tdd_limit(2000) == 20.0
+        assert get_tdd_limit(2000) == pytest.approx(20.0)
 
     def test_voltage_limit_5pct_for_low_voltage(self) -> None:
         """IEEE 519 Table 1: THD_V < 5% for systems ≤ 69 kV."""
-        assert IEEE_519_VOLTAGE_LIMIT_PCT == 5.0
+        assert IEEE_519_VOLTAGE_LIMIT_PCT == pytest.approx(5.0)
 
     def test_compliance_flags_set_correctly(self) -> None:
         """Voltage and current compliance must be True/False based on limits."""
