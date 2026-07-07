@@ -85,7 +85,7 @@ export function RevitPage() {
 			return;
 		}
 		try {
-			const result = await revitService.readRvt(filepath);
+			await revitService.readRvt(filepath);
 			toast.success(`Read ${filepath}`);
 		} catch (err) {
 			toast.error(
@@ -95,7 +95,7 @@ export function RevitPage() {
 	};
 
 	const handleUpload = async (file: File) => {
-		const result = await revitService.uploadRvt(file);
+		await revitService.uploadRvt(file);
 		toast.success(`Uploaded ${file.name}`);
 	};
 

@@ -87,7 +87,7 @@ export function AutoCADPage() {
 			return;
 		}
 		try {
-			const result = await autocadService.readDwg(filepath);
+			await autocadService.readDwg(filepath);
 			toast.success(`Read ${filepath} successfully`);
 		} catch (err) {
 			toast.error(
@@ -97,7 +97,7 @@ export function AutoCADPage() {
 	};
 
 	const handleUpload = async (file: File) => {
-		const result = await autocadService.uploadDwg(file);
+		await autocadService.uploadDwg(file);
 		toast.success(`Uploaded ${file.name}`);
 	};
 

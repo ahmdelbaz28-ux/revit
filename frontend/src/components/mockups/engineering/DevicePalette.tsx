@@ -84,7 +84,7 @@ export function DevicePalette({ onSelect, selectedType }: DevicePaletteProps) {
 			<div className="p-4 border-t border-border">
 				<button
 					onClick={() =>
-						window.dispatchEvent(new CustomEvent("nexus-reset-project"))
+						globalThis.dispatchEvent(new CustomEvent("nexus-reset-project"))
 					}
 					className="w-full py-2 text-xs text-destructive hover:bg-destructive/10 rounded border border-transparent hover:border-destructive transition-colors"
 				>

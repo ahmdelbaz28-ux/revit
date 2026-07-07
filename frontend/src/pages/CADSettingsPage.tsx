@@ -199,7 +199,7 @@ export function CADSettingsPage() {
                         };
                         localStorage.setItem("cad_settings", JSON.stringify(settings));
                         toast.success("AutoCAD settings saved");
-                } catch (_error) {
+                } catch {
                         toast.error("Failed to save settings");
                 }
         };
@@ -216,7 +216,7 @@ export function CADSettingsPage() {
                         };
                         localStorage.setItem("cad_settings", JSON.stringify(settings));
                         toast.success("Revit settings saved");
-                } catch (_error) {
+                } catch {
                         toast.error("Failed to save settings");
                 }
         };

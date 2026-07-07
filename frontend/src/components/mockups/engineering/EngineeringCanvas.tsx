@@ -181,8 +181,8 @@ export function EngineeringCanvas({ onItemDrop }: EngineeringCanvasProps) {
 	// Handle Global Reset Event
 	useEffect(() => {
 		const handler = () => actions.resetProject();
-		window.addEventListener("nexus-reset-project", handler);
-		return () => window.removeEventListener("nexus-reset-project", handler);
+		globalThis.addEventListener("nexus-reset-project", handler);
+		return () => globalThis.removeEventListener("nexus-reset-project", handler);
 	}, []);
 
 	const getCoords = (e: React.MouseEvent) => {
@@ -238,8 +238,8 @@ export function EngineeringCanvas({ onItemDrop }: EngineeringCanvasProps) {
 	);
 
 	useEffect(() => {
-		window.addEventListener("keydown", handleKeyDown);
-		return () => window.removeEventListener("keydown", handleKeyDown);
+		globalThis.addEventListener("keydown", handleKeyDown);
+		return () => globalThis.removeEventListener("keydown", handleKeyDown);
 	}, [handleKeyDown]);
 
 	// Handle Drop from Library

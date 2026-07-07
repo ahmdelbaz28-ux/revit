@@ -89,7 +89,6 @@ export function ReportGeneratorPage() {
 	const {
 		data: projects,
 		loading: projectsLoading,
-		refetch: refetchProjects,
 	} = useProjects();
 	const [selectedProjectId, setSelectedProjectId] = useState<string | null>(
 		null,

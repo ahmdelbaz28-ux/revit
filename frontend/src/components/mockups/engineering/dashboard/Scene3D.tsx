@@ -126,7 +126,7 @@ export function Scene3D() {
 			renderer.setSize(w, h);
 		};
 
-		window.addEventListener("resize", handleResize);
+		globalThis.addEventListener("resize", handleResize);
 
 		return () => {
 			// Cleanup
@@ -155,7 +155,7 @@ export function Scene3D() {
 				resources.renderer.dispose();
 			}
 
-			window.removeEventListener("resize", handleResize);
+			globalThis.removeEventListener("resize", handleResize);
 		};
 	}, [geometry, genMaterial, batMaterial, loadMaterial, planeGeo, planeMat]);
 

@@ -214,7 +214,7 @@ export function DigitalTwinPage() {
                         // V140 Phase 5: Call real Digital Twin API
                         const history = (await digitalTwinApi.getHistory()) as VersionInfo[];
                         setVersions(Array.isArray(history) ? history : []);
-                } catch (_error) {
+                } catch {
                         // Fallback to empty if API fails (no mock data)
                         setVersions([]);
                         toast.error("Failed to load version history");
@@ -249,7 +249,7 @@ export function DigitalTwinPage() {
                         };
                         localStorage.setItem("digital_twin_settings", JSON.stringify(settings));
                         toast.success("Conversion settings saved");
-                } catch (_error) {
+                } catch {
                         toast.error("Failed to save settings");
                 }
         };

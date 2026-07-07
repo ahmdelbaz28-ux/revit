@@ -663,8 +663,8 @@ export function useDrawing() {
 			if (e.key === "e" || e.key === "E") setTool("erase");
 		};
 
-		window.addEventListener("keydown", handleKeyDown);
-		return () => window.removeEventListener("keydown", handleKeyDown);
+		globalThis.addEventListener("keydown", handleKeyDown);
+		return () => globalThis.removeEventListener("keydown", handleKeyDown);
 	}, [undo, redo, deleteSelected, setTool, state.selectedIds]);
 
 	return {

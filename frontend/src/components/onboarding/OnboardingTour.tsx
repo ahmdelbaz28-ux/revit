@@ -129,8 +129,8 @@ export const OnboardingTour: React.FC = () => {
 		if (!isVisible) return;
 		getTargetPosition();
 		const handleResize = () => getTargetPosition();
-		window.addEventListener("resize", handleResize);
-		return () => window.removeEventListener("resize", handleResize);
+		globalThis.addEventListener("resize", handleResize);
+		return () => globalThis.removeEventListener("resize", handleResize);
 	}, [isVisible, getTargetPosition]);
 
 	const completeTour = useCallback(() => {

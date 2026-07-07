@@ -114,10 +114,6 @@ export function ContextPanel({
 		getDocumentDirection,
 	);
 	const isRtl = documentDirection === "rtl";
-	const _helpContextId = useMemo(
-		() => getHelpContextId(selected, contextId),
-		[selected, contextId],
-	);
 	const visible = open && Boolean(selected);
 
 	useEffect(() => {

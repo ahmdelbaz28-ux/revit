@@ -86,8 +86,7 @@ export function ProjectsPage() {
 	} = useProjects();
 	const { mutate: deleteProject, loading: deleting } = useDeleteProject();
 	const { mutate: syncProject, loading: syncing } = useSyncProject();
-	const { mutate: createProject, loading: creatingProject } =
-		useCreateProject();
+	const { mutate: createProject } = useCreateProject();
 	const [newProject, setNewProject] = useState({ name: "", description: "" });
 	const [creating, setCreating] = useState(false);
 	const [showCreateForm, setShowCreateForm] = useState(false);

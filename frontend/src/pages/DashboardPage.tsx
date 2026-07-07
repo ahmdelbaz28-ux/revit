@@ -33,12 +33,10 @@ export function DashboardPage() {
 	const {
 		data: projects,
 		loading: projectsLoading,
-		error: projectsError,
 	} = useProjects();
 	const {
 		data: devices,
 		loading: devicesLoading,
-		error: devicesError,
 	} = useDevices(null); // Pass null as projectId
 
 	// Calculate stats

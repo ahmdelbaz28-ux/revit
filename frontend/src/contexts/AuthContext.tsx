@@ -91,8 +91,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                                 refresh();
                         }
                 };
-                window.addEventListener("focus", onFocus);
-                return () => window.removeEventListener("focus", onFocus);
+                globalThis.addEventListener("focus", onFocus);
+                return () => globalThis.removeEventListener("focus", onFocus);
         }, [state.isAuthenticated, refresh]);
 
         const login = useCallback(

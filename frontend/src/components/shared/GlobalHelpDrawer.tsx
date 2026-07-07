@@ -92,9 +92,9 @@ export function GlobalHelpDrawer({
 				onOpenChange(true);
 			}
 		};
-		window.addEventListener("fireai:open-help", handleMagicHelp);
+		globalThis.addEventListener("fireai:open-help", handleMagicHelp);
 		return () =>
-			window.removeEventListener("fireai:open-help", handleMagicHelp);
+			globalThis.removeEventListener("fireai:open-help", handleMagicHelp);
 	}, [location.pathname, onOpenChange]);
 
 	const toggleCategory = (cat: string) => {

@@ -84,7 +84,7 @@ export function ContextualHelpButton({
 		const helpEvent = new CustomEvent("fireai:open-help", {
 			detail: { topicId },
 		});
-		window.dispatchEvent(helpEvent);
+		globalThis.dispatchEvent(helpEvent);
 	};
 
 	return (

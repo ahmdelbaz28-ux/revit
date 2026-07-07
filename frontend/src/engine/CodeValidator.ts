@@ -657,7 +657,6 @@ export function validateAllDevices(devices: Device[]): CodeViolation[] {
 
 	// Group by type for validation
 	const smokeDetectors = devices.filter((d) => d.type.includes("SMOKE"));
-	const _heatDetectors = devices.filter((d) => d.type.includes("HEAT"));
 	const emergencyLights = devices.filter((d) => d.type.includes("LIGHT"));
 	const panels = devices.filter((d) => d.type.includes("PANEL"));
 

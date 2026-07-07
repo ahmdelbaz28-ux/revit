@@ -90,8 +90,8 @@ function App() {
 				setCommandPaletteOpen(true);
 			}
 		};
-		window.addEventListener("keydown", handleKeyDown);
-		return () => window.removeEventListener("keydown", handleKeyDown);
+		globalThis.addEventListener("keydown", handleKeyDown);
+		return () => globalThis.removeEventListener("keydown", handleKeyDown);
 	}, [location.pathname]);
 
 	// V193 (R10): Skip-link for keyboard users to bypass the sidebar.

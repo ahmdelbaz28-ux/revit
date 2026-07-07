@@ -99,8 +99,8 @@ function SidebarProvider({
 			}
 		};
 
-		window.addEventListener("keydown", handleKeyDown);
-		return () => window.removeEventListener("keydown", handleKeyDown);
+		globalThis.addEventListener("keydown", handleKeyDown);
+		return () => globalThis.removeEventListener("keydown", handleKeyDown);
 	}, [toggleSidebar]);
 
 	const state = open ? "expanded" : "collapsed";
