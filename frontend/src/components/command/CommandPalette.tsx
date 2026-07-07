@@ -210,9 +210,13 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
                 <div className="fixed inset-0 z-[200] flex items-start justify-center pt-[20vh]">
                         <div
                                 className="absolute inset-0 bg-black/70"
+                                role="button"
+                                tabIndex={0}
+                                aria-label="Close command palette"
                                 onClick={() => onOpenChange(false)}
                                 onKeyDown={(e) => {
-                                        if (e.key === "Enter") {
+                                        if (e.key === "Enter" || e.key === " ") {
+                                                e.preventDefault();
                                                 onOpenChange(false);
                                         }
                                 }}
@@ -230,7 +234,10 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
                                                 className="flex-1 bg-transparent text-slate-100 text-sm placeholder:text-slate-500 outline-none"
                                         />
                                         <button
-                                                onClick={() => onOpenChange(false)} onKeyDown={(e) => { if (e.key === "Enter") (() => onOpenChange(false))(); }}                                          className="text-xs text-slate-500 border border-slate-700 rounded px-2 py-1 hover:text-slate-300"
+                                                type="button"
+                                                onClick={() => onOpenChange(false)}
+                                                className="text-xs text-slate-500 border border-slate-700 rounded px-2 py-1 hover:text-slate-300"
+                                                aria-label="Close command palette"
                                         >
                                                 ESC
                                         </button>

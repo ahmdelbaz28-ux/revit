@@ -78,6 +78,19 @@ const ZoneNode: React.FC<ZoneNodeProps> = ({
                 return "text-emerald-500";
         };
 
+        // SonarQube S3358: extract nested ternary into an independent function.
+        // Returns the Tailwind classes for a device's status badge.
+        const getDeviceStatusClasses = (status: Device["status"]) => {
+                switch (status) {
+                        case "normal":
+                                return "text-emerald-500 bg-emerald-500/10";
+                        case "warning":
+                                return "text-amber-500 bg-amber-500/10";
+                        case "fault":
+                                return "text-red-500 bg-red-500/10";
+                }
+        };
+
         return (
                 <div className="select-none">
                         <div
@@ -87,7 +100,19 @@ const ZoneNode: React.FC<ZoneNodeProps> = ({
                                                 : ""
                                 }`}
                                 style={{ paddingLeft: `${level * 20 + 8}px` }}
+                                role="button"
+                                tabIndex={0}
+                                aria-label={`${zone.name} — ${expanded ? "collapse" : "expand"}`}
                                 onClick={() => {
+                                        if (zone.children && zone.children.length > 0) {
+                                                setExpanded(!expanded);
+                                        } else {
+                                                onZoomToZone(zone.id);
+                                        }
+                                }}
+                                onKeyDown={(e) => {
+                                        if (e.key !== "Enter" && e.key !== " ") return;
+                                        e.preventDefault();
                                         if (zone.children && zone.children.length > 0) {
                                                 setExpanded(!expanded);
                                         } else {
@@ -135,7 +160,17 @@ const ZoneNode: React.FC<ZoneNodeProps> = ({
                                                                 selectedDevice === device.id ? "bg-slate-700" : ""
                                                         }`}
                                                         style={{ paddingLeft: `${(level + 1) * 20 + 8}px` }}
-                                                        onClick={() => onDeviceSelect(device.id)} onKeyDown={(e) => { if (e.key === "Enter") (() => onDeviceSelect(device.id))(); }}                                              >
+                                                        role="button"
+                                                        tabIndex={0}
+                                                        aria-label={`Select device ${device.name}`}
+                                                        onClick={() => onDeviceSelect(device.id)}
+                                                        onKeyDown={(e) => {
+                                                                if (e.key === "Enter" || e.key === " ") {
+                                                                        e.preventDefault();
+                                                                        onDeviceSelect(device.id);
+                                                                }
+                                                        }}
+                                                >
                                                         <div className="w-4" />
                                                         {device.type === "smoke" && (
                                                                 <MonitorSpeaker className="h-4 w-4" />
@@ -146,13 +181,9 @@ const ZoneNode: React.FC<ZoneNodeProps> = ({
                                                         {device.type === "facp" && <Settings className="h-4 w-4" />}
                                                         <span className="text-sm truncate">{device.name}</span>
                                                         <span
-                                                                className={`ml-auto text-xs px-2 py-0.5 rounded-full ${
-                                                                        device.status === "normal"
-                                                                                ? "text-emerald-500 bg-emerald-500/10"
-                                                                                : device.status === "warning"
-                                                                                        ? "text-amber-500 bg-amber-500/10"
-                                                                                        : "text-red-500 bg-red-500/10"
-                                                                }`}
+                                                                className={`ml-auto text-xs px-2 py-0.5 rounded-full ${getDeviceStatusClasses(
+                                                                        device.status,
+                                                                )}`}
                                                         >
                                                                 {device.status}
                                                         </span>

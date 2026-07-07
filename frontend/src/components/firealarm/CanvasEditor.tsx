@@ -138,21 +138,21 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
                 const isSelected = selectedDetector === detector.id;
                 const statusColor = getStatusColor(detector.status);
 
-                // Different shapes for different detector types
-                let detectorShape;
+                // Different shapes for different detector types.
+                // SonarQube S3923: "smoke", "speaker", and the default case all
+                // render the same circle shape. Initialize detectorShape with the
+                // default (circle) and only override in the cases that differ.
+                let detectorShape = (
+                        <circle
+                                cx="12"
+                                cy="12"
+                                r="8"
+                                fill={statusColor}
+                                stroke="#FFFFFF"
+                                strokeWidth="2"
+                        />
+                );
                 switch (detector.type) {
-                        case "smoke":
-                                detectorShape = (
-                                        <circle
-                                                cx="12"
-                                                cy="12"
-                                                r="8"
-                                                fill={statusColor}
-                                                stroke="#FFFFFF"
-                                                strokeWidth="2"
-                                        />
-                                );
-                                break;
                         case "heat":
                                 detectorShape = (
                                         <polygon
@@ -191,18 +191,6 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
                                         />
                                 );
                                 break;
-                        case "speaker":
-                                detectorShape = (
-                                        <circle
-                                                cx="12"
-                                                cy="12"
-                                                r="8"
-                                                fill={statusColor}
-                                                stroke="#FFFFFF"
-                                                strokeWidth="2"
-                                        />
-                                );
-                                break;
                         case "facp":
                                 detectorShape = (
                                         <rect
@@ -217,17 +205,8 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
                                         />
                                 );
                                 break;
-                        default:
-                                detectorShape = (
-                                        <circle
-                                                cx="12"
-                                                cy="12"
-                                                r="8"
-                                                fill={statusColor}
-                                                stroke="#FFFFFF"
-                                                strokeWidth="2"
-                                        />
-                                );
+                        // "smoke", "speaker", and any unknown type fall through
+                        // to the default circle shape initialized above.
                 }
 
                 return (

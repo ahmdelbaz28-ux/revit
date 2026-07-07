@@ -77,7 +77,17 @@ export function FileUploader({
 				}}
 				onDragLeave={() => setDragging(false)}
 				onDrop={handleDrop}
-				onClick={() => inputRef.current?.click()} onKeyDown={(e) => { if (e.key === "Enter") (() => inputRef.current?.click())(); }}			>
+				onClick={() => inputRef.current?.click()}
+				onKeyDown={(e) => {
+					if (e.key === "Enter" || e.key === " ") {
+						e.preventDefault();
+						inputRef.current?.click();
+					}
+				}}
+				role="button"
+				tabIndex={0}
+				aria-label="Drop file here or click to browse"
+			>
 				<input
 					ref={inputRef}
 					type="file"
@@ -109,7 +119,9 @@ export function FileUploader({
 					</div>
 					<Button
 						size="sm"
-						onClick={handleUpload} onKeyDown={(e) => { if (e.key === "Enter") (handleUpload)(); }}						disabled={uploading}
+						type="button"
+						onClick={handleUpload}
+						disabled={uploading}
 						className="bg-orange-600 hover:bg-orange-700 text-white"
 					>
 						{uploading ? "Uploading..." : "Upload"}
@@ -117,7 +129,10 @@ export function FileUploader({
 					<Button
 						size="sm"
 						variant="ghost"
-						onClick={() => setSelectedFile(null)} onKeyDown={(e) => { if (e.key === "Enter") (() => setSelectedFile(null))(); }}						disabled={uploading}
+						type="button"
+						onClick={() => setSelectedFile(null)}
+						disabled={uploading}
+						aria-label="Remove selected file"
 					>
 						<X className="h-4 w-4" />
 					</Button>

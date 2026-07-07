@@ -143,13 +143,11 @@ export function ContextPanel({
 	const panelSideClasses = isRtl
 		? "left-0 border-r border-slate-800"
 		: "right-0 border-l border-slate-800";
-	const panelTransformClasses = isRtl
-		? visible
-			? "translate-x-0"
-			: "-translate-x-full"
-		: visible
-			? "translate-x-0"
-			: "translate-x-full";
+	// SonarQube S3358: extract nested ternary into independent statements.
+	const panelTransformClasses = (() => {
+		if (visible) return "translate-x-0";
+		return isRtl ? "-translate-x-full" : "translate-x-full";
+	})();
 
 	return (
 		<div
@@ -159,7 +157,17 @@ export function ContextPanel({
 		>
 			<div
 				className={`absolute inset-0 bg-black/35 transition-opacity duration-300 ${visible ? "opacity-100" : "opacity-0"}`}
-				onClick={handleClose} onKeyDown={(e) => { if (e.key === "Enter") (handleClose)(); }}			/>
+				role="button"
+				tabIndex={0}
+				aria-label="Close context panel"
+				onClick={handleClose}
+				onKeyDown={(e) => {
+						if (e.key === "Enter" || e.key === " ") {
+							e.preventDefault();
+							handleClose();
+						}
+					}}
+				/>
 
 			<aside
 				className={`fixed top-0 bottom-0 z-10 flex w-[min(26rem,94vw)] flex-col bg-slate-950/95 text-slate-100 shadow-2xl shadow-black/40 backdrop-blur-xl transition-transform duration-300 ${panelSideClasses} ${panelTransformClasses} ${className}`}
@@ -187,7 +195,8 @@ export function ContextPanel({
 						variant="ghost"
 						size="icon"
 						className="h-9 w-9 shrink-0 text-slate-400 hover:bg-slate-800 hover:text-slate-100"
-						onClick={handleClose} onKeyDown={(e) => { if (e.key === "Enter") (handleClose)(); }}						aria-label="Close context panel"
+						onClick={handleClose}
+						aria-label="Close context panel"
 					>
 						<X className="h-4 w-4" />
 					</Button>
@@ -288,7 +297,8 @@ export function ContextPanel({
 									<Button
 										type="button"
 										className="w-full bg-red-600 text-white hover:bg-red-700"
-										onClick={() => openHelp?.()} onKeyDown={(e) => { if (e.key === "Enter") (() => openHelp?.())(); }}									>
+										onClick={() => openHelp?.()}
+										>
 										<CircleHelp className="h-4 w-4" />
 										Open related help
 									</Button>

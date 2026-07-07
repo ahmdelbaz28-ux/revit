@@ -24,14 +24,29 @@ export function FloatingErrorLog() {
 		return null; // Hide if no errors and not pinned
 	}
 
+	// SonarQube S3358: extract nested ternary into independent statements.
+	const panelHeight = isPinned || isExpanded ? "h-48" : "h-7";
+	const panelPosition = isPinned ? "relative" : "fixed bottom-6 left-0 right-0 z-50";
+
 	return (
 		<div
-			className={`flex flex-col border-t bg-card/95 backdrop-blur-md transition-all duration-300 ease-in-out shrink-0 overflow-hidden ${isPinned ? "h-48" : isExpanded ? "h-48" : "h-7"} ${isPinned ? "relative" : "fixed bottom-6 left-0 right-0 z-50"}`}
+			className={`flex flex-col border-t bg-card/95 backdrop-blur-md transition-all duration-300 ease-in-out shrink-0 overflow-hidden ${panelHeight} ${panelPosition}`}
 		>
 			{/* Header */}
 			<div
 				className="h-7 flex items-center justify-between px-2 border-b cursor-pointer select-none shrink-0 bg-red-950/10"
-				onClick={() => !isPinned && setIsExpanded(!isExpanded)} onKeyDown={(e) => { if (e.key === "Enter") (() => !isPinned && setIsExpanded(!isExpanded))(); }}			>
+				role="button"
+				tabIndex={0}
+				aria-label={isExpanded ? "Collapse error log" : "Expand error log"}
+				onClick={() => !isPinned && setIsExpanded(!isExpanded)}
+				onKeyDown={(e) => {
+					if (isPinned) return;
+					if (e.key === "Enter" || e.key === " ") {
+						e.preventDefault();
+						setIsExpanded(!isExpanded);
+					}
+				}}
+			>
 				<div className="flex items-center gap-3">
 					<div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
 					<span className="text-[11px] font-semibold uppercase tracking-wider text-foreground">
@@ -89,7 +104,17 @@ export function FloatingErrorLog() {
 							<div
 								key={err.id}
 								className="flex items-center px-4 py-1.5 border-b border-border/30 hover:bg-muted/30 group bg-red-950/20 border-l-2 border-l-red-500 cursor-pointer"
-								onClick={() => handleFocus(err.elementId)} onKeyDown={(e) => { if (e.key === "Enter") (() => handleFocus(err.elementId))(); }}							>
+								role="button"
+								tabIndex={0}
+								aria-label={`Focus element ${err.elementId ?? "unknown"}: ${err.message}`}
+								onClick={() => handleFocus(err.elementId)}
+								onKeyDown={(e) => {
+										if (e.key === "Enter" || e.key === " ") {
+											e.preventDefault();
+											handleFocus(err.elementId);
+										}
+									}}
+								>
 								<div className="w-[80px] shrink-0 text-muted-foreground">
 									{new Date(err.timestamp).toLocaleTimeString()}
 								</div>
