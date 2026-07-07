@@ -304,7 +304,9 @@ class ScanToBIMService:
         try:
             ocr_result = self.ocr_service.process_file(file_path, lang=lang)
         except Exception as e:
-            self.logger.error(f"OCR processing failed for {file_path}: {e}")
+            # V201 (SonarCloud S8572): use logger.exception() to include full
+            # traceback automatically, instead of f-string interpolation.
+            self.logger.exception("OCR processing failed for %s", file_path)
             return ScanToBIMResult(
                 success=False,
                 rooms=[],
@@ -452,7 +454,9 @@ class ScanToBIMService:
             return True
 
         except Exception as e:
-            self.logger.error(f"Failed to export to IFC: {e}")
+            # V201 (SonarCloud S8572): use logger.exception() to include full
+            # traceback automatically, instead of f-string interpolation.
+            self.logger.exception("Failed to export to IFC")
             return False
 
     def validate_bim_data(self, rooms: List[BIMRoom]) -> Dict[str, Any]:

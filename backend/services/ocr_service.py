@@ -96,7 +96,9 @@ class OCRService:
             pytesseract.get_tesseract_version()
             self.logger.info("Tesseract OCR installation validated successfully")
         except Exception as e:
-            self.logger.error(f"Tesseract OCR not found: {e}")
+            # V201 (SonarCloud S8572): use logger.exception() to include full
+            # traceback automatically, instead of f-string interpolation.
+            self.logger.exception("Tesseract OCR not found")
             raise RuntimeError(
                 "Tesseract OCR is required but not installed. "
                 "Please install Tesseract from https://tesseract-ocr.github.io/"
@@ -302,7 +304,9 @@ class OCRService:
                 total_word_count = result['word_count']
 
         except Exception as e:
-            self.logger.error(f"OCR processing failed for {file_path}: {e}")
+            # V201 (SonarCloud S8572): logger.exception() includes the full
+            # traceback automatically — no need to interpolate {e}.
+            self.logger.exception("OCR processing failed for %s", file_path)
             raise
 
         # Combine all extracted text

@@ -333,14 +333,24 @@ class MultiDatabaseService:
         }
 
     def close(self):
-        """Close all database connections."""
+        """Close all database connections.
+
+        V201 (SonarCloud S8572/S2148): All exception handlers in this method
+        previously used bare `except Exception: pass`, silently swallowing
+        errors during shutdown — making connection-leak debugging impossible.
+        Each handler now logs the exception with full traceback via
+        `logger.exception()` (which automatically includes the exception
+        info from `sys.exc_info()`). The cleanup still proceeds (the
+        client is set to None regardless) because the goal of close()
+        is best-effort teardown.
+        """
         with self._lock:
             # Close Redis
             if self._redis_client:
                 try:
                     self._redis_client.close()
                 except Exception:
-                    pass
+                    logger.exception("Failed to close Redis client")
                 self._redis_client = None
 
             # Close Qdrant
@@ -348,7 +358,7 @@ class MultiDatabaseService:
                 try:
                     self._qdrant_client.close()
                 except Exception:
-                    pass
+                    logger.exception("Failed to close Qdrant client")
                 self._qdrant_client = None
 
             # Close Neo4j
@@ -356,7 +366,7 @@ class MultiDatabaseService:
                 try:
                     self._neo4j_driver.close()
                 except Exception:
-                    pass
+                    logger.exception("Failed to close Neo4j driver")
                 self._neo4j_driver = None
 
             # Close PostgreSQL pool
@@ -364,7 +374,7 @@ class MultiDatabaseService:
                 try:
                     self._postgres_pool.closeall()
                 except Exception:
-                    pass
+                    logger.exception("Failed to close PostgreSQL pool")
                 self._postgres_pool = None
 
             self._initialized = False
