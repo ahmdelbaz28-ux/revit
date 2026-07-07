@@ -25,6 +25,13 @@ from unittest.mock import patch
 
 import pytest
 
+# V207 FIX: Skip this entire module if pytesseract is not installed.
+# pytesseract requires the tesseract system package (apt install tesseract-ocr)
+# which is not available in all CI environments. Without this skip, the
+# collection error aborts the ENTIRE test run, masking all other test results.
+# importorskip raises pytest.skip() at collection time if the import fails.
+pytest.importorskip("pytesseract", reason="pytesseract not installed — OCR tests skipped")
+
 from backend.services.ocr_service import OCRService, ocr_service
 from backend.services.scan_to_bim import BIMRoom, scan_to_bim_service
 
