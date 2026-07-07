@@ -64,9 +64,21 @@ class TestAutoCADServiceInitialization:
     @patch('backend.services.autocad_service.HAS_AUTOCAD_API', False)
     def test_connect_without_api(self):
         """Test connecting when AutoCAD API is not available."""
+        # V142 FIX: The production connect() implementation falls back to a
+        # SIMULATION mode when HAS_AUTOCAD_API is False AND FIREAI_ENV is
+        # "development" (the default). The simulation mode returns True and
+        # sets self.connected=True — useful for local dev, but it would mask
+        # the real "no API" behavior this test is verifying. Patch FIREAI_ENV
+        # to a non-development value so the simulation branch is bypassed
+        # and the genuine "API unavailable → connect() returns False" path
+        # is exercised. This is the safety-critical behavior: callers MUST
+        # learn that the connection failed so they can fall back to a
+        # different ingestion strategy rather than assuming AutoCAD is
+        # reachable.
         service = AutoCADService()
 
-        result = service.connect()
+        with patch.dict(os.environ, {"FIREAI_ENV": "production"}):
+            result = service.connect()
 
         assert result is False
         assert service.connected is False

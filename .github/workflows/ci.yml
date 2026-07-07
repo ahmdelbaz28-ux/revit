@@ -197,6 +197,8 @@ jobs:
           DATABASE_URL: "sqlite:////tmp/fireai_ci_test.db"
           DIGITAL_TWIN_DB_PATH: "/tmp/fireai_ci_test.db"
           UDM_DB_PATH: "/tmp/udm_ci_test.db"
+          # V207 FIX: SECRET_KEY is used by webhook test fixtures as HMAC secret.
+          SECRET_KEY: "ci-test-hmac-secret-key-32-chars-minimum!!"
         run: |
           # If FIREAI_SESSION_SECRET_CI secret is not set, generate one for this run.
           # This allows the workflow to function even before the secret is configured.

@@ -24,6 +24,7 @@ from pathlib import Path
 from parsers._path_security import (
     UnsafePathError,
     validate_input_path,
+    validate_output_path,
 )
 from qomn_fire.core.errors import ConversionError, Result
 
@@ -61,14 +62,20 @@ class RvtConverter:
                 remedy="Ensure input file is in allowed upload directory with correct extension."
             ))
 
-        # V128 SECURITY: Validate output path to prevent path traversal in output
+        # V128 SECURITY: Validate output path to prevent path traversal in output.
+        # V142 FIX: Use validate_output_path (not validate_input_path) — the
+        # output IFC file does NOT exist yet (we are about to create it).
+        # validate_input_path raises FileNotFoundError when the path does not
+        # exist, which made every legitimate fallback conversion abort with
+        # an unhandled FileNotFoundError before the converter could run. This
+        # is the same safety-critical bug that was fixed in DwgConverter.
         try:
-            safe_output_path = validate_input_path(
+            safe_output_path = validate_output_path(
                 output_ifc_path,
                 allowed_extensions={".ifc"},
             )
             # Use the validated/sanitized path from here forward
-            output_ifc_path = safe_output_path
+            output_ifc_path = str(safe_output_path)
         except UnsafePathError as e:
             return Result.failure(ConversionError(
                 message=f"Unsafe output path: {e}",
@@ -144,6 +151,12 @@ class RvtConverter:
                 ))
 
             # Create minimal IFC content
+            # V142 FIX: Use the correct ISO 10303-21 end marker
+            # "END-ISO-10303-21;" (with hyphens) per ISO 10303-21 §7.3.
+            # The previous "END ISO-10303-21;" (with a space) failed IFC
+            # structural validation in qomn_fire/tests/test_parsers.py
+            # (TestConverters::test_rvt_converter_fallback_creates_ifc),
+            # which inspects the mock output for the proper end marker.
             mock_content = f"""ISO-10303-21;
 HEADER;
 FILE_DESCRIPTION(('ViewDefinition [DesignTransferView]'),'2;1');
@@ -153,7 +166,7 @@ ENDSEC;
 DATA;
 #1=IFCPROJECT('{input_path.stem}',#2,'RVT Conversion Mock','','',#3,#4);
 ENDSEC;
-END ISO-10303-21;
+END-ISO-10303-21;
 """
 
             # Write to validated output path

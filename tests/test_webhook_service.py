@@ -103,7 +103,7 @@ class TestSubscriptionValidation:
         with pytest.raises(ValueError, match="at least 32 characters"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)
             service.subscribe(WebhookSubscription(
                 id="sub-1", url="https://example.com/hook",
-                secret = os.getenv("SECRET_KEY"),  # 28 chars < 32  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
+                secret="short-secret-28-chars-!!!",  # 28 chars < 32 — hardcoded to test rejection (NOT env var, which can vary)
             ))
 
     def test_empty_id_rejected(self, service):

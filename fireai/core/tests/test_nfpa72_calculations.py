@@ -669,8 +669,12 @@ class TestCheckVoltageDrop:
         assert result["compliant"] is False
 
     def test_drop_fraction_calculation(self) -> None:
-        # 1.0 A × 0.01 Ω/m × 50 m = 0.5 V drop
-        expected_drop = 0.5
+        # V142: 1.0 A × 0.01 Ω/m × 50 m × 2 (DC return path factor per
+        # NFPA 72 §10.14) = 1.0 V drop. The ×2 accounts for both the supply
+        # and return conductors — a single-path calculation would understate
+        # the voltage drop by 50% and could allow deployment of devices
+        # beyond their listed operating voltage range.
+        expected_drop = 1.0
         result = check_voltage_drop(24.0, 1.0, 0.01, 50.0)
         assert abs(result["drop_v"] - expected_drop) < 0.01
 

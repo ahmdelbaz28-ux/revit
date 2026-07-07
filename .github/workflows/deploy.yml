@@ -132,6 +132,9 @@ jobs:
           DATABASE_URL: "sqlite:////tmp/fireai_deploy_test.db"
           DIGITAL_TWIN_DB_PATH: "/tmp/fireai_deploy_test.db"
           UDM_DB_PATH: "/tmp/udm_deploy_test.db"
+          # V207 FIX: SECRET_KEY is used by webhook test fixtures as HMAC secret.
+          # Must be ≥32 chars per NIST SP 800-107 (enforced by webhook_service.py).
+          SECRET_KEY: "ci-test-hmac-secret-key-32-chars-minimum!!"
         run: |
           # Generate ephemeral session secret for this run (matches ci.yml pattern)
           export FIREAI_SESSION_SECRET=$(python -c 'import secrets; print(secrets.token_urlsafe(64))')

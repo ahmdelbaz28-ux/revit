@@ -601,6 +601,9 @@ DetectorTypeSimple = Literal["smoke", "heat"]
 from fireai.constants.nfpa72 import (
     COMBINED_HEIGHT_SPACING_TABLE as _CANONICAL_HEIGHT_TABLE,
 )
+from fireai.constants.nfpa72 import (
+    DC_RETURN_PATH_FACTOR,
+)
 
 _NFPA72_TABLE_17_6_3_1_1 = list(_CANONICAL_HEIGHT_TABLE)
 
@@ -1020,7 +1023,16 @@ def check_voltage_drop(
     if max_drop_fraction <= 0 or max_drop_fraction > 1:
         raise ValueError(f"max_drop_fraction must be in (0, 1], got {max_drop_fraction}")
 
-    total_resistance = cable_resistance_ohm_per_m * cable_length_m
+    # V142 FIX: Apply DC_RETURN_PATH_FACTOR (=2.0) per NFPA 72 §10.14. The
+    # one-way cable_length_m must be multiplied by 2 to account for the
+    # return conductor (supply + return path). Without this factor, voltage
+    # drop is understated by 50% — a safety-critical bug that could cause
+    # devices to be deployed beyond their listed voltage range. The
+    # Pydantic-based VoltageDropInput.compute_voltage_drop() already
+    # includes this factor (see nfpa72_schemas.py:340); this standalone
+    # function was missing it, producing inconsistent results between the
+    # two calculation paths.
+    total_resistance = cable_resistance_ohm_per_m * cable_length_m * DC_RETURN_PATH_FACTOR
     drop_v           = load_current_a * total_resistance
     drop_fraction    = drop_v / supply_voltage_v if supply_voltage_v > 0 else float("inf")
     return {

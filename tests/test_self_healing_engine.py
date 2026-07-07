@@ -152,28 +152,38 @@ class TestWeightedCircuitBreaker(unittest.TestCase):
     def test_weighted_scoring_critical_trips_faster(self):
         """Critical errors (weight=5) should trip the breaker faster than transient (weight=1)."""
         # With threshold=10 and CRITICAL weight=5, should trip after 3 errors
+        # ZeroDivisionError maps to ErrorSeverity.CRITICAL (weight=5).
+        result1 = self.cb.register_healing_event("ZeroDivisionError")  # 5.0
+        result2 = self.cb.register_healing_event("ZeroDivisionError")  # 10.0
+        result3 = self.cb.register_healing_event("ZeroDivisionError")  # 15.0
 
-        self.assertTrue(result1)   # Still CLOSED
+        self.assertTrue(result1)   # Still CLOSED (5.0 > 10.0 is False)
         self.assertTrue(result2)   # Still CLOSED (10.0 > 10.0 is False)
         self.assertFalse(result3)  # TRIPPED (15.0 > 10.0)
 
     def test_weighted_scoring_transient_trips_slower(self):
         """Transient errors (weight=1) should require more events to trip."""
         # With threshold=10 and TRANSIENT weight=1, should trip after 11 errors
+        # IndexError maps to ErrorSeverity.TRANSIENT (weight=1).
+        result = True  # initialize so the loop variable is defined for the assertion
         for i in range(10):
+            result = self.cb.register_healing_event("IndexError")
             self.assertTrue(result, f"Should be CLOSED at event {i+1}")
 
-        self.assertFalse(result11)  # TRIPPED
+        result11 = self.cb.register_healing_event("IndexError")  # 11.0
+        self.assertFalse(result11)  # TRIPPED (11.0 > 10.0)
 
     def test_deque_o1_pruning(self):
         """Verify O(1) deque correctly prunes expired events."""
         cb = WeightedCircuitBreaker(threshold=100.0, window_seconds=0.5, cooldown_seconds=1.0)
+        cb.register_healing_event()  # seed the deque with one event
         self.assertEqual(len(cb._events), 1)
 
         # Wait for window to expire
         time.sleep(0.6)
 
-        # Next event should prune the expired one
+        # Next event should prune the expired one. Only the new event remains.
+        cb.register_healing_event()
         self.assertEqual(len(cb._events), 1)  # Only the new event remains
 
     def test_backward_compatible_register(self):
@@ -183,6 +193,9 @@ class TestWeightedCircuitBreaker(unittest.TestCase):
 
     def test_health_includes_weighted_metrics(self):
         """V53 FIX (BUG 9) preserved: health() method works with weighted metrics."""
+        # Register one CRITICAL event (ZeroDivisionError → weight=5) so the
+        # health snapshot reflects a non-empty, weighted state.
+        self.cb.register_healing_event("ZeroDivisionError")
         health = self.cb.health()
 
         self.assertEqual(health["state"], "CLOSED")
@@ -204,8 +217,11 @@ class TestHalfOpenRecovery(unittest.TestCase):
 
     def test_cooldown_transitions_to_half_open(self):
         """After cooldown period, breaker should transition to HALF_OPEN."""
-        # Trip the breaker
-        # Need another event to exceed threshold (5.0 > 5.0 is False)
+        # Trip the breaker. With threshold=5.0 and ZeroDivisionError weight=5,
+        # a single event yields current_weight=5.0 which does NOT exceed the
+        # threshold (5.0 > 5.0 is False). Need another event to exceed.
+        self.cb.register_healing_event("ZeroDivisionError")  # 5.0 (still CLOSED)
+        self.cb.register_healing_event("ZeroDivisionError")  # 10.0 → TRIPPED
 
         self.assertEqual(self.cb.state, "OPEN")
 
@@ -603,6 +619,9 @@ class TestCircuitBreakerBackwardCompat(unittest.TestCase):
     def test_reset_method(self):
         """reset() method should work as before."""
         cb = WeightedCircuitBreaker(threshold=5.0)
+        # ZeroDivisionError weight=5; one event gives 5.0 which is NOT > 5.0,
+        # so register a second event to actually trip the breaker.
+        cb.register_healing_event("ZeroDivisionError")
         cb.register_healing_event("ZeroDivisionError")
         self.assertEqual(cb.state, "OPEN")
 
@@ -761,9 +780,12 @@ class TestV66VulnerabilityFixes(unittest.TestCase):
         self.assertFalse(is_open)
         self.assertEqual(state, "CLOSED")
 
-        # Trip the breaker
+        # Trip the breaker. ZeroDivisionError weight=5; one event gives 5.0
+        # which is NOT > 5.0, so register a second event to actually trip.
+        cb.register_healing_event("ZeroDivisionError")
+        cb.register_healing_event("ZeroDivisionError")
 
-        # When OPEN
+        # When OPEN (before cooldown)
         is_open, state = cb.check_and_cooldown()
         self.assertTrue(is_open)
         self.assertEqual(state, "OPEN")

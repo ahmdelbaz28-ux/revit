@@ -58,6 +58,27 @@ class Result(Generic[T, E]):
             raise ValueError("Panic: Attempted to fetch error of successful Result")
         return self._error
 
+    # V142 FIX: Classmethod constructors. The DWG/RVT converters
+    # (qomn_fire/parsers/dwg_converter.py, rvt_converter.py) construct results
+    # via Result.success(value) / Result.failure(error). Previously these
+    # classmethods did not exist on this Result class, so every error path in
+    # the converters raised AttributeError instead of returning a structured
+    # ConversionError — masking the real failure from callers and tests.
+    # In a safety-critical fire-alarm platform, an unhandled AttributeError
+    # during DWG/RVT conversion means a corrupted BIM file produces an
+    # uncaught exception rather than a structured rejection, leaving the
+    # caller with no remedy information. Added classmethods mirror the
+    # existing constructor's value/error invariants.
+    @classmethod
+    def success(cls, value: T) -> "Result[T, E]":
+        """Construct a success result holding `value`."""
+        return cls(value=value, error=None)
+
+    @classmethod
+    def failure(cls, error: E) -> "Result[T, E]":
+        """Construct a failure result holding `error`."""
+        return cls(value=None, error=error)
+
     # BUG-37 FIX: Add __repr__ for debugging
     def __repr__(self) -> str:
         if self.is_success:

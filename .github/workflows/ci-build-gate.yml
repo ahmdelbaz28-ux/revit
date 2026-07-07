@@ -117,4 +117,6 @@ jobs:
           DATABASE_URL: "sqlite:////tmp/fireai_buildgate_test.db"
           DIGITAL_TWIN_DB_PATH: "/tmp/fireai_buildgate_test.db"
           UDM_DB_PATH: "/tmp/udm_buildgate_test.db"
+          # V207 FIX: SECRET_KEY is used by webhook test fixtures as HMAC secret.
+          SECRET_KEY: "ci-test-hmac-secret-key-32-chars-minimum!!"
         run: pytest backend/tests/ -v --tb=short
