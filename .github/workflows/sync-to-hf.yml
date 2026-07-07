@@ -8,7 +8,7 @@ name: Sync to HuggingFace Space
 # - GitHub repo is the SINGLE SOURCE OF TRUTH (full monorepo: frontend + backend
 #   + skills + tests + docs + deploy configs).
 # - HuggingFace Space is a DEPLOYMENT TARGET that hosts only the runtime subset
-#   (backend Python + frontend dist built inside the Dockerfile).
+#   (backend Python + frontend source built inside the Dockerfile).
 # - On every push to `main`, this workflow mirrors the runtime subset to the HF
 #   Space repo so that HF rebuilds the Docker image automatically.
 #
@@ -18,15 +18,12 @@ name: Sync to HuggingFace Space
 #   marine/ parsers/ qomn_conduit/ qomn_fire/
 #
 # WHAT IS EXCLUDED (repo-only): .github/ skills/ deploy/ docs/ tests/ *.md
-#   (except README.md), alembic/, services/, templates/, vercel.json, etc.
+#   (except README.md), alembic/, services/, templates/, vercel.json,
+#   revit_data/ (has >10 MiB files HF rejects), todo-app/, etc.
 #
 # AUTH
 # ────
-# Requires the `HF_TOKEN` repository secret (write scope on the HF Space).
-# Create at: https://huggingface.co/settings/tokens → "Write" access.
-# Then add as GitHub secret:
-#   GH REST API: PUT /repos/{owner}/{repo}/actions/secrets/HF_TOKEN
-#   Body: { "encrypted_value": <libsodium-sealed>, "key_id": <pubkey-id> }
+# Uses the `HF_TOKEN` repository secret (write scope on the HF Space).
 # ═══════════════════════════════════════════════════════════════════════════
 
 on:
@@ -43,7 +40,6 @@ permissions:
   contents: read
 
 env:
-  HF_SPACE_REPO: "https://huggingface.co/spaces/ahmdelbaz28/BAZSPARK"
   HF_USERNAME: "ahmdelbaz28"
   HF_SPACE_NAME: "BAZSPARK"
 
@@ -69,13 +65,14 @@ jobs:
           # Clone HF Space into a sibling directory using token auth
           git clone "https://${HF_USERNAME}:${HF_TOKEN}@huggingface.co/spaces/${HF_USERNAME}/${HF_SPACE_NAME}" hf_space
           # Print HF commit SHA for traceability (before sync)
-          cd hf_space && git rev-parse --short HEAD > ../hf_before_sha.txt
-          echo "HF before-sync SHA: $(cat ../hf_before_sha.txt)"
+          (cd hf_space && git rev-parse --short HEAD) | tee hf_before_sha.txt
+          echo "HF before-sync SHA: $(cat hf_before_sha.txt)"
 
-      - name: Sync runtime files (rsync)
+      - name: Sync runtime files (whitelist + exclude junk)
         run: |
-          # Runtime-only file list — MUST match HF Dockerfile COPY statements.
-          # If the Dockerfile is updated to COPY new dirs, add them here too.
+          # ── Whitelist of runtime paths that must exist on HF ──────────────
+          # MUST match the COPY statements in the HF Dockerfile.
+          # If you add a new COPY to the Dockerfile, add the path here too.
           RUNTIME_PATHS=(
             "Dockerfile"
             "README.md"
@@ -95,77 +92,83 @@ jobs:
             "qomn_fire"
           )
 
-          # Build rsync include list
-          INCLUDE_ARGS=()
+          # ── Step 1: wipe the HF working tree clean (keep only .git/) ──────
+          # This ensures files that no longer exist on GitHub get removed from HF.
+          find hf_space -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} +
+
+          # ── Step 2: copy each whitelisted path from GitHub checkout ──────
           for p in "${RUNTIME_PATHS[@]}"; do
-            INCLUDE_ARGS+=(--include="/${p}")
-            # If it's a directory, include all contents
-            if [ -d "${{ github.workspace }}/${p}" ]; then
-              INCLUDE_ARGS+=(--include="/${p}/**")
+            if [ -e "${{ github.workspace }}/${p}" ]; then
+              # Use rsync with junk-file exclusions to avoid pushing cache/build artifacts
+              rsync -a \
+                --exclude='node_modules/' \
+                --exclude='__pycache__/' \
+                --exclude='*.pyc' \
+                --exclude='.venv/' \
+                --exclude='venv/' \
+                --exclude='dist/' \
+                --exclude='build/' \
+                --exclude='.env*' \
+                --exclude='*.db' \
+                --exclude='*.sqlite*' \
+                --exclude='coverage/' \
+                --exclude='.pytest_cache/' \
+                --exclude='.mypy_cache/' \
+                --exclude='.ruff_cache/' \
+                --exclude='.git/' \
+                "${{ github.workspace }}/${p}" "hf_space/${p}"
+              echo "  + synced: ${p}"
+            else
+              echo "  ! skipped (not in repo): ${p}"
             fi
           done
 
-          # rsync from GitHub checkout → hf_space, deleting files that no longer exist on GitHub
-          # --delete-excluded ensures HF-only files (like stale skills/) get removed
-          rsync -av --delete \
-            --exclude='.git/' \
-            --exclude='.github/' \
-            --exclude='node_modules/' \
-            --exclude='__pycache__/' \
-            --exclude='*.pyc' \
-            --exclude='.venv/' \
-            --exclude='dist/' \
-            --exclude='.env*' \
-            --exclude='*.db' \
-            --exclude='*.sqlite*' \
-            --exclude='coverage/' \
-            --exclude='.pytest_cache/' \
-            --exclude='.mypy_cache/' \
-            --exclude='.ruff_cache/' \
-            "${{ github.workspace }}/" "hf_space/"
-
-          echo "✓ Runtime files synced"
+          echo ""
+          echo "=== HF Space contents after sync ==="
+          ls -la hf_space/ | head -30
 
       - name: Commit & push to HuggingFace
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-          GH_SHA_SHORT: ${{ github.sha }}
+          GH_SHA: ${{ github.sha }}
         run: |
           cd hf_space
 
-          # Stage all changes (including deletions)
+          # Stage all changes (including deletions from the wipe step)
           git add -A
 
           # Check if there's anything to commit
           if git diff --cached --quiet; then
-            echo "ℹ️ No changes to sync — HF Space is already up-to-date with GitHub ${GH_SHA_SHORT::7}"
+            echo "ℹ️ No changes to sync — HF Space is already up-to-date with GitHub ${GH_SHA::7}"
             exit 0
           fi
 
+          # Summary of what changed
+          echo "=== Files changed in this sync ==="
+          git diff --cached --stat | tail -20
+
           # Compose commit message with full traceability
-          COMMIT_MSG="🤖 Auto-sync from GitHub @ ${GH_SHA_SHORT::7}
+          git commit -m "Auto-sync from GitHub @ ${GH_SHA::7}" \
+                     -m "Source: github.com/${{ github.repository }}@${GH_SHA}" \
+                     -m "Trigger: ${{ github.event_name }} by ${{ github.actor }}" \
+                     -m "Workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
-          Source: github.com/${{ github.repository }}@${{ github.sha }}
-          Trigger: ${{ github.event_name }} by ${{ github.actor }}
-          Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          """
-
-          git commit -m "${COMMIT_MSG}"
-
-          # Push back to HF — force-with-lease to handle any concurrent HF commits safely
+          # Push back to HF
           git push "https://${HF_USERNAME}:${HF_TOKEN}@huggingface.co/spaces/${HF_USERNAME}/${HF_SPACE_NAME}" HEAD:main
 
           # Print HF commit SHA for traceability (after sync)
-          git rev-parse --short HEAD > ../hf_after_sha.txt
-          echo "✓ Pushed to HuggingFace Space"
-          echo "HF before-sync SHA: $(cat ../hf_before_sha.txt)"
-          echo "HF after-sync  SHA: $(cat ../hf_after_sha.txt)"
-          echo "GitHub source SHA: ${GH_SHA_SHORT::7}"
+          git rev-parse --short HEAD | tee ../hf_after_sha.txt
+          echo ""
+          echo "=========================================="
+          echo "  HF before-sync SHA: $(cat ../hf_before_sha.txt)"
+          echo "  HF after-sync  SHA: $(cat ../hf_after_sha.txt)"
+          echo "  GitHub source SHA: ${GH_SHA::7}"
+          echo "=========================================="
 
-      - name: Trigger HF Space rebuild verification (optional health check)
+      - name: HF Space rebuild info
         if: success()
         run: |
-          echo "⏳ Waiting 30s for HF Space to start rebuilding..."
-          sleep 30
-          echo "HF Space URL: https://${HF_USERNAME}-${HF_SPACE_NAME,,}.hf.space"
-          echo "You can monitor the build at: https://huggingface.co/spaces/${HF_USERNAME}/${HF_SPACE_NAME}"
+          echo "ℹ️ HuggingFace Spaces rebuild automatically on push."
+          echo "   Monitor at: https://huggingface.co/spaces/${HF_USERNAME}/${HF_SPACE_NAME}"
+          echo "   Public URL: https://${HF_USERNAME}-${HF_SPACE_NAME,,}.hf.space"
+          echo "   Health:     https://${HF_USERNAME}-${HF_SPACE_NAME,,}.hf.space/api/health"
