@@ -239,7 +239,7 @@ def _enforce_test_api_key(monkeypatch):
     # Also clear FIREAI_EVIDENCE_HMAC_KEY / AUDIT_HMAC_KEY if empty —
     # the audit store may complain about missing HMAC keys in tests.
     # Don't set them; let tests that need them set their own values.
-    return
+    return  # NOSONAR - python:S3626
 
 
 # ─── V141.1 FIX (adversarial audit — Rate Limiter Test Pollution) ────────────

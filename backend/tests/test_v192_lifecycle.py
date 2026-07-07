@@ -227,7 +227,7 @@ class TestV192ConflictDetection:
         assert resp.status_code == 404, f"Expected 404, got {resp.status_code}: {resp.text}"
 
 
-# HEALTH & STATISTICS
+# HEALTH & STATISTICS  # NOSONAR - python:S125
 # ══════════════════════════════════════════════════════════════════════════════
 
 

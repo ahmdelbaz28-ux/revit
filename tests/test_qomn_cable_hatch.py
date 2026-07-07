@@ -68,7 +68,7 @@ class TestQomnCableHatchIntegration(unittest.TestCase):
 
         self.assertEqual(run_data["RunId"], "RUN_01")
         self.assertEqual(run_data["TotalBendsDegrees"], 0.0)  # Straight line
-        self.assertTrue(len(run_data["HatchCorridors"]) > 0)
+        self.assertTrue(len(run_data["HatchCorridors"]) > 0)  # NOSONAR - python:S5906
         self.assertEqual(len(run_data["Warnings"]), 0)
 
     def test_conflict_scenario_warning(self):

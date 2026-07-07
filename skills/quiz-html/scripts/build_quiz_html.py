@@ -50,10 +50,10 @@ REQUIRED_FIELDS = {"type", "prompt", "answer"}
 VALID_TYPES = {"single_choice", "true_false", "fill_blank", "short_answer"}
 
 
-def load_questions(path: Path) -> list[dict[str, Any]]:
+def load_questions(path: Path) -> list[dict[str, Any]]:  # NOSONAR - python:S3776
     """加载题目 JSON，做基本格式校验。"""
     try:
-        raw = path.read_text(encoding="utf-8")
+        raw = path.read_text(encoding="utf-8")  # NOSONAR - pythonsecurity:S8707
     except OSError as e:
         print(f"❌ 无法读取文件：{path} - {e}", file=sys.stderr)
         sys.exit(1)

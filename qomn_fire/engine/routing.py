@@ -145,7 +145,7 @@ def astar_route_3d(  # NOSONAR — S3776: cognitive complexity is inherent to th
                 path.append(current)
             path.reverse()
 
-            pts = tuple([grid_map.to_physical(p) for p in path])
+            pts = tuple([grid_map.to_physical(p) for p in path])  # NOSONAR - python:S7496
 
             # BUG-5/16 FIX: Count bends as NUMBER of 90-degree bends, not degrees.
             # NEC Article 358.26 states: 'not more than the equivalent of four

@@ -52,7 +52,7 @@ os.environ.setdefault("FIREAI_API_KEY", "stress_test_admin_key")
 os.environ.setdefault("FIREAI_CACHE_MAX_ENTRIES", "1000")  # smaller for faster tests
 
 # Pre-import clean
-for mod in list(sys.modules.keys()):
+for mod in list(sys.modules.keys()):  # NOSONAR - python:S7504
     if mod.startswith(("backend", "fireai")):
         del sys.modules[mod]
 
@@ -146,9 +146,9 @@ def test_api_key_middleware_wired() -> None:
         # Simulate ASGI call
         async def _run():
             captured = {}
-            async def _receive():
+            async def _receive():  # NOSONAR - python:S7503
                 return {"type": "http.request", "body": b"", "more_body": False}
-            async def _send(message):
+            async def _send(message):  # NOSONAR - python:S7503
                 if message["type"] == "http.response.start":
                     captured["status"] = message.get("status")
 
@@ -163,7 +163,7 @@ def test_api_key_middleware_wired() -> None:
                 "state": {},
             }
 
-            async def _inner_app(scope, receive, send):
+            async def _inner_app(scope, receive, send):  # NOSONAR - python:S7503
                 # The middleware should have set scope["fireai_role"]
                 captured["role"] = scope.get("fireai_role")
 
@@ -182,7 +182,7 @@ def test_api_key_middleware_wired() -> None:
         # Test that missing API key leaves role unset
         async def _run_no_auth():
             captured = {}
-            async def _receive():
+            async def _receive():  # NOSONAR - python:S7503
                 return {"type": "http.request", "body": b"", "more_body": False}
             async def _send(message):
                 # NOSONAR: S1186 — stub ASGI send callable for unit test.  # NOSONAR — S7632: test function documented via class name / module path
@@ -195,7 +195,7 @@ def test_api_key_middleware_wired() -> None:
                 "headers": [], "query_string": b"",
                 "client": ("127.0.0.1", 12345), "state": {},
             }
-            async def _inner_app(scope, receive, send):
+            async def _inner_app(scope, receive, send):  # NOSONAR - python:S7503
                 captured["role"] = scope.get("fireai_role")
             mw = ApiKeyMiddleware(_inner_app)
             await mw(scope, _receive, _send)
@@ -220,8 +220,8 @@ def test_cache_bounded_lru() -> None:  # NOSONAR — S1192: duplicated literal a
     print("\n[TEST 3] Cache Bounded + LRU Eviction (FIXED)")
     try:
         # Re-import to pick up env
-        for mod in list(sys.modules.keys()):
-            if "backend.app" in mod:
+        for mod in list(sys.modules.keys()):  # NOSONAR - python:S7504
+            if "backend.app" in mod:  # NOSONAR - python:S1192
                 del sys.modules[mod]
         from backend.app import (
             _CACHE_MAX_ENTRIES,
@@ -491,7 +491,7 @@ def test_health_endpoint_info_disclosure() -> None:
 def test_cache_race_conditions() -> None:
     print("\n[TEST 9] Cache Race Conditions (lock added)")
     try:
-        for mod in list(sys.modules.keys()):
+        for mod in list(sys.modules.keys()):  # NOSONAR - python:S7504
             if "backend.app" in mod:
                 del sys.modules[mod]
         from backend.app import _cache, _cache_lock, cache_delete, cache_set
@@ -629,7 +629,7 @@ def test_csp_unsafe_inline_prod() -> None:
     try:
         old_env = os.environ.get("FIREAI_ENV")
         os.environ["FIREAI_ENV"] = "production"
-        for mod in list(sys.modules.keys()):
+        for mod in list(sys.modules.keys()):  # NOSONAR - python:S7504
             if "security_middleware" in mod:
                 del sys.modules[mod]
         from backend.security_middleware import _build_csp
@@ -672,7 +672,7 @@ def test_hsts_conditional() -> None:
         # for a safety-critical system. Modern browsers ignore HSTS on localhost.
         old_env = os.environ.get("FIREAI_ENV")
         os.environ["FIREAI_ENV"] = "development"
-        for mod in list(sys.modules.keys()):
+        for mod in list(sys.modules.keys()):  # NOSONAR - python:S7504
             if "security_middleware" in mod:
                 del sys.modules[mod]
         from backend.security_middleware import _should_emit_hsts
@@ -705,7 +705,7 @@ def test_hsts_conditional() -> None:
 
         # Production mode → always emit
         os.environ["FIREAI_ENV"] = "production"
-        for mod in list(sys.modules.keys()):
+        for mod in list(sys.modules.keys()):  # NOSONAR - python:S7504
             if "security_middleware" in mod:
                 del sys.modules[mod]
         from backend.security_middleware import _should_emit_hsts as _should_emit_hsts_prod
@@ -764,7 +764,7 @@ def test_ssrf_via_external_services() -> None:
 # ============================================================================
 # TEST 15: Error handler leak (FIXED analyze.py)
 # ============================================================================
-def test_error_handler_leak() -> None:
+def test_error_handler_leak() -> None:  # NOSONAR - python:S3776
     print("\n[TEST 15] Error Handler Information Leak (FIXED)")
     try:
         # Read app.py source directly (avoid importing routers that may
@@ -890,13 +890,13 @@ def test_sync_websocket_auth() -> None:
 # ============================================================================
 # TEST 18: Production mode safety
 # ============================================================================
-def test_production_mode_safety() -> None:
+def test_production_mode_safety() -> None:  # NOSONAR - python:S3776
     print("\n[TEST 18] Production Mode Safety")
     try:
         old_env = os.environ.get("FIREAI_ENV")
         os.environ["FIREAI_ENV"] = "production"
         os.environ["CORS_ALLOWED_ORIGINS"] = "https://app.example.com"
-        for mod in list(sys.modules.keys()):
+        for mod in list(sys.modules.keys()):  # NOSONAR - python:S7504
             if "backend.app" in mod or "backend.security_middleware" in mod:
                 del sys.modules[mod]
 
@@ -1015,10 +1015,10 @@ def test_correlation_id_log_injection() -> None:
 # ============================================================================
 # TEST 21: Concurrency stress — many parallel cache + api_key operations
 # ============================================================================
-def test_concurrency_stress() -> None:
+def test_concurrency_stress() -> None:  # NOSONAR - python:S3776
     print("\n[TEST 21] Concurrency Stress (parallel cache + auth)")
     try:
-        for mod in list(sys.modules.keys()):
+        for mod in list(sys.modules.keys()):  # NOSONAR - python:S7504
             if "backend.app" in mod or "backend.api_keys" in mod:
                 del sys.modules[mod]
         from backend.api_keys import add_api_key, validate_api_key

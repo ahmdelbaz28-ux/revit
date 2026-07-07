@@ -1268,7 +1268,7 @@ class DatabaseService:
                 resolved=result.resolved,
             )
 
-    # Statistics and export
+    # Statistics and export  # NOSONAR - python:S125
     # ──────────────────────────────────────────────────────────────────────────
 
     def get_statistics(self) -> StatisticsResponse:

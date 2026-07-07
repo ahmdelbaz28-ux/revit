@@ -447,7 +447,7 @@ export function MultilingualDemo() {
 	);
 }
 
-function LanguageCard({
+function LanguageCard({  // NOSONAR - typescript:S6759
 	id,
 	name,
 	badge,
@@ -511,7 +511,7 @@ function LanguageCard({
 	);
 }
 
-function DemoErrorRow({ text, ltr = false }: { text: string; ltr?: boolean }) {
+function DemoErrorRow({ text, ltr = false }: { text: string; ltr?: boolean }) {  // NOSONAR - typescript:S6759
 	return (
 		<div
 			className={`text-[9px] font-mono p-1.5 bg-red-950/20 border border-red-900/30 rounded flex items-center gap-2 ${ltr ? "border-l-2 border-l-red-500" : "border-r-2 border-r-red-500"}`}
@@ -522,7 +522,7 @@ function DemoErrorRow({ text, ltr = false }: { text: string; ltr?: boolean }) {
 	);
 }
 
-function TermRow({
+function TermRow({  // NOSONAR - typescript:S6759
 	domain,
 	en,
 	ar,

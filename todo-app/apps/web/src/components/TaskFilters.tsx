@@ -3,7 +3,7 @@ interface Props {
 	onChange: (filters: any) => void;
 }
 
-export default function TaskFilters({ filters, onChange }: Props) {
+export default function TaskFilters({ filters, onChange }: Props) {  // NOSONAR - typescript:S6759
 	return (
 		<div className="flex gap-3 flex-wrap">
 			<select

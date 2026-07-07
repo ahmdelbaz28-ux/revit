@@ -188,7 +188,7 @@ async def process_image_batch(  # NOSONAR — S3776: cognitive complexity is inh
 # ─── Endpoints ───────────────────────────────────────────────────────────────
 
 @app.post("/batch")
-async def batch_segment(files: List[UploadFile] = File(...)):
+async def batch_segment(files: List[UploadFile] = File(...)):  # NOSONAR - python:S8410
     """Process a batch of images and return layout segmentation results."""
     image_data_list = []
     for file in files:

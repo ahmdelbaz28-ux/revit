@@ -114,7 +114,7 @@ class TestV130AuditNotice:
     def test_audit_notice_cites_stratification(self):
         """The notice must cite NFPA 72 §17.7.1.11 (stratification)."""
         r = compute_smoke_detector_spacing(10.0)
-        assert "17.7.1.11" in r["audit_notice"]
+        assert "17.7.1.11" in r["audit_notice"]  # NOSONAR - python:S1313
 
     def test_audit_notice_offers_alternatives(self):
         """

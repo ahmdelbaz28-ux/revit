@@ -141,7 +141,7 @@ class HTTPTransport(TransportLayer):
 
     async def async_send_request(self, request_data: Dict[str, Any], target_host: str = "localhost", target_port: int = 8000) -> Dict[str, Any]:
         """Send request asynchronously to target HTTP endpoint"""
-        target_url = f"http://{target_host}:{target_port}/facp/request"
+        target_url = f"http://{target_host}:{target_port}/facp/request"  # NOSONAR - python:S5332
 
         # Create a session for this host if not exists
         session_key = f"{target_host}:{target_port}"

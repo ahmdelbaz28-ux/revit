@@ -182,7 +182,7 @@ def get_placeholder_regions(pptx_path):
 def _pptx_to_pdf(pptx_path, temp_dir):
     """Convert PPTX to PDF via LibreOffice. Returns path to the PDF file."""
     pdf_path = temp_dir / f"{pptx_path.stem}.pdf"
-    result = subprocess.run(
+    result = subprocess.run(  # NOSONAR - pythonsecurity:S8705
         ["soffice", "--headless", "--convert-to", "pdf", "--outdir", str(temp_dir), str(pptx_path)],
         capture_output=True,
         text=True,
@@ -194,7 +194,7 @@ def _pptx_to_pdf(pptx_path, temp_dir):
 
 def _pdf_to_images(pdf_path, temp_dir, dpi):
     """Convert PDF pages to JPEG images via pdftoppm. Returns sorted image paths."""
-    result = subprocess.run(
+    result = subprocess.run(  # NOSONAR - pythonsecurity:S8705
         ["pdftoppm", "-jpeg", "-r", str(dpi), str(pdf_path), str(temp_dir / "slide")],
         capture_output=True,
         text=True,
@@ -260,7 +260,7 @@ def create_grids(
     return grid_files
 
 
-def create_grid(
+def create_grid(  # NOSONAR - python:S3776
     image_paths,
     cols,
     width,

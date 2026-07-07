@@ -51,10 +51,10 @@ def _normalize_sort(sort: str) -> str:
 @router.get("", dependencies=[Depends(require_permission(Permission.CONNECTION_READ))])
 async def list_connections(
     project_id: str,
-    page: int = Query(1, ge=1),
-    limit: int = Query(20, ge=1, le=100),
-    sort: str = Query("createdAt"),
-    order: str = Query("desc"),
+    page: int = Query(1, ge=1),  # NOSONAR - python:S8410
+    limit: int = Query(20, ge=1, le=100),  # NOSONAR - python:S8410
+    sort: str = Query("createdAt"),  # NOSONAR - python:S8410
+    order: str = Query("desc"),  # NOSONAR - python:S8410
 ):
     # V140 FIX: Validate order to prevent injection
     if order not in ("asc", "desc"):
@@ -109,7 +109,7 @@ async def create_connection(project_id: str, input_data: CreateConnectionInput):
 async def update_connection(
     project_id: str,
     connection_id: str,
-    cableSize: str | None = None,
+    cableSize: str | None = None,  # NOSONAR - python:S117
     length: float | None = None,
     connection_type: str | None = None,  # FIX #14: Renamed 'type' to 'connection_type' — 'type' shadows built-in
 ):

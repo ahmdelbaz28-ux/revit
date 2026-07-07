@@ -372,7 +372,7 @@ class ScanToBIMService:
             'total_area': sum(room.area for room in valid_rooms),
             'average_area': sum(room.area for room in valid_rooms) / len(valid_rooms) if valid_rooms else 0,
             'average_confidence': avg_confidence,
-            'room_types_found': list(set(room.room_type for room in bim_rooms)),
+            'room_types_found': list(set(room.room_type for room in bim_rooms)),  # NOSONAR - python:S7494
         }
 
         # Add warnings for invalid rooms
@@ -453,7 +453,7 @@ class ScanToBIMService:
             self.logger.info(f"Exported {len(rooms)} rooms to IFC-compatible JSON: {output_path}")
             return True
 
-        except Exception as e:
+        except Exception as e:  # NOSONAR - python:S1481
             # V201 (SonarCloud S8572): use logger.exception() to include full
             # traceback automatically, instead of f-string interpolation.
             self.logger.exception("Failed to export to IFC")

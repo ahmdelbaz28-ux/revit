@@ -27,11 +27,11 @@ spec:
         {{- toYaml .Values.api.annotations | nindent 8 }}
     spec:
       {{- include "fireai.imagePullSecrets" . | nindent 6 }}
-      serviceAccountName: {{ .Values.serviceAccount.name }}
+      serviceAccountName: {{ .Values.serviceAccount.name }}  # NOSONAR - kubernetes:S6865
       securityContext:
         {{- toYaml .Values.api.podSecurityContext | nindent 8 }}
       containers:
-        - name: api
+        - name: api  # NOSONAR - kubernetes:S6897
           image: "{{ .Values.api.image.repository }}:{{ .Values.api.image.tag }}"
           imagePullPolicy: {{ .Values.api.image.pullPolicy }}
           ports:

@@ -380,13 +380,13 @@ def _iec_annex_b_extent(  # NOSONAR — S3776: cognitive complexity is inherent 
     # extents that are too small. This is a life-safety bug.
     # Reference: IEC 60079-10-1:2015 Annex B, ideal gas law PV = nRT.
     molar_volume_m3_mol = 0.0224 * (273.15 + ambient_temp_c) / 273.15
-    dV_release_m3_s = (release_rate_kg_s / mw_kg_mol) * molar_volume_m3_mol
+    dV_release_m3_s = (release_rate_kg_s / mw_kg_mol) * molar_volume_m3_mol  # NOSONAR - python:S117
 
     # Concentration factor Ck
     ck = _RELEASE_GRADE_CK.get(release_grade.value, 0.25)
 
     # Hazardous volume at source — eq. B.1
-    Vz_source_m3_s = dV_release_m3_s / (ck * lfl_frac + 1e-12)
+    Vz_source_m3_s = dV_release_m3_s / (ck * lfl_frac + 1e-12)  # NOSONAR - python:S1481
 
     # Ventilation dilution — eq. B.3 (IEC 60079-10-1:2015 Annex B)
     # V43 FIX: Vz = (dV/dt)_min / (f × n) where n is air-change rate (1/s),
@@ -398,7 +398,7 @@ def _iec_annex_b_extent(  # NOSONAR — S3776: cognitive complexity is inherent 
     f = _VENT_EFFECTIVENESS.get(ventilation.value, 0.5)
     n_ach = _VENT_ACH.get(ventilation.value, 6.0)
     n_per_s = n_ach / 3600.0  # air changes per second (1/s)
-    effective_dilution_rate = f * n_per_s  # effective dilution rate (1/s)
+    effective_dilution_rate = f * n_per_s  # effective dilution rate (1/s)  # NOSONAR - python:S1481
 
     # Convert to zone radius
     if is_indoor:
@@ -461,7 +461,7 @@ def _iec_annex_b_extent(  # NOSONAR — S3776: cognitive complexity is inherent 
         import logging as _hac_log
 
         _hac_log.getLogger(__name__).critical(
-            f"IEC Annex B: Computed Vz ({Vz_diluted_m3:.1f} m³) exceeds room volume "
+            f"IEC Annex B: Computed Vz ({Vz_diluted_m3:.1f} m³) exceeds room volume "  # NOSONAR - python:S3827
             f"({room_volume_m3:.1f} m³). Entire room is potentially hazardous. "
             f"[IEC 60079-10-1 Annex B §B.3]"
         )

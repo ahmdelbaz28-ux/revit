@@ -331,7 +331,7 @@ class EnginePool:
             self.logger.info("Load rebalancing initiated. Current std dev: %.2f", load_stats['std_dev_load'])
             # In a real implementation, this would redistribute tasks among workers
             # For now, we'll just log the action
-            pass
+            pass  # NOSONAR - python:S2772
 
 
 class AdaptiveEnginePool(EnginePool):

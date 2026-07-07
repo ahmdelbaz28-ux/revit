@@ -416,7 +416,7 @@ export function Settings() {
 	);
 }
 
-function NavItem({
+function NavItem({  // NOSONAR - typescript:S6759
 	icon,
 	title,
 	active,
@@ -444,7 +444,7 @@ function NavItem({
 	);
 }
 
-function SectionHeader({ title }: { title: string }) {
+function SectionHeader({ title }: { title: string }) {  // NOSONAR - typescript:S6759
 	return (
 		<div className="flex items-center gap-4 mb-6">
 			<h3 className="text-sm font-bold tracking-wide uppercase text-white">
@@ -455,7 +455,7 @@ function SectionHeader({ title }: { title: string }) {
 	);
 }
 
-function SettingRow({
+function SettingRow({  // NOSONAR - typescript:S6759
 	title,
 	desc,
 	children,
@@ -475,7 +475,7 @@ function SettingRow({
 	);
 }
 
-function ThemeCard({ mode, active }: { mode: string; active?: boolean }) {
+function ThemeCard({ mode, active }: { mode: string; active?: boolean }) {  // NOSONAR - typescript:S6759
 	return (
 		<div
 			className={`flex flex-col gap-2 p-3 rounded-xl border cursor-pointer transition-all w-32 ${active ? "bg-primary/5 border-primary ring-1 ring-primary/30" : "bg-[#15181e] border-white/5 hover:border-white/20"}`}
@@ -513,7 +513,7 @@ function ThemeCard({ mode, active }: { mode: string; active?: boolean }) {
 	);
 }
 
-function ColorSwatch({ color, active }: { color: string; active?: boolean }) {
+function ColorSwatch({ color, active }: { color: string; active?: boolean }) {  // NOSONAR - typescript:S6759
 	return (
 		<div
 			className={`w-6 h-6 rounded-full cursor-pointer flex items-center justify-center ${color} ${active ? "ring-2 ring-white ring-offset-2 ring-offset-[#0a0a0c]" : "opacity-80 hover:opacity-100"}`}

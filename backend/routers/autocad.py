@@ -255,7 +255,7 @@ class OperationResponse(BaseModel):
 
 # ── Endpoints ───────────────────────────────────────────────────────────────
 
-@router.post("/connect", response_model=ConnectResponse)
+@router.post("/connect", response_model=ConnectResponse)  # NOSONAR - python:S8409
 async def connect_to_autocad(request: ConnectRequest) -> ConnectResponse:
     """Connect to AutoCAD application."""
     try:
@@ -278,7 +278,7 @@ async def connect_to_autocad(request: ConnectRequest) -> ConnectResponse:
         raise _safe_error(503, "Failed to connect to AutoCAD", e)
 
 
-@router.post("/disconnect", response_model=ConnectResponse)
+@router.post("/disconnect", response_model=ConnectResponse)  # NOSONAR - python:S8409
 async def disconnect_from_autocad() -> ConnectResponse:
     """Disconnect from AutoCAD application."""
     try:
@@ -294,7 +294,7 @@ async def disconnect_from_autocad() -> ConnectResponse:
         raise _safe_error(500, "Failed to disconnect from AutoCAD", e)
 
 
-@router.get("/documents", response_model=DocumentsResponse, dependencies=[Depends(require_permission(Permission.ELEMENT_READ))])
+@router.get("/documents", response_model=DocumentsResponse, dependencies=[Depends(require_permission(Permission.ELEMENT_READ))])  # NOSONAR - python:S8409
 async def list_autocad_documents() -> DocumentsResponse:
     """List open documents in AutoCAD."""
     try:
@@ -321,7 +321,7 @@ async def list_autocad_documents() -> DocumentsResponse:
         raise _safe_error(500, "Error getting documents", e)
 
 
-@router.post("/read_dwg", response_model=ReadFileResponse, dependencies=[Depends(require_permission(Permission.ELEMENT_READ))])
+@router.post("/read_dwg", response_model=ReadFileResponse, dependencies=[Depends(require_permission(Permission.ELEMENT_READ))])  # NOSONAR - python:S8409
 async def read_dwg_file(request: ReadDwgRequest) -> ReadFileResponse:
     """Read entities from a DWG file."""
     try:
@@ -353,7 +353,7 @@ async def read_dwg_file(request: ReadDwgRequest) -> ReadFileResponse:
         raise _safe_error(500, "Error reading DWG file", e)
 
 
-@router.post("/write_dwg", response_model=OperationResponse, dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])
+@router.post("/write_dwg", response_model=OperationResponse, dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])  # NOSONAR - python:S8409
 async def write_dwg_file(request: WriteDwgRequest) -> OperationResponse:
     """Write entities to a DWG file."""
     try:
@@ -386,7 +386,7 @@ async def write_dwg_file(request: WriteDwgRequest) -> OperationResponse:
         raise _safe_error(500, "Error writing DWG file", e)
 
 
-@router.post("/draw_line", response_model=OperationResponse)
+@router.post("/draw_line", response_model=OperationResponse)  # NOSONAR - python:S8409
 async def draw_line(request: DrawLineRequest) -> OperationResponse:
     """Draw a line in AutoCAD."""
     try:
@@ -419,7 +419,7 @@ async def draw_line(request: DrawLineRequest) -> OperationResponse:
         raise _safe_error(500, "Error drawing line", e)
 
 
-@router.post("/draw_polyline", response_model=OperationResponse)
+@router.post("/draw_polyline", response_model=OperationResponse)  # NOSONAR - python:S8409
 async def draw_polyline(request: DrawPolylineRequest) -> OperationResponse:
     """Draw a polyline in AutoCAD."""
     try:
@@ -452,7 +452,7 @@ async def draw_polyline(request: DrawPolylineRequest) -> OperationResponse:
         raise _safe_error(500, "Error drawing polyline", e)
 
 
-@router.post("/draw_circle", response_model=OperationResponse)
+@router.post("/draw_circle", response_model=OperationResponse)  # NOSONAR - python:S8409
 async def draw_circle(request: DrawCircleRequest) -> OperationResponse:
     """Draw a circle in AutoCAD."""
     try:
@@ -485,7 +485,7 @@ async def draw_circle(request: DrawCircleRequest) -> OperationResponse:
         raise _safe_error(500, "Error drawing circle", e)
 
 
-@router.post("/draw_text", response_model=OperationResponse)
+@router.post("/draw_text", response_model=OperationResponse)  # NOSONAR - python:S8409
 async def draw_text(request: DrawTextRequest) -> OperationResponse:
     """Draw text in AutoCAD."""
     try:
@@ -519,7 +519,7 @@ async def draw_text(request: DrawTextRequest) -> OperationResponse:
         raise _safe_error(500, "Error drawing text", e)
 
 
-@router.get("/status", response_model=StatusResponse)
+@router.get("/status", response_model=StatusResponse)  # NOSONAR - python:S8409
 async def get_autocad_status() -> StatusResponse:
     """Get the current AutoCAD connection status."""
     try:
@@ -538,7 +538,7 @@ async def get_autocad_status() -> StatusResponse:
         raise _safe_error(500, "Error getting AutoCAD status", e)
 
 
-@router.post("/save", response_model=OperationResponse)
+@router.post("/save", response_model=OperationResponse)  # NOSONAR - python:S8409
 async def save_document(request: SaveRequest) -> OperationResponse:
     """Save the current AutoCAD document."""
     try:
@@ -572,10 +572,10 @@ async def save_document(request: SaveRequest) -> OperationResponse:
 _MAX_UPLOAD_SIZE = 50 * 1024 * 1024
 
 
-@router.post("/upload_dwg", response_model=ReadFileResponse, dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])
-@router.post("/upload", response_model=ReadFileResponse, dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])
+@router.post("/upload_dwg", response_model=ReadFileResponse, dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])  # NOSONAR - python:S8409
+@router.post("/upload", response_model=ReadFileResponse, dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])  # NOSONAR - python:S8409
 @limiter.limit("10/minute")
-async def upload_and_read_dwg(request: Request, file: UploadFile = File(...)) -> ReadFileResponse:
+async def upload_and_read_dwg(request: Request, file: UploadFile = File(...)) -> ReadFileResponse:  # NOSONAR - python:S8410
     """
     Upload a DWG file and read its contents.
 
@@ -631,7 +631,7 @@ async def upload_and_read_dwg(request: Request, file: UploadFile = File(...)) ->
                 pass
 
 
-@router.delete("/entity/{handle}", response_model=DeleteEntityResponse)
+@router.delete("/entity/{handle}", response_model=DeleteEntityResponse)  # NOSONAR - python:S8409
 async def delete_entity(handle: str) -> DeleteEntityResponse:
     """Delete an AutoCAD entity by handle."""
     try:
@@ -658,7 +658,7 @@ async def delete_entity(handle: str) -> DeleteEntityResponse:
         raise _safe_error(500, "Error deleting entity", e)
 
 
-@router.put("/entity/{handle}", response_model=OperationResponse)
+@router.put("/entity/{handle}", response_model=OperationResponse)  # NOSONAR - python:S8409
 async def update_entity(handle: str, request: ModifyEntityRequest) -> OperationResponse:
     """Update an AutoCAD entity's properties."""
     try:

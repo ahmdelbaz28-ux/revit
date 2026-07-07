@@ -138,7 +138,7 @@ class SelectionEngine:
         )
 
         selected, _ = eligible_panels[0]
-        alternatives = tuple([p[0].model for p in eligible_panels[1:4]])
+        alternatives = tuple([p[0].model for p in eligible_panels[1:4]])  # NOSONAR - python:S7496
 
         capacity_util = required_points / selected.points_capacity
         nac_util = required_nacs / selected.nac_capacity

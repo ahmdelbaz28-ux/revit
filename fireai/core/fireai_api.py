@@ -130,7 +130,7 @@ async def _run_with_timeout(coro, timeout: float = REQUEST_TIMEOUT_SECONDS):  # 
         )
 
 
-async def verify_api_key(x_api_key: str = Header(...)) -> str:
+async def verify_api_key(x_api_key: str = Header(...)) -> str:  # NOSONAR - python:S7503
     """
     Verify API key using timing-safe comparison.
     Security Fix (VULN-017): Use secrets.compare_digest instead of set membership.
@@ -301,7 +301,7 @@ async def get_audit_trail() -> dict[str, Any]:
 # Rate-limited endpoints
 @app.post("/projects/", tags=["Projects"], dependencies=[Depends(verify_api_key)])
 @limiter.limit("10/minute")
-async def upload_file(request: Request, file: UploadFile = File(...)) -> dict[str, Any]:
+async def upload_file(request: Request, file: UploadFile = File(...)) -> dict[str, Any]:  # NOSONAR - python:S8410
     content = await file.read()
     if len(content) > MAX_FILE_SIZE_BYTES:
         raise HTTPException(status_code=413, detail=f"File too large. Maximum allowed size is {MAX_FILE_SIZE_MB} MB.")  # NOSONAR — S8415: assignment kept for readability / debuggability
@@ -316,7 +316,7 @@ async def upload_file(request: Request, file: UploadFile = File(...)) -> dict[st
     return {"filename": filename, "size_bytes": len(content), "status": "accepted"}
 
 
-@app.post("/analyse/room", response_model=RoomResultOut, tags=["Design"], dependencies=[Depends(verify_api_key)])
+@app.post("/analyse/room", response_model=RoomResultOut, tags=["Design"], dependencies=[Depends(verify_api_key)])  # NOSONAR - python:S8409
 @limiter.limit("30/minute")
 async def analyse_room(request: Request, body: AnalyseRoomRequest) -> RoomResultOut:
     try:
@@ -352,7 +352,7 @@ async def analyse_room(request: Request, body: AnalyseRoomRequest) -> RoomResult
     return _room_result_to_out(result)
 
 
-@app.post("/analyse/floor", response_model=FloorResultOut, tags=["Design"], dependencies=[Depends(verify_api_key)])
+@app.post("/analyse/floor", response_model=FloorResultOut, tags=["Design"], dependencies=[Depends(verify_api_key)])  # NOSONAR - python:S8409
 @limiter.limit("10/minute")
 async def analyse_floor(request: Request, body: AnalyseFloorRequest) -> FloorResultOut:
     # Build and validate each room - log any rejections
@@ -414,7 +414,7 @@ def _get_fireai_system():
     return _fireai_system
 
 
-@app.post("/analyse/room/v10", response_model=RoomResultOut, tags=["Design"], dependencies=[Depends(verify_api_key)])
+@app.post("/analyse/room/v10", response_model=RoomResultOut, tags=["Design"], dependencies=[Depends(verify_api_key)])  # NOSONAR - python:S8409
 @limiter.limit("30/minute")
 async def analyse_room_v10(request: Request, body: AnalyseRoomRequest) -> RoomResultOut:
     """Analyze room using V10 Enhanced with resilience and audit trail."""

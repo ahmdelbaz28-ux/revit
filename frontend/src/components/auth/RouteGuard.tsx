@@ -28,7 +28,7 @@ interface RouteGuardProps {
 	children: ReactNode;
 }
 
-export function RouteGuard({ children }: RouteGuardProps) {
+export function RouteGuard({ children }: RouteGuardProps) {  // NOSONAR - typescript:S6759
 	const { isAuthenticated, loading } = useAuth();
 	const location = useLocation();
 

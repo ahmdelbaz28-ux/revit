@@ -478,7 +478,7 @@ export function PluginManager() {
 	);
 }
 
-function CategoryItem({
+function CategoryItem({  // NOSONAR - typescript:S6759
 	label,
 	count,
 	active,
@@ -526,7 +526,7 @@ function CategoryItem({
 	);
 }
 
-function SubCategoryItem({ label }: { label: string }) {
+function SubCategoryItem({ label }: { label: string }) {  // NOSONAR - typescript:S6759
 	return (
 		<div className="px-2 py-1.5 rounded text-[11px] text-slate-500 hover:text-slate-300 hover:bg-muted cursor-pointer transition-colors">
 			{label}

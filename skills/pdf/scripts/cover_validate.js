@@ -46,7 +46,7 @@ function resolveChromium(chromiumObj) {
 	let exe;
 	try {
 		exe = chromiumObj.executablePath();
-	} catch (_) {
+	} catch (_) {  // NOSONAR - javascript:S2486
 		exe = null;
 	}
 	if (exe && fs.existsSync(exe)) return { status: "ok", executablePath: exe };
@@ -80,7 +80,7 @@ function parseArgs(argv) {
 		const t = tokens[i];
 		if (t === "--width") width = tokens[++i];
 		else if (t === "--height") height = tokens[++i];
-		else if (t === "--min-gap") minGap = parseFloat(tokens[++i]);
+		else if (t === "--min-gap") minGap = parseFloat(tokens[++i]);  // NOSONAR - javascript:S7773
 		else if (t === "--help" || t === "-h") {
 			console.log(`Usage: node cover_validate.js <cover.html> [options]
 
@@ -102,7 +102,7 @@ Options:
 function dimToPx(dim) {
 	if (!dim) return null;
 	const s = String(dim).trim();
-	const num = parseFloat(s);
+	const num = parseFloat(s);  // NOSONAR - javascript:S7773
 	if (s.endsWith("mm")) return Math.round(num * 3.7795); // 1mm ≈ 3.7795px at 96dpi
 	if (s.endsWith("cm")) return Math.round(num * 37.795);
 	if (s.endsWith("in")) return Math.round(num * 96);
@@ -374,7 +374,7 @@ async function main() {
 				`     Text: <${o.textTag}> "${o.text}" @ y=${Math.round(o.textRect.y)}-${Math.round(o.textRect.y + o.textRect.height)}`,
 			);
 			console.error(
-				`     Line: <${o.lineTag}${o.lineClass ? `.${o.lineClass.split(" ")[0]}` : ""}> [${o.lineType}] @ y=${Math.round(o.lineRect.y)}-${Math.round(o.lineRect.y + o.lineRect.height)}`,
+				`     Line: <${o.lineTag}${o.lineClass ? `.${o.lineClass.split(" ")[0]}` : ""}> [${o.lineType}] @ y=${Math.round(o.lineRect.y)}-${Math.round(o.lineRect.y + o.lineRect.height)}`,  // NOSONAR - javascript:S4624
 			);
 			console.error(
 				`     Fix: Move the decorative line at least ${Math.ceil(o.required - o.gap)}px away from the text.`,

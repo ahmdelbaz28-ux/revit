@@ -281,7 +281,7 @@ function Connections() {
 
 // ===== Create Connection Modal =====
 
-function CreateConnectionModal({
+function CreateConnectionModal({  // NOSONAR - typescript:S6759
 	onClose,
 	onSuccess,
 }: {

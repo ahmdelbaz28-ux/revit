@@ -14,7 +14,7 @@ MAX_ACCURACY_HISTORY = 10
 class MasteryEngine:
     """Tracks mastery level, weak points, and spaced repetition schedule."""
 
-    def update_mastery(
+    def update_mastery(  # NOSONAR - python:S3776
         self,
         existing_records: dict[str, MasteryRecord],
         questions: list[Question],

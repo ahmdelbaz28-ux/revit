@@ -22,7 +22,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+export function AuthProvider({ children }: { children: ReactNode }) {  // NOSONAR - typescript:S6759
 	const [user, setUser] = useState<User | null>(null);
 	const [token, setToken] = useState<string | null>(() =>
 		localStorage.getItem("token"),

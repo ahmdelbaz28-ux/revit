@@ -14,12 +14,12 @@ MAX_RESULTS = 3
 CSV_CONFIG = {
     "style": {
         "file": "styles.csv",
-        "search_cols": ["Style Category", "Keywords", "Best For", "Type", "AI Prompt Keywords"],
+        "search_cols": ["Style Category", "Keywords", "Best For", "Type", "AI Prompt Keywords"],  # NOSONAR - python:S1192
         "output_cols": ["Style Category", "Type", "Keywords", "Primary Colors", "Effects & Animation", "Best For", "Performance", "Accessibility", "Framework Compatibility", "Complexity", "AI Prompt Keywords", "CSS/Technical Keywords", "Implementation Checklist", "Design System Variables"]
     },
     "color": {
         "file": "colors.csv",
-        "search_cols": ["Product Type", "Notes"],
+        "search_cols": ["Product Type", "Notes"],  # NOSONAR - python:S1192
         "output_cols": ["Product Type", "Primary (Hex)", "Secondary (Hex)", "CTA (Hex)", "Background (Hex)", "Text (Hex)", "Notes"]
     },
     "chart": {
@@ -40,7 +40,7 @@ CSV_CONFIG = {
     "ux": {
         "file": "ux-guidelines.csv",
         "search_cols": ["Category", "Issue", "Description", "Platform"],
-        "output_cols": ["Category", "Issue", "Platform", "Description", "Do", "Don't", "Code Example Good", "Code Example Bad", "Severity"]
+        "output_cols": ["Category", "Issue", "Platform", "Description", "Do", "Don't", "Code Example Good", "Code Example Bad", "Severity"]  # NOSONAR - python:S1192
     },
     "typography": {
         "file": "typography.csv",

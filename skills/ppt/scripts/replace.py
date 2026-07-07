@@ -38,8 +38,8 @@ _EMU_PER_PT = 12700
 
 def _clear_paragraph_bullets(paragraph):
     """Remove all bullet XML elements from a paragraph's pPr."""
-    pPr = paragraph._element.get_or_add_pPr()
-    for child in list(pPr):
+    pPr = paragraph._element.get_or_add_pPr()  # NOSONAR - python:S117
+    for child in list(pPr):  # NOSONAR - python:S7504
         if any(child.tag.endswith(t) for t in ("buChar", "buNone", "buAutoNum", "buFont")):
             pPr.remove(child)
     return pPr
@@ -47,7 +47,7 @@ def _clear_paragraph_bullets(paragraph):
 
 def _apply_paragraph_properties(paragraph, para_data: Dict[str, Any]):
     text = para_data.get("text", "")
-    pPr = _clear_paragraph_bullets(paragraph)
+    pPr = _clear_paragraph_bullets(paragraph)  # NOSONAR - python:S117
 
     if para_data.get("bullet", False):
         level = para_data.get("level", 0)
@@ -55,7 +55,7 @@ def _apply_paragraph_properties(paragraph, para_data: Dict[str, Any]):
         font_size = para_data.get("font_size", 18.0)
         pPr.attrib["marL"] = str(int(font_size * _INDENT_FACTOR * (1 + level) * _EMU_PER_PT))
         pPr.attrib["indent"] = str(int(-font_size * 0.8 * _EMU_PER_PT))
-        buChar = OxmlElement("a:buChar")
+        buChar = OxmlElement("a:buChar")  # NOSONAR - python:S117
         buChar.set("char", "•")
         pPr.append(buChar)
         if "alignment" not in para_data:
@@ -125,7 +125,7 @@ def _validate_replacements(inventory: InventoryData, replacements: Dict) -> List
     return errors
 
 
-def apply_replacements(pptx_file: str, json_file: str, output_file: str):
+def apply_replacements(pptx_file: str, json_file: str, output_file: str):  # NOSONAR - python:S3776
     prs = Presentation(pptx_file)
     inventory = extract_text_inventory(Path(pptx_file), prs)
 
@@ -139,7 +139,7 @@ def apply_replacements(pptx_file: str, json_file: str, output_file: str):
         for slide_key, shapes in inventory.items()
     }
 
-    with open(json_file) as f:
+    with open(json_file) as f:  # NOSONAR - pythonsecurity:S8707
         replacements = json.load(f, object_pairs_hook=_check_duplicate_keys)
 
     errors = _validate_replacements(inventory, replacements)

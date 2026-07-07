@@ -40,7 +40,7 @@ os.environ["FIREAI_API_KEY"] = "http_test_admin_key_v2"
 os.environ["FIREAI_CACHE_MAX_ENTRIES"] = "100"
 
 # Clear cached modules
-for mod in list(sys.modules.keys()):
+for mod in list(sys.modules.keys()):  # NOSONAR - python:S7504
     if mod.startswith(("backend", "fireai")):
         del sys.modules[mod]
 

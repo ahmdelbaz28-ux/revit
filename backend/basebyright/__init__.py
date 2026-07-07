@@ -212,7 +212,7 @@ class StateIsolationContext:
                 except Exception:
                     pass
 
-            for did in self._created_device_ids:
+            for did in self._created_device_ids:  # NOSONAR - python:S1481
                 try:
                     # Need project_id context — skip if not available
                     pass
@@ -324,7 +324,7 @@ class FaultInjector:
 
     def deactivate_all(self) -> None:
         """Remove all active fault injections."""
-        for key in list(self._active_faults.keys()):
+        for key in list(self._active_faults.keys()):  # NOSONAR - python:S7504
             env_key = f"FIREAI_FAULT_{key.upper()}"
             original = self._original_env.get(env_key)
             if original is not None:

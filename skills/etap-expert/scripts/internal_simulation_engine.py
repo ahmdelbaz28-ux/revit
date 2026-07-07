@@ -52,8 +52,8 @@ NEC_310_16_COPPER_75C = {
     "2 AWG": 115,
     "1/0 AWG": 150,
     "2/0 AWG": 175,
-    "3/0 AWG": 200,
-    "4/0 AWG": 230,
+    "3/0 AWG": 200,  # NOSONAR - python:S1192
+    "4/0 AWG": 230,  # NOSONAR - python:S1192
     "250 kcmil": 255,
     "350 kcmil": 310,
     "500 kcmil": 380,
@@ -482,7 +482,7 @@ def simulate_arc_flash(
     # IEEE 1584-2018 coefficients for MCC
     K1 = -0.792
     K2 = 0.0
-    Cf = 1.5  # V < 1kV
+    Cf = 1.5  # V < 1kV  # NOSONAR - python:S117
     x = 1.641  # Distance exponent for MCC
 
     # Step 1: Arcing current (V ≤ 1 kV)

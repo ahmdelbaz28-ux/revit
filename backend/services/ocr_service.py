@@ -303,7 +303,7 @@ class OCRService:
                 total_confidence = result['confidence']
                 total_word_count = result['word_count']
 
-        except Exception as e:
+        except Exception as e:  # NOSONAR - python:S1481
             # V201 (SonarCloud S8572): logger.exception() includes the full
             # traceback automatically — no need to interpolate {e}.
             self.logger.exception("OCR processing failed for %s", file_path)

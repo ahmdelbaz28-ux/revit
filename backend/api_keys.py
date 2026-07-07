@@ -630,7 +630,7 @@ def update_api_key_role(key_hash: str, role: Role) -> bool:
         else:
             # Slow path: scan for matching bcrypt_hash
             updated = False
-            for lk, v in list(keys.items()):
+            for lk, v in list(keys.items()):  # NOSONAR - python:S7504
                 if v.get("bcrypt_hash") == key_hash or v.get("key_hash") == key_hash:
                     keys[lk]["role"] = role.value
                     _save_keys(keys)

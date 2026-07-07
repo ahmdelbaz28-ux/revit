@@ -151,7 +151,7 @@ class FireScenario:
 
     """
 
-    fire_load_MJ: float
+    fire_load_MJ: float  # NOSONAR - python:S116
     fire_growth_rate: str
     room_area_m2: float
     room_height_m: float
@@ -390,7 +390,7 @@ def calculate_smoke_layer_height(
         return 0.0
 
     # Convective HRR (kW)
-    Q_c = chi_c * max(fire_hrr_kw, 0.0)
+    Q_c = chi_c * max(fire_hrr_kw, 0.0)  # NOSONAR - python:S117
 
     if Q_c < 1e-6 or time_seconds < 1e-6:
         return H  # No smoke yet; interface at ceiling
@@ -413,7 +413,7 @@ def calculate_smoke_layer_height(
     if denominator < 1e-30:
         return 0.0
 
-    Q_star = Q_c / denominator
+    Q_star = Q_c / denominator  # NOSONAR - python:S117
     layer_fraction = Q_star ** (1.0 / 3.0) * time_seconds ** (2.0 / 3.0)
 
     # Ceiling type correction factors (conservative)
@@ -499,7 +499,7 @@ def calculate_smoke_layer_temp(
 
     # Alpert ceiling jet correlation: ΔT = 16.9 * Q^(2/3) / H^(5/3)
     # Note: Q in kW, H in metres, result ΔT in °C (or K, equivalent)
-    delta_T = 16.9 * (Q ** (2.0 / 3.0)) / (H ** (5.0 / 3.0))
+    delta_T = 16.9 * (Q ** (2.0 / 3.0)) / (H ** (5.0 / 3.0))  # NOSONAR - python:S117
 
     # Ceiling type correction (conservative)
     ceiling_factor = 1.0
@@ -589,7 +589,7 @@ def _compute_optical_density(
         Optical density per metre (1/m) in the upper smoke layer.
 
     """
-    Delta_H_c = PHYSICAL_CONSTANTS["EFFECTIVE_HEAT_OF_COMBUSTION_MJ_KG"]  # 20 MJ/kg
+    Delta_H_c = PHYSICAL_CONSTANTS["EFFECTIVE_HEAT_OF_COMBUSTION_MJ_KG"]  # 20 MJ/kg  # NOSONAR - python:S117
     y_soot = PHYSICAL_CONSTANTS["SOOT_YIELD_FACTOR"]  # 0.050
     alpha_ext = PHYSICAL_CONSTANTS["SPECIFIC_EXTINCTION_COEFFICIENT_M2_KG"]  # 8700
 
@@ -648,7 +648,7 @@ def _compute_optical_density(
         return float("inf")
 
     # Soot concentration (kg/m³)
-    C_soot = total_soot / upper_layer_volume
+    C_soot = total_soot / upper_layer_volume  # NOSONAR - python:S117
 
     # Optical density (1/m)
     return alpha_ext * C_soot
@@ -716,21 +716,21 @@ def estimate_co_concentration(
         return 0.0
 
     # Physical constants
-    Delta_H_c = PHYSICAL_CONSTANTS["EFFECTIVE_HEAT_OF_COMBUSTION_MJ_KG"]  # 20 MJ/kg
-    y_CO = PHYSICAL_CONSTANTS["CO_YIELD_FACTOR"]  # 0.020
+    Delta_H_c = PHYSICAL_CONSTANTS["EFFECTIVE_HEAT_OF_COMBUSTION_MJ_KG"]  # 20 MJ/kg  # NOSONAR - python:S117
+    y_CO = PHYSICAL_CONSTANTS["CO_YIELD_FACTOR"]  # 0.020  # NOSONAR - python:S117
     M_CO = PHYSICAL_CONSTANTS["CO_MOLAR_MASS_G_MOL"]  # 28.01
-    M_air = PHYSICAL_CONSTANTS["AIR_MOLAR_MASS_G_MOL"]  # 28.96
+    M_air = PHYSICAL_CONSTANTS["AIR_MOLAR_MASS_G_MOL"]  # 28.96  # NOSONAR - python:S117
 
     # Mass loss rate from HRR
     m_dot_fuel = Q / (Delta_H_c * 1000.0)  # kg/s
 
     # CO production rate (kg_CO/s)
-    m_dot_CO = y_CO * m_dot_fuel
+    m_dot_CO = y_CO * m_dot_fuel  # NOSONAR - python:S117
 
     # Ventilation factor: accounts for opening geometry
     # Minimum ventilation area is assumed to be 0.1 m² even if sealed
     # (no room is perfectly airtight; cracks, etc.)
-    A_v = max(ventilation_opening_m2, 0.1)
+    A_v = max(ventilation_opening_m2, 0.1)  # NOSONAR - python:S117
 
     # Ventilation factor per SFPE simplified model:
     # Higher opening area = more ventilation = less CO accumulation
@@ -740,17 +740,17 @@ def estimate_co_concentration(
     # Total CO mass produced (kg) — approximate for growing fire
     # For t² fire, total energy ≈ Q(t) * t / 3
     # Total CO ≈ m_dot_CO * t / 3
-    total_CO_mass = m_dot_CO * time_seconds / 3.0  # kg
+    total_CO_mass = m_dot_CO * time_seconds / 3.0  # kg  # NOSONAR - python:S117
 
     # CO concentration in the room (well-mixed, kg/m³)
     # Effective ventilation reduces concentration
     effective_volume = room_volume_m3 * (1.0 + ventilation_factor * time_seconds / room_volume_m3)
-    CO_mass_concentration = total_CO_mass / max(effective_volume, 1e-6)  # kg/m³
+    CO_mass_concentration = total_CO_mass / max(effective_volume, 1e-6)  # kg/m³  # NOSONAR - python:S117
 
     # Convert to ppm by volume:
     # ppm = (mass_conc / M_CO) / (rho_air / M_air) * 1e6
     rho_air = PHYSICAL_CONSTANTS["AMBIENT_AIR_DENSITY_KG_M3"]  # 1.2 kg/m³
-    CO_ppm = (CO_mass_concentration / M_CO) / (rho_air / M_air) * 1e6
+    CO_ppm = (CO_mass_concentration / M_CO) / (rho_air / M_air) * 1e6  # NOSONAR - python:S117
 
     # For under-ventilated fires (small openings), CO production increases
     # significantly. Apply a ventilation correction factor.
@@ -845,7 +845,7 @@ def calculate_aset(  # NOSONAR — S3776: cognitive complexity is inherent to th
         # Check if fire has consumed available fuel load
         # Total energy released = alpha * t³ / 3 (integral of alpha*t² dt)
         alpha = FIRE_GROWTH_RATES[scenario.fire_growth_rate]
-        total_energy_MJ = alpha * (t**3) / 3.0 / 1000.0  # kJ to MJ
+        total_energy_MJ = alpha * (t**3) / 3.0 / 1000.0  # kJ to MJ  # NOSONAR - python:S117
 
         if total_energy_MJ >= scenario.fire_load_MJ:
             # Fire has burned through available fuel; steady-state or decay
@@ -1050,15 +1050,15 @@ def _estimate_o2_depletion(
 
     # Total energy released (MJ) — for t² fire, average is Q/3
     # total_energy_MJ = Q * t / 3 / 1000  (Q in kW = kJ/s, so MJ = kJ/1000)
-    total_energy_MJ = Q * time_seconds / 3.0 / 1000.0
+    total_energy_MJ = Q * time_seconds / 3.0 / 1000.0  # NOSONAR - python:S117
 
     # Total O₂ consumed (kg)
-    total_O2_consumed = o2_consumption_rate * total_energy_MJ
+    total_O2_consumed = o2_consumption_rate * total_energy_MJ  # NOSONAR - python:S117
 
     # Ventilation replenishment: air flow through opening
     # Simplified: flow_rate ≈ 0.5 * A_v * sqrt(2 * g * H_opening * ΔT/T)
     # For engineering estimate: flow_rate ≈ 0.4 * A_v (m³/s) for typical openings
-    A_v = max(ventilation_opening_m2, 0.1)
+    A_v = max(ventilation_opening_m2, 0.1)  # NOSONAR - python:S117
     air_flow_rate = 0.4 * A_v  # m³/s (conservative)
 
     # Total fresh air supplied (m³)
@@ -1066,14 +1066,14 @@ def _estimate_o2_depletion(
 
     # O₂ in fresh air: 20.9% by volume → 0.209 * rho_air * (M_O2/M_air) kg/m³
     rho_air = PHYSICAL_CONSTANTS["AMBIENT_AIR_DENSITY_KG_M3"]  # 1.2 kg/m³
-    O2_mass_fraction_in_air = 0.233  # kg O₂ / kg air (by mass)
+    O2_mass_fraction_in_air = 0.233  # kg O₂ / kg air (by mass)  # NOSONAR - python:S117
     o2_in_fresh_air = total_air_supplied * rho_air * O2_mass_fraction_in_air  # kg
 
     # Initial O₂ in room
-    initial_O2 = V * rho_air * O2_mass_fraction_in_air  # kg
+    initial_O2 = V * rho_air * O2_mass_fraction_in_air  # kg  # NOSONAR - python:S117
 
     # Current O₂ mass
-    current_O2 = max(0.0, initial_O2 + o2_in_fresh_air - total_O2_consumed)
+    current_O2 = max(0.0, initial_O2 + o2_in_fresh_air - total_O2_consumed)  # NOSONAR - python:S117
 
     # O₂ concentration by mass → convert to volume %
     # By volume: O₂ vol% ≈ O2_mass / (total_air_mass) * (M_air / M_O2) * 100

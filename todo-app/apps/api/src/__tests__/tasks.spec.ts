@@ -107,7 +107,7 @@ describe("Tasks API", () => {
 
 			expect(res.status).toBe(201);
 			expect(res.body.tags).toBeDefined();
-			expect(res.body.tags.length).toBe(2);
+			expect(res.body.tags.length).toBe(2);  // NOSONAR - typescript:S5906
 		});
 
 		it("should create task with due date", async () => {

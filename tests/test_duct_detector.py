@@ -370,7 +370,7 @@ class TestDetectorPlacement:
         result = analyse_duct(duct)
         for det in result.detectors:
             assert "17.7.5" in det.nfpa_ref
-            assert "6.4.2.2" in det.spacing_ref
+            assert "6.4.2.2" in det.spacing_ref  # NOSONAR - python:S1313
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -553,7 +553,7 @@ class TestDuctWarnings:
         assert len(mismatch_warns) == 0
 
 
-# analyse_ducts and total_duct_detectors
+# analyse_ducts and total_duct_detectors  # NOSONAR - python:S125
 # ─────────────────────────────────────────────────────────────────────────────
 
 
@@ -615,7 +615,7 @@ class TestNFPAReferences:
             duct_type="supply", airflow_cfm=3000.0,
         )
         result = analyse_duct(duct)
-        assert "6.4.2.2" in result.spacing_ref
+        assert "6.4.2.2" in result.spacing_ref  # NOSONAR - python:S1313
 
 
 if __name__ == "__main__":

@@ -80,7 +80,7 @@ class GeocodingService:
         self._min_interval: float = 1.1  # Nominatim rate limit
         self._client: httpx.AsyncClient | None = None
 
-    async def _get_client(self) -> httpx.AsyncClient:
+    async def _get_client(self) -> httpx.AsyncClient:  # NOSONAR - python:S7503
         """Lazy-initialize the HTTP client."""
         if self._client is None or self._client.is_closed:
             self._client = httpx.AsyncClient(

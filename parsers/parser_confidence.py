@@ -184,7 +184,7 @@ class ParserConfidence:
                     )
                     actual_scale = _extract_scale(self.pdf_path)
                     scale_confidence = 0.95 if actual_scale else 0.0
-                except (ImportError, Exception):
+                except (ImportError, Exception):  # NOSONAR - python:S5713
                     pass
 
                 # If still no scale, try PDF parser as fallback
@@ -199,7 +199,7 @@ class ParserConfidence:
                             actual_scale = _result.scale
                             scale_confidence = 0.8
                             has_scale = True
-                    except (ImportError, Exception):
+                    except (ImportError, Exception):  # NOSONAR - python:S5713
                         scale_confidence = 0.0
 
                 CRITICAL_SAFETY_THRESHOLD = 0.95

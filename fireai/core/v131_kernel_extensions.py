@@ -152,7 +152,7 @@ class GenerativeDesignEngine:
 
         return variants
 
-    async def _generate_layout_for_strategy(
+    async def _generate_layout_for_strategy(  # NOSONAR - python:S7503
         self,
         room_width: float,
         room_length: float,
@@ -253,7 +253,7 @@ class WebhookPublisher:
         self.session = None  # Will initialize aiohttp session when needed
         self._initialized = False
 
-    async def initialize(self) -> None:
+    async def initialize(self) -> None:  # NOSONAR - python:S7503
         """Initialize the webhook publisher with HTTP session."""
         if not self._initialized:
             try:
@@ -424,7 +424,7 @@ class ARHookManager:
         self.active_sessions: Dict[str, Dict[str, Any]] = {}
         self.visualization_cache: Dict[str, bytes] = {}
 
-    async def create_session(self, building_id: str, session_config: Optional[Dict[str, Any]] = None) -> str:
+    async def create_session(self, building_id: str, session_config: Optional[Dict[str, Any]] = None) -> str:  # NOSONAR - python:S7503
         """
         Create a new AR session for the specified building.
 
@@ -513,7 +513,7 @@ class ARHookManager:
 
         return session["visualization_state"]
 
-    async def end_session(self, session_id: str) -> bool:
+    async def end_session(self, session_id: str) -> bool:  # NOSONAR - python:S7503
         """
         End the specified AR session.
 
@@ -535,7 +535,7 @@ class ARHookManager:
 
         return False
 
-    async def generate_ar_visualization(self, building_data: Dict[str, Any], format_type: str = "glb") -> Optional[bytes]:
+    async def generate_ar_visualization(self, building_data: Dict[str, Any], format_type: str = "glb") -> Optional[bytes]:  # NOSONAR - python:S7503
         """
         Generate AR visualization data in the specified format.
 

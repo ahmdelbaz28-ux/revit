@@ -66,10 +66,10 @@ else:
 class MockAutoCADObject:
     """Mock/Simulated AutoCAD drawing object for development environments."""
     def __init__(self, **kwargs) -> None:
-        self.Handle = kwargs.get("Handle", "MOCK_HANDLE")
-        self.ObjectName = kwargs.get("ObjectName", "MockObject")
-        self.Layer = kwargs.get("Layer", "0")
-        self.Color = kwargs.get("Color", 0)
+        self.Handle = kwargs.get("Handle", "MOCK_HANDLE")  # NOSONAR - python:S116
+        self.ObjectName = kwargs.get("ObjectName", "MockObject")  # NOSONAR - python:S116
+        self.Layer = kwargs.get("Layer", "0")  # NOSONAR - python:S116
+        self.Color = kwargs.get("Color", 0)  # NOSONAR - python:S116
 
 
 class AutoCADService:

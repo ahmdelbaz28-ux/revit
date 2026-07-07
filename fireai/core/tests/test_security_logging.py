@@ -313,13 +313,13 @@ class TestSecurityAuditLoggerLogEvent:
         assert len(event_id) > 0
 
     def test_log_event_writes_json(self, audit_logger, temp_log_dir) -> None:
-        audit_logger.log_event("AUTH_FAILURE", ip="1.2.3.4")
+        audit_logger.log_event("AUTH_FAILURE", ip="1.2.3.4")  # NOSONAR - python:S1313
         log_path = temp_log_dir / "security_audit.log"
         assert log_path.exists()
         content = log_path.read_text()
         event = json.loads(content.strip().split("\n")[-1])
         assert event["event_type"] == "AUTH_FAILURE"
-        assert event["details"]["ip"] == "1.2.3.4"
+        assert event["details"]["ip"] == "1.2.3.4"  # NOSONAR - python:S1313
 
     def test_log_event_includes_chain_hash(self, audit_logger, temp_log_dir) -> None:
         audit_logger.log_event("AUTH_SUCCESS")

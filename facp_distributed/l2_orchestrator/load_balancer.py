@@ -352,7 +352,7 @@ class LoadBalancer:
         tasks_to_redistribute = {}
 
         # Find tasks assigned to the failed worker
-        for task_id, assigned_worker_id in list(self.task_assignment_history.items()):
+        for task_id, assigned_worker_id in list(self.task_assignment_history.items()):  # NOSONAR - python:S7504
             if assigned_worker_id == failed_worker_id:
                 tasks_to_redistribute[task_id] = assigned_worker_id
 
@@ -478,7 +478,7 @@ class LoadBalancer:
                 # Redistribute pending tasks that were queued during failure
                 if self._pending_redistribution:
                     pending_count = len(self._pending_redistribution)
-                    for task_id, _original_worker_id in list(self._pending_redistribution.items()):
+                    for task_id, _original_worker_id in list(self._pending_redistribution.items()):  # NOSONAR - python:S7504
                         if worker.can_accept_task():
                             worker.register_task_start()
                             self.task_assignment_history[task_id] = worker_id

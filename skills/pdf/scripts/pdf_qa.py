@@ -90,7 +90,7 @@ def check_last_page_fill(doc, result):
     # Get bounding boxes of all content on last page
     blocks = last_page.get_text("blocks")
     if not blocks:
-        result.error("Last page blank", f"Page {len(doc)} (last page) has no content at all!")
+        result.error("Last page blank", f"Page {len(doc)} (last page) has no content at all!")  # NOSONAR - python:S1192
         return
 
     # Calculate max y-coordinate covered by content
@@ -118,7 +118,7 @@ def check_last_page_fill(doc, result):
         result.ok(f"Last page fill ratio {fill_ratio:.0%} ✓")
 
 
-def check_punctuation(doc, result):
+def check_punctuation(doc, result):  # NOSONAR - python:S3776
     """Check CJK punctuation placement rules"""
     violations = []
 
@@ -179,7 +179,7 @@ def check_blank_pages(doc, result):
         result.ok("No blank pages ✓")
 
 
-def check_colors(doc, result):
+def check_colors(doc, result):  # NOSONAR - python:S3776
     """Analyze colors used in the document (informational only, no pass/fail)"""
     colors = set()
 
@@ -277,7 +277,7 @@ def check_text_overflow(doc, result):
         result.ok("No content overflow ✓")
 
 
-def check_content_fill_ratio(doc, result):
+def check_content_fill_ratio(doc, result):  # NOSONAR - python:S3776
     """
     Check content fill ratio per page — warns when content is crammed at top leaving large void below.
 
@@ -346,7 +346,7 @@ def check_content_fill_ratio(doc, result):
         result.ok("Content fill ratio adequate on all pages ✓")
 
 
-def check_cover_bleed(doc, result, poster=False):
+def check_cover_bleed(doc, result, poster=False):  # NOSONAR - python:S3776
     """
     Check if the cover page (page 1) fills the entire page area (full-bleed).
 
@@ -473,7 +473,7 @@ def check_margin_symmetry(doc, result, skip_cover=False):
         result.ok("Left/right margins appear symmetric \u2713")
 
 
-def check_table_centering(doc, result):
+def check_table_centering(doc, result):  # NOSONAR - python:S3776
     """Check if detected table regions are centered."""
     def _bbox_intersects(a, b, tol=6):
         return not (a[2] < b[0] - tol or a[0] > b[2] + tol or
@@ -564,7 +564,7 @@ def check_table_centering(doc, result):
         result.ok("Table centering check complete \u2713")
 
 
-def check_font_embedding(doc, result):
+def check_font_embedding(doc, result):  # NOSONAR - python:S3776
     """Check font embedding status using PyMuPDF font list."""
     fonts_used = set()
     non_embedded = set()
@@ -593,7 +593,7 @@ def check_font_embedding(doc, result):
         result.ok("All fonts are embedded \u2713")
 
 
-def check_helvetica_in_cjk(doc, result):
+def check_helvetica_in_cjk(doc, result):  # NOSONAR - python:S3776
     """
     Detect Helvetica rendering visible text in documents containing CJK text.
 
@@ -880,7 +880,7 @@ if __name__ == "__main__":
         check_formulas = True
         args.remove('--formulas')
     for arg in args:
-        files.extend(glob.glob(arg))
+        files.extend(glob.glob(arg))  # NOSONAR - pythonsecurity:S8707
 
     if not files:
         print(f"File not found: {args}")

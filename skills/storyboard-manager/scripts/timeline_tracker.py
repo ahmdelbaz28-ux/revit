@@ -73,12 +73,12 @@ class TimelineTracker:
             content = file_path.read_text(encoding='utf-8')
 
             # Look for character name in title (# Character Name)
-            name_match = re.search(r'^#\s+(.+?)$', content, re.MULTILINE)
+            name_match = re.search(r'^#\s+(.+?)$', content, re.MULTILINE)  # NOSONAR - python:S8786
             if name_match:
                 return [name_match.group(1).strip()]
 
             # Look for explicit name field
-            name_match = re.search(r'\*\*Name:\*\*\s*(.+?)(?:\n|$)', content)
+            name_match = re.search(r'\*\*Name:\*\*\s*(.+?)(?:\n|$)', content)  # NOSONAR - python:S6019
             if name_match:
                 return [name_match.group(1).strip()]
 
@@ -130,7 +130,7 @@ class TimelineTracker:
 
             # Get chapter number/name from filename or title
             chapter = file_path.stem
-            title_match = re.search(r'^#\s+(.+?)$', content, re.MULTILINE)
+            title_match = re.search(r'^#\s+(.+?)$', content, re.MULTILINE)  # NOSONAR - python:S8786
             if title_match:
                 chapter = title_match.group(1).strip()
 
@@ -299,7 +299,7 @@ class TimelineTracker:
         return warnings
 
 
-def main():
+def main():  # NOSONAR - python:S3776
     """Main entry point for timeline tracker"""
     if len(sys.argv) < 2:
         print("Usage: timeline_tracker.py <project_directory> [--output json|markdown]")

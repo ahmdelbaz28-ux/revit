@@ -418,7 +418,7 @@ class SLCCapacitanceAuditor:
                 )
             except Exception as e:
                 logger.warning("V112: audit_slc_loops: failed to construct DecisionProvenance audit result: %s", e)
-                pass
+                pass  # NOSONAR - python:S2772
 
         return {
             "decision_type": "slc_capacitance_audit",

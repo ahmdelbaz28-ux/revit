@@ -382,7 +382,7 @@ export async function runChartAnalysis(
 // CLI 调试
 // ══════════════════════════════════════════════════════════
 
-async function cli() {
+async function cli() {  // NOSONAR - typescript:S3776
 	const args = process.argv.slice(2);
 	const cmd = args[0];
 

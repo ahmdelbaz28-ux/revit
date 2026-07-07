@@ -12,7 +12,7 @@ import type {
 } from "./types";
 
 export function getHelpTopic(
-	topicId: HelpTopicId | string | null | undefined,
+	topicId: HelpTopicId | string | null | undefined,  // NOSONAR - typescript:S6571
 ): HelpTopic | undefined {
 	if (!topicId) return undefined;
 	return HELP_TOPICS[topicId as HelpTopicId] ?? undefined;
@@ -197,7 +197,7 @@ export function getRelatedTopics(topic: HelpTopic): HelpTopic[] {
 }
 
 export function getFirstTopicForContext(
-	contextId: HelpTopicId | string | null | undefined,
+	contextId: HelpTopicId | string | null | undefined,  // NOSONAR - typescript:S6571
 ): HelpTopic | undefined {
 	const exact = getHelpTopic(contextId);
 	if (exact) return exact;

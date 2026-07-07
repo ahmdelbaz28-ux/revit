@@ -43,7 +43,7 @@ def _is_cjk(ch: str) -> bool:
 class ParagraphData:
     """Text and formatting for one paragraph."""
 
-    def __init__(self, paragraph: Any):
+    def __init__(self, paragraph: Any):  # NOSONAR - python:S3776
         self.text: str = paragraph.text.strip()
         self.bullet: bool = False
         self.level: Optional[int] = None
@@ -60,7 +60,7 @@ class ParagraphData:
         self.line_spacing: Optional[float] = None
 
         # Bullet detection
-        pPr = getattr(getattr(paragraph, "_p", None), "pPr", None)
+        pPr = getattr(getattr(paragraph, "_p", None), "pPr", None)  # NOSONAR - python:S117
         if pPr is not None and (
             pPr.find(f"{_BULLET_NS}buChar") is not None
             or pPr.find(f"{_BULLET_NS}buAutoNum") is not None
@@ -194,7 +194,7 @@ class ShapeData:
     # Issue detection helpers
     # ------------------------------------------------------------------
 
-    def _default_font_size_pts(self) -> float:
+    def _default_font_size_pts(self) -> float:  # NOSONAR - python:S3776
         """Best-effort default font size from theme styles."""
         if self.default_font_size:
             return self.default_font_size
@@ -211,7 +211,7 @@ class ShapeData:
             pass
         return 14.0  # conservative fallback
 
-    def _estimate_frame_overflow(self) -> None:
+    def _estimate_frame_overflow(self) -> None:  # NOSONAR - python:S3776
         """Estimate text overflow via character-count heuristic (no external deps)."""
         if not hasattr(self.shape, "text_frame"):
             return
@@ -471,7 +471,7 @@ def save_inventory(inventory: InventoryData, output_path: Path) -> None:
         slide_key: {k: sd.to_dict() for k, sd in shapes.items()}
         for slide_key, shapes in inventory.items()
     }
-    with open(output_path, "w", encoding="utf-8") as f:
+    with open(output_path, "w", encoding="utf-8") as f:  # NOSONAR - pythonsecurity:S8707
         json.dump(json_data, f, indent=2, ensure_ascii=False)
 
 

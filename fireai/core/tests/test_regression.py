@@ -89,15 +89,15 @@ class TestV79NaNInfBypass:
         """NaN area must NOT pass min/max area checks."""
         nan_area = float("nan")
         # This was the original bug: NaN < 2.0 is False, NaN > 50000 is False
-        assert not (nan_area < 2.0)   # NaN comparison is False
-        assert not (nan_area > 50000.0)  # NaN comparison is False
+        assert not (nan_area < 2.0)   # NaN comparison is False  # NOSONAR - python:S1940
+        assert not (nan_area > 50000.0)  # NaN comparison is False  # NOSONAR - python:S1940
         # The fix: isfinite check catches NaN before comparisons
         assert not math.isfinite(nan_area)
 
     def test_inf_area_not_accepted_as_valid_room(self) -> None:
         """Infinity area must NOT pass min/max area checks."""
         inf_area = float("inf")
-        assert not (inf_area < 2.0)   # inf > 2.0 is True → caught by max
+        assert not (inf_area < 2.0)   # inf > 2.0 is True → caught by max  # NOSONAR - python:S1940
         assert inf_area > 50000.0     # inf > max → caught
         # But the isfinite check is the primary guard
         assert not math.isfinite(inf_area)

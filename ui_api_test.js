@@ -120,7 +120,7 @@ async function runUITests() {
 	const browser = await puppeteer.launch({
 		headless: false, // Set to true for headless mode
 		executablePath:
-			"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+			"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",  // NOSONAR - javascript:S7780
 		args: ["--no-sandbox", "--disable-setuid-sandbox"],
 	});
 

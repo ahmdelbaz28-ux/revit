@@ -48,7 +48,7 @@ function loadPlaywright() {
 			.forEach((p) => roots.add(p));
 	}
 	try {
-		const g = execSync("npm root -g", { stdio: ["ignore", "pipe", "ignore"] })
+		const g = execSync("npm root -g", { stdio: ["ignore", "pipe", "ignore"] })  // NOSONAR - javascript:S4036
 			.toString()
 			.trim();
 		if (g) roots.add(g);
@@ -82,7 +82,7 @@ function loadPdfLib() {
 	}
 	const Module = require("node:module");
 	try {
-		const g = execSync("npm root -g", { stdio: ["ignore", "pipe", "ignore"] })
+		const g = execSync("npm root -g", { stdio: ["ignore", "pipe", "ignore"] })  // NOSONAR - javascript:S4036
 			.toString()
 			.trim();
 		const pkg = path.join(g, "pdf-lib", "package.json");
@@ -96,11 +96,11 @@ function loadPdfLib() {
 	throw new Error("pdf-lib not found. Install: npm install -g pdf-lib");
 }
 
-function resolveChromium(chromiumObj, allowInstall = false) {
+function resolveChromium(chromiumObj, allowInstall = false) {  // NOSONAR - javascript:S3776
 	let exe;
 	try {
 		exe = chromiumObj.executablePath();
-	} catch (_) {
+	} catch (_) {  // NOSONAR - javascript:S2486
 		exe = null;
 	}
 
@@ -124,7 +124,7 @@ function resolveChromium(chromiumObj, allowInstall = false) {
 	}
 
 	if (allowInstall) {
-		const r = spawnSync("npx", ["playwright", "install", "chromium"], {
+		const r = spawnSync("npx", ["playwright", "install", "chromium"], {  // NOSONAR - javascript:S4036
 			stdio: "inherit",
 			shell: true,
 		});
@@ -218,7 +218,7 @@ function prettyBytes(n) {
 // Pre-render hooks (run in browser context before PDF export)
 // ═══════════════════════════════════════════════════════════════════
 
-async function preRenderHooks(page) {
+async function preRenderHooks(page) {  // NOSONAR - javascript:S3776
 	const warnings = [];
 
 	// 1. Wait for Mermaid diagrams
@@ -231,7 +231,7 @@ async function preRenderHooks(page) {
 			await page.waitForFunction(
 				() => {
 					for (const m of document.querySelectorAll(".mermaid"))
-						if (!m.querySelector("svg") && !m.getAttribute("data-processed"))
+						if (!m.querySelector("svg") && !m.getAttribute("data-processed"))  // NOSONAR - javascript:S7761
 							return false;
 					return true;
 				},
@@ -239,7 +239,7 @@ async function preRenderHooks(page) {
 			);
 			await sleep(2000);
 			console.log("  ✓ Mermaid rendered");
-		} catch (_) {
+		} catch (_) {  // NOSONAR - javascript:S2486
 			warnings.push("Mermaid rendering timed out (30s)");
 		}
 	}
@@ -303,8 +303,8 @@ async function preRenderHooks(page) {
 					delimiters: [
 						{ left: "$$", right: "$$", display: true },
 						{ left: "$", right: "$", display: false },
-						{ left: "\\(", right: "\\)", display: false },
-						{ left: "\\[", right: "\\]", display: true },
+						{ left: "\\(", right: "\\)", display: false },  // NOSONAR - javascript:S7780
+						{ left: "\\[", right: "\\]", display: true },  // NOSONAR - javascript:S7780
 					],
 					throwOnError: false,
 				});
@@ -367,7 +367,7 @@ async function preRenderHooks(page) {
 			if (o.hOverflow) parts.push(`H +${o.hOverflow}px`);
 			if (o.vOverflow) parts.push(`V +${o.vOverflow}px`);
 			console.log(
-				`    <${o.tag}${o.cls ? `.${o.cls.split(" ")[0]}` : ""}> ${parts.join(", ")}`,
+				`    <${o.tag}${o.cls ? `.${o.cls.split(" ")[0]}` : ""}> ${parts.join(", ")}`,  // NOSONAR - javascript:S4624
 			);
 		});
 		warnings.push(`${overflows.length} element(s) have overflow`);
@@ -382,12 +382,12 @@ async function preRenderHooks(page) {
 	//
 	//     (The old "expand to scrollHeight" logic belongs in html2poster.js where a single
 	//     continuous canvas is the desired output.)
-	const vOverflowFix = await page.evaluate(() => {
+	const vOverflowFix = await page.evaluate(() => {  // NOSONAR - javascript:S3776
 		const fixes = [];
 		// Candidates: html, body, and any direct child of body that acts as a full-page canvas
 		const candidates = [document.documentElement, document.body];
 		const bodyChildren = document.body.children;
-		for (let i = 0; i < bodyChildren.length; i++) {
+		for (let i = 0; i < bodyChildren.length; i++) {  // NOSONAR - javascript:S4138
 			const child = bodyChildren[i];
 			// Skip SVG defs, script, style elements
 			const tag = child.tagName.toLowerCase();
@@ -400,7 +400,7 @@ async function preRenderHooks(page) {
 				continue;
 			candidates.push(child);
 			// Also check one level deeper (e.g., .canvas > .content)
-			for (let j = 0; j < child.children.length; j++) {
+			for (let j = 0; j < child.children.length; j++) {  // NOSONAR - javascript:S4138
 				const grandchild = child.children[j];
 				const gtag = grandchild.tagName.toLowerCase();
 				if (gtag === "svg" || gtag === "script" || gtag === "style") continue;
@@ -467,11 +467,11 @@ async function preRenderHooks(page) {
 	//     across multiple @page pages, these elements either overlap with body
 	//     text or land on the wrong page. Fix: convert them to static positioning
 	//     so they participate in normal document flow and paginate naturally.
-	const absBottomFix = await page.evaluate(() => {
+	const absBottomFix = await page.evaluate(() => {  // NOSONAR - javascript:S3776
 		const converted = [];
 		// Scan inside page-level containers (body children and their children)
 		const containers = [];
-		for (let i = 0; i < document.body.children.length; i++) {
+		for (let i = 0; i < document.body.children.length; i++) {  // NOSONAR - javascript:S4138
 			const child = document.body.children[i];
 			const tag = child.tagName.toLowerCase();
 			if (
@@ -563,7 +563,7 @@ async function preRenderHooks(page) {
 				el.classList.contains("cover") ||
 				el.classList.contains("cover-page") ||
 				el.id === "cover" ||
-				el.getAttribute("data-role") === "cover";
+				el.getAttribute("data-role") === "cover";  // NOSONAR - javascript:S7761
 			if (isVh || (isCover && el.offsetHeight > 0)) {
 				// Force the element to fill the print page
 				el.style.height = "100vh";
@@ -680,7 +680,7 @@ async function postProcess(pdfPath, options = {}) {
 // Main pipeline
 // ═══════════════════════════════════════════════════════════════════
 
-async function convert(inputFile, outputFile, customCSS, options = {}) {
+async function convert(inputFile, outputFile, customCSS, options = {}) {  // NOSONAR - javascript:S3776
 	const { width, height, mergeFiles, title } = options;
 
 	if (!fs.existsSync(inputFile)) {
@@ -804,13 +804,13 @@ async function convert(inputFile, outputFile, customCSS, options = {}) {
 					const styles = Array.from(document.querySelectorAll("style"));
 					for (const s of styles) {
 						const text = s.textContent || "";
-						const match = text.match(
+						const match = text.match(  // NOSONAR - javascript:S6594
 							/@page\s*\{[^}]*size:\s*([\d.]+)px\s+([\d.]+)px/,
 						);
 						if (match)
 							return {
-								width: parseFloat(match[1]),
-								height: parseFloat(match[2]),
+								width: parseFloat(match[1]),  // NOSONAR - javascript:S7773
+								height: parseFloat(match[2]),  // NOSONAR - javascript:S7773
 							};
 					}
 					return null;

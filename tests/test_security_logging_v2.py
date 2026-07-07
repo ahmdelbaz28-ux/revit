@@ -305,7 +305,7 @@ class TestSecurityAuditLoggerLogEvent:
         assert len(event_id) > 0
 
     def test_writes_to_log_file(self, security_logger, temp_log_dir):
-        security_logger.log_event("AUTH_FAILURE", ip="1.2.3.4")
+        security_logger.log_event("AUTH_FAILURE", ip="1.2.3.4")  # NOSONAR - python:S1313
         log_path = temp_log_dir / "security_audit.log"
         assert log_path.exists()
         content = log_path.read_text()

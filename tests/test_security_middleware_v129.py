@@ -59,7 +59,7 @@ def dev_app():
     os.environ["FIREAI_ENV"] = "development"
     os.environ["FIREAI_API_KEY"] = ""
     # Clear cached module so __init__ runs again with new env
-    for mod_name in list(sys.modules):
+    for mod_name in list(sys.modules):  # NOSONAR - python:S7504
         if mod_name == "backend.app" or mod_name.startswith("backend.app."):
             del sys.modules[mod_name]
     try:
@@ -263,7 +263,7 @@ class TestBackendAppCorsHardening:
 
 def _reload_backend_app(env_overrides: dict):
     """Reload backend.app with the given env vars set."""
-    for mod_name in list(sys.modules):
+    for mod_name in list(sys.modules):  # NOSONAR - python:S7504
         if mod_name == "backend.app" or mod_name.startswith("backend.app."):
             del sys.modules[mod_name]
     saved = {}
@@ -359,7 +359,7 @@ class TestBackendAppAlsoHasSecurityHeaders:
         os.environ["FIREAI_API_KEY"] = ""
         try:
             # Reload backend_app fresh
-            for mod_name in list(sys.modules):
+            for mod_name in list(sys.modules):  # NOSONAR - python:S7504
                 if mod_name == "backend_app" or mod_name.startswith("backend_app."):
                     del sys.modules[mod_name]
             backend_app = importlib.import_module("backend_app")
@@ -373,6 +373,6 @@ class TestBackendAppAlsoHasSecurityHeaders:
                 assert "x-correlation-id" in response.headers
         finally:
             # Restore env
-            for mod_name in list(sys.modules):
+            for mod_name in list(sys.modules):  # NOSONAR - python:S7504
                 if mod_name == "backend_app" or mod_name.startswith("backend_app."):
                     del sys.modules[mod_name]

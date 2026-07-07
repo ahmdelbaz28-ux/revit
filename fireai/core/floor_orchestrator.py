@@ -394,7 +394,7 @@ class FloorOrchestrator:
                 except Exception as adapt_err:
                     result.errors.append(f"Adaptive re-solve error: {adapt_err}. Manual design required.")
 
-        except (NFPAComplianceError, InvalidInputError, ValueError) as e:
+        except (NFPAComplianceError, InvalidInputError, ValueError) as e:  # NOSONAR - python:S5713
             # Logic errors → convert to ERROR result
             result.status = "ERROR"
             result.errors.append(str(e))

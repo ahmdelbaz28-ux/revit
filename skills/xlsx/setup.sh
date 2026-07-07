@@ -10,10 +10,10 @@
 set -euo pipefail
 
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BLUE='\033[0;34m'; NC='\033[0m'
-ok() { echo -e "  ${GREEN}✓${NC} $1"; }
-fail() { echo -e "  ${RED}✗${NC} $1"; }
-warn() { echo -e "  ${YELLOW}○${NC} $1"; }
-info() { echo -e "  ${BLUE}→${NC} $1"; }
+ok() { echo -e "  ${GREEN}✓${NC} $1"; }  # NOSONAR - shelldre:S7679
+fail() { echo -e "  ${RED}✗${NC} $1"; }  # NOSONAR - shelldre:S7679
+warn() { echo -e "  ${YELLOW}○${NC} $1"; }  # NOSONAR - shelldre:S7679
+info() { echo -e "  ${BLUE}→${NC} $1"; }  # NOSONAR - shelldre:S7679
 
 echo "============================================"
 echo "  XLSX Skill — Environment Setup"
@@ -26,7 +26,7 @@ echo "Platform: $OS $ARCH"
 echo ""
 
 # ── 0. macOS: Homebrew ──
-if [ "$OS" = "Darwin" ]; then
+if [ "$OS" = "Darwin" ]; then  # NOSONAR - shelldre:S7688
     echo "--- Homebrew (macOS package manager) ---"
     if command -v brew &>/dev/null; then
         BREW_VER=$(brew --version 2>/dev/null | head -1)
@@ -43,7 +43,7 @@ echo "--- Python ---"
 if command -v python3 &>/dev/null; then
     PY_VER=$(python3 --version 2>&1)
     ok "python3 ($PY_VER)"
-    if [ "$OS" = "Darwin" ]; then
+    if [ "$OS" = "Darwin" ]; then  # NOSONAR - shelldre:S7688
         PY_PATH=$(which python3 2>/dev/null)
         if [[ "$PY_PATH" == "/usr/bin/python3" ]]; then
             warn "Using macOS system Python (limited). Recommend: brew install python3"
@@ -96,9 +96,9 @@ for entry in "${PY_PKGS[@]}"; do
     fi
 done
 
-if [ ${#MISSING_PY[@]} -gt 0 ]; then
+if [ ${#MISSING_PY[@]} -gt 0 ]; then  # NOSONAR - shelldre:S7688
     echo ""
-    if [ -t 0 ]; then
+    if [ -t 0 ]; then  # NOSONAR - shelldre:S7688
         read -p "  Install missing Python packages? [Y/n] " -n 1 -r REPLY
         echo ""
         REPLY=${REPLY:-Y}
@@ -123,7 +123,7 @@ if command -v soffice &>/dev/null; then
     ok "libreoffice ($LO_VER)"
 else
     warn "libreoffice not installed (needed only for .xlsx→PDF or .csv→.xlsx conversion)"
-    case "$OS" in
+    case "$OS" in  # NOSONAR - shelldre:S131
         Darwin) info "Install: brew install --cask libreoffice" ;;
         Linux)  info "Install: sudo apt install libreoffice-core  (Debian/Ubuntu)" ;;
     esac
@@ -133,4 +133,4 @@ fi
 echo ""
 echo "============================================"
 echo "  Setup complete."
-echo "============================================"
+echo "============================================"  # NOSONAR - shelldre:S1192

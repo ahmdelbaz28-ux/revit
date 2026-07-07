@@ -213,7 +213,7 @@ async def export_revit(project_id: str):
 @router.get("/ifc", dependencies=[Depends(require_permission(Permission.EXPORT_READ))])
 async def export_ifc(
     project_id: str,
-    version: str = Query("IFC4", pattern="^(IFC2X3|IFC4)$"),
+    version: str = Query("IFC4", pattern="^(IFC2X3|IFC4)$"),  # NOSONAR - python:S8410
 ):
     """Export project as IFC (Industry Foundation Classes)."""
     project = _verify_project(project_id)

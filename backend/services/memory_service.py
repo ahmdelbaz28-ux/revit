@@ -708,7 +708,7 @@ class MemoryService:
                 "source": "memory_error",
             }
 
-    async def close(self) -> None:
+    async def close(self) -> None:  # NOSONAR - python:S7503
         """Close the memory service and release resources. Per agent.md Rule 8."""
         logger.info("MemoryService closing...")
         self._memory = None

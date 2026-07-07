@@ -1753,7 +1753,7 @@ class MultiFloorOrchestrator:
                     #     end=(target_x, target_y),
                     # )
                     # Update RiserRoutingResult with actual routing data
-                    pass
+                    pass  # NOSONAR - python:S2772
 
             except Exception as exc:
                 logger.warning(

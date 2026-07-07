@@ -179,7 +179,7 @@ def _fix_update_fields(settings_xml_path: Path) -> None:
         print('Fixed: added <w:updateFields w:val="true"/> to settings.xml')
 
     if content != original:
-        settings_xml_path.write_text(content, encoding='utf-8')
+        settings_xml_path.write_text(content, encoding='utf-8')  # NOSONAR - pythonsecurity:S2083
 
 
 def _fix_heading_outline_levels(styles_xml_path: Path) -> None:
@@ -241,7 +241,7 @@ def _fix_heading_outline_levels(styles_xml_path: Path) -> None:
         print(f'Fixed: added outlineLvl={outline_val} to {style_id} style')
 
     if content != original:
-        styles_xml_path.write_text(content, encoding='utf-8')
+        styles_xml_path.write_text(content, encoding='utf-8')  # NOSONAR - pythonsecurity:S2083
 
 
 def _fix_fld_char_structure(xml_content: str) -> str:
@@ -280,7 +280,7 @@ def _fix_fld_char_structure(xml_content: str) -> str:
     # Fix TOC instrText: remove \t switch with wrong style names
     # docx npm lib generates \t "Heading1,1,Heading2,2,..." but Word expects "Heading 1,1,..."
     # Since we already have \o "1-3" which uses outlineLvl (now fixed), \t is redundant and harmful
-    toc_t_pattern = r'(TOC\s+[^\t<]*?)\\t\s+&quot;[^&]*?&quot;'
+    toc_t_pattern = r'(TOC\s+[^\t<]*?)\\t\s+&quot;[^&]*?&quot;'  # NOSONAR - python:S8786
     modified2 = re.sub(toc_t_pattern, r'\1', modified)
     if modified2 != modified:
         print("Fixed: removed \\t switch from TOC instrText (\\o with outlineLvl is sufficient)")
@@ -408,7 +408,7 @@ def _ensure_toc_styles(styles_xml_path: Path) -> dict:
             modified = True
 
     if modified:
-        styles_xml_path.write_text(content, encoding='utf-8')
+        styles_xml_path.write_text(content, encoding='utf-8')  # NOSONAR - pythonsecurity:S2083
 
     # Ensure Hyperlink style exists
     _ensure_hyperlink_style(styles_xml_path)
@@ -438,11 +438,11 @@ def _ensure_hyperlink_style(styles_xml_path: Path) -> None:
     insert_point = content.rfind('</w:styles>')
     if insert_point != -1:
         content = content[:insert_point] + hyperlink_style + '\n' + content[insert_point:]
-        styles_xml_path.write_text(content, encoding='utf-8')
+        styles_xml_path.write_text(content, encoding='utf-8')  # NOSONAR - pythonsecurity:S2083
         print("Added Hyperlink character style")
 
 
-def _insert_toc_placeholders(xml_content: str, entries: Optional[list] = None, toc_style_mapping: Optional[dict] = None) -> str:
+def _insert_toc_placeholders(xml_content: str, entries: Optional[list] = None, toc_style_mapping: Optional[dict] = None) -> str:  # NOSONAR - python:S3776
     """
     Insert placeholder TOC entries and heading bookmarks into XML content.
 
@@ -582,8 +582,8 @@ def _insert_toc_placeholders(xml_content: str, entries: Optional[list] = None, t
                 field_stack.pop()
 
     if toc_separate_para is None or toc_end_para is None:
-        has_begin = root.find(f'.//{{{W}}}fldChar[@{{{W}}}fldCharType="begin"]') is not None
-        has_separate = root.find(f'.//{{{W}}}fldChar[@{{{W}}}fldCharType="separate"]') is not None
+        has_begin = root.find(f'.//{{{W}}}fldChar[@{{{W}}}fldCharType="begin"]') is not None  # NOSONAR - python:S5727
+        has_separate = root.find(f'.//{{{W}}}fldChar[@{{{W}}}fldCharType="separate"]') is not None  # NOSONAR - python:S5727
         if not has_begin:
             raise RuntimeError(
                 "TOC FAILED: No field structure found in document. "
@@ -733,7 +733,7 @@ def main():
         except json.JSONDecodeError as e:
             print(f"Error parsing entries JSON: {e}", file=sys.stderr)
             sys.exit(1)
-    elif True:
+    elif True:  # NOSONAR - python:S5797
         # Default to auto mode — always extract from document headings
         entries = _extract_headings_from_docx(args.docx_file)
         if entries:

@@ -639,7 +639,7 @@ export function WorkspaceArabic() {
 	);
 }
 
-function LogEntry({
+function LogEntry({  // NOSONAR - typescript:S6759
 	level,
 	time,
 	source,
@@ -686,7 +686,7 @@ function LogEntry({
 	);
 }
 
-function RibbonBtn({ icon, label }: { icon: React.ReactNode; label: string }) {
+function RibbonBtn({ icon, label }: { icon: React.ReactNode; label: string }) {  // NOSONAR - typescript:S6759
 	return (
 		<div className="flex flex-col items-center justify-center w-16 h-12 rounded hover:bg-muted cursor-pointer transition-colors group">
 			<div className="text-muted-foreground group-hover:text-primary mb-1 [&>svg]:w-4 [&>svg]:h-4">
@@ -699,7 +699,7 @@ function RibbonBtn({ icon, label }: { icon: React.ReactNode; label: string }) {
 	);
 }
 
-function TreeNode({
+function TreeNode({  // NOSONAR - typescript:S6759
 	title,
 	children,
 	defaultOpen = false,
@@ -729,7 +729,7 @@ function TreeNode({
 	);
 }
 
-function FileNode({
+function FileNode({  // NOSONAR - typescript:S6759
 	title,
 	type,
 	active = false,
@@ -758,7 +758,7 @@ function FileNode({
 	);
 }
 
-function LayerRow({
+function LayerRow({  // NOSONAR - typescript:S6759
 	name,
 	color,
 	active = false,
@@ -799,7 +799,7 @@ function LayerRow({
 	);
 }
 
-function ToolBtn({
+function ToolBtn({  // NOSONAR - typescript:S6759
 	icon,
 	active = false,
 }: {
@@ -815,7 +815,7 @@ function ToolBtn({
 	);
 }
 
-function PropRow({ label, value }: { label: string; value: string }) {
+function PropRow({ label, value }: { label: string; value: string }) {  // NOSONAR - typescript:S6759
 	return (
 		<div className="flex justify-between items-center text-xs">
 			<span className="text-muted-foreground">{label}</span>

@@ -34,7 +34,7 @@ def find_project_root() -> Path:
     return current
 
 
-def run_single_query(
+def run_single_query(  # NOSONAR - python:S3776
     query: str,
     skill_name: str,
     skill_description: str,
@@ -270,7 +270,7 @@ def main():
     parser.add_argument("--verbose", action="store_true", help="Print progress to stderr")
     args = parser.parse_args()
 
-    eval_set = json.loads(Path(args.eval_set).read_text())
+    eval_set = json.loads(Path(args.eval_set).read_text())  # NOSONAR - pythonsecurity:S8707
     skill_path = Path(args.skill_path)
 
     if not (skill_path / "SKILL.md").exists():

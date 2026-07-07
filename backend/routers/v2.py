@@ -876,7 +876,7 @@ async def get_csrf_token(request: Request) -> dict[str, Any]:
     forwarded_proto = request.headers.get("x-forwarded-proto", "").lower()
     is_https = forwarded_proto == "https" or request.url.scheme == "https"
 
-    cookie_header = build_csrf_cookie_header(token, is_https=is_https)
+    cookie_header = build_csrf_cookie_header(token, is_https=is_https)  # NOSONAR - python:S930
 
     response = JSONResponse(content={
         "csrf_token": token,

@@ -122,7 +122,7 @@ class DxfParser:
             # Extract closed LWPOLYLINE boundaries representing rooms
             for idx, lwpoly in enumerate(msp.query("LWPOLYLINE")):
                 if lwpoly.closed:
-                    pts = tuple([Point3D(p[0], p[1], 0.0) for p in lwpoly.get_points(format='xy')])
+                    pts = tuple([Point3D(p[0], p[1], 0.0) for p in lwpoly.get_points(format='xy')])  # NOSONAR - python:S7496
                     if len(pts) >= 3:
                         area = DxfParser._calculate_polygon_area(pts)
                         rooms.append(Room(

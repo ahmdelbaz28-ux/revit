@@ -206,11 +206,11 @@ def inject_fault_isolators(  # NOSONAR — S3776: cognitive complexity is inhere
         # Insert isolator if needed
         if need_isolator:
             isolator_count += 1
-            iso_device = _make_isolator(
+            iso_device = _make_isolator(  # NOSONAR - python:S930
                 index=isolator_count,
                 position=device_pos,
                 reason=reason,
-                zone_before=current_zone,
+                zone_before=current_zone,  # NOSONAR - python:S930
                 zone_after=device_zone,
             )
             secure_loop.append(iso_device)
@@ -235,11 +235,11 @@ def inject_fault_isolators(  # NOSONAR — S3776: cognitive complexity is inhere
     if class_a and loop_devices:
         last_pos = _get_position(loop_devices[-1])
         isolator_count += 1
-        iso_device = _make_isolator(
+        iso_device = _make_isolator(  # NOSONAR - python:S930
             index=isolator_count,
             position=last_pos,
             reason="Class A loop return point per NFPA 72 §21.4",
-            zone_before=current_zone,
+            zone_before=current_zone,  # NOSONAR - python:S930
             zone_after=None,
         )
         secure_loop.append(iso_device)

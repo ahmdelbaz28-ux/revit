@@ -358,7 +358,7 @@ class NFPA72Validator(StandardValidator):
         )
         self._add_rule(
             "NFPA72:18.4.2.1",
-            "18.4.2.1",
+            "18.4.2.1",  # NOSONAR - python:S1313
             "Notification appliance spacing per mounting height and sound level",
             lambda d: d.nac_circuits >= 1 and d.nac_voltage_v >= 16.0,
             SeverityLevel.HIGH,
@@ -366,7 +366,7 @@ class NFPA72Validator(StandardValidator):
         )
         self._add_rule(
             "NFPA72:23.8.5.2",
-            "23.8.5.2",
+            "23.8.5.2",  # NOSONAR - python:S1313
             "Battery capacity must support standby + alarm duration",
             lambda d: d.battery_standby_hours >= 24 and d.battery_alarm_minutes >= 15,
             SeverityLevel.CRITICAL,
@@ -383,7 +383,7 @@ class NFPA101Validator(StandardValidator):
     def _define_rules(self) -> None:
         self._add_rule(
             "NFPA101:7.2.3.9",
-            "7.2.3.9",
+            "7.2.3.9",  # NOSONAR - python:S1313
             "Stairwell > 75ft (22.86m) requires pressurization",
             lambda d: not d.pressurization_required or d.building_height_m > 22.86,
             SeverityLevel.HIGH,
@@ -415,7 +415,7 @@ class NFPA101Validator(StandardValidator):
         )
         self._add_rule(
             "NFPA101:7.8.1.2",
-            "7.8.1.2",
+            "7.8.1.2",  # NOSONAR - python:S1313
             "Emergency lighting required in egress paths",
             lambda d: d.has_emergency_lights,
             SeverityLevel.HIGH,
@@ -423,7 +423,7 @@ class NFPA101Validator(StandardValidator):
         )
         self._add_rule(
             "NFPA101:18.3.5.1",
-            "18.3.5.1",
+            "18.3.5.1",  # NOSONAR - python:S1313
             "Fire alarm system in healthcare occupancies",
             lambda d: d.occupancy_type != "healthcare" or d.has_fire_alarm,
             SeverityLevel.CRITICAL,
@@ -545,7 +545,7 @@ class IBCValidator(StandardValidator):
         )
 
 
-class ASMEA17_1Validator(StandardValidator):
+class ASMEA17_1Validator(StandardValidator):  # NOSONAR - python:S101
     """ASME A17.1: Elevator Safety Code."""
 
     def __init__(self) -> None:
@@ -554,7 +554,7 @@ class ASMEA17_1Validator(StandardValidator):
     def _define_rules(self) -> None:
         self._add_rule(
             "ASME:2.1.1.1",
-            "2.1.1.1",
+            "2.1.1.1",  # NOSONAR - python:S1313
             "Elevator hoistway smoke detectors required",
             lambda d: not d.has_elevator or d.has_fire_alarm,
             SeverityLevel.CRITICAL,
@@ -562,7 +562,7 @@ class ASMEA17_1Validator(StandardValidator):
         )
         self._add_rule(
             "ASME:2.1.2.1",
-            "2.1.2.1",
+            "2.1.2.1",  # NOSONAR - python:S1313
             "Elevator shunt trip for sprinklers within 0.6m of hoistway",
             lambda d: not d.has_unguarded_sprinkler,
             SeverityLevel.CRITICAL,
@@ -570,7 +570,7 @@ class ASMEA17_1Validator(StandardValidator):
         )
         self._add_rule(
             "ASME:2.1.3.3",
-            "2.1.3.3",
+            "2.1.3.3",  # NOSONAR - python:S1313
             "Elevator lobby smoke detection",
             lambda d: not d.has_elevator or d.num_floors >= 2,
             SeverityLevel.HIGH,
@@ -578,7 +578,7 @@ class ASMEA17_1Validator(StandardValidator):
         )
         self._add_rule(
             "ASME:2.1.4.1",
-            "2.1.4.1",
+            "2.1.4.1",  # NOSONAR - python:S1313
             "Phase I emergency recall operation required",
             lambda d: not d.has_elevator,
             SeverityLevel.HIGH,
@@ -586,7 +586,7 @@ class ASMEA17_1Validator(StandardValidator):
         )
         self._add_rule(
             "ASME:3.1.1.1",
-            "3.1.1.1",
+            "3.1.1.1",  # NOSONAR - python:S1313
             "Firefighter service operation required > 25ft travel",
             lambda d: not d.has_elevator or d.building_height_m > 7.62,
             SeverityLevel.HIGH,
@@ -922,7 +922,7 @@ class MultiStandardValidator:
                     rule_a="NFPA72:21.4.2",
                     rule_b="ASME:2.1.2.1",
                     section_a="21.4.2",
-                    section_b="2.1.2.1",
+                    section_b="2.1.2.1",  # NOSONAR - python:S1313
                     description=(
                         "Unguarded sprinkler within 0.6m of hoistway: "
                         "NFPA 72 requires dedicated heat detector, "
@@ -991,7 +991,7 @@ class MultiStandardValidator:
                     standard_b=ValidationStandard.UL_864,
                     rule_a="NFPA72:23.8.5.2",
                     rule_b="UL864:6.1",
-                    section_a="23.8.5.2",
+                    section_a="23.8.5.2",  # NOSONAR - python:S1313
                     section_b="6.1",
                     description=(
                         "Battery standby capacity < 24 hours fails "

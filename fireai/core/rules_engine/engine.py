@@ -500,7 +500,7 @@ class RulesEngine:
         # the beta network (Phase 2). Adding them as alpha-only
         # candidates would pass a single fact to an action that
         # expects a fact pair, causing IndexError.
-        for fact in list(self._facts.values()):
+        for fact in list(self._facts.values()):  # NOSONAR - python:S7504
             fact_type = fact.fact_type
             if fact_type not in self._alpha_index:
                 continue

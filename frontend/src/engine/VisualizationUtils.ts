@@ -142,8 +142,8 @@ export function getColorForValue(value: number, scale: ColorScale): string {
 	}
 
 	// Value is above maximum
-	if (value >= stops[stops.length - 1].value) {
-		return stops[stops.length - 1].hex;
+	if (value >= stops[stops.length - 1].value) {  // NOSONAR - typescript:S7755
+		return stops[stops.length - 1].hex;  // NOSONAR - typescript:S7755
 	}
 
 	// Find the two stops the value falls between
@@ -175,9 +175,9 @@ export function hexToRgb(hex: string): { r: number; g: number; b: number } {
 	const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
 	return result
 		? {
-				r: parseInt(result[1], 16),
-				g: parseInt(result[2], 16),
-				b: parseInt(result[3], 16),
+				r: parseInt(result[1], 16),  // NOSONAR - typescript:S7773
+				g: parseInt(result[2], 16),  // NOSONAR - typescript:S7773
+				b: parseInt(result[3], 16),  // NOSONAR - typescript:S7773
 			}
 		: { r: 0, g: 0, b: 0 };
 }

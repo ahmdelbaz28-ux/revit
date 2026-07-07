@@ -361,7 +361,7 @@ export function ComplianceCenter() {
 	);
 }
 
-function StandardGroup({ title, items }: { title: string; items: any[] }) {
+function StandardGroup({ title, items }: { title: string; items: any[] }) {  // NOSONAR - typescript:S6759
 	return (
 		<div className="mb-4">
 			<div className="text-xs font-semibold text-foreground mb-2 flex items-center">

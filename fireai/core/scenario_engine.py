@@ -501,8 +501,8 @@ class FirePhysics:
         t_burn varies by occupancy — uses _BURN_DURATION table.
         Returns kW.
         """
-        t_burn = _BURN_DURATION.get(occupancy.lower(), _BURN_DURATION["default"])
-        total_mj = fire_load_mj_m2 * area_m2
+        t_burn = _BURN_DURATION.get(occupancy.lower(), _BURN_DURATION["default"])  # NOSONAR - python:S1481
+        total_mj = fire_load_mj_m2 * area_m2  # NOSONAR - python:S1481
 
     @staticmethod
     def ceiling_jet_temp_rise(
@@ -624,7 +624,7 @@ class FirePhysics:
             # Mass flow = rho * V * delta * 2*pi*r (integrated over annular ring)
 
             # Ceiling jet velocity (Alpert 1972, far field)
-            V_jet = _ALPERT_V_FAR * (q_kw ** (1.0 / 3.0)) * (ratio ** (-5.0 / 6.0)) / (H ** (1.0 / 3.0))
+            V_jet = _ALPERT_V_FAR * (q_kw ** (1.0 / 3.0)) * (ratio ** (-5.0 / 6.0)) / (H ** (1.0 / 3.0))  # NOSONAR - python:S117
 
             # Ceiling jet mass flow (kg/s) — derived from velocity
             # m = rho * V * delta * 2*pi*r

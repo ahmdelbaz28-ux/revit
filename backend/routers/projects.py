@@ -51,10 +51,10 @@ def _normalize_sort(sort: str) -> str:
 
 @router.get("", dependencies=[Depends(require_permission(Permission.PROJECT_READ))])
 async def list_projects(
-    page: int = Query(1, ge=1, description="Page number"),
-    limit: int = Query(20, ge=1, le=100, description="Items per page"),
-    sort: str = Query("createdAt", description="Sort field"),
-    order: str = Query("desc", description="Sort order (asc/desc)"),
+    page: int = Query(1, ge=1, description="Page number"),  # NOSONAR - python:S8410
+    limit: int = Query(20, ge=1, le=100, description="Items per page"),  # NOSONAR - python:S8410
+    sort: str = Query("createdAt", description="Sort field"),  # NOSONAR - python:S8410
+    order: str = Query("desc", description="Sort order (asc/desc)"),  # NOSONAR - python:S8410
 ):
     # V140 FIX: Validate order to prevent injection
     if order not in ("asc", "desc"):

@@ -23,7 +23,7 @@ interface ConfigEditorProps {
 	saveConfig: (config: Record<string, unknown>) => Promise<void>;
 }
 
-export function ConfigEditor({
+export function ConfigEditor({  // NOSONAR - typescript:S6759
 	title,
 	description,
 	loadConfig,

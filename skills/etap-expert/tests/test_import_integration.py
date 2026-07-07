@@ -332,7 +332,7 @@ class TestDirectFireAIImports:
         try:
             from fireai.core.atex_hazardous_arbiter import EquipmentProtectionLevel
 
-            assert EquipmentProtectionLevel is not None
+            assert EquipmentProtectionLevel is not None  # NOSONAR - python:S5727
         except ImportError:
             pytest.skip("fireai.core.atex_hazardous_arbiter not importable")
 

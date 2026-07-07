@@ -3,7 +3,7 @@ import datetime
 from lunar_python import Lunar, Solar
 
 
-def get_cyber_divination_data(birth_year, birth_month, birth_day, birth_hour=0, birth_minute=0):
+def get_cyber_divination_data(birth_year, birth_month, birth_day, birth_hour=0, birth_minute=0):  # NOSONAR - python:S3776
     """
     赛博算命核心算法 v2.1
     - 输出适配 HTML 前端渲染

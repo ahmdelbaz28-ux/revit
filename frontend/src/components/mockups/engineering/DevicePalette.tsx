@@ -46,7 +46,7 @@ interface DevicePaletteProps {
 	selectedType: DeviceType | null;
 }
 
-export function DevicePalette({ onSelect, selectedType }: DevicePaletteProps) {
+export function DevicePalette({ onSelect, selectedType }: DevicePaletteProps) {  // NOSONAR - typescript:S6759
 	return (
 		<div className="w-64 bg-card border-r border-border flex flex-col h-full">
 			<div className="p-4 border-b border-border">

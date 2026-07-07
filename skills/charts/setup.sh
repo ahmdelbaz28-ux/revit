@@ -10,10 +10,10 @@
 set -euo pipefail
 
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BLUE='\033[0;34m'; NC='\033[0m'
-ok() { echo -e "  ${GREEN}✓${NC} $1"; }
-fail() { echo -e "  ${RED}✗${NC} $1"; }
-warn() { echo -e "  ${YELLOW}○${NC} $1"; }
-info() { echo -e "  ${BLUE}→${NC} $1"; }
+ok() { echo -e "  ${GREEN}✓${NC} $1"; }  # NOSONAR - shelldre:S7679
+fail() { echo -e "  ${RED}✗${NC} $1"; }  # NOSONAR - shelldre:S7679
+warn() { echo -e "  ${YELLOW}○${NC} $1"; }  # NOSONAR - shelldre:S7679
+info() { echo -e "  ${BLUE}→${NC} $1"; }  # NOSONAR - shelldre:S7679
 
 echo "============================================"
 echo "  Charts Skill — Environment Setup"
@@ -26,7 +26,7 @@ echo "Platform: $OS $ARCH"
 echo ""
 
 # ── 0. macOS: Homebrew ──
-if [ "$OS" = "Darwin" ]; then
+if [ "$OS" = "Darwin" ]; then  # NOSONAR - shelldre:S7688
     echo "--- Homebrew (macOS package manager) ---"
     if command -v brew &>/dev/null; then
         BREW_VER=$(brew --version 2>/dev/null | head -1)
@@ -43,7 +43,7 @@ echo "--- Python ---"
 if command -v python3 &>/dev/null; then
     PY_VER=$(python3 --version 2>&1)
     ok "python3 ($PY_VER)"
-    if [ "$OS" = "Darwin" ]; then
+    if [ "$OS" = "Darwin" ]; then  # NOSONAR - shelldre:S7688
         PY_PATH=$(which python3 2>/dev/null)
         if [[ "$PY_PATH" == "/usr/bin/python3" ]]; then
             warn "Using macOS system Python (limited). Recommend: brew install python3"
@@ -98,9 +98,9 @@ for entry in "${PY_PKGS[@]}"; do
     fi
 done
 
-if [ ${#MISSING_PY[@]} -gt 0 ]; then
+if [ ${#MISSING_PY[@]} -gt 0 ]; then  # NOSONAR - shelldre:S7688
     echo ""
-    if [ -t 0 ]; then
+    if [ -t 0 ]; then  # NOSONAR - shelldre:S7688
         read -p "  Install missing Python packages? [Y/n] " -n 1 -r REPLY
         echo ""
         REPLY=${REPLY:-Y}
@@ -159,7 +159,7 @@ else
     info "Install: npm install -g playwright"
 fi
 
-if [ "$OS" = "Darwin" ]; then
+if [ "$OS" = "Darwin" ]; then  # NOSONAR - shelldre:S7688
     PW_CACHE="$HOME/Library/Caches/ms-playwright"
 else
     PW_CACHE="$HOME/.cache/ms-playwright"
@@ -170,7 +170,7 @@ if ls "$PW_CACHE"/chromium-* &>/dev/null 2>&1; then
 else
     fail "chromium not installed"
     info "Install: npx playwright install chromium"
-    if [ "$OS" = "Linux" ]; then
+    if [ "$OS" = "Linux" ]; then  # NOSONAR - shelldre:S7688
         info "         npx playwright install-deps  (system libs, needs sudo)"
     fi
 fi
@@ -194,26 +194,26 @@ else:
 fi
 
 # Check system CJK fonts
-if [ "$OS" = "Darwin" ]; then
+if [ "$OS" = "Darwin" ]; then  # NOSONAR - shelldre:S7688
     if ls /System/Library/Fonts/PingFang.ttc &>/dev/null 2>&1 \
        || ls /System/Library/Fonts/STHeiti*.ttc &>/dev/null 2>&1; then
         ok "macOS CJK system fonts available (PingFang/STHeiti)"
         CJK_FOUND=true
     fi
-elif [ "$OS" = "Linux" ]; then
+elif [ "$OS" = "Linux" ]; then  # NOSONAR - shelldre:S7688
     if fc-list :lang=zh 2>/dev/null | head -1 | grep -q .; then
         ok "system CJK fonts available (fc-list)"
         CJK_FOUND=true
     fi
 fi
 
-if [ "$CJK_FOUND" = false ]; then
+if [ "$CJK_FOUND" = false ]; then  # NOSONAR - shelldre:S7688
     warn "No CJK font detected — Chinese labels may show as □"
     info "The skill configures font fallback via rcParams at runtime."
     info "Ensure a CJK font file exists (e.g., SimHei.ttf) and is registered."
-    if [ "$OS" = "Darwin" ]; then
+    if [ "$OS" = "Darwin" ]; then  # NOSONAR - shelldre:S7688
         info "macOS ships with PingFang — try: plt.rcParams['font.sans-serif'] = ['PingFang SC', 'DejaVu Sans']"
-    elif [ "$OS" = "Linux" ]; then
+    elif [ "$OS" = "Linux" ]; then  # NOSONAR - shelldre:S7688
         info "Install: sudo apt install fonts-noto-cjk"
     fi
 fi
@@ -225,4 +225,4 @@ echo "  Setup complete."
 echo "  Data charts: matplotlib + seaborn"
 echo "  Structural diagrams: Playwright + CSS"
 echo "  Interactive charts: ECharts / D3.js via Node.js"
-echo "============================================"
+echo "============================================"  # NOSONAR - shelldre:S1192

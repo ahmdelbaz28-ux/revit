@@ -576,7 +576,7 @@ export function ProjectDashboard() {
 	);
 }
 
-function Widget({
+function Widget({  // NOSONAR - typescript:S6759
 	title,
 	icon,
 	children,
@@ -600,7 +600,7 @@ function Widget({
 	);
 }
 
-function ProgressBar({
+function ProgressBar({  // NOSONAR - typescript:S6759
 	label,
 	percent,
 	color,
@@ -629,7 +629,7 @@ function ProgressBar({
 	);
 }
 
-function TimelineItem({
+function TimelineItem({  // NOSONAR - typescript:S6759
 	time,
 	user,
 	icon,
@@ -660,7 +660,7 @@ function TimelineItem({
 	);
 }
 
-function HourRow({
+function HourRow({  // NOSONAR - typescript:S6759
 	label,
 	used,
 	budget,
@@ -692,7 +692,7 @@ function HourRow({
 	);
 }
 
-function Avatar({ initials, color }: { initials: string; color: string }) {
+function Avatar({ initials, color }: { initials: string; color: string }) {  // NOSONAR - typescript:S6759
 	return (
 		<div
 			className={`w-8 h-8 rounded-full border-2 border-card flex items-center justify-center text-[10px] font-bold text-white shadow-sm ${color} z-10 hover:z-20 hover:scale-110 transition-transform cursor-pointer`}

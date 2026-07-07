@@ -147,7 +147,7 @@ class TestCatalog:
 
     def test_catalog_number_pattern(self):
         import re
-        pat = re.compile(r"^[EPR][A-Z0-9]{1,3}-[0-9]{3}$")
+        pat = re.compile(r"^[EPR][A-Z0-9]{1,3}-[0-9]{3}$")  # NOSONAR - python:S6353
         for _, f in all_fittings().items():
             assert pat.match(f.catalog_number), (
                 f"Bad catalog number: {f.catalog_number!r}"

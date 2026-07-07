@@ -60,7 +60,7 @@ class TestValidateInputPath:
         finally:
             os.unlink(p)
 
-    def test_missing_file_raises_FileNotFoundError(self):
+    def test_missing_file_raises_FileNotFoundError(self):  # NOSONAR - python:S100
         """Missing file → FileNotFoundError (benign, distinct from unsafe)."""
         with pytest.raises(FileNotFoundError):
             validate_input_path("/tmp/this_does_not_exist_v122.dwg",  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)

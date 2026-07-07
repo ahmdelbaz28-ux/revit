@@ -326,7 +326,7 @@ class TestRecommendWireGauge:
                 calculate_voltage_drop(0.5, 50.0, thinner, 24.0)
                 # At least this gauge should be non-compliant or we'd have recommended it
                 # (Note: this may not always hold due to ordering, but for small loads it should)
-                pass  # Structural check only
+                pass  # Structural check only  # NOSONAR - python:S2772
 
     def test_nfpa_reference_in_result(self):
         result = recommend_wire_gauge(0.5, 50.0, 24.0, 10.0)

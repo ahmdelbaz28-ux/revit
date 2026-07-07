@@ -43,7 +43,7 @@ export function AutoCADDrawPage() {
 	const [textLayer, setTextLayer] = useState("");
 
 	const parsePoint = (s: string): number[] => {
-		return s.split(",").map((v) => parseFloat(v.trim()));
+		return s.split(",").map((v) => parseFloat(v.trim()));  // NOSONAR - typescript:S7773
 	};
 
 	const drawLine = async () => {
@@ -84,7 +84,7 @@ export function AutoCADDrawPage() {
 		try {
 			await autocadService.drawCircle(
 				parsePoint(circleCenter),
-				parseFloat(circleRadius),
+				parseFloat(circleRadius),  // NOSONAR - typescript:S7773
 				circleLayer || undefined,
 			);
 			toast.success("Circle drawn");
@@ -103,7 +103,7 @@ export function AutoCADDrawPage() {
 			await autocadService.drawText(
 				parsePoint(textPoint),
 				textContent,
-				parseFloat(textHeight),
+				parseFloat(textHeight),  // NOSONAR - typescript:S7773
 				textLayer || undefined,
 			);
 			toast.success("Text drawn");

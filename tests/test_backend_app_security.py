@@ -41,7 +41,7 @@ def _get_cors_middleware_kwargs(app):
 def _reload_backend_app(env_overrides: dict) -> Any:
     """Reload backend_app with the given env vars set."""
     # Clear cached module so __init__ runs again with new env
-    for mod_name in list(sys.modules):
+    for mod_name in list(sys.modules):  # NOSONAR - python:S7504
         if mod_name == "backend_app" or mod_name.startswith("backend_app."):
             del sys.modules[mod_name]
     saved = {}

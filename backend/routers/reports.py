@@ -239,10 +239,10 @@ def _normalize_sort(sort: str) -> str:
 @router.get("", dependencies=[Depends(require_permission(Permission.REPORT_READ))])
 async def list_reports(
     project_id: str,
-    page: int = Query(1, ge=1),
-    limit: int = Query(20, ge=1, le=100),
-    sort: str = Query("createdAt"),
-    order: str = Query("desc"),
+    page: int = Query(1, ge=1),  # NOSONAR - python:S8410
+    limit: int = Query(20, ge=1, le=100),  # NOSONAR - python:S8410
+    sort: str = Query("createdAt"),  # NOSONAR - python:S8410
+    order: str = Query("desc"),  # NOSONAR - python:S8410
 ):
     # V140 FIX: Validate order to prevent injection
     if order not in ("asc", "desc"):
@@ -376,7 +376,7 @@ async def get_report(project_id: str, report_id: str):
 async def export_report(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     project_id: str,
     report_id: str,
-    format: str = Query("json", pattern="^(pdf|dxf|json)$"),
+    format: str = Query("json", pattern="^(pdf|dxf|json)$"),  # NOSONAR - python:S8410
 ):
     """Export a report in the specified format."""
     _verify_project(project_id)

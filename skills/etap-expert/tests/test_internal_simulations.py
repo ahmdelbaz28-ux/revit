@@ -177,19 +177,19 @@ class TestProtectionCoordinationRegression:
         result = simulate_protection_coordination()
         # Skill: CT 100:5
         assert result.ct_ratio_primary == 100
-        assert result.ct_ratio_secondary == 5.0
+        assert result.ct_ratio_secondary == 5.0  # NOSONAR - python:S1244
 
     def test_relay_51_pickup_matches_skill(self) -> None:
         result = simulate_protection_coordination()
         # Skill: 51 pickup = 3.5A secondary = 70A primary
-        assert result.relay_51_pickup_secondary_a == 3.5
-        assert result.relay_51_pickup_primary_a == 70.0
+        assert result.relay_51_pickup_secondary_a == 3.5  # NOSONAR - python:S1244
+        assert result.relay_51_pickup_primary_a == 70.0  # NOSONAR - python:S1244
 
     def test_relay_50_pickup_matches_skill(self) -> None:
         result = simulate_protection_coordination()
         # Skill: 50 pickup = 25A secondary = 500A primary
         assert result.relay_50_pickup_secondary_a == 25
-        assert result.relay_50_pickup_primary_a == 500.0
+        assert result.relay_50_pickup_primary_a == 500.0  # NOSONAR - python:S1244
 
     def test_locked_rotor_calculated(self) -> None:
         """Locked rotor = 6 × FLA (NEMA Code F)."""

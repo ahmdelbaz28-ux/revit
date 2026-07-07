@@ -226,12 +226,12 @@ class TestIFCParserSecurity:
         finally:
             os.unlink(p)
 
-    def test_missing_file_raises_ValueError(self):
+    def test_missing_file_raises_ValueError(self):  # NOSONAR - python:S100
         with pytest.raises(ValueError, match="not found"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778
             self._make("/tmp/v125_ifc_missing.ifc").parse()  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
 
 
-# Rule #23 enforcement: each parser MUST use the shared helper
+# Rule #23 enforcement: each parser MUST use the shared helper  # NOSONAR - python:S125
 # ═══════════════════════════════════════════════════════════════════════════════
 
 

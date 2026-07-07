@@ -126,8 +126,8 @@ class TestV130AuditNotice:
         """Audit notice must cite NFPA sections (§17.7.1.11, §17.7.4.6, §17.7.4.7)."""
         r = compute_smoke_detector_spacing(10.0)
         notice = r.get("audit_notice", "")
-        assert "17.7.1.11" in notice, f"Missing §17.7.1.11 ref: {notice}"
-        assert "17.7.4.6" in notice or "beam" in notice.lower(), f"Missing beam ref: {notice}"
+        assert "17.7.1.11" in notice, f"Missing §17.7.1.11 ref: {notice}"  # NOSONAR - python:S1313
+        assert "17.7.4.6" in notice or "beam" in notice.lower(), f"Missing beam ref: {notice}"  # NOSONAR - python:S1313
 
     def test_audit_notice_confirms_flat_spacing(self):
         """Audit notice must confirm 9.1m flat spacing per §17.7.3.2.3."""

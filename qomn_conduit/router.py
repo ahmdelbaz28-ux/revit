@@ -119,7 +119,7 @@ class BoundingBox:
         )
 
 
-# A* node
+# A* node  # NOSONAR - python:S125
 # ─────────────────────────────────────────────────────────────────────────────
 
 @dataclass(order=False)

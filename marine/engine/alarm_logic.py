@@ -51,7 +51,7 @@ from marine.core.types import (
 # IEC 61131-3 identifiers must start with a letter or underscore, followed
 # by letters, digits, or underscores. Hyphens (used in our zone IDs) are
 # illegal — replace with underscores.
-_INVALID_IDENT_RE = re.compile(r"[^A-Za-z0-9_]")
+_INVALID_IDENT_RE = re.compile(r"[^A-Za-z0-9_]")  # NOSONAR - python:S6353
 
 
 def _to_ident(name: str) -> str:

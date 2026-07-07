@@ -172,7 +172,7 @@ def _try_zai_sdk_classification(request: str) -> LLMClassificationResult | None:
 # ═══════════════════════════════════════════════════════════════════════════
 
 
-def _enhance_pattern_result(request: str, category: str) -> LLMClassificationResult:
+def _enhance_pattern_result(request: str, category: str) -> LLMClassificationResult:  # NOSONAR - python:S3776
     """
     Enhance pattern-based classification with structured reasoning.
 
@@ -189,18 +189,18 @@ def _enhance_pattern_result(request: str, category: str) -> LLMClassificationRes
     elif category == "B":
         reasoning = "Request is missing critical numerical parameters"
         # Detect what's missing
-        if "transformer" in req_lower and not re.search(r"\d+\s*(v|kv)\b", req_lower):
+        if "transformer" in req_lower and not re.search(r"\d+\s*(v|kv)\b", req_lower):  # NOSONAR - python:S8786
             missing_data.append("voltage")
-        if "relay" in req_lower and "motor" in req_lower and not re.search(r"\d+\s*hp", req_lower):
+        if "relay" in req_lower and "motor" in req_lower and not re.search(r"\d+\s*hp", req_lower):  # NOSONAR - python:S8786
             missing_data.append("motor HP")
-        if "voltage drop" in req_lower and not re.search(r"\d+\s*(awg|kcmil)", req_lower):
+        if "voltage drop" in req_lower and not re.search(r"\d+\s*(awg|kcmil)", req_lower):  # NOSONAR - python:S8786
             missing_data.append("cable size (AWG)")
     elif category == "C":
         # Determine if wrong study or physically impossible
         for combo in FORBIDDEN_STUDY_COMBOS:
             if all(kw in req_lower for kw in combo):
                 reasoning = f"Wrong study combination: {combo}"
-                if "load flow" in combo and "fault current" in combo:
+                if "load flow" in combo and "fault current" in combo:  # NOSONAR - python:S1192
                     correct_study = "Short Circuit (ANSI C37 / IEC 60909)"
                 elif "arc flash" in combo and "load flow" in combo:
                     correct_study = "Arc Flash (IEEE 1584)"

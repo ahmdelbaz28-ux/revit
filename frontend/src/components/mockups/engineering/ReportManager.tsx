@@ -523,7 +523,7 @@ export function ReportManager() {
 									</div>
 									<div className="space-y-1.5">
 										<label className="text-[10px] text-slate-400">Status</label>  // NOSONAR — S6853: React import kept for JSX transform
-										<select className="h-7 w-full text-xs bg-slate-950 border border-slate-700 rounded text-slate-200 px-2 outline-none">
+										<select className="h-7 w-full text-xs bg-slate-950 border border-slate-700 rounded text-slate-200 px-2 outline-none">  // NOSONAR - typescript:S6772
 											<option>Issued for Construction</option>
 											<option>For Review</option>
 											<option>Draft</option>

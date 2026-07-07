@@ -125,7 +125,7 @@ def write_xlsx(path: Path) -> None:
         formula1=f'"{",".join(STAGE_OPTIONS)}"',
         allow_blank=True,
     )
-    dv_stage.add("F2:F200")
+    dv_stage.add("F2:F200")  # NOSONAR - python:S1192
     ws.add_data_validation(dv_stage)
 
     # 条件格式：F 列 = Offer 绿色，Reject 灰色，沉默 黄色

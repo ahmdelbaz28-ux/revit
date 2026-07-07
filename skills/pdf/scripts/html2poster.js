@@ -41,7 +41,7 @@ function resolveChromium(chromiumObj) {
 	let exe;
 	try {
 		exe = chromiumObj.executablePath();
-	} catch (_) {
+	} catch (_) {  // NOSONAR - javascript:S2486
 		exe = null;
 	}
 	if (exe && fs.existsSync(exe)) return { status: "ok", executablePath: exe };
@@ -75,7 +75,7 @@ function parseArgs(argv) {
 		const t = tokens[i];
 		if (t === "--output" || t === "-o") output = tokens[++i];
 		else if (t === "--width") width = tokens[++i];
-		else if (t === "--max-height") maxHeight = parseInt(tokens[++i], 10);
+		else if (t === "--max-height") maxHeight = parseInt(tokens[++i], 10);  // NOSONAR - javascript:S7773
 		else if (t === "--help" || t === "-h") {
 			console.log(`
 Usage: node html2poster.js <input.html> [options]
@@ -156,7 +156,7 @@ async function main() {
 
 	try {
 		// Use a wide viewport so content doesn't wrap unexpectedly
-		const widthPx = parseInt(width, 10) || 720;
+		const widthPx = parseInt(width, 10) || 720;  // NOSONAR - javascript:S7773
 		const page = await browser.newPage({
 			viewport: { width: widthPx, height: 1200 },
 		});

@@ -164,7 +164,7 @@ class ConstraintSolver:
                 f"device_radius must be positive, got {device_radius}"
             )
 
-        if not coverage_safety_factor > 0 or coverage_safety_factor > 1.0:
+        if not coverage_safety_factor > 0 or coverage_safety_factor > 1.0:  # NOSONAR - python:S1940
             raise ValueError(
                 f"coverage_safety_factor must be in (0, 1], got {coverage_safety_factor}"
             )

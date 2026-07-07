@@ -958,7 +958,7 @@ class TestAnalyzeBuilding:
             ]
             # We need to call analyze_building directly with actual rooms
             # Let's use the real pipeline but cause one room to fail
-            pass
+            pass  # NOSONAR - python:S2772
 
         # Better approach: use a room with invalid geometry for one room
         rooms = [

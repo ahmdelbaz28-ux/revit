@@ -250,34 +250,34 @@ class TestDashboardRateLimiter:
         from backend.routers.monitor import DashboardRateLimiter
         limiter = DashboardRateLimiter(max_requests=5, window_seconds=60)
         for _ in range(5):
-            assert limiter.check("192.168.1.1") is True
+            assert limiter.check("192.168.1.1") is True  # NOSONAR - python:S1313
 
     def test_rate_limiter_blocks_excess(self) -> None:
         """Test that excess requests are blocked."""
         from backend.routers.monitor import DashboardRateLimiter
         limiter = DashboardRateLimiter(max_requests=3, window_seconds=60)
         for _ in range(3):
-            assert limiter.check("10.0.0.1") is True
-        assert limiter.check("10.0.0.1") is False
+            assert limiter.check("10.0.0.1") is True  # NOSONAR - python:S1313
+        assert limiter.check("10.0.0.1") is False  # NOSONAR - python:S1313
 
     def test_rate_limiter_per_ip(self) -> None:
         """Test that rate limiting is per-IP."""
         from backend.routers.monitor import DashboardRateLimiter
         limiter = DashboardRateLimiter(max_requests=2, window_seconds=60)
-        assert limiter.check("1.1.1.1") is True
-        assert limiter.check("1.1.1.1") is True
-        assert limiter.check("2.2.2.2") is True  # Different IP
-        assert limiter.check("1.1.1.1") is False  # Original IP blocked
+        assert limiter.check("1.1.1.1") is True  # NOSONAR - python:S1313
+        assert limiter.check("1.1.1.1") is True  # NOSONAR - python:S1313
+        assert limiter.check("2.2.2.2") is True  # Different IP  # NOSONAR - python:S1313
+        assert limiter.check("1.1.1.1") is False  # Original IP blocked  # NOSONAR - python:S1313
 
     def test_rate_limiter_window_expiry(self) -> None:
         """Test that rate limit window expires."""
         from backend.routers.monitor import DashboardRateLimiter
         limiter = DashboardRateLimiter(max_requests=2, window_seconds=1)
-        assert limiter.check("3.3.3.3") is True
-        assert limiter.check("3.3.3.3") is True
-        assert limiter.check("3.3.3.3") is False
+        assert limiter.check("3.3.3.3") is True  # NOSONAR - python:S1313
+        assert limiter.check("3.3.3.3") is True  # NOSONAR - python:S1313
+        assert limiter.check("3.3.3.3") is False  # NOSONAR - python:S1313
         time.sleep(1.1)
-        assert limiter.check("3.3.3.3") is True
+        assert limiter.check("3.3.3.3") is True  # NOSONAR - python:S1313
 
 
 # ══════════════════════════════════════════════════════════════════════════════

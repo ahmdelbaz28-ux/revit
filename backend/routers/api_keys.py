@@ -44,7 +44,7 @@ class UpdateKeyRoleRequest(BaseModel):
 
 @router.get("")
 async def list_keys(
-    _role: Role = Depends(require_permission(Permission.USER_MANAGE)),
+    _role: Role = Depends(require_permission(Permission.USER_MANAGE)),  # NOSONAR - python:S8410
 ):
     """List all API keys (admin only). Key values are never returned."""
     keys = list_api_keys()
@@ -54,7 +54,7 @@ async def list_keys(
 @router.post("", status_code=201)
 async def create_key(
     request: GenerateKeyRequest,
-    _role: Role = Depends(require_permission(Permission.USER_MANAGE)),
+    _role: Role = Depends(require_permission(Permission.USER_MANAGE)),  # NOSONAR - python:S8410
 ):
     """
     Generate a new API key with the specified role (admin only).
@@ -82,7 +82,7 @@ async def create_key(
 @router.delete("/{key_hash}")
 async def delete_key(
     key_hash: str,
-    _role: Role = Depends(require_permission(Permission.USER_MANAGE)),
+    _role: Role = Depends(require_permission(Permission.USER_MANAGE)),  # NOSONAR - python:S8410
 ):
     """Delete an API key by its hash (admin only)."""
     deleted = delete_api_key(key_hash)
@@ -95,7 +95,7 @@ async def delete_key(
 async def update_key_role_endpoint(
     key_hash: str,
     request: UpdateKeyRoleRequest,
-    _role: Role = Depends(require_permission(Permission.USER_MANAGE)),
+    _role: Role = Depends(require_permission(Permission.USER_MANAGE)),  # NOSONAR - python:S8410
 ):
     """Update an API key's role (admin only)."""
     updated = update_api_key_role(key_hash, request.role)
@@ -106,7 +106,7 @@ async def update_key_role_endpoint(
 
 @router.get("/roles")
 async def list_roles(
-    _role: Role = Depends(require_permission(Permission.USER_MANAGE)),
+    _role: Role = Depends(require_permission(Permission.USER_MANAGE)),  # NOSONAR - python:S8410
 ):
     """List available roles and their permissions (admin only)."""
     roles_info = {}

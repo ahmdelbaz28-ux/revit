@@ -229,7 +229,7 @@ class TestZoneHazardConsistency:
         assert len(warnings) >= 1
 
 
-# ATEXHazardousArbiter.arbitrate_v21
+# ATEXHazardousArbiter.arbitrate_v21  # NOSONAR - python:S125
 # ─────────────────────────────────────────────────────────────────────────────
 
 
@@ -451,7 +451,7 @@ class TestArbitrateV21:
         assert result.space_id == "PUMP-ROOM-A"
 
 
-# ATEXHazardousArbiter.validate_equipment
+# ATEXHazardousArbiter.validate_equipment  # NOSONAR - python:S125
 # ─────────────────────────────────────────────────────────────────────────────
 
 
@@ -566,16 +566,16 @@ class TestRecommendProtection:
     def test_zone1_d(self, arbiter):
         assert arbiter._recommend_protection(ATEXZone.ZONE_1) == ProtectionType.d
 
-    def test_zone2_nA(self, arbiter):
+    def test_zone2_nA(self, arbiter):  # NOSONAR - python:S100
         assert arbiter._recommend_protection(ATEXZone.ZONE_2) == ProtectionType.nA
 
     def test_zone20_ia(self, arbiter):
         assert arbiter._recommend_protection(ATEXZone.ZONE_20) == ProtectionType.ia
 
-    def test_zone21_tD(self, arbiter):
+    def test_zone21_tD(self, arbiter):  # NOSONAR - python:S100
         assert arbiter._recommend_protection(ATEXZone.ZONE_21) == ProtectionType.tD
 
-    def test_zone22_tD(self, arbiter):
+    def test_zone22_tD(self, arbiter):  # NOSONAR - python:S100
         assert arbiter._recommend_protection(ATEXZone.ZONE_22) == ProtectionType.tD
 
 

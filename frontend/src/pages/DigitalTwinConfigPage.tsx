@@ -65,7 +65,7 @@ export function DigitalTwinConfigPage() {
 									>
 										{typeof m === "object" && m
 											? String(
-													(m as Record<string, unknown>).name ||
+													(m as Record<string, unknown>).name ||  // NOSONAR - typescript:S6551
 														`Mapping ${i + 1}`,
 												)
 											: `Mapping ${i + 1}`}

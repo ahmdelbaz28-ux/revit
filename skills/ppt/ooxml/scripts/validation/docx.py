@@ -67,13 +67,13 @@ class DOCXSchemaValidator(BaseSchemaValidator):
 
         return all_valid
 
-    def validate_whitespace_preservation(self):
+    def validate_whitespace_preservation(self):  # NOSONAR - python:S3776
         """Validate that w:t elements with whitespace have xml:space='preserve'."""
         errors = []
 
         for xml_file in self.xml_files:
             # Only check document.xml files
-            if xml_file.name != "document.xml":
+            if xml_file.name != "document.xml":  # NOSONAR - python:S1192
                 continue
 
             try:
@@ -116,7 +116,7 @@ class DOCXSchemaValidator(BaseSchemaValidator):
             print("PASSED - All whitespace is properly preserved")
         return True
 
-    def validate_deletions(self):
+    def validate_deletions(self):  # NOSONAR - python:S3776
         """
         Validate that w:t elements are not within w:del elements.
         For some reason, XSD validation does not catch this, so we do it manually.
@@ -207,7 +207,7 @@ class DOCXSchemaValidator(BaseSchemaValidator):
 
         return count
 
-    def validate_insertions(self):
+    def validate_insertions(self):  # NOSONAR - python:S3776
         """
         Validate that w:delText elements are not within w:ins elements.
         w:delText is only allowed in w:ins if nested within a w:del.

@@ -169,7 +169,7 @@ def parse_front_matter(content: str) -> tuple[SkillFrontMatter | None, str | Non
     Front-matter is delimited by --- at start and end.
     Returns (front_matter, error_message).
     """
-    fm_pattern = re.compile(r"^---\s*\n(.*?)\n---\s*\n", re.DOTALL)
+    fm_pattern = re.compile(r"^---\s*\n(.*?)\n---\s*\n", re.DOTALL)  # NOSONAR - python:S8786
     match = fm_pattern.match(content)
     if not match:
         return None, "No YAML front-matter found at start of SKILL.md"
@@ -201,7 +201,7 @@ def parse_front_matter(content: str) -> tuple[SkillFrontMatter | None, str | Non
 
 def extract_sections(content: str) -> list[str]:
     """Extract all section headings (## N. Title)."""
-    pattern = re.compile(r"^##\s+(\d+)\.\s+(.+)$", re.MULTILINE)
+    pattern = re.compile(r"^##\s+(\d+)\.\s+(.+)$", re.MULTILINE)  # NOSONAR - python:S8786
     matches = pattern.findall(content)
     # Sort by section number
     matches.sort(key=lambda x: int(x[0]))
@@ -257,7 +257,7 @@ def extract_standards(content: str) -> dict[str, list[str]]:
 # ═══════════════════════════════════════════════════════════════════════════
 
 
-def load_skill(skill_path: Path | str) -> ValidationResult:
+def load_skill(skill_path: Path | str) -> ValidationResult:  # NOSONAR - python:S3776
     """
     Load and validate the etap-expert skill.
 

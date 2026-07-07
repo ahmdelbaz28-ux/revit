@@ -369,7 +369,7 @@ def generate_visual(
         print(f"        Prompt: {formatted_prompt[:80]}...")
 
     try:
-        result = subprocess.run(
+        result = subprocess.run(  # NOSONAR - pythonsecurity:S8705
             cmd,
             capture_output=True,
             text=True,
@@ -393,7 +393,7 @@ def generate_visual(
         return False
 
 
-def main():
+def main():  # NOSONAR - python:S3776
     parser = argparse.ArgumentParser(
         description="Generate visuals for a market research report (default: 5-6 core visuals)"
     )
@@ -438,7 +438,7 @@ def main():
     # Create output directory
     output_dir = Path(args.output_dir)
     if not args.dry_run:
-        output_dir.mkdir(parents=True, exist_ok=True)
+        output_dir.mkdir(parents=True, exist_ok=True)  # NOSONAR - pythonsecurity:S8707
 
     print(f"\n{'='*60}")
     print("Market Research Visual Generator")

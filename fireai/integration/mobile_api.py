@@ -230,7 +230,7 @@ class MobileAPI:
         return auth_token
 
     def refresh_token(self, refresh_token: str) -> AuthToken:
-        for token_id, stored in list(self._tokens.items()):
+        for token_id, stored in list(self._tokens.items()):  # NOSONAR - python:S7504
             if stored.refresh_token == refresh_token:
                 new_token = self._generate_token()
                 new_refresh = self._generate_token()

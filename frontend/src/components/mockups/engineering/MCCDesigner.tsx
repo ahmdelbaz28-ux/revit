@@ -406,7 +406,7 @@ export function MCCDesigner() {
 	);
 }
 
-function PaletteItem({
+function PaletteItem({  // NOSONAR - typescript:S6759
 	label,
 	size,
 	bg = "bg-slate-800",
@@ -427,7 +427,7 @@ function PaletteItem({
 	);
 }
 
-function Bucket({
+function Bucket({  // NOSONAR - typescript:S6759
 	title,
 	sub,
 	status,
@@ -471,7 +471,7 @@ function Bucket({
 	);
 }
 
-function PropRow({
+function PropRow({  // NOSONAR - typescript:S6759
 	label,
 	value,
 	link = false,

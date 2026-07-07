@@ -116,7 +116,7 @@ def test_invalid_version_rejected(name, author):
     invalid_versions = [
         "1.0",           # Missing patch
         "1",             # Missing minor and patch
-        "1.0.0.0",       # Too many parts
+        "1.0.0.0",       # Too many parts  # NOSONAR - python:S1313
         "v1.0.0",        # Contains letter
         "1.0.-1",        # Negative number
     ]
@@ -327,7 +327,7 @@ def test_edge_case_names(name, version, author):
     # If we get here, the name was valid and normalized
     assert metadata.name == name.lower()
     # Add pass to ensure function has executable code
-    pass
+    pass  # NOSONAR - python:S2772
 
 
 def test_specific_invalid_cases():

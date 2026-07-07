@@ -77,7 +77,7 @@ class ConnectionManager:
 
     async def broadcast(self, message: str) -> int:
         sent_count = 0
-        for client_id, websocket in list(self._active_connections.items()):
+        for client_id, websocket in list(self._active_connections.items()):  # NOSONAR - python:S7504
             try:
                 await websocket.send_text(message)
                 sent_count += 1

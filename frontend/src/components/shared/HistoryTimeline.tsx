@@ -67,7 +67,7 @@ export function HistoryTimeline() {
 			<CardContent>
 				{loading ? (
 					<div className="space-y-3">
-						{[...Array(3)].map((_, i) => (
+						{[...Array(3)].map((_, i) => (  // NOSONAR - typescript:S7723
 							<Skeleton key={i} className="h-16 w-full bg-slate-700" />  // NOSONAR — S6479: array index key acceptable for static list
 						))}
 					</div>

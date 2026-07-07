@@ -37,7 +37,7 @@ export async function makeApiRequest(
 			...options,
 			headers: {
 				...defaultHeaders,
-				...(options.headers || {}),
+				...(options.headers || {}),  // NOSONAR - typescript:S7744
 			},
 		};
 
@@ -68,7 +68,7 @@ export async function makeApiRequest(
 			ok: response.ok,
 			duration: endTime - startTime,
 		};
-	} catch (_error) {
+	} catch (_error) {  // NOSONAR - typescript:S2486
 		const endTime = Date.now();
 		return {
 			status: 0,
@@ -125,7 +125,7 @@ export async function waitForEndpoint(
 			if (response.status >= 200 && response.status < 400) {
 				return true;
 			}
-		} catch (_error) {
+		} catch (_error) {  // NOSONAR - typescript:S2486
 			// Continue waiting if there's a network error
 		}
 

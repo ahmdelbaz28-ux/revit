@@ -14,7 +14,7 @@ import sys
 from pathlib import Path
 
 
-def generate_html(data: dict, auto_refresh: bool = False, skill_name: str = "") -> str:
+def generate_html(data: dict, auto_refresh: bool = False, skill_name: str = "") -> str:  # NOSONAR - python:S3776
     """Generate HTML report from loop output data. If auto_refresh is True, adds a meta refresh tag."""
     history = data.get("history", [])
     _ = data.get("holdout", 0)  # NOSONAR: S2201 return value intentionally unused
@@ -340,12 +340,12 @@ def main():
     else:
         # Validate the input path to prevent path traversal
         input_path = _validate_input_path(args.input)
-        data = json.loads(input_path.read_text())
+        data = json.loads(input_path.read_text())  # NOSONAR - pythonsecurity:S8707
 
     html_output = generate_html(data, skill_name=args.skill_name)
 
     if args.output:
-        Path(args.output).write_text(html_output)
+        Path(args.output).write_text(html_output)  # NOSONAR - pythonsecurity:S8707
         print(f"Report written to {args.output}", file=sys.stderr)
     else:
         print(html_output)

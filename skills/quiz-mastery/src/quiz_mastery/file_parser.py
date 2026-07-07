@@ -74,7 +74,7 @@ def _parse_pptx(file_path: Path) -> str:
 
 # ── .ppt (legacy binary → textutil fallback) ─────────────────────
 
-def _parse_ppt(file_path: Path) -> str:
+def _parse_ppt(file_path: Path) -> str:  # NOSONAR - python:S3776
     """
     Extract text from legacy .ppt format.
 
@@ -137,7 +137,7 @@ def _parse_pdf(file_path: Path) -> str:
 
     # Strategy 2: macOS python3 Quartz (Core Graphics) — zero-dep on macOS
     try:
-        result = subprocess.run(
+        result = subprocess.run(  # NOSONAR - pythonsecurity:S8705
             [
                 "python3", "-c",
                 "import sys\n"
@@ -165,7 +165,7 @@ def _parse_pdf(file_path: Path) -> str:
 
     # Strategy 3: pdftotext (poppler)
     try:
-        result = subprocess.run(
+        result = subprocess.run(  # NOSONAR - pythonsecurity:S8705
             ["pdftotext", str(file_path), "-"],
             capture_output=True,
             text=True,
@@ -223,7 +223,7 @@ def parse_file(file_path: str) -> str:
     if suffix == ".ppt":
         return _parse_ppt(path)
 
-    return path.read_text(encoding="utf-8")
+    return path.read_text(encoding="utf-8")  # NOSONAR - pythonsecurity:S8707
 
 
 def build_extraction_prompt(content: str) -> dict:

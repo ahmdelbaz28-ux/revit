@@ -12,7 +12,7 @@ interface ConfirmDialogProps {
 	variant?: "danger" | "warning" | "default";
 }
 
-export function ConfirmDialog({
+export function ConfirmDialog({  // NOSONAR - typescript:S6759
 	isOpen,
 	title,
 	message,

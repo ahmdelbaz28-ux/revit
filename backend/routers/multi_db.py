@@ -65,7 +65,7 @@ async def get_from_redis(key: str):
 
 
 @router.post("/redis/set", dependencies=[Depends(require_permission(Permission.SYSTEM_CONFIG))])
-async def set_in_redis(key: str, value: str, ttl: Optional[int] = Query(None, description="Time to live in seconds")):
+async def set_in_redis(key: str, value: str, ttl: Optional[int] = Query(None, description="Time to live in seconds")):  # NOSONAR - python:S8410
     """Set a value in Redis cache."""
     try:
         db_service = get_multi_db_service()
@@ -141,7 +141,7 @@ async def store_element_embeddings(element_id: str, embeddings: List[float]):
 
 
 @router.post("/bim/find-similar", dependencies=[Depends(require_permission(Permission.ELEMENT_READ))])
-async def find_similar_elements(query_embedding: List[float], limit: int = Query(5, ge=1, le=20)):
+async def find_similar_elements(query_embedding: List[float], limit: int = Query(5, ge=1, le=20)):  # NOSONAR - python:S8410
     """Find similar BIM elements using vector search."""
     try:
         db_service = get_multi_db_service()
@@ -160,7 +160,7 @@ async def find_similar_elements(query_embedding: List[float], limit: int = Query
 async def create_element_relationships(
     element_id: str,
     related_elements: List[str],
-    relationship_type: str = Query("CONNECTED_TO", description="Type of relationship")
+    relationship_type: str = Query("CONNECTED_TO", description="Type of relationship")  # NOSONAR - python:S8410
 ):
     """Create relationships between elements in Neo4j."""
     try:
@@ -186,7 +186,7 @@ async def create_element_relationships(
 @router.get("/bim/related-elements/{element_id}", dependencies=[Depends(require_permission(Permission.ELEMENT_READ))])
 async def find_related_elements(
     element_id: str,
-    relationship_type: str = Query("CONNECTED_TO", description="Type of relationship")
+    relationship_type: str = Query("CONNECTED_TO", description="Type of relationship")  # NOSONAR - python:S8410
 ):
     """Find elements related to a specific element in Neo4j."""
     try:
@@ -203,7 +203,7 @@ async def find_related_elements(
 
 
 @router.get("/neo4j/query", dependencies=[Depends(require_permission(Permission.SYSTEM_CONFIG))])
-async def execute_neo4j_query(query: str, parameters: Optional[str] = Query(None)):
+async def execute_neo4j_query(query: str, parameters: Optional[str] = Query(None)):  # NOSONAR - python:S8410
     """Execute a custom Cypher query against Neo4j."""
     try:
         import json

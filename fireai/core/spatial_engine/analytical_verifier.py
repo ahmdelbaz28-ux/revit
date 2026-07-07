@@ -194,7 +194,7 @@ class AnalyticalVerifier:
 
         all_covered = True
         seen_pairs: set[tuple[int, int]] = set()
-        pairs_checked = 0
+        pairs_checked = 0  # NOSONAR - python:S1481
 
         for i, (xi, yi) in enumerate(detectors):
             bx = math.floor(xi / cell)

@@ -29,9 +29,9 @@ def _resolve_font(candidates: list) -> str:
     """Return the first font name likely available on this OS."""
     system = platform.system()
     _platform_hints = {
-        "Darwin":  {"PingFang SC", "Hiragino Sans GB", ".AppleSystemUIFont"},
-        "Windows": {"Microsoft YaHei", "SimHei", "SimSun"},
-        "Linux":   {"Noto Sans CJK SC", "WenQuanYi Micro Hei", "Source Han Sans SC"},
+        "Darwin":  {"PingFang SC", "Hiragino Sans GB", ".AppleSystemUIFont"},  # NOSONAR - python:S1192
+        "Windows": {"Microsoft YaHei", "SimHei", "SimSun"},  # NOSONAR - python:S1192
+        "Linux":   {"Noto Sans CJK SC", "WenQuanYi Micro Hei", "Source Han Sans SC"},  # NOSONAR - python:S1192
     }
     available = _platform_hints.get(system, set())
     for name in candidates:
@@ -329,7 +329,7 @@ def make_chart_title(text, size_pt=12, bold=True, axis=False, max_line_chars=6):
     # Outer txPr: Office reads rotation from here for axis titles
     if axis:
         outer_body = RichTextProperties(rot=-5400000)
-        txPr = RichText(
+        txPr = RichText(  # NOSONAR - python:S117
             bodyPr=outer_body,
             p=[Paragraph(pPr=ParagraphProperties(defRPr=deepcopy(rpr)))],
         )
@@ -578,7 +578,7 @@ def copy_style(source_cell, target_cell):
     target_cell.number_format = source_cell.number_format
 
 
-def auto_fit_columns(ws, min_width=8, max_width=28, header_row=None, data_start_row=None):
+def auto_fit_columns(ws, min_width=8, max_width=28, header_row=None, data_start_row=None):  # NOSONAR - python:S3776
     """
     Auto-fit column widths based on DATA content (not header).
     Headers that exceed the computed width get wrap_text=True instead of stretching the column.

@@ -163,13 +163,13 @@ def calculate_heat_detector_response(  # NOSONAR — S3776: cognitive complexity
     # Using simplified form for engineering estimates
     if r <= 0.2 * H:
         # Near plume center
-        delta_T = 16.9 * (Q ** (2.0 / 3.0)) / (H ** (5.0 / 3.0))
+        delta_T = 16.9 * (Q ** (2.0 / 3.0)) / (H ** (5.0 / 3.0))  # NOSONAR - python:S117
     else:
         # Away from plume
         delta_T = 5.38 * ((Q / r) ** (2.0 / 3.0)) / H
 
     # Ceiling jet temperature
-    T_gas = ambient_temp_c + delta_T
+    T_gas = ambient_temp_c + delta_T  # NOSONAR - python:S117
 
     # If gas temperature never reaches activation temperature, detector won't activate
     if T_gas <= activation_temp_c:

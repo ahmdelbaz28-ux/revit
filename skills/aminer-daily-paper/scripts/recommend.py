@@ -76,7 +76,7 @@ def build_payload(args: argparse.Namespace) -> dict[str, Any]:
     return {"function_name": "aminer_recommend", "arguments": arguments}
 
 
-def call_api(config: dict[str, Any], payload: dict[str, Any]) -> list[dict[str, Any]]:
+def call_api(config: dict[str, Any], payload: dict[str, Any]) -> list[dict[str, Any]]:  # NOSONAR - python:S3776
     base_url = str(config["baseUrl"]).rstrip("/")
     url = f"{base_url}/functions/invoke"
     headers = {
@@ -123,7 +123,7 @@ def call_api(config: dict[str, Any], payload: dict[str, Any]) -> list[dict[str, 
     return [p for p in result if isinstance(p, dict)]
 
 
-def render_markdown(papers: list[dict[str, Any]], topics: list[str]) -> str:
+def render_markdown(papers: list[dict[str, Any]], topics: list[str]) -> str:  # NOSONAR - python:S3776
     if not papers:
         return "No papers returned. Try broadening the topics or adjusting the query."
 

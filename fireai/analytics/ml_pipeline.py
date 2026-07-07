@@ -171,7 +171,7 @@ class _LinearRegression:
             self.coef_ = [0.0] * m
             self.intercept_ = 0.0
             return
-        Xt = list(zip(*X, strict=False))
+        Xt = list(zip(*X, strict=False))  # NOSONAR - python:S117
         x_means = [sum(col) / n for col in Xt]
         y_mean = sum(y) / n
         coef: list[float] = []
@@ -200,7 +200,7 @@ class _RandomForestClassifier:
         len(X[0]) if X else 0
         for _ in range(self.n_estimators):
             indices = [secrets.randbelow(n) for _ in range(n)]  # NOSONAR
-            X_boot = [X[i] for i in indices]
+            X_boot = [X[i] for i in indices]  # NOSONAR - python:S117
             y_boot = [y[i] for i in indices]
             tree = self._build_tree(X_boot, y_boot, depth=0)
             self.trees.append(tree)
@@ -226,9 +226,9 @@ class _RandomForestClassifier:
                     best_thresh = val
         if best_gini == float("inf"):
             return {"leaf": True, "value": sum(y) / max(len(y), 1)}
-        left_X = [X[i] for i in range(len(X)) if X[i][best_feat] <= best_thresh]
+        left_X = [X[i] for i in range(len(X)) if X[i][best_feat] <= best_thresh]  # NOSONAR - python:S117
         left_y = [y[i] for i in range(len(X)) if X[i][best_feat] <= best_thresh]
-        right_X = [X[i] for i in range(len(X)) if X[i][best_feat] > best_thresh]
+        right_X = [X[i] for i in range(len(X)) if X[i][best_feat] > best_thresh]  # NOSONAR - python:S117
         right_y = [y[i] for i in range(len(X)) if X[i][best_feat] > best_thresh]
         return {
             "leaf": False,
@@ -274,7 +274,7 @@ class _RandomForestRegressor:
         n = len(X)
         for _ in range(self.n_estimators):
             indices = [secrets.randbelow(n) for _ in range(n)]  # NOSONAR
-            X_boot = [X[i] for i in indices]
+            X_boot = [X[i] for i in indices]  # NOSONAR - python:S117
             y_boot = [y[i] for i in indices]
             tree = self._build_tree(X_boot, y_boot, depth=0)
             self.trees.append(tree)
@@ -300,9 +300,9 @@ class _RandomForestRegressor:
                     best_thresh = val
         if best_mse == float("inf"):
             return {"leaf": True, "value": sum(y) / max(len(y), 1)}
-        left_X = [X[i] for i in range(len(X)) if X[i][best_feat] <= best_thresh]
+        left_X = [X[i] for i in range(len(X)) if X[i][best_feat] <= best_thresh]  # NOSONAR - python:S117
         left_y = [y[i] for i in range(len(X)) if X[i][best_feat] <= best_thresh]
-        right_X = [X[i] for i in range(len(X)) if X[i][best_feat] > best_thresh]
+        right_X = [X[i] for i in range(len(X)) if X[i][best_feat] > best_thresh]  # NOSONAR - python:S117
         right_y = [y[i] for i in range(len(X)) if X[i][best_feat] > best_thresh]
         return {
             "leaf": False,
@@ -483,9 +483,9 @@ class MLPipeline:
                 val_end = val_start + fold_size if fold < cv_folds - 1 else n
                 val_idx = list(range(val_start, val_end))
                 fold_train_idx = [i for i in range(n) if i not in val_idx]
-                X_ft = [X[i] for i in fold_train_idx]
+                X_ft = [X[i] for i in fold_train_idx]  # NOSONAR - python:S117
                 y_ft = [y[i] for i in fold_train_idx]
-                X_fv = [X[i] for i in val_idx]
+                X_fv = [X[i] for i in val_idx]  # NOSONAR - python:S117
                 y_fv = [y[i] for i in val_idx]
                 if not X_fv:
                     continue

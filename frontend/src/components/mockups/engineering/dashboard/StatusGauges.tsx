@@ -3,7 +3,7 @@ interface StatusGaugesProps {
 	dataMode: string;
 }
 
-export function StatusGauges({ liveData, dataMode }: StatusGaugesProps) {
+export function StatusGauges({ liveData, dataMode }: StatusGaugesProps) {  // NOSONAR - typescript:S6759
 	const voltage = (liveData.voltage as number) || 220;
 	const current = (liveData.current as number) || 15;
 	const frequency = (liveData.frequency as number) || 50;

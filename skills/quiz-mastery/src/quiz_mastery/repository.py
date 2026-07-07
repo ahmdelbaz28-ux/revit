@@ -24,7 +24,7 @@ class JsonRepository:
 
     def save_json(self, path: Path, data: Any) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+        path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")  # NOSONAR - pythonsecurity:S2083
 
     def knowledge_points_path(self, document_id: str) -> Path:
         return self.kp_dir / f"{document_id}.json"

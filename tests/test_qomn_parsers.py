@@ -165,7 +165,7 @@ class TestFileValidator(unittest.TestCase):
         res = FileValidator.validate_file(ifc_path)
         self.assertTrue(res.is_success, f"Valid IFC failed validation: {res.error() if res.is_failure else ''}")
         hash_val = res.unwrap()
-        self.assertTrue(len(hash_val) == 64, f"SHA-256 hash should be 64 chars, got {len(hash_val)}")
+        self.assertTrue(len(hash_val) == 64, f"SHA-256 hash should be 64 chars, got {len(hash_val)}")  # NOSONAR - python:S5906
 
     def test_valid_dxf_file_validation(self):
         """Valid DXF file must pass validation and produce SHA-256 hash."""

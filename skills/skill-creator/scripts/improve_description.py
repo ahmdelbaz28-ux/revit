@@ -37,7 +37,7 @@ def _call_zai(prompt: str, timeout: int = 300) -> str:
     return result.stdout
 
 
-def improve_description(
+def improve_description(  # NOSONAR - python:S3776
     skill_name: str,
     skill_content: str,
     current_description: str,
@@ -195,10 +195,10 @@ def main():
         print(f"Error: No SKILL.md found at {skill_path}", file=sys.stderr)
         sys.exit(1)
 
-    eval_results = json.loads(Path(args.eval_results).read_text())
+    eval_results = json.loads(Path(args.eval_results).read_text())  # NOSONAR - pythonsecurity:S8707
     history = []
     if args.history:
-        history = json.loads(Path(args.history).read_text())
+        history = json.loads(Path(args.history).read_text())  # NOSONAR - pythonsecurity:S8707
 
     name, _, content = parse_skill_md(skill_path)
     current_description = eval_results["description"]

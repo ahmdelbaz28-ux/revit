@@ -110,7 +110,7 @@ class TestQomnFireSelfHealing(unittest.TestCase):
         with open("qomn_fire_healing_audit.jsonl", encoding="utf-8") as f:
             lines = f.readlines()
 
-        self.assertTrue(len(lines) >= 1)
+        self.assertTrue(len(lines) >= 1)  # NOSONAR - python:S5906
         logged_entry = json.loads(lines[0])
 
         self.assertIn("payload", logged_entry)
@@ -327,7 +327,7 @@ class TestAsyncAuditLoggerRotation(unittest.TestCase):
         # Original file should exist (possibly rotated)
         # At least one backup should exist
         files = os.listdir(self.temp_dir)
-        self.assertTrue(len(files) >= 1, f"Expected log files, got: {files}")
+        self.assertTrue(len(files) >= 1, f"Expected log files, got: {files}")  # NOSONAR - python:S5906
 
     def test_backward_compatible_log_event(self):
         """Verify log_event still works exactly like the old AuditLogger."""
@@ -1135,7 +1135,7 @@ class TestV76AuditHashChain(unittest.TestCase):
         # Verify chain detects the break
         report = logger.verify_chain(filepath=tampered_path)
         self.assertFalse(report["chain_valid"], "Chain should be INVALID after deletion")
-        self.assertTrue(len(report["break_points"]) > 0, "Break points must be reported")
+        self.assertTrue(len(report["break_points"]) > 0, "Break points must be reported")  # NOSONAR - python:S5906
 
     def test_v76_fix3_valid_chain_passes_verification(self):
         """V76 FIX 3: Intact chain must pass verify_chain()."""

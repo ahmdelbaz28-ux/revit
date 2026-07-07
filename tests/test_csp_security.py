@@ -82,7 +82,7 @@ class TestCSPEnvironmentAwareDefaults:
         """Each test starts with NO CSP_UNSAFE_EVAL env var set."""
         monkeypatch.delenv("CSP_UNSAFE_EVAL", raising=False)
         # Also reset FIREAI_ENV between tests
-        return
+        return  # NOSONAR - python:S3626
 
     def test_production_defaults_to_no_unsafe_eval(self, monkeypatch):
         """
@@ -125,7 +125,7 @@ class TestCSPExplicitOverrides:
     @pytest.fixture(autouse=True)
     def _clean_env(self, monkeypatch):
         monkeypatch.delenv("CSP_UNSAFE_EVAL", raising=False)
-        return
+        return  # NOSONAR - python:S3626
 
     def test_production_can_opt_in_to_unsafe_eval(self, monkeypatch):
         """
@@ -170,7 +170,7 @@ class TestCSPLoggingEscalation:
     @pytest.fixture(autouse=True)
     def _clean_env(self, monkeypatch):
         monkeypatch.delenv("CSP_UNSAFE_EVAL", raising=False)
-        return
+        return  # NOSONAR - python:S3626
 
     def test_production_unsafe_eval_logs_at_error_level(self, monkeypatch, caplog):
         """
@@ -216,7 +216,7 @@ class TestCSPStructuralIntegrity:
     def _clean_env(self, monkeypatch):
         monkeypatch.delenv("CSP_UNSAFE_EVAL", raising=False)
         monkeypatch.delenv("CSP_CONNECT_SRC", raising=False)
-        return
+        return  # NOSONAR - python:S3626
 
     def test_csp_has_default_src(self, monkeypatch):
         monkeypatch.setenv("FIREAI_ENV", "production")

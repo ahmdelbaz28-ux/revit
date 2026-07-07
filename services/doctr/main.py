@@ -179,7 +179,7 @@ app = FastAPI(lifespan=lifespan, title="FireAI DocTR OCR Service")
 
 
 @app.post("/batch")
-async def batch_ocr(files: List[UploadFile] = File(...)):
+async def batch_ocr(files: List[UploadFile] = File(...)):  # NOSONAR - python:S8410
     """Process a batch of images and return OCR results with bounding boxes."""
     tasks = []
     for file in files:

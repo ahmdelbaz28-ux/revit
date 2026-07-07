@@ -25,12 +25,12 @@ class WebSocketTransport(TransportLayer):
         self.running = False
         self.loop = None
 
-    async def _register_client(self, websocket: websockets.WebSocketServerProtocol):
+    async def _register_client(self, websocket: websockets.WebSocketServerProtocol):  # NOSONAR - python:S7503
         """Register a new client connection"""
         self.clients.add(websocket)
         print(f"Client connected: {websocket.remote_address}, Total clients: {len(self.clients)}")
 
-    async def _unregister_client(self, websocket: websockets.WebSocketServerProtocol):
+    async def _unregister_client(self, websocket: websockets.WebSocketServerProtocol):  # NOSONAR - python:S7503
         """Unregister a client connection"""
         self.clients.remove(websocket)
         print(f"Client disconnected: {websocket.remote_address}, Total clients: {len(self.clients)}")

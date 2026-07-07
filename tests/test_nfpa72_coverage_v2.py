@@ -242,7 +242,7 @@ class TestValidateHVACExclusionZones:
         diff = [(0.0, 0.0)]
         violations = validate_hvac_exclusion_zones(det, diff)
         for v in violations:
-            assert "17.7.4.1" in v.get("nfpa_reference", "")
+            assert "17.7.4.1" in v.get("nfpa_reference", "")  # NOSONAR - python:S1313
 
     def test_exactly_at_exclusion_radius(self):
         """Detector at exactly 0.9144m — should NOT be a violation (>= check)."""
@@ -345,7 +345,7 @@ class TestSuggestDuctDetectors:
         assert devices[0].detector_type == "heat"
 
 
-# create_room_polygon / is_point_in_room
+# create_room_polygon / is_point_in_room  # NOSONAR - python:S125
 # ─────────────────────────────────────────────────────────────────────────────
 
 

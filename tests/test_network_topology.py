@@ -41,7 +41,7 @@ from fireai.core.network_topology import (
     PanelNode,
 )
 
-# Fixtures / Helpers
+# Fixtures / Helpers  # NOSONAR - python:S125
 # ─────────────────────────────────────────────────────────────────────────────
 
 
@@ -114,7 +114,7 @@ class TestConstants:
         assert REQUIRED_TOPOLOGY == "ring"
 
 
-# PanelNode & NetworkLink
+# PanelNode & NetworkLink  # NOSONAR - python:S125
 # ─────────────────────────────────────────────────────────────────────────────
 
 

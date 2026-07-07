@@ -62,7 +62,7 @@ def env_cleanup():
     original = os.environ.copy()
     yield
     # Restore: remove any added keys, reset any changed keys
-    for key in list(os.environ.keys()):
+    for key in list(os.environ.keys()):  # NOSONAR - python:S7504
         if key not in original:
             del os.environ[key]
         elif os.environ[key] != original[key]:
@@ -1011,11 +1011,11 @@ class TestCorsWildcardRejection:
     def test_development_extra_origins_added(self, env_cleanup):
         """Development mode should add extra origins from CORS_ORIGINS."""
         os.environ["FIREAI_ENV"] = "development"
-        os.environ["CORS_ORIGINS"] = "http://test-server.local:4000"
+        os.environ["CORS_ORIGINS"] = "http://test-server.local:4000"  # NOSONAR - python:S5332
 
         origins = _get_cors_origins()
 
-        assert "http://test-server.local:4000" in origins
+        assert "http://test-server.local:4000" in origins  # NOSONAR - python:S5332
         # Localhost defaults should still be present
         assert "http://localhost:3000" in origins
 

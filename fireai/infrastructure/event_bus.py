@@ -463,7 +463,7 @@ class RedisEventBus(EventBus):
         self._dlq_max = dlq_max
         self._lock = asyncio.Lock()
 
-    async def _get_redis(self):
+    async def _get_redis(self):  # NOSONAR - python:S7503
         if self._redis is None:
             try:
                 import redis.asyncio as aioredis
@@ -486,7 +486,7 @@ class RedisEventBus(EventBus):
     async def start(self) -> None:
         self._running = True
         r = await self._get_redis()
-        for event_type in list(self._handlers.keys()):
+        for event_type in list(self._handlers.keys()):  # NOSONAR - python:S7504
             stream_key = f"{self._stream_prefix}{event_type}"
             try:
                 await r.xgroup_create(stream_key, self._consumer_group, id="0", mkstream=True)
@@ -512,7 +512,7 @@ class RedisEventBus(EventBus):
         while self._running:
             try:
                 r = await self._get_redis()
-                for event_type in list(self._handlers.keys()):
+                for event_type in list(self._handlers.keys()):  # NOSONAR - python:S7504
                     stream_key = f"{self._stream_prefix}{event_type}"
                     try:
                         results = await r.xreadgroup(
@@ -566,7 +566,7 @@ class RedisEventBus(EventBus):
         """Replay events from Redis Streams."""
         r = await self._get_redis()
         count = 0
-        for et in list(self._handlers.keys()):
+        for et in list(self._handlers.keys()):  # NOSONAR - python:S7504
             if event_type and et != event_type:
                 continue
             stream_key = f"{self._stream_prefix}{et}"

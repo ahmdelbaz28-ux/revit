@@ -105,7 +105,7 @@ def _init_api_keys() -> None:
 _init_api_keys()
 
 
-async def verify_api_key(api_key: str = Security(_API_KEY_HEADER)) -> str:
+async def verify_api_key(api_key: str = Security(_API_KEY_HEADER)) -> str:  # NOSONAR - python:S7503
     """
     Verify the API key from the request header.
 

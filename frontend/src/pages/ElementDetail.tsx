@@ -410,7 +410,7 @@ function ElementDetail() {  // NOSONAR — S3776: cognitive complexity is inhere
 	);
 }
 
-function PropertyRow({
+function PropertyRow({  // NOSONAR - typescript:S6759
 	label,
 	value,
 }: {

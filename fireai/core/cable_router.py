@@ -928,7 +928,7 @@ class CableRouter:
             return 0.0, 0.0, 0, 0
 
         total_length = 0.0
-        straight_length = 0.0
+        straight_length = 0.0  # NOSONAR - python:S1481
         num_bends = 0
         num_elevation_changes = 0
 

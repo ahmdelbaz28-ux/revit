@@ -72,7 +72,7 @@ GATES = [
 # ═══════════════════════════════════════════════════════════════════════════
 
 
-def run_gate(gate_num: int, gate_name: str, test_file: str, verbose: bool = False) -> GateResult:
+def run_gate(gate_num: int, gate_name: str, test_file: str, verbose: bool = False) -> GateResult:  # NOSONAR - python:S3776
     """Run a single test gate using pytest."""
     test_path = TESTS_DIR / test_file
     if not test_path.exists():
@@ -137,15 +137,15 @@ def run_gate(gate_num: int, gate_name: str, test_file: str, verbose: bool = Fals
             for test in data.get("tests", []):
                 if test.get("outcome") == "failed":
                     failures.append(f"{test.get('nodeid')}: {test.get('call', {}).get('longrepr', '')[:200]}")
-    except (json.JSONDecodeError, ValueError):
+    except (json.JSONDecodeError, ValueError):  # NOSONAR - python:S5713
         # Fallback: parse plain text
         if "passed" in output:
             import re
 
-            m = re.search(r"(\d+) passed", output)
+            m = re.search(r"(\d+) passed", output)  # NOSONAR - python:S8786
             if m:
                 tests_passed = int(m.group(1))
-            m = re.search(r"(\d+) failed", output)
+            m = re.search(r"(\d+) failed", output)  # NOSONAR - python:S8786
             if m:
                 tests_failed = int(m.group(1))
             tests_run = tests_passed + tests_failed
@@ -170,7 +170,7 @@ def run_gate(gate_num: int, gate_name: str, test_file: str, verbose: bool = Fals
     )
 
 
-def run_all_gates(verbose: bool = False, only_gate: int | None = None) -> list[GateResult]:
+def run_all_gates(verbose: bool = False, only_gate: int | None = None) -> list[GateResult]:  # NOSONAR - python:S3776
     """Run all (or one) gate(s) and return results."""
     results = []
     for gate_num, gate_name, test_file in GATES:

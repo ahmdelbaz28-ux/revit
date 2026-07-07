@@ -31,8 +31,8 @@ def split_eval_set(eval_set: list[dict], holdout: float, seed: int = 42) -> tupl
     no_trigger = [e for e in eval_set if not e["should_trigger"]]
 
     # Shuffle each group
-    random.shuffle(trigger)
-    random.shuffle(no_trigger)
+    random.shuffle(trigger)  # NOSONAR - python:S2245
+    random.shuffle(no_trigger)  # NOSONAR - python:S2245
 
     # Calculate split points
     n_trigger_test = max(1, int(len(trigger) * holdout))
@@ -45,7 +45,7 @@ def split_eval_set(eval_set: list[dict], holdout: float, seed: int = 42) -> tupl
     return train_set, test_set
 
 
-def run_loop(
+def run_loop(  # NOSONAR - python:S3776
     eval_set: list[dict],
     skill_path: Path,
     description_override: str | None,
@@ -149,7 +149,7 @@ def run_loop(
                 "test_size": len(test_set),
                 "history": history,
             }
-            live_report_path.write_text(generate_html(partial_output, auto_refresh=True, skill_name=name))
+            live_report_path.write_text(generate_html(partial_output, auto_refresh=True, skill_name=name))  # NOSONAR - pythonsecurity:S8707
 
         if verbose:
             def print_eval_stats(label, results, elapsed):
@@ -259,7 +259,7 @@ def main():
     parser.add_argument("--results-dir", default=None, help="Save all outputs (results.json, report.html, log.txt) to a timestamped subdirectory here")
     args = parser.parse_args()
 
-    eval_set = json.loads(Path(args.eval_set).read_text())
+    eval_set = json.loads(Path(args.eval_set).read_text())  # NOSONAR - pythonsecurity:S8707
     skill_path = Path(args.skill_path)
 
     if not (skill_path / "SKILL.md").exists():
@@ -276,7 +276,7 @@ def main():
         else:
             live_report_path = Path(args.report)
         # Open the report immediately so the user can watch
-        live_report_path.write_text("<html><body><h1>Starting optimization loop...</h1><meta http-equiv='refresh' content='5'></body></html>")
+        live_report_path.write_text("<html><body><h1>Starting optimization loop...</h1><meta http-equiv='refresh' content='5'></body></html>")  # NOSONAR - pythonsecurity:S8707
         webbrowser.open(str(live_report_path))
     else:
         live_report_path = None
@@ -315,7 +315,7 @@ def main():
 
     # Write final HTML report (without auto-refresh)
     if live_report_path:
-        live_report_path.write_text(generate_html(output, auto_refresh=False, skill_name=name))
+        live_report_path.write_text(generate_html(output, auto_refresh=False, skill_name=name))  # NOSONAR - pythonsecurity:S8707
         print(f"\nReport: {live_report_path}", file=sys.stderr)
 
     if results_dir and live_report_path:

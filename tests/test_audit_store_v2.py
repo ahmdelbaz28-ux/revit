@@ -78,7 +78,7 @@ def reset_database():
     _as._memory_conn = orig_memory_conn
 
 
-# Constants and SecurityError
+# Constants and SecurityError  # NOSONAR - python:S125
 # ─────────────────────────────────────────────────────────────────────────────
 
 

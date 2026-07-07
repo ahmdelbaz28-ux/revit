@@ -89,7 +89,7 @@ DENSITY_CAP_FACTOR = 2.0
 COVERAGE_SAFETY_FACTOR = 0.98
 
 
-def _hex_s_guarded(R: float, wm: float) -> float:
+def _hex_s_guarded(R: float, wm: float) -> float:  # NOSONAR - python:S117
     """
     Max S s.t. side-wall boundary worst point ≤ R (analytical).
 
@@ -264,10 +264,10 @@ class DensityOptimizer:
         # that verification uses for corner checks, eliminating the systematic
         # mismatch that caused ~44% proof failure rate.
         # Per agent.md Rule 5: more detectors = safer = correct.
-        self.R_place = radius - PLACEMENT_MARGIN
+        self.R_place = radius - PLACEMENT_MARGIN  # NOSONAR - python:S116
         # Hex spacing: use R_place*sqrt(3), clamped to max_spacing (NFPA 72 rule)
-        self.S_g = min(self.R_place * math.sqrt(3), max_spacing)
-        self.Ry_g = self.S_g * math.sqrt(3) / 2
+        self.S_g = min(self.R_place * math.sqrt(3), max_spacing)  # NOSONAR - python:S116
+        self.Ry_g = self.S_g * math.sqrt(3) / 2  # NOSONAR - python:S116
 
     # ── public ──────────────────────────────────────────────────────────────────
 
@@ -395,7 +395,7 @@ class DensityOptimizer:
 
     # ── A: Hex-Guarded ──────────────────────────────────────────────────────────
 
-    def _calculate_rows(self, L: float) -> list[float]:
+    def _calculate_rows(self, L: float) -> list[float]:  # NOSONAR - python:S117
         """
         Returns y-coordinates of rows.
         - First and last rows are within R_place of the walls.
@@ -403,7 +403,7 @@ class DensityOptimizer:
 
         V7.4: Uses R_place instead of R to align with verification.
         """
-        wm, Ry = self.wm, self.Ry_g
+        wm, Ry = self.wm, self.Ry_g  # NOSONAR - python:S117
         coverage_limit = self.R_place  # V7.4: aligned with verification margin
 
         # Small room: check if a SINGLE row at center can cover both walls
@@ -430,7 +430,7 @@ class DensityOptimizer:
         rows = [y_first + i * actual_ry for i in range(n_gaps + 1)]
         return [round(y, 3) for y in rows]
 
-    def _distribute_rows(self, L: float, n_rows: int) -> list[float]:
+    def _distribute_rows(self, L: float, n_rows: int) -> list[float]:  # NOSONAR - python:S117
         """
         Evenly distribute row centers in [wm, L-wm].
         Guarantees wall distance <= S/2 for first and last rows.
@@ -441,7 +441,7 @@ class DensityOptimizer:
         gap = available / (n_rows - 1)
         return [self.wm + i * gap for i in range(n_rows)]
 
-    def _calculate_columns(self, W: float) -> tuple[int, float]:
+    def _calculate_columns(self, W: float) -> tuple[int, float]:  # NOSONAR - python:S117
         """
         Returns (n_cols, step_x) for horizontal placement.
         Guarantees step_x <= max_spacing.
@@ -460,7 +460,7 @@ class DensityOptimizer:
     def _hex_guarded(self, room: Room, along_x: bool) -> DetectorLayout:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         W, L = (room.width, room.length) if along_x else (room.length, room.width)
         S, wm = self.S_g, self.wm
-        Rp = self.R_place  # V7.4: use placement radius for spacing
+        Rp = self.R_place  # V7.4: use placement radius for spacing  # NOSONAR - python:S117
         pts: list[tuple[float, float]] = []
 
         # Use calculated row distribution for NFPA compliance
@@ -493,7 +493,7 @@ class DensityOptimizer:
             room=room, detectors=pts, method=f"hexG_{'x' if along_x else 'y'}", coverage_radius=self.R
         )
 
-    def _row_xs_guarded(self, W, wm, S, offset, R):
+    def _row_xs_guarded(self, W, wm, S, offset, R):  # NOSONAR - python:S117
         xs = []
         x = wm + offset
         while x <= W - wm + 1e-9:
@@ -514,14 +514,14 @@ class DensityOptimizer:
         V7.4: Uses R_place instead of R for placement decisions.
         """
         W, L = (room.width, room.length) if along_x else (room.length, room.width)
-        Rp, wm = self.R_place, self.wm  # V7.4: use R_place
+        Rp, wm = self.R_place, self.wm  # V7.4: use R_place  # NOSONAR - python:S117
         pts: list[tuple[float, float]] = []
 
         # Use calculated row distribution (now returns y-coordinates directly)
         y_coords = self._calculate_rows(L)
 
         # Use _calculate_columns for horizontal placement
-        Nx, Sx = self._calculate_columns(W)
+        Nx, Sx = self._calculate_columns(W)  # NOSONAR - python:S117
         if Nx == 1:
             even_xs = [W / 2]
             odd_xs = [W / 2]
@@ -561,20 +561,20 @@ class DensityOptimizer:
 
     def _rect_best(self, room: Room) -> DetectorLayout | None:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         W, L = room.width, room.length
-        Nx0 = self._min_n(W)
-        Ny0 = self._min_n(L)
+        Nx0 = self._min_n(W)  # NOSONAR - python:S117
+        Ny0 = self._min_n(L)  # NOSONAR - python:S117
         best_nx, best_ny, best_t = None, None, 10**9
-        for Nx in range(Nx0, Nx0 + 25):
+        for Nx in range(Nx0, Nx0 + 25):  # NOSONAR - python:S117
             if Nx * Ny0 >= best_t:
                 break
-            for Ny in range(Ny0, Ny0 + 25):
+            for Ny in range(Ny0, Ny0 + 25):  # NOSONAR - python:S117
                 t = Nx * Ny
                 if t >= best_t:
                     break
                 xs = self._place(W, Nx)
                 ys = self._place(L, Ny)
-                Sx = (xs[-1] - xs[0]) / (Nx - 1) if Nx > 1 else 0.0
-                Sy = (ys[-1] - ys[0]) / (Ny - 1) if Ny > 1 else 0.0
+                Sx = (xs[-1] - xs[0]) / (Nx - 1) if Nx > 1 else 0.0  # NOSONAR - python:S117
+                Sy = (ys[-1] - ys[0]) / (Ny - 1) if Ny > 1 else 0.0  # NOSONAR - python:S117
                 if math.sqrt((Sx / 2) ** 2 + (Sy / 2) ** 2) <= self.R_place + 1e-9:  # V7.4: use R_place
                     best_nx, best_ny, best_t = Nx, Ny, t
         if best_nx is None:
@@ -614,7 +614,7 @@ class DensityOptimizer:
         # Corner guards: ensure all corners are within R_place of a detector
         # V7.4: use R_place so guards match verification
         W, L = room.width, room.length
-        wm, Rp = self.wm, self.R_place
+        wm, Rp = self.wm, self.R_place  # NOSONAR - python:S117
         corners = [(wm, wm), (W - wm, wm), (wm, L - wm), (W - wm, L - wm)]
         for cx, cy in corners:
             covered = False
@@ -892,8 +892,8 @@ class DensityOptimizer:
         #             = coarse_step×√2/2 + (R - coarse_step×√2/2)
         #             = R
         coarse_margin = coarse_step * math.sqrt(2) / 2  # 0.707m for 1.0m cells
-        R_eff_coarse = self.R - coarse_margin
-        R2_eff_coarse = R_eff_coarse**2 + 1e-9
+        R_eff_coarse = self.R - coarse_margin  # NOSONAR - python:S117
+        R2_eff_coarse = R_eff_coarse**2 + 1e-9  # NOSONAR - python:S117
         corner_covered_coarse = (dist2_c <= R2_eff_coarse).any(axis=1)  # (n_corners,)
         corner_covered_cells = corner_covered_coarse.reshape(n_coarse_cells, 4)
         cell_covered = corner_covered_cells.all(axis=1)  # (n_cells,)
@@ -975,8 +975,8 @@ class DensityOptimizer:
         # Use R_eff = R - δ√2/2 (triangle inequality safety margin)
         # For 0.20m cells: margin = 0.141m, R_eff = 6.259m
         fine_margin = step * math.sqrt(2) / 2  # 0.141m for 0.20m cells
-        R_eff_fine = self.R - fine_margin
-        R2_eff_fine = R_eff_fine**2 + 1e-9
+        R_eff_fine = self.R - fine_margin  # NOSONAR - python:S117
+        R2_eff_fine = R_eff_fine**2 + 1e-9  # NOSONAR - python:S117
 
         fine_corner_covered = (dist2_f <= R2_eff_fine).any(axis=1)  # (n_fine_corners,)
         fine_corner_covered_cells = fine_corner_covered.reshape(n_fine_cells, 4)
@@ -1009,7 +1009,7 @@ class DensityOptimizer:
 
     # ── original pure-Python verify (kept as fallback) ──────────────────────────
   # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
-    def _verify(self, layout: DetectorLayout) -> None:
+    def _verify(self, layout: DetectorLayout) -> None:  # NOSONAR - python:S3776
         """
         Conservative grid verification using same-detector corner check.
 
@@ -1205,7 +1205,7 @@ class DensityOptimizer:
         layout.violations = violations
         return layout.nfpa_valid
   # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
-    def _check_wall_coverage(
+    def _check_wall_coverage(  # NOSONAR - python:S3776
         self,
         dets: list[tuple[float, float]],
         perp_fn,

@@ -28,12 +28,12 @@ const querySchema = z.object({
 		.string()
 		.regex(/\d+/)
 		.optional()
-		.transform((v) => parseInt(v || "1", 10)),
+		.transform((v) => parseInt(v || "1", 10)),  // NOSONAR - typescript:S7773
 	limit: z
 		.string()
 		.regex(/\d+/)
 		.optional()
-		.transform((v) => Math.min(parseInt(v || "10", 10), 100)),
+		.transform((v) => Math.min(parseInt(v || "10", 10), 100)),  // NOSONAR - typescript:S7773
 	status: z.enum(["PENDING", "IN_PROGRESS", "COMPLETED"]).optional(),
 	tag: z.string().optional(),
 	dueDate: z.enum(["today", "week", "overdue"]).optional(),

@@ -169,7 +169,7 @@ class TestCalculateNACLoad:
 
     def test_nfpa_section_reference(self):
         result = calculate_nac_load([], nac_rating_a=2.0)
-        assert "10.6.4.2" in result.nfpa_section
+        assert "10.6.4.2" in result.nfpa_section  # NOSONAR - python:S1313
 
     def test_formula_contains_values(self):
         devices = [NotificationDevice("H1", "horn", 0.5)]
@@ -483,7 +483,7 @@ class TestCalculateCorridorStrobes:
 
     def test_nfpa_section_reference(self):
         result = calculate_corridor_strobes(30.0)
-        assert "18.5.5.4" in result.nfpa_section
+        assert "18.5.5.4" in result.nfpa_section  # NOSONAR - python:S1313
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -564,7 +564,7 @@ class TestNotificationAssessment:
             strobe_result=strobe,
         )
         assessment.evaluate()
-        assert any("10.6.4.2" in ref for ref in assessment.nfpa_references)
+        assert any("10.6.4.2" in ref for ref in assessment.nfpa_references)  # NOSONAR - python:S1313
         assert any("18.4.3" in ref for ref in assessment.nfpa_references)
         assert any("18.5.5" in ref for ref in assessment.nfpa_references)
 

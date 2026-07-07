@@ -162,7 +162,7 @@ class FACPMessageValidator:
     """Validates FACP messages according to distributed system specification"""  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
 
     @staticmethod
-    def validate_request(request: FACPRequest) -> tuple[bool, List[str]]:
+    def validate_request(request: FACPRequest) -> tuple[bool, List[str]]:  # NOSONAR - python:S3776
         """Validate FACP request message for distributed system"""
         errors = []
 

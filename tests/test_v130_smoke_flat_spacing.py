@@ -125,7 +125,7 @@ class TestQomnKernelSmokeFlatSpacing:
         # Above 20ft — advisory should be present
         result = compute_smoke_detector_spacing(8.0)
         assert "audit_notice" in result, "Stratification advisory missing for h>6.096m"
-        assert "stratification" in result["audit_notice"].lower() or "17.7.1.11" in result["audit_notice"]
+        assert "stratification" in result["audit_notice"].lower() or "17.7.1.11" in result["audit_notice"]  # NOSONAR - python:S1313
         assert "9.1m" in result["audit_notice"], "Advisory must confirm 9.1m flat spacing"
 
     def test_low_ceiling_no_advisory(self):
@@ -283,7 +283,7 @@ class TestTechnologyDispatcherSmokeFlat:
         assert decision.spacing_m == pytest.approx(9.1, abs=0.01)
         # Should have stratification advisory
         has_stratification = any(
-            "stratification" in w.lower() or "17.7.1.11" in w
+            "stratification" in w.lower() or "17.7.1.11" in w  # NOSONAR - python:S1313
             for w in decision.warnings
         )
         assert has_stratification, (

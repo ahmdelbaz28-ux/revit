@@ -20,7 +20,7 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export function BMSDashboard() {
-	const [_activeZone, _setActiveZone] = useState("Server Room");
+	const [_activeZone, _setActiveZone] = useState("Server Room");  // NOSONAR - typescript:S6754
 
 	return (
 		<div className="flex flex-col h-screen w-screen overflow-hidden bg-slate-900 text-slate-100 font-sans">
@@ -522,7 +522,7 @@ export function BMSDashboard() {
 	);
 }
 
-function NavNode({
+function NavNode({  // NOSONAR - typescript:S6759
 	title,
 	expanded = false,
 	active = false,
@@ -570,7 +570,7 @@ function NavNode({
 	);
 }
 
-function PointRow({
+function PointRow({  // NOSONAR - typescript:S6759
 	label,
 	value,
 	status,

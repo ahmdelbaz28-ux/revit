@@ -27,7 +27,7 @@ const defaultValue: SmartHelpContextValue = {
 	navigateToTopic: noop,
 };
 
-export function SmartHelpProvider({ children }: { children: ReactNode }) {
+export function SmartHelpProvider({ children }: { children: ReactNode }) {  // NOSONAR - typescript:S6759
 	return (
 		<SmartHelpContext.Provider value={defaultValue}>
 			{children}

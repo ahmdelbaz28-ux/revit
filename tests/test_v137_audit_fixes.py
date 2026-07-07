@@ -176,7 +176,7 @@ class TestHostCookieSecure:
     def test_cookie_always_has_secure(self):
         """build_csrf_cookie_header must always include Secure for __Host-."""
         from backend.security_csrf import build_csrf_cookie_header
-        header = build_csrf_cookie_header("test_token", is_https=False)
+        header = build_csrf_cookie_header("test_token", is_https=False)  # NOSONAR - python:S930
         assert "Secure" in header, (
             "__Host- cookie must always have Secure attribute (even in dev)"
         )

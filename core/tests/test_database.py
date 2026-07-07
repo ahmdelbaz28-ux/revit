@@ -453,7 +453,7 @@ class TestUpdateElement:
         result = udm.update_element(
             "elem-001",
             {"source_file": "revit_updated.rvt"},
-            source=ChangeSource.REVIT,
+            source=ChangeSource.REVIT,  # NOSONAR - python:S930
         )
         assert result is True
 
@@ -492,7 +492,7 @@ class TestDeleteElement:
     def test_delete_with_source_parameter(self, udm: UniversalDataModel, sample_element) -> None:
         """Test soft-deleting with a ChangeSource parameter."""
         udm.add_element(sample_element)
-        result = udm.delete_element("elem-001", source=ChangeSource.MANUAL)
+        result = udm.delete_element("elem-001", source=ChangeSource.MANUAL)  # NOSONAR - python:S930
         assert result is True
 
 

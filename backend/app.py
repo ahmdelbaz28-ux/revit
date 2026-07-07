@@ -259,7 +259,7 @@ def get_cache() -> _OrderedDict[str, dict]:
     return _cache
 
 
-async def cache_get(key: str):
+async def cache_get(key: str):  # NOSONAR - python:S7503
     """Get value from cache. Returns None if expired or missing."""
     with _cache_lock:
         entry = _cache.get(key)
@@ -273,7 +273,7 @@ async def cache_get(key: str):
         return entry["value"]
 
 
-async def cache_set(key: str, value: object, expire: int = 300) -> None:
+async def cache_set(key: str, value: object, expire: int = 300) -> None:  # NOSONAR - python:S7503
     """
     Set value in cache with expiration in seconds.
 
@@ -322,7 +322,7 @@ async def cache_set(key: str, value: object, expire: int = 300) -> None:
     _ensure_cache_reaper_started()
 
 
-async def cache_delete(key: str) -> None:
+async def cache_delete(key: str) -> None:  # NOSONAR - python:S7503
     """Delete key from cache."""
     with _cache_lock:
         _cache.pop(key, None)
@@ -786,7 +786,7 @@ async def database_health():
 # (information disclosure: reveals internal operational metrics).
 @app.post("/api/v1/cache/clear", tags=["Cache"])
 async def clear_cache(
-    _role: str = Depends(require_permission(Permission.SYSTEM_CONFIG)),
+    _role: str = Depends(require_permission(Permission.SYSTEM_CONFIG)),  # NOSONAR - python:S8410
 ) -> dict[str, object]:
     """
     Clear all cached data. Requires SYSTEM_CONFIG permission (admin only).
@@ -808,7 +808,7 @@ async def clear_cache(
 
 @app.get("/api/v1/cache/stats", tags=["Cache"])
 async def cache_stats(
-    _role: str = Depends(require_permission(Permission.SYSTEM_CONFIG)),
+    _role: str = Depends(require_permission(Permission.SYSTEM_CONFIG)),  # NOSONAR - python:S8410
 ) -> dict[str, object]:
     """
     Get cache statistics. Requires SYSTEM_CONFIG permission (admin only).

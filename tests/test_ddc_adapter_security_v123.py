@@ -51,7 +51,7 @@ class TestV123BackwardCompatibility:
     new UnsafePathError → ValueError at the convert() boundary.
     """
 
-    def test_path_traversal_still_raises_ValueError(self, monkeypatch):
+    def test_path_traversal_still_raises_ValueError(self, monkeypatch):  # NOSONAR - python:S100
         """File outside FIREAI_ALLOWED_UPLOAD_DIRS → ValueError (not UnsafePathError)."""
         monkeypatch.setenv("FIREAI_ALLOWED_UPLOAD_DIRS", "/var/fireai/uploads")
         monkeypatch.delenv("FIREAI_ENV", raising=False)
@@ -75,7 +75,7 @@ class TestV123BackwardCompatibility:
             except FileNotFoundError:
                 pass
 
-    def test_bad_extension_still_raises_ValueError(self):
+    def test_bad_extension_still_raises_ValueError(self):  # NOSONAR - python:S100
         """Extension not in DDC converter set → ValueError."""
         path = _make_temp(suffix=".bogus")
         try:
@@ -85,7 +85,7 @@ class TestV123BackwardCompatibility:
         finally:
             os.unlink(path)
 
-    def test_missing_file_still_raises_FileNotFoundError(self):
+    def test_missing_file_still_raises_FileNotFoundError(self):  # NOSONAR - python:S100
         """Missing file → FileNotFoundError (benign, preserved from pre-V123)."""
         adapter = DDCAdapter()
         with pytest.raises(FileNotFoundError):

@@ -412,7 +412,7 @@ class ClusterCommunicator:
         time.time()
 
         with self.lock:
-            for node_id, node in list(self.nodes.items()):
+            for node_id, node in list(self.nodes.items()):  # NOSONAR - python:S7504
                 if node_id != self.node_id:  # Don't check ourselves
                     if not node.is_healthy():
                         if node.status != NodeStatus.DEAD:
@@ -513,7 +513,7 @@ class ClusterCommunicator:
 
     def broadcast_message(self, message: Dict[str, Any], exclude_node: Optional[str] = None):
         """Broadcast a message to all nodes in the cluster"""
-        for node_id in list(self.nodes.keys()):
+        for node_id in list(self.nodes.keys()):  # NOSONAR - python:S7504
             if node_id != exclude_node and node_id != self.node_id:
                 self.send_message(node_id, message)
 

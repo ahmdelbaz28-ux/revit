@@ -396,7 +396,7 @@ class TestCorridorStrobesExtended:
     def test_nac_section_reference(self):
         """NFPA section reference must be present."""
         result = calculate_corridor_strobes(10.0)
-        assert "18.5.5.4" in result.nfpa_section
+        assert "18.5.5.4" in result.nfpa_section  # NOSONAR - python:S1313
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

@@ -117,7 +117,7 @@ class DetectorReliabilitySimulator:
             for x in self._frange(0.1, room_width - 0.1, step)
             for y in self._frange(0.1, room_length - 0.1, step)
         ]
-        R_sq = coverage_radius**2
+        R_sq = coverage_radius**2  # NOSONAR - python:S117
         n_pts = len(grid_pts)
 
         for _trial in range(self.n_trials):

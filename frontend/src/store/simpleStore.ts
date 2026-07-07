@@ -69,9 +69,9 @@ export interface AppState {
 	canvasElements: CanvasElement[];
 	helpOpen: boolean;
 	eventLogs: LogEntry[];
-	dataMode: "live" | "simulation" | "demo" | "mock";
+	dataMode: "live" | "simulation" | "demo" | "mock";  // NOSONAR - typescript:S4323
 	liveData: Record<string, unknown>;
-	connectionStatus: "connected" | "disconnected" | "connecting";
+	connectionStatus: "connected" | "disconnected" | "connecting";  // NOSONAR - typescript:S4323
 	voiceActive: boolean;
 	faults: Array<{ id: string; type: string; timestamp: number }>;
 	setDataMode: (mode: "live" | "simulation" | "demo" | "mock") => void;

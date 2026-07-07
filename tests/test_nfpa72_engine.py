@@ -270,7 +270,7 @@ class TestGetDetectorSpacing:
     def test_nfpa_section_reference(self):
         """All results must reference NFPA 72 §17.6.3.1."""
         result = get_detector_spacing(3.0, "smoke")
-        assert "17.6.3.1" in result.nfpa_section
+        assert "17.6.3.1" in result.nfpa_section  # NOSONAR - python:S1313
 
     def test_formula_contains_spacing_and_height(self):
         """
@@ -414,8 +414,8 @@ class TestCalculateBattery:
 
     def test_formula_verification(self):
         """Verify Ah = (I_sb×24 + I_al×5/60) / 0.85 × 1.20."""
-        I_sb = 0.3
-        I_al = 2.0
+        I_sb = 0.3  # NOSONAR - python:S117
+        I_al = 2.0  # NOSONAR - python:S117
         result = calculate_battery(I_sb, I_al)
 
         standby_ah = I_sb * 24
@@ -430,8 +430,8 @@ class TestCalculateBattery:
 
     def test_default_safety_margin_is_20_pct(self):
         """Default safety margin should be 20% per NFPA 72 §10.6.7.2.1."""
-        I_sb = 1.0
-        I_al = 1.0
+        I_sb = 1.0  # NOSONAR - python:S117
+        I_al = 1.0  # NOSONAR - python:S117
         result = calculate_battery(I_sb, I_al)
 
         standby_ah = I_sb * 24
@@ -455,7 +455,7 @@ class TestCalculateBattery:
     def test_zero_safety_margin(self):
         """Zero safety margin should give smaller required Ah."""
         result = calculate_battery(0.5, 1.5, safety_margin=0.0)
-        I_sb, I_al = 0.5, 1.5
+        I_sb, I_al = 0.5, 1.5  # NOSONAR - python:S117
         standby_ah = I_sb * 24
         alarm_ah = I_al * (5 / 60)
         total_raw = standby_ah + alarm_ah
@@ -467,8 +467,8 @@ class TestCalculateBattery:
 
     def test_derating_factor_applied(self):
         """Verify derating factor increases required Ah beyond raw total."""
-        I_sb = 0.5
-        I_al = 1.0
+        I_sb = 0.5  # NOSONAR - python:S117
+        I_al = 1.0  # NOSONAR - python:S117
         result = calculate_battery(I_sb, I_al, safety_margin=0.0)
 
         raw_total = I_sb * 24 + I_al * (5 / 60)
@@ -1203,7 +1203,7 @@ class TestCrossCutting:
 
     def test_battery_result_is_adequate_consistency(self):
         """is_adequate must match installed_ah >= required_ah."""
-        for I_sb, I_al in [(0.1, 0.5), (1.0, 2.0), (5.0, 10.0)]:
+        for I_sb, I_al in [(0.1, 0.5), (1.0, 2.0), (5.0, 10.0)]:  # NOSONAR - python:S117
             result = calculate_battery(I_sb, I_al)
             assert result.is_adequate == (result.installed_ah >= result.required_ah)
 

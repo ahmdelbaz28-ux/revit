@@ -30,10 +30,10 @@ project_router = APIRouter(prefix="/devices", tags=["devices"])
 
 @project_router.get("", dependencies=[Depends(require_permission(Permission.DEVICE_READ))])
 async def list_global_devices(
-    page: int = Query(1, ge=1),
-    limit: int = Query(20, ge=1, le=100),
-    sort: str = Query("createdAt"),
-    order: str = Query("desc"),
+    page: int = Query(1, ge=1),  # NOSONAR - python:S8410
+    limit: int = Query(20, ge=1, le=100),  # NOSONAR - python:S8410
+    sort: str = Query("createdAt"),  # NOSONAR - python:S8410
+    order: str = Query("desc"),  # NOSONAR - python:S8410
 ):
     """List devices globally or across the first project for compatibility."""
     if order not in ("asc", "desc"):
@@ -81,10 +81,10 @@ def _normalize_sort(sort: str) -> str:
 @router.get("", dependencies=[Depends(require_permission(Permission.DEVICE_READ))])
 async def list_devices(
     project_id: str,
-    page: int = Query(1, ge=1),
-    limit: int = Query(20, ge=1, le=100),
-    sort: str = Query("createdAt"),
-    order: str = Query("desc"),
+    page: int = Query(1, ge=1),  # NOSONAR - python:S8410
+    limit: int = Query(20, ge=1, le=100),  # NOSONAR - python:S8410
+    sort: str = Query("createdAt"),  # NOSONAR - python:S8410
+    order: str = Query("desc"),  # NOSONAR - python:S8410
 ):
     # V140 FIX: Validate order to prevent injection
     if order not in ("asc", "desc"):

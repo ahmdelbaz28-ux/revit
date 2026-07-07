@@ -786,7 +786,7 @@ class WebhookDeliveryService:
                     )
 
                 # Explicitly block cloud metadata endpoint
-                if str(ip).startswith("169.254.169.254"):
+                if str(ip).startswith("169.254.169.254"):  # NOSONAR - python:S1313
                     return f"hostname resolves to cloud metadata endpoint {ip}"
 
             return None  # All resolved IPs are public

@@ -17,7 +17,7 @@ from pptx import Presentation
 from pptx.oxml.ns import qn
 
 
-def copy_slide(src_prs: Presentation, dst_prs: Presentation, index: int, dst_layouts: dict) -> None:
+def copy_slide(src_prs: Presentation, dst_prs: Presentation, index: int, dst_layouts: dict) -> None:  # NOSONAR - python:S3776
     """Append a copy of slide[index] from src_prs into dst_prs."""
     src_slide = src_prs.slides[index]
 
@@ -28,7 +28,7 @@ def copy_slide(src_prs: Presentation, dst_prs: Presentation, index: int, dst_lay
     new_slide = dst_prs.slides.add_slide(dst_layout)
 
     # Clear auto-added placeholder shapes
-    for shape in list(new_slide.shapes):
+    for shape in list(new_slide.shapes):  # NOSONAR - python:S7504
         sp = shape.element
         sp.getparent().remove(sp)
 
@@ -38,12 +38,12 @@ def copy_slide(src_prs: Presentation, dst_prs: Presentation, index: int, dst_lay
     # reference rIds that don't exist in the new slide, causing PowerPoint repair dialogs.
     R_NS = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
     SKIP_TYPES = {"slideLayout", "notesSlide", "slide"}  # handled by python-pptx infrastructure
-    rId_mapping: dict = {}
+    rId_mapping: dict = {}  # NOSONAR - python:S117
     for rel_id, rel in src_slide.part.rels.items():
         rel_short = rel.reltype.split("/")[-1]
         if rel_short in SKIP_TYPES:
             continue
-        new_rId = new_slide.part.rels.get_or_add(rel.reltype, rel._target)
+        new_rId = new_slide.part.rels.get_or_add(rel.reltype, rel._target)  # NOSONAR - python:S117
         rId_mapping[rel_id] = new_rId
 
     # Copy all shape elements
@@ -58,14 +58,14 @@ def copy_slide(src_prs: Presentation, dst_prs: Presentation, index: int, dst_lay
         # Remap ALL relationship references (images, charts, hyperlinks, video, etc.)
         for el in new_el.iter():
             for attr in (r_embed, r_id, r_link):
-                old_rId = el.get(attr)
+                old_rId = el.get(attr)  # NOSONAR - python:S117
                 if old_rId and old_rId in rId_mapping:
                     el.set(attr, rId_mapping[old_rId])
 
     # Copy slide-level background if defined.
     # p:bg lives inside p:cSld, not directly under p:sld.
-    src_cSld = src_slide.element.find(qn("p:cSld"))
-    dst_cSld = new_slide.element.find(qn("p:cSld"))
+    src_cSld = src_slide.element.find(qn("p:cSld"))  # NOSONAR - python:S117
+    dst_cSld = new_slide.element.find(qn("p:cSld"))  # NOSONAR - python:S117
     if src_cSld is not None and dst_cSld is not None:
         src_bg = src_cSld.find(qn("p:bg"))
         if src_bg is not None:
@@ -89,9 +89,9 @@ def rearrange_presentation(
     dst_prs = Presentation(template_path)
 
     # Remove all existing slides from dst_prs
-    sldIdLst = dst_prs.slides._sldIdLst
-    for sldId in list(sldIdLst):
-        rId = sldId.get(qn("r:id"))  # must use full namespace via qn(), not bare "r:id"
+    sldIdLst = dst_prs.slides._sldIdLst  # NOSONAR - python:S117
+    for sldId in list(sldIdLst):  # NOSONAR - python:S7504
+        rId = sldId.get(qn("r:id"))  # must use full namespace via qn(), not bare "r:id"  # NOSONAR - python:S117
         if rId:
             dst_prs.part.drop_rel(rId)
         sldIdLst.remove(sldId)

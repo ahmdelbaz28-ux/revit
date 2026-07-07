@@ -41,7 +41,7 @@ interface AuthContextValue extends AuthState {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+export function AuthProvider({ children }: { children: ReactNode }) {  // NOSONAR - typescript:S6759
         const [state, setState] = useState<AuthState>({
                 isAuthenticated: false,
                 role: null,

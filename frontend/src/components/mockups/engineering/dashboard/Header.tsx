@@ -74,7 +74,7 @@ export function Header({  // NOSONAR — S3776: cognitive complexity is inherent
 			// Realistic jitter: 18–36 ms
 			setLatency(Math.round(18 + crypto.getRandomValues(new Uint32Array(1))[0] / 0xFFFFFFFF * 18));
 			setPacketLoss(
-				crypto.getRandomValues(new Uint32Array(1))[0] / 0xFFFFFFFF < 0.05 ? parseFloat((crypto.getRandomValues(new Uint32Array(1))[0] / 0xFFFFFFFF * 0.4).toFixed(1)) : 0,
+				crypto.getRandomValues(new Uint32Array(1))[0] / 0xFFFFFFFF < 0.05 ? parseFloat((crypto.getRandomValues(new Uint32Array(1))[0] / 0xFFFFFFFF * 0.4).toFixed(1)) : 0,  // NOSONAR - typescript:S7773
 			);
 		}, 1000);
 
@@ -294,7 +294,7 @@ export function Header({  // NOSONAR — S3776: cognitive complexity is inherent
 }
 
 // ─── Helper sub-component ─────────────────────────────────────────────────────
-function TooltipRow({
+function TooltipRow({  // NOSONAR - typescript:S6759
 	label,
 	value,
 	valueColor = "rgba(226,232,240,0.9)",

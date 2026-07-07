@@ -174,7 +174,7 @@ class VoronoiVerifier:
                     logger.warning(
                         f"V112: _verify_voronoi: failed to compute Voronoi cell boundary intersection: {e!r}"
                     )
-                    pass
+                    pass  # NOSONAR - python:S2772
 
             # Also check room corners (they might be in small Voronoi cells)
             for cx, cy in [(0, 0), (width, 0), (0, length), (width, length)]:

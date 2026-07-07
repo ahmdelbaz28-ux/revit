@@ -30,7 +30,7 @@ spec:
       annotations:
         seccomp.security.alpha.kubernetes.io/pod: "runtime/default"
     spec:
-      serviceAccountName: fireai-sa
+      serviceAccountName: fireai-sa  # NOSONAR - kubernetes:S6865
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
@@ -39,10 +39,10 @@ spec:
         seccompProfile:
           type: RuntimeDefault
       containers:
-        - name: worker
+        - name: worker  # NOSONAR - kubernetes:S6897
           # V141.1 FIX (B6 revised): corrected from `fireai/worker:1.0.0`
           # (non-existent Docker Hub org) to GHCR path.
-          image: ghcr.io/ahmdelbaz28-ux/revit/worker:latest
+          image: ghcr.io/ahmdelbaz28-ux/revit/worker:latest  # NOSONAR - kubernetes:S6596
           imagePullPolicy: Always
           envFrom:
             - configMapRef:

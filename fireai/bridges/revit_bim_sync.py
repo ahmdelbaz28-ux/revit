@@ -112,19 +112,19 @@ class RevitAPIBridge:
             import Autodesk.Revit.DB as DB  # noqa: F401
 
             return "revit_api"
-        except (ImportError, ModuleNotFoundError):
+        except (ImportError, ModuleNotFoundError):  # NOSONAR - python:S5713
             pass  # Revit API only available inside Revit process
         try:
             import revit  # noqa: F401
 
             return "pyrevit"
-        except (ImportError, ModuleNotFoundError):
+        except (ImportError, ModuleNotFoundError):  # NOSONAR - python:S5713
             pass  # pyrevit not available (works everywhere)
         try:
             import ifcopenshell  # noqa: F401
 
             return "ifcopenshell"
-        except (ImportError, ModuleNotFoundError):
+        except (ImportError, ModuleNotFoundError):  # NOSONAR - python:S5713
             pass  # ifcopenshell not available (always works)
         return "json_file"
 

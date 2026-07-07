@@ -341,7 +341,7 @@ class ProjectLearner:
         try:
             with open(self.persist_path) as f:
                 data = json.load(f)
-        except (json.JSONDecodeError, FileNotFoundError, OSError):
+        except (json.JSONDecodeError, FileNotFoundError, OSError):  # NOSONAR - python:S5713
             return  # empty or missing file — start fresh
         key = f"project_{self.building_id}"
         if key in data:

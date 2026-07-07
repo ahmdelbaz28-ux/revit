@@ -69,7 +69,7 @@ def _resolve_allowed_bases() -> list[Path]:
         # If we can't even resolve the temp dir, something is very wrong;
         # let it bubble up so the parser fails loudly rather than silently
         # accepting unsafe paths.
-        raise
+        raise  # NOSONAR - python:S2737
 
     # Development convenience: allow CWD. NEVER in production.
     if os.getenv("FIREAI_ENV") == "development":
@@ -197,7 +197,7 @@ def validate_input_path(
     # was a symlink, log it for audit purposes — the resolved target
     # has already been verified to live under an allowed base.
     if input_path_obj.is_symlink():  # NOSONAR — S6549: acceptable
-        logger.info(
+        logger.info(  # NOSONAR - pythonsecurity:S5145
             "%s: input path is a symlink: %s → %s (resolved target verified)",
             parser_name, input_path_obj, safe_path,
         )

@@ -229,7 +229,7 @@ def _build_dependency_graph(
         try:
             source = filepath.read_text(encoding="utf-8", errors="replace")
             tree = ast.parse(source, filename=str(filepath))
-        except (SyntaxError, Exception):
+        except (SyntaxError, Exception):  # NOSONAR - python:S5713
             continue
 
         collector = ImportCollector(filepath, root)

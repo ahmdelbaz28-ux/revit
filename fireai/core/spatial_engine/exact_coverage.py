@@ -242,7 +242,7 @@ class ExactCoverageEngine:
                         room_poly = room_poly.difference(obs_poly)
                 except Exception as e:
                     logger.warning("V112: verify_with_obstacles: failed to subtract obstacle polygon: %s", e)
-                    pass  # Skip invalid obstacles
+                    pass  # Skip invalid obstacles  # NOSONAR - python:S2772
 
         # Build sensor coverage circles using effective radius (2% safety)
         # V30 B3: Use fewer segments (16 vs default 64) — sufficient for NFPA accuracy

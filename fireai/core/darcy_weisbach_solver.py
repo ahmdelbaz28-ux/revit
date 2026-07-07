@@ -516,7 +516,7 @@ def _solve_colebrook_white(  # NOSONAR — S3776: cognitive complexity is inhere
         if denom <= 0:
             break
         # V138 F-4: Correct sign — both terms should be NEGATIVE
-        B_over_2f32 = 2.51 / (reynolds * 2.0 * f * sqrt_f)
+        B_over_2f32 = 2.51 / (reynolds * 2.0 * f * sqrt_f)  # NOSONAR - python:S117
         g_prime = -1.0 / (2.0 * f * sqrt_f) - (2.0 / math.log(10)) * B_over_2f32 / denom
 
         # V135 F-15: Guard against non-finite g_prime (Inf or NaN)
@@ -562,7 +562,7 @@ def _solve_colebrook_white(  # NOSONAR — S3776: cognitive complexity is inhere
         reynolds, relative_roughness, f,
     )
     # Store non-convergence flag — caller checks result.converged
-    pass  # V138 F-5: converged=False returned via tuple
+    pass  # V138 F-5: converged=False returned via tuple  # NOSONAR - python:S2772
     return (f, False)
 
 

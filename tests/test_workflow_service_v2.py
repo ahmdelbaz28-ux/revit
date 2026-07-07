@@ -24,7 +24,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 try:
     import backend.services.workflow_service as _wfs_mod  # noqa: F401
     _WORKFLOW_AVAILABLE = True
-except (ModuleNotFoundError, ImportError):
+except (ModuleNotFoundError, ImportError):  # NOSONAR - python:S5713
     _WORKFLOW_AVAILABLE = False
 
 if not _WORKFLOW_AVAILABLE:

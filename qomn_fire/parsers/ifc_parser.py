@@ -117,7 +117,7 @@ class IfcParser:
         # design based on wrong geometry produces WRONG coverage = people die.
         placeholder_wall_count = 0
         placeholder_room_count = 0
-        placeholder_opening_count = 0
+        placeholder_opening_count = 0  # NOSONAR - python:S1481
 
         # ── Parse STEP physical instances ──
         instances = IfcParser.STEP_PATTERN.findall(content)

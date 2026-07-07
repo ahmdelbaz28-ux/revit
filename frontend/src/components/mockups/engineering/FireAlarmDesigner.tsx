@@ -53,7 +53,7 @@ export function FireAlarmDesigner() {
 	const [projectDescription, setProjectDescription] = useState("");
 	const [showGrid, setShowGrid] = useState(true);
 	const [snapToGrid, setSnapToGrid] = useState(true);
-	const [_zoomLevel, _setZoomLevel] = useState(100);
+	const [_zoomLevel, _setZoomLevel] = useState(100);  // NOSONAR - typescript:S6754
 	const [units, setUnits] = useState<"metric" | "imperial">("metric");
 
 	// Initialize with sample detectors

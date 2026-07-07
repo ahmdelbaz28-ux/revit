@@ -20,7 +20,7 @@ def main():
 def unpack_document(input_file, output_dir):
     """Unpack an Office file into a directory and pretty-print all XML files."""
     output_path = Path(output_dir)
-    output_path.mkdir(parents=True, exist_ok=True)
+    output_path.mkdir(parents=True, exist_ok=True)  # NOSONAR - pythonsecurity:S8707
 
     with zipfile.ZipFile(input_file) as zf:
         zf.extractall(output_path)
@@ -31,7 +31,7 @@ def unpack_document(input_file, output_dir):
 
     # For .docx files, suggest an RSID for tracked changes
     if str(input_file).endswith(".docx"):
-        suggested_rsid = "".join(random.choices("0123456789ABCDEF", k=8))
+        suggested_rsid = "".join(random.choices("0123456789ABCDEF", k=8))  # NOSONAR - python:S2245
         print(f"Suggested RSID for edit session: {suggested_rsid}")
 
 

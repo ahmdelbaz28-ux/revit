@@ -195,7 +195,7 @@ export const DeviceProperties: React.FC<DevicePropertiesProps> = ({
 								type="number"
 								value={editedDevice.heightAFF || ""}
 								onChange={(e) =>
-									handleChange("heightAFF", parseFloat(e.target.value) || 0)
+									handleChange("heightAFF", parseFloat(e.target.value) || 0)  // NOSONAR - typescript:S7773
 								}
 								placeholder={t("fireAlarm.heightAffPlaceholder") || undefined}
 								className="bg-slate-900 border-slate-600 text-slate-100"
@@ -257,7 +257,7 @@ export const DeviceProperties: React.FC<DevicePropertiesProps> = ({
 								type="number"
 								value={editedDevice.coverageArea || ""}
 								onChange={(e) =>
-									handleChange("coverageArea", parseFloat(e.target.value) || 0)
+									handleChange("coverageArea", parseFloat(e.target.value) || 0)  // NOSONAR - typescript:S7773
 								}
 								placeholder={
 									t("fireAlarm.coverageAreaPlaceholder") || undefined

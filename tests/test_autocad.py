@@ -51,7 +51,7 @@ class TestAutoCADServiceInitialization:
         # mock setup. Fix: make GetActiveObject raise so Dispatch is exercised.
         mock_win32com.GetActiveObject.side_effect = Exception("no instance")
 
-        result = service.connect()  # noqa: F841  (verified via side effects below)
+        result = service.connect()  # noqa: F841  (verified via side effects below)  # NOSONAR - python:S1481
 
         # Verify the connection attempt
         assert mock_win32com.Dispatch.called

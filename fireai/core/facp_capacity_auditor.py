@@ -92,7 +92,7 @@ _MODULE_KEYWORDS: frozenset[str] = frozenset(
 # Data model
 # ============================================================================
 @dataclass(frozen=True)
-class FACP_Profile:
+class FACP_Profile:  # NOSONAR - python:S101
     """
     Manufacturer-specific FACP protocol limits.
 
@@ -240,7 +240,7 @@ def _build_rule_applied(
             logger.warning(
                 f"V112: _build_rule_applied: failed to construct RuleApplied provenance for rule_id={rule_id!r}: {e!r}"
             )
-            pass
+            pass  # NOSONAR - python:S2772
     return entry
 
 
@@ -611,7 +611,7 @@ class FACPCapacityAuditor:
                 logger.warning(
                     f"V112: audit_slc_protocol_limits: failed to construct DecisionProvenance audit result: {e!r}"
                 )
-                pass
+                pass  # NOSONAR - python:S2772
 
         return result
 

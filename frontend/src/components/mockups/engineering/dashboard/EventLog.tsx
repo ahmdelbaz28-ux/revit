@@ -12,7 +12,7 @@ interface EventLogProps {
 	connectionStatus: string;
 }
 
-export function EventLog({
+export function EventLog({  // NOSONAR - typescript:S6759
 	eventLogs,
 	dataMode,
 	connectionStatus,

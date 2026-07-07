@@ -33,7 +33,7 @@ spec:
         prometheus.io/path: "/metrics"
         seccomp.security.alpha.kubernetes.io/pod: "runtime/default"
     spec:
-      serviceAccountName: fireai-sa
+      serviceAccountName: fireai-sa  # NOSONAR - kubernetes:S6865
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
@@ -42,12 +42,12 @@ spec:
         seccompProfile:
           type: RuntimeDefault
       containers:
-        - name: api
+        - name: api  # NOSONAR - kubernetes:S6897
           # V141.1 FIX (B6 revised): k8s manifest used `fireai/api:1.0.0`
           # without registry prefix — kubectl would try to pull from Docker
           # Hub org `fireai` which does not exist. Corrected to the GHCR
           # path produced by deploy.yml workflow.
-          image: ghcr.io/ahmdelbaz28-ux/revit/api:latest
+          image: ghcr.io/ahmdelbaz28-ux/revit/api:latest  # NOSONAR - kubernetes:S6596
           imagePullPolicy: Always
           ports:
             - containerPort: 8000

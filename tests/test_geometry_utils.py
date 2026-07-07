@@ -304,7 +304,7 @@ class TestValidatePolygon:
         assert any("simplification" in w for w in result.warnings)
 
 
-# Winding & Orientation
+# Winding & Orientation  # NOSONAR - python:S125
 # ─────────────────────────────────────────────────────────────────────────────
 
 

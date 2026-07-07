@@ -314,7 +314,7 @@ class SevereWeatherService:
         self._request_timeout = request_timeout
         self._client: httpx.AsyncClient | None = None
 
-    async def _get_client(self) -> httpx.AsyncClient:
+    async def _get_client(self) -> httpx.AsyncClient:  # NOSONAR - python:S7503
         """Lazy-initialize the HTTP client."""
         if self._client is None or self._client.is_closed:
             self._client = httpx.AsyncClient(
@@ -827,7 +827,7 @@ class SevereWeatherService:
         except ET.ParseError as e:
             logger.warning("MeteoAlarm Atom XML parse error: %s", e)
             # Return empty results — caller will handle fallback
-            pass
+            pass  # NOSONAR - python:S2772
 
         return alerts, has_power_risk, has_extreme_temp
 

@@ -94,9 +94,9 @@ class TestHarmonicAnalysis:
         # Tune capacitor to resonate near 5th harmonic (300 Hz at 60 Hz fundamental)
         # f_r = 1/(2π×sqrt(L×C)) → C = 1/(4π²×f²×L)
         f_target = 300.0  # 5th harmonic
-        L_h = 0.1 / 1000  # 0.1 mH → H
-        C_f = 1.0 / (4.0 * math.pi**2 * f_target**2 * L_h)
-        C_uf = C_f * 1e6  # → µF
+        L_h = 0.1 / 1000  # 0.1 mH → H  # NOSONAR - python:S117
+        C_f = 1.0 / (4.0 * math.pi**2 * f_target**2 * L_h)  # NOSONAR - python:S117
+        C_uf = C_f * 1e6  # → µF  # NOSONAR - python:S117
 
         result = simulate_harmonic_analysis(
             fundamental_freq_hz=60.0,

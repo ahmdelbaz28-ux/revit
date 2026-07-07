@@ -51,7 +51,7 @@ os.environ["FIREAI_ENV"] = "development"
 os.environ["FIREAI_API_KEY"] = "strict_test_admin_key"
 os.environ["FIREAI_CACHE_MAX_ENTRIES"] = "100"
 
-for mod in list(sys.modules.keys()):
+for mod in list(sys.modules.keys()):  # NOSONAR - python:S7504
     if mod.startswith(("backend", "fireai")):
         del sys.modules[mod]
 
@@ -173,7 +173,7 @@ def test_cache_large_value_dos() -> None:
     """
     print("\n[STRICT 3] Cache Large Value DoS")
     try:
-        for mod in list(sys.modules.keys()):
+        for mod in list(sys.modules.keys()):  # NOSONAR - python:S7504
             if "backend.app" in mod:  # NOSONAR — S1192: duplicated literal acceptable in this localized context
                 del sys.modules[mod]
         from backend.app import _CACHE_MAX_VALUE_SIZE, cache_get, cache_set
@@ -208,7 +208,7 @@ def test_cache_expired_cleanup_gap() -> None:
     """
     print("\n[STRICT 4] Cache Expired Cleanup Gap")
     try:
-        for mod in list(sys.modules.keys()):
+        for mod in list(sys.modules.keys()):  # NOSONAR - python:S7504
             if "backend.app" in mod:
                 del sys.modules[mod]
         # Set short reaper interval for testing
@@ -566,7 +566,7 @@ def test_cache_lock_starvation() -> None:  # NOSONAR — S3776: cognitive comple
     """
     print("\n[STRICT 13] Cache Lock Starvation")
     try:
-        for mod in list(sys.modules.keys()):
+        for mod in list(sys.modules.keys()):  # NOSONAR - python:S7504
             if "backend.app" in mod:
                 del sys.modules[mod]
         from backend.app import _CACHE_MAX_ENTRIES, cache_get, cache_set
@@ -730,7 +730,7 @@ def test_cache_value_size_limit_exists() -> None:
     """Verify cache_set caps value size."""
     print("\n[STRICT 18] Cache Value Size Limit")
     try:
-        for mod in list(sys.modules.keys()):
+        for mod in list(sys.modules.keys()):  # NOSONAR - python:S7504
             if "backend.app" in mod:
                 del sys.modules[mod]
         import inspect

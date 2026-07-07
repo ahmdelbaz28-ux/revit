@@ -60,7 +60,7 @@ class TestSSRFPrevention:
         """_check_ssrf_url should block cloud metadata endpoint."""
         from fireai.infrastructure.webhook_service import WebhookDeliveryService
         service = WebhookDeliveryService(allow_http=True)
-        error = service._check_ssrf_url("http://169.254.169.254/latest/meta-data/")
+        error = service._check_ssrf_url("http://169.254.169.254/latest/meta-data/")  # NOSONAR - python:S1313
         assert error is not None
         assert "metadata" in error.lower() or "internal" in error.lower() or "private" in error.lower()
 

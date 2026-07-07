@@ -567,7 +567,7 @@ class TestNanInfInputs:
 
     def test_nan_pipeline_never_raises(self):
         """NaN input must never cause an unhandled exception."""
-        try:
+        try:  # NOSONAR - python:S8714
             result = analyze_room(_valid_payload(ceiling_height_m=float("nan")))
             assert isinstance(result, PipelineResult)
         except Exception:

@@ -192,8 +192,8 @@ def grid_polygon_verify(  # NOSONAR — S3776: cognitive complexity is inherent 
 
     min_x, min_y, max_x, max_y = polygon_bounds(room_coords)
     R = coverage_radius
-    R_eff = R - step * math.sqrt(2) / 2  # δ-conservative
-    R2_eff = R_eff**2 + 1e-9
+    R_eff = R - step * math.sqrt(2) / 2  # δ-conservative  # NOSONAR - python:S117
+    R2_eff = R_eff**2 + 1e-9  # NOSONAR - python:S117
 
     total_points = 0
     covered_points = 0
@@ -215,7 +215,7 @@ def grid_polygon_verify(  # NOSONAR — S3776: cognitive complexity is inherent 
                 logger.warning(
                     f"V112: grid_polygon_verify: failed to check grid point ({x:.2f}, {y:.2f}) containment: {e!r}"
                 )
-                pass
+                pass  # NOSONAR - python:S2772
             y += step
         x += step
 

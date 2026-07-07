@@ -154,7 +154,7 @@ class NetworkTopologyAuditor:
         # and future state additions without breaking callers.
         pass  # NOSONAR — S1186: intentional no-op stateless constructor
 
-    def audit_network_topology(
+    def audit_network_topology(  # NOSONAR - python:S3776
         self,
         panels: list[dict[str, Any]],
         links: list[dict[str, Any]],

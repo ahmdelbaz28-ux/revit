@@ -74,7 +74,7 @@ class PPTXSchemaValidator(BaseSchemaValidator):
 
         return all_valid
 
-    def validate_uuid_ids(self):
+    def validate_uuid_ids(self):  # NOSONAR - python:S3776
         """Validate that ID attributes that look like UUIDs contain only hex values."""
         errors = []
         # UUID pattern: 8-4-4-4-12 hex digits with optional braces/hyphens
@@ -122,7 +122,7 @@ class PPTXSchemaValidator(BaseSchemaValidator):
         # Check if it's 32 hex-like characters (could include invalid hex chars)
         return len(clean_value) == 32 and all(c.isalnum() for c in clean_value)
 
-    def validate_slide_layout_ids(self):
+    def validate_slide_layout_ids(self):  # NOSONAR - python:S3776
         """Validate that sldLayoutId elements in slide masters reference valid slide layouts."""
         errors = []
 
@@ -231,7 +231,7 @@ class PPTXSchemaValidator(BaseSchemaValidator):
             print("PASSED - All slides have exactly one slideLayout reference")
         return True
 
-    def validate_notes_slide_references(self):
+    def validate_notes_slide_references(self):  # NOSONAR - python:S3776
         """Validate that each notesSlide file is referenced by only one slide."""
         errors = []
         notes_slide_references = {}  # Track which slides reference each notesSlide

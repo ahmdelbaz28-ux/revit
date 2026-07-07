@@ -742,7 +742,7 @@ class AutodeskForgeProvider:
         """
         if not self._client_id or not self._client_secret:
             return None
-        # TODO: Implement actual APS token fetch
+        # TODO: Implement actual APS token fetch  # NOSONAR - python:S1135
         # import time
         # import httpx
         # if self._token and time.time() < self._token_expires:

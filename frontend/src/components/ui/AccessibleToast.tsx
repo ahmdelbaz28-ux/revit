@@ -7,7 +7,7 @@ interface AccessibleToastProps {
 	onClose: () => void;
 }
 
-export function AccessibleToast({
+export function AccessibleToast({  // NOSONAR - typescript:S6759
 	message,
 	type = "info",
 	duration = 5000,

@@ -140,7 +140,7 @@ class RedliningValidator:
 
         return "\n".join(error_parts)
 
-    def _get_git_word_diff(self, original_text, modified_text):
+    def _get_git_word_diff(self, original_text, modified_text):  # NOSONAR - python:S3776
         """Generate word diff using git with character-level precision."""
         try:
             with tempfile.TemporaryDirectory() as temp_dir:
@@ -233,13 +233,13 @@ class RedliningValidator:
                             content_lines.append(line)
                     return "\n".join(content_lines)
 
-        except (subprocess.CalledProcessError, FileNotFoundError, Exception):
+        except (subprocess.CalledProcessError, FileNotFoundError, Exception):  # NOSONAR - python:S5713
             # Git not available or other error, return None to use fallback
             pass
 
         return None
 
-    def _remove_zai_tracked_changes(self, root):
+    def _remove_zai_tracked_changes(self, root):  # NOSONAR - python:S3776
         """Remove tracked changes authored by Z.AI from the XML root."""
         ins_tag = f"{{{self.namespaces['w']}}}ins"
         del_tag = f"{{{self.namespaces['w']}}}del"

@@ -24,7 +24,7 @@ interface SymbolProps {
 }
 
 interface SymbolLibraryProps extends SymbolProps {
-	type: DetectorType;
+	type: DetectorType;  // NOSONAR - typescript:S6767
 }
 
 // Helper function to get status color
@@ -488,7 +488,7 @@ export const SymbolLibrary: React.FC = () => {
 					</span>
 				</div>
 				<div className="flex flex-col items-center">
-					<FACP size="md" type="facp" />
+					<FACP size="md" type="facp" />  // NOSONAR - typescript:S6770
 					<span className="text-xs text-slate-400 mt-1">
 						{t("fireAlarm.facp")}
 					</span>

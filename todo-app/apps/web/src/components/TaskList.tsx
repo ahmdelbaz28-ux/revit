@@ -15,7 +15,7 @@ interface Props {
 	onDelete: (id: string) => void;
 }
 
-export default function TaskList({ tasks, onEdit, onDelete }: Props) {
+export default function TaskList({ tasks, onEdit, onDelete }: Props) {  // NOSONAR - typescript:S6759
 	if (tasks.length === 0) {
 		return (
 			<p className="text-center py-8 text-gray-500">

@@ -551,7 +551,7 @@ class TestNFPAReferences:
 
     def test_smoke_return_references(self):
         refs = NFPA_REFERENCES[DeviceInputType.SMOKE_RETURN]
-        assert any("17.7.5.6" in r for r in refs)
+        assert any("17.7.5.6" in r for r in refs)  # NOSONAR - python:S1313
         assert any("6.8" in r for r in refs)
 
     def test_heat_references(self):
@@ -566,7 +566,7 @@ class TestNFPAReferences:
 
     def test_duct_detector_references(self):
         refs = NFPA_REFERENCES[DeviceInputType.DUCT_DETECTOR]
-        assert any("17.7.5.6" in r for r in refs)
+        assert any("17.7.5.6" in r for r in refs)  # NOSONAR - python:S1313
         assert any("6.8" in r for r in refs)
 
     def test_waterflow_references(self):
@@ -576,7 +576,7 @@ class TestNFPAReferences:
 
     def test_valve_tamper_references(self):
         refs = NFPA_REFERENCES[DeviceInputType.VALVE_TAMPER]
-        assert any("17.14.2.1" in r for r in refs)
+        assert any("17.14.2.1" in r for r in refs)  # NOSONAR - python:S1313
 
     def test_sprinkler_supervisory_references(self):
         refs = NFPA_REFERENCES[DeviceInputType.SPRINKLER_SUPERVISORY]

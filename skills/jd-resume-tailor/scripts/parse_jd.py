@@ -65,13 +65,13 @@ def extract_special(text: str) -> dict:
         out["education"] = edu.group(0)
 
     # 工作年限
-    years = re.search(r"(\d+)\s*[-~–到至]\s*(\d+)\s*年|(\d+)\s*\+?\s*年(以上|及以上)?", text)
+    years = re.search(r"(\d+)\s*[-~–到至]\s*(\d+)\s*年|(\d+)\s*\+?\s*年(以上|及以上)?", text)  # NOSONAR - python:S8786
     if years:
         out["years"] = years.group(0)
 
     # 语言
     lang_pat = re.search(
-        r"(英语\s*(口语)?\s*(流利|熟练|母语)|CET[-\s]?[46]|雅思\s*\d(\.\d)?|托福\s*\d{2,3}|母语水平|business\s*english)",
+        r"(英语\s*(口语)?\s*(流利|熟练|母语)|CET[-\s]?[46]|雅思\s*\d(\.\d)?|托福\s*\d{2,3}|母语水平|business\s*english)",  # NOSONAR - python:S8786
         text,
         flags=re.IGNORECASE,
     )
@@ -94,7 +94,7 @@ def extract_special(text: str) -> dict:
 
     # 证书
     certs = re.findall(
-        r"(CFA(?:\s*Level\s*[I123]+)?|CPA|FRM|ACCA|PMP|AWS\s*[\w\s]*认证|Azure\s*[\w]*|GCP\s*[\w]*)",
+        r"(CFA(?:\s*Level\s*[I123]+)?|CPA|FRM|ACCA|PMP|AWS\s*[\w\s]*认证|Azure\s*[\w]*|GCP\s*[\w]*)",  # NOSONAR - python:S8786
         text,
         flags=re.IGNORECASE,
     )

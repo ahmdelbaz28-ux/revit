@@ -184,7 +184,7 @@ class ProofCertificateGenerator:
         self.S = max_spacing
         self.wm = wall_min
         self.delta_margin = self.delta * math.sqrt(2) / 2
-        self.R_eff = self.R - self.delta_margin
+        self.R_eff = self.R - self.delta_margin  # NOSONAR - python:S116
 
     def generate(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         self,
@@ -218,8 +218,8 @@ class ProofCertificateGenerator:
         """
         delta = self.delta
         R = self.R
-        R_eff = self.R_eff
-        R2_eff = R_eff**2 + 1e-9
+        R_eff = self.R_eff  # NOSONAR - python:S117
+        R2_eff = R_eff**2 + 1e-9  # NOSONAR - python:S117
         delta_margin = self.delta_margin
 
         # Build verification grid

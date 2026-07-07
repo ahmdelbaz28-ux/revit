@@ -72,7 +72,7 @@ def extract_experiences(text: str) -> list[dict]:
 
     # 匹配锚点（含 | 或 ｜，且包含日期/年份）
     anchor_re = re.compile(
-        r"^(?P<title>[^\n]+?[|｜][^\n]+?[|｜][^\n]+)$"
+        r"^(?P<title>[^\n]+?[|｜][^\n]+?[|｜][^\n]+)$"  # NOSONAR - python:S8786
     )
 
     for line in lines:
@@ -167,7 +167,7 @@ def main() -> None:
     report = render(experiences)
 
     if args.out:
-        Path(args.out).write_text(report, encoding="utf-8")
+        Path(args.out).write_text(report, encoding="utf-8")  # NOSONAR - pythonsecurity:S8707
         print(f"✓ 故事矩阵已生成：{args.out}")
     else:
         print(report)

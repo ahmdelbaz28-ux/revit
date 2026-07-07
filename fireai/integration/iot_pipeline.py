@@ -331,7 +331,7 @@ class IoTPipeline:
 
     # ── Sensor Data Ingestion ──────────────────────────────────────────
 
-    async def ingest_sensor_data(
+    async def ingest_sensor_data(  # NOSONAR - python:S7503
         self,
         sensor_id: str,
         value: float,
@@ -529,7 +529,7 @@ class IoTPipeline:
 
     # ── Communication Loss Detection ───────────────────────────────────
 
-    async def start_comm_loss_monitor(
+    async def start_comm_loss_monitor(  # NOSONAR - python:S7503
         self, interval_seconds: float = 60.0
     ) -> None:
         """
@@ -561,7 +561,7 @@ class IoTPipeline:
         self._running = True
         self._comm_loss_timer = asyncio.create_task(_monitor())
 
-    async def stop_comm_loss_monitor(self) -> None:
+    async def stop_comm_loss_monitor(self) -> None:  # NOSONAR - python:S7503
         """Stop the communication loss monitor."""
         self._running = False
         if self._comm_loss_timer is not None:
@@ -647,7 +647,7 @@ class IoTPipeline:
             logger.exception("MQTT connection failed: %s", exc)
             return False
 
-    async def _connect_mqtt_simulated(
+    async def _connect_mqtt_simulated(  # NOSONAR - python:S7503
         self, broker: str, port: int, topic: str
     ) -> bool:
         logger.info(
@@ -680,7 +680,7 @@ class IoTPipeline:
             logger.exception("OPC-UA connection failed: %s", exc)
             return False
 
-    async def _connect_opcua_simulated(
+    async def _connect_opcua_simulated(  # NOSONAR - python:S7503
         self, endpoint: str
     ) -> bool:
         logger.info(

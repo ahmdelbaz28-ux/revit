@@ -137,10 +137,10 @@ class ShuntTripResult:
     has_dedicated_hd: bool
     hd_device_id: str | None = None
     hd_distance_m: float | None = None
-    hd_temp_rating_C: float | None = None
+    hd_temp_rating_C: float | None = None  # NOSONAR - python:S116
     hd_rti: float | None = None
-    required_hd_temp_C: float = 0.0
-    sprinkler_temp_C: float = 0.0
+    required_hd_temp_C: float = 0.0  # NOSONAR - python:S116
+    sprinkler_temp_C: float = 0.0  # NOSONAR - python:S116
     sprinkler_rti: float = 0.0
     rti_violation: bool = False
     temp_violation: bool = False
@@ -186,7 +186,7 @@ class ElevatorShuntTripAuditor:
 
     def __init__(
         self,
-        safety_gap_C: float = SAFETY_GAP_C,
+        safety_gap_C: float = SAFETY_GAP_C,  # NOSONAR - python:S117
         rti_ratio_limit: float = RTI_RATIO_LIMIT,
     ) -> None:
         """
@@ -202,7 +202,7 @@ class ElevatorShuntTripAuditor:
                 used when the temperature gap is sufficiently large.
 
         """
-        self.safety_gap_C = safety_gap_C
+        self.safety_gap_C = safety_gap_C  # NOSONAR - python:S116
         self.rti_ratio_limit = rti_ratio_limit
 
     def audit_hoistway_machine_room(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
@@ -573,7 +573,7 @@ class ElevatorShuntTripAuditor:
                 logger.warning(
                     f"V112: audit_hoistway_machine_room: failed to construct DecisionProvenance audit result: {e!r}"
                 )
-                pass
+                pass  # NOSONAR - python:S2772
 
         # Fallback: plain dict
         return {

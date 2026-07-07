@@ -433,7 +433,7 @@ class DeltaCache:
             dependents = self._graph.get_all_dependents(node_id)
             all_invalidated |= dependents
 
-        count = 0
+        count = 0  # NOSONAR - python:S1481
         for nid in all_invalidated:
             # Invalidate all cache keys with this node_id prefix
             count += self._cache.invalidate_prefix(f"{nid}:")

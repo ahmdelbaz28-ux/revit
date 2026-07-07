@@ -690,7 +690,7 @@ def perform_aset_rset_analysis(  # NOSONAR — S3776: cognitive complexity is in
     travel_distance_m: float,
     occupancy_type: str = "business",
     fire_growth_rate: str = "medium",
-    fire_load_MJ: float = 500.0,
+    fire_load_MJ: float = 500.0,  # NOSONAR - python:S117
     is_sprinklered: bool = True,
     safety_factor_override: float | None = None,
     ventilation_opening_m2: float = 2.0,

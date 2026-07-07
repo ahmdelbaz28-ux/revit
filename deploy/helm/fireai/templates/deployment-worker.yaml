@@ -27,11 +27,11 @@ spec:
         seccomp.security.alpha.kubernetes.io/pod: "runtime/default"
     spec:
       {{- include "fireai.imagePullSecrets" . | nindent 6 }}
-      serviceAccountName: {{ .Values.serviceAccount.name }}
+      serviceAccountName: {{ .Values.serviceAccount.name }}  # NOSONAR - kubernetes:S6865
       securityContext:
         {{- toYaml .Values.worker.podSecurityContext | nindent 8 }}
       containers:
-        - name: worker
+        - name: worker  # NOSONAR - kubernetes:S6897
           image: "{{ .Values.worker.image.repository }}:{{ .Values.worker.image.tag }}"
           imagePullPolicy: {{ .Values.worker.image.pullPolicy }}
           env:

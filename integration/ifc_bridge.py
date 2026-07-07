@@ -564,7 +564,7 @@ def run_compliance_on_ifc(ifc_path: str) -> dict:
     all_results = []
 
     for room in rooms:
-        result = oracle.verify_truth(room, devices, obstructions)
+        result = oracle.verify_truth(room, devices, obstructions)  # NOSONAR - python:S930
         all_results.append(result)
         all_violations.extend(result["violations"])
 

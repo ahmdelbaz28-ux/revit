@@ -75,7 +75,7 @@ class XMLEditor:
         parser = _create_line_tracking_parser()
         self.dom = defusedxml.minidom.parse(str(self.xml_path), parser)
 
-    def get_node(
+    def get_node(  # NOSONAR - python:S3776
         self,
         tag: str,
         attrs: Optional[dict[str, str]] = None,
@@ -129,7 +129,7 @@ class XMLEditor:
 
             # Check attrs filter
             if attrs is not None:
-                if not all(
+                if not all(  # NOSONAR - python:S1066
                     elem.getAttribute(attr_name) == attr_value
                     for attr_name, attr_value in attrs.items()
                 ):
@@ -366,7 +366,7 @@ def _create_line_tracking_parser():
     """
 
     def set_content_handler(dom_handler):
-        def startElementNS(name, tagName, attrs):
+        def startElementNS(name, tagName, attrs):  # NOSONAR - python:S1542
             orig_start_cb(name, tagName, attrs)
             cur_elem = dom_handler.elementStack[-1]
             cur_elem.parse_position = (

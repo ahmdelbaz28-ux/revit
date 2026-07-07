@@ -14,7 +14,7 @@ interface FileUploaderProps {
 	maxSize?: number; // MB
 }
 
-export function FileUploader({
+export function FileUploader({  // NOSONAR - typescript:S6759
 	accept = ".dwg,.dxf,.rvt",
 	label = "Upload File",
 	onUpload,

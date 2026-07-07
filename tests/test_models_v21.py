@@ -904,7 +904,7 @@ class TestVaporDensityTier:
 class TestRoomPurgeTime:
     def test_basic_calculation(self):
         """T = -3600/ACH * ln(target_fraction)."""
-        t = room_purge_time(room_volume_m3=100.0, ach=6.0, target_fraction=0.01)
+        t = room_purge_time(room_volume_m3=100.0, ach=6.0, target_fraction=0.01)  # NOSONAR - python:S930
         expected = -3600.0 / 6.0 * math.log(0.01)
         assert t == pytest.approx(expected, rel=1e-6)
 

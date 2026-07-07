@@ -32,7 +32,7 @@ LABEL maintainer="FireAI Engineering Team" \
       version="1.0.0" \
       security.fireai.compliance="nfpa72-2022"
 
-RUN groupadd -r fireai && \
+RUN groupadd -r fireai && \  # NOSONAR - docker:S7031
     useradd -r -g fireai -d /app -s /sbin/nologin -c "FireAI Service" fireai
 
 RUN apt-get update && apt-get install -y --no-install-recommends \

@@ -21,7 +21,7 @@ t = Transaction(doc, 'Set Parameter by Name')
 #Select element from revit.
 selection = [doc.GetElement(x) for x in uidoc.Selection.GetElementIds()]
 
-def set_parameter_by_name(element, parameterName, value):
+def set_parameter_by_name(element, parameterName, value):  # NOSONAR - python:S117
 	element.LookupParameter(parameterName).Set(value)
 
 #Start Transaction

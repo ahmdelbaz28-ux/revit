@@ -127,7 +127,7 @@ class TestTechnologyDecision:
         assert d.fallback_technology == DetectorTechnology.POINT_SMOKE
 
 
-# EliteTechnologyDispatcher.select_technology
+# EliteTechnologyDispatcher.select_technology  # NOSONAR - python:S125
 # ─────────────────────────────────────────────────────────────────────────────
 
 
@@ -230,7 +230,7 @@ class TestSelectTechnology:
         assert any("§17.7.3" in ref for ref in d.nfpa_references)
 
 
-# EliteTechnologyDispatcher._get_smoke_spacing
+# EliteTechnologyDispatcher._get_smoke_spacing  # NOSONAR - python:S125
 # ─────────────────────────────────────────────────────────────────────────────
 
 

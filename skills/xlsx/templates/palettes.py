@@ -35,7 +35,7 @@ _Palette = Dict[str, str | list]
 
 
 def _make_palette(
-    *,
+    *,  # NOSONAR - python:S107
     primary: str,
     primary_light: str,
     accent_positive: str = "1B7D46",

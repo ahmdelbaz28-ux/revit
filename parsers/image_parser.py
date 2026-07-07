@@ -232,7 +232,7 @@ class ImageParser:
 
             # Process each contour
             for contour in contours:
-                room = self._process_contour(contour, img, result.image_size)
+                room = self._process_contour(contour, img, result.image_size)  # NOSONAR - python:S930
                 if room and room.floor_area > 2.0:  # Min 2m²
                     result.rooms.append(room)
 

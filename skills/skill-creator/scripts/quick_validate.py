@@ -8,7 +8,7 @@ from pathlib import Path
 import yaml
 
 
-def validate_skill(skill_path):
+def validate_skill(skill_path):  # NOSONAR - python:S3776
     """Basic validation of a skill"""
     skill_path = Path(skill_path)
 

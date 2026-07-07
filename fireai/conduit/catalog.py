@@ -45,7 +45,7 @@ from fireai.conduit.types import ConduitType, FittingType, Result, TradeSize
 # E=EMT, P=PVC/UPVC, R=RGD; 90=90° elbow, 45=45°, C=compression coupling, S=set-screw
 # ─────────────────────────────────────────────────────────────────────────────
 _CATALOG_NUMBER_PATTERN = re.compile(
-    r"^[EPR][A-Z0-9]{1,3}-[0-9]{3}$"
+    r"^[EPR][A-Z0-9]{1,3}-[0-9]{3}$"  # NOSONAR - python:S6353
 )
 
 

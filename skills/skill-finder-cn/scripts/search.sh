@@ -4,7 +4,7 @@
 QUERY="$1"
 LIMIT="${2:-10}"
 
-if [ -z "$QUERY" ]; then
+if [ -z "$QUERY" ]; then  # NOSONAR - shelldre:S7688
     echo "用法: search.sh <关键词> [数量]"
     exit 1
 fi

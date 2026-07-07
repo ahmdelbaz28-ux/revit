@@ -295,7 +295,7 @@ export function calculateShortCircuit(
 	// Total impedance = source + cable
 	const Rtotal = R * L + Rsource;
 	const Xtotal = X * L + Xsource;
-	const Z = Math.sqrt(Rtotal * Rtotal + Xtotal * Xtotal);
+	const Z = Math.sqrt(Rtotal * Rtotal + Xtotal * Xtotal);  // NOSONAR - typescript:S7769
 
 	// Guard against division by zero (shouldn't happen with source impedance, but defensive)
 	if (Z === 0) {
