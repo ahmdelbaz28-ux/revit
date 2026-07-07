@@ -356,7 +356,7 @@ class AuditLog:
         col_names = [desc[0] for desc in self._conn.execute("SELECT * FROM audit_entries LIMIT 0;").description]
 
         for row in all_rows:
-            row_dict = dict(zip(col_names, row, strict=False))
+            row_dict = dict(zip(col_names, row))
             try:
                 entry = self._row_to_entry(row_dict)
             except Exception as exc:

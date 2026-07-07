@@ -41,11 +41,18 @@ export function ElementList({
         const [search, setSearch] = useState("");
         const [categoryFilter, setCategoryFilter] = useState("all");
 
+<<<<<<< Updated upstream
         const categories = useMemo(() => {
                 const set = new Set(elements.map((e) => e.category));
                 // V196: Use localeCompare for reliable alphabetical sort (SonarCloud S2871)
                 return ["all", ...Array.from(set).sort((a, b) => a.localeCompare(b))];
         }, [elements]);
+=======
+	const categories = useMemo(() => {
+		const set = new Set(elements.map((e) => e.category));
+		return ["all", ...Array.from(set).sort((a, b) => a.localeCompare(b))];
+	}, [elements]);
+>>>>>>> Stashed changes
 
         const filtered = useMemo(() => {
                 return elements.filter((e) => {

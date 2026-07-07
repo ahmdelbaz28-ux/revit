@@ -1926,7 +1926,7 @@ def fix_docx_accurate_pages(fixed_docx_path: str, pass1_pdf_path: str, output_pa
 
         doc_xml_path = os.path.join(tmpdir, 'word', 'document.xml')
         with open(doc_xml_path, 'wb') as f:
-            f.write(etree.tostring(root, xml_declaration=True, encoding='UTF-8', standalone=True))
+            _ = f.write(etree.tostring(root, xml_declaration=True, encoding='UTF-8', standalone=True))
 
         with zf_mod.ZipFile(output_path, 'w', zf_mod.ZIP_DEFLATED) as zf:
             for dirpath, _dirnames, filenames in os.walk(tmpdir):

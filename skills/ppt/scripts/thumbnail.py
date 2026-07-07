@@ -284,7 +284,7 @@ def create_grid(
     draw = ImageDraw.Draw(grid)
 
     try:
-        font = ImageFont.load_default(size=font_size)
+        font = ImageFont.truetype("arial.ttf", size=font_size)
     except Exception:
         font = ImageFont.load_default()
 

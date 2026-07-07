@@ -19,10 +19,20 @@
 import { execSync } from "node:child_process";
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { join } from "node:path";
+import { join, resolve, normalize } from "node:path";
 
 const url = process.argv[2];
-const outDir = process.argv[3] || "/tmp/rendered";
+const rawOutDir = process.argv[3] || "/tmp/rendered";
+
+// Validate output directory path to prevent path traversal
+const resolvedOutDir = resolve(rawOutDir);
+const allowedRoot = resolve("/tmp/rendered");
+if (!resolvedOutDir.startsWith(allowedRoot) && !resolvedOutDir.startsWith(resolve(join(homedir(), ".cache")))) {
+	console.error(`Error: Output directory "${rawOutDir}" resolves to "${resolvedOutDir}" which is outside allowed paths.`);
+	console.error(`Allowed: ${allowedRoot} or ${join(homedir(), ".cache")}`);
+	process.exit(1);
+}
+const outDir = resolvedOutDir;
 
 if (!url) {
 	console.error("Usage: node fetch-rendered-dom.mjs <URL> [outDir]");

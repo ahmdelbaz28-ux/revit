@@ -21,6 +21,7 @@ def simulate_bim_element_data(element_id: str) -> Dict:
 
     return {
         "element_id": element_id,
+<<<<<<< Updated upstream
         "type": secrets.choice(element_types),  # NOSONAR
         "category": secrets.choice(categories),  # NOSONAR
         "name": f"{secrets.choice(element_types)}_{element_id}",  # NOSONAR
@@ -28,6 +29,15 @@ def simulate_bim_element_data(element_id: str) -> Dict:
         "coordinates": [random.uniform(0, 100), random.uniform(0, 100), random.uniform(0, 30)],  # NOSONAR
         "dimensions": [random.uniform(1, 20), random.uniform(0.1, 5), random.uniform(2, 10)],  # NOSONAR
         "material": secrets.choice(["Concrete", "Steel", "Wood", "Glass"]),  # NOSONAR
+=======
+        "type": secrets.choice(element_types),
+        "category": secrets.choice(categories),
+        "name": f"{secrets.choice(element_types)}_{element_id}",
+        "level": f"Level_{secrets.randbelow(4) + 1}",
+        "coordinates": [random.uniform(0, 100), random.uniform(0, 100), random.uniform(0, 30)],
+        "dimensions": [random.uniform(1, 20), random.uniform(0.1, 5), random.uniform(2, 10)],
+        "material": secrets.choice(["Concrete", "Steel", "Wood", "Glass"]),
+>>>>>>> Stashed changes
         "properties": {
             "fire_rating": secrets.choice(["1-hour", "2-hour", "3-hour", "non-rated"]),  # NOSONAR
             "thermal_resistance": round(random.uniform(0.5, 5.0), 2),  # NOSONAR

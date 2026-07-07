@@ -159,7 +159,6 @@ class DxfParser:
             # The original code had bare `except Exception: pass` which meant that
             # building model was empty. In a safety-critical system, silent failures
             # are DANGEROUS — a corrupted DXF file would produce a fallback building
-            # with no indication that the actual file content was never parsed.
             logger.warning(
                 "ezdxf failed to parse DXF file '%s': %s. "
                 "Falling back to text-based parsing. The file may be corrupted.",

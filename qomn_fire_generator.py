@@ -1979,9 +1979,13 @@ def execute_integrated_master_project():
     draw_facp_schedule(doc, rec)
 
     # Aligned Viewport
+<<<<<<< Updated upstream
     # S930 fix: parameter name must match `qomn_fire/drawing/dxf_generator.py::add_viewport`
     # which uses `view_center=` (NOT `view_center_point=`).
     add_viewport(doc, center=(350.0, 300.0), size=(500.0, 400.0), view_center=(12.5, 7.5), view_height=20.0)
+=======
+    add_viewport(doc, (350.0, 300.0), (500.0, 400.0), (12.5, 7.5), 20.0)
+>>>>>>> Stashed changes
 
     # Legend Table and Revisions table
     revs = [

@@ -124,8 +124,13 @@ def fix_python_s2245_s5443_s5332(filepath):
             fix_stats['S2245_fixed'] += 1
 
         # Convert 'random.choice' or 'random.shuffle' usage to secrets-based if used in security flow
+<<<<<<< Updated upstream
         content = re.sub(r'\brandom\.choice\s*\(', 'secrets.choice(', content)  # NOSONAR: S8786 — regex is intentional for code fixing  # NOSONAR — S7632: test function documented via class name / module path
         content = re.sub(r'\brandom\.randint\s*\(', 'secrets.randbelow(', content)  # NOSONAR: S8786 — regex is intentional for code fixing  # NOSONAR — S7632: test function documented via class name / module path
+=======
+        content = re.sub(r'\brandom\.choice\s*\(', 'secrets.choice(', content)
+        content = re.sub(r'\brandom\.randint\s*\(', 'random.SystemRandom().randint(', content)
+>>>>>>> Stashed changes
 
         if content != original:
             backup_file(filepath)

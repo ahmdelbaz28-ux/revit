@@ -13,6 +13,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+<<<<<<< Updated upstream
 # S6470 fix: .dockerignore (added in this commit) filters secrets/VCS/caches
 # so the recursive copy is safe. Copying explicitly-listed files would
 # require updating the Dockerfile every time a new runtime file is added;
@@ -23,6 +24,9 @@ COPY . .
 # Create non-root user for security (S6471)
 RUN useradd -m -u 1000 appuser
 USER appuser
+=======
+COPY main.py .
+>>>>>>> Stashed changes
 
 EXPOSE 8000
 

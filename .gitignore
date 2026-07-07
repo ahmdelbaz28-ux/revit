@@ -411,3 +411,17 @@ deploy_to_hf.py
 `nnul
 `nnul
 `nBAZSPARK/
+
+sonar_issues.json
+# Large/test output files
+newman_test_results.json
+postman_collection.json
+postman_collection_updated.json
+API_Test_Collection_Updated.postman_collection.json
+BAZSPARK/
+BAZSPARK_HF/
+revit/
+.playwright-mcp/
+nul
+.kilo/
+postman_collection*.json
