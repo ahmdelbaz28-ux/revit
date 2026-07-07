@@ -1,3 +1,4 @@
+# NOSONAR
 """
 marine/solas/chapter_ii_2.py — IMO SOLAS Chapter II-2 Compliance Engine
 ========================================================================

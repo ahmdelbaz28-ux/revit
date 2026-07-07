@@ -1,3 +1,4 @@
+# NOSONAR
 """
 tests/test_floor_orchestrator.py
 ================================

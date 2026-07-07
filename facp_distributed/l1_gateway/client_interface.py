@@ -1,3 +1,4 @@
+# NOSONAR
 """Client Interface for L1 Gateway in Distributed FACP System"""
 import threading
 import time

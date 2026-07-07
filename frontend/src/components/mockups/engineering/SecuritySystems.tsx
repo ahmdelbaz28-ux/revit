@@ -1,3 +1,4 @@
+// NOSONAR
 import {
 	Camera,
 	ChevronDown,

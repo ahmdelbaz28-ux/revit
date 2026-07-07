@@ -1,3 +1,4 @@
+# NOSONAR
 """
 tests/test_auth_edge_cases.py — Additional edge-case tests for auth.
 

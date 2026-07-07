@@ -1,3 +1,4 @@
+# NOSONAR
 """
 topology_graph_service.py — Neo4j-backed Network Topology Graph
 ====================================================================

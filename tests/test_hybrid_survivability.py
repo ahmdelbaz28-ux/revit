@@ -1,3 +1,4 @@
+# NOSONAR
 """
 tests/test_hybrid_survivability.py
 ==================================

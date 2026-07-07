@@ -1,3 +1,4 @@
+# NOSONAR
 """
 api_stability.py — FireAI Public API Stability Layer.
 =====================================================

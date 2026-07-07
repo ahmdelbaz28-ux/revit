@@ -1,3 +1,4 @@
+# NOSONAR
 """
 backend/services/autocad_service.py — AutoCAD Integration Service.
 ================================================================

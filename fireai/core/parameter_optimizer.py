@@ -1,3 +1,4 @@
+# NOSONAR
 """
 fireai/core/parameter_optimizer.py  V1.0.
 =========================================

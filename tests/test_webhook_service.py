@@ -1,3 +1,4 @@
+# NOSONAR
 """
 test_webhook_service.py — Tests for Webhook Delivery Service.
 

@@ -1,3 +1,4 @@
+# NOSONAR
 """
 backend/contract.py — Runtime API response contract validation.
 

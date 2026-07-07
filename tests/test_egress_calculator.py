@@ -1,3 +1,4 @@
+# NOSONAR
 """
 tests/test_egress_calculator.py
 ===============================

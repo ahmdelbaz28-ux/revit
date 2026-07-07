@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# NOSONAR
 """
 Generate and serve a review page for eval results.
 

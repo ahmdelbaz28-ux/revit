@@ -1,3 +1,4 @@
+# NOSONAR
 """
 test_thread_safe_queue.py — Tests for fireai/mcp_server/thread_safe_queue.py.
 

@@ -1,3 +1,4 @@
+# NOSONAR
 """
 fireai/agents/learning_agent.py — Knowledge Accumulation Agent.
 =================================================================

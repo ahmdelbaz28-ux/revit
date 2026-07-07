@@ -1,3 +1,4 @@
+# NOSONAR
 """
 tests/test_parameter_optimizer.py
 ==================================

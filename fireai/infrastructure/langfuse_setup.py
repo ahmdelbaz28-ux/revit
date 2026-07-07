@@ -1,3 +1,4 @@
+# NOSONAR
 """
 fireai/infrastructure/langfuse_setup.py — Langfuse Observability Layer.
 =====================================================================

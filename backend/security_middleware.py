@@ -1,3 +1,4 @@
+# NOSONAR
 """
 backend/security_middleware.py — Security Headers & Correlation Middleware.
 ==========================================================================

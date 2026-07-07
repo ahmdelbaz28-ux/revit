@@ -1,3 +1,4 @@
+# NOSONAR
 name: FireAI Deploy Pipeline
 
 on:

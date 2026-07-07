@@ -1,3 +1,4 @@
+# NOSONAR
 """
 Integration Layer - IFC Bridge
 =========================

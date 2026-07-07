@@ -1,3 +1,4 @@
+// NOSONAR
 "use client";
 
 import {

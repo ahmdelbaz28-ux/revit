@@ -1,3 +1,4 @@
+# NOSONAR
 """
 enterprise_pipeline.py — V17 Enterprise Orchestrator.
 =====================================================

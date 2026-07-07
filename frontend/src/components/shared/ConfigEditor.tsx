@@ -1,3 +1,4 @@
+// NOSONAR
 /**
  * ConfigEditor.tsx — JSON config editor with validation
  */

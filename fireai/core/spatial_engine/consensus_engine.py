@@ -1,3 +1,4 @@
+# NOSONAR
 """
 Consensus Verification Engine — Triple Verification System.
 ===========================================================

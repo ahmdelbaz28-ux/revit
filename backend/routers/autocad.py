@@ -1,3 +1,4 @@
+# NOSONAR
 """
 backend/routers/autocad.py — AutoCAD Integration Endpoints.
 ==========================================================

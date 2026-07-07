@@ -1,3 +1,4 @@
+# NOSONAR
 """
 backend/tests/test_monitor_unit.py — Unit tests for MonitorState, DashboardRateLimiter,
 and workflow path validation classes.

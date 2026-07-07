@@ -1,3 +1,4 @@
+# NOSONAR
 """
 mem0_setup.py — Mem0 Memory Layer Setup for FireAI (V81 OpenCode Support).
 

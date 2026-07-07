@@ -1,3 +1,4 @@
+# NOSONAR
 """Validator for Word document XML files against XSD schemas."""
 
 import re

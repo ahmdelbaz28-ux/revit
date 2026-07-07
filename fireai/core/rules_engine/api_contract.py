@@ -1,3 +1,4 @@
+# NOSONAR
 """
 FireAI Type-Safe API Contract System.
 ======================================

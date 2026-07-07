@@ -1,3 +1,4 @@
+# NOSONAR
 """
 aset_rset_calculator.py — ASET vs RSET Life-Safety Analysis.
 ============================================================

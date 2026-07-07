@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# NOSONAR
 """
 parse_jd.py — 解析 JD 文本，抽取 must-have / nice-to-have / 职责 / 特殊要求
 

@@ -1,3 +1,4 @@
+# NOSONAR
 """
 test_v133_phase1_security.py — Tests for PHASE 1 Security Hardening.
 

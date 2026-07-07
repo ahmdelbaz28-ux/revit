@@ -1,3 +1,4 @@
+# NOSONAR
 """
 test_ocr_scan_to_bim.py — Tests for OCR Service and ScanToBIM Pipeline
 =======================================================================

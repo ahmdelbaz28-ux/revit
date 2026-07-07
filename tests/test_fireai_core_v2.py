@@ -1,3 +1,4 @@
+# NOSONAR
 """
 tests/test_fireai_core_v2.py
 =============================

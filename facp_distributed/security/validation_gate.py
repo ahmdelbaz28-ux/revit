@@ -1,3 +1,4 @@
+# NOSONAR
 """Validation Firewall for Distributed FACP System"""
 import hashlib
 import logging

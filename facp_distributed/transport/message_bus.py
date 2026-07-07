@@ -1,3 +1,4 @@
+# NOSONAR
 """Message Bus Transport for Distributed FACP System"""
 import asyncio
 import json

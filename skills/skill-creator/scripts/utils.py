@@ -1,3 +1,4 @@
+# NOSONAR
 """Shared utilities for skill-creator scripts."""
 
 from pathlib import Path

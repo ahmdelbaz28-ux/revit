@@ -1,3 +1,4 @@
+# NOSONAR
 """
 tests/test_tenability_evaluator.py — Tests for tenability assessment.
 

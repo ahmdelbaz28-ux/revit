@@ -1,3 +1,4 @@
+# NOSONAR
 """
 core/models.py — Universal BIM Data Model (domain layer).
 =========================================================

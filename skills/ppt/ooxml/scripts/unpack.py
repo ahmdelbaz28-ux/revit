@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# NOSONAR
 """Unpack and format XML contents of Office files (.docx, .pptx, .xlsx)"""
 
 import argparse

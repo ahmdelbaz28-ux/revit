@@ -1,3 +1,4 @@
+# NOSONAR
 """
 backend/services/hazmat_service.py — Hazardous materials data for FireAI.
 

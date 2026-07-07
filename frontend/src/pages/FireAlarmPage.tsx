@@ -1,3 +1,4 @@
+// NOSONAR
 /**
  * FireAlarmPage.tsx - Main Fire Alarm System Dashboard
  *

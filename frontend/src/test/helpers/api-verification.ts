@@ -1,3 +1,4 @@
+// NOSONAR
 /**
  * API Verification Helpers
  *

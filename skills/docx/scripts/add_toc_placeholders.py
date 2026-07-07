@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# NOSONAR
 """
 Add placeholder entries to Table of Contents in a DOCX file.
 

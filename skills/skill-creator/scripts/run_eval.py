@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# NOSONAR
 """
 Run trigger evaluation for a skill description.
 

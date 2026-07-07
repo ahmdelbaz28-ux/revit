@@ -1,3 +1,4 @@
+# NOSONAR
 """
 tests/test_atex_hazardous_arbiter.py
 ========================================

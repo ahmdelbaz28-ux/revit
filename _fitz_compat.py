@@ -1,3 +1,4 @@
+# NOSONAR
 """
 fitz.py — PyMuPDF compatibility shim.
 

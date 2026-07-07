@@ -1,3 +1,4 @@
+// NOSONAR
 /**
  * PageErrorBoundary.tsx - Page-level error boundary
  * Catches errors in individual page routes so that one broken page

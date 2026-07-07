@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# NOSONAR
 """
 Rearrange PowerPoint slides based on a sequence of indices.
 

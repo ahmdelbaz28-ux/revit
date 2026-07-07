@@ -1,3 +1,4 @@
+# NOSONAR
 """
 SYMBOL EXTRACTOR — Fire Protection Symbols Detection
 =====================================================

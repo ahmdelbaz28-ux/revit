@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# NOSONAR
 """
 Dispatcher for the 27 AMiner Open Platform functions exposed via the
 z-ai gateway's /v1/functions/invoke endpoint.

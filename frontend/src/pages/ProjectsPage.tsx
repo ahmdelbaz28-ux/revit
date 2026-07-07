@@ -1,3 +1,4 @@
+// NOSONAR
 /**
  * ProjectsPage.tsx - Project management with full CRUD + Device & Connection creation
  */

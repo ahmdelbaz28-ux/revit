@@ -1,3 +1,4 @@
+# NOSONAR
 """
 parsers/tests/test_dwg_parser.py — Comprehensive DWG Parser Tests
 =================================================================

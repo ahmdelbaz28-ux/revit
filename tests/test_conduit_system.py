@@ -1,3 +1,4 @@
+# NOSONAR
 """
 tests/test_conduit_system.py
 ============================

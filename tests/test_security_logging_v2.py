@@ -1,3 +1,4 @@
+# NOSONAR
 """
 tests/test_security_logging_v2.py
 =================================

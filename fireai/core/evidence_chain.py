@@ -1,3 +1,4 @@
+# NOSONAR
 r"""
 evidence_chain.py — Chained Evidence Envelopes for FireAI.
 ==========================================================

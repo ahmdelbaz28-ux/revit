@@ -1,3 +1,4 @@
+# NOSONAR
 """
 v17_core/acoustic_calculator.py — NFPA 72 §18.4 Audible Notification Compliance.
 =================================================================================

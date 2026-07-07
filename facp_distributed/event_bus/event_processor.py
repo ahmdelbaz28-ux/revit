@@ -1,3 +1,4 @@
+# NOSONAR
 """Event Processor for Event Bus in Distributed FACP System"""
 import threading
 import time

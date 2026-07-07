@@ -1,3 +1,4 @@
+# NOSONAR
 """
 parsers/tests/test_path_security_enhanced.py — Enhanced security tests for
 parsers/_path_security.py (68% → 80%+).

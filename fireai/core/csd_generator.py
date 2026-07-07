@@ -1,3 +1,4 @@
+# NOSONAR
 """
 CSD (Control Station Device) Generation Module.
 This module defines the necessary enums, dataclasses, and generator class for

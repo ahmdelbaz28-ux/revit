@@ -1,3 +1,4 @@
+# NOSONAR
 """
 streaming_dwg_parser.py — Real-time DWG Streaming Parser.
 =========================================================

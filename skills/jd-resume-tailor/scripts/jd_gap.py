@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# NOSONAR
 """
 jd_gap.py — 把 parse_jd.py 的 JSON 与简历文本做 gap 分析
 

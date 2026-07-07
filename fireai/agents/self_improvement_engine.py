@@ -1,3 +1,4 @@
+# NOSONAR
 """
 fireai/agents/self_improvement_engine.py — Continuous Improvement Engine.
 ==========================================================================

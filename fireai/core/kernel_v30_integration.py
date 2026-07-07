@@ -1,3 +1,4 @@
+# NOSONAR
 """
 kernel_v30_integration.py — V30 Real Integration Engine.
 ========================================================

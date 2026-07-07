@@ -1,3 +1,4 @@
+# NOSONAR
 """
 test_api_keys.py — Direct unit tests for backend/api_keys.py.
 

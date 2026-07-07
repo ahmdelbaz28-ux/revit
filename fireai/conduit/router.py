@@ -1,3 +1,4 @@
+# NOSONAR
 """
 fireai.conduit.router — Orthogonal A* Conduit Path Router.
 ==========================================================

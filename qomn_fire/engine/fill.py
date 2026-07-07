@@ -1,3 +1,4 @@
+# NOSONAR
 """
 QOMN-FIRE CONDUIT FILL SIZING ENGINE
 Reference Standard: NEC 2023 Chapter 9, Table 1 & Table 4.

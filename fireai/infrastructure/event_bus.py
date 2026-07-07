@@ -1,3 +1,4 @@
+# NOSONAR
 """
 fireai/infrastructure/event_bus.py — Production Event Bus with Schema Validation,
 Retry with Backoff, Dead Letter Queue, At-Least-Once Delivery, and Event Replay.

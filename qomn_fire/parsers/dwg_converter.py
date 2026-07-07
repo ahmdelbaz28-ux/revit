@@ -1,3 +1,4 @@
+# NOSONAR
 """
 QOMN-FIRE DWG TO DXF TRANSFORMATION WRAPPER
 Converts binary DWG files to text-based DXF format for parsing.

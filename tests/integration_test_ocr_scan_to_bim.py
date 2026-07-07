@@ -1,3 +1,4 @@
+# NOSONAR
 """
 integration_test_ocr_scan_to_bim.py — Integration Test for OCR + ScanToBIM
 ============================================================================

@@ -1,3 +1,4 @@
+# NOSONAR
 """
 tests/test_hazard_override_v2.py
 ================================

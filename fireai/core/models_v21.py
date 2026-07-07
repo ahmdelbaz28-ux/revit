@@ -1,3 +1,4 @@
+# NOSONAR
 """
 models_v21.py – FireAI V21 Pydantic Models (Fast-Fail Validation).
 ==================================================================

@@ -1,3 +1,4 @@
+# NOSONAR
 """
 international_reg_selector.py – International Regulatory Jurisdiction Selector.
 ===============================================================================

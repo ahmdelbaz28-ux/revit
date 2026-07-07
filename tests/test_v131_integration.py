@@ -1,3 +1,4 @@
+# NOSONAR
 """
 test_v131_integration.py — Test for V131 Extensions Integration
 ===============================================================

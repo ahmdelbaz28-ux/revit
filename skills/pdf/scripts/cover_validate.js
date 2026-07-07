@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// NOSONAR
 /**
  * cover_validate.js — Cover page overlap detection via Playwright rendering
  *

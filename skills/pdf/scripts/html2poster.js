@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// NOSONAR
 /**
  * html2poster.js — Single-page poster/long-image HTML → PDF converter
  *

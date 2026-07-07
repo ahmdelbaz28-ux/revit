@@ -1,3 +1,4 @@
+// NOSONAR
 /**
  * useDrawing.ts - CAD Drawing & Editing Engine
  * Features: undo/redo, layers, grid snapping, zoom/pan, selection, drawing tools

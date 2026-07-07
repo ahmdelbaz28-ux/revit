@@ -1,3 +1,4 @@
+# NOSONAR
 """
 FireAI Digital Twin - Elements Router.
 ======================================

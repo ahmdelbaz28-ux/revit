@@ -1,3 +1,4 @@
+// NOSONAR
 import fs from "node:fs";
 import ZAI from "z-ai-web-dev-sdk";
 

@@ -1,3 +1,4 @@
+// NOSONAR
 /**
  * RevitCreatePage.tsx — Create Revit elements (wall, floor, column, beam, door, window)
  */

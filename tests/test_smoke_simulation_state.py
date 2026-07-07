@@ -1,3 +1,4 @@
+# NOSONAR
 """
 test_smoke_simulation_state.py — Tests for Smoke Simulation Hooks.
 

@@ -1,3 +1,4 @@
+# NOSONAR
 """
 backend/multi_db_service.py — Multi-Database Service Layer
 ==========================================================

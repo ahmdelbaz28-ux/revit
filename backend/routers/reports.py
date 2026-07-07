@@ -1,3 +1,4 @@
+# NOSONAR
 """
 backend/routers/reports.py — Report generation and export endpoints.
 

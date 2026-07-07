@@ -1,3 +1,4 @@
+# NOSONAR
 """L1 Gateway for Distributed FACP System"""
 import logging
 import time

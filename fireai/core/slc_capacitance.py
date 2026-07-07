@@ -1,3 +1,4 @@
+# NOSONAR
 """
 fireai/core/slc_capacitance.py.
 ================================

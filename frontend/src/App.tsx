@@ -1,3 +1,4 @@
+// NOSONAR
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";

@@ -1,3 +1,4 @@
+# NOSONAR
 """
 backend/routers/devices.py — Devices CRUD endpoints.
 

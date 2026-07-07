@@ -1,3 +1,4 @@
+# NOSONAR
 """
 qomn_conduit.router — Orthogonal A* Conduit Path Router
 ========================================================

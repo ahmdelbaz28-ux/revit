@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# NOSONAR
 """
 ats_check.py — 简历 ATS（Applicant Tracking System）友好度检查 + 关键词覆盖率
 

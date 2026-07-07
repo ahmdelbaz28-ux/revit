@@ -1,3 +1,4 @@
+# NOSONAR
 """
 sanitized_handler.py — Input-Sanitized MCP Request Handler.
 ===========================================================

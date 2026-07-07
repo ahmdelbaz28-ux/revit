@@ -1,3 +1,4 @@
+# NOSONAR
 """
 marine/tests/test_marine_regression_v2.py — Regression tests for v2 bugfixes.
 

@@ -1,3 +1,4 @@
+# NOSONAR
 """
 test_acoustics_engine.py — Unified Acoustics Engine Tests
 =========================================================

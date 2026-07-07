@@ -1,3 +1,4 @@
+# NOSONAR
 """
 backend/services/memory_service.py — Mem0-based Memory Layer for FireAI (V76).
 

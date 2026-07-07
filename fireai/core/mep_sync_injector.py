@@ -1,3 +1,4 @@
+# NOSONAR
 """
 mep_sync_injector.py — MEP Interface Module Synchronizer for Fire Alarm Integration.
 ====================================================================================

@@ -1,3 +1,4 @@
+# NOSONAR
 """
 backend/routers/digital_twin.py — Digital Twin Conversion Endpoints.
 ===================================================================

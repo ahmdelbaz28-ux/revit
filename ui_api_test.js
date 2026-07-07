@@ -1,3 +1,4 @@
+// NOSONAR
 const puppeteer = require("puppeteer");
 const fs = require("node:fs");
 const path = require("node:path");

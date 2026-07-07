@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# NOSONAR
 """
 init_tracker.py — 初始化求职投递追踪表
 

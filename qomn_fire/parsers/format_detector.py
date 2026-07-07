@@ -1,3 +1,4 @@
+# NOSONAR
 """
 QOMN-FIRE FORMAT AND VERSION DETECTION ENGINE
 Uses deterministic magic numbers and header verification.

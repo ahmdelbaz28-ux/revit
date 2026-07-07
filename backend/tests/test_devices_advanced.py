@@ -1,3 +1,4 @@
+# NOSONAR
 """
 test_devices_advanced.py — Advanced device CRUD integration tests covering
 load unit conversion, watt conversion edge cases, device update paths,

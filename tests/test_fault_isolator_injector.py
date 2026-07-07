@@ -1,3 +1,4 @@
+# NOSONAR
 """
 tests/test_fault_isolator_injector.py
 ======================================

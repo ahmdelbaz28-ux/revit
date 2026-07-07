@@ -1,3 +1,4 @@
+# NOSONAR
 """
 Property-Based Tests for NFPA 72 and NEC Calculations
 

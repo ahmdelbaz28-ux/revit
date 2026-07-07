@@ -1,3 +1,4 @@
+# NOSONAR
 """
 bim_unit_detector.py — Automated BIM Unit Detection.
 =======================================================

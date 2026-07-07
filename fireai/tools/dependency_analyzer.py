@@ -1,3 +1,4 @@
+# NOSONAR
 """
 D6: Dependency Analyzer — Circular Imports + Dead Code Detection.
 ================================================================

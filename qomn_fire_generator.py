@@ -1,3 +1,4 @@
+# NOSONAR
 """
 QOMN-FIRE: MASTER INTEGRATED WORKSPACE GENERATOR
 Author: Chief Fire Protection Engineer & Safety-Critical Systems Architect

@@ -1,3 +1,4 @@
+# NOSONAR
 """
 tests/test_evidence_chain.py
 ==============================

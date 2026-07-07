@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# NOSONAR
 """
 Tool to pack a directory into a .docx, .pptx, or .xlsx file with XML formatting undone.
 

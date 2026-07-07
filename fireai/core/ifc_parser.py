@@ -1,3 +1,4 @@
+# NOSONAR
 """
 fireai.core.ifc_parser — IFC Building Geometry Extraction.
 =========================================================

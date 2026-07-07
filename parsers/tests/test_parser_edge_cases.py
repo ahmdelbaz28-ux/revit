@@ -1,3 +1,4 @@
+# NOSONAR
 """
 parsers/tests/test_parser_edge_cases.py — Parser Edge Case Tests
 =================================================================

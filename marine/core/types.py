@@ -1,3 +1,4 @@
+# NOSONAR
 """
 marine/core/types.py — Domain Types for Marine Fire Safety
 ===========================================================

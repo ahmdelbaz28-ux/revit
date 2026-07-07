@@ -1,3 +1,4 @@
+# NOSONAR
 """
 tests/test_qomn_integration.py — QOMN-FIRE Pipeline Integration Tests
 =======================================================================

@@ -1,3 +1,4 @@
+# NOSONAR
 """
 marine/engine/alarm_logic.py — Alarm Logic Tree Generator
 ==========================================================

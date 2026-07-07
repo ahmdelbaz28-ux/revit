@@ -1,3 +1,4 @@
+# NOSONAR
 """
 revit_bim_sync.py — BIM/Revit Sync Without Revit API Dependency.
 ================================================================

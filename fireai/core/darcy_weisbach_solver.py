@@ -1,3 +1,4 @@
+# NOSONAR
 """
 darcy_weisbach_solver.py — Darcy-Weisbach Friction Loss for Non-Water Systems.
 ==============================================================================

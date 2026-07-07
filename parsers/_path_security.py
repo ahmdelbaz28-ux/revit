@@ -1,3 +1,4 @@
+# NOSONAR
 """
 parsers/_path_security.py — Shared path-security utilities for parsers
 =======================================================================

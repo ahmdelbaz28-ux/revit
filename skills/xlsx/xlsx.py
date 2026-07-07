@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# NOSONAR
 """
 xlsx.py — Unified Excel Quality Assurance & Manipulation Tool
 

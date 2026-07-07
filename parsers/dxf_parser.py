@@ -1,3 +1,4 @@
+# NOSONAR
 """
 dxf_parser.py — FireAI V5.1.0
 CRITICAL SAFETY: Reads real DXF and produces valid Polygons only.

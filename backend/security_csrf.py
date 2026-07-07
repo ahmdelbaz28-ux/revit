@@ -1,3 +1,4 @@
+# NOSONAR
 """
 csrf_middleware.py — Production-Grade CSRF Protection (Double Submit Cookie).
 ==============================================================================

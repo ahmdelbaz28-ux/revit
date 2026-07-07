@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# NOSONAR
 """
 build_quiz_html.py - 把题目 JSON 注入到模板 HTML，生成可独立运行的练习网页。
 

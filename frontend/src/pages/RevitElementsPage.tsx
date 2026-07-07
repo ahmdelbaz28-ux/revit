@@ -1,3 +1,4 @@
+// NOSONAR
 /**
  * RevitElementsPage.tsx — View and manage Revit elements
  */

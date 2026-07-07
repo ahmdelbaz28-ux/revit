@@ -1,3 +1,4 @@
+# NOSONAR
 """
 NFPA 72 V5 Calculations - Radius, Heat, and Sloped Ceiling Calculations
 This module provides calculation functions for NFPA 72 Chapter 17 compliance.

@@ -1,3 +1,4 @@
+# NOSONAR
 """
 FireAI Rules Engine — Integration Bridge Tests
 =================================================

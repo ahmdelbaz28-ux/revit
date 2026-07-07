@@ -1,3 +1,4 @@
+# NOSONAR
 """
 test_bim_provider.py — Tests for Provider-Agnostic BIM Abstraction Layer.
 

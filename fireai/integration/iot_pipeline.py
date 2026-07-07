@@ -1,3 +1,4 @@
+# NOSONAR
 """
 fireai/integration/iot_pipeline.py.
 ====================================

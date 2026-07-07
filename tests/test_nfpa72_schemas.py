@@ -1,3 +1,4 @@
+# NOSONAR
 """
 tests/test_nfpa72_schemas.py
 ==============================

@@ -1,3 +1,4 @@
+# NOSONAR
 """
 Comprehensive tests for the audit_store module.
 

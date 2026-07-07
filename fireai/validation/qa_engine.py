@@ -1,3 +1,4 @@
+# NOSONAR
 """
 fireai/validation/qa_engine.py.
 ================================

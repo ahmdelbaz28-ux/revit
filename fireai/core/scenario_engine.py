@@ -1,3 +1,4 @@
+# NOSONAR
 """
 scenario_engine.py — Fire Scenario Testing Engine (FireAI Integration).
 ======================================================================

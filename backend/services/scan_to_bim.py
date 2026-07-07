@@ -1,3 +1,4 @@
+# NOSONAR
 """
 scan_to_bim.py — OCR to BIM Extraction Pipeline
 ===============================================

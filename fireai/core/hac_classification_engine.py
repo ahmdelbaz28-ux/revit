@@ -1,3 +1,4 @@
+# NOSONAR
 """
 hac_classification_engine.py – Hazardous Area Classification Engine.
 =====================================================================

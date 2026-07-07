@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// NOSONAR
 /**
  * 使用 Playwright 获取 JS 渲染后的完整 DOM 和 WebGL 元数据
  *

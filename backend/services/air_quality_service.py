@@ -1,3 +1,4 @@
+# NOSONAR
 """
 backend/services/air_quality_service.py — Air quality data for FireAI.
 

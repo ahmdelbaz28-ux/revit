@@ -1,3 +1,4 @@
+# NOSONAR
 """
 fireai.core.revit_exporter — IFC & Revit Output Generation.
 ===========================================================

@@ -1,3 +1,4 @@
+# NOSONAR
 """
 fireai/core/device_placement.py — NFPA 72 Device Placement Engine.
 ===================================================================

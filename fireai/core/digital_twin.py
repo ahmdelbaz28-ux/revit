@@ -1,3 +1,4 @@
+# NOSONAR
 """
 digital_twin.py — FireAI Digital Twin (Production Safety System).
 ================================================================

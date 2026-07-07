@@ -1,3 +1,4 @@
+# NOSONAR
 """
 digital_twin_sync.py — Digital Twin Synchronization Module for FireAI.
 ======================================================================

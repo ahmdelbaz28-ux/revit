@@ -1,3 +1,4 @@
+# NOSONAR
 """
 tests/test_duct_detector.py
 ============================

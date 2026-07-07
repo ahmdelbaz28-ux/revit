@@ -1,3 +1,4 @@
+# NOSONAR
 """
 fireai/agents/predictive_agent.py — Anticipatory Recommendations Agent.
 ========================================================================

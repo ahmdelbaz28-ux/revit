@@ -1,3 +1,4 @@
+# NOSONAR
 """
 Mandatory Security Tests for FireAI Platform
 

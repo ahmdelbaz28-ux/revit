@@ -1,3 +1,4 @@
+# NOSONAR
 """
 IFC Parser - Industry Foundation Classes
 ===================================

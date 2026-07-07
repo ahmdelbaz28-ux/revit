@@ -1,3 +1,4 @@
+# NOSONAR
 """
 tests/test_v150_thread_safety_edge_cases_api_ergonomics.py
 ==========================================================

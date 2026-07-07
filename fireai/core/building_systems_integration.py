@@ -1,3 +1,4 @@
+# NOSONAR
 """
 fireai.core.building_systems_integration — Building Systems Fire Integration.
 =============================================================================

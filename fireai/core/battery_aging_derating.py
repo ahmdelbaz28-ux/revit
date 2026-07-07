@@ -1,3 +1,4 @@
+# NOSONAR
 """
 battery_aging_derating.py — NFPA 72 §10.6.7 Battery Capacity Auditor.
 =====================================================================

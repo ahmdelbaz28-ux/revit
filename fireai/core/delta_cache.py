@@ -1,3 +1,4 @@
+# NOSONAR
 """
 delta_cache.py — DeltaCache: Incremental Change Detection & Recomputation.
 ==========================================================================

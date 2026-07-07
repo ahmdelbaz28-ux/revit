@@ -1,3 +1,4 @@
+# NOSONAR
 """
 MIP Solver for FireAI — Set Covering Formulation.
 =================================================

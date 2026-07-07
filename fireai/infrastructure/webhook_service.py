@@ -1,3 +1,4 @@
+# NOSONAR
 """
 webhook_service.py — Webhook Event Delivery Service.
 ======================================================

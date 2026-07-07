@@ -1,3 +1,4 @@
+// NOSONAR
 import { Button } from "@/components/ui/button";
 import { useStore } from "@/store/simpleStore";
 

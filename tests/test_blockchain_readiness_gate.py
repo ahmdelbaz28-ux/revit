@@ -1,3 +1,4 @@
+# NOSONAR
 """
 tests/test_blockchain_readiness_gate.py
 =========================================

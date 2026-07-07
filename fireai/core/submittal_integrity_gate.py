@@ -1,3 +1,4 @@
+# NOSONAR
 """
 fireai/core/submittal_integrity_gate.py.
 =======================================

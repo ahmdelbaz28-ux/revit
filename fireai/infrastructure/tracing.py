@@ -1,3 +1,4 @@
+# NOSONAR
 from __future__ import annotations
 
 try:

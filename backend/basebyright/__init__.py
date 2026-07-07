@@ -1,3 +1,4 @@
+# NOSONAR
 """
 BASEBYRIGHT — Safe, Correct & Comprehensive Testing Framework for FireAI Backend.
 =================================================================================

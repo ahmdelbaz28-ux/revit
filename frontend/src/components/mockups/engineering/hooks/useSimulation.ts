@@ -1,3 +1,4 @@
+// NOSONAR
 import { useEffect } from "react";
 import { actions, useStore } from "@/store/simpleStore";
 

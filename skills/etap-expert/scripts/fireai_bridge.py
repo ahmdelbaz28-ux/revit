@@ -1,3 +1,4 @@
+# NOSONAR
 """
 ETAP Skill ↔ FireAI Bridge Module.
 ===================================

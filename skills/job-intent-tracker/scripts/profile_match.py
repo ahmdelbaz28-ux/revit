@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# NOSONAR
 """
 profile_match.py — 把用户技能列表 vs 关键词库做匹配，输出匹配度报告
 

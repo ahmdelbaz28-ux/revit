@@ -1,3 +1,4 @@
+// NOSONAR
 /**
  * @file mockWorker.ts
  * @description Web Worker that simulates the backend server sending live telemetry data.

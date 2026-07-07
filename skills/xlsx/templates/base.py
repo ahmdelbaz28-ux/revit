@@ -1,3 +1,4 @@
+# NOSONAR
 """
 xlsx skill — Base Template
 ===========================

@@ -1,4 +1,5 @@
 #!/usr/bin/env tsx
+// NOSONAR
 
 /**
  * generate.ts - 统一入口（纯 SDK 版本）

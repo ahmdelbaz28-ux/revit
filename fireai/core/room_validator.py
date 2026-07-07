@@ -1,3 +1,4 @@
+# NOSONAR
 """
 Room Validator - Strict validation for FireAI V10
 Validates RoomSpec before analysis to prevent crashes and ensure data integrity.

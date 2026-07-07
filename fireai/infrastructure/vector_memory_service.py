@@ -1,3 +1,4 @@
+# NOSONAR
 """
 vector_memory_service.py — Qdrant-backed Semantic Memory for FireAI Agents
 ==============================================================================

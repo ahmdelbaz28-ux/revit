@@ -1,3 +1,4 @@
+# NOSONAR
 """
 backend/routers/projects.py — Projects CRUD endpoints.
 

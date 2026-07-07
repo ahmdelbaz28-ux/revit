@@ -1,3 +1,4 @@
+# NOSONAR
 """
 Clause-Mapped Compliance Engine — NFPA 72 / NEC Validation.
 

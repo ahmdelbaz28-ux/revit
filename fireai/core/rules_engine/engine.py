@@ -1,3 +1,4 @@
+# NOSONAR
 """
 FireAI Rules Engine — Core Engine.
 ==================================

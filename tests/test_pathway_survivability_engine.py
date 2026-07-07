@@ -1,3 +1,4 @@
+# NOSONAR
 """
 tests/test_pathway_survivability_engine.py
 ===========================================

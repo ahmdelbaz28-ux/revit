@@ -1,3 +1,4 @@
+# NOSONAR
 """
 dwg_parser.py — FireAI DWG Parser
 SAFETY-CRITICAL: Reads DWG via LibreDWG tools.

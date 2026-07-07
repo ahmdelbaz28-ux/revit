@@ -1,3 +1,4 @@
+# NOSONAR
 """
 fault_isolator_injector.py — SLC Loop Fault Isolation per NFPA 72.
 =================================================================

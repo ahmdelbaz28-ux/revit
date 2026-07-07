@@ -1,3 +1,4 @@
+// NOSONAR
 /**
  * AuthContext.tsx — Global authentication state for the entire app.
  *

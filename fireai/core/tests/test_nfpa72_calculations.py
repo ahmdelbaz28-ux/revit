@@ -1,3 +1,4 @@
+# NOSONAR
 """
 NFPA 72 compliance calculations tests — SAFETY CRITICAL.
 

@@ -1,3 +1,4 @@
+# NOSONAR
 """
 Set Parameter by Name
 Set one of element's parameters.

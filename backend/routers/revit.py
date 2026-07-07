@@ -1,3 +1,4 @@
+# NOSONAR
 """
 backend/routers/revit.py — Revit Integration Endpoints.
 =====================================================

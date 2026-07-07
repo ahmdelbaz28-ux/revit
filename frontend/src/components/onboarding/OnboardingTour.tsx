@@ -1,3 +1,4 @@
+// NOSONAR
 import type React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";

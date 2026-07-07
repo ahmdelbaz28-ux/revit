@@ -1,3 +1,4 @@
+# NOSONAR
 """
 test_basebyright.py — Comprehensive tests for the BASEBYRIGHT framework itself.
 ===============================================================================

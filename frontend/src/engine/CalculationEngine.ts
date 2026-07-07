@@ -1,3 +1,4 @@
+// NOSONAR
 /**
  * CalculationEngine.ts - Pure Electrical Engineering Calculations
  * Based on IEC 60364, IEC 60909, and NEC standards

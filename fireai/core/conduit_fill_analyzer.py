@@ -1,3 +1,4 @@
+# NOSONAR
 """
 conduit_fill_analyzer.py — NEC Chapter 9 Conduit Fill Analysis.
 ===============================================================

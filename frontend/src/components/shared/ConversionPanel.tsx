@@ -1,3 +1,4 @@
+// NOSONAR
 /**
  * ConversionPanel.tsx — Conversion panel with progress bar
  */

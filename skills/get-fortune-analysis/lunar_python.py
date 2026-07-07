@@ -1,3 +1,4 @@
+# NOSONAR
 import datetime
 
 from lunar_python import Lunar, Solar

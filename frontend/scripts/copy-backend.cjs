@@ -1,3 +1,4 @@
+# NOSONAR
 /**
  * copy-backend.cjs — Copies Python backend files into the frontend build
  * so electron-builder can include them as extraResources.

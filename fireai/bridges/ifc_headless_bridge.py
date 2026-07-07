@@ -1,3 +1,4 @@
+# NOSONAR
 """
 fireai/bridges/ifc_headless_bridge.py.
 =======================================

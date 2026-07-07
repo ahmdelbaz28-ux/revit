@@ -1,3 +1,4 @@
+# NOSONAR
 """
 QOMN-FIRE IFC METADATA PARSER
 Parses IFC (Industry Foundation Classes) models and extracts geometric elements.

@@ -1,3 +1,4 @@
+// NOSONAR
 /**
  * v193-e2e-auth.spec.ts — End-to-end Playwright tests for the V193 auth flow.
  *

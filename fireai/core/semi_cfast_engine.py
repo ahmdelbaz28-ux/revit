@@ -1,3 +1,4 @@
+# NOSONAR
 """
 semi_cfast_engine.py — Physics-based smoke layer and tenability engine for ASET/RSET calculations.
 

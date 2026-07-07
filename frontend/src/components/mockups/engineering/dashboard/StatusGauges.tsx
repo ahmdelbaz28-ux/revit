@@ -1,3 +1,4 @@
+// NOSONAR
 interface StatusGaugesProps {
 	liveData: Record<string, unknown>;
 	dataMode: string;

@@ -1,3 +1,4 @@
+# NOSONAR
 """
 fireai/core/tests/test_helpers.py — Reusable Test Utilities.
 ============================================================

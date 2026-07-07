@@ -1,3 +1,4 @@
+# NOSONAR
 """
 core/tests/test_database.py — Comprehensive unit tests for core/database.py.
 

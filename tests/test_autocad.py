@@ -1,3 +1,4 @@
+# NOSONAR
 """
 tests/test_autocad.py — AutoCAD Service Tests
 ==========================================

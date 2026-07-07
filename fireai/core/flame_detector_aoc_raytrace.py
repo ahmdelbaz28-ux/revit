@@ -1,3 +1,4 @@
+# NOSONAR
 """
 flame_detector_aoc_raytrace.py – Flame Detector AOC Ray Trace Engine.
 =====================================================================

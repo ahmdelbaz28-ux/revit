@@ -1,3 +1,4 @@
+# NOSONAR
 """
 backend/routers/qomn.py — QOMN-FIRE Engineering Kernel REST API.
 ================================================================

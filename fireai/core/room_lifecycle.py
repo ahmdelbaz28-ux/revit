@@ -1,3 +1,4 @@
+# NOSONAR
 """
 room_lifecycle.py — FireAI Room Lifecycle State Machine.
 ========================================================

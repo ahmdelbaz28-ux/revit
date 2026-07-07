@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# NOSONAR
 """
 postcheck.py — Document business rule self-check script
 

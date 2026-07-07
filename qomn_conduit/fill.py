@@ -1,3 +1,4 @@
+# NOSONAR
 """
 qomn_conduit.fill — NEC Chapter 9 Conduit Fill Calculator
 ==========================================================

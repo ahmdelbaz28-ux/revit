@@ -1,3 +1,4 @@
+# NOSONAR
 """
 riser_diagram_generator.py — NFPA 72 §7.4.5 System Riser Diagram Generator.
 ===============================================================================

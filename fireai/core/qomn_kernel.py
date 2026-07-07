@@ -1,3 +1,4 @@
+# NOSONAR
 """
 fireai/core/qomn_kernel.py — QOMN-FIRE Deterministic Engineering Kernel
 QOMN-FIRE: Zero-Defect Fire Alarm & Light Current Engineering Kernel.

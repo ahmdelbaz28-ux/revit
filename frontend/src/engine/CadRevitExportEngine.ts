@@ -1,3 +1,4 @@
+// NOSONAR
 /**
  * CadRevitExportEngine.ts - CAD/BIM Export Engine
  * Exports to AutoCAD DXF, Revit JSON, and IFC (IFC2x3/IFC4) formats

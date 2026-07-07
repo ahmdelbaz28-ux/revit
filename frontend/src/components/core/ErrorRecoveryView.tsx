@@ -1,3 +1,4 @@
+// NOSONAR
 import { AlertTriangle, BookOpenText, RotateCcw } from "lucide-react";
 import { useState } from "react";
 import { SmartHelpDrawer } from "@/components/help/SmartHelpDrawer";

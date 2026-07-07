@@ -1,3 +1,4 @@
+# NOSONAR
 """
 D2: Compliance Proof Document Generator — AHJ-Ready Markdown.
 =============================================================

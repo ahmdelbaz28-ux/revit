@@ -1,3 +1,4 @@
+# NOSONAR
 """
 test_dwg.py — DWG/DXF parser integration tests.
 

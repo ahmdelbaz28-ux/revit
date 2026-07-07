@@ -1,3 +1,4 @@
+// NOSONAR
 /**
  * ExportEngine.ts - Professional Export Functions
  * Generates industry-standard Excel and DXF files

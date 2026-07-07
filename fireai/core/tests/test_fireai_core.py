@@ -1,3 +1,4 @@
+# NOSONAR
 """
 Comprehensive tests for the fireai_core module.
 

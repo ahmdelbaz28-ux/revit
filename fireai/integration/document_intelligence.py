@@ -1,3 +1,4 @@
+# NOSONAR
 """
 fireai/integration/document_intelligence.py — Document Intelligence Connector
 

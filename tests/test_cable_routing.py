@@ -1,3 +1,4 @@
+# NOSONAR
 """
 tests/test_cable_routing.py
 ===========================

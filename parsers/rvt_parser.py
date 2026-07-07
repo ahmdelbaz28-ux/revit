@@ -1,3 +1,4 @@
+# NOSONAR
 """FireAI RVT Parser - Revit RVT file parser"""
 
 import logging

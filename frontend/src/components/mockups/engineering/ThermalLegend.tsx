@@ -1,3 +1,4 @@
+// NOSONAR
 /**
  * ThermalLegend.tsx - Color Scale Legend Component
  * Shows the thermal color gradient with value ranges

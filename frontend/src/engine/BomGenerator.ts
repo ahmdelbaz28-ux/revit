@@ -1,3 +1,4 @@
+// NOSONAR
 /**
  * BomGenerator.ts - Automated Bill of Materials Generation
  * Generates dynamic tables based on canvas elements

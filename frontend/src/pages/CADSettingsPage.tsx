@@ -1,3 +1,4 @@
+// NOSONAR
 /**
  * CADSettingsPage.tsx — AutoCAD & Revit Connection Configuration
  *

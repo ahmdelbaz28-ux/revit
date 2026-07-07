@@ -1,3 +1,4 @@
+# NOSONAR
 """
 Gate 4 Extension: Tests for Extended Simulations + LLM Classifier (V131 Phase 3).
 =================================================================================

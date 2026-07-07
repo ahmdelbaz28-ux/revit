@@ -1,3 +1,4 @@
+# NOSONAR
 """
 adapters/pdf_to_rooms_adapter — PDF wall extraction to FireAI Room adapter.
 

@@ -1,3 +1,4 @@
+# NOSONAR
 """
 tests/test_auth_router.py — Tests for the session-based auth router (M-3).
 

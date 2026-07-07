@@ -1,3 +1,4 @@
+# NOSONAR
 """
 tests/test_notification_appliance_v2.py
 ========================================

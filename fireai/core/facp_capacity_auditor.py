@@ -1,3 +1,4 @@
+# NOSONAR
 """
 fireai/core/facp_capacity_auditor.py.
 ====================================

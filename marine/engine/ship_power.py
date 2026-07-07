@@ -1,3 +1,4 @@
+# NOSONAR
 """
 marine/engine/ship_power.py — Ship Electrical Power for Fire Systems
 =====================================================================

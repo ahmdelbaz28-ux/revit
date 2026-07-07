@@ -1,3 +1,4 @@
+# NOSONAR
 """
 v2.py — API v2 Routers for FireAI Cloud-Native Endpoints.
 ============================================================

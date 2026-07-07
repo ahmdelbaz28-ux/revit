@@ -1,3 +1,4 @@
+# NOSONAR
 """
 tests/test_models_v21.py
 =========================

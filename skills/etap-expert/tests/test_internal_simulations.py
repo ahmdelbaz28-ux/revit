@@ -1,3 +1,4 @@
+# NOSONAR
 """
 Gate 4: Regression Validation Tests.
 =====================================

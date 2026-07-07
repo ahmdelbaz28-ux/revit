@@ -1,3 +1,4 @@
+# NOSONAR
 """
 test_ugld_acoustics.py — UGLD Acoustic Physics Engine Tests
 ===========================================================

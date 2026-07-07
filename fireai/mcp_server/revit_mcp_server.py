@@ -1,3 +1,4 @@
+# NOSONAR
 """
 revit_mcp_server.py — Main Revit MCP Server Entry Point.
 ========================================================

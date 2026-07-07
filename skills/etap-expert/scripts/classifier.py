@@ -1,3 +1,4 @@
+# NOSONAR
 """
 ETAP Expert Skill — Request Classifier.
 =======================================

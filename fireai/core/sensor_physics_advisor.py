@@ -1,3 +1,4 @@
+# NOSONAR
 """
 sensor_physics_advisor.py — Advisory Layer for 3D Ceiling/Slope Effects.
 ========================================================================

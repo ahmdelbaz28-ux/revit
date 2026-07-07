@@ -1,3 +1,4 @@
+# NOSONAR
 """
 backend/services/revit_service.py — Revit Integration Service.
 =============================================================

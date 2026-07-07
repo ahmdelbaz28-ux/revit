@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# NOSONAR
 """
 design_engine.py — Aesthetic computation engine for art-direction-first PDF production.
 

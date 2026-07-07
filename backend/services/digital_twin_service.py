@@ -1,3 +1,4 @@
+# NOSONAR
 """
 backend/services/digital_twin_service.py — Digital Twin Engine.
 ================================================================

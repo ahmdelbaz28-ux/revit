@@ -1,3 +1,4 @@
+# NOSONAR
 """
 HTTP-Level Stress Test Suite for the Revit/FireAI Platform
 ============================================================

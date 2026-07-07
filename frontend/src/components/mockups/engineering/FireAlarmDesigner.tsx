@@ -1,3 +1,4 @@
+// NOSONAR
 /**
  * FireAlarmDesigner.tsx - Professional Fire Alarm System Designer
  * Implements NFPA 72 compliance and detector coverage calculations

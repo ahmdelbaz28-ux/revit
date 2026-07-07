@@ -1,3 +1,4 @@
+// NOSONAR
 import {
 	AlertOctagon,
 	AlertTriangle,

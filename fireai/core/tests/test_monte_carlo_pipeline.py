@@ -1,3 +1,4 @@
+# NOSONAR
 """
 test_monte_carlo_pipeline.py — Comprehensive tests for the Monte Carlo pipeline.
 

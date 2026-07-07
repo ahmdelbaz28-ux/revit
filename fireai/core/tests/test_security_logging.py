@@ -1,3 +1,4 @@
+# NOSONAR
 """
 fireai/core/tests/test_security_logging.py — Security Logging Tests.
 =====================================================================

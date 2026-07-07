@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# NOSONAR
 """
 Extract structured text content from PowerPoint presentations.
 

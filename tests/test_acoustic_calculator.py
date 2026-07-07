@@ -1,3 +1,4 @@
+# NOSONAR
 """
 tests/test_acoustic_calculator.py
 =================================

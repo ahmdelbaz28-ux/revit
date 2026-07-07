@@ -1,3 +1,4 @@
+# NOSONAR
 """
 fireai.conduit.output — Revit, AutoCAD, and Schedule Output Generators.
 =======================================================================

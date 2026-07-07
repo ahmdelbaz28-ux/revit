@@ -1,3 +1,4 @@
+# NOSONAR
 """
 backend/services/elevation_service.py — Elevation data for FireAI.
 

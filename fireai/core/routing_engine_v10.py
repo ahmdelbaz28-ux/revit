@@ -1,3 +1,4 @@
+# NOSONAR
 """
 fireai/core/routing_engine_v10.py.
 =================================

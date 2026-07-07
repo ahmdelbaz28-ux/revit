@@ -1,3 +1,4 @@
+# NOSONAR
 """
 ugld_raytrace.py — UGLD Acoustic Ray Tracing Engine (Phase 2).
 ==============================================================

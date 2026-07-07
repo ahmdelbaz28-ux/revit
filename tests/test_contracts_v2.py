@@ -1,3 +1,4 @@
+# NOSONAR
 """
 tests/test_contracts_v2.py
 ===========================

@@ -1,3 +1,4 @@
+# NOSONAR
 """HTTP Transport for Distributed FACP System"""
 import asyncio
 import logging

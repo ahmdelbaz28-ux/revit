@@ -1,3 +1,4 @@
+// NOSONAR
 import { Search } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";

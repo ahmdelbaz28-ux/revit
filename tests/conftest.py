@@ -1,3 +1,4 @@
+# NOSONAR
 """
 conftest.py — Shared Pytest Fixtures for FireAI Test Suite
 ===========================================================

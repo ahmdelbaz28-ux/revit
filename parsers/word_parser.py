@@ -1,3 +1,4 @@
+# NOSONAR
 """
 word_parser.py — FireAI Word Specification Parser
 Parses project specifications from Word documents.

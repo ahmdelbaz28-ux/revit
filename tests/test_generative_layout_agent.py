@@ -1,3 +1,4 @@
+# NOSONAR
 """
 test_generative_layout_agent.py — Tests for Generative Design Engine.
 

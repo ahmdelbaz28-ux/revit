@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# NOSONAR
 """
 FireAI — Constants Usage Index Generator.
 

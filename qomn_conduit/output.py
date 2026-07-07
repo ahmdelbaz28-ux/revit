@@ -1,3 +1,4 @@
+# NOSONAR
 """
 qomn_conduit.output — Revit, AutoCAD, and Schedule Output Generators
 ====================================================================

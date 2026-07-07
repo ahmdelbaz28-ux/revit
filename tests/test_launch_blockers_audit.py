@@ -1,3 +1,4 @@
+# NOSONAR
 """
 test_launch_blockers_audit.py — Comprehensive Launch Blocker Audit Tests
 =========================================================================

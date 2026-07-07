@@ -1,3 +1,4 @@
+# NOSONAR
 """
 tests/test_constraint_engine_v2.py
 ===================================

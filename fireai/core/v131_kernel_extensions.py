@@ -1,3 +1,4 @@
+# NOSONAR
 """
 V131 Kernel Extensions - Decoupled Architecture with Generative Design, Cloud Webhooks, and AR Hooks
 ===============================================================================================

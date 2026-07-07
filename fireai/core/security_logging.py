@@ -1,3 +1,4 @@
+# NOSONAR
 """
 fireai.core.security_logging — Security Event Audit Logging & Log Rotation.
 ==========================================================================

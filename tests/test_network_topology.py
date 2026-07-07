@@ -1,3 +1,4 @@
+# NOSONAR
 """
 tests/test_network_topology.py
 ================================

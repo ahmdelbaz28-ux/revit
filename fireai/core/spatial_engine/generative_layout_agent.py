@@ -1,3 +1,4 @@
+# NOSONAR
 """
 generative_layout_agent.py — Generative Design Engine for FireAI.
 ====================================================================

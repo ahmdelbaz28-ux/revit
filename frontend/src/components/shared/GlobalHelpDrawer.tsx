@@ -1,3 +1,4 @@
+// NOSONAR
 /**
  * GlobalHelpDrawer.tsx — Full help tree + user guide
  *

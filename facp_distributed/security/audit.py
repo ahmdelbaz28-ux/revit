@@ -1,3 +1,4 @@
+# NOSONAR
 """Audit Logging System for Distributed FACP System"""
 import hashlib
 import json

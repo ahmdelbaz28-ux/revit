@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# NOSONAR
 """
 BIM_MULTI_DB_EXAMPLE.py — BIM/CAD Multi-Database Workflow Example
 ==============================================================

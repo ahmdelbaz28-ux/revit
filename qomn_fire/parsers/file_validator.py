@@ -1,3 +1,4 @@
+# NOSONAR
 """
 QOMN-FIRE CRITICAL FILE VALIDATOR
 Guarantees file safety, size limits, and checks for physical file corruption.

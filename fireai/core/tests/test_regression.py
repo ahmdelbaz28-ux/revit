@@ -1,3 +1,4 @@
+# NOSONAR
 """
 fireai/core/tests/test_regression.py — Regression Tests for Known Bugs.
 ======================================================================

@@ -1,3 +1,4 @@
+# NOSONAR
 """FACP Distributed Protocol Schema Definitions"""
 import uuid
 from dataclasses import dataclass

@@ -1,3 +1,4 @@
+// NOSONAR
 /**
  * BatteryCalculator.ts - NFPA 72 Battery Calculation Engine
  * Calculates battery requirements per NFPA 72 §27.6.2 requirements

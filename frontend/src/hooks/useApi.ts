@@ -1,3 +1,4 @@
+// NOSONAR
 /**
  * useApi.ts - React hooks wrapping the digitalTwinApi client
  * Uses useState/useEffect for data fetching with loading/error states

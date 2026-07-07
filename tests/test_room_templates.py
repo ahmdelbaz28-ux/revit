@@ -1,3 +1,4 @@
+# NOSONAR
 """
 tests/test_room_templates.py
 ================================

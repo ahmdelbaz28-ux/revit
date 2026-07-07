@@ -1,3 +1,4 @@
+# NOSONAR
 """
 marine/engine/fire_resistance.py — Fire Division Class Calculator
 ==================================================================

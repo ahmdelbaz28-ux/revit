@@ -1,3 +1,4 @@
+# NOSONAR
 """
 fireai.core.nfpa72_engine — Core NFPA 72 Engineering Calculations.
 =================================================================

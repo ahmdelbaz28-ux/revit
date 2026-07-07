@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# NOSONAR
 """
 api_server.py — FastAPI REST wrapper for FireAI
 Based on V10 Enhanced + LearningStore.

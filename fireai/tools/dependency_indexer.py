@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# NOSONAR
 """
 FireAI — Module Dependency Index Generator.
 

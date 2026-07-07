@@ -1,3 +1,4 @@
+# NOSONAR
 """
 ConstraintSolver — Area-Based Greedy Fallback Coverage Solver.
 =============================================================

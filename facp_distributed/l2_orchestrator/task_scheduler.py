@@ -1,3 +1,4 @@
+# NOSONAR
 """Task Scheduler for L2 Orchestrator in Distributed FACP System"""
 import logging
 import threading

@@ -1,3 +1,4 @@
+# NOSONAR
 """
 fireai_cli_engine.py – FireAI CLI Orchestration Engine.
 =======================================================

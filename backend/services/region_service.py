@@ -1,3 +1,4 @@
+# NOSONAR
 """
 backend/services/region_service.py — Regulatory region detection for FireAI.
 

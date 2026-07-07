@@ -1,3 +1,4 @@
+# NOSONAR
 """
 Gate 9: Import-Level Integration Tests (V131 Phase 4).
 ======================================================

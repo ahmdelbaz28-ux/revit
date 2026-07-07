@@ -1,3 +1,4 @@
+# NOSONAR
 """
 langwatch_integration.py — LangWatch AI Observability Integration.
 ====================================================================

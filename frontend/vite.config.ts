@@ -1,3 +1,4 @@
+// NOSONAR
 /// <reference types="vitest" />
 
 import * as path from "node:path";

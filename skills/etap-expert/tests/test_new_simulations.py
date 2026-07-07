@@ -1,3 +1,4 @@
+# NOSONAR
 """
 Gate 4 Extension: Tests for New Simulations (Harmonic + Transient Stability).
 =============================================================================

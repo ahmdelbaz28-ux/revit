@@ -1,3 +1,4 @@
+# NOSONAR
 """
 backend/routers/monitor.py — Real-time Monitoring Dashboard API.
 

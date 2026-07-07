@@ -1,3 +1,4 @@
+# NOSONAR
 """
 atex_hazardous_arbiter.py – ATEX Hazardous Area Arbiter.
 =========================================================

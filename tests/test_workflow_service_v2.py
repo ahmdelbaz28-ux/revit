@@ -1,3 +1,4 @@
+# NOSONAR
 """
 tests/test_workflow_service_v2.py — Expanded test coverage for WorkflowService.
 

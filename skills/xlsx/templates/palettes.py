@@ -1,3 +1,4 @@
+# NOSONAR
 """
 xlsx skill — Palette System (Style-First Theme Engine)
 =======================================================

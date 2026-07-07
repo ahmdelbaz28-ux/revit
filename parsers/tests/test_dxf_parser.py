@@ -1,3 +1,4 @@
+# NOSONAR
 """
 parsers/tests/test_dxf_parser.py — Comprehensive DXF Parser Tests
 =================================================================

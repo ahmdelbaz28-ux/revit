@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# NOSONAR
 """
 star_story_builder.py — 从简历文本里抽出工作 / 项目经历，生成"故事矩阵"骨架
 

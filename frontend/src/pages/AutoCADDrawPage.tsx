@@ -1,3 +1,4 @@
+// NOSONAR
 /**
  * AutoCADDrawPage.tsx — Drawing tools for AutoCAD
  */

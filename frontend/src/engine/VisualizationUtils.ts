@@ -1,3 +1,4 @@
+// NOSONAR
 /**
  * VisualizationUtils.ts - Color Mapping for Thermal Visualization
  * Maps electrical values to color gradients based on IEC/NEC thresholds

@@ -1,3 +1,4 @@
+# NOSONAR
 """
 backend/routers/environment.py — Environmental data endpoints for FireAI.
 

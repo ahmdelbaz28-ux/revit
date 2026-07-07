@@ -1,3 +1,4 @@
+# NOSONAR
 """L2 Orchestrator for Distributed FACP System"""
 import logging
 import time

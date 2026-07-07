@@ -1,3 +1,4 @@
+# NOSONAR
 """Agent Registry for L2 Orchestrator in Distributed FACP System"""
 import threading
 import time

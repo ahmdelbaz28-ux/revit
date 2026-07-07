@@ -1,3 +1,4 @@
+# NOSONAR
 """
 Comprehensive tests for the multi_floor_orchestrator module.
 

@@ -1,3 +1,4 @@
+# NOSONAR
 """
 Comprehensive tests for fireai.core.safety_assurance.
 

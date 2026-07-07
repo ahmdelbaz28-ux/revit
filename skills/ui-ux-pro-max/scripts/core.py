@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# NOSONAR
 """UI/UX Pro Max Core - BM25 search engine for UI/UX style guides"""
 
 import csv

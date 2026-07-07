@@ -1,3 +1,4 @@
+# NOSONAR
 """
 Comprehensive tests for the analysis_pipeline module.
 

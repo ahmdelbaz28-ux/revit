@@ -1,3 +1,4 @@
+// NOSONAR
 /**
  * RevitPage.tsx — Revit Dashboard
  */

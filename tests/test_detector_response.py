@@ -1,3 +1,4 @@
+# NOSONAR
 """
 tests/test_detector_response.py
 ================================

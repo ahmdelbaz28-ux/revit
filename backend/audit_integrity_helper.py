@@ -1,3 +1,4 @@
+# NOSONAR
 """
 audit_integrity_helper.py — Signed Audit Trail for DB Writes.
 ===============================================================

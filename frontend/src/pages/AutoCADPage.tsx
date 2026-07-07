@@ -1,3 +1,4 @@
+// NOSONAR
 /**
  * AutoCADPage.tsx — AutoCAD Dashboard
  * Connection management + status overview

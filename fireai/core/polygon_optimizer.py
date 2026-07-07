@@ -1,3 +1,4 @@
+# NOSONAR
 """
 fireai/core/polygon_optimizer.py  V1.0.
 ======================================

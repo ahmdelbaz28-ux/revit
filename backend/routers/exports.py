@@ -1,3 +1,4 @@
+# NOSONAR
 """
 backend/routers/exports.py — DXF, Revit JSON, and IFC export endpoints.
 

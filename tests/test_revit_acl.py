@@ -1,3 +1,4 @@
+# NOSONAR
 """
 tests/test_revit_acl.py
 ===========================

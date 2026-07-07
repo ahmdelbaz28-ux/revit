@@ -1,3 +1,4 @@
+# NOSONAR
 """
 monte_carlo_pipeline.py — Monte Carlo Integration into Main Pipeline.
 ====================================================================

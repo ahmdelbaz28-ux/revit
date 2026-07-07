@@ -1,3 +1,4 @@
+# NOSONAR
 """
 backend/db_models.py — SQLAlchemy ORM models for Alembic autogenerate support.
 

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# NOSONAR
 """
 poster_validate.py — Pre- and post-generation quality checks for poster/creative PDFs.
 

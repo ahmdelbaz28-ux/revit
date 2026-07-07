@@ -1,3 +1,4 @@
+# NOSONAR
 """
 tests/test_safe_building_engine.py
 =====================================

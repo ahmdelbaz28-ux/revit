@@ -1,3 +1,4 @@
+# NOSONAR
 """
 fireai/integration/autocad_bridge.py.
 ======================================

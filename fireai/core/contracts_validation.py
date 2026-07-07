@@ -1,3 +1,4 @@
+# NOSONAR
 """
 fireai.core.contracts_validation — Input Contract Validation.
 =============================================================

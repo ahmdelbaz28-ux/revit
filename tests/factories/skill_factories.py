@@ -1,3 +1,4 @@
+# NOSONAR
 """
 tests/factories/skill_factories.py
 

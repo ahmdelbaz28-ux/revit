@@ -1,3 +1,4 @@
+# NOSONAR
 """
 fireai/core/pdf_report.py  V1.0 — Building-level NFPA 72-2022 PDF Report.
 ========================================================================

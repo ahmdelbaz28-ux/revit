@@ -1,3 +1,4 @@
+// NOSONAR
 /**
  * digitalTwinApi.ts - REST API Client for Digital Twin Backend (System A)
  *

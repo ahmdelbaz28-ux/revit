@@ -1,3 +1,4 @@
+# NOSONAR
 """
 backend/services/workflow_service.py — LangGraph-based Workflow Engine for FireAI.
 

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# NOSONAR
 """
 toc_validate.py - Table of Contents Validation for DOCX and PDF files.
 

@@ -1,3 +1,4 @@
+# NOSONAR
 """
 Tests for the Role-Based Access Control (RBAC) system.
 

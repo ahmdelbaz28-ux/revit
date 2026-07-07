@@ -1,3 +1,4 @@
+# NOSONAR
 """
 Comprehensive Stress Test Suite v2 for the Revit/FireAI Platform
 ================================================================

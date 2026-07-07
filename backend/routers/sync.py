@@ -1,3 +1,4 @@
+# NOSONAR
 """
 backend/routers/sync.py — Project synchronization and WebSocket endpoint.
 

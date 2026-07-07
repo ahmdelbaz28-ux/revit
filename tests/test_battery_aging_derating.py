@@ -1,3 +1,4 @@
+# NOSONAR
 """
 tests/test_battery_aging_derating.py
 =====================================

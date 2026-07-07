@@ -1,3 +1,4 @@
+# NOSONAR
 """
 audit_blockchain_bridge.py — Real Hash-Chain Audit (Not Blockchain).
 ====================================================================

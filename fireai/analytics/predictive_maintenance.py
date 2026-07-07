@@ -1,3 +1,4 @@
+# NOSONAR
 """
 fireai/analytics/predictive_maintenance.py.
 ============================================

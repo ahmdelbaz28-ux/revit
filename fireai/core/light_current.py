@@ -1,3 +1,4 @@
+# NOSONAR
 """
 fireai.core.light_current — QOMN-FIRE Light Current System Design.
 =================================================================

@@ -1,3 +1,4 @@
+# NOSONAR
 """
 tests/test_parsers_security_v125.py — V125 path-security hardening tests
 =========================================================================

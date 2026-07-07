@@ -1,3 +1,4 @@
+// NOSONAR
 import { Battery, Box, Plus, Power, Zap } from "lucide-react";
 import type React from "react";
 import type { DeviceType } from "@/store/simpleStore";

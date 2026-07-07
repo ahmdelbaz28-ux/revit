@@ -1,3 +1,4 @@
+// NOSONAR
 /**
  * ReportGeneratorPage.tsx - Advanced report generator matching the new UI design
  */

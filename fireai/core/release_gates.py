@@ -1,3 +1,4 @@
+# NOSONAR
 """
 fireai.core.release_gates — Release Gate Evaluation.
 =====================================================

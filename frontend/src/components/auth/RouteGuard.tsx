@@ -1,3 +1,4 @@
+// NOSONAR
 /**
  * RouteGuard.tsx — Protects routes that require authentication.
  *

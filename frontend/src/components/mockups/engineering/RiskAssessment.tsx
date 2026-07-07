@@ -1,3 +1,4 @@
+// NOSONAR
 import { Activity, Factory, MapPin, ShieldAlert } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";

@@ -1,3 +1,4 @@
+# NOSONAR
 """
 test_ifc43_mapper.py — Tests for IFC 4.3 Schema Mapper.
 

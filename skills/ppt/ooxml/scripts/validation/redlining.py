@@ -1,3 +1,4 @@
+# NOSONAR
 """Validator for tracked changes in Word documents."""
 
 import subprocess

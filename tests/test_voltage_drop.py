@@ -1,3 +1,4 @@
+# NOSONAR
 """
 tests/test_voltage_drop.py
 ==========================

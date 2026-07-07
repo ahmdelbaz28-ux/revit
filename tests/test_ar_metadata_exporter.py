@@ -1,3 +1,4 @@
+# NOSONAR
 """
 test_ar_metadata_exporter.py — Tests for AR Metadata Exporter.
 

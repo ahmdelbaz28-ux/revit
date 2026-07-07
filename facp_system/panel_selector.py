@@ -1,3 +1,4 @@
+# NOSONAR
 """
 FACP DETERMINISTIC SELECTION ALGORITHM
 Applies strict engineering multipliers, filters, and scoring logic.

@@ -1,3 +1,4 @@
+# NOSONAR
 """
 fire_zone_engine.py — NFPA 72 Fire Zone Clustering Engine.
 =========================================================

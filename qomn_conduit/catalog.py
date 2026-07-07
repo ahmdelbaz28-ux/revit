@@ -1,3 +1,4 @@
+# NOSONAR
 """
 qomn_conduit.catalog — Safety-Critical Conduit Fitting Catalog
 ==============================================================

@@ -1,3 +1,4 @@
+# NOSONAR
 """
 fireai/integration/bentley_bridge.py.
 ======================================

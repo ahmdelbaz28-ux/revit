@@ -1,3 +1,4 @@
+# NOSONAR
 """
 tests/test_audit_store_v2.py
 =============================

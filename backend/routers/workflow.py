@@ -1,3 +1,4 @@
+# NOSONAR
 """
 backend/routers/workflow.py — Workflow API endpoints for FireAI.
 

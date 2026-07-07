@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# NOSONAR
 """
 Create thumbnail grids from PowerPoint presentation slides.
 

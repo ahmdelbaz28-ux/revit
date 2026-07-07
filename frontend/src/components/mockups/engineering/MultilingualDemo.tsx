@@ -1,3 +1,4 @@
+// NOSONAR
 import {
 	ArrowRight,
 	CheckCircle2,

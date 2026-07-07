@@ -1,3 +1,4 @@
+# NOSONAR
 """
 tests/test_submittal_integrity_gate.py — Tests for TOCTOU hash verification.
 

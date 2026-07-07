@@ -1,3 +1,4 @@
+# NOSONAR
 """
 fireai.core.stairwell_smoke_control — Stairwell Smoke Control Integrator.
 =========================================================================

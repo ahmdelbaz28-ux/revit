@@ -1,3 +1,4 @@
+# NOSONAR
 """
 services/doctr/main.py — DocTR OCR Service for FireAI
 

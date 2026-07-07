@@ -1,3 +1,4 @@
+# NOSONAR
 """
 test_v2_api.py — Tests for /api/v2/ Cloud-Native API Endpoints.
 

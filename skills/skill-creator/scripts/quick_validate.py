@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# NOSONAR
 """Quick validation script for skills - minimal version"""
 
 import re

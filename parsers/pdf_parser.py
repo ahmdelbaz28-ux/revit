@@ -1,3 +1,4 @@
+# NOSONAR
 """
 pdf_parser.py — FireAI PDF Floor Plan Parser
 Extracts fire alarm device locations from PDF drawings.

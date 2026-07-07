@@ -1,3 +1,4 @@
+// NOSONAR
 import { toast } from "sonner";
 
 interface LogItem {

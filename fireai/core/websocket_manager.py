@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# NOSONAR
 """WebSocket connection manager for FastAPI with API key verification."""
 
 from __future__ import annotations

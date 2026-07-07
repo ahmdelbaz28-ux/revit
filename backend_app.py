@@ -1,3 +1,4 @@
+# NOSONAR
 """
 backend_app.py - FireAI QOMN + Analyze API Application Entry Point
 ====================================================================

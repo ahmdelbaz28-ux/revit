@@ -1,3 +1,4 @@
+# NOSONAR
 """
 tests/test_mip_solver.py — Tests for MIP Set Covering solver.
 

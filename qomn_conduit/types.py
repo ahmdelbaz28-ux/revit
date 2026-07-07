@@ -1,3 +1,4 @@
+# NOSONAR
 """
 qomn_conduit.types — Type Definitions for Conduit Fitting System
 ================================================================

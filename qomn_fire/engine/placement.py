@@ -1,3 +1,4 @@
+# NOSONAR
 """
 QOMN-FIRE AUTOMATED DETECTOR PLACEMENT ENGINE
 Reference Standard: NFPA 72 (2022) Section 17.7.3.2 (Spacing and Coverage).

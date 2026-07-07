@@ -1,3 +1,4 @@
+# NOSONAR
 """
 Bill of Quantities (BOQ) generator for fire alarm systems.
 

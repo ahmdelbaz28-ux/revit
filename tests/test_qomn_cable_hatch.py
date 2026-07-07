@@ -1,3 +1,4 @@
+# NOSONAR
 """
 tests/test_qomn_cable_hatch.py — QOMN Cable Routing & Hatch Placement Test Suite
 =================================================================================

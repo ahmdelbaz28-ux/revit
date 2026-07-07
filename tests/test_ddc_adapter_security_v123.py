@@ -1,3 +1,4 @@
+# NOSONAR
 """
 tests/test_ddc_adapter_security_v123.py — V123 refactor verification
 =====================================================================

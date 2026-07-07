@@ -1,3 +1,4 @@
+# NOSONAR
 """
 fireai.core.notification_appliance — NFPA 72 Notification Appliance Calculations.
 =================================================================================

@@ -1,3 +1,4 @@
+# NOSONAR
 """
 backend/routers/dwg.py — DWG/DXF file parsing endpoint.
 

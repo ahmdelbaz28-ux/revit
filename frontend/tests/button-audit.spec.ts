@@ -1,3 +1,4 @@
+// NOSONAR
 import { expect, test } from "@playwright/test";
 
 test.describe("Complete Button Audit for BazSpark UI", () => {

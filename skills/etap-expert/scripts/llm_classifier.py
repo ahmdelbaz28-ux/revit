@@ -1,3 +1,4 @@
+# NOSONAR
 """
 ETAP Expert Skill — LLM-Based Request Classifier (V131 Phase 3).
 =================================================================

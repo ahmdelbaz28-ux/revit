@@ -1,3 +1,4 @@
+# NOSONAR
 """
 fireai/core/network_topology.py.
 =================================

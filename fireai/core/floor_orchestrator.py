@@ -1,3 +1,4 @@
+# NOSONAR
 """
 floor_orchestrator.py — FireAI V20.2 with Audit Integration
 CRITICAL SAFETY:

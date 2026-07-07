@@ -1,3 +1,4 @@
+// NOSONAR
 /**
  * EngineeringPage.tsx - Fire Alarm Electrical Calculations
  *

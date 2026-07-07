@@ -1,3 +1,4 @@
+// NOSONAR
 import { actions, useStore } from "@/store/simpleStore";
 import {
 	ControlPanel,

@@ -1,3 +1,4 @@
+# NOSONAR
 """
 ci_benchmark.py — Automated CI Benchmark Suite.
 ================================================

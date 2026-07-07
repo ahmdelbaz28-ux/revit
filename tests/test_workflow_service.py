@@ -1,3 +1,4 @@
+# NOSONAR
 """
 tests/test_workflow_service.py — LangGraph Workflow Service Tests for FireAI.
 

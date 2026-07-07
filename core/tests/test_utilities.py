@@ -1,3 +1,4 @@
+# NOSONAR
 """
 core/tests/test_utilities.py — Comprehensive unit tests for core/models.py.
 

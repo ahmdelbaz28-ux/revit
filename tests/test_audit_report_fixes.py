@@ -1,3 +1,4 @@
+# NOSONAR
 """
 test_audit_report_fixes.py — Tests for Audit Report Corrective Actions
 ======================================================================

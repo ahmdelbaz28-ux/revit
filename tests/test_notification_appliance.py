@@ -1,3 +1,4 @@
+# NOSONAR
 """
 Tests for fireai.core.notification_appliance — NFPA 72 Notification Appliances
 

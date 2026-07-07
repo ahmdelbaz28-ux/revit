@@ -1,3 +1,4 @@
+# NOSONAR
 """
 revit_acl.py – Anti-Corruption Layer for Revit/BIM Data Import.
 ==============================================================

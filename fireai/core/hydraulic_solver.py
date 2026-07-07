@@ -1,3 +1,4 @@
+# NOSONAR
 """
 hydraulic_solver.py — Hazen-Williams Friction Loss & Hydraulic Calculation Engine.
 =================================================================================

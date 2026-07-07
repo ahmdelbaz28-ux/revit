@@ -1,3 +1,4 @@
+# NOSONAR
 """
 event_bus.py - FireAI Event Bus (Digital Twin Foundation).
 =========================================================

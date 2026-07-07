@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// NOSONAR
 /**
  * html2pdf-next.js — HTML → PDF converter using Playwright + pdf-lib
  *

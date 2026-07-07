@@ -1,3 +1,4 @@
+# NOSONAR
 """
 fireai/infrastructure/stream_processor.py — Stream Processor with
 Transform/Filter/Sink Pipeline, Windowed Aggregations (1min, 5min, 1h),

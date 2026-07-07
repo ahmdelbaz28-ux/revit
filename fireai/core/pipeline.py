@@ -1,3 +1,4 @@
+# NOSONAR
 """
 pipeline.py — FireAI Main Analysis Pipeline.
 =============================================

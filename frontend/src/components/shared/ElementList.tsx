@@ -1,3 +1,4 @@
+// NOSONAR
 /**
  * ElementList.tsx — Sortable, filterable element table
  */

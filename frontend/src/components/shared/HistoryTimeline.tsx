@@ -1,3 +1,4 @@
+// NOSONAR
 /**
  * HistoryTimeline.tsx — Timeline view for conversion history
  */

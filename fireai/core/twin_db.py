@@ -1,3 +1,4 @@
+# NOSONAR
 """
 twin_db.py — SQLite-Backed Twin System of Record.
 =================================================

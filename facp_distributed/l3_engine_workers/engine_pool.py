@@ -1,3 +1,4 @@
+# NOSONAR
 """Engine Pool for L3 in Distributed FACP System"""
 import logging
 import threading

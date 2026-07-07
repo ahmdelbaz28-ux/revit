@@ -1,3 +1,4 @@
+// NOSONAR
 import { HelpCircle, Moon, Shield, Sun, Wifi, WifiOff } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 

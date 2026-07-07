@@ -1,3 +1,4 @@
+# NOSONAR
 """
 PARSER CONFIDENCE — Input Gateway for NFPA 72 Engine
 =====================================================

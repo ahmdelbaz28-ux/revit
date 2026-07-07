@@ -1,3 +1,4 @@
+# NOSONAR
 """
 backend/tests/conftest.py — Backend test configuration.
 

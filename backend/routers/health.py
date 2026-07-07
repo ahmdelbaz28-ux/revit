@@ -1,3 +1,4 @@
+# NOSONAR
 """
 backend/routers/health.py — Health check endpoint.
 

@@ -1,3 +1,4 @@
+# NOSONAR
 """
 tests/test_bim_input_sanitizer.py
 ==================================

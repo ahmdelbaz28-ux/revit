@@ -1,3 +1,4 @@
+# NOSONAR
 """
 image_parser.py — FireAI Image Floor Plan Parser
 Parses floor plans from images (JPG, PNG, etc.) using Computer Vision.

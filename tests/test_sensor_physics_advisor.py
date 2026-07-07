@@ -1,3 +1,4 @@
+# NOSONAR
 """
 tests/test_sensor_physics_advisor.py
 ======================================

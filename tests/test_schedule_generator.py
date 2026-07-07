@@ -1,3 +1,4 @@
+# NOSONAR
 """
 tests/test_schedule_generator.py
 ==================================

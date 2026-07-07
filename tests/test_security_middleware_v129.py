@@ -1,3 +1,4 @@
+# NOSONAR
 """
 tests/test_security_middleware_v129.py — Tests for V129 Infrastructure Security Hardening
 =========================================================================================

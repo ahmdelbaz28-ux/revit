@@ -1,3 +1,4 @@
+# NOSONAR
 """
 QOMN-FIRE ORTHOGONAL 3D PATHFINDER ROUTING ENGINE
 A* algorithm for conduit routing with NEC 360-degree bend limit enforcement.

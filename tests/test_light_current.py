@@ -1,3 +1,4 @@
+# NOSONAR
 """
 tests/test_light_current.py
 ===========================

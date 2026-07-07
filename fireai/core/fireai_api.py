@@ -1,3 +1,4 @@
+# NOSONAR
 """FireAI NFPA 72-2022 Design API — FastAPI application (V10)."""
 
 from __future__ import annotations

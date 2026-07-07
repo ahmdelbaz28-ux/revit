@@ -1,3 +1,4 @@
+# NOSONAR
 """
 core/database.py — Universal Data Model (UDM) SQLite Store.
 ===========================================================

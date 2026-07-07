@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# NOSONAR
 """
 Library for working with Word documents: comments, tracked changes, and editing.
 

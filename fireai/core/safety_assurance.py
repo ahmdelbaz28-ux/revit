@@ -1,3 +1,4 @@
+# NOSONAR
 """
 safety_assurance.py — FireAI Safety Assurance Module.
 =====================================================

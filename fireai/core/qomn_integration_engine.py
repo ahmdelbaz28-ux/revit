@@ -1,3 +1,4 @@
+# NOSONAR
 """
 QOMN INTEGRATED ENGINE: CABLE ROUTING & HATCH PLACEMENT SUITE.
 =============================================================

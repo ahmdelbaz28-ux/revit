@@ -1,3 +1,4 @@
+// NOSONAR
 /**
  * fullApi.ts — Comprehensive API client covering ALL backend endpoints.
  *

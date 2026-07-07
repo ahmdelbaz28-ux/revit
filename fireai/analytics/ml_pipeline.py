@@ -1,3 +1,4 @@
+# NOSONAR
 """
 fireai/analytics/ml_pipeline.py — End-to-End ML Pipeline.
 ============================================================

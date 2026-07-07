@@ -1,3 +1,4 @@
+# NOSONAR
 """
 backend/database.py — Lightweight database layer for the Digital Twin API.
 

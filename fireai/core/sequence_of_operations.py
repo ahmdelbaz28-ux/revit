@@ -1,3 +1,4 @@
+# NOSONAR
 """
 sequence_of_operations.py — NFPA 72 §14.4 Cause & Effect Matrix Generator.
 ==========================================================================

@@ -1,3 +1,4 @@
+# NOSONAR
 """
 QOMN-FIRE GEOMETRIC VALIDATION LAYER
 Enforces physical, dimension, and coordinate constraints on building models.

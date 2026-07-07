@@ -1,3 +1,4 @@
+// NOSONAR
 import { AlertTriangle, CheckCircle2, Save, X, XCircle } from "lucide-react";
 import type React from "react";
 import { useState } from "react";

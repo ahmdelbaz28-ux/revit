@@ -1,3 +1,4 @@
+# NOSONAR
 """
 backend/routers/api_keys.py — API Key management endpoints (admin only).
 

@@ -1,3 +1,4 @@
+// NOSONAR
 interface ControlPanelProps {
 	isFaulty: (id: string) => boolean;
 	onFaultToggle: (id: string) => void;

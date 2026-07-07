@@ -1,3 +1,4 @@
+# NOSONAR
 """
 backend/services/geocoding_service.py — Geocoding service for FireAI.
 

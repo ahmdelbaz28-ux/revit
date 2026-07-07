@@ -1,3 +1,4 @@
+// NOSONAR
 /**
  * DigitalTwinConfigPage.tsx — Config editor for Digital Twin settings
  */

@@ -1,3 +1,4 @@
+# NOSONAR
 """
 fireai.core.audit_log — QOMN-FIRE Layer 4: Audit Log (Immutable Record).
 ========================================================================

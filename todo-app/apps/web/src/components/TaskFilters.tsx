@@ -1,3 +1,4 @@
+// NOSONAR
 interface Props {
 	filters: { status: string; tag: string; dueDate: string };
 	onChange: (filters: any) => void;

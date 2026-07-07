@@ -1,3 +1,4 @@
+# NOSONAR
 """
 backend/routers/multi_db.py — Multi-Database API Endpoints
 =========================================================

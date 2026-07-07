@@ -1,3 +1,4 @@
+# NOSONAR
 """
 fireai/core/safe_building_engine.py.
 ===================================

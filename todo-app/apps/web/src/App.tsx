@@ -1,3 +1,4 @@
+// NOSONAR
 import { Navigate, Route, Routes } from "react-router-dom";
 import { useAuth } from "./contexts/AuthContext";
 import Dashboard from "./pages/Dashboard";

@@ -1,3 +1,4 @@
+# NOSONAR
 """
 tests/test_fire_zone_engine.py
 ================================

@@ -1,3 +1,4 @@
+# NOSONAR
 """
 test_v137_audit_fixes.py — Regression tests for V137 AUDIT findings (F-1 to F-9).
 

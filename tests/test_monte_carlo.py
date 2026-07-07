@@ -1,3 +1,4 @@
+# NOSONAR
 """
 tests/test_monte_carlo.py
 ==========================

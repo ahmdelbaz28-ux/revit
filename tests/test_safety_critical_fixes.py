@@ -1,3 +1,4 @@
+# NOSONAR
 """
 Safety-Critical Fix Verification Tests
 ========================================

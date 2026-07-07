@@ -1,3 +1,4 @@
+# NOSONAR
 """
 tests/test_sequence_of_operations_v2.py
 ==========================================

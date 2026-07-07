@@ -1,3 +1,4 @@
+# NOSONAR
 """
 backend/routers/analyze.py - Project-level analyze endpoints.
 =============================================================

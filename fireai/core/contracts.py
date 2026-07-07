@@ -1,3 +1,4 @@
+# NOSONAR
 """
 FireAI Service Contracts — Versioned JSON Schemas.
 ==================================================

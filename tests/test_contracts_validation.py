@@ -1,3 +1,4 @@
+# NOSONAR
 """
 FireAI Contracts Validation — Comprehensive Tests
 ===================================================

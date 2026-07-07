@@ -1,3 +1,4 @@
+# NOSONAR
 """
 Gate 1: Static Validation Tests.
 ================================

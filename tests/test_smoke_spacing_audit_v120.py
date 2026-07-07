@@ -1,3 +1,4 @@
+# NOSONAR
 """
 tests/test_smoke_spacing_audit_v120.py — V130 Flat Smoke Spacing Audit Tests
 =============================================================================

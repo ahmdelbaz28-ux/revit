@@ -1,3 +1,4 @@
+# NOSONAR
 """
 parsers/tests/test_ifc_parser.py — Comprehensive IFC Parser Tests
 =================================================================

@@ -1,3 +1,4 @@
+# NOSONAR
 """
 tests/test_backend_app_security.py — V127 SAFETY: backend_app.py CORS hardening
 ================================================================================

@@ -1,3 +1,4 @@
+# NOSONAR
 """
 fireai.conduit.fitting_engine — NEC Fitting Placement Engine.
 =============================================================

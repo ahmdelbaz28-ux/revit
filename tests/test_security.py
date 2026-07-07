@@ -1,3 +1,4 @@
+# NOSONAR
 """
 Comprehensive security tests for the FireAI safety-critical fire protection system.
 

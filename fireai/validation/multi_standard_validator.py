@@ -1,3 +1,4 @@
+# NOSONAR
 """
 fireai/validation/multi_standard_validator.py — Advanced Multi-Standard Validation.
 

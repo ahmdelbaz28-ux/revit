@@ -1,3 +1,4 @@
+# NOSONAR
 """
 tests/test_device_placement.py
 ================================

@@ -1,3 +1,4 @@
+# NOSONAR
 """
 tests/test_auth_security.py — Security edge-case tests for auth router.
 

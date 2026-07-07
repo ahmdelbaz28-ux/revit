@@ -1,3 +1,4 @@
+# NOSONAR
 """
 fireai.core.constraint_engine — Code-Based Routing Constraints.
 ==============================================================

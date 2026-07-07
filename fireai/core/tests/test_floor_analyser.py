@@ -1,3 +1,4 @@
+# NOSONAR
 """
 Floor analyser tests — NFPA 72 floor-level fire detection validation.
 

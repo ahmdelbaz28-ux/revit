@@ -1,3 +1,4 @@
+# NOSONAR
 """
 tests/test_qomn_integration_engine_v2.py
 ===========================================

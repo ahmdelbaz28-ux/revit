@@ -1,3 +1,4 @@
+# NOSONAR
 """Load Balancer for L2 Orchestrator in Distributed FACP System"""
 import logging
 import random

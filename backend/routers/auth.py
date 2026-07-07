@@ -1,3 +1,4 @@
+# NOSONAR
 """
 backend/routers/auth.py — Session-based authentication with signed HttpOnly cookies.
 

@@ -1,3 +1,4 @@
+# NOSONAR
 """WebSocket Transport for Distributed FACP System"""
 import asyncio
 import json

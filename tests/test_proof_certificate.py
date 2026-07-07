@@ -1,3 +1,4 @@
+# NOSONAR
 """
 tests/test_proof_certificate.py
 ================================

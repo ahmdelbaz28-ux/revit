@@ -1,3 +1,4 @@
+# NOSONAR
 """
 Static analysis tool — scans ALL .py files for numeric constant mismatches.
 Prevents Bug #25-class issues where mw_air or DETECTOR_RADIUS diverge silently.

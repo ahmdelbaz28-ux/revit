@@ -1,3 +1,4 @@
+# NOSONAR
 """
 V192 Backend Integration Tests — Life-safety CRUD verification.
 

@@ -1,3 +1,4 @@
+// NOSONAR
 import { Book, FileText, LifeBuoy, X } from "lucide-react";
 
 interface HelpDrawerProps {

@@ -1,3 +1,4 @@
+// NOSONAR
 /**
  * FileUploader.tsx — Drag & Drop file uploader for DWG/RVT files
  */

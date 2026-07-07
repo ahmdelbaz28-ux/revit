@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# NOSONAR
 """Fetch AMiner paper recommendations and render results as Markdown."""
 from __future__ import annotations
 

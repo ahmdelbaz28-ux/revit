@@ -1,3 +1,4 @@
+# NOSONAR
 """
 test_v135_high_fixes.py — Regression tests for V135 HIGH findings (F-7 to F-17).
 

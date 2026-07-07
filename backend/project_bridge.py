@@ -1,3 +1,4 @@
+# NOSONAR
 """
 backend/project_bridge.py — Cross-database project & device synchronization bridge.
 

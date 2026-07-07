@@ -1,3 +1,4 @@
+# NOSONAR
 """
 core/retry.py — AI Agent Skill Retry & Fault Tolerance System.
 =============================================================

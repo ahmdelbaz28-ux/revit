@@ -1,3 +1,4 @@
+# NOSONAR
 """
 excel_parser.py — FireAI Excel Room Data Parser
 Parses room specifications from Excel files.

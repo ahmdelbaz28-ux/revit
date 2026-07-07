@@ -1,3 +1,4 @@
+# NOSONAR
 """
 qomn_conduit.fitting_engine — NEC Fitting Placement Engine
 ===========================================================

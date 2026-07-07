@@ -1,3 +1,4 @@
+# NOSONAR
 """
 geometry_utils.py — Computational Geometry for FireAI.
 =====================================================

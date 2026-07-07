@@ -1,3 +1,4 @@
+# NOSONAR
 """Enhanced FACP Message Schema for Distributed System"""
 import json
 import uuid

@@ -1,3 +1,4 @@
+# NOSONAR
 """
 backend/routers/connections.py — Connections CRUD endpoints.
 

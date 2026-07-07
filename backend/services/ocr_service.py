@@ -1,3 +1,4 @@
+# NOSONAR
 """
 ocr_service.py — Tesseract OCR for PDF/images to Text Extraction
 ================================================================

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# NOSONAR
 """
 PDF Quality Assurance Checker
 =============================

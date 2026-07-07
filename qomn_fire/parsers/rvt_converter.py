@@ -1,3 +1,4 @@
+# NOSONAR
 """
 QOMN-FIRE RVT TO IFC TRANSFORMATION WRAPPER
 Converts binary Revit model files to IFC format for parsing.

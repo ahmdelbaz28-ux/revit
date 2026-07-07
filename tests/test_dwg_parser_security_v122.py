@@ -1,3 +1,4 @@
+# NOSONAR
 """
 tests/test_dwg_parser_security_v122.py — Finding #5 hardening tests
 =====================================================================

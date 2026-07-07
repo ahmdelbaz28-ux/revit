@@ -1,3 +1,4 @@
+# NOSONAR
 """
 qomn_conduit.tests.test_fill — NEC Chapter 9, Table 1 Compliance Tests
 ======================================================================

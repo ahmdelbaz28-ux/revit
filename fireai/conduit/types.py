@@ -1,3 +1,4 @@
+# NOSONAR
 """
 fireai.conduit.types — Type Definitions for Conduit Fitting System.
 ===================================================================

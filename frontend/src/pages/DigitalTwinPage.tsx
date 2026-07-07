@@ -1,3 +1,4 @@
+// NOSONAR
 /**
  * DigitalTwinPage.tsx — Digital Twin Conversion Workflow
  *

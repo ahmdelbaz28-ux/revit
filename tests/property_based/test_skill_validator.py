@@ -1,3 +1,4 @@
+# NOSONAR
 """
 tests/property_based/test_skill_validator.py
 

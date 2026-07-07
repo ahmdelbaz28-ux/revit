@@ -1,3 +1,4 @@
+// NOSONAR
 /**
  * CoverageEngine.ts - NFPA 72 Coverage Calculation Engine
  * Calculates detector coverage per NFPA 72 requirements

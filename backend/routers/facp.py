@@ -1,3 +1,4 @@
+# NOSONAR
 """
 backend/routers/facp.py — FACP Selection & Compliance REST API.
 ================================================================

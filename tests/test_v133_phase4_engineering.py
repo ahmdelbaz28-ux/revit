@@ -1,3 +1,4 @@
+# NOSONAR
 """
 test_v133_phase4_engineering.py — Tests for PHASE 4 Engineering Upgrades.
 

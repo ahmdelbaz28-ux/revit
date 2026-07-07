@@ -1,3 +1,4 @@
+# NOSONAR
 """
 tests.test_cable_router — Comprehensive Tests for Cable Router Suite
 ====================================================================

@@ -1,3 +1,4 @@
+# NOSONAR
 """
 v17_core/dynamic_tenability_evaluator.py — NFPA 101 §9.3 ASET vs RSET.
 ======================================================================

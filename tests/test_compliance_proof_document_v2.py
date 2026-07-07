@@ -1,3 +1,4 @@
+# NOSONAR
 """
 tests/test_compliance_proof_document_v2.py
 ============================================

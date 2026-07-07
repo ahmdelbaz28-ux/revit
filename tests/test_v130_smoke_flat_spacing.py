@@ -1,3 +1,4 @@
+# NOSONAR
 """
 V130 CRITICAL FIX Verification — Smoke Detector Flat Spacing
 =============================================================

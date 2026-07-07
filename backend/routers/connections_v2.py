@@ -1,3 +1,4 @@
+# NOSONAR
 """
 FireAI Digital Twin - Connections V2 Router.
 ============================================

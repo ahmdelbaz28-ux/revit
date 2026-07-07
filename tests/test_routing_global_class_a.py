@@ -1,3 +1,4 @@
+# NOSONAR
 """
 tests/test_routing_global_class_a.py
 =====================================

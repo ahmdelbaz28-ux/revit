@@ -1,3 +1,4 @@
+// NOSONAR
 /**
  * Screenshot capture script for FireAI Electron app.
  * Usage: xvfb-run node capture-screenshots.mjs

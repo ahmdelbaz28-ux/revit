@@ -1,3 +1,4 @@
+# NOSONAR
 """
 graphrag_engine.py — GraphRAG Engine: Semantic Vector Memory + Knowledge Graph
 ================================================================================

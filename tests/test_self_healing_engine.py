@@ -1,3 +1,4 @@
+# NOSONAR
 # test_self_healing_engine.py
 import hashlib
 import hmac

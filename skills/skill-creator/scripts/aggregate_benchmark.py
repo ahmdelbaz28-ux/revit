@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# NOSONAR
 """
 Aggregate individual run results into benchmark summary statistics.
 

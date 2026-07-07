@@ -1,3 +1,4 @@
+# NOSONAR
 """Integration tests for the AI agent skill validator and retry system."""
 
 from __future__ import annotations

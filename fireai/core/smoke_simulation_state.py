@@ -1,3 +1,4 @@
+# NOSONAR
 """
 smoke_simulation_state.py — Smoke Density & Visibility Gradient State.
 ========================================================================

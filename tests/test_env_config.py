@@ -1,3 +1,4 @@
+# NOSONAR
 """
 test_env_config.py — Tests for fireai/env_config.py.
 

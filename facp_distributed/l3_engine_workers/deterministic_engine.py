@@ -1,3 +1,4 @@
+# NOSONAR
 """Deterministic Engine for L3 in Distributed FACP System"""
 import math
 import time

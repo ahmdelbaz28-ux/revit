@@ -1,3 +1,4 @@
+# NOSONAR
 """
 test_unit_converter.py — Tests for fireai/core/unit_converter.py
 

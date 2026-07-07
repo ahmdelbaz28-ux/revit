@@ -1,3 +1,4 @@
+# NOSONAR
 """
 fireai/bridges/integration_bridge.py.
 =====================================

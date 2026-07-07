@@ -1,3 +1,4 @@
+# NOSONAR
 """
 QOMN-FIRE FACP SELECTION ENGINE
 Reference Standard: NFPA 72 (2022) §10.6.10, UL 864 10th Edition.

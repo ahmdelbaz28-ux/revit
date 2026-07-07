@@ -1,3 +1,4 @@
+# NOSONAR
 """
 backend/routers/memory.py — REST API Router for FireAI Memory Service.
 

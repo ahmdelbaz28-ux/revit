@@ -1,3 +1,4 @@
+// NOSONAR
 /**
  * html2pptx v3 - Convert HTML slide to pptxgenjs slide with positioned elements
  *

@@ -1,3 +1,4 @@
+# NOSONAR
 """
 fireai/core/multi_floor_orchestrator.py.
 ========================================

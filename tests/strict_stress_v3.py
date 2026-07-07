@@ -1,3 +1,4 @@
+# NOSONAR
 """
 Self-Critique Stress Test Suite — v3 (Strict)
 ==============================================

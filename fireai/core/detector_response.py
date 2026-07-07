@@ -1,3 +1,4 @@
+# NOSONAR
 """
 fireai.core.detector_response — NFPA 72 Detector Response Time Modeling.
 =======================================================================

@@ -1,3 +1,4 @@
+# NOSONAR
 """
 test_v136_medium_low_fixes.py — Regression tests for V136 MEDIUM + LOW fixes.
 

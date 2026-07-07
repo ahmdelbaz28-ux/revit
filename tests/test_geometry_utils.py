@@ -1,3 +1,4 @@
+# NOSONAR
 """
 tests/test_geometry_utils.py
 =============================

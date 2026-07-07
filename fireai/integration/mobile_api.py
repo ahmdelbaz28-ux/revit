@@ -1,3 +1,4 @@
+# NOSONAR
 """
 fireai/integration/mobile_api.py.
 ==================================

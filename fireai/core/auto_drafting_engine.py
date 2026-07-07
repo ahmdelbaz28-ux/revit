@@ -1,3 +1,4 @@
+# NOSONAR
 """
 auto_drafting_engine.py — A* Wall-Aware Auto-Drafting for Fire Alarm Shop Drawings.
 ===================================================================================

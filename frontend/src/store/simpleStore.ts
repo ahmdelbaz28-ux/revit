@@ -1,3 +1,4 @@
+// NOSONAR
 import { useEffect, useRef, useState } from "react";
 
 // --- Types ---

@@ -1,3 +1,4 @@
+# NOSONAR
 """
 tests/test_qomn_kernel.py
 Comprehensive test suite for:

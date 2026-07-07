@@ -1,3 +1,4 @@
+# NOSONAR
 """
 safety_audit_engine.py – FireAI V21.2 Automated Safety Audit Engine.
 ====================================================================

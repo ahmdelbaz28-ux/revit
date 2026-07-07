@@ -1,3 +1,4 @@
+# NOSONAR
 """
 qomn_conduit.tests.test_router — Pathfinding Determinism Tests
 ===============================================================

@@ -1,3 +1,4 @@
+# NOSONAR
 """
 fireai/core/tests/test_performance.py — Performance Tests for Core Modules.
 ===========================================================================

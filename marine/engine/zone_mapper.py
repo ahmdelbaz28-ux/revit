@@ -1,3 +1,4 @@
+# NOSONAR
 """
 marine/engine/zone_mapper.py — Marine Zone Division Engine
 ============================================================

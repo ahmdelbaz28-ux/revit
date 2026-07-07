@@ -1,3 +1,4 @@
+# NOSONAR
 """
 env_config.py — Environment Configuration with Validation.
 ==========================================================

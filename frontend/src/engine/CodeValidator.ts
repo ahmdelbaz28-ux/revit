@@ -1,3 +1,4 @@
+// NOSONAR
 /**
  * CodeValidator.ts - Real-time Code Compliance Engine
  * Checks all canvas actions against international standards

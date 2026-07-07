@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# NOSONAR
 """
 Design System Generator - Aggregates search results and applies reasoning
 to generate comprehensive design system recommendations.

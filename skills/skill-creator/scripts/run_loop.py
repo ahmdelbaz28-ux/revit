@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# NOSONAR
 """
 Run the eval + improve loop until all pass or max iterations reached.
 

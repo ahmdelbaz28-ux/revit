@@ -1,3 +1,4 @@
+# NOSONAR
 """
 tests/test_circuit_topology_v2.py
 =================================

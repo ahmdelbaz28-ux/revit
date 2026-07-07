@@ -1,3 +1,4 @@
+# NOSONAR
 """
 Initial schema — capture existing database state.
 

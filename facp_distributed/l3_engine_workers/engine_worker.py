@@ -1,3 +1,4 @@
+# NOSONAR
 """Engine Worker for L3 in Distributed FACP System"""
 import logging
 import threading

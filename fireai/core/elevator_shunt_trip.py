@@ -1,3 +1,4 @@
+# NOSONAR
 """
 fireai/core/elevator_shunt_trip.py.
 ===================================

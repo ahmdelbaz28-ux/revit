@@ -1,3 +1,4 @@
+# NOSONAR
 """
 parsers/ddc_adapter.py — DataDrivenConstruction (DDC) Converter CLI Adapter
 

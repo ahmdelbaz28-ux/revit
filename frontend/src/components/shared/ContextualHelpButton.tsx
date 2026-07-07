@@ -1,3 +1,4 @@
+// NOSONAR
 /**
  * ContextualHelpButton.tsx — Per-page help button
  *

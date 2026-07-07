@@ -1,3 +1,4 @@
+# NOSONAR
 """
 test_v141_vector_topology.py — Tests for Qdrant Vector Memory + Neo4j Topology.
 

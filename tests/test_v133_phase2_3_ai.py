@@ -1,3 +1,4 @@
+# NOSONAR
 """
 test_v133_phase2_3_ai.py — Tests for PHASE 2 (LangWatch) and PHASE 3 (Smithery MCP).
 

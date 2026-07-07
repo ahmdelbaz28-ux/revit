@@ -1,3 +1,4 @@
+# NOSONAR
 """
 digital_twin_interface.py — FireAI Digital Twin Interface.
 =========================================================

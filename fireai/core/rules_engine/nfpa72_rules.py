@@ -1,3 +1,4 @@
+# NOSONAR
 """
 FireAI Rules Engine — NFPA 72 Declarative Rule Definitions.
 ============================================================

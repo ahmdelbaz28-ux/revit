@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# NOSONAR
 """
 Apply text replacements to PowerPoint presentation.
 

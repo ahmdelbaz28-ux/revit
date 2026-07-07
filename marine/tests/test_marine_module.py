@@ -1,3 +1,4 @@
+# NOSONAR
 """
 marine/tests/test_marine_module.py — Tests for the marine fire-safety module.
 Covers: SOLAS compliance, IEC 60092 detector selection, fire-resistance

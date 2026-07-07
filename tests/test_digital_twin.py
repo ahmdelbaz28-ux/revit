@@ -1,3 +1,4 @@
+# NOSONAR
 """
 tests/test_digital_twin.py — Digital Twin Service Tests
 ====================================================

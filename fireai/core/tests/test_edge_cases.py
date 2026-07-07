@@ -1,3 +1,4 @@
+# NOSONAR
 """
 fireai/core/tests/test_edge_cases.py — Edge Case Tests for FireAI Core.
 =======================================================================

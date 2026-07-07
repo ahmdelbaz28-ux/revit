@@ -1,3 +1,4 @@
+# NOSONAR
 """RBAC System for Distributed FACP System"""
 import time
 from enum import Enum

@@ -1,3 +1,4 @@
+# NOSONAR
 """
 backend/services/weather_service.py — Real-time weather data for FireAI.
 

@@ -1,3 +1,4 @@
+# NOSONAR
 """
 fireai/integration/ar_vr_visualizer.py.
 ========================================

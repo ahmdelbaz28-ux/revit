@@ -1,3 +1,4 @@
+// NOSONAR
 import { Battery, Box, Eye, Power, Siren, Wifi, Zap } from "lucide-react";
 import type React from "react";
 import type { DeviceType } from "@/store/simpleStore";

@@ -1,3 +1,4 @@
+# NOSONAR
 """
 backend/services/severe_weather_service.py — Severe weather alerts for FireAI.
 

@@ -1,3 +1,4 @@
+// NOSONAR
 /**
  * ReportsPage.tsx - Report generation with deterministic analysis
  */

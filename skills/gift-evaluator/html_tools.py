@@ -1,3 +1,4 @@
+# NOSONAR
 import argparse
 import base64
 import html

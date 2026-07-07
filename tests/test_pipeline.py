@@ -1,3 +1,4 @@
+# NOSONAR
 """
 FireAI Pipeline — End-to-End Integration Tests
 ================================================

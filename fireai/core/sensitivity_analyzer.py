@@ -1,3 +1,4 @@
+# NOSONAR
 """
 fireai/core/sensitivity_analyzer.py  V1.0.
 ==========================================

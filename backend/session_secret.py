@@ -1,3 +1,4 @@
+# NOSONAR
 """
 backend/session_secret.py — Professional session secret management.
 

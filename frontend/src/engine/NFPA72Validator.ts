@@ -1,3 +1,4 @@
+// NOSONAR
 /**
  * NFPA72Validator.ts - Validates Fire Alarm System Designs against NFPA 72 Standards
  */

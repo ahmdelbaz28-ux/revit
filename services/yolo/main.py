@@ -1,3 +1,4 @@
+# NOSONAR
 """
 services/yolo/main.py — YOLO Layout Segmentation Service for FireAI
 

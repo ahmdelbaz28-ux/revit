@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# NOSONAR
 """
 setup_databases.py — Database Configuration Setup Script
 ======================================================

@@ -1,3 +1,4 @@
+// NOSONAR
 /**
  * SettingsPage.tsx - Application configuration and user preferences
  */

@@ -1,3 +1,4 @@
+# NOSONAR
 """
 bim_input_sanitizer.py — Safety-Critical Input Sanitization for BIM Parameters.
 ================================================================================

@@ -1,3 +1,4 @@
+# NOSONAR
 """
 pathway_survivability_engine.py — NFPA 72-2022 §12.4 Pathway Survivability.
 

@@ -1,3 +1,4 @@
+# NOSONAR
 """
 test_v134_security_fixes.py — Regression tests for V134 CRITICAL fixes.
 

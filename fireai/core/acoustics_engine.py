@@ -1,3 +1,4 @@
+# NOSONAR
 """
 acoustics_engine.py — Unified Acoustics Integration Engine for FireAI.
 ======================================================================

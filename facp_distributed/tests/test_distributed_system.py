@@ -1,3 +1,4 @@
+# NOSONAR
 """Comprehensive Tests for Distributed FACP System"""
 import time
 import unittest

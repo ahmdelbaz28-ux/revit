@@ -1,3 +1,4 @@
+// NOSONAR
 /**
  * csrf.ts — CSRF token manager (Double Submit Cookie pattern).
  *

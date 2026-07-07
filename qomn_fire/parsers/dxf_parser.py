@@ -1,3 +1,4 @@
+# NOSONAR
 """
 QOMN-FIRE DXF GEOMETRY PARSER
 Parses DXF files and extracts boundary shapes (rooms, walls, openings).

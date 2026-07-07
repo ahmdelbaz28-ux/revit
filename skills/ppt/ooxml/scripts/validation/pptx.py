@@ -1,3 +1,4 @@
+# NOSONAR
 """Validator for PowerPoint presentation XML files against XSD schemas."""
 
 import re

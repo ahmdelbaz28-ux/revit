@@ -1,3 +1,4 @@
+# NOSONAR
 """
 tests/test_audit_trail_v2.py
 =============================

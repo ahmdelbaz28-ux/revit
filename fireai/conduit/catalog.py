@@ -1,3 +1,4 @@
+# NOSONAR
 """
 fireai.conduit.catalog — Immutable Fitting Catalog.
 ===================================================

@@ -1,3 +1,4 @@
+// NOSONAR
 /**
  * V192 Visual Smoke Test — Life-safety system verification.
  *

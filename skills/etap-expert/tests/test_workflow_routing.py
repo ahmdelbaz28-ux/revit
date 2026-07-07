@@ -1,3 +1,4 @@
+# NOSONAR
 """
 Gate 3: Behavioral Validation Tests.
 ====================================

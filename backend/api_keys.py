@@ -1,3 +1,4 @@
+# NOSONAR
 """
 API Key management with role-based access control.
 

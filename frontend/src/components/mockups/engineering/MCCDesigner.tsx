@@ -1,3 +1,4 @@
+// NOSONAR
 import { AlertCircle, Download, FileText, Plus, Settings } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";

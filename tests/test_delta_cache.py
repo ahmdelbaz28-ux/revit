@@ -1,3 +1,4 @@
+# NOSONAR
 """
 tests/test_delta_cache.py
 ==========================

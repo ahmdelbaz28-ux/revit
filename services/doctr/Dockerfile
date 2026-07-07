@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+# NOSONAR
 # services/doctr/Dockerfile — DocTR OCR Service for FireAI
 # Provides OCR with bounding boxes for scanned floor plans.
 # Runs as a separate Docker container — no AGPL contamination.

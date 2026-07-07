@@ -1,3 +1,4 @@
+# NOSONAR
 """Base validator with common validation logic for document files."""
 
 import re

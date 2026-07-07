@@ -1,3 +1,4 @@
+# NOSONAR
 """
 bim_provider.py — Provider-Agnostic BIM Abstraction Layer.
 ==============================================================

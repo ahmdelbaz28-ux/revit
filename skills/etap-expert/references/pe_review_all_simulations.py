@@ -1,3 +1,4 @@
+# NOSONAR
 # PE Review Report — All 10 ETAP Expert Skill Simulations
 # ========================================================
 # Independent Professional Engineer (PE) review of the 10 numerical

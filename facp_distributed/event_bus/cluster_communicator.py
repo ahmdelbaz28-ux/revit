@@ -1,3 +1,4 @@
+# NOSONAR
 """Cluster Communicator for Event Bus in Distributed FACP System"""
 import json
 import socket

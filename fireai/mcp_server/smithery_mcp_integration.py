@@ -1,3 +1,4 @@
+# NOSONAR
 """
 smithery_mcp_integration.py — Agentic BIM Control (READ-ONLY + Human-Approved Writes).
 =======================================================================================

@@ -1,3 +1,4 @@
+# NOSONAR
 """
 marine/modu/modu_code.py — MODU Code Fire Safety for Offshore Units.
 

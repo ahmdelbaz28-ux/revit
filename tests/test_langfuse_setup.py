@@ -1,3 +1,4 @@
+# NOSONAR
 """
 tests/test_langfuse_setup.py.
 ==============================

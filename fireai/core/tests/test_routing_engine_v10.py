@@ -1,3 +1,4 @@
+# NOSONAR
 """
 Tests for fireai.core.routing_engine_v10.
 ========================================

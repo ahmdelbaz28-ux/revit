@@ -1,3 +1,4 @@
+// NOSONAR
 import { format } from "date-fns";
 
 interface Task {

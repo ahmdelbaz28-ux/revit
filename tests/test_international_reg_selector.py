@@ -1,3 +1,4 @@
+# NOSONAR
 """
 tests/test_international_reg_selector.py
 ============================================

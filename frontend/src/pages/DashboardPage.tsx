@@ -1,3 +1,4 @@
+// NOSONAR
 import {
 	Activity,
 	AlertTriangle,

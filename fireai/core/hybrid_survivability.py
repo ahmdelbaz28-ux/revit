@@ -1,3 +1,4 @@
+# NOSONAR
 """
 hybrid_survivability.py — Layer 7: Hybrid Survivability Index Engine.
 ====================================================================

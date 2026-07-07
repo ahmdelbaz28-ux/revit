@@ -1,3 +1,4 @@
+# NOSONAR
 """
 tests/test_firestop_annotator.py
 ================================

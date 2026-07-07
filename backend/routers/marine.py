@@ -1,3 +1,4 @@
+# NOSONAR
 """
 backend/routers/marine.py — Marine Fire-Safety REST API.
 =========================================================

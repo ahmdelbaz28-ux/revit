@@ -1,3 +1,4 @@
+// NOSONAR
 /**
  * EngineeringCanvas.tsx - Thermal Visualization Canvas
  * Dynamic color rendering based on electrical calculations

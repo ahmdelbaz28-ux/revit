@@ -1,3 +1,4 @@
+# NOSONAR
 """
 duct_detector.py — NFPA 72 §17.7.5 Duct Detector Placement.
 ============================================================

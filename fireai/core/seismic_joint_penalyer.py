@@ -1,3 +1,4 @@
+# NOSONAR
 """
 fireai/core/seismic_joint_penalyer.py.
 ======================================

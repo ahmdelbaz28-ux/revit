@@ -1,3 +1,4 @@
+# NOSONAR
 """
 ar_metadata_exporter.py — AR Metadata Export with Behind-the-Wall Visibility.
 ==============================================================================

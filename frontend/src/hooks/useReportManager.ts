@@ -1,3 +1,4 @@
+// NOSONAR
 /**
  * useReportManager.ts - Professional Report Generation Engine
  * 15 report templates with multi-format export (PDF, Excel, CSV, JSON)

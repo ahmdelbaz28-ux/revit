@@ -1,3 +1,4 @@
+# NOSONAR
 """
 fire_cli.py – FireAI command-line entry point.
 

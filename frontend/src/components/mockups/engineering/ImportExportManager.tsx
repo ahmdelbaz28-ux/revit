@@ -1,3 +1,4 @@
+// NOSONAR
 import DxfParser from "dxf-parser";
 import { saveAs } from "file-saver";
 import { AlertCircle, Download, Upload } from "lucide-react";

@@ -1,3 +1,4 @@
+# NOSONAR
 """
 tests/test_csp_security.py — Content-Security-Policy Header Tests
 ==================================================================

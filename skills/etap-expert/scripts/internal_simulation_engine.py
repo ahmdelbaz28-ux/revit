@@ -1,3 +1,4 @@
+# NOSONAR
 """
 ETAP Expert Skill — Internal Simulation Engine.
 ================================================

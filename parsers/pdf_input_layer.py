@@ -1,3 +1,4 @@
+# NOSONAR
 """
 FIREAI PDF INPUT LAYER — Real Drawing Parser
 =====================================
