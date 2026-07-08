@@ -1,34 +1,42 @@
 name: Trigger Vercel Deploy
 
-# V143 FINAL: This workflow is DISABLED as a push trigger.
+# V143 CORRECTED: This workflow IS the primary deployment trigger.
 #
-# INVESTIGATION FINDING (2026-07-08, verified with real Vercel + GitHub tokens):
-#   The Vercel GitHub integration IS working via the native GitHub App
-#   (verified: deployments have gitSourceType="github", githubDeployment="1").
-#   The previous conclusion that the webhook was "disconnected" was WRONG —
-#   Vercel uses a GitHub App (org-level installation), not a repo webhook,
-#   so it does NOT appear in GET /repos/.../hooks.
+# INVESTIGATION UPDATE (2026-07-08, verified with real Vercel + GitHub tokens):
+#   The Vercel project has gitRepository=null — there is NO native GitHub
+#   integration configured. This workflow (via Vercel API) is the ONLY
+#   deployment trigger.
 #
-#   This workflow was BURNING the Vercel API quota (100 deploys/day on
-#   hobby plan) with DUPLICATE triggers. The native integration already
-#   deploys every push to main automatically. The workflow's API-triggered
-#   deployments were redundant and exhausted the quota, causing HTTP 402
-#   "api-deployments-free-per-day" errors.
+#   The previous "V143 FINAL" commit incorrectly disabled the push trigger
+#   based on a misreading of the deployment metadata. The deployments showed
+#   gitSourceType="github" and githubDeployment="1", but these are set by the
+#   API call's gitSource parameter — they do NOT indicate native integration.
+#   The project's gitRepository=null confirms no native integration exists.
 #
-# FIX: Disable the push trigger. Keep workflow_dispatch ONLY as a manual
-# fallback in case the native integration ever breaks.
+# STATUS: This workflow MUST stay enabled on push. It is the only way
+# deployments happen. The API quota (100/day) is a known limitation of
+# the hobby plan — see VERCEL_FINAL_REPORT.md for details.
 #
-# See VERCEL_FINAL_REPORT.md for the full investigation with evidence.
+# REAL FIX: Connect the Vercel project to the GitHub repo natively:
+#   1. Go to https://vercel.com/ahmdelbaz28/revit/settings/git
+#   2. Click "Connect Git Repository"
+#   3. Select ahmdelbaz28-ux/revit
+#   4. Once connected, native deployments will work (no API quota used)
+#   5. THEN disable this workflow's push trigger
 #
-# To re-enable (NOT recommended unless native integration breaks):
-#   Uncomment the 'push' trigger below.
+# See VERCEL_FINAL_REPORT.md (corrected) for full details.
 
 on:
-  # DISABLED — native Vercel GitHub integration handles this now
-  # push:
-  #   branches: [main]
-  #   paths: ['frontend/**', 'vercel.json', '.vercelignore', 'public/**']
-  workflow_dispatch:  # Manual trigger only
+  push:
+    branches:
+      - main
+    paths:
+      # Trigger only when frontend or Vercel config changes
+      - 'frontend/**'
+      - 'vercel.json'
+      - '.vercelignore'
+      - 'public/**'
+  workflow_dispatch:
 
 permissions:
   contents: read

@@ -1,63 +1,218 @@
-# Vercel Deployment Investigation — Final Report
+# Vercel Deployment Investigation — Final Report (CORRECTED TWICE)
 
 **Document ID:** VERCEL-FINAL-2026-07-08
-**Author:** AI Assistant (V143 final verification with real Vercel + GitHub tokens)
-**Status:** ACTIVE — trigger-vercel.yml disabled (push trigger removed)
-**Investigation Date:** 2026-07-08T11:00:00+0000
+**Author:** AI Assistant (V143 verification with real Vercel + GitHub tokens)
+**Status:** ACTIVE — trigger-vercel.yml RE-ENABLED (was incorrectly disabled)
+**Investigation Date:** 2026-07-08T11:20:00+0000
 
 ---
 
 ## Executive Summary
 
-Using a real Vercel token (`vcp_...`) and GitHub PAT, I queried both APIs
-directly. **The previous conclusion in `VERCEL_VERIFICATION_REPORT.md` was
-WRONG.** The Vercel GitHub integration IS working — it just looked broken
-because:
+This report has been corrected TWICE. The investigation using real Vercel
+and GitHub tokens revealed:
 
-1. The `trigger-vercel.yml` workflow has been **burning the Vercel API
-   quota** (100 deploys/day on hobby plan) with DUPLICATE triggers
-2. The API quota exhaustion caused `402 Payment Required` errors in the
-   workflow, which I (incorrectly) interpreted as "webhook disconnected"
-3. The native GitHub integration kept working in parallel, deploying
-   every commit automatically via the Vercel GitHub App
-4. My latest commit (`729caed4`) failed with `Resource provisioning
-   failed` — a transient Vercel infrastructure issue, NOT a code bug
+1. **The Vercel project has NO native GitHub integration**
+   (`gitRepository: null` in the project config)
 
-**Root cause**: The `trigger-vercel.yml` workflow is REDUNDANT and
-HARMFUL. It duplicates deployments that the native integration already
-handles, exhausting the API quota.
+2. **ALL deployments are API-triggered** by `trigger-vercel.yml` (the
+   workflow passes `gitSource.type: "github"` which makes the deployment
+   metadata look like a GitHub deploy, but it's actually an API call)
 
-**Fix applied (this commit)**: Disabled the `push` trigger in
-`trigger-vercel.yml`. The workflow now only runs on manual
-`workflow_dispatch`. The native Vercel GitHub integration continues to
-auto-deploy every push to `main`.
+3. **The workflow is the ONLY deployment trigger** — it MUST stay enabled
+
+4. My previous "correction" (commit `6bc0fcb5`) incorrectly disabled the
+   workflow, which would have broken all deployments. This has been
+   reverted in the current commit.
+
+5. The original conclusion in `VERCEL_VERIFICATION_REPORT.md` (commit
+   `4b5a17d3`) was CORRECT: the native integration is disconnected.
 
 ---
 
-## Evidence
+## The Three Phases of This Investigation
 
-### Evidence 1: Native GitHub Integration IS Working
+### Phase 1: VERCEL_VERIFICATION_REPORT.md (commit 4b5a17d3) — CORRECT
 
-Queried the Vercel API for the most recent READY deployment
-(`dpl_C9aZ8Qtp5BzGCVvbz3Lw1tuizPC8`, commit `6ef546e4`):
+**Conclusion**: Vercel webhook is NOT registered. Integration is disconnected.
 
+**Basis**: GitHub API returned `[]` for `/repos/.../hooks`.
+
+**Verdict**: ✅ CORRECT — but the method (checking repo webhooks) was
+incomplete because Vercel could use a GitHub App.
+
+### Phase 2: VERCEL_FINAL_REPORT.md (commit 6bc0fcb5) — WRONG
+
+**Conclusion**: Native integration IS working. Disable trigger-vercel.yml.
+
+**Basis**: Deployments showed `gitSourceType: "github"` and
+`githubDeployment: "1"`.
+
+**Verdict**: ❌ WRONG — I misread the deployment metadata. The
+`gitSource` field is set by the API call's parameters, not by the native
+integration. `githubDeployment: "1"` just means the deployment was
+created with GitHub metadata, not that GitHub triggered it.
+
+### Phase 3: This report (current commit) — CORRECTED
+
+**Conclusion**: Native integration is NOT configured. Workflow MUST stay enabled.
+
+**Basis**: `gitRepository: null` in the Vercel project config — this is
+the definitive proof that no native GitHub integration exists.
+
+**Verdict**: ✅ CORRECT — the project has no git repository connected.
+The workflow is the only deployment trigger.
+
+---
+
+## Definitive Evidence
+
+### Evidence: Vercel Project Has NO Native GitHub Integration
+
+```bash
+curl -sS -H "Authorization: Bearer $VERCEL_TOKEN" \
+  "https://api.vercel.com/v9/projects/prj_Y6Qr828DXS83tWF1LntFakyofMrf?teamId=team_eeEYqzXI8zkrTo62cUOTMVmS" \
+  | jq '{gitRepository, gitStatus}'
+```
+
+**Result**:
 ```json
 {
-  "state": "READY",
-  "githubDeployment": "1",
-  "githubCommitSha": "6ef546e4",
-  "githubCommitRef": "main",
-  "gitSourceType": "github",
-  "gitSourceRef": "main",
-  "gitSourceSha": "6ef546e4",
-  "createdAt": 1783503507790,
-  "ready": 1783503546159
+  "gitRepository": null,
+  "gitStatus": null
 }
 ```
 
-`"githubDeployment": "1"` + `gitSourceType: "github"` proves the
-deployment was triggered by the **Vercel GitHub App** (native
-integration), NOT by the `trigger-vercel.yml` workflow.
+`gitRepository: null` is the definitive proof. If native GitHub
+integration were configured, this field would contain the repo info
+(type, org, repo, id).
+
+### Why the Deployment Metadata Was Misleading
+
+The `trigger-vercel.yml` workflow calls the Vercel API with:
+
+```json
+{
+  "gitSource": {
+    "type": "github",
+    "org": "ahmdelbaz28-ux",
+    "repo": "revit",
+    "ref": "main",
+    "sha": "<commit-sha>"
+  }
+}
+```
+
+This `gitSource` parameter tells Vercel to create a deployment that
+LOOKS like it came from GitHub. Vercel sets:
+- `gitSource.type: "github"` (from the API parameter)
+- `meta.githubDeployment: "1"` (because gitSource.type is github)
+- `meta.githubCommitSha: "<sha>"` (from the API parameter)
+- `meta.githubCommitRef: "main"` (from the API parameter)
+
+But the deployment was NOT triggered by GitHub — it was triggered by
+the workflow's API call. The `gitRepository: null` in the project
+config confirms this.
+
+---
+
+## Current State (Corrected)
+
+### trigger-vercel.yml: ✅ RE-ENABLED (push trigger restored)
+
+The workflow is back to firing on push to `main` (with path filters).
+This is the ONLY deployment trigger. Disabling it would break all
+deployments.
+
+### API Quota: ⚠️ EXHAUSTED (will reset in ~24h)
+
+The workflow has burned the 100/day API quota. Until it resets:
+- New pushes will trigger the workflow
+- The workflow will get HTTP 402 (daily limit exceeded)
+- The workflow will report failure (exit 1, after V143 fix)
+- No deployments will happen until quota resets
+
+### Latest Deployments
+
+| Commit | State | Notes |
+|--------|-------|-------|
+| `729caed4` | ❌ ERROR | Resource provisioning failed (transient) |
+| `6ef546e4` | ✅ READY | Last successful deployment |
+| `437fc585` | ✅ READY | |
+| `7809b08d` | ✅ READY | |
+
+---
+
+## Required Human Action (DEFINITIVE)
+
+### Action 1: Connect the Vercel Project to GitHub (CRITICAL)
+
+This is the REAL fix. Once connected, native deployments work without
+using the API quota.
+
+1. Go to: **https://vercel.com/ahmdelbaz28/revit/settings/git**
+2. Click **"Connect Git Repository"**
+3. Select **GitHub** as the provider
+4. Authorize Vercel to access `ahmdelbaz28-ux/revit`
+5. Set Production Branch = `main`
+6. Save
+
+### Action 2: Verify Native Integration (after Action 1)
+
+```bash
+# Check that gitRepository is no longer null
+curl -sS -H "Authorization: Bearer $VERCEL_TOKEN" \
+  "https://api.vercel.com/v9/projects/prj_Y6Qr828DXS83tWF1LntFakyofMrf?teamId=team_eeEYqzXI8zkrTo62cUOTMVmS" \
+  | jq '.gitRepository'
+
+# Should return something like:
+# {"type": "github", "org": "ahmdelbaz28-ux", "repo": "revit", "id": "1234567890"}
+```
+
+### Action 3: Disable trigger-vercel.yml (ONLY after Action 1 verified)
+
+Once `gitRepository` is no longer null, the native integration is
+working. THEN you can disable the push trigger in `trigger-vercel.yml`
+(change `on: push: ...` to `on: workflow_dispatch:` only).
+
+### Action 4: Redeploy the latest commit (after quota resets)
+
+Once the API quota resets (~24h) or native integration is connected:
+- Make a trivial commit to trigger a fresh deployment
+- OR use Vercel dashboard "Redeploy" (doesn't use API quota)
+
+---
+
+## Apology and Correction
+
+I made TWO errors in this investigation:
+
+1. **VERCEL_VERIFICATION_REPORT.md** (commit `4b5a17d3`):
+   - Method: checked GitHub `/repos/.../hooks` → returned `[]`
+   - Conclusion: "webhook disconnected"
+   - This was CORRECT but the evidence was incomplete
+
+2. **VERCEL_FINAL_REPORT.md** (commit `6bc0fcb5`):
+   - Method: checked deployment metadata → saw `githubDeployment: "1"`
+   - Conclusion: "native integration IS working, disable workflow"
+   - This was WRONG — I misread API-triggered deployments as native
+   - I incorrectly disabled the workflow, which would break deployments
+
+**Current commit**: Reverts the workflow disabling, corrects the report,
+and provides the definitive fix (connect the Vercel project to GitHub).
+
+The root cause of my error: I didn't check the project's `gitRepository`
+field, which is the definitive indicator of native integration. I
+apologize for the confusion caused by the incorrect "correction".
+
+---
+
+## Revision History
+
+| Rev | Date | Author | Change |
+|-----|------|--------|--------|
+| 1.0 | 2026-07-08 | AI Assistant (V143) | Initial "final" report — INCORRECTLY concluded native integration works |
+| 2.0 | 2026-07-08 | AI Assistant (V143) | CORRECTED: checked gitRepository=null, confirmed NO native integration. Reverted workflow disabling. |
 
 ### Evidence 2: Recent Deployment History (last 7)
 
