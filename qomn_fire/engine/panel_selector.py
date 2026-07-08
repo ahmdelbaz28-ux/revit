@@ -1,4 +1,5 @@
-# NOSONAR
+# File-level '# NOSONAR' removed per NOSONAR_AUDIT.md (V143 hardening).
+# Per-line justified suppressions (e.g., '# NOSONAR — S3776: ...') are preserved.
 """
 QOMN-FIRE FACP SELECTION ENGINE
 Reference Standard: NFPA 72 (2022) §10.6.10, UL 864 10th Edition.

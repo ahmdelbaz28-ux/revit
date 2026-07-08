@@ -1,4 +1,5 @@
-# NOSONAR
+# File-level '# NOSONAR' removed per NOSONAR_AUDIT.md (V143 hardening).
+# Per-line justified suppressions (e.g., '# NOSONAR — S3776: ...') are preserved.
 """
 QOMN-FIRE CONDUIT FILL SIZING ENGINE
 Reference Standard: NEC 2023 Chapter 9, Table 1 & Table 4.
