@@ -1,4 +1,5 @@
-# NOSONAR
+# File-level '# NOSONAR' removed per NOSONAR_AUDIT.md (V143 hardening).
+# Per-line justified suppressions (e.g., '# NOSONAR — S3776: ...') are preserved.
 """
 fireai/infrastructure/event_bus.py — Production Event Bus with Schema Validation,
 Retry with Backoff, Dead Letter Queue, At-Least-Once Delivery, and Event Replay.
