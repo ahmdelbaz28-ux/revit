@@ -240,28 +240,156 @@ Where:
 
 ---
 
-## Sign-Off
+## Sign-Off Protocol (MANDATORY — DO NOT REMOVE)
 
-By signing below, the reviewing engineer confirms that:
+> ⚠️ **LIFE-SAFETY NOTICE**: This platform calculates fire alarm coverage,
+> ASET/RSET timing, and hazardous area classification for real buildings.
+> **No design produced by this software may be used for any real-world
+> fire alarm system until EVERY change listed above has a SIGNED
+> PE/FPE approval below.** Using unsigned output is a violation of
+> NFPA 72 §1.2 (Authority Having Jurisdiction) and may constitute
+> professional negligence.
 
-1. The formulas implemented match the cited standards
-2. The assumptions (burn durations, ventilation values, grid resolutions)
-   are appropriate for the intended use cases
-3. The safety factors (if any) are adequate for life-safety applications
-4. The test values verify correct implementation
+### A. Per-Change Engineer Sign-Off
 
-**Engineer Name:** _________________________________
-**License Number:** _________________________________
-**PE/FPE State:** _________________________________
-**Date:** _________________________________
-**Signature:** _________________________________
+Each safety-critical change requires its OWN individual sign-off.
+An engineer signing Change 1 is NOT signing Change 2, 3, or 4.
+Strike through (~~like this~~) any item the engineer does NOT approve;
+that change MUST then be reverted from the codebase before production use.
+
+#### Change 1 — `q_max_from_fire_load` (Peak HRR Calculation)
+**Status:** ☐ APPROVED  ☐ REJECTED  ☐ APPROVED WITH CONDITIONS
+
+- Formula `Q_max = (fire_load_mj_m2 × area_m2) / t_burn × 1000` is correct: _____
+- Burn duration values in `_BURN_DURATION` table are appropriate: _____
+- Ventilation-controlled fires are NOT a concern for this use case (or have been addressed): _____
+- Safety factor (currently 1.0) is adequate for life-safety: _____
+
+| Field | Value |
+|-------|-------|
+| Engineer Name (print) | _________________________________ |
+| PE/FPE License Number | _________________________________ |
+| License State/Jurisdiction | _________________________________ |
+| License Expiration Date | _________________________________ |
+| AHJ Reference (if applicable) | _________________________________ |
+| Review Date | _________________________________ |
+| Engineer Signature | _________________________________ |
+
+#### Change 2 — `ProofCertificate` δ-Conservative Grid Method
+**Status:** ☐ APPROVED  ☐ REJECTED  ☐ APPROVED WITH CONDITIONS
+
+- δ = 0.20 m grid resolution is appropriate for AHJ acceptance: _____
+- Triangle-inequality proof is acceptable compliance documentation: _____
+- `effective_radius_m` field addition is structurally correct: _____
+- Hash computation includes all audit-relevant fields: _____
+
+| Field | Value |
+|-------|-------|
+| Engineer Name (print) | _________________________________ |
+| PE/FPE License Number | _________________________________ |
+| License State/Jurisdiction | _________________________________ |
+| License Expiration Date | _________________________________ |
+| AHJ Reference (if applicable) | _________________________________ |
+| Review Date | _________________________________ |
+| Engineer Signature | _________________________________ |
+
+#### Change 3 — `check_voltage_drop` DC Return Path Factor (×2)
+**Status:** ☐ APPROVED  ☐ REJECTED  ☐ APPROVED WITH CONDITIONS
+
+- ×2 factor is correct for Class A circuits (2-conductor): _____
+- ×2 factor is correct for Class B circuits (2-conductor): _____
+- 4-wire circuits are not applicable (or have been separately handled): _____
+- NAC and SLC voltage drop calculations both use this function correctly: _____
+
+| Field | Value |
+|-------|-------|
+| Engineer Name (print) | _________________________________ |
+| PE/FPE License Number | _________________________________ |
+| License State/Jurisdiction | _________________________________ |
+| License Expiration Date | _________________________________ |
+| AHJ Reference (if applicable) | _________________________________ |
+| Review Date | _________________________________ |
+| Engineer Signature | _________________________________ |
+
+#### Change 4 — HAC `Vz_diluted_m3` Formula (IEC 60079-10-1 Annex B)
+**Status:** ☐ APPROVED  ☐ REJECTED  ☐ APPROVED WITH CONDITIONS
+
+- Formula `Vz = Vz_source / (f × n)` is correct per IEC 60079-10-1 Annex B eq. B.3: _____
+- The use of source release rate vs. `(dV/dt)_min` has been justified: _____
+- `_VENT_EFFECTIVENESS` table values (0.5–1.0) match IEC 60079-10-1 Table B.1: _____
+- `_VENT_ACH` table values (6–30 ACH) are appropriate for Zone 2 classification: _____
+- Test values in `tests/test_hac_classification_engine.py` match hand calculations: _____
+
+| Field | Value |
+|-------|-------|
+| Engineer Name (print) | _________________________________ |
+| PE/FPE License Number | _________________________________ |
+| License State/Jurisdiction | _________________________________ |
+| License Expiration Date | _________________________________ |
+| AHJ Reference (if applicable) | _________________________________ |
+| Review Date | _________________________________ |
+| Engineer Signature | _________________________________ |
+
+### B. Master Approval Block
+
+This block is signed ONLY AFTER all individual change sign-offs above
+are complete. It authorizes the platform for production use in fire
+alarm system design.
+
+> By signing below, the Principal Engineer confirms that:
+> 1. ALL changes above have been individually reviewed and signed.
+> 2. The platform as a whole meets NFPA 72-2022, NFPA 101-2021,
+>    IEC 60079-10-1:2015, and NFPA 557-2016 requirements as applicable.
+> 3. The platform is approved for use ONLY in the jurisdictions listed.
+> 4. The Principal Engineer accepts professional liability for designs
+>    produced using this platform within the approved scope.
+
+| Field | Value |
+|-------|-------|
+| Principal Engineer Name (print) | _________________________________ |
+| PE/FPE License Number | _________________________________ |
+| License State/Jurisdiction(s) | _________________________________ |
+| License Expiration Date | _________________________________ |
+| Approved Occupancy Types | _________________________________ |
+| Approved Building Heights | _________________________________ |
+| Approval Expiration Date | _________________________________ |
+| Master Review Date | _________________________________ |
+| Principal Engineer Signature | _________________________________ |
+| Company / Firm | _________________________________ |
+| Notary Acknowledgement (optional) | _________________________________ |
+
+### C. Revision History
+
+| Rev | Date | Author | Change Summary |
+|-----|------|--------|----------------|
+| 1.0 | 2026-07-08 | AI Assistant (automated) | Initial creation — 4 safety-critical changes flagged for PE/FPE review |
+| 1.1 | 2026-07-08 | AI Assistant (V143 hardening) | Added per-change sign-off blocks, master approval block, and revision history. Added test-suite reference for HAC. NO engineering formula changes. |
+
+### D. Production Use Blocker
+
+**This section MUST be completed before ANY production deployment:**
+
+- [ ] ALL 4 changes above have SIGNED PE/FPE approval
+- [ ] Master Approval Block is signed by Principal Engineer
+- [ ] AHJ (Authority Having Jurisdiction) has been notified in writing
+- [ ] At least ONE real-world design has been validated against hand calculations
+- [ ] At least ONE real-world design has been validated against CFD (FDS) or full-scale test
+- [ ] Insurance carrier has been notified (if applicable)
+- [ ] Local fire marshal has been notified (if applicable)
+
+Until ALL checkboxes above are ticked and dated, this platform is
+**CLASSIFIED AS NON-PRODUCTION** and may only be used for:
+- Internal training
+- Design exploration
+- Academic research
+- Pre-design sizing (NOT final design)
 
 ---
 
 ## Appendix: How to Run the Tests
 
 ```bash
-# Run all safety-critical tests
+# Run all safety-critical tests (must pass before engineer review)
 export FIREAI_SESSION_SECRET="$(python -c 'import secrets; print(secrets.token_urlsafe(64))')"
 export FIREAI_API_KEY="ci-test-admin-key"
 export CORS_ALLOWED_ORIGINS="http://localhost:3000"
@@ -269,8 +397,23 @@ export DATABASE_URL="sqlite:////tmp/test.db"
 export DIGITAL_TWIN_DB_PATH="/tmp/test.db"
 export UDM_DB_PATH="/tmp/udm.db"
 export SECRET_KEY="ci-test-hmac-secret-key-32-chars-minimum!!"
+export FIREAI_HMAC_SECRET_KEY="ci-test-hmac-key-for-audit-trail"
 
-python -m pytest tests/test_proof_certificate.py tests/test_hac_classification_engine.py \
-    fireai/core/tests/test_analysis_pipeline.py fireai/core/tests/test_nfpa72_calculations.py \
+# Safety-critical modules (must all pass)
+python -m pytest \
+    tests/test_proof_certificate.py \
+    tests/test_hac_classification_engine.py \
+    fireai/core/tests/test_analysis_pipeline.py \
+    fireai/core/tests/test_nfpa72_calculations.py \
+    tests/test_fireai_kernel_v30.py \
+    tests/test_scenario_engine.py \
     -v --tb=short --no-cov
+
+# Engineering Review Required verification:
+# 1. Run tests above — all must pass
+# 2. Inspect test values against hand calculations
+# 3. Verify formula references in source code match cited standards
+# 4. Sign the appropriate per-change block above
+# 5. Tick the Production Use Blocker checkboxes
+# 6. Commit the signed document to the repository
 ```

@@ -1,4 +1,6 @@
-# NOSONAR
+# V143 NOSONAR AUDIT: File-level `# NOSONAR` removed. Per-line justified
+# suppressions remain (e.g., `# NOSONAR — S3776: cognitive complexity is
+# inherent to the safety-critical algorithm`). See NOSONAR_AUDIT.md.
 # ═══════════════════════════════════════════════════════════════════════════════
 # fireai_kernel_v30.py
 # النواة الخارقة — FireAlarmAI V30
