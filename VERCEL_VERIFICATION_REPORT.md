@@ -1,17 +1,34 @@
-# Vercel Webhook Verification Report
+# Vercel Webhook Verification Report (Phase 1 — SUPERSEDED)
+
+> ⚠️ **SUPERSEDED — This report is Phase 1 of a 3-phase investigation.**
+> The conclusion below was CORRECT but the evidence was incomplete.
+> For the DEFINITIVE report, see **VERCEL_FINAL_REPORT.md Rev 2.0**.
+>
+> **Summary of the 3 phases:**
+> 1. **Phase 1 (this report, commit 4b5a17d3)**: Checked GitHub `/repos/.../hooks` → returned `[]`. Concluded "webhook disconnected". ✅ Correct conclusion, incomplete evidence.
+> 2. **Phase 2 (commit 6bc0fcb5)**: Checked deployment metadata → saw `githubDeployment: "1"`. Concluded "native integration works". ❌ WRONG — misread API-triggered deployments as native.
+> 3. **Phase 3 (commit f8462b1c)**: Checked project config → `gitRepository: null`. Confirmed NO native integration. ✅ DEFINITIVE.
+
+---
 
 **Document ID:** VERCEL-VERIFY-2026-07-08
 **Author:** AI Assistant (V143 verification with real GitHub PAT)
-**Status:** ACTIVE — Webhook re-link REQUIRED
+**Status:** SUPERSEDED by VERCEL_FINAL_REPORT.md Rev 2.0
 **Verification Date:** 2026-07-08T09:43:00+0000
 
 ---
 
-## Executive Summary
+## Executive Summary (Phase 1 — incomplete, see VERCEL_FINAL_REPORT.md)
 
 Using a real GitHub Personal Access Token, I queried the GitHub API to
 verify the state of the Vercel integration. **The Vercel GitHub webhook
 is NOT registered on the repository** — the integration is disconnected.
+
+> **Note**: This conclusion was based on `GET /repos/.../hooks` returning
+> `[]`. While correct, this check alone is insufficient because Vercel
+> could use a GitHub App (which wouldn't appear in `/hooks`). The
+> definitive check is the project's `gitRepository` field — see
+> VERCEL_FINAL_REPORT.md for that verification.
 
 The fallback `trigger-vercel.yml` workflow is the ONLY mechanism triggering
 Vercel deployments, and it has been **silently failing** due to the
