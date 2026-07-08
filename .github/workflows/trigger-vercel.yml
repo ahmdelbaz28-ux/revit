@@ -1,35 +1,34 @@
 name: Trigger Vercel Deploy
 
-# V143 HARDENING: This workflow replaces the V207 fallback with a more
-# robust trigger that:
-#   1. Respects path filters — skips deploy for docs/tests/python-only
-#      changes (Vercel builds the Vite frontend only, so backend/docs
-#      changes don't require a Vercel deploy).
-#   2. Uses concurrency to cancel superseded runs (avoids burning the
-#      Vercel free plan 100 deploys/day quota on rapid pushes).
-#   3. Retries the Vercel API call up to 3 times with exponential backoff
-#      on transient failures (5xx, network errors).
-#   4. Emits a GitHub Actions job summary with the deployment URL.
-#   5. Distinguishes 'daily limit hit' (warning, exit 0) from real
-#      failures (error, exit 1).
+# V143 FINAL: This workflow is DISABLED as a push trigger.
 #
-# Original V207 context: The GitHub→Vercel webhook was returning 404
-# (Vercel deploy hook ID 'kHEPjW3IYR' no longer valid). This workflow
-# is the fallback. Once the Vercel GitHub integration webhook is
-# re-linked via vercel.com dashboard, this workflow can be removed.
+# INVESTIGATION FINDING (2026-07-08, verified with real Vercel + GitHub tokens):
+#   The Vercel GitHub integration IS working via the native GitHub App
+#   (verified: deployments have gitSourceType="github", githubDeployment="1").
+#   The previous conclusion that the webhook was "disconnected" was WRONG —
+#   Vercel uses a GitHub App (org-level installation), not a repo webhook,
+#   so it does NOT appear in GET /repos/.../hooks.
+#
+#   This workflow was BURNING the Vercel API quota (100 deploys/day on
+#   hobby plan) with DUPLICATE triggers. The native integration already
+#   deploys every push to main automatically. The workflow's API-triggered
+#   deployments were redundant and exhausted the quota, causing HTTP 402
+#   "api-deployments-free-per-day" errors.
+#
+# FIX: Disable the push trigger. Keep workflow_dispatch ONLY as a manual
+# fallback in case the native integration ever breaks.
+#
+# See VERCEL_FINAL_REPORT.md for the full investigation with evidence.
+#
+# To re-enable (NOT recommended unless native integration breaks):
+#   Uncomment the 'push' trigger below.
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      # Trigger only when frontend or Vercel config changes
-      - 'frontend/**'
-      - 'vercel.json'
-      - '.vercelignore'
-      - 'public/**'
-      # Allow manual trigger regardless of paths
-  workflow_dispatch:
+  # DISABLED — native Vercel GitHub integration handles this now
+  # push:
+  #   branches: [main]
+  #   paths: ['frontend/**', 'vercel.json', '.vercelignore', 'public/**']
+  workflow_dispatch:  # Manual trigger only
 
 permissions:
   contents: read
