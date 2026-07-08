@@ -1,4 +1,5 @@
-# NOSONAR
+# File-level '# NOSONAR' removed per NOSONAR_AUDIT.md (V143 hardening).
+# Per-line justified suppressions (e.g., '# NOSONAR — S3776: ...') are preserved.
 """
 image_parser.py — FireAI Image Floor Plan Parser
 Parses floor plans from images (JPG, PNG, etc.) using Computer Vision.

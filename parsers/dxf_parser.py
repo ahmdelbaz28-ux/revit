@@ -1,4 +1,5 @@
-# NOSONAR
+# File-level '# NOSONAR' removed per NOSONAR_AUDIT.md (V143 hardening).
+# Per-line justified suppressions (e.g., '# NOSONAR — S3776: ...') are preserved.
 """
 dxf_parser.py — FireAI V5.1.0
 CRITICAL SAFETY: Reads real DXF and produces valid Polygons only.

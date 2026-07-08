@@ -1,4 +1,5 @@
-# NOSONAR
+# File-level '# NOSONAR' removed per NOSONAR_AUDIT.md (V143 hardening).
+# Per-line justified suppressions (e.g., '# NOSONAR — S3776: ...') are preserved.
 """
 parsers/tests/test_path_security_enhanced.py — Enhanced security tests for
 parsers/_path_security.py (68% → 80%+).
