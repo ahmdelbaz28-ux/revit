@@ -65,6 +65,30 @@ logging.basicConfig(
 )
 log = logging.getLogger("akamai-deploy")
 
+# Placeholder tokens replaced inside the Akamai JSON templates. Defined as
+# constants so the literal strings are not duplicated across the script
+# (SonarCloud python:S1192) and so the placeholder names are discoverable.
+_EDGE_HOSTNAME_PLACEHOLDER = "{EDGE_HOSTNAME}"
+_ORIGIN_HOSTNAME_PLACEHOLDER = "{ORIGIN_HOSTNAME}"
+_ORIGIN_TOKEN_PLACEHOLDER = "{AKAMAI_ORIGIN_TOKEN}"
+
+
+def _edge_hostname() -> str:
+    """Resolve the edge hostname from env, defaulting to 'bazspark'."""
+    return os.getenv("AKAMAI_EDGE_HOSTNAME", "bazspark")
+
+
+def _origin_hostname() -> str:
+    """Resolve the origin hostname from env, defaulting to the HF Space."""
+    return os.getenv(
+        "AKAMAI_ORIGIN_HOSTNAME", "ahmdelbaz28-bazspark.hf.space"
+    )
+
+
+def _origin_token() -> str:
+    """Resolve the Akamai origin token from env (placeholder until rotated)."""
+    return os.getenv("AKAMAI_REQUIRE_ORIGIN_TOKEN", "REPLACE_ME")
+
 
 # ── EdgeGrid auth ────────────────────────────────────────────────────────────
 
@@ -193,9 +217,9 @@ def import_rules(
         rules = rules["rules"]
     # Replace placeholders
     rules_str = json.dumps(rules)
-    rules_str = rules_str.replace("{ORIGIN_HOSTNAME}", os.getenv("AKAMAI_ORIGIN_HOSTNAME", "ahmdelbaz28-bazspark.hf.space"))
-    rules_str = rules_str.replace("{EDGE_HOSTNAME}", os.getenv("AKAMAI_EDGE_HOSTNAME", "bazspark"))
-    rules_str = rules_str.replace("{AKAMAI_ORIGIN_TOKEN}", os.getenv("AKAMAI_REQUIRE_ORIGIN_TOKEN", "REPLACE_ME"))
+    rules_str = rules_str.replace(_ORIGIN_HOSTNAME_PLACEHOLDER, _origin_hostname())
+    rules_str = rules_str.replace(_EDGE_HOSTNAME_PLACEHOLDER, _edge_hostname())
+    rules_str = rules_str.replace(_ORIGIN_TOKEN_PLACEHOLDER, _origin_token())
     rules = json.loads(rules_str)
 
     _api(
@@ -219,10 +243,10 @@ def add_hostnames(
     hostnames_data = json.loads(HOSTNAMES_JSON.read_text())
     added = []
     for hn in hostnames_data.get("hostnames", []):
-        cname_from = hn["cnameFrom"].replace("{EDGE_HOSTNAME}", os.getenv("AKAMAI_EDGE_HOSTNAME", "bazspark"))
+        cname_from = hn["cnameFrom"].replace(_EDGE_HOSTNAME_PLACEHOLDER, _edge_hostname())
         body = {
             "cnameFrom": cname_from,
-            "cnameTo": hn["cnameTo"].replace("{EDGE_HOSTNAME}", os.getenv("AKAMAI_EDGE_HOSTNAME", "bazspark")),
+            "cnameTo": hn["cnameTo"].replace(_EDGE_HOSTNAME_PLACEHOLDER, _edge_hostname()),
             "certProvisioningType": hn.get("certProvisioningType", "CPS_MANAGED"),
         }
         try:
@@ -361,8 +385,8 @@ def main() -> None:
     print(f"  api.bazspark.com  CNAME  {edge_hostname}")
     print()
     print("Verification:")
-    print(f"  curl -I https://api.bazspark.com/api/health")
-    print(f"  # Should return 200 with X-Akamai-EdgeWorker: inject-headers")
+    print("  curl -I https://api.bazspark.com/api/health")
+    print("  # Should return 200 with X-Akamai-EdgeWorker: inject-headers")
 
 
 if __name__ == "__main__":

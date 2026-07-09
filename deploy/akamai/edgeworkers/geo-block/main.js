@@ -13,7 +13,7 @@
 // Update the SANCTIONED_COUNTRIES list quarterly per OFAC updates.
 // ─────────────────────────────────────────────────────────────────────────
 
-import { URL } from 'url';
+import { URL } from 'node:url';
 import { createResponse } from 'create-response';
 
 // OFAC sanctioned countries (ISO 3166-1 alpha-2).
@@ -29,16 +29,16 @@ const SANCTIONED_COUNTRIES = new Set([
 ]);
 
 // Allowed paths even from sanctioned countries (e.g., UN humanitarian access).
-const ALLOWED_PATHS_FOR_SANCTIONED = ['/api/health', '/api/v1/health'];
+const ALLOWED_PATHS_FOR_SANCTIONED = new Set(['/api/health', '/api/v1/health']);
 
 export function onClientRequest(request) {
     // Akamai exposes user geo info natively — no header parsing needed.
-    const country = (request.user && request.user.location && request.user.location.countryCode) || '';
+    const country = request.user?.location?.countryCode || '';
     const path = new URL(request.url).pathname;
 
     // Inject geo info into the request so backend can log it.
     request.addHeader('Akamai-Geo-Country', country);
-    if (request.user && request.user.location) {
+    if (request.user?.location) {
         if (request.user.location.region) {
             request.addHeader('Akamai-Geo-Region', request.user.location.region);
         }
@@ -48,7 +48,7 @@ export function onClientRequest(request) {
     }
 
     // Block sanctioned countries (except for allowed paths)
-    if (SANCTIONED_COUNTRIES.has(country) && !ALLOWED_PATHS_FOR_SANCTIONED.includes(path)) {
+    if (SANCTIONED_COUNTRIES.has(country) && !ALLOWED_PATHS_FOR_SANCTIONED.has(path)) {
         return createResponse(
             403,
             {
@@ -64,6 +64,5 @@ export function onClientRequest(request) {
         );
     }
 
-    // Pass through
-    return;
+    // Pass through (implicit return)
 }

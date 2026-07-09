@@ -15,9 +15,7 @@
 // See: https://techdocs.akamai.com/edgeworkers/docs/getting-started
 // ─────────────────────────────────────────────────────────────────────────
 
-import { URL } from 'url';
-import { createResponse } from 'create-response';
-import { httpRequest } from 'http-request';
+import { URL } from 'node:url';
 
 // Shared secret — MUST match AKAMAI_REQUIRE_ORIGIN_TOKEN env var on backend.
 // Stored as an EdgeWorker secret (not in source code) via Property Manager.
@@ -50,8 +48,7 @@ export function onClientRequest(request) {
         // Don't block here — let WAF/Bot Manager decide based on combined signals
     }
 
-    // Pass through to origin
-    return;
+    // Pass through to origin (implicit return)
 }
 
 export function onOriginResponse(request, response) {

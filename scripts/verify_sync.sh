@@ -10,6 +10,10 @@
 # ═══════════════════════════════════════════════════════════════════════════
 set -euo pipefail
 
+# Separator line for visual output grouping (defined once to avoid
+# duplicating the literal — SonarCloud shelldre:S1192).
+SEP="═══════════════════════════════════════════════════════════════════════"
+
 GH_REPO="/home/z/my-project/repos/revit"
 HF_SPACE="/home/z/my-project/repos/BAZSPARK"
 
@@ -56,9 +60,9 @@ EXCLUDES=(
   --exclude='Thumbs.db'
 )
 
-echo "═══════════════════════════════════════════════════════════════════════"
+echo "$SEP"
 echo "  GitHub ↔ HuggingFace Space Sync Verification"
-echo "═══════════════════════════════════════════════════════════════════════"
+echo "$SEP"
 echo ""
 echo "GitHub:  $GH_REPO"
 echo "HF Space: $HF_SPACE"
@@ -92,19 +96,19 @@ TOTAL_PATHS=${#RUNTIME_PATHS[@]}
 SYNCED=0
 
 for p in "${RUNTIME_PATHS[@]}"; do
-  if [ ! -e "$GH_REPO/$p" ]; then
+  if [[ ! -e "$GH_REPO/$p" ]]; then
     echo "  ⚠ $p: missing in GitHub"
     DIFF_FOUND=true
     continue
   fi
-  if [ ! -e "$HF_SPACE/$p" ]; then
+  if [[ ! -e "$HF_SPACE/$p" ]]; then
     echo "  ✗ $p: missing in HF Space"
     DIFF_FOUND=true
     continue
   fi
 
   # Use rsync --dry-run to compare (respects exclude patterns)
-  if [ -d "$GH_REPO/$p" ]; then
+  if [[ -d "$GH_REPO/$p" ]]; then
     DIFF=$(rsync -a --dry-run --itemize-changes "${EXCLUDES[@]}" \
       "$GH_REPO/$p/" "$HF_SPACE/$p/" 2>/dev/null || true)
   else
@@ -116,7 +120,7 @@ for p in "${RUNTIME_PATHS[@]}"; do
     fi
   fi
 
-  if [ -z "$DIFF" ]; then
+  if [[ -z "$DIFF" ]]; then
     echo "  ✓ $p — in sync"
     SYNCED=$((SYNCED + 1))
   else
@@ -130,17 +134,17 @@ echo ""
 echo "── Summary ──"
 echo "  Paths in sync: $SYNCED / $TOTAL_PATHS"
 
-if [ "$DIFF_FOUND" = "false" ]; then
+if [[ "$DIFF_FOUND" = "false" ]]; then
   echo ""
-  echo "═══════════════════════════════════════════════════════════════════════"
+  echo "$SEP"
   echo "  ✅ ALL RUNTIME FILES ARE IN SYNC"
-  echo "═══════════════════════════════════════════════════════════════════════"
+  echo "$SEP"
   exit 0
 else
   echo ""
-  echo "═══════════════════════════════════════════════════════════════════════"
+  echo "$SEP"
   echo "  ⚠ SYNC DIFFERENCES DETECTED"
-  echo "═══════════════════════════════════════════════════════════════════════"
+  echo "$SEP"
   echo ""
   echo "To fix:"
   echo "  1. Commit changes on GitHub:  cd $GH_REPO && git add -A && git commit -m '...' && git push"

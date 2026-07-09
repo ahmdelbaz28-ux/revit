@@ -233,28 +233,8 @@ class AkamaiIntegrationMiddleware:
             return
 
         # ── 1. Origin verification ─────────────────────────────────────────
-        if self.config.require_origin_token:
-            akamai_internal = _get_header(scope, _HDR_AKAMAI_INTERNAL)
-            # The token is checked against a shared secret rotated periodically.
-            # Akamai sets this header via an EdgeWorker or Request Header
-            # Modification rule in Property Manager.
-            if akamai_internal != self.config.require_origin_token:
-                # Fail-safe: log CRITICAL and block in production.
-                # In dev/test (FIREAI_ENV != production), allow passthrough.
-                if self.config.production_mode:
-                    logger.critical(
-                        "Direct origin access blocked (no/invalid Akamai-Internal token). "
-                        "path=%s, true_client_ip=%s",
-                        scope.get("path", ""),
-                        _get_header(scope, _HDR_TRUE_CLIENT_IP),
-                    )
-                    await self._send_forbidden(send, "Direct origin access forbidden")
-                    return
-                logger.warning(
-                    "Missing Akamai-Internal token in non-production env (allowed). "
-                    "path=%s",
-                    scope.get("path", ""),
-                )
+        if not await self._check_origin_token(scope, send):
+            return  # 403 already sent or non-prod warning logged
 
         path: str = scope.get("path", "")
 
@@ -270,42 +250,12 @@ class AkamaiIntegrationMiddleware:
             self._set_header(scope, _HDR_X_FORWARDED_FOR, true_client_ip.encode())
 
         # ── 3. Geo filtering ───────────────────────────────────────────────
-        if self.config.blocked_countries:
-            country = _get_header(scope, _HDR_AKAMAI_GEO_COUNTRY).upper()
-            if country and country in self.config.blocked_countries:
-                logger.warning(
-                    "Geo-blocked request from country=%s path=%s ip=%s",
-                    country,
-                    path,
-                    true_client_ip or "unknown",
-                )
-                await self._send_forbidden(
-                    send, f"Access from {country} is not permitted"
-                )
-                return
+        if not await self._check_geo_block(scope, send, path, true_client_ip):
+            return
 
         # ── 4. Bot score enforcement (auth endpoints only) ─────────────────
-        if _is_bot_sensitive_path(path):
-            bot_score_str = _get_header(scope, _HDR_AKAMAI_BOT_SCORE)
-            if bot_score_str:
-                try:
-                    bot_score = int(bot_score_str)
-                    if bot_score > self.config.allowed_bot_score:
-                        logger.warning(
-                            "Bot score %d exceeds threshold %d on sensitive path=%s ip=%s",
-                            bot_score,
-                            self.config.allowed_bot_score,
-                            path,
-                            true_client_ip or "unknown",
-                        )
-                        await self._send_forbidden(
-                            send, "Automated traffic detected on sensitive endpoint"
-                        )
-                        return
-                except ValueError:
-                    logger.debug(
-                        "Invalid Akamai-Bot-Score header value: %r", bot_score_str
-                    )
+        if not await self._check_bot_score(scope, send, path, true_client_ip):
+            return
 
         # ── 5. Wrap send() to inject response headers ─────────────────────
         # We capture Akamai's GRN and echo it back so operators can correlate
@@ -326,6 +276,87 @@ class AkamaiIntegrationMiddleware:
             await send(message)
 
         await self.app(scope, receive, send_wrapper)
+
+    async def _check_origin_token(self, scope: Scope, send: Send) -> bool:
+        """Verify Akamai-Internal token; return False if request was blocked.
+
+        Returns True to continue processing, False if a 403 was sent (prod)
+        or if no token check is configured. The token is checked against a
+        shared secret rotated periodically. Akamai sets this header via an
+        EdgeWorker or Request Header Modification rule in Property Manager.
+        """
+        if not self.config.require_origin_token:
+            return True
+        akamai_internal = _get_header(scope, _HDR_AKAMAI_INTERNAL)
+        if akamai_internal == self.config.require_origin_token:
+            return True
+        # Fail-safe: log CRITICAL and block in production.
+        # In dev/test (FIREAI_ENV != production), allow passthrough.
+        if self.config.production_mode:
+            logger.critical(
+                "Direct origin access blocked (no/invalid Akamai-Internal token). "
+                "path=%s, true_client_ip=%s",
+                scope.get("path", ""),
+                _get_header(scope, _HDR_TRUE_CLIENT_IP),
+            )
+            await self._send_forbidden(send, "Direct origin access forbidden")
+            return False
+        logger.warning(
+            "Missing Akamai-Internal token in non-production env (allowed). "
+            "path=%s",
+            scope.get("path", ""),
+        )
+        return True
+
+    async def _check_geo_block(
+        self, scope: Scope, send: Send, path: str, true_client_ip: str
+    ) -> bool:
+        """Return False (and send 403) if the request is from a blocked country."""
+        if not self.config.blocked_countries:
+            return True
+        country = _get_header(scope, _HDR_AKAMAI_GEO_COUNTRY).upper()
+        if country and country in self.config.blocked_countries:
+            logger.warning(
+                "Geo-blocked request from country=%s path=%s ip=%s",
+                country,
+                path,
+                true_client_ip or "unknown",
+            )
+            await self._send_forbidden(
+                send, f"Access from {country} is not permitted"
+            )
+            return False
+        return True
+
+    async def _check_bot_score(
+        self, scope: Scope, send: Send, path: str, true_client_ip: str
+    ) -> bool:
+        """Return False (and send 403) if bot score exceeds threshold on sensitive paths."""
+        if not _is_bot_sensitive_path(path):
+            return True
+        bot_score_str = _get_header(scope, _HDR_AKAMAI_BOT_SCORE)
+        if not bot_score_str:
+            return True
+        try:
+            bot_score = int(bot_score_str)
+        except ValueError:
+            logger.debug(
+                "Invalid Akamai-Bot-Score header value: %r", bot_score_str
+            )
+            return True
+        if bot_score <= self.config.allowed_bot_score:
+            return True
+        logger.warning(
+            "Bot score %d exceeds threshold %d on sensitive path=%s ip=%s",
+            bot_score,
+            self.config.allowed_bot_score,
+            path,
+            true_client_ip or "unknown",
+        )
+        await self._send_forbidden(
+            send, "Automated traffic detected on sensitive endpoint"
+        )
+        return False
 
     # ── Internal helpers ────────────────────────────────────────────────────
 

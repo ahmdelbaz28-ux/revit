@@ -174,22 +174,8 @@ class CloudflareIntegrationMiddleware:
             return
 
         # ── 1. Origin verification ─────────────────────────────────────────
-        if self.config.require_origin_token:
-            cf_token = _get_header(scope, _HDR_X_CF_ORIGIN_TOKEN)
-            if cf_token != self.config.require_origin_token:
-                if self.config.production_mode:
-                    logger.critical(
-                        "Direct origin access blocked (no/invalid X-CF-Origin-Token). "
-                        "path=%s, cf_connecting_ip=%s",
-                        scope.get("path", ""),
-                        _get_header(scope, _HDR_CF_CONNECTING_IP),
-                    )
-                    await self._send_forbidden(send, "Direct origin access forbidden")
-                    return
-                logger.warning(
-                    "Missing X-CF-Origin-Token in non-production env (allowed). path=%s",
-                    scope.get("path", ""),
-                )
+        if not await self._check_origin_token(scope, send):
+            return
 
         path: str = scope.get("path", "")
 
@@ -203,19 +189,8 @@ class CloudflareIntegrationMiddleware:
             self._set_header(scope, _HDR_X_FORWARDED_FOR, cf_ip.encode())
 
         # ── 3. Geo filtering (CF-IPCountry) ────────────────────────────────
-        if self.config.blocked_countries:
-            country = _get_header(scope, _HDR_CF_IPCOUNTRY).upper()
-            if country and country in self.config.blocked_countries:
-                logger.warning(
-                    "Geo-blocked request from country=%s path=%s ip=%s",
-                    country,
-                    path,
-                    cf_ip or "unknown",
-                )
-                await self._send_forbidden(
-                    send, f"Access from {country} is not permitted"
-                )
-                return
+        if not await self._check_geo_block(scope, send, path, cf_ip):
+            return
 
         # ── 4. Wrap send() to inject response headers ─────────────────────
         cf_ray = _get_header(scope, _HDR_CF_RAY)
@@ -229,6 +204,52 @@ class CloudflareIntegrationMiddleware:
             await send(message)
 
         await self.app(scope, receive, send_wrapper)
+
+    async def _check_origin_token(self, scope: Scope, send: Send) -> bool:
+        """Verify X-CF-Origin-Token; return False if a 403 was sent (prod).
+
+        In non-production environments, missing/invalid tokens are logged as
+        warnings but the request is allowed to proceed (fail-open for dev).
+        """
+        if not self.config.require_origin_token:
+            return True
+        cf_token = _get_header(scope, _HDR_X_CF_ORIGIN_TOKEN)
+        if cf_token == self.config.require_origin_token:
+            return True
+        if self.config.production_mode:
+            logger.critical(
+                "Direct origin access blocked (no/invalid X-CF-Origin-Token). "
+                "path=%s, cf_connecting_ip=%s",
+                scope.get("path", ""),
+                _get_header(scope, _HDR_CF_CONNECTING_IP),
+            )
+            await self._send_forbidden(send, "Direct origin access forbidden")
+            return False
+        logger.warning(
+            "Missing X-CF-Origin-Token in non-production env (allowed). path=%s",
+            scope.get("path", ""),
+        )
+        return True
+
+    async def _check_geo_block(
+        self, scope: Scope, send: Send, path: str, cf_ip: str
+    ) -> bool:
+        """Return False (and send 403) if the request is from a blocked country."""
+        if not self.config.blocked_countries:
+            return True
+        country = _get_header(scope, _HDR_CF_IPCOUNTRY).upper()
+        if country and country in self.config.blocked_countries:
+            logger.warning(
+                "Geo-blocked request from country=%s path=%s ip=%s",
+                country,
+                path,
+                cf_ip or "unknown",
+            )
+            await self._send_forbidden(
+                send, f"Access from {country} is not permitted"
+            )
+            return False
+        return True
 
     # ── Internal helpers ────────────────────────────────────────────────────
 

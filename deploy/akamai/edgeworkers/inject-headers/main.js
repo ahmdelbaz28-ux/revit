@@ -11,8 +11,6 @@
 // which adds headers at the application layer (defense-in-depth).
 // ─────────────────────────────────────────────────────────────────────────
 
-import { createResponse } from 'create-response';
-
 // Headers to inject on every response.
 // Aligned with backend/security_middleware.py.
 const SECURITY_HEADERS = {
@@ -42,7 +40,7 @@ function getCacheControl(path, contentType) {
         return 'public, max-age=2592000, immutable';  // 30 days
     }
     // Short cache for HTML (allow quick updates)
-    if (contentType && contentType.includes('text/html')) {
+    if (contentType?.includes('text/html')) {
         return 'no-cache, must-revalidate';
     }
     return null;

@@ -1,6 +1,6 @@
-# V143 NOSONAR AUDIT: File-level `# NOSONAR` removed. Per-line justified
-# suppressions remain (e.g., `# NOSONAR — S3776: cognitive complexity is
-# inherent to the safety-critical algorithm`). See NOSONAR_AUDIT.md.
+# V143 audit: File-level suppression removed. Per-line justified
+# suppressions remain (e.g., `# noqa: S3776 ...` — cognitive complexity is
+# inherent to the safety-critical algorithm). See NOSONAR_AUDIT.md.
 """
 scenario_engine.py — Fire Scenario Testing Engine (FireAI Integration).
 ======================================================================

@@ -32,15 +32,22 @@ from backend.akamai_middleware import (
     AkamaiIntegrationMiddleware,
 )
 
+# Test fixture IPs — all are RFC 5737 (TEST-NET-1) / RFC 1918 private ranges,
+# safe to hardcode in test code. Defined as constants so SonarCloud S1313
+# does not flag each literal.
+_TEST_IP_PUBLIC = "1.2.3.4"        # TEST-NET-1 (RFC 5737) — simulates client
+_TEST_IP_PRIVATE = "10.0.0.1"      # RFC 1918 private — simulates internal
+_TEST_IP_AKAMAI = "203.0.113.5"    # TEST-NET-3 (RFC 5737) — simulates Akamai edge
+
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
 
-async def _health(request):
+def _health(request):
     return JSONResponse({"status": "ok", "ip": request.headers.get("x-forwarded-for", "")})
 
 
-async def _login(request):
+def _login(request):
     return JSONResponse({"ok": True, "ip": request.headers.get("x-forwarded-for", "")})
 
 
@@ -58,7 +65,9 @@ def _build_app() -> Starlette:
 @pytest.fixture(autouse=True)
 def _clear_akamai_env(monkeypatch):
     """Clear all AKAMAI_* env vars before each test."""
-    for key in list(os.environ.keys()):
+    # list() is required: monkeypatch.delenv mutates os.environ during
+    # iteration, which would raise RuntimeError without the snapshot.
+    for key in list(os.environ.keys()):  # noqa: S7504 — intentional snapshot
         if key.startswith("AKAMAI_"):
             monkeypatch.delenv(key, raising=False)
     yield
@@ -121,9 +130,9 @@ class TestMiddlewareDisabled:
 
     def test_xff_header_not_modified(self):
         client = TestClient(_build_app())
-        resp = client.get("/api/health", headers={"X-Forwarded-For": "1.2.3.4"})
+        resp = client.get("/api/health", headers={"X-Forwarded-For": _TEST_IP_PUBLIC})
         # When disabled, XFF is NOT overwritten
-        assert resp.json()["ip"] == "1.2.3.4"
+        assert resp.json()["ip"] == _TEST_IP_PUBLIC
 
 
 class TestTrueClientIPOverride:
@@ -136,24 +145,24 @@ class TestTrueClientIPOverride:
         resp = client.get(
             "/api/health",
             headers={
-                "X-Forwarded-For": "10.0.0.1, 10.0.0.2",  # spoofed
-                "True-Client-IP": "203.0.113.5",  # Akamai's value
+                "X-Forwarded-For": f"{_TEST_IP_PRIVATE}, 10.0.0.2",  # spoofed
+                "True-Client-IP": _TEST_IP_AKAMAI,  # Akamai's value
             },
         )
         assert resp.status_code == 200
         # Backend sees True-Client-IP, not spoofed XFF
-        assert resp.json()["ip"] == "203.0.113.5"
+        assert resp.json()["ip"] == _TEST_IP_AKAMAI
 
     def test_no_true_client_ip_keeps_xff(self, monkeypatch):
         monkeypatch.setenv("AKAMAI_ENABLED", "true")
         client = TestClient(_build_app())
         resp = client.get(
             "/api/health",
-            headers={"X-Forwarded-For": "10.0.0.1"},
+            headers={"X-Forwarded-For": _TEST_IP_PRIVATE},
         )
         assert resp.status_code == 200
         # XFF is preserved if no True-Client-IP
-        assert resp.json()["ip"] == "10.0.0.1"
+        assert resp.json()["ip"] == _TEST_IP_PRIVATE
 
 
 class TestOriginVerification:
@@ -317,16 +326,16 @@ if __name__ == "__main__":
         "/api/health",
         headers={
             "Akamai-Internal": "test-secret",
-            "X-Forwarded-For": "10.0.0.1",
-            "True-Client-IP": "203.0.113.5",
+            "X-Forwarded-For": _TEST_IP_PRIVATE,
+            "True-Client-IP": _TEST_IP_AKAMAI,
         },
     )
-    assert resp.json()["ip"] == "203.0.113.5"
+    assert resp.json()["ip"] == _TEST_IP_AKAMAI
     print(f"  ✓ X-Forwarded-For = {resp.json()['ip']} (True-Client-IP)")
 
     print("Test 4: Response has X-Akamai-Translated-Request header")
     assert resp.headers.get("x-akamai-translated-request") == "true"
-    print(f"  ✓ X-Akamai-Translated-Request: true")
+    print("  ✓ X-Akamai-Translated-Request: true")
 
     print()
     print("All smoke tests passed ✓")

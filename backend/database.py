@@ -227,7 +227,7 @@ class Database:
             return 0
         if isinstance(row, dict):
             # RealDictCursor / RealDictRow — keys are column names
-            return row.get(key, row.get(list(row.keys())[0], 0))
+            return row.get(key, row.get(next(iter(row.keys())), 0))
         # SQLite Row or plain tuple — index by position
         return row[0]
 

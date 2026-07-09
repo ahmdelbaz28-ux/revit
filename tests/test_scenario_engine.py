@@ -481,8 +481,8 @@ class TestDetectionTime:
             smoke_threshold=4.0,
             max_t_s=30.0,
         )
-        assert t_det == 30.0  # Hit the cap  # NOSONAR
-        assert od == 0.0  # Never detected
+        assert t_det == pytest.approx(30.0)  # Hit the cap
+        assert od == pytest.approx(0.0)  # Never detected
 
     def test_detection_time_q_max_caps_hrr_at_detection(self):
         """When q_max is low, HRR at detection must not exceed q_max."""
@@ -987,10 +987,10 @@ class TestDataClasses:
         )
         assert ev.detector_index == 0
         assert ev.detector_pos == (1.0, 2.0)
-        assert ev.distance_m == 3.5  # NOSONAR
-        assert ev.detection_time_s == 15.2
-        assert ev.hrr_at_detection_kw == 125.0  # NOSONAR
-        assert ev.smoke_conc_pct_m == 4.5
+        assert ev.distance_m == pytest.approx(3.5)
+        assert ev.detection_time_s == pytest.approx(15.2)
+        assert ev.hrr_at_detection_kw == pytest.approx(125.0)
+        assert ev.smoke_conc_pct_m == pytest.approx(4.5)
 
     def test_blind_spot_holds_all_fields(self):
         """BlindSpot must hold position, nearest_dist, estimated_time."""
@@ -1000,8 +1000,8 @@ class TestDataClasses:
             estimated_detection_s=75.0,
         )
         assert bs.position == (5.0, 5.0)
-        assert bs.nearest_detector_dist_m == 8.5  # NOSONAR
-        assert bs.estimated_detection_s == 75.0
+        assert bs.nearest_detector_dist_m == pytest.approx(8.5)
+        assert bs.estimated_detection_s == pytest.approx(75.0)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
