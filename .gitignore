@@ -429,3 +429,8 @@ postman_collection*.json
 *.sonarbak
 *.bak
 
+
+# ── Cloudflare ───────────────────────────────────────────────────────────────
+.wrangler/
+.dev.vars
+.mf/

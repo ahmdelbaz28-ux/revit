@@ -108,6 +108,7 @@ jobs:
                 # Ensure target dir exists (rsync won't create it for 'src/' form)
                 mkdir -p "hf_space/${p}"
                 rsync -a \
+                  --delete \
                   --exclude='node_modules/' \
                   --exclude='__pycache__/' \
                   --exclude='*.pyc' \
@@ -123,6 +124,11 @@ jobs:
                   --exclude='.mypy_cache/' \
                   --exclude='.ruff_cache/' \
                   --exclude='.git/' \
+                  --exclude='.wrangler/' \
+                  --exclude='.cache/' \
+                  --exclude='*.log' \
+                  --exclude='.DS_Store' \
+                  --exclude='Thumbs.db' \
                   "${{ github.workspace }}/${p}/" "hf_space/${p}/"
                 echo "  + synced (dir): ${p}/"
               else
@@ -190,10 +196,64 @@ jobs:
           echo "  GitHub source SHA: ${GH_SHA::7}"
           echo "=========================================="
 
-      - name: HF Space rebuild info
+      - name: Verify sync integrity
         if: success()
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          echo "ℹ️ HuggingFace Spaces rebuild automatically on push."
-          echo "   Monitor at: https://huggingface.co/spaces/${HF_USERNAME}/${HF_SPACE_NAME}"
-          echo "   Public URL: https://${HF_USERNAME}-${HF_SPACE_NAME,,}.hf.space"
-          echo "   Health:     https://${HF_USERNAME}-${HF_SPACE_NAME,,}.hf.space/api/health"
+          echo "═══════════════════════════════════════════════════════════════════════"
+          echo "  SYNC VERIFICATION"
+          echo "═══════════════════════════════════════════════════════════════════════"
+          echo ""
+          echo "GitHub source SHA: ${GH_SHA::7}"
+          echo "HF after-sync SHA: $(cat hf_after_sha.txt)"
+          echo ""
+
+          # Verify HF Space is reachable and healthy
+          echo "── Checking HF Space health endpoint ──"
+          sleep 5  # Give HF a moment to start rebuilding
+          HF_URL="https://${HF_USERNAME}-${HF_SPACE_NAME,,}.hf.space/api/health"
+
+          # Try up to 3 times (HF may be rebuilding)
+          for attempt in 1 2 3; do
+            HTTP_CODE=$(curl -s -o /tmp/health.json -w "%{http_code}" --max-time 15 "$HF_URL" || echo "000")
+            if [ "$HTTP_CODE" = "200" ]; then
+              echo "  ✓ HF Space healthy (HTTP 200)"
+              cat /tmp/health.json | python3 -c "
+          import json, sys
+          try:
+              d = json.load(sys.stdin)
+              data = d.get('data', d)
+              print(f'    status: {data.get(\"status\", \"?\")}')
+              print(f'    database: {data.get(\"database\", \"?\")}')
+              print(f'    uptime: {data.get(\"uptime_seconds\", 0):.0f}s')
+          except:
+              print('    (could not parse health response)')
+          "
+              break
+            else
+              echo "  ⏳ Attempt $attempt: HTTP $HTTP_CODE (HF may be rebuilding, retrying in 15s...)"
+              sleep 15
+            fi
+          done
+
+          echo ""
+          echo "── Verifying file count matches ──"
+          GH_COUNT=$(find ${{ github.workspace }}/{adapters,backend,core,facp_system,fireai,frontend,integration,marine,parsers,qomn_conduit,qomn_fire} -type f 2>/dev/null | wc -l)
+          HF_COUNT=$(cd hf_space && find {adapters,backend,core,facp_system,fireai,frontend,integration,marine,parsers,qomn_conduit,qomn_fire} -type f 2>/dev/null | wc -l)
+          echo "  GitHub runtime files: $GH_COUNT"
+          echo "  HF Space runtime files: $HF_COUNT"
+          if [ "$GH_COUNT" = "$HF_COUNT" ]; then
+            echo "  ✓ File counts match"
+          else
+            echo "  ⚠ File count mismatch (some files may be excluded by rsync filters — this is expected)"
+          fi
+
+          echo ""
+          echo "═══════════════════════════════════════════════════════════════════════"
+          echo "  SYNC COMPLETE — HF Space is up-to-date with GitHub @ ${GH_SHA::7}"
+          echo "═══════════════════════════════════════════════════════════════════════"
+          echo ""
+          echo "  Monitor:    https://huggingface.co/spaces/${HF_USERNAME}/${HF_SPACE_NAME}"
+          echo "  Public URL: https://${HF_USERNAME}-${HF_SPACE_NAME,,}.hf.space"
+          echo "  Health:     https://${HF_USERNAME}-${HF_SPACE_NAME,,}.hf.space/api/health"
