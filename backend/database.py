@@ -117,7 +117,20 @@ class Database:
         logger.info("Digital Twin database initialized (SQLite) at %s", db_path)
 
     def _init_postgres(self) -> None:
-        """Initialize PostgreSQL connection pool."""
+        """Initialize PostgreSQL connection pool.
+
+        Fallback chain (added 2026-07-09):
+          1. Try DATABASE_URL (primary — usually Supabase in standard config).
+          2. If the connection fails (e.g. HF Spaces free tier cannot reach
+             Supabase's IPv6-only endpoint), fall back to NEON_DATABASE_URL
+             (IPv4-direct, always reachable from any container runtime).
+          3. If both fail, raise the original DATABASE_URL error so the
+             application surfaces the primary misconfiguration, not a
+             secondary one.
+
+        This makes BOTH databases work together: Supabase stays as the
+        standard primary; Neon is the automatic IPv4 fallback.
+        """
         try:
             import psycopg2  # noqa: F401  (imported to surface ImportError early)
             from psycopg2 import pool as pg_pool
@@ -128,16 +141,56 @@ class Database:
             )
 
         db_url = getattr(self, '_database_url', _DATABASE_URL)
-        self._pg_pool = pg_pool.ThreadedConnectionPool(
-            minconn=2,
-            maxconn=20,
-            dsn=db_url,
-        )
-        self._conn = None  # Not used in Postgres mode
-        logger.info(
-            f"Digital Twin database initialized (PostgreSQL) — "
-            f"pool: 2–20 connections, URL: {db_url.split('@')[-1]}"
-        )
+        neon_url = os.environ.get("NEON_DATABASE_URL", "")
+
+        # Try the primary DATABASE_URL first
+        try:
+            self._pg_pool = pg_pool.ThreadedConnectionPool(
+                minconn=2,
+                maxconn=20,
+                dsn=db_url,
+            )
+            # Smoke-test the connection — pool creation is lazy on some drivers
+            test_conn = self._pg_pool.getconn()
+            try:
+                cur = test_conn.cursor()
+                cur.execute("SELECT 1")
+                cur.fetchone()
+                cur.close()
+            finally:
+                self._pg_pool.putconn(test_conn)
+            self._conn = None
+            logger.info(
+                "Digital Twin database initialized (PostgreSQL) — "
+                "pool: 2–20 connections, URL: %s",
+                db_url.split("@")[-1],
+            )
+        except Exception as primary_exc:
+            if not neon_url or neon_url == db_url:
+                # No fallback available — raise the original error
+                raise
+            logger.warning(
+                "Primary DATABASE_URL failed (%s); falling back to NEON_DATABASE_URL (%s)",
+                type(primary_exc).__name__,
+                neon_url.split("@")[-1],
+            )
+            # Close the partially-initialized pool if it was created
+            try:
+                self._pg_pool.closeall()
+            except Exception:
+                pass
+            self._database_url = neon_url
+            self._pg_pool = pg_pool.ThreadedConnectionPool(
+                minconn=2,
+                maxconn=20,
+                dsn=neon_url,
+            )
+            self._conn = None
+            logger.info(
+                "Digital Twin database initialized (PostgreSQL via NEON_DATABASE_URL fallback) — "
+                "pool: 2–20 connections, URL: %s",
+                neon_url.split("@")[-1],
+            )
         self._init_schema_pg()
 
     @contextmanager
@@ -158,6 +211,25 @@ class Database:
                 cur.close()
         finally:
             self._pg_pool.putconn(conn)
+
+    def _scalar(self, cur, key: str = "count"):
+        """Read a scalar value from a cursor — works for BOTH SQLite tuples
+        (`row[0]`) and PostgreSQL RealDictCursor rows (`row['count']`).
+
+        Added 2026-07-09: the legacy code path assumed tuple cursors
+        (`cur.fetchone()[0]`) which is correct for SQLite but raises
+        `KeyError: 0` against the RealDictCursor used in PostgreSQL mode.
+        This helper transparently handles both cursor types so the same
+        SQL (`SELECT COUNT(*) FROM ...`) works on either backend.
+        """
+        row = cur.fetchone()
+        if row is None:
+            return 0
+        if isinstance(row, dict):
+            # RealDictCursor / RealDictRow — keys are column names
+            return row.get(key, row.get(list(row.keys())[0], 0))
+        # SQLite Row or plain tuple — index by position
+        return row[0]
 
     @contextmanager
     def _transaction(self):
@@ -489,7 +561,7 @@ class Database:
         with self._transaction() as cur:
             # Get total count
             cur.execute("SELECT COUNT(*) FROM projects")
-            total = cur.fetchone()[0]
+            total = self._scalar(cur)
 
             # Get paginated results with device/connection counts in ONE query (no N+1)
             offset = (page - 1) * limit
@@ -581,11 +653,11 @@ class Database:
         """
         with self._transaction() as cur:
             cur.execute("SELECT COUNT(*) FROM devices")
-            total_devices = cur.fetchone()[0]
+            total_devices = self._scalar(cur)
             cur.execute("SELECT COUNT(*) FROM connections")
-            total_connections = cur.fetchone()[0]
+            total_connections = self._scalar(cur)
             cur.execute("SELECT COUNT(*) FROM projects WHERE status = 'active'")
-            active_projects = cur.fetchone()[0]
+            active_projects = self._scalar(cur)
         return {
             "total_devices": total_devices,
             "total_connections": total_connections,
@@ -675,7 +747,7 @@ class Database:
                 f"SELECT COUNT(*) FROM devices WHERE project_id = {self._ph()}",
                 (project_id,),
             )
-            total = cur.fetchone()[0]
+            total = self._scalar(cur)
 
             offset = (page - 1) * limit
             # sort and order are SAFE here (whitelisted above) — lgtm[py/sql-injection]
@@ -867,7 +939,7 @@ class Database:
                 f"SELECT COUNT(*) FROM connections WHERE project_id = {self._ph()}",
                 (project_id,),
             )
-            total = cur.fetchone()[0]
+            total = self._scalar(cur)
 
             offset = (page - 1) * limit
             # sort and order are SAFE here (whitelisted above) — lgtm[py/sql-injection]
@@ -1024,7 +1096,7 @@ class Database:
                 f"SELECT COUNT(*) FROM reports WHERE project_id = {self._ph()}",
                 (project_id,),
             )
-            total = cur.fetchone()[0]
+            total = self._scalar(cur)
 
             offset = (page - 1) * limit
             # sort and order are SAFE here (whitelisted above) — lgtm[py/sql-injection]
