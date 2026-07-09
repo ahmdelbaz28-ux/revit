@@ -23,6 +23,22 @@
  *   - Redirect to /dashboard on success
  *   - Redirect to original ?from= URL if present
  */
+
+import {
+	AlertCircle,
+	Eye,
+	EyeOff,
+	FileCheck,
+	Flame,
+	KeyRound,
+	Loader2,
+	LogIn,
+	ShieldCheck,
+	Zap,
+} from "lucide-react";
+import { type FormEvent, useState } from "react";
+import { Navigate, useSearchParams } from "react-router-dom";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -32,26 +48,11 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import {
-	Eye,
-	EyeOff,
-	KeyRound,
-	Loader2,
-	LogIn,
-	AlertCircle,
-	Flame,
-	ShieldCheck,
-	Zap,
-	FileCheck,
-} from "lucide-react";
-import { useState, type FormEvent } from "react";
-import { useSearchParams, Navigate } from "react-router-dom";
-import { login } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
+import { login } from "@/services/api";
 
 const APP_VERSION = "v1.55.0";
 
@@ -184,9 +185,9 @@ export function LoginPage() {
 					</h2>
 
 					<p className="text-slate-400 text-base leading-relaxed mb-10 max-w-md">
-						BAZSPARK is the digital twin platform for fire protection engineers —
-						combining deterministic code compliance with real-time collaboration
-						across BIM, CAD, and Revit workflows.
+						BAZSPARK is the digital twin platform for fire protection engineers
+						— combining deterministic code compliance with real-time
+						collaboration across BIM, CAD, and Revit workflows.
 					</p>
 
 					<div className="space-y-4 max-w-md">
@@ -278,8 +279,8 @@ export function LoginPage() {
 										</button>
 									</div>
 									<p id="api-key-help" className="text-xs text-slate-500">
-										Your API key is set by the FIREAI_API_KEY environment variable
-										on the backend at first startup.
+										Your API key is set by the FIREAI_API_KEY environment
+										variable on the backend at first startup.
 									</p>
 								</div>
 

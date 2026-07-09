@@ -21,15 +21,16 @@
  * it either renders the children (authenticated) or redirects (not).
  */
 import { Loader2 } from "lucide-react";
+import type { ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import type { ReactNode } from "react";
 
 interface RouteGuardProps {
 	children: ReactNode;
 }
 
-export function RouteGuard({ children }: RouteGuardProps) {  // NOSONAR - typescript:S6759
+export function RouteGuard({ children }: RouteGuardProps) {
+	// NOSONAR - typescript:S6759
 	const { isAuthenticated, loading } = useAuth();
 	const location = useLocation();
 
