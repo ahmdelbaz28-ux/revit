@@ -174,7 +174,7 @@ class TestLLMServiceChat:
         mock_create = AsyncMock(return_value=mock_completion)
         mock_client.chat.completions.create = mock_create
 
-        # Patch _get_client to return our mock
+        # Patch _get_client to return our mock regardless of provider arg
         with patch.object(svc, "_get_client", return_value=mock_client):
             import asyncio
 
@@ -185,7 +185,7 @@ class TestLLMServiceChat:
 
         assert result.content == "NFPA 72 spacing is 9.1m."
         assert result.model == "z-ai/glm-4.7"
-        assert result.source == "zenmux"
+        assert result.source == "zenmux"  # primary provider name
         assert result.finish_reason == "stop"
         assert result.prompt_tokens == 20
         assert result.completion_tokens == 10
@@ -240,8 +240,8 @@ class TestLLMServiceHealth:
 
         result = asyncio.get_event_loop().run_until_complete(run())
         assert result["available"] is False
-        assert "base_url" in result
-        assert "default_model" in result
+        assert "primary" in result
+        assert "fallback" in result
         assert "timeout_s" in result
 
     def test_health_configured(self, configured_env):
@@ -255,8 +255,12 @@ class TestLLMServiceHealth:
 
         result = asyncio.get_event_loop().run_until_complete(run())
         assert result["available"] is True
-        assert result["base_url"] == "https://zenmux.ai/api/v1"
-        assert result["default_model"] == "z-ai/glm-4.7"
+        assert result["primary"]["name"] == "zenmux"
+        assert result["primary"]["available"] is True
+        assert result["primary"]["base_url"] == "https://zenmux.ai/api/v1"
+        assert result["primary"]["model"] == "z-ai/glm-4.7"
+        assert result["fallback"]["name"] == "aliyun-maas"
+        assert result["fallback"]["enabled"] is False
 
 
 # ── Singleton tests ──────────────────────────────────────────────────────────
@@ -284,4 +288,74 @@ class TestSingleton:
         monkeypatch.setenv("ZENMUX_API_KEY", "key-2")
         svc2 = mod.get_llm_service()
         assert svc2 is not svc1
-        assert svc2._api_key == "key-2"
+        assert svc2._primary.api_key == "key-2"
+
+
+# ── Fallback provider tests ──────────────────────────────────────────────────
+
+
+class TestFallbackProvider:
+    def test_fallback_disabled_by_default(self, configured_env):
+        from backend.services.llm_service import LLMService
+
+        svc = LLMService()
+        assert svc.fallback_available is False
+
+    def test_fallback_enabled_when_configured(self, configured_env, monkeypatch):
+        monkeypatch.setenv("LLM_FALLBACK_ENABLED", "true")
+        monkeypatch.setenv("LLM_FALLBACK_API_KEY", "sk-ws-test")
+        from backend.services.llm_service import LLMService
+
+        svc = LLMService()
+        assert svc.fallback_available is True
+        assert svc._fallback.name == "aliyun-maas"
+        assert svc._fallback.model == "qwen-plus-latest"
+
+    def test_fallback_used_when_primary_fails(self, configured_env, monkeypatch):
+        """If primary provider raises, fallback should be tried."""
+        monkeypatch.setenv("LLM_FALLBACK_ENABLED", "true")
+        monkeypatch.setenv("LLM_FALLBACK_API_KEY", "sk-ws-test")
+        from backend.services.llm_service import LLMService
+
+        svc = LLMService()
+
+        # Mock: primary raises, fallback succeeds
+        mock_fallback_completion = MagicMock()
+        mock_msg = MagicMock()
+        mock_msg.content = "Fallback response"
+        mock_choice = MagicMock()
+        mock_choice.message = mock_msg
+        mock_choice.finish_reason = "stop"
+        mock_usage = MagicMock()
+        mock_usage.prompt_tokens = 5
+        mock_usage.completion_tokens = 5
+        mock_usage.total_tokens = 10
+        mock_fallback_completion.choices = [mock_choice]
+        mock_fallback_completion.usage = mock_usage
+        mock_fallback_completion.model_dump.return_value = {}
+
+        mock_primary_client = MagicMock()
+        mock_primary_client.chat.completions.create = AsyncMock(
+            side_effect=RuntimeError("primary failed")
+        )
+        mock_fallback_client = MagicMock()
+        mock_fallback_client.chat.completions.create = AsyncMock(
+            return_value=mock_fallback_completion
+        )
+
+        def _get_client_mock(provider=None, *args, **kwargs):
+            if provider and provider.name == "aliyun-maas":
+                return mock_fallback_client
+            return mock_primary_client
+
+        with patch.object(svc, "_get_client", side_effect=_get_client_mock):
+            import asyncio
+
+            async def run():
+                return await svc.chat("test prompt")
+
+            result = asyncio.get_event_loop().run_until_complete(run())
+
+        assert result.content == "Fallback response"
+        assert result.source == "aliyun-maas"
+        assert result.total_tokens == 10

@@ -25,11 +25,23 @@ DESIGN
 
 ENVIRONMENT VARIABLES
 ---------------------
+Primary provider (Zenmux):
 * ``ZENMUX_API_KEY``       — API key (required for production use)
 * ``ZENMUX_BASE_URL``      — defaults to ``https://zenmux.ai/api/v1``
 * ``ZENMUX_MODEL``         — default chat model (e.g. ``z-ai/glm-4.7``)
 * ``ZENMUX_REQUEST_TIMEOUT`` — seconds, default 60 (LLM calls can be slow)
 * ``ZENMUX_MAX_TOKENS``    — default 2000
+
+Fallback provider (Alibaba Cloud MaaS — optional, used if primary fails):
+* ``LLM_FALLBACK_API_KEY``  — Alibaba MaaS API key
+* ``LLM_FALLBACK_BASE_URL`` — defaults to Alibaba MaaS compatible-mode endpoint
+* ``LLM_FALLBACK_MODEL``    — default ``qwen-plus-latest``
+* ``LLM_FALLBACK_ENABLED``  — set to ``"true"`` to enable fallback (default: disabled)
+
+When fallback is enabled and the primary provider returns an error (429, 500,
+502, 503, timeout, or connection error), the service automatically retries
+with the fallback provider. The ``source`` field in LLMResponse indicates
+which provider succeeded (``"zenmux"`` or ``"aliyun-maas"``).
 
 USAGE
 -----
@@ -39,6 +51,7 @@ USAGE
         raise HTTPException(503, "LLM service not configured")
     result = await svc.chat("Explain NFPA 72 §17.7.3.2.3", system="You are a fire protection engineer.")
     print(result.content)
+    print(result.source)  # "zenmux" or "aliyun-maas"
 """
 from __future__ import annotations
 
@@ -57,12 +70,32 @@ _DEFAULT_TIMEOUT = 60.0
 _DEFAULT_MAX_TOKENS = 2000
 _DEFAULT_TEMPERATURE = 0.1  # low temperature for deterministic engineering advice
 
+# Fallback provider defaults (Alibaba Cloud MaaS — OpenAI-compatible)
+_FALLBACK_DEFAULT_BASE_URL = (
+    "https://ws-jhr3ncn4gmi9gm21.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1"
+)
+_FALLBACK_DEFAULT_MODEL = "qwen-plus-latest"
+
 # Conservative retry policy — LLM calls can be slow, so we allow up to 3
 # attempts with exponential backoff. Only network/timeout errors are retried;
 # 4xx errors (auth, quota, bad request) are surfaced immediately.
 _MAX_RETRIES = 3
 _RETRY_MIN_WAIT = 1.0
 _RETRY_MAX_WAIT = 10.0
+
+
+@dataclass(frozen=True)
+class _ProviderConfig:
+    """Configuration for a single LLM provider (primary or fallback)."""
+
+    name: str  # "zenmux" or "aliyun-maas"
+    api_key: str
+    base_url: str
+    model: str
+
+    @property
+    def available(self) -> bool:
+        return bool(self.api_key)
 
 
 @dataclass(frozen=True)
@@ -92,47 +125,75 @@ class LLMService:
     """
 
     def __init__(self) -> None:
-        self._api_key: str = os.environ.get("ZENMUX_API_KEY", "")
-        self._base_url: str = os.environ.get("ZENMUX_BASE_URL", _DEFAULT_BASE_URL)
-        self._default_model: str = os.environ.get("ZENMUX_MODEL", _DEFAULT_MODEL)
+        # Primary provider (Zenmux or any OpenAI-compatible API)
+        self._primary = _ProviderConfig(
+            name="zenmux",
+            api_key=os.environ.get("ZENMUX_API_KEY", ""),
+            base_url=os.environ.get("ZENMUX_BASE_URL", _DEFAULT_BASE_URL),
+            model=os.environ.get("ZENMUX_MODEL", _DEFAULT_MODEL),
+        )
+        # Fallback provider (Alibaba Cloud MaaS — optional)
+        self._fallback_enabled = os.environ.get(
+            "LLM_FALLBACK_ENABLED", ""
+        ).lower() in ("1", "true", "yes", "on")
+        self._fallback = _ProviderConfig(
+            name="aliyun-maas",
+            api_key=os.environ.get("LLM_FALLBACK_API_KEY", ""),
+            base_url=os.environ.get(
+                "LLM_FALLBACK_BASE_URL", _FALLBACK_DEFAULT_BASE_URL
+            ),
+            model=os.environ.get(
+                "LLM_FALLBACK_MODEL", _FALLBACK_DEFAULT_MODEL
+            ),
+        )
         self._timeout: float = float(
             os.environ.get("ZENMUX_REQUEST_TIMEOUT", _DEFAULT_TIMEOUT)
         )
         self._max_tokens: int = int(
             os.environ.get("ZENMUX_MAX_TOKENS", _DEFAULT_MAX_TOKENS)
         )
-        self._client: Any = None  # openai.AsyncOpenAI | None
+        # Cache of clients per provider name
+        self._clients: dict[str, Any] = {}
         self._lock = threading.Lock()
 
     # ── Properties ────────────────────────────────────────────────────────
 
     @property
     def available(self) -> bool:
-        """True if the service is configured (API key present)."""
-        return bool(self._api_key)
+        """True if at least one provider is configured."""
+        return self._primary.available or (
+            self._fallback_enabled and self._fallback.available
+        )
 
     @property
     def base_url(self) -> str:
-        return self._base_url
+        return self._primary.base_url
 
     @property
     def default_model(self) -> str:
-        return self._default_model
+        return self._primary.model
+
+    @property
+    def fallback_available(self) -> bool:
+        """True if fallback is enabled AND configured."""
+        return self._fallback_enabled and self._fallback.available
 
     # ── Client lifecycle ──────────────────────────────────────────────────
 
-    def _get_client(self) -> Any:
-        """Lazily create the OpenAI async client.
+    def _get_client(self, provider: _ProviderConfig | None = None) -> Any:
+        """Lazily create an OpenAI async client for the given provider.
 
+        If ``provider`` is None, uses the primary provider.
         We import ``openai`` inside the method so the module can be imported
         even if the ``openai`` package is not installed (graceful degradation
         — the router will report 503 if the service is unavailable).
         """
-        if self._client is not None:
-            return self._client
-        if not self.available:
+        prov = provider or self._primary
+        if prov.name in self._clients:
+            return self._clients[prov.name]
+        if not prov.available:
             raise RuntimeError(
-                "ZENMUX_API_KEY is not set. Configure it to enable the LLM service."
+                f"{prov.name} API key is not set. Configure it to enable the LLM service."
             )
         try:
             from openai import AsyncOpenAI
@@ -143,23 +204,23 @@ class LLMService:
             ) from exc
 
         with self._lock:
-            if self._client is None:
-                self._client = AsyncOpenAI(
-                    api_key=self._api_key,
-                    base_url=self._base_url,
+            if prov.name not in self._clients:
+                self._clients[prov.name] = AsyncOpenAI(
+                    api_key=prov.api_key,
+                    base_url=prov.base_url,
                     timeout=self._timeout,
                     max_retries=0,  # we handle retries via tenacity
                 )
-        return self._client
+        return self._clients[prov.name]
 
     async def close(self) -> None:
-        """Close the underlying HTTP client (graceful shutdown)."""
-        if self._client is not None:
+        """Close all cached HTTP clients (graceful shutdown)."""
+        for name, client in list(self._clients.items()):
             try:
-                await self._client.close()
+                await client.close()
             except Exception:
-                logger.debug("Error closing LLM client", exc_info=True)
-            self._client = None
+                logger.debug("Error closing %s client", name, exc_info=True)
+        self._clients.clear()
 
     # ── Core chat method ──────────────────────────────────────────────────
 
@@ -174,20 +235,24 @@ class LLMService:
     ) -> LLMResponse:
         """Send a chat completion request and return the response.
 
+        If the primary provider fails AND fallback is enabled, automatically
+        retries with the fallback provider. The ``source`` field in the
+        returned LLMResponse indicates which provider succeeded.
+
         Args:
             prompt: The user message. Must be non-empty.
             system: Optional system message (sets the assistant's persona).
-            model: Override the default model.
-            temperature: Sampling temperature [0.0, 2.0]. Default 0.1 for
-                deterministic engineering advice.
+            model: Override the default model (per-provider default if None).
+            temperature: Sampling temperature [0.0, 2.0]. Default 0.1.
             max_tokens: Max tokens to generate. Defaults to ZENMUX_MAX_TOKENS.
 
         Returns:
             LLMResponse with the generated content and usage stats.
 
         Raises:
-            RuntimeError: If the service is not configured (no API key).
-            Exception: On API errors after retries are exhausted.
+            ValueError: If prompt is empty.
+            RuntimeError: If no provider is configured.
+            Exception: On API errors after retries and fallback are exhausted.
         """
         if not prompt or not prompt.strip():
             raise ValueError("prompt must be non-empty")
@@ -196,16 +261,64 @@ class LLMService:
                 "LLM service not configured. Set ZENMUX_API_KEY to enable."
             )
 
-        client = self._get_client()
-        use_model = model or self._default_model
-        use_max_tokens = max_tokens or self._max_tokens
-
         messages: list[dict[str, str]] = []
         if system:
             messages.append({"role": "system", "content": system})
         messages.append({"role": "user", "content": prompt})
+        use_max_tokens = max_tokens or self._max_tokens
 
-        # tenacity retry on transient network errors
+        # Try primary provider first
+        primary_error: Exception | None = None
+        if self._primary.available:
+            try:
+                return await self._try_provider(
+                    self._primary, messages, model, temperature, use_max_tokens
+                )
+            except Exception as exc:
+                primary_error = exc
+                logger.warning(
+                    "Primary LLM provider '%s' failed: %s. "
+                    "Attempting fallback if enabled.",
+                    self._primary.name,
+                    type(exc).__name__,
+                )
+
+        # Try fallback provider if enabled and configured
+        if self.fallback_available:
+            try:
+                return await self._try_provider(
+                    self._fallback, messages, model, temperature, use_max_tokens
+                )
+            except Exception as fallback_exc:
+                logger.error(
+                    "Fallback LLM provider '%s' also failed: %s",
+                    self._fallback.name,
+                    type(fallback_exc).__name__,
+                )
+                # Raise the fallback error (most recent), but log primary too
+                if primary_error:
+                    logger.error(
+                        "Primary provider error was: %s", primary_error
+                    )
+                raise fallback_exc
+
+        # No fallback available, raise primary error
+        if primary_error:
+            raise primary_error
+        raise RuntimeError("No LLM provider available")
+
+    async def _try_provider(
+        self,
+        provider: _ProviderConfig,
+        messages: list[dict[str, str]],
+        model: str | None,
+        temperature: float,
+        max_tokens: int,
+    ) -> LLMResponse:
+        """Attempt a chat completion with a single provider (with tenacity retry)."""
+        client = self._get_client(provider)
+        use_model = model or provider.model
+
         from tenacity import (
             retry,
             retry_if_exception_type,
@@ -224,16 +337,17 @@ class LLMService:
                 model=use_model,
                 messages=messages,
                 temperature=temperature,
-                max_tokens=use_max_tokens,
+                max_tokens=max_tokens,
             )
 
         try:
             completion = await _do_completion()
         except Exception:
             logger.exception(
-                "LLM chat completion failed (model=%s, base_url=%s)",
+                "LLM chat completion failed (provider=%s, model=%s, base_url=%s)",
+                provider.name,
                 use_model,
-                self._base_url,
+                provider.base_url,
             )
             raise
 
@@ -256,7 +370,7 @@ class LLMService:
         return LLMResponse(
             content=content or "",
             model=use_model,
-            source="zenmux",
+            source=provider.name,
             finish_reason=finish or "stop",
             prompt_tokens=prompt_t,
             completion_tokens=completion_t,
@@ -270,8 +384,19 @@ class LLMService:
         """Return a health/status dict (never raises)."""
         return {
             "available": self.available,
-            "base_url": self._base_url,
-            "default_model": self._default_model,
+            "primary": {
+                "name": self._primary.name,
+                "available": self._primary.available,
+                "base_url": self._primary.base_url,
+                "model": self._primary.model,
+            },
+            "fallback": {
+                "name": self._fallback.name,
+                "enabled": self._fallback_enabled,
+                "available": self.fallback_available,
+                "base_url": self._fallback.base_url,
+                "model": self._fallback.model,
+            },
             "timeout_s": self._timeout,
             "max_tokens": self._max_tokens,
         }
