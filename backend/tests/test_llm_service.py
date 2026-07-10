@@ -134,8 +134,9 @@ class TestLLMServiceChat:
         from backend.services.llm_service import LLMService
 
         svc = LLMService()
+        loop = asyncio.get_event_loop()
         with pytest.raises(RuntimeError, match="ZENMUX_API_KEY"):
-            asyncio.get_event_loop().run_until_complete(svc.chat("hello"))
+            loop.run_until_complete(svc.chat("hello"))
 
     def test_chat_raises_on_empty_prompt(self, configured_env):
         from backend.services.llm_service import LLMService
