@@ -215,7 +215,9 @@ class LLMService:
 
     async def close(self) -> None:
         """Close all cached HTTP clients (graceful shutdown)."""
-        for name, client in list(self._clients.items()):
+        # list() snapshot is required: self._clients.clear() below mutates the
+        # dict during iteration, which would raise RuntimeError without it.
+        for name, client in list(self._clients.items()):  # noqa: S7504 — intentional snapshot
             try:
                 await client.close()
             except Exception:
@@ -289,18 +291,17 @@ class LLMService:
                 return await self._try_provider(
                     self._fallback, messages, model, temperature, use_max_tokens
                 )
-            except Exception as fallback_exc:
-                logger.error(
-                    "Fallback LLM provider '%s' also failed: %s",
+            except Exception:
+                logger.exception(
+                    "Fallback LLM provider '%s' also failed",
                     self._fallback.name,
-                    type(fallback_exc).__name__,
                 )
                 # Raise the fallback error (most recent), but log primary too
                 if primary_error:
                     logger.error(
                         "Primary provider error was: %s", primary_error
                     )
-                raise fallback_exc
+                raise
 
         # No fallback available, raise primary error
         if primary_error:
@@ -344,9 +345,8 @@ class LLMService:
             completion = await _do_completion()
         except Exception:
             logger.exception(
-                "LLM chat completion failed (provider=%s, model=%s, base_url=%s)",
+                "LLM chat completion failed (provider=%s, base_url=%s)",
                 provider.name,
-                use_model,
                 provider.base_url,
             )
             raise
@@ -380,7 +380,7 @@ class LLMService:
 
     # ── Health check ──────────────────────────────────────────────────────
 
-    async def health(self) -> dict[str, Any]:
+    async def health(self) -> dict[str, Any]:  # noqa: S7503 — async for future extensibility
         """Return a health/status dict (never raises)."""
         return {
             "available": self.available,

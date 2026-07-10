@@ -35,8 +35,8 @@ from backend.akamai_middleware import (
 # Test fixture IPs — all are RFC 5737 (TEST-NET-1) / RFC 1918 private ranges,
 # safe to hardcode in test code. Defined as constants so SonarCloud S1313
 # does not flag each literal.
-_TEST_IP_PUBLIC = "1.2.3.4"        # TEST-NET-1 (RFC 5737) — simulates client
-_TEST_IP_PRIVATE = "10.0.0.1"      # RFC 1918 private — simulates internal
+_TEST_IP_PUBLIC = "1.2.3.4"        # noqa: S1313 — TEST-NET-1 (RFC 5737) test fixture
+_TEST_IP_PRIVATE = "10.0.0.1"      # noqa: S1313 — RFC 1918 private test fixture
 _TEST_IP_AKAMAI = "203.0.113.5"    # TEST-NET-3 (RFC 5737) — simulates Akamai edge
 
 

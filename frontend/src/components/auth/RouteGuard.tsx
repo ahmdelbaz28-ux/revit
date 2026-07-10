@@ -26,30 +26,30 @@ import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface RouteGuardProps {
-	children: ReactNode;
+        readonly children: ReactNode;
 }
 
 export function RouteGuard({ children }: RouteGuardProps) {
-	// NOSONAR - typescript:S6759
-	const { isAuthenticated, loading } = useAuth();
-	const location = useLocation();
+        // NOSONAR - typescript:S6759
+        const { isAuthenticated, loading } = useAuth();
+        const location = useLocation();
 
-	if (loading) {
-		return (
-			<div className="min-h-screen flex items-center justify-center bg-slate-950">
-				<div className="flex flex-col items-center gap-3">
-					<Loader2 className="h-8 w-8 animate-spin text-orange-500" />
-					<p className="text-sm text-slate-400">Verifying session...</p>
-				</div>
-			</div>
-		);
-	}
+        if (loading) {
+                return (
+                        <div className="min-h-screen flex items-center justify-center bg-slate-950">
+                                <div className="flex flex-col items-center gap-3">
+                                        <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
+                                        <p className="text-sm text-slate-400">Verifying session...</p>
+                                </div>
+                        </div>
+                );
+        }
 
-	if (!isAuthenticated) {
-		// Preserve the original path so we can return after login
-		const from = encodeURIComponent(location.pathname + location.search);
-		return <Navigate to={`/login?from=${from}`} replace />;
-	}
+        if (!isAuthenticated) {
+                // Preserve the original path so we can return after login
+                const from = encodeURIComponent(location.pathname + location.search);
+                return <Navigate to={`/login?from=${from}`} replace />;
+        }
 
-	return <>{children}</>;
+        return <>{children}</>;
 }

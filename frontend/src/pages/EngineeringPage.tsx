@@ -9,8 +9,7 @@
 import { Battery, Cable, Zap } from "lucide-react";
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { AskAiButton } from "@/components/ai/AskAiButton";
-import { AskAiSheet } from "@/components/ai/AskAiSheet";
+import { ExplainButton } from "@/components/ai/ExplainButton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -39,7 +38,6 @@ import { qomnApi } from "@/services/fullApi";
 export function EngineeringPage() {
         const { t } = useTranslation();
         const [activeTab, setActiveTab] = useState("voltage-drop");
-        const [aiOpen, setAiOpen] = useState(false);
         const [voltageDropInputs, setVoltageDropInputs] = useState({
                 current: "",
                 length: "",
@@ -194,7 +192,6 @@ export function EngineeringPage() {
         const batteryResult = calculateBatteryRequirements();
 
         return (
-                <>
                 <div className="flex-1 overflow-auto" aria-label={t("engineering.title")}>
                         <div className="p-6 max-w-4xl mx-auto space-y-6">
                                 {/* Header */}
@@ -362,9 +359,21 @@ export function EngineeringPage() {
                                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                                 <Card className="border-slate-700 bg-slate-900/50">
                                                                         <CardHeader>
-                                                                                <CardTitle className="text-slate-200 text-sm">
-                                                                                        {t("engineering.results")}
-                                                                                </CardTitle>
+                                                                                <div className="flex items-center justify-between">
+                                                                                        <CardTitle className="text-slate-200 text-sm">
+                                                                                                {t("engineering.results")}
+                                                                                        </CardTitle>
+                                                                                        <ExplainButton
+                                                                                                calculationType="voltage_drop"
+                                                                                                result={{
+                                                                                                        percentage: vDropResult.percentage,
+                                                                                                        absolute_v: vDropResult.absolute,
+                                                                                                        current: voltageDropInputs.current,
+                                                                                                        length: voltageDropInputs.length,
+                                                                                                        voltage: voltageDropInputs.voltage,
+                                                                                                }}
+                                                                                        />
+                                                                                </div>
                                                                         </CardHeader>
                                                                         <CardContent>
                                                                                 <div className="space-y-2">
@@ -525,9 +534,20 @@ export function EngineeringPage() {
                                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                                 <Card className="border-slate-700 bg-slate-900/50">
                                                                         <CardHeader>
-                                                                                <CardTitle className="text-slate-200 text-sm">
-                                                                                        {t("engineering.results")}
-                                                                                </CardTitle>
+                                                                                <div className="flex items-center justify-between">
+                                                                                        <CardTitle className="text-slate-200 text-sm">
+                                                                                                {t("engineering.results")}
+                                                                                        </CardTitle>
+                                                                                        <ExplainButton
+                                                                                                calculationType="cable_sizing"
+                                                                                                result={{
+                                                                                                        recommended_size_mm2: cableResult.recommendedSize,
+                                                                                                        base_ampacity_a: cableResult.baseAmpacity,
+                                                                                                        derating_factor: cableResult.deratingFactor,
+                                                                                                        final_ampacity_a: cableResult.finalAmpacity,
+                                                                                                }}
+                                                                                        />
+                                                                                </div>
                                                                         </CardHeader>
                                                                         <CardContent>
                                                                                 <div className="space-y-2">
@@ -707,9 +727,21 @@ export function EngineeringPage() {
                                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                                 <Card className="border-slate-700 bg-slate-900/50">
                                                                         <CardHeader>
-                                                                                <CardTitle className="text-slate-200 text-sm">
-                                                                                        {t("engineering.results")}
-                                                                                </CardTitle>
+                                                                                <div className="flex items-center justify-between">
+                                                                                        <CardTitle className="text-slate-200 text-sm">
+                                                                                                {t("engineering.results")}
+                                                                                        </CardTitle>
+                                                                                        <ExplainButton
+                                                                                                calculationType="battery_sizing"
+                                                                                                result={{
+                                                                                                        total_standby_current_ma: batteryResult.totalStandbyCurrent,
+                                                                                                        total_alarm_current_ma: batteryResult.totalAlarmCurrent,
+                                                                                                        required_capacity_ah: batteryResult.requiredCapacity,
+                                                                                                        recommended_battery: batteryResult.recommendedBattery,
+                                                                                                        standby_hours: batteryCalcInputs.standbyHours,
+                                                                                                }}
+                                                                                        />
+                                                                                </div>
                                                                         </CardHeader>
                                                                         <CardContent>
                                                                                 <div className="space-y-2">
@@ -766,8 +798,5 @@ export function EngineeringPage() {
                                 )}
                         </div>
                 </div>
-                <AskAiButton onClick={() => setAiOpen(true)} />
-                <AskAiSheet open={aiOpen} onOpenChange={setAiOpen} context="engineering" />
-                </>
         );
 }

@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { Toaster } from "sonner";
+import { AskAiButton } from "@/components/ai/AskAiButton";
+import { AskAiSheet } from "@/components/ai/AskAiSheet";
 import CommandPalette from "@/components/command/CommandPalette";
 import { RouteGuard } from "@/components/auth/RouteGuard";
 import AppShell from "@/components/layout/AppShell";
@@ -63,6 +65,7 @@ function App() {
                 null,
         );
         const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+        const [aiOpen, setAiOpen] = useState(false);
 
         useEffect(() => {
                 // Set document direction based on language for RTL support
@@ -76,6 +79,7 @@ function App() {
         }, [i18n.language]);
 
         // V140 Phase 7: Magic Help — F1 opens help for current page
+        // V207.3: Ctrl+J opens AI Copilot
         useEffect(() => {
                 const handleKeyDown = (e: KeyboardEvent) => {
                         if (e.key === "F1" || (e.ctrlKey && e.key === "h")) {
@@ -87,6 +91,9 @@ function App() {
                         } else if (e.ctrlKey && e.key === "k") {
                                 e.preventDefault();
                                 setCommandPaletteOpen(true);
+                        } else if (e.ctrlKey && e.key === "j") {
+                                e.preventDefault();
+                                setAiOpen((prev) => !prev);
                         }
                 };
                 globalThis.addEventListener("keydown", handleKeyDown);
@@ -203,6 +210,13 @@ function App() {
                                         open={commandPaletteOpen}
                                         onOpenChange={setCommandPaletteOpen}
                                 />
+                                {/* V207.3: Global AI Copilot — visible on all protected routes (Ctrl+J) */}
+                                {!isPublicRoute && (
+                                        <>
+                                                <AskAiButton onClick={() => setAiOpen(true)} />
+                                                <AskAiSheet open={aiOpen} onOpenChange={setAiOpen} />
+                                        </>
+                                )}
                                 <OnboardingTour />
                                 <Toaster position="bottom-right" />
                         </div>

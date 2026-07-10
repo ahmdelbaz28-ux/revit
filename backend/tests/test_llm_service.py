@@ -27,7 +27,9 @@ sys.path.insert(0, str(REPO_ROOT))
 @pytest.fixture
 def clean_env(monkeypatch):
     """Remove all ZENMUX_* env vars before each test."""
-    for key in list(os.environ.keys()):
+    # list() snapshot is required: monkeypatch.delenv mutates os.environ
+    # during iteration, which would raise RuntimeError without it.
+    for key in list(os.environ.keys()):  # noqa: S7504 — intentional snapshot
         if key.startswith("ZENMUX_"):
             monkeypatch.delenv(key, raising=False)
     # Also reset the singleton
@@ -119,7 +121,7 @@ class TestLLMServiceConfig:
         from backend.services.llm_service import LLMService
 
         svc = LLMService()
-        assert svc._timeout == 120.0
+        assert svc._timeout == pytest.approx(120.0)
 
 
 # ── LLMService.chat tests (mocked) ───────────────────────────────────────────
@@ -127,14 +129,13 @@ class TestLLMServiceConfig:
 
 class TestLLMServiceChat:
     def test_chat_raises_when_not_configured(self, clean_env):
+        import asyncio
+
         from backend.services.llm_service import LLMService
 
         svc = LLMService()
         with pytest.raises(RuntimeError, match="ZENMUX_API_KEY"):
-            import asyncio
-            asyncio.get_event_loop().run_until_complete(
-                svc.chat("hello")
-            )
+            asyncio.get_event_loop().run_until_complete(svc.chat("hello"))
 
     def test_chat_raises_on_empty_prompt(self, configured_env):
         from backend.services.llm_service import LLMService
@@ -195,7 +196,7 @@ class TestLLMServiceChat:
         mock_create.assert_called_once()
         call_kwargs = mock_create.call_args.kwargs
         assert call_kwargs["model"] == "z-ai/glm-4.7"
-        assert call_kwargs["temperature"] == 0.1
+        assert call_kwargs["temperature"] == pytest.approx(0.1)
         assert len(call_kwargs["messages"]) == 2
         assert call_kwargs["messages"][0]["role"] == "system"
         assert call_kwargs["messages"][1]["role"] == "user"
