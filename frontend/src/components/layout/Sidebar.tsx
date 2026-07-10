@@ -20,6 +20,8 @@ import {
         PencilRuler,
         Settings,
         CloudSun,
+        Brain,
+        Network,
         Settings2,
         ShieldCheck,
 } from "lucide-react";
@@ -151,6 +153,18 @@ const navItems: NavItem[] = [
                 defaultLabel: "Monitor",
                 icon: Activity,
                 path: "/monitor",
+        },
+        {
+                labelKey: "nav.memory",
+                defaultLabel: "Memory",
+                icon: Brain,
+                path: "/memory",
+        },
+        {
+                labelKey: "nav.graphrag",
+                defaultLabel: "GraphRAG",
+                icon: Network,
+                path: "/graphrag",
         },
         {
                 labelKey: "nav.elements",

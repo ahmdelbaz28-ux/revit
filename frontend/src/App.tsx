@@ -34,7 +34,9 @@ import { FACPPage } from "./pages/FACPPage";
 import { FireAlarmPage } from "./pages/FireAlarmPage";
 import { LoginPage } from "./pages/LoginPage";
 import { MarinePage } from "./pages/MarinePage";
+import { MemoryPage } from "./pages/MemoryPage";
 import { MonitorPage } from "./pages/MonitorPage";
+import { GraphRAGPage } from "./pages/GraphRAGPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 import { ProjectsPage } from "./pages/ProjectsPage";
 import { ReportGeneratorPage } from "./pages/ReportGeneratorPage";
@@ -133,6 +135,8 @@ function App() {
                 { path: "/facp", element: <FACPPage /> },
                 { path: "/environment", element: <EnvironmentPage /> },
                 { path: "/monitor", element: <MonitorPage /> },
+                { path: "/memory", element: <MemoryPage /> },
+                { path: "/graphrag", element: <GraphRAGPage /> },
                 { path: "/reports", element: <ReportsPage /> },
                 { path: "/reports/generate", element: <ReportGeneratorPage /> },
                 { path: "/settings", element: <SettingsPage /> },
