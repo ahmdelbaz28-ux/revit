@@ -1,155 +1,153 @@
-/* BAZSPARK — Professional Engineering Theme (V213) */
+/* BAZSPARK — Professional Engineering Theme V222
+ * Based on: VS Code Dark+, GitHub Dark, Material Dark, NFPA 79 / IEC 60204-1
+ * Optimized for 8+ hour sessions — reduced eye strain, WCAG AAA text contrast
+ */
 @import "tailwindcss";
 
 :root {
-        /* ── Engineering Navy palette ──────────────────────────────────────── */
-        --color-background: #0b1220;          /* deep navy-black (NOT pure black) */
-        --color-foreground: #e6edf3;          /* warm off-white */
-        --color-card: #111a2b;                /* elevated surface */
-        --color-card-foreground: #e6edf3;
-        --color-popover: #111a2b;
-        --color-popover-foreground: #e6edf3;
+	/* ── Surface palette (dark-but-not-black, 3% elevation steps) ─────── */
+	--color-background: #0f172a;          /* slate-900 navy-charcoal */
+	--color-foreground: #e6edf3;          /* cool off-white (NOT pure white) */
+	--color-card: #172033;                /* +3% white → elevated surface */
+	--color-card-foreground: #e6edf3;
+	--color-popover: #172033;
+	--color-popover-foreground: #e6edf3;
 
-        --color-primary: #3b82f6;             /* engineering blue (blue-500) */
-        --color-primary-foreground: #0b1220;  /* dark text on blue */
-        --color-secondary: #1c2333;
-        --color-secondary-foreground: #e6edf3;
-        --color-muted: #161d2b;
-        --color-muted-foreground: #8b95a7;
-        --color-accent: #3b82f6;
-        --color-accent-foreground: #0b1220;
+	/* ── Action colors ────────────────────────────────────────────────── */
+	--color-primary: #2f81f7;             /* calm cyan-blue (GitHub accent) */
+	--color-primary-foreground: #ffffff;  /* white on blue (use semibold ≥15px) */
+	--color-secondary: #1e293b;           /* recessed surface */
+	--color-secondary-foreground: #cbd5e1;
+	--color-muted: #1e293b;               /* hover/recessed */
+	--color-muted-foreground: #94a3b8;    /* secondary text (7:1 AAA) */
+	--color-accent: #2dd4bf;              /* teal — active tab / selected row only */
+	--color-accent-foreground: #052e2b;
 
-        --color-border: #2a3441;
-        --color-input: #2a3441;
-        --color-ring: #3b82f6;
+	/* ── Structural ──────────────────────────────────────────────────── */
+	--color-border: #2a3a52;              /* subtle but visible */
+	--color-input: #334155;               /* stronger border for form fields */
+	--color-ring: #2f81f7;               /* focus ring = primary */
 
-        --color-destructive: #dc2626;
-        --color-destructive-foreground: #ffffff;
+	/* ── Destructive (deep red for filled buttons) ───────────────────── */
+	--color-destructive: #dc2626;
+	--color-destructive-foreground: #ffffff;
 
-        /* ── Status (NFPA / IEC 60204 convention — never deviate) ─────────── */
-        --color-success: #16a34a;   /* PASS — green-600 */
-        --color-warning: #d97706;   /* WARN — amber-600 */
-        --color-danger:  #dc2626;   /* FAIL — red-600   */
-        --color-info:    #2563eb;   /* INFO — blue-600  */
+	/* ── Status (NFPA 79 / IEC 60204-1 — never deviate) ─────────────── */
+	--color-success: #3fb950;             /* GREEN = normal / safe / run */
+	--color-warning: #d29922;             /* AMBER = caution / attention */
+	--color-danger: #f85149;              /* RED = fault / alarm (status text) */
+	--color-info: #38bdf8;                /* BLUE = mandatory / informational */
 
-        --radius: 0.375rem;  /* 6px — tighter, more engineering-appropriate */
+	--radius: 0.5rem;                     /* 8px — balanced for engineering */
+	--radius-sm: 0.375rem;               /* 6px */
 }
 
 @theme {
-        --color-background: var(--color-background);
-        --color-foreground: var(--color-foreground);
-        --color-primary: var(--color-primary);
-        --color-primary-foreground: var(--color-primary-foreground);
-        --color-secondary: var(--color-secondary);
-        --color-secondary-foreground: var(--color-secondary-foreground);
-        --color-muted: var(--color-muted);
-        --color-muted-foreground: var(--color-muted-foreground);
-        --color-accent: var(--color-accent);
-        --color-accent-foreground: var(--color-accent-foreground);
-        --color-border: var(--color-border);
-        --color-input: var(--color-input);
-        --color-ring: var(--color-ring);
-        --color-card: var(--color-card);
-        --color-card-foreground: var(--color-card-foreground);
-        --color-popover: var(--color-popover);
-        --color-popover-foreground: var(--color-popover-foreground);
-        --color-destructive: var(--color-destructive);
-        --color-destructive-foreground: var(--color-destructive-foreground);
-        --color-success: var(--color-success);
-        --color-warning: var(--color-warning);
-        --color-danger: var(--color-danger);
-        --color-info: var(--color-info);
-        --radius: var(--radius);
+	--color-background: var(--color-background);
+	--color-foreground: var(--color-foreground);
+	--color-primary: var(--color-primary);
+	--color-primary-foreground: var(--color-primary-foreground);
+	--color-secondary: var(--color-secondary);
+	--color-secondary-foreground: var(--color-secondary-foreground);
+	--color-muted: var(--color-muted);
+	--color-muted-foreground: var(--color-muted-foreground);
+	--color-accent: var(--color-accent);
+	--color-accent-foreground: var(--color-accent-foreground);
+	--color-border: var(--color-border);
+	--color-input: var(--color-input);
+	--color-ring: var(--color-ring);
+	--color-card: var(--color-card);
+	--color-card-foreground: var(--color-card-foreground);
+	--color-popover: var(--color-popover);
+	--color-popover-foreground: var(--color-popover-foreground);
+	--color-destructive: var(--color-destructive);
+	--color-destructive-foreground: var(--color-destructive-foreground);
+	--color-success: var(--color-success);
+	--color-warning: var(--color-warning);
+	--color-danger: var(--color-danger);
+	--color-info: var(--color-info);
+	--radius: var(--radius);
 }
 
 * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
 }
 
 body {
-        font-family: Inter, system-ui, -apple-system, sans-serif;
-        background-color: var(--color-background);
-        color: var(--color-foreground);
-        -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
-        overflow-x: hidden;
-        font-feature-settings: "cv11", "ss01";
-        font-variation-settings: "opsz" 32;
+	font-family: Inter, system-ui, -apple-system, sans-serif;
+	background-color: var(--color-background);
+	color: var(--color-foreground);
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+	overflow-x: hidden;
+	font-feature-settings: "cv11", "ss01";
+	font-variation-settings: "opsz" 32;
 }
 
 #root {
-        min-height: 100vh;
+	min-height: 100vh;
 }
 
 /* SAFETY-CRITICAL: visible focus indicators for keyboard navigation */
 *:focus-visible {
-        outline: 2px solid var(--color-ring);
-        outline-offset: 2px;
-        border-radius: 4px;
+	outline: 2px solid var(--color-ring);
+	outline-offset: 2px;
+	border-radius: 4px;
 }
 
 *:focus:not(:focus-visible) {
-        outline: none;
+	outline: none;
 }
 
 /* Scrollbar — subtle, engineering-style */
 ::-webkit-scrollbar {
-        width: 8px;
-        height: 8px;
+	width: 8px;
+	height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-        background: var(--color-muted);
+	background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-        background: var(--color-border);
-        border-radius: var(--radius);
+	background: var(--color-border);
+	border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-        background: var(--color-muted-foreground);
+	background: var(--color-muted-foreground);
 }
 
-/* ── Minimal animations (kept for legitimate UI feedback only) ────────── */
+/* ── Minimal animations (legitimate UI feedback only) ───────────────── */
 
 @keyframes fade-in {
-        from { opacity: 0; }
-        to   { opacity: 1; }
-}
-
-@keyframes fade-in-up {
-        from { opacity: 0; transform: translateY(8px); }
-        to   { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes slide-in-from-right {
-        from { transform: translateX(100%); }
-        to   { transform: translateX(0); }
+	from { opacity: 0; }
+	to   { opacity: 1; }
 }
 
 .fade-in {
-        animation: fade-in 200ms ease-out;
-}
-
-.animate-fade-in-up {
-        animation: fade-in-up 250ms ease-out both;
-}
-
-.animate-in {
-        animation-name: slide-in-from-right;
-        animation-duration: 200ms;
-        animation-timing-function: ease-out;
+	animation: fade-in 200ms ease-out;
 }
 
 /* Status pulse — for LIVE telemetry heartbeats ONLY, never compliance status */
 @keyframes status-pulse {
-        0%, 100% { opacity: 1; }
-        50%      { opacity: 0.5; }
+	0%, 100% { opacity: 1; }
+	50%      { opacity: 0.5; }
 }
 
 .animate-status-pulse {
-        animation: status-pulse 2s ease-in-out infinite;
+	animation: status-pulse 2s ease-in-out infinite;
+}
+
+/* ── Icon stroke width override (lucide-react) ──────────────────────── */
+/* 1.5px stroke for all icons — reduces visual noise at 16px size */
+svg.lucide {
+	stroke-width: 1.5;
+}
+
+/* ── Button label weight (WCAG large-text for white-on-blue) ────────── */
+button {
+	font-weight: 500;
 }
