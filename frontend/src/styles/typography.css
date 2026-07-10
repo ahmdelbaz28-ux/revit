@@ -1,106 +1,62 @@
-@reference "tailwindcss";
+/* ── Engineering type scale (dense, hierarchy via weight not size) ──────── */
 
-/* Typography Styles for Fire Alarm System */
-
-/* Headings */
 h1 {
-	@apply text-2xl font-bold text-slate-100;
+	font-size: 1.125rem;
+	font-weight: 600;
+	letter-spacing: -0.01em;
+	color: var(--color-foreground);
 }
 
 h2 {
-	@apply text-xl font-bold text-slate-100;
+	font-size: 1rem;
+	font-weight: 600;
+	color: var(--color-foreground);
 }
 
 h3 {
-	@apply text-lg font-semibold text-slate-100;
+	font-size: 0.875rem;
+	font-weight: 600;
+	color: var(--color-foreground);
 }
 
 h4 {
-	@apply text-base font-semibold text-slate-100;
+	font-size: 0.875rem;
+	font-weight: 500;
+	color: var(--color-foreground);
 }
 
 h5 {
-	@apply text-sm font-semibold text-slate-100;
+	font-size: 0.75rem;
+	font-weight: 600;
+	color: var(--color-foreground);
 }
 
 h6 {
-	@apply text-xs font-semibold text-slate-100;
+	font-size: 0.75rem;
+	font-weight: 500;
+	color: var(--color-muted-foreground);
 }
 
-/* Body Text */
-.text-xxs {
-	@apply text-xs;
+/* Numeric data — always mono + tabular for alignment */
+.font-mono {
+	font-family: "JetBrains Mono", ui-monospace, monospace;
 }
 
-.text-xs {
-	@apply text-xs leading-4;
-}
-
-.text-sm {
-	@apply text-sm leading-5;
-}
-
-.text-base {
-	@apply text-base leading-6;
-}
-
-.text-lg {
-	@apply text-lg leading-7;
-}
-
-.text-xl {
-	@apply text-xl leading-8;
-}
-
-.text-2xl {
-	@apply text-2xl leading-9;
-}
-
-/* Font weights */
-.font-display {
-	@apply font-bold;
-}
-
-.font-body {
-	@apply font-normal;
-}
-
-.font-caption {
-	@apply font-normal text-xs;
-}
-
-/* Monospace for numbers */
 .number-display {
-	font-family: "JetBrains Mono", monospace;
-	@apply font-mono;
+	font-family: "JetBrains Mono", ui-monospace, monospace;
+	font-variant-numeric: tabular-nums;
 }
 
-/* Fire Alarm specific text styles */
-.fire-alarm-title {
-	@apply text-lg font-bold text-slate-100;
+/* Status text — use CSS vars directly */
+.status-pass {
+	color: var(--color-success);
 }
-
-.fire-alarm-content {
-	@apply text-base text-slate-200;
-}
-
-.fire-alarm-detail {
-	@apply text-sm text-slate-400;
-}
-
-/* Status text colors */
-.status-normal {
-	@apply text-emerald-400;
-}
-
 .status-warning {
-	@apply text-amber-400;
+	color: var(--color-warning);
 }
-
-.status-danger {
-	@apply text-red-400;
+.status-fail {
+	color: var(--color-danger);
 }
-
 .status-info {
-	@apply text-blue-400;
+	color: var(--color-info);
 }
