@@ -1,4 +1,4 @@
-// NOSONAR
+
 import {
 	AlertTriangle,
 	Bell,
@@ -21,7 +21,7 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export function BMSDashboard() {
-	const [_activeZone, _setActiveZone] = useState("Server Room");  // NOSONAR - typescript:S6754
+	const [_activeZone, _setActiveZone] = useState("Server Room");
 
 	return (
 		<div className="flex flex-col h-screen w-screen overflow-hidden bg-card text-foreground font-sans">
@@ -104,7 +104,7 @@ export function BMSDashboard() {
 					<Separator orientation="vertical" className="h-6 bg-slate-600" />
 					<div className="relative cursor-pointer">
 						<Bell className="h-5 w-5 text-foreground/90 hover:text-white" />
-						<Badge className="absolute -top-2 -right-2 h-4 w-4 p-0 flex items-center justify-center bg-red-500 text-[9px] hover:bg-danger">
+						<Badge className="absolute -top-2 -right-2 h-4 w-4 p-0 flex items-center justify-center bg-slate-500 text-[9px] hover:bg-danger">
 							3
 						</Badge>
 					</div>
@@ -200,15 +200,15 @@ export function BMSDashboard() {
 							</div>
 
 							{/* Server Room */}
-							<div className="absolute top-0 right-0 w-[20%] h-[40%] border-b border-border bg-red-500/20 p-2 flex flex-col shadow-[inset_0_0_20px_rgba(239,68,68,0.5)] animate-pulse">
+							<div className="absolute top-0 right-0 w-[20%] h-[40%] border-b border-border bg-slate-500/20 p-2 flex flex-col shadow-[inset_0_0_20px_rgba(100, 116, 139,0.5)] animate-pulse">
 								<span className="text-xs font-bold text-foreground flex items-center gap-1">
-									<AlertTriangle className="h-3 w-3 text-red-500" />
+									<AlertTriangle className="h-3 w-3 text-slate-400" />
 									Server Room
 								</span>
-								<div className="mt-auto text-[10px] text-red-300 font-mono font-bold">
+								<div className="mt-auto text-[10px] text-slate-400 font-mono font-bold">
 									19.8°C | ALARM
 								</div>
-								<Thermometer className="absolute top-2 right-2 h-4 w-4 text-red-500" />
+								<Thermometer className="absolute top-2 right-2 h-4 w-4 text-slate-400" />
 							</div>
 
 							{/* Meeting Room 201 */}
@@ -253,7 +253,7 @@ export function BMSDashboard() {
 								/>
 								<path
 									d="M 20% 75% L 55% 75% L 55% 25% L 80% 25%"
-									stroke="#ef4444"
+									stroke="#64748b"
 									strokeWidth="2"
 									strokeDasharray="5 5"
 									fill="none"
@@ -292,7 +292,7 @@ export function BMSDashboard() {
 							</div>
 							<div className="text-xs text-muted-foreground">Level 2 • 24.5 m²</div>
 						</div>
-						<Badge className="bg-red-500/20 text-danger border border-red-500/50 hover:bg-red-500/30">
+						<Badge className="bg-slate-500/20 text-danger border border-slate-500/50 hover:bg-slate-500/30">
 							ALARM
 						</Badge>
 					</div>
@@ -315,7 +315,7 @@ export function BMSDashboard() {
 									value="19.8°C"
 									status="HIGH ALARM"
 									color="text-danger"
-									bg="bg-red-500/10"
+									bg="bg-slate-500/10"
 									border="border-danger/30"
 								/>
 								<PointRow
@@ -347,7 +347,7 @@ export function BMSDashboard() {
 									value="ON - FAULT"
 									status="FAULT"
 									color="text-danger"
-									bg="bg-red-500/10"
+									bg="bg-slate-500/10"
 								/>
 							</div>
 						</div>
@@ -474,7 +474,7 @@ export function BMSDashboard() {
 								Trend (2h)
 							</h3>
 							<div className="h-20 bg-card border border-border rounded relative p-2">
-								<div className="absolute top-4 left-0 w-full h-[1px] bg-red-500/50 border-b border-dashed border-red-500/50"></div>
+								<div className="absolute top-4 left-0 w-full h-[1px] bg-slate-500/50 border-b border-dashed border-slate-500/50"></div>
 								<svg
 									className="w-full h-full preserve-aspect-ratio-none"
 									viewBox="0 0 100 100"
@@ -523,7 +523,7 @@ export function BMSDashboard() {
 	);
 }
 
-function NavNode({  // NOSONAR - typescript:S6759
+function NavNode({
 	title,
 	expanded = false,
 	active = false,
@@ -539,7 +539,7 @@ function NavNode({  // NOSONAR - typescript:S6759
 	const colors = {
 		normal: "bg-green-500",
 		warning: "bg-primary",
-		alarm: "bg-red-500 animate-pulse",
+		alarm: "bg-slate-500 animate-pulse",
 		offline: "bg-slate-500",
 	};
 
@@ -550,7 +550,7 @@ function NavNode({  // NOSONAR - typescript:S6759
 			>
 				<div className="w-4 h-4 flex items-center justify-center">
 					{children ? (
-						expanded ? (  // NOSONAR — S3358: nested ternary acceptable in this localized context
+						expanded ? (
 							<ChevronDown className="h-3 w-3 text-muted-foreground" />
 						) : (
 							<ChevronRight className="h-3 w-3 text-muted-foreground" />
@@ -571,7 +571,7 @@ function NavNode({  // NOSONAR - typescript:S6759
 	);
 }
 
-function PointRow({  // NOSONAR - typescript:S6759
+function PointRow({
 	label,
 	value,
 	status,

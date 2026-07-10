@@ -1,4 +1,4 @@
-// NOSONAR
+
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
@@ -10,6 +10,8 @@ import { RouteGuard } from "@/components/auth/RouteGuard";
 import AppShell from "@/components/layout/AppShell";
 import OnboardingTour from "@/components/onboarding/OnboardingTour";
 import { GlobalHelpDrawer } from "@/components/shared/GlobalHelpDrawer";
+import { MagneticCursor } from "@/components/interaction/MagneticCursor";
+import { SmoothScroll } from "@/components/interaction/SmoothScroll";
 import type { HelpTopicId } from "@/help/types";
 import { ROUTE_HELP_MAP } from "@/help/types";
 import { useHealth } from "@/hooks/useApi";
@@ -65,7 +67,7 @@ import "./styles/typography.css";
  * (previously the SPA silently returned 200 with empty content).
  */
 function App() {
-        const { t, i18n } = useTranslation(); // NOSONAR — acceptable in this context
+        const { t, i18n } = useTranslation();
         const { connected } = useHealth();
         const location = useLocation();
         const [helpOpen, setHelpOpen] = useState(false);
@@ -171,9 +173,11 @@ function App() {
 
         return (
                 <AuthProvider>
-                        <div className="h-screen bg-background text-foreground">
-                                {SkipLink}
-                                {isPublicRoute ? (
+                        <SmoothScroll>
+                                <MagneticCursor />
+                                <div className="h-screen bg-background text-foreground">
+                                        {SkipLink}
+                                        {isPublicRoute ? (
                                         publicRoutes
                                 ) : (
                                         <AppShell
@@ -235,7 +239,8 @@ function App() {
                                 )}
                                 <OnboardingTour />
                                 <Toaster position="bottom-right" />
-                        </div>
+                                </div>
+                        </SmoothScroll>
                 </AuthProvider>
         );
 }

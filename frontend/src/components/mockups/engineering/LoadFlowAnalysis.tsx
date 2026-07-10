@@ -1,4 +1,4 @@
-// NOSONAR
+
 import {
 	AlertTriangle,
 	Download,
@@ -588,7 +588,7 @@ export function LoadFlowAnalysis() {
 							</span>
 						</div>
 						<div className="flex items-center gap-2">
-							<div className="w-3 h-3 bg-red-500 rounded-sm"></div>{" "}
+							<div className="w-3 h-3 bg-slate-500 rounded-sm"></div>{" "}
 							<span className="text-muted-foreground">
 								Critical (&lt;0.90 / &gt;100%)
 							</span>

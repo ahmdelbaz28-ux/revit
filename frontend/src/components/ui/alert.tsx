@@ -1,4 +1,4 @@
-// NOSONAR
+
 import { cva, type VariantProps } from "class-variance-authority";
 import * as React from "react";
 
@@ -37,7 +37,7 @@ const AlertTitle = React.forwardRef<
 	HTMLParagraphElement,
 	React.HTMLAttributes<HTMLHeadingElement>
 >(({ className, ...props }, ref) => (
-	<h5  // NOSONAR — S6850: acceptable
+	<h5
 		ref={ref}
 		className={cn("mb-1 font-medium leading-none tracking-tight", className)}
 		{...props}

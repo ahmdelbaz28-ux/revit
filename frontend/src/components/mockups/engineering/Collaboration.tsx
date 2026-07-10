@@ -1,4 +1,4 @@
-// NOSONAR
+
 import {
 	CheckCircle2,
 	Eye,
@@ -236,7 +236,7 @@ export function Collaboration() {
 									<div className="flex items-end justify-between h-4 mb-4 gap-[2px] opacity-70 px-2 relative z-10">
 										{Array.from({ length: 20 }).map((_, i) => (
 											<div
-												key={i}  // NOSONAR — S6479: array index key acceptable for static list
+												key={i}
 												className="w-1 bg-emerald-500 rounded-t-sm"
 												style={{
 													height: `${Math.max(10, crypto.getRandomValues(new Uint32Array(1))[0] / 0xFFFFFFFF * 100)}%`,

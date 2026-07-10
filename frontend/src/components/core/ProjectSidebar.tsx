@@ -1,4 +1,4 @@
-// NOSONAR
+
 import { Box, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -28,7 +28,7 @@ export function ProjectSidebar() {
 						</div>
 					) : (
 						devices.map((el) => (
-							<div  // NOSONAR — S6848: type assertion acceptable
+							<div
 								key={el.id}
 								className={`flex items-center justify-between py-1 px-2 rounded cursor-pointer group ${selectedElementId === el.id ? "bg-primary/10 text-primary" : "hover:bg-muted/50 text-muted-foreground"}`}
 								onClick={() => actions.selectElement(el.id)}
@@ -40,7 +40,7 @@ export function ProjectSidebar() {
 								<Button
 									variant="ghost"
 									size="icon"
-									className="h-5 w-5 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-500 transition-opacity"
+									className="h-5 w-5 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-slate-400 transition-opacity"
 									onClick={(e) => {
 										e.stopPropagation();
 										handleDelete(el.id);

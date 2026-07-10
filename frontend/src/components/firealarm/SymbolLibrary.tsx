@@ -1,4 +1,4 @@
-// NOSONAR
+
 import type React from "react";
 import { useTranslation } from "react-i18next";
 
@@ -25,7 +25,7 @@ interface SymbolProps {
 }
 
 interface SymbolLibraryProps extends SymbolProps {
-	type: DetectorType;  // NOSONAR - typescript:S6767
+	type: DetectorType;
 }
 
 // Helper function to get status color
@@ -489,7 +489,7 @@ export const SymbolLibrary: React.FC = () => {
 					</span>
 				</div>
 				<div className="flex flex-col items-center">
-					<FACP size="md" type="facp" />  // NOSONAR - typescript:S6770
+					<FACP size="md" type="facp" />
 					<span className="text-xs text-muted-foreground mt-1">
 						{t("fireAlarm.facp")}
 					</span>
@@ -538,7 +538,7 @@ export const SymbolLibrary: React.FC = () => {
 						</span>
 					</div>
 					<div className="flex items-center gap-2">
-						<div className="w-4 h-4 rounded-full bg-red-500"></div>
+						<div className="w-4 h-4 rounded-full bg-slate-500"></div>
 						<span className="text-xs text-muted-foreground">
 							{t("fireAlarm.fault")}
 						</span>

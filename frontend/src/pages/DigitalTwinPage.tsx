@@ -1,4 +1,4 @@
-// NOSONAR
+
 /**
  * DigitalTwinPage.tsx — Digital Twin Conversion Workflow
  *
@@ -69,7 +69,7 @@ interface VersionInfo {
 }
 
 export function DigitalTwinPage() {
-        const { t } = useTranslation(); // NOSONAR — acceptable in this context
+        const { t } = useTranslation();
         const [activeTab, setActiveTab] = useState("convert");
 
         // Conversion state
@@ -421,7 +421,7 @@ export function DigitalTwinPage() {
                                                 {/* Conversion Result */}
                                                 {conversionResult && (
                                                         <Card
-                                                                className={`border-border bg-card ${conversionResult.success ? "border-emerald-500/50" : "border-red-500/50"}`}
+                                                                className={`border-border bg-card ${conversionResult.success ? "border-emerald-500/50" : "border-slate-500/50"}`}
                                                         >
                                                                 <CardHeader>
                                                                         <CardTitle className="text-lg text-foreground flex items-center gap-2">
@@ -474,7 +474,7 @@ export function DigitalTwinPage() {
                                                                                                         </p>
                                                                                                         <ul className="text-xs text-yellow-300 space-y-1">
                                                                                                                 {conversionResult.warnings.map((warning, idx) => (
-                                                                                                                        <li key={idx}>• {warning}</li>  // NOSONAR — S6479: array index key acceptable for static list
+                                                                                                                        <li key={idx}>• {warning}</li>
                                                                                                                 ))}
                                                                                                         </ul>
                                                                                                 </div>
@@ -483,16 +483,16 @@ export function DigitalTwinPage() {
                                                                         )}
 
                                                                         {conversionResult.errors.length > 0 && (
-                                                                                <div className="p-4 bg-red-500/10 border border-danger/30 rounded-lg">
+                                                                                <div className="p-4 bg-slate-500/10 border border-danger/30 rounded-lg">
                                                                                         <div className="flex items-start gap-2">
                                                                                                 <AlertCircle className="h-5 w-5 text-danger mt-0.5" />
                                                                                                 <div className="flex-1">
                                                                                                         <p className="text-sm font-medium text-red-200 mb-2">
                                                                                                                 Errors
                                                                                                         </p>
-                                                                                                        <ul className="text-xs text-red-300 space-y-1">
+                                                                                                        <ul className="text-xs text-slate-400 space-y-1">
                                                                                                                 {conversionResult.errors.map((error, idx) => (
-                                                                                                                        <li key={idx}>• {error}</li>  // NOSONAR — S6479: array index key acceptable for static list
+                                                                                                                        <li key={idx}>• {error}</li>
                                                                                                                 ))}
                                                                                                         </ul>
                                                                                                 </div>
@@ -627,7 +627,7 @@ export function DigitalTwinPage() {
                                                                                         type="number"
                                                                                         value={levelHeight}
                                                                                         onChange={(e) =>
-                                                                                                setLevelHeight(parseInt(e.target.value, 10))  // NOSONAR - typescript:S7773
+                                                                                                setLevelHeight(parseInt(e.target.value, 10))
                                                                                         }
                                                                                         className="bg-card border-border text-foreground"
                                                                                 />
@@ -688,7 +688,7 @@ export function DigitalTwinPage() {
                                                                         <div className="flex items-center justify-center py-12">
                                                                                 <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                                                                         </div>
-                                                                ) : versions.length === 0 ? (  // NOSONAR — S3358: nested ternary acceptable in this localized context
+                                                                ) : versions.length === 0 ? (
                                                                         <div className="text-center py-12 text-muted-foreground">
                                                                                 <Clock className="h-12 w-12 mx-auto mb-4 opacity-50" />
                                                                                 <p>No conversion history yet</p>
@@ -706,7 +706,7 @@ export function DigitalTwinPage() {
                                                                                                                         variant={
                                                                                                                                 version.status === "success"
                                                                                                                                         ? "default"
-                                                                                                                                        : version.status === "partial"  // NOSONAR — S3358: nested ternary acceptable in this localized context
+                                                                                                                                        : version.status === "partial"
                                                                                                                                                 ? "secondary"
                                                                                                                                                 : "destructive"
                                                                                                                         }

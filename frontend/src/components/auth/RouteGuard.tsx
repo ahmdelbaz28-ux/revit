@@ -1,4 +1,4 @@
-// NOSONAR
+
 /**
  * RouteGuard.tsx — Protects routes that require authentication.
  *
@@ -30,7 +30,7 @@ interface RouteGuardProps {
 }
 
 export function RouteGuard({ children }: RouteGuardProps) {
-        // NOSONAR - typescript:S6759
+
         const { isAuthenticated, loading } = useAuth();
         const location = useLocation();
 

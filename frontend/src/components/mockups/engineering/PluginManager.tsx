@@ -1,4 +1,4 @@
-// NOSONAR
+
 import {
 	AlertCircle,
 	Box,
@@ -148,7 +148,7 @@ export function PluginManager() {
 								downloads="12.4k"
 								price="$49/mo"
 								category="Electrical"
-								iconColor="bg-red-500"
+								iconColor="bg-slate-500"
 								iconLetter="A"
 								action="Install"
 								selected={selectedPlugin === 1}
@@ -288,7 +288,7 @@ export function PluginManager() {
 							<div className="p-6">
 								{/* Detail Header */}
 								<div className="flex gap-4 mb-6">
-									<div className="w-16 h-16 rounded-md bg-red-500 flex items-center justify-center text-white text-3xl font-bold shadow-lg shadow-red-500/20 shrink-0">
+									<div className="w-16 h-16 rounded-md bg-slate-500 flex items-center justify-center text-white text-3xl font-bold shadow-lg shadow-red-500/20 shrink-0">
 										A
 									</div>
 									<div>
@@ -479,7 +479,7 @@ export function PluginManager() {
 	);
 }
 
-function CategoryItem({  // NOSONAR - typescript:S6759
+function CategoryItem({
 	label,
 	count,
 	active,
@@ -527,7 +527,7 @@ function CategoryItem({  // NOSONAR - typescript:S6759
 	);
 }
 
-function SubCategoryItem({ label }: { label: string }) {  // NOSONAR - typescript:S6759
+function SubCategoryItem({ label }: { label: string }) {
 	return (
 		<div className="px-2 py-1.5 rounded text-[11px] text-muted-foreground hover:text-foreground/90 hover:bg-muted cursor-pointer transition-colors">
 			{label}
@@ -585,7 +585,7 @@ function PluginCard({
 	}
 
 	return (
-		<div  // NOSONAR — S6848: type assertion acceptable
+		<div
 			className={`flex flex-col bg-card/40 border rounded-md p-5 cursor-pointer transition-all hover:shadow-lg hover:border-border ${selected ? "border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.15)] bg-blue-950/10" : "border-slate-800"}`}
 			onClick={onClick}
 		>

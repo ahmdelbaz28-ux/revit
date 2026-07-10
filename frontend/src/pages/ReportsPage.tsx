@@ -1,4 +1,4 @@
-// NOSONAR
+
 /**
  * ReportsPage.tsx - Report generation with deterministic analysis
  */
@@ -241,7 +241,7 @@ export function ReportsPage() {
 
                 if (reportsError) {
                         return (
-                                <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
+                                <div className="bg-slate-500/10 border border-slate-500/20 rounded-lg p-4">
                                         <p className="text-danger text-sm">
                                                 {t("reports.errorLoading")}: {reportsError}
                                         </p>
@@ -294,14 +294,14 @@ export function ReportsPage() {
                                                                         variant={
                                                                                 report.status === "completed"
                                                                                         ? "default"
-                                                                                        : report.status === "pending"  // NOSONAR — S3358: nested ternary acceptable in this localized context
+                                                                                        : report.status === "pending"
                                                                                                 ? "secondary"
                                                                                                 : "destructive"
                                                                         }
                                                                         className={
                                                                                 report.status === "completed"
                                                                                         ? "bg-success/10 text-success border-success/30"
-                                                                                        : report.status === "pending"  // NOSONAR — S3358: nested ternary acceptable in this localized context
+                                                                                        : report.status === "pending"
                                                                                                 ? "bg-warning/10 text-warning border-warning/30"
                                                                                                 : "bg-danger/10 text-danger border-danger/30"
                                                                         }
@@ -369,7 +369,7 @@ export function ReportsPage() {
 
                                 {/* Error banner */}
                                 {generateError && (
-                                        <Card className="border-danger/30 bg-red-500/5">
+                                        <Card className="border-danger/30 bg-slate-500/5">
                                                 <CardContent className="p-3">
                                                         <p className="text-sm text-danger">
                                                                 {t("reports.reportGenerationFailed")}: {generateError}
@@ -467,8 +467,8 @@ export function ReportsPage() {
                                                                                                 deterministic_analysis: e.target.checked,
                                                                                         }))
                                                                                 }
-                                                                                className="rounded bg-card border-border text-red-500 focus:ring-red-500"
-                                                                        />  // NOSONAR — S6772: hook dependency array intentional
+                                                                                className="rounded bg-card border-border text-slate-400 focus:ring-red-500"
+                                                                        />
                                                                         Deterministic Analysis
                                                                 </Label>
                                                         </div>
@@ -483,8 +483,8 @@ export function ReportsPage() {
                                                                                                 nfpa_compliance: e.target.checked,
                                                                                         }))
                                                                                 }
-                                                                                className="rounded bg-card border-border text-red-500 focus:ring-red-500"
-                                                                        />  // NOSONAR — S6772: hook dependency array intentional
+                                                                                className="rounded bg-card border-border text-slate-400 focus:ring-red-500"
+                                                                        />
                                                                         NFPA Compliance
                                                                 </Label>
                                                         </div>

@@ -1,4 +1,4 @@
-// NOSONAR
+
 /**
  * ConversionPanel.tsx — Conversion panel with progress bar
  */
@@ -111,10 +111,10 @@ export function ConversionPanel() {
 					</div>
 				)}
 				{state === "error" && (
-					<div className="p-3 bg-danger/10 border border-red-600/30 rounded-lg">
+					<div className="p-3 bg-danger/10 border border-slate-600/30 rounded-lg">
 						<div className="flex items-center gap-2">
 							<XCircle className="h-5 w-5 text-danger" />
-							<span className="text-sm text-red-300">Conversion Failed</span>
+							<span className="text-sm text-slate-400">Conversion Failed</span>
 						</div>
 					</div>
 				)}

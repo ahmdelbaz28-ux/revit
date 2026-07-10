@@ -1,4 +1,4 @@
-// NOSONAR
+
 import {
 	Activity,
 	AlertTriangle,
@@ -112,7 +112,7 @@ export function DashboardPage() {
 							{projectsLoading ? (
 								<Skeleton className="h-8 w-16 bg-secondary" />
 							) : (
-								<div className="text-3xl font-bold text-red-600">
+								<div className="text-3xl font-bold text-slate-500">
 									{activeProjects}
 								</div>
 							)}
@@ -215,7 +215,7 @@ export function DashboardPage() {
 								</div>
 							</div>
 							<div className="flex items-center gap-3">
-								<div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center">
+								<div className="w-10 h-10 rounded-full bg-slate-500/20 flex items-center justify-center">
 									<XCircle className="h-5 w-5 text-danger" />
 								</div>
 								<div>
@@ -242,7 +242,7 @@ export function DashboardPage() {
 								? t("dashboard.loading")
 								: t("dashboard.lastUpdated") +
 									": " +
-									(health ? new Date().toLocaleString() : "")}  // NOSONAR — S3358: nested ternary acceptable in this localized context
+									(health ? new Date().toLocaleString() : "")}
 						</CardDescription>
 					</CardHeader>
 					<CardContent>
@@ -252,7 +252,7 @@ export function DashboardPage() {
 								<Skeleton className="h-4 w-4/5 bg-secondary" />
 								<Skeleton className="h-4 w-3/4 bg-secondary" />
 							</div>
-						) : health ? (  // NOSONAR — S3358: nested ternary acceptable in this localized context
+						) : health ? (
 							<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 								<div className="flex items-center gap-2">
 									<Server className="h-5 w-5 text-info" />

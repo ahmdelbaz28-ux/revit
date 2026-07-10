@@ -1,4 +1,4 @@
-// NOSONAR
+
 /**
  * DigitalTwinConvertPage.tsx — Conversion panel + history timeline
  */

@@ -1,4 +1,4 @@
-// NOSONAR
+
 import {
 	ArrowRight,
 	CheckCircle2,
@@ -305,9 +305,9 @@ export function MultilingualDemo() {
 								</span>
 							</div>
 							<div className="flex items-center gap-4">
-								<div className="w-48 h-16 bg-card border border-slate-800 rounded relative overflow-hidden shadow-[0_0_15px_rgba(239,68,68,0.15)]">
-									<div className="absolute bottom-0 w-full h-8 bg-card border-t border-red-500/50 flex flex-col">
-										<div className="h-2 w-full bg-red-500/10"></div>
+								<div className="w-48 h-16 bg-card border border-slate-800 rounded relative overflow-hidden shadow-[0_0_15px_rgba(100, 116, 139,0.15)]">
+									<div className="absolute bottom-0 w-full h-8 bg-card border-t border-slate-500/50 flex flex-col">
+										<div className="h-2 w-full bg-slate-500/10"></div>
 										<div className="flex-1 bg-red-950/20"></div>
 									</div>
 									<div className="absolute top-2 right-2 text-[8px] text-danger animate-pulse">
@@ -321,7 +321,7 @@ export function MultilingualDemo() {
 							<div className="flex items-center gap-4">
 								<div className="w-48 h-16 bg-card border border-slate-800 rounded relative overflow-hidden">
 									<div className="absolute bottom-0 w-full h-2 bg-card border-t border-border flex justify-end items-center pr-2">
-										<div className="w-3 h-1.5 bg-red-500 rounded-sm"></div>
+										<div className="w-3 h-1.5 bg-slate-500 rounded-sm"></div>
 									</div>
 								</div>
 								<span className="text-sm text-muted-foreground">
@@ -448,7 +448,7 @@ export function MultilingualDemo() {
 	);
 }
 
-function LanguageCard({  // NOSONAR - typescript:S6759
+function LanguageCard({
 	id,
 	name,
 	badge,
@@ -512,18 +512,18 @@ function LanguageCard({  // NOSONAR - typescript:S6759
 	);
 }
 
-function DemoErrorRow({ text, ltr = false }: { text: string; ltr?: boolean }) {  // NOSONAR - typescript:S6759
+function DemoErrorRow({ text, ltr = false }: { text: string; ltr?: boolean }) {
 	return (
 		<div
 			className={`text-[9px] font-mono p-1.5 bg-red-950/20 border border-red-900/30 rounded flex items-center gap-2 ${ltr ? "border-l-2 border-l-red-500" : "border-r-2 border-r-red-500"}`}
 		>
-			<div className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0"></div>
+			<div className="w-1.5 h-1.5 rounded-full bg-slate-500 shrink-0"></div>
 			<span className="text-foreground/90 truncate leading-tight">{text}</span>
 		</div>
 	);
 }
 
-function TermRow({  // NOSONAR - typescript:S6759
+function TermRow({
 	domain,
 	en,
 	ar,

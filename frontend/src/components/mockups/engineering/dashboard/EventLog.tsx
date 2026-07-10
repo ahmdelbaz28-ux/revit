@@ -1,4 +1,4 @@
-// NOSONAR
+
 import { toast } from "sonner";
 
 interface LogItem {
@@ -13,7 +13,7 @@ interface EventLogProps {
 	connectionStatus: string;
 }
 
-export function EventLog({  // NOSONAR - typescript:S6759
+export function EventLog({
 	eventLogs,
 	dataMode,
 	connectionStatus,
@@ -75,7 +75,7 @@ export function EventLog({  // NOSONAR - typescript:S6759
 			<div className="flex-1 bg-background/50 rounded-lg border border-border p-3 overflow-y-auto font-mono text-[10px] space-y-1">
 				{eventLogs.map((log, index) => (
 					<div
-						key={index}  // NOSONAR — S6479: array index key acceptable for static list
+						key={index}
 						className={`${log.message.includes("CRITICAL") || log.message.includes("CASCADE") || log.message.includes("Alert") ? "text-destructive" : "text-foreground"}`}
 					>
 						{log.message}

@@ -1,71 +1,72 @@
 @import "tailwindcss";
 
 @layer base {
-	:root {
-		/* ── BAZSPARK V222 Engineering palette (must match src/index.css) ── */
-		--background: 15 23 42;              /* #0f172a — slate-900 */
-		--foreground: 230 237 243;           /* #e6edf3 — cool off-white */
+        :root {
+                /* ── BAZSPARK Awwwards palette ── */
+                --background: 7 11 18;                /* #070b12 — deep navy */
+                --foreground: 232 240 254;            /* #e8f0fe — off-white */
 
-		--card: 23 32 51;                    /* #172033 — elevated surface */
-		--card-foreground: 230 237 243;
+                --card: 17 24 39;                     /* glassmorphism base (with alpha via /60) */
+                --card-foreground: 232 240 254;
 
-		--popover: 23 32 51;
-		--popover-foreground: 230 237 243;
+                --popover: 17 24 39;
+                --popover-foreground: 232 240 254;
 
-		--primary: 47 129 247;               /* #2f81f7 — calm cyan-blue */
-		--primary-foreground: 255 255 255;   /* white (use semibold ≥15px) */
+                --primary: 34 211 238;                /* #22d3ee — softened cyan */
+                --primary-foreground: 7 11 18;
 
-		--secondary: 30 41 59;               /* #1e293b — recessed surface */
-		--secondary-foreground: 203 213 225;
+                --secondary: 255 255 255;             /* used with /05 alpha */
+                --secondary-foreground: 232 240 254;
 
-		--muted: 30 41 59;                   /* #1e293b — hover/recessed */
-		--muted-foreground: 148 163 184;     /* #94a3b8 — secondary text (7:1 AAA) */
+                --muted: 255 255 255;                 /* used with /05 alpha */
+                --muted-foreground: 148 163 184;      /* #94a3b8 — slate */
 
-		--accent: 45 212 191;                /* #2dd4bf — teal, active tab only */
-		--accent-foreground: 5 46 43;
+                --accent: 34 211 238;                  /* softened cyan */
+                --accent-foreground: 7 11 18;
 
-		--destructive: 220 38 38;            /* #dc2626 — filled buttons */
-		--destructive-foreground: 255 255 255;
+                --destructive: 248 113 113;
+                --destructive-foreground: 7 11 18;
 
-		--border: 42 58 82;                  /* #2a3a52 — subtle but visible */
-		--input: 51 65 85;                   /* #334155 — stronger for form fields */
-		--ring: 47 129 247;                  /* #2f81f7 — focus ring */
+                --border: 31 45 68;                   /* used with /50 alpha */
+                --input: 31 45 68;
+                --ring: 34 211 238;
 
-		/* Status — NFPA 79 / IEC 60204-1 convention */
-		--success: 63 185 80;                /* #3fb950 — GREEN = safe */
-		--warning: 210 153 34;               /* #d29922 — AMBER = caution */
-		--danger: 248 81 73;                 /* #f85149 — RED = fault */
-		--info: 56 189 248;                  /* #38bdf8 — BLUE = info */
+                --success: 52 211 153;
+                --warning: 251 191 36;
+                --danger: 248 113 113;
+                --info: 34 211 238;
 
-		--radius: 0.5rem;                    /* 8px */
-	}
+                --darker: 10 14 23;                   /* #0a0e17 */
+
+                --radius: 0.75rem;                    /* 12px */
+        }
 }
 
-/* Tailwind v4 alpha-value mappings */
 @layer base {
-	:root {
-		--color-primary: var(--primary);
-		--color-primary-foreground: var(--primary-foreground);
-		--color-background: var(--background);
-		--color-foreground: var(--foreground);
-		--color-card: var(--card);
-		--color-card-foreground: var(--card-foreground);
-		--color-popover: var(--popover);
-		--color-popover-foreground: var(--popover-foreground);
-		--color-secondary: var(--secondary);
-		--color-secondary-foreground: var(--secondary-foreground);
-		--color-muted: var(--muted);
-		--color-muted-foreground: var(--muted-foreground);
-		--color-accent: var(--accent);
-		--color-accent-foreground: var(--accent-foreground);
-		--color-destructive: var(--destructive);
-		--color-destructive-foreground: var(--destructive-foreground);
-		--color-border: var(--border);
-		--color-input: var(--input);
-		--color-ring: var(--ring);
-		--color-success: var(--success);
-		--color-warning: var(--warning);
-		--color-danger: var(--danger);
-		--color-info: var(--info);
-	}
+        :root {
+                --color-primary: var(--primary);
+                --color-primary-foreground: var(--primary-foreground);
+                --color-background: var(--background);
+                --color-foreground: var(--foreground);
+                --color-card: var(--card);
+                --color-card-foreground: var(--card-foreground);
+                --color-popover: var(--popover);
+                --color-popover-foreground: var(--popover-foreground);
+                --color-secondary: var(--secondary);
+                --color-secondary-foreground: var(--secondary-foreground);
+                --color-muted: var(--muted);
+                --color-muted-foreground: var(--muted-foreground);
+                --color-accent: var(--accent);
+                --color-accent-foreground: var(--accent-foreground);
+                --color-destructive: var(--destructive);
+                --color-destructive-foreground: var(--destructive-foreground);
+                --color-border: var(--border);
+                --color-input: var(--input);
+                --color-ring: var(--ring);
+                --color-success: var(--success);
+                --color-warning: var(--warning);
+                --color-danger: var(--danger);
+                --color-info: var(--info);
+                --color-darker: var(--darker);
+        }
 }

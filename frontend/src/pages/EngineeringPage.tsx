@@ -1,4 +1,4 @@
-// NOSONAR
+
 /**
  * EngineeringPage.tsx - Fire Alarm Electrical Calculations
  *
@@ -60,15 +60,15 @@ export function EngineeringPage() {
                 alarmMinutes: "5",
         });
 
-        const [_apiLoading, setApiLoading] = useState(false);  // NOSONAR - typescript:S6754
-        const [_apiError, setApiError] = useState<string | null>(null);  // NOSONAR - typescript:S6754
+        const [_apiLoading, setApiLoading] = useState(false);
+        const [_apiError, setApiError] = useState<string | null>(null);
 
         const calculateVoltageDrop = useCallback(() => {
                 // Local fallback calculation
-                const current = parseFloat(voltageDropInputs.current);  // NOSONAR - typescript:S7773
-                const length = parseFloat(voltageDropInputs.length);  // NOSONAR - typescript:S7773
-                const cableSize = parseFloat(voltageDropInputs.cableSize);  // NOSONAR - typescript:S7773
-                const voltage = parseFloat(voltageDropInputs.voltage);  // NOSONAR - typescript:S7773
+                const current = parseFloat(voltageDropInputs.current);
+                const length = parseFloat(voltageDropInputs.length);
+                const cableSize = parseFloat(voltageDropInputs.cableSize);
+                const voltage = parseFloat(voltageDropInputs.voltage);
 
                 if (
                         Number.isNaN(current) ||
@@ -86,8 +86,8 @@ export function EngineeringPage() {
                 const percentage = (voltageDrop / voltage) * 100;
 
                 return {
-                        percentage: parseFloat(percentage.toFixed(2)),  // NOSONAR - typescript:S7773
-                        absolute: parseFloat(voltageDrop.toFixed(3)),  // NOSONAR - typescript:S7773
+                        percentage: parseFloat(percentage.toFixed(2)),
+                        absolute: parseFloat(voltageDrop.toFixed(3)),
                 };
         }, [voltageDropInputs]);
 
@@ -116,9 +116,9 @@ export function EngineeringPage() {
 
         const calculateCableSizing = () => {
                 // Placeholder calculation
-                const loadCurrent = parseFloat(cableSizingInputs.loadCurrent);  // NOSONAR - typescript:S7773
-                const length = parseFloat(cableSizingInputs.length);  // NOSONAR - typescript:S7773
-                const ambientTemp = parseFloat(cableSizingInputs.ambientTemp);  // NOSONAR - typescript:S7773
+                const loadCurrent = parseFloat(cableSizingInputs.loadCurrent);
+                const length = parseFloat(cableSizingInputs.length);
+                const ambientTemp = parseFloat(cableSizingInputs.ambientTemp);
 
                 if (
                         Number.isNaN(loadCurrent) ||
@@ -141,20 +141,20 @@ export function EngineeringPage() {
 
                 return {
                         recommendedSize: recommendedSize.toFixed(1),
-                        baseAmpacity: parseFloat(baseAmpacity.toFixed(2)),  // NOSONAR - typescript:S7773
-                        deratingFactor: parseFloat(deratingFactor.toFixed(2)),  // NOSONAR - typescript:S7773
-                        finalAmpacity: parseFloat(finalAmpacity.toFixed(2)),  // NOSONAR - typescript:S7773
+                        baseAmpacity: parseFloat(baseAmpacity.toFixed(2)),
+                        deratingFactor: parseFloat(deratingFactor.toFixed(2)),
+                        finalAmpacity: parseFloat(finalAmpacity.toFixed(2)),
                 };
         };
 
         const calculateBatteryRequirements = () => {
                 // Placeholder calculation
-                const standbyDevices = parseInt(batteryCalcInputs.standbyDevices, 10);  // NOSONAR - typescript:S7773
-                const standbyCurrent = parseFloat(batteryCalcInputs.standbyCurrent);  // NOSONAR - typescript:S7773
-                const alarmDevices = parseInt(batteryCalcInputs.alarmDevices, 10);  // NOSONAR - typescript:S7773
-                const alarmCurrent = parseFloat(batteryCalcInputs.alarmCurrent);  // NOSONAR - typescript:S7773
-                const standbyHours = parseFloat(batteryCalcInputs.standbyHours);  // NOSONAR - typescript:S7773
-                const alarmMinutes = parseFloat(batteryCalcInputs.alarmMinutes);  // NOSONAR - typescript:S7773
+                const standbyDevices = parseInt(batteryCalcInputs.standbyDevices, 10);
+                const standbyCurrent = parseFloat(batteryCalcInputs.standbyCurrent);
+                const alarmDevices = parseInt(batteryCalcInputs.alarmDevices, 10);
+                const alarmCurrent = parseFloat(batteryCalcInputs.alarmCurrent);
+                const standbyHours = parseFloat(batteryCalcInputs.standbyHours);
+                const alarmMinutes = parseFloat(batteryCalcInputs.alarmMinutes);
 
                 if (
                         Number.isNaN(standbyDevices) ||
@@ -179,9 +179,9 @@ export function EngineeringPage() {
                 const requiredCapacity = (standbyCapacity + alarmCapacity) * 1.2; // 20% safety factor
 
                 return {
-                        totalStandbyCurrent: parseFloat(totalStandbyCurrent.toFixed(2)),  // NOSONAR - typescript:S7773
-                        totalAlarmCurrent: parseFloat(totalAlarmCurrent.toFixed(2)),  // NOSONAR - typescript:S7773
-                        requiredCapacity: parseFloat(requiredCapacity.toFixed(2)),  // NOSONAR - typescript:S7773
+                        totalStandbyCurrent: parseFloat(totalStandbyCurrent.toFixed(2)),
+                        totalAlarmCurrent: parseFloat(totalAlarmCurrent.toFixed(2)),
+                        requiredCapacity: parseFloat(requiredCapacity.toFixed(2)),
                         recommendedBattery: `24V ${Math.ceil(requiredCapacity)}Ah Lead Acid`,
                 };
         };
@@ -407,21 +407,21 @@ export function EngineeringPage() {
                                                                                         variant={
                                                                                                 vDropResult.percentage < 3
                                                                                                         ? "default"
-                                                                                                        : vDropResult.percentage < 5  // NOSONAR — S3358: nested ternary acceptable in this localized context
+                                                                                                        : vDropResult.percentage < 5
                                                                                                                 ? "secondary"
                                                                                                                 : "destructive"
                                                                                         }
                                                                                         className={
                                                                                                 vDropResult.percentage < 3
                                                                                                         ? "bg-success/10 text-success border-success/30"
-                                                                                                        : vDropResult.percentage < 5  // NOSONAR — S3358: nested ternary acceptable in this localized context
+                                                                                                        : vDropResult.percentage < 5
                                                                                                                 ? "bg-warning/10 text-warning border-warning/30"
                                                                                                                 : "bg-danger/10 text-danger border-danger/30"
                                                                                         }
                                                                                 >
                                                                                         {vDropResult.percentage < 3
                                                                                                 ? t("engineering.suitable")
-                                                                                                : vDropResult.percentage < 5  // NOSONAR — S3358: nested ternary acceptable in this localized context
+                                                                                                : vDropResult.percentage < 5
                                                                                                         ? t("engineering.acceptable")
                                                                                                         : t("engineering.excessive")}
                                                                                 </Badge>

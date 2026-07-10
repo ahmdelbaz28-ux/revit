@@ -1,4 +1,4 @@
-// NOSONAR
+
 import { AlertCircle, Download, FileText, Plus, Settings } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -195,7 +195,7 @@ export function MCCDesigner() {
 
 							{/* Highlighted Fault Bucket */}
 							<div className="h-[120px] bg-card border-2 border-blue-500 relative flex flex-col p-2 shadow-[0_0_15px_rgba(59,130,246,0.3)]">
-								<div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-red-500 animate-pulse shadow-[0_0_5px_red]"></div>
+								<div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-slate-500 animate-pulse shadow-[0_0_5px_red]"></div>
 								<div className="text-xs font-bold text-white mb-1">
 									F2-06: Condenser Water
 								</div>
@@ -203,7 +203,7 @@ export function MCCDesigner() {
 									20HP • 27A
 								</div>
 								<div className="mt-auto flex gap-2">
-									<div className="w-4 h-4 bg-red-500/20 border border-red-500 rounded-sm"></div>
+									<div className="w-4 h-4 bg-slate-500/20 border border-slate-500 rounded-sm"></div>
 									<div className="w-4 h-4 bg-card border border-border rounded-sm"></div>
 								</div>
 							</div>
@@ -298,7 +298,7 @@ export function MCCDesigner() {
 							</div>
 
 							{/* Fault Details */}
-							<div className="border border-red-500/50 bg-red-500/10 rounded-md p-3 space-y-2">
+							<div className="border border-slate-500/50 bg-slate-500/10 rounded-md p-3 space-y-2">
 								<div className="flex items-center gap-2 text-danger font-bold text-xs uppercase">
 									<AlertCircle className="h-4 w-4" /> Fault Detected
 								</div>
@@ -313,7 +313,7 @@ export function MCCDesigner() {
 								<div className="text-xs text-foreground/90">
 									<span className="text-muted-foreground">Time:</span> 14:23:07
 								</div>
-								<div className="flex gap-2 mt-2 pt-2 border-t border-red-500/20">
+								<div className="flex gap-2 mt-2 pt-2 border-t border-slate-500/20">
 									<Button
 										size="sm"
 										variant="destructive"
@@ -407,7 +407,7 @@ export function MCCDesigner() {
 	);
 }
 
-function PaletteItem({  // NOSONAR - typescript:S6759
+function PaletteItem({
 	label,
 	size,
 	bg = "bg-card",
@@ -428,7 +428,7 @@ function PaletteItem({  // NOSONAR - typescript:S6759
 	);
 }
 
-function Bucket({  // NOSONAR - typescript:S6759
+function Bucket({
 	title,
 	sub,
 	status,
@@ -448,7 +448,7 @@ function Bucket({  // NOSONAR - typescript:S6759
 	let dot = null;
 	if (status === "green") dot = "bg-emerald-500 shadow-[0_0_5px_#10b981]";
 	if (status === "yellow") dot = "bg-yellow-400 shadow-[0_0_5px_#facc15]";
-	if (status === "red") dot = "bg-red-500 shadow-[0_0_5px_#ef4444]";
+	if (status === "red") dot = "bg-slate-500 shadow-[0_0_5px_#64748b]";
 
 	return (
 		<div
@@ -472,7 +472,7 @@ function Bucket({  // NOSONAR - typescript:S6759
 	);
 }
 
-function PropRow({  // NOSONAR - typescript:S6759
+function PropRow({
 	label,
 	value,
 	link = false,

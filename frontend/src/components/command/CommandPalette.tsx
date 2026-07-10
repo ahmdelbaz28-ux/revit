@@ -1,4 +1,4 @@
-// NOSONAR
+
 import { Search } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -209,7 +209,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
 
         return (
                 <div className="fixed inset-0 z-[200] flex items-start justify-center pt-[20vh]">
-                        <div  // NOSONAR — S6819: non-null assertion acceptable
+                        <div
                                 className="absolute inset-0 bg-black/70"
                                 role="button"
                                 tabIndex={0}
@@ -254,7 +254,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
                                                         const isActive = index === selectedIndex;
                                                         if (result.type === "command") {
                                                                 return (
-                                                                        <button  // NOSONAR — S6819: non-null assertion acceptable
+                                                                        <button
                                                                                 key={result.item.id}
                                                                                 role="option"
                                                                                 aria-selected={isActive}
@@ -285,7 +285,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
 
                                                         const title = result.item.titleEn;
                                                         return (
-                                                                <button  // NOSONAR — S6819: non-null assertion acceptable
+                                                                <button
                                                                         key={result.item.id}
                                                                         role="option"
                                                                         aria-selected={isActive}

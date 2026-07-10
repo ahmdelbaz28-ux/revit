@@ -1,4 +1,4 @@
-// NOSONAR
+
 /**
  * useDrawing.ts - CAD Drawing & Editing Engine
  * Features: undo/redo, layers, grid snapping, zoom/pan, selection, drawing tools
@@ -152,7 +152,7 @@ const DEFAULT_STYLE: ElementStyle = {
 };
 
 function generateId(): string {
-        return `el_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;  // NOSONAR — safe in UI context
+        return `el_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 }
 
 function snapToGrid(value: number, gridSize: number): number {
@@ -365,7 +365,7 @@ export function useDrawing() {
         }, []);
 
         const handleCanvasClick = useCallback(
-                (screenX: number, screenY: number) => {  // NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+                (screenX: number, screenY: number) => {
                         const worldPoint = screenToWorld(screenX, screenY);
                         const snappedPoint = snapPoint(
                                 worldPoint,
@@ -409,9 +409,9 @@ export function useDrawing() {
                                         state.activeTool === "conduit" ||
                                         state.activeTool === "cable_tray"
                                                 ? newPoints.length >= 2
-                                                : state.activeTool === "rectangle" || state.activeTool === "circle"  // NOSONAR — S3358: nested ternary acceptable in this localized context
+                                                : state.activeTool === "rectangle" || state.activeTool === "circle"
                                                         ? newPoints.length >= 2
-                                                        : state.activeTool === "text"  // NOSONAR — S3358: nested ternary acceptable in this localized context
+                                                        : state.activeTool === "text"
                                                                 ? newPoints.length >= 1
                                                                 : newPoints.length >= 3;
 
@@ -469,7 +469,7 @@ export function useDrawing() {
                         setState((prev) => ({
                                 ...prev,
                                 selectedIds: multiSelect
-                                        ? prev.selectedIds.includes(id)  // NOSONAR — S3358: nested ternary acceptable in this localized context
+                                        ? prev.selectedIds.includes(id)
                                                 ? prev.selectedIds.filter((sid) => sid !== id)
                                                 : [...prev.selectedIds, id]
                                         : [id],
@@ -611,16 +611,16 @@ export function useDrawing() {
         );
 
         useEffect(() => {
-                // S2004 fix: extract the select-all action so the keyboard  // NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+                // S2004 fix: extract the select-all action so the keyboard
                 // handler stays under 4 nesting levels (was 5 with the inline
                 // setState inside if-inside-if-inside-handler-inside-effect).
                 const selectAll = () => {
                         setState((prev) => ({
                                 ...prev,
-                                selectedIds: prev.elements.map((el) => el.id),  // NOSONAR - typescript:S2004
+                                selectedIds: prev.elements.map((el) => el.id),
                         }));
                 };
-                const handleKeyDown = (e: KeyboardEvent) => {  // NOSONAR - typescript:S3776
+                const handleKeyDown = (e: KeyboardEvent) => {
                         if (e.ctrlKey || e.metaKey) {
                                 if (e.key === "z") {
                                         e.preventDefault();
@@ -722,7 +722,7 @@ function findElementAtPoint(
                 for (const p of el.points) {
                         const dx = p.x - point.x;
                         const dy = p.y - point.y;
-                        if (Math.sqrt(dx * dx + dy * dy) < tolerance) {  // NOSONAR - typescript:S7769
+                        if (Math.sqrt(dx * dx + dy * dy) < tolerance) {
                                 return el;
                         }
                 }

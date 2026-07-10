@@ -1,4 +1,4 @@
-// NOSONAR
+
 /**
  * RevitCreatePage.tsx — Create Revit elements (wall, floor, column, beam, door, window)
  */
@@ -28,7 +28,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { revitService } from "@/services/revitService";
 
 const parsePoint = (s: string): number[] =>
-	s.split(",").map((v) => parseFloat(v.trim()));  // NOSONAR - typescript:S7773
+	s.split(",").map((v) => parseFloat(v.trim()));
 const parsePoints = (s: string): number[][] =>
 	s.split(";").map((p) => parsePoint(p.trim()));
 
@@ -83,7 +83,7 @@ export function RevitCreatePage() {
 					result = await revitService.createWall(
 						parsePoint(wallStart),
 						parsePoint(wallEnd),
-						parseFloat(wallHeight),  // NOSONAR - typescript:S7773
+						parseFloat(wallHeight),
 						wallLevel,
 						wallType,
 					);
@@ -98,7 +98,7 @@ export function RevitCreatePage() {
 				case "column":
 					result = await revitService.createColumn(
 						parsePoint(colLocation),
-						parseFloat(colHeight),  // NOSONAR - typescript:S7773
+						parseFloat(colHeight),
 						colLevel,
 						colType,
 					);

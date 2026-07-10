@@ -1,4 +1,4 @@
-// NOSONAR
+
 /**
  * useApi.ts - React hooks wrapping the digitalTwinApi client
  * Uses useState/useEffect for data fetching with loading/error states
@@ -38,7 +38,7 @@ export function useHealth(): UseApiResult<HealthStatus> & {
 	const [data, setData] = useState<HealthStatus | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
-	const [_refreshKey, setRefreshKey] = useState(0);  // NOSONAR - typescript:S6754
+	const [_refreshKey, setRefreshKey] = useState(0);
 
 	const refetch = useCallback(() => setRefreshKey((k) => k + 1), []);
 
@@ -83,7 +83,7 @@ export function useProjects(): UseApiResult<Project[]> {
 	const [data, setData] = useState<Project[] | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
-	const [_refreshKey, setRefreshKey] = useState(0);  // NOSONAR - typescript:S6754
+	const [_refreshKey, setRefreshKey] = useState(0);
 
 	const refetch = useCallback(() => setRefreshKey((k) => k + 1), []);
 
@@ -128,7 +128,7 @@ export function useProject(id: string | null): UseApiResult<Project> {
 	const [data, setData] = useState<Project | null>(null);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
-	const [_refreshKey, setRefreshKey] = useState(0);  // NOSONAR - typescript:S6754
+	const [_refreshKey, setRefreshKey] = useState(0);
 
 	const refetch = useCallback(() => setRefreshKey((k) => k + 1), []);
 
@@ -179,7 +179,7 @@ export function useDevices(projectId: string | null): UseApiResult<Device[]> {
 	const [data, setData] = useState<Device[] | null>(null);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
-	const [_refreshKey, setRefreshKey] = useState(0);  // NOSONAR - typescript:S6754
+	const [_refreshKey, setRefreshKey] = useState(0);
 
 	const refetch = useCallback(() => setRefreshKey((k) => k + 1), []);
 
@@ -232,7 +232,7 @@ export function useConnections(
 	const [data, setData] = useState<Connection[] | null>(null);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
-	const [_refreshKey, setRefreshKey] = useState(0);  // NOSONAR - typescript:S6754
+	const [_refreshKey, setRefreshKey] = useState(0);
 
 	const refetch = useCallback(() => setRefreshKey((k) => k + 1), []);
 
@@ -283,7 +283,7 @@ export function useReports(projectId: string | null): UseApiResult<Report[]> {
 	const [data, setData] = useState<Report[] | null>(null);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
-	const [_refreshKey, setRefreshKey] = useState(0);  // NOSONAR - typescript:S6754
+	const [_refreshKey, setRefreshKey] = useState(0);
 
 	const refetch = useCallback(() => setRefreshKey((k) => k + 1), []);
 
@@ -468,7 +468,7 @@ export function useSyncProject(): UseMutationResult<string, unknown> {
 	const [error, setError] = useState<string | null>(null);
 
 	const mutate = useCallback(
-		async (projectId: string): Promise<unknown | null> => {  // NOSONAR - typescript:S6571
+		async (projectId: string): Promise<unknown | null> => {
 			setLoading(true);
 			setError(null);
 			try {

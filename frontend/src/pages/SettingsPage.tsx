@@ -1,4 +1,4 @@
-// NOSONAR
+
 /**
  * SettingsPage.tsx - Application configuration and user preferences
  */
@@ -60,7 +60,7 @@ export function SettingsPage() {
 	const [reportFormat, setReportFormat] = useState("pdf");
 	const [reportQuality, setReportQuality] = useState("high");
 
-	const [_saveStatus, setSaveStatus] = useState<string | null>(null);  // NOSONAR - typescript:S6754
+	const [_saveStatus, setSaveStatus] = useState<string | null>(null);
 
 	const persistSettings = (key: string, value: Record<string, unknown>) => {
 		// CodeQL: js/clear-text-storage-of-sensitive-data — FALSE POSITIVE.
@@ -363,7 +363,7 @@ export function SettingsPage() {
 										type="number"
 										value={passwordExpiry}
 										onChange={(e) =>
-											setPasswordExpiry(parseInt(e.target.value, 10))  // NOSONAR - typescript:S7773
+											setPasswordExpiry(parseInt(e.target.value, 10))
 										}
 										className="bg-card border-border text-foreground"
 									/>
@@ -404,7 +404,7 @@ export function SettingsPage() {
 											type="number"
 											value={apiTimeout}
 											onChange={(e) =>
-												setApiTimeout(parseInt(e.target.value, 10))  // NOSONAR - typescript:S7773
+												setApiTimeout(parseInt(e.target.value, 10))
 											}
 											className="bg-card border-border text-foreground"
 										/>
@@ -420,7 +420,7 @@ export function SettingsPage() {
 											type="number"
 											value={retryAttempts}
 											onChange={(e) =>
-												setRetryAttempts(parseInt(e.target.value, 10))  // NOSONAR - typescript:S7773
+												setRetryAttempts(parseInt(e.target.value, 10))
 											}
 											className="bg-card border-border text-foreground"
 										/>

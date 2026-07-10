@@ -1,4 +1,4 @@
-// NOSONAR
+
 /**
  * BatteryCalculator.ts - NFPA 72 Battery Calculation Engine
  * Calculates battery requirements per NFPA 72 §27.6.2 requirements
@@ -87,9 +87,9 @@ export function calculateBatteryRequirements(
 	}
 
 	return {
-		totalStandbyCurrent: parseFloat(totalStandbyCurrent.toFixed(2)),  // NOSONAR - typescript:S7773
-		totalAlarmCurrent: parseFloat(totalAlarmCurrent.toFixed(2)),  // NOSONAR - typescript:S7773
-		requiredCapacity: parseFloat(requiredCapacity.toFixed(2)),  // NOSONAR - typescript:S7773
+		totalStandbyCurrent: parseFloat(totalStandbyCurrent.toFixed(2)),
+		totalAlarmCurrent: parseFloat(totalAlarmCurrent.toFixed(2)),
+		requiredCapacity: parseFloat(requiredCapacity.toFixed(2)),
 		recommendedBattery,
 		compliance: {
 			meetsNFPA27_6_2: true,

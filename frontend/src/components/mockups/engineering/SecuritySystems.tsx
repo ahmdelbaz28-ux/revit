@@ -1,4 +1,4 @@
-// NOSONAR
+
 import {
 	Camera,
 	ChevronDown,
@@ -18,7 +18,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 
 export function SecuritySystems() {
-	const [_activeCam, _setActiveCam] = useState("CAM-EXT-01");  // NOSONAR - typescript:S6754
+	const [_activeCam, _setActiveCam] = useState("CAM-EXT-01");
 
 	return (
 		<div className="flex flex-col h-screen w-screen overflow-hidden bg-card text-foreground font-sans">
@@ -163,14 +163,14 @@ export function SecuritySystems() {
 									cx="35%"
 									cy="85%"
 									r="15"
-									fill="rgba(239, 68, 68, 0.15)"
-									stroke="rgba(239, 68, 68, 0.3)"
+									fill="rgba(100, 116, 139, 0.15)"
+									stroke="rgba(100, 116, 139, 0.3)"
 									strokeDasharray="2 2"
 								/>
 								<text
 									x="35%"
 									y="85%"
-									fill="#ef4444"
+									fill="#64748b"
 									fontSize="8"
 									textAnchor="middle"
 									dy="3"
@@ -225,7 +225,7 @@ export function SecuritySystems() {
 									}}
 								></div>
 								<div className="absolute top-2 right-2 flex items-center gap-1 bg-black/60 px-1.5 py-0.5 rounded text-[8px] font-mono text-white border border-slate-800 backdrop-blur-md">
-									<div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></div>{" "}
+									<div className="w-1.5 h-1.5 rounded-full bg-slate-500 animate-pulse"></div>{" "}
 									LIVE
 								</div>
 								<div className="absolute bottom-2 left-2 text-[8px] font-mono text-white/70 bg-black/60 px-1 rounded backdrop-blur-md">
@@ -356,7 +356,7 @@ export function SecuritySystems() {
 	);
 }
 
-function TabBtn({  // NOSONAR - typescript:S6759
+function TabBtn({
 	label,
 	active = false,
 }: {
@@ -372,7 +372,7 @@ function TabBtn({  // NOSONAR - typescript:S6759
 	);
 }
 
-function NavNode({  // NOSONAR - typescript:S6759
+function NavNode({
 	title,
 	expanded = false,
 	active = false,
@@ -390,7 +390,7 @@ function NavNode({  // NOSONAR - typescript:S6759
 			>
 				<div className="w-4 h-4 flex items-center justify-center">
 					{children ? (
-						expanded ? (  // NOSONAR — S3358: nested ternary acceptable in this localized context
+						expanded ? (
 							<ChevronDown className="h-3 w-3 text-muted-foreground" />
 						) : (
 							<ChevronRight className="h-3 w-3 text-muted-foreground" />
@@ -410,7 +410,7 @@ function NavNode({  // NOSONAR - typescript:S6759
 	);
 }
 
-function PropRow({ label, value }: { label: string; value: string }) {  // NOSONAR - typescript:S6759
+function PropRow({ label, value }: { label: string; value: string }) {
 	return (
 		<div className="flex justify-between py-0.5 text-xs">
 			<span className="text-muted-foreground">{label}</span>
@@ -419,7 +419,7 @@ function PropRow({ label, value }: { label: string; value: string }) {  // NOSON
 	);
 }
 
-function CamSymbol({  // NOSONAR - typescript:S6759
+function CamSymbol({
 	x,
 	y,
 	label,

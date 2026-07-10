@@ -1,4 +1,4 @@
-// NOSONAR
+
 /**
  * ReportGeneratorPage.tsx - Advanced report generator matching the new UI design
  */
@@ -86,7 +86,7 @@ const REPORT_TYPES = [
 // ============================================================================
 
 export function ReportGeneratorPage() {
-	const { t } = useTranslation(); // NOSONAR — acceptable in this context
+	const { t } = useTranslation();
 	const {
 		data: projects,
 		loading: projectsLoading,
@@ -165,7 +165,7 @@ export function ReportGeneratorPage() {
 			a.download = `${report.name || report.type}_${report.id.slice(0, 8)}.${format === "pdf" ? "pdf" : "json"}`;
 			document.body.appendChild(a);
 			a.click();
-			document.body.removeChild(a);  // NOSONAR — S7762: acceptable
+			document.body.removeChild(a);
 			window.URL.revokeObjectURL(url);
 		} catch {
 			// Export may fail if backend doesn't support it
@@ -245,7 +245,7 @@ export function ReportGeneratorPage() {
 								<Activity className="h-4 w-4 animate-pulse" />
 								<span className="text-sm">Loading projects...</span>
 							</div>
-						) : !projects || projects.length === 0 ? (  // NOSONAR — S3358: nested ternary acceptable in this localized context
+						) : !projects || projects.length === 0 ? (
 							<div className="text-center py-6 text-muted-foreground">
 								<FolderKanban className="h-8 w-8 mx-auto mb-2 opacity-50" />
 								<p className="text-sm">
@@ -308,7 +308,7 @@ export function ReportGeneratorPage() {
 								</CardHeader>
 								<CardContent className="space-y-6">
 									{generateError && (
-										<div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
+										<div className="bg-slate-500/10 border border-slate-500/20 rounded-lg p-3">
 											<p className="text-sm text-danger">{generateError}</p>
 										</div>
 									)}
@@ -324,7 +324,7 @@ export function ReportGeneratorPage() {
 													key={type.id}
 													className={`p-4 rounded-lg border text-left transition-all ${
 														reportType === type.id
-															? "border-red-500 bg-red-500/10"
+															? "border-slate-500 bg-slate-500/10"
 															: "border-border bg-muted/50 hover:border-border"
 													}`}
 													onClick={() => setReportType(type.id)}
@@ -333,7 +333,7 @@ export function ReportGeneratorPage() {
 														<div
 															className={`p-2 rounded ${
 																reportType === type.id
-																	? "bg-red-500/20"
+																	? "bg-slate-500/20"
 																	: "bg-muted/50"
 															}`}
 														>
@@ -436,7 +436,7 @@ export function ReportGeneratorPage() {
 													onChange={(e) =>
 														setIncludeDisabledDevices(e.target.checked)
 													}
-													className="h-4 w-4 text-red-500 rounded border-border bg-card focus:ring-red-500 focus:ring-offset-slate-800"
+													className="h-4 w-4 text-slate-400 rounded border-border bg-card focus:ring-red-500 focus:ring-offset-slate-800"
 												/>
 												<div>
 													<Label
@@ -462,7 +462,7 @@ export function ReportGeneratorPage() {
 													onChange={(e) =>
 														setSafetyMarginPadding(e.target.checked)
 													}
-													className="h-4 w-4 text-red-500 rounded border-border bg-card focus:ring-red-500 focus:ring-offset-slate-800"
+													className="h-4 w-4 text-slate-400 rounded border-border bg-card focus:ring-red-500 focus:ring-offset-slate-800"
 												/>
 												<div>
 													<Label
@@ -522,7 +522,7 @@ export function ReportGeneratorPage() {
 
 						{/* Error */}
 						{reportsError && (
-							<Card className="border-danger/30 bg-red-500/5">
+							<Card className="border-danger/30 bg-slate-500/5">
 								<CardContent className="p-3">
 									<p className="text-sm text-danger">
 										Error loading reports: {reportsError}
@@ -551,7 +551,7 @@ export function ReportGeneratorPage() {
 											Loading reports...
 										</span>
 									</div>
-								) : !reports || reports.length === 0 ? (  // NOSONAR — S3358: nested ternary acceptable in this localized context
+								) : !reports || reports.length === 0 ? (
 									<div className="text-center py-8 text-muted-foreground">
 										<FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
 										<p className="text-sm">No reports generated yet</p>
@@ -575,7 +575,7 @@ export function ReportGeneratorPage() {
 															</div>
 															<div className="text-xs text-muted-foreground mt-0.5">
 																{report.type
-																	.replace(/_/g, " ")  // NOSONAR - typescript:S7781
+																	.replace(/_/g, " ")
 																	.replace(/\b\w/g, (l) => l.toUpperCase())}
 																{" • "}
 																{new Date(report.createdAt).toLocaleString()}

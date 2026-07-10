@@ -1,4 +1,4 @@
-// NOSONAR
+
 import {
 	ArrowRightLeft,
 	Cable,
@@ -352,7 +352,7 @@ export function CablingNetwork() {
 								</h3>
 								<div className="space-y-1 bg-muted/50 p-2 rounded border border-border/50 text-xs">
 									<PropRow label="VLAN" value="20 (Corp Data)" />
-									<PropRow label="IP Range" value="10.20.2.0/24" />  // NOSONAR - typescript:S1313
+									<PropRow label="IP Range" value="10.20.2.0/24" />
 									<PropRow label="PoE" value="Available" />
 									<PropRow label="Port Speed" value="1Gbps Auto" />
 								</div>
@@ -412,7 +412,7 @@ export function CablingNetwork() {
 	);
 }
 
-function RibbonBtn({  // NOSONAR - typescript:S6759
+function RibbonBtn({
 	icon,
 	label,
 	active = false,
@@ -435,7 +435,7 @@ function RibbonBtn({  // NOSONAR - typescript:S6759
 	);
 }
 
-function NavNode({  // NOSONAR - typescript:S6759
+function NavNode({
 	title,
 	expanded = false,
 	active = false,
@@ -453,7 +453,7 @@ function NavNode({  // NOSONAR - typescript:S6759
 			>
 				<div className="w-4 h-4 flex items-center justify-center">
 					{children ? (
-						expanded ? (  // NOSONAR — S3358: nested ternary acceptable in this localized context
+						expanded ? (
 							<svg
 								width="10"
 								height="10"
@@ -491,7 +491,7 @@ function NavNode({  // NOSONAR - typescript:S6759
 	);
 }
 
-function PropRow({ label, value }: { label: string; value: string }) {  // NOSONAR - typescript:S6759
+function PropRow({ label, value }: { label: string; value: string }) {
 	return (
 		<div className="flex justify-between py-0.5">
 			<span className="text-muted-foreground">{label}</span>

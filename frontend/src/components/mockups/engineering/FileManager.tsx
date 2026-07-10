@@ -1,4 +1,4 @@
-// NOSONAR
+
 import {
 	Archive,
 	Box,
@@ -360,7 +360,7 @@ export function FileManager() {
 	);
 }
 
-function ToolbarBtn({ icon, label }: { icon: React.ReactNode; label: string }) {  // NOSONAR - typescript:S6759
+function ToolbarBtn({ icon, label }: { icon: React.ReactNode; label: string }) {
 	return (
 		<Button
 			variant="ghost"
@@ -372,7 +372,7 @@ function ToolbarBtn({ icon, label }: { icon: React.ReactNode; label: string }) {
 	);
 }
 
-function NavGroup({  // NOSONAR - typescript:S6759
+function NavGroup({
 	icon,
 	title,
 	active,
@@ -406,7 +406,7 @@ function NavGroup({  // NOSONAR - typescript:S6759
 	);
 }
 
-function NavItem({ title, active }: { title: string; active?: boolean }) {  // NOSONAR - typescript:S6759
+function NavItem({ title, active }: { title: string; active?: boolean }) {
 	return (
 		<div
 			className={`px-3 py-1.5 rounded text-xs cursor-pointer truncate ${active ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-white/5 hover:text-foreground/90"}`}
@@ -416,7 +416,7 @@ function NavItem({ title, active }: { title: string; active?: boolean }) {  // N
 	);
 }
 
-function FileCard({  // NOSONAR - typescript:S6759
+function FileCard({
 	name,
 	type,
 	size,
@@ -448,7 +448,7 @@ function FileCard({  // NOSONAR - typescript:S6759
 	} else if (type === "pdf") {
 		Icon = FileText;
 		iconColor = "text-danger";
-		iconBg = "bg-red-400/10 border-red-400/20";
+		iconBg = "bg-slate-500/10 border-slate-500/20";
 	} else if (type === "xlsx") {
 		Icon = FileText;
 		iconColor = "text-success";
@@ -512,7 +512,7 @@ function FileCard({  // NOSONAR - typescript:S6759
 	);
 }
 
-function PropRow({  // NOSONAR - typescript:S6759
+function PropRow({
 	label,
 	value,
 	mono,

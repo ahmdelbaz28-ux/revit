@@ -1,4 +1,4 @@
-// NOSONAR
+
 import { Slot } from "@radix-ui/react-slot";
 import { ChevronRight, MoreHorizontal } from "lucide-react";
 import * as React from "react";
@@ -62,7 +62,7 @@ const BreadcrumbPage = React.forwardRef<
 	HTMLSpanElement,
 	React.ComponentPropsWithoutRef<"span">
 >(({ className, ...props }, ref) => (
-	<span  // NOSONAR — S6819: non-null assertion acceptable
+	<span
 		ref={ref}
 		role="link"
 		aria-disabled="true"
@@ -78,7 +78,7 @@ const BreadcrumbSeparator = ({
 	className,
 	...props
 }: React.ComponentProps<"li">) => (
-	<li  // NOSONAR — S6819: non-null assertion acceptable
+	<li
 		role="presentation"
 		aria-hidden="true"
 		className={cn("[&>svg]:w-3.5 [&>svg]:h-3.5", className)}
@@ -93,7 +93,7 @@ const BreadcrumbEllipsis = ({
 	className,
 	...props
 }: React.ComponentProps<"span">) => (
-	<span  // NOSONAR — S6819: non-null assertion acceptable
+	<span
 		role="presentation"
 		aria-hidden="true"
 		className={cn("flex h-9 w-9 items-center justify-center", className)}

@@ -1,4 +1,4 @@
-// NOSONAR
+
 import {
 	Activity,
 	AlertTriangle,
@@ -122,7 +122,7 @@ export function ProjectDashboard() {
 								</div>
 							</div>
 							<div className="flex items-center gap-2 text-xs">
-								<Badge className="bg-red-500 text-white hover:bg-danger border-transparent shadow-[0_0_10px_rgba(239,68,68,0.5)]">
+								<Badge className="bg-slate-500 text-white hover:bg-danger border-transparent shadow-[0_0_10px_rgba(100, 116, 139,0.5)]">
 									3 Critical Issues
 								</Badge>
 								<span className="text-muted-foreground">needs review</span>
@@ -254,7 +254,7 @@ export function ProjectDashboard() {
 										time="14 min ago"
 										user="Ahmed"
 										icon={<ShieldAlert className="w-3.5 h-3.5 text-white" />}
-										color="bg-red-500"
+										color="bg-slate-500"
 										text="Compliance check run — 3 critical issues flagged in Fire Alarm."
 									/>
 									<TimelineItem
@@ -396,7 +396,7 @@ export function ProjectDashboard() {
 										className="relative w-48 h-48 rounded-full bg-card flex items-center justify-center mb-6"
 										style={{
 											background:
-												"conic-gradient(#ef4444 0% 25%, #f97316 25% 75%, #eab308 75% 100%)",
+												"conic-gradient(#64748b 0% 25%, #f97316 25% 75%, #eab308 75% 100%)",
 										}}
 									>
 										<div className="w-36 h-36 bg-card rounded-full flex flex-col items-center justify-center shadow-inner">
@@ -408,8 +408,8 @@ export function ProjectDashboard() {
 									</div>
 
 									<div className="w-full grid grid-cols-3 gap-2">
-										<div className="bg-red-500/10 border border-red-500/20 rounded p-2 text-center">
-											<div className="text-lg font-bold text-red-500 font-mono">
+										<div className="bg-slate-500/10 border border-slate-500/20 rounded p-2 text-center">
+											<div className="text-lg font-bold text-slate-400 font-mono">
 												12
 											</div>
 											<div className="text-[10px] text-muted-foreground uppercase">
@@ -465,7 +465,7 @@ export function ProjectDashboard() {
 											title="RVT"
 										></div>
 										<div
-											className="bg-red-400 h-full"
+											className="bg-slate-500 h-full"
 											style={{ width: "15%" }}
 											title="PDF"
 										></div>
@@ -487,7 +487,7 @@ export function ProjectDashboard() {
 											<span className="font-mono font-medium">1.8 GB</span>
 										</div>
 										<div className="flex items-center gap-2">
-											<div className="w-2 h-2 rounded-full bg-red-400"></div>
+											<div className="w-2 h-2 rounded-full bg-slate-500"></div>
 											<span className="text-muted-foreground w-10">PDF</span>
 											<span className="font-mono font-medium">0.6 GB</span>
 										</div>
@@ -577,7 +577,7 @@ export function ProjectDashboard() {
 	);
 }
 
-function Widget({  // NOSONAR - typescript:S6759
+function Widget({
 	title,
 	icon,
 	children,
@@ -601,7 +601,7 @@ function Widget({  // NOSONAR - typescript:S6759
 	);
 }
 
-function ProgressBar({  // NOSONAR - typescript:S6759
+function ProgressBar({
 	label,
 	percent,
 	color,
@@ -630,7 +630,7 @@ function ProgressBar({  // NOSONAR - typescript:S6759
 	);
 }
 
-function TimelineItem({  // NOSONAR - typescript:S6759
+function TimelineItem({
 	time,
 	user,
 	icon,
@@ -661,7 +661,7 @@ function TimelineItem({  // NOSONAR - typescript:S6759
 	);
 }
 
-function HourRow({  // NOSONAR - typescript:S6759
+function HourRow({
 	label,
 	used,
 	budget,
@@ -680,7 +680,7 @@ function HourRow({  // NOSONAR - typescript:S6759
 			<span className="text-xs text-foreground/90 w-32 truncate">{label}</span>
 			<div className="flex-1 h-1.5 bg-card rounded-full overflow-hidden">
 				<div
-					className={`h-full rounded-full ${isOver ? "bg-red-500" : color}`}
+					className={`h-full rounded-full ${isOver ? "bg-slate-500" : color}`}
 					style={{ width: `${percent}%` }}
 				></div>
 			</div>
@@ -693,7 +693,7 @@ function HourRow({  // NOSONAR - typescript:S6759
 	);
 }
 
-function Avatar({ initials, color }: { initials: string; color: string }) {  // NOSONAR - typescript:S6759
+function Avatar({ initials, color }: { initials: string; color: string }) {
 	return (
 		<div
 			className={`w-8 h-8 rounded-full border-2 border-card flex items-center justify-center text-[10px] font-bold text-white shadow-sm ${color} z-10 hover:z-20 hover:scale-110 transition-transform cursor-pointer`}

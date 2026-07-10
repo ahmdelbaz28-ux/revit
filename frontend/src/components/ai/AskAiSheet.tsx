@@ -94,8 +94,8 @@ export function AskAiSheet({
                                 {/* Header */}
                                 <SheetHeader className="px-4 py-3 border-b border-border bg-card">
                                         <div className="flex items-center gap-3">
-                                                <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-danger/10 border border-red-600/30">
-                                                        <Sparkles className="w-5 h-5 text-red-500" />
+                                                <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-danger/10 border border-slate-600/30">
+                                                        <Sparkles className="w-5 h-5 text-slate-400" />
                                                 </div>
                                                 <div className="flex-1 min-w-0">
                                                         <SheetTitle className="text-foreground text-base font-semibold">
@@ -124,7 +124,7 @@ export function AskAiSheet({
                                                 {messages.length === 0 && (
                                                         <div className="flex flex-col items-center justify-center py-12 text-center">
                                                                 <div className="w-16 h-16 rounded-full bg-danger/10 flex items-center justify-center mb-4">
-                                                                        <Bot className="w-8 h-8 text-red-500" />
+                                                                        <Bot className="w-8 h-8 text-slate-400" />
                                                                 </div>
                                                                 <p className="text-foreground/90 text-sm font-medium mb-1">
                                                                         {t("ai.welcome", "Ask me anything about fire alarm engineering")}
@@ -148,7 +148,7 @@ export function AskAiSheet({
                                                 {loading && (
                                                         <div className="flex items-start gap-2.5">
                                                                 <div className="flex-shrink-0 w-7 h-7 rounded-full bg-card flex items-center justify-center">
-                                                                        <Bot className="w-4 h-4 text-red-500" />
+                                                                        <Bot className="w-4 h-4 text-slate-400" />
                                                                 </div>
                                                                 <div className="bg-card rounded-md rounded-tl-sm px-3.5 py-2.5">
                                                                         <div className="flex items-center gap-1.5">
@@ -177,7 +177,7 @@ export function AskAiSheet({
                                                                 <Badge
                                                                         key={prompt}
                                                                         variant="outline"
-                                                                        className="cursor-pointer text-xs text-foreground/90 border-border hover:border-red-600/50 hover:text-danger transition-colors"
+                                                                        className="cursor-pointer text-xs text-foreground/90 border-border hover:border-slate-600/50 hover:text-danger transition-colors"
                                                                         onClick={() => handleQuickPrompt(prompt)}
                                                                 >
                                                                         {prompt}
@@ -249,14 +249,14 @@ function MessageBubble({ message }: { readonly message: ChatMessage }) {
         return (
                 <div className="flex items-start gap-2.5">
                         <div className="flex-shrink-0 w-7 h-7 rounded-full bg-card flex items-center justify-center">
-                                <Bot className="w-4 h-4 text-red-500" />
+                                <Bot className="w-4 h-4 text-slate-400" />
                         </div>
                         <div className="max-w-[85%]">
                                 <div className="bg-card text-foreground rounded-md rounded-tl-sm px-3.5 py-2">
                                         <p className="text-sm whitespace-pre-wrap break-words">
                                                 {message.content}
                                                 {message.isStreaming && (
-                                                        <span className="inline-block w-1.5 h-4 bg-red-500 ml-0.5 animate-pulse align-text-bottom" />
+                                                        <span className="inline-block w-1.5 h-4 bg-slate-500 ml-0.5 animate-pulse align-text-bottom" />
                                                 )}
                                         </p>
                                 </div>

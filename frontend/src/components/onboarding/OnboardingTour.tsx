@@ -1,4 +1,4 @@
-// NOSONAR
+
 import type React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
@@ -167,13 +167,13 @@ export const OnboardingTour: React.FC = () => {
 		top:
 			step.position === "top"
 				? `${targetElement.top - 160}px`
-				: step.position === "bottom"  // NOSONAR — S3358: nested ternary acceptable in this localized context
+				: step.position === "bottom"
 					? `${targetElement.bottom + 16}px`
 					: `${targetElement.top + targetElement.height / 2 - 80}px`,
 		left:
 			step.position === "left"
 				? `${targetElement.left - 280}px`
-				: step.position === "right"  // NOSONAR — S3358: nested ternary acceptable in this localized context
+				: step.position === "right"
 					? `${targetElement.right + 16}px`
 					: `${targetElement.left + targetElement.width / 2 - 140}px`,
 	};

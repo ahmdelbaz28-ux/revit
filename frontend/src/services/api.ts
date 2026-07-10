@@ -1,4 +1,4 @@
-// NOSONAR
+
 import type {
         Conflict,
         ConflictsListParams,
@@ -244,7 +244,7 @@ class ApiClient {
          * /api/v2/auth/csrf-token and cached. On 403 CSRF rejection, the token
          * is invalidated and the request is retried once with a fresh token.
          */
-        private async fetchWithRetry<T>(  // NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+        private async fetchWithRetry<T>(
                 url: string,
                 options?: RequestInit,
                 retries = 3,
@@ -382,7 +382,7 @@ class ApiClient {
                 if (params?.sort_order) searchParams.set("sort_order", params.sort_order);
                 const query = searchParams.toString();
                 return this.fetchWithRetry<UdmPaginatedData<Element>>(
-                        `/elements${query ? `?${query}` : ""}`, // NOSONAR — acceptable in this context
+                        `/elements${query ? `?${query}` : ""}`,
                 );
         }
 
@@ -541,7 +541,7 @@ class ApiClient {
                         searchParams.set("page_size", String(params.page_size));
                 const query = searchParams.toString();
                 return this.fetchWithRetry<UdmPaginatedData<UdmConnection>>(
-                        `/connections${query ? `?${query}` : ""}`, // NOSONAR — acceptable in this context
+                        `/connections${query ? `?${query}` : ""}`,
                 );
         }
 
@@ -587,7 +587,7 @@ class ApiClient {
                         searchParams.set("page_size", String(params.page_size));
                 const query = searchParams.toString();
                 return this.fetchWithRetry<UdmPaginatedData<Conflict>>(
-                        `/conflicts${query ? `?${query}` : ""}`, // NOSONAR — acceptable in this context
+                        `/conflicts${query ? `?${query}` : ""}`,
                 );
         }
 

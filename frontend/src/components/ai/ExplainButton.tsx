@@ -89,7 +89,7 @@ export function ExplainButton({
                                 <div className="absolute top-full left-0 mt-2 w-96 max-w-[calc(100vw-2rem)] z-30 bg-card border border-border rounded-lg shadow-xl">
                                         <div className="flex items-center justify-between px-3 py-2 border-b border-border">
                                                 <div className="flex items-center gap-1.5">
-                                                        <Bot className="w-3.5 h-3.5 text-red-500" />
+                                                        <Bot className="w-3.5 h-3.5 text-slate-400" />
                                                         <span className="text-xs font-medium text-foreground">
                                                                 {t("ai.aiExplanation", "AI Explanation")}
                                                         </span>

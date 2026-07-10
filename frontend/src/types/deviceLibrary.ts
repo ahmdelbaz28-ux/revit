@@ -1,4 +1,4 @@
-// NOSONAR
+
 /**
  * deviceLibrary.ts - Comprehensive Light Current Device Library
  * 38 devices across 6 categories with AutoCAD/Revit/IFC mappings

@@ -1,4 +1,4 @@
-// NOSONAR
+
 import {
 	HELP_CATEGORY_LABELS,
 	HELP_TOPIC_ORDER,
@@ -13,7 +13,7 @@ import type {
 } from "./types";
 
 export function getHelpTopic(
-	topicId: HelpTopicId | string | null | undefined,  // NOSONAR - typescript:S6571
+	topicId: HelpTopicId | string | null | undefined,
 ): HelpTopic | undefined {
 	if (!topicId) return undefined;
 	return HELP_TOPICS[topicId as HelpTopicId] ?? undefined;
@@ -83,7 +83,7 @@ function includesToken(haystack: string, token: string): boolean {
 	return normalizedHaystack === token || normalizedHaystack.includes(token);
 }
 
-function scoreTopic(  // NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+function scoreTopic(
 	topic: HelpTopic,
 	tokens: string[],
 ): { score: number; matchedKeywords: string[] } {
@@ -198,7 +198,7 @@ export function getRelatedTopics(topic: HelpTopic): HelpTopic[] {
 }
 
 export function getFirstTopicForContext(
-	contextId: HelpTopicId | string | null | undefined,  // NOSONAR - typescript:S6571
+	contextId: HelpTopicId | string | null | undefined,
 ): HelpTopic | undefined {
 	const exact = getHelpTopic(contextId);
 	if (exact) return exact;

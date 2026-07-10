@@ -1,4 +1,4 @@
-// NOSONAR
+
 import { Battery, Box, Plus, Power, Zap } from "lucide-react";
 import type React from "react";
 import type { DeviceType } from "@/store/simpleStore";
@@ -47,7 +47,7 @@ interface DevicePaletteProps {
 	selectedType: DeviceType | null;
 }
 
-export function DevicePalette({ onSelect, selectedType }: DevicePaletteProps) {  // NOSONAR - typescript:S6759
+export function DevicePalette({ onSelect, selectedType }: DevicePaletteProps) {
 	return (
 		<div className="w-64 bg-card border-r border-border flex flex-col h-full">
 			<div className="p-4 border-b border-border">

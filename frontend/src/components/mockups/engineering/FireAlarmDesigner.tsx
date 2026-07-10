@@ -1,4 +1,4 @@
-// NOSONAR
+
 /**
  * FireAlarmDesigner.tsx - Professional Fire Alarm System Designer
  * Implements NFPA 72 compliance and detector coverage calculations
@@ -54,7 +54,7 @@ export function FireAlarmDesigner() {
 	const [projectDescription, setProjectDescription] = useState("");
 	const [showGrid, setShowGrid] = useState(true);
 	const [snapToGrid, setSnapToGrid] = useState(true);
-	const [_zoomLevel, _setZoomLevel] = useState(100);  // NOSONAR - typescript:S6754
+	const [_zoomLevel, _setZoomLevel] = useState(100);
 	const [units, setUnits] = useState<"metric" | "imperial">("metric");
 
 	// Initialize with sample detectors
@@ -96,7 +96,7 @@ export function FireAlarmDesigner() {
 			y: 200,
 			type,
 			status: "normal",
-			coverageRadius: type === "smoke" ? 6.37 : type === "heat" ? 4.27 : 0,  // NOSONAR — S3358: nested ternary acceptable in this localized context
+			coverageRadius: type === "smoke" ? 6.37 : type === "heat" ? 4.27 : 0,
 		};
 		setDetectors([...detectors, newDetector]);
 	};

@@ -1,4 +1,4 @@
-// NOSONAR
+
 import { Button } from "@/components/ui/button";
 import { useStore } from "@/store/simpleStore";
 
@@ -75,7 +75,7 @@ export function ReportManager() {
 			</div>
 
 			<div
-				className={`p-4 border rounded ${report.conflicts.length > 0 ? "border-red-500/50 bg-red-500/10" : "border-emerald-500/50 bg-emerald-500/10"}`}
+				className={`p-4 border rounded ${report.conflicts.length > 0 ? "border-slate-500/50 bg-slate-500/10" : "border-emerald-500/50 bg-emerald-500/10"}`}
 			>
 				<h3
 					className={`font-semibold mb-2 ${report.conflicts.length > 0 ? "text-danger" : "text-success"}`}

@@ -1,4 +1,4 @@
-// NOSONAR
+
 import {
 	Box,
 	Cpu,

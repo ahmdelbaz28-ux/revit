@@ -1,4 +1,4 @@
-// NOSONAR
+
 /**
  * EngineeringCanvas.tsx - Thermal Visualization Canvas
  * Dynamic color rendering based on electrical calculations
@@ -74,7 +74,7 @@ const DEVICE_COLORS: Record<DeviceType, string> = {
 	BATTERY: "#10b981",
 	LOAD: "#3b82f6",
 	PANEL: "#94a3b8",
-	SENSOR_SMOKE: "#ef4444",
+	SENSOR_SMOKE: "#64748b",
 	SENSOR_MOTION: "#f97316",
 	CAMERA: "#a855f7",
 	SPEAKER: "#ec4899",
@@ -84,7 +84,7 @@ const DEVICE_COLORS: Record<DeviceType, string> = {
 // MAIN COMPONENT
 // ============================================================================
 
-export function EngineeringCanvas({ onItemDrop }: EngineeringCanvasProps) {  // NOSONAR - typescript:S6759
+export function EngineeringCanvas({ onItemDrop }: EngineeringCanvasProps) {
 	const devices = useStore((s) => s.devices);
 	const connections = useStore((s) => s.connections);
 	const selectedId = useStore((s) => s.selectedElementId);
@@ -107,7 +107,7 @@ export function EngineeringCanvas({ onItemDrop }: EngineeringCanvasProps) {  // 
 				// Calculate cable length (pixels to meters, then km)
 				const dx = to.x - from.x;
 				const dy = to.y - from.y;
-				const lengthPx = Math.sqrt(dx * dx + dy * dy);  // NOSONAR - typescript:S7769
+				const lengthPx = Math.sqrt(dx * dx + dy * dy);
 				const lengthM = lengthPx * 0.01; // 1px = 10mm
 				const _lengthKm = lengthM / 1000;
 
@@ -156,7 +156,7 @@ export function EngineeringCanvas({ onItemDrop }: EngineeringCanvasProps) {  // 
 			const loadPercent = (totalCurrent / 100) * 100; // Assume 100A base
 			const stressColor = getLoadColor(loadPercent);
 			const glowIntensity =
-				loadPercent > 100 ? 1 : loadPercent > 80 ? 0.6 : 0.2;  // NOSONAR — S3358: nested ternary acceptable in this localized context
+				loadPercent > 100 ? 1 : loadPercent > 80 ? 0.6 : 0.2;
 			const isOverloaded = loadPercent >= 100;
 
 			return {
@@ -229,7 +229,7 @@ export function EngineeringCanvas({ onItemDrop }: EngineeringCanvasProps) {  // 
 	const handleKeyDown = useCallback(
 		(e: KeyboardEvent) => {
 			if ((e.key === "Delete" || e.key === "Backspace") && selectedId) {
-				if (devices.find((d) => d.id === selectedId)) {  // NOSONAR - typescript:S7754
+				if (devices.find((d) => d.id === selectedId)) {
 					actions.deleteDevice(selectedId);
 					actions.selectElement(null);
 				}
@@ -349,8 +349,8 @@ export function EngineeringCanvas({ onItemDrop }: EngineeringCanvasProps) {  // 
 					{/* Critical Animation */}
 					<style>{`
             @keyframes criticalPulse {
-              0%, 100% { opacity: 1; filter: drop-shadow(0 0 8px #ef4444); }
-              50% { opacity: 0.7; filter: drop-shadow(0 0 16px #ef4444); }
+              0%, 100% { opacity: 1; filter: drop-shadow(0 0 8px #64748b); }
+              50% { opacity: 0.7; filter: drop-shadow(0 0 16px #64748b); }
             }
             @keyframes dashFlow {
               to { stroke-dashoffset: -20; }
@@ -372,7 +372,7 @@ export function EngineeringCanvas({ onItemDrop }: EngineeringCanvasProps) {  // 
 						height="200%"
 					>
 						<feGaussianBlur stdDeviation="4" result="blur" />
-						<feFlood flood-color="#ef4444" flood-opacity="0.6" result="color" />  // NOSONAR — S6747: JSX acceptable
+						<feFlood flood-color="#64748b" flood-opacity="0.6" result="color" />
 						<feComposite in="color" in2="blur" operator="in" result="glow" />
 						<feMerge>
 							<feMergeNode in="glow" />
@@ -388,7 +388,7 @@ export function EngineeringCanvas({ onItemDrop }: EngineeringCanvasProps) {  // 
 						height="200%"
 					>
 						<feGaussianBlur stdDeviation="3" result="blur" />
-						<feFlood flood-color="#f59e0b" flood-opacity="0.5" result="color" />  // NOSONAR — S6747: JSX acceptable
+						<feFlood flood-color="#f59e0b" flood-opacity="0.5" result="color" />
 						<feComposite in="color" in2="blur" operator="in" result="glow" />
 						<feMerge>
 							<feMergeNode in="glow" />
@@ -398,7 +398,7 @@ export function EngineeringCanvas({ onItemDrop }: EngineeringCanvasProps) {  // 
 
 					<filter id="glow-normal" x="-50%" y="-50%" width="200%" height="200%">
 						<feGaussianBlur stdDeviation="2" result="blur" />
-						<feFlood flood-color="#10b981" flood-opacity="0.3" result="color" />  // NOSONAR — S6747: JSX acceptable
+						<feFlood flood-color="#10b981" flood-opacity="0.3" result="color" />
 						<feComposite in="color" in2="blur" operator="in" result="glow" />
 						<feMerge>
 							<feMergeNode in="glow" />
@@ -410,7 +410,7 @@ export function EngineeringCanvas({ onItemDrop }: EngineeringCanvasProps) {  // 
 				{/* Thermal Connections */}
 				{thermalConnections.map((conn) => {
 					const _gradientSegments = generateCableGradient(
-						Math.sqrt(  // NOSONAR - typescript:S7769
+						Math.sqrt(
 							(conn.toX - conn.fromX) ** 2 + (conn.toY - conn.fromY) ** 2,
 						),
 						conn.voltageDrop.percentage * 0.8,
@@ -427,24 +427,24 @@ export function EngineeringCanvas({ onItemDrop }: EngineeringCanvasProps) {  // 
 								x2={conn.toX}
 								y2={conn.toY}
 								stroke={conn.color}
-								strokeWidth={conn.isCritical ? 5 : conn.isWarning ? 4 : 3}  // NOSONAR — S3358: nested ternary acceptable in this localized context
+								strokeWidth={conn.isCritical ? 5 : conn.isWarning ? 4 : 3}
 								className={`
                   transition-all duration-150
                   ${conn.isCritical ? "critical-animated" : ""}
-                  ${conn.isCritical ? "" : conn.isWarning ? "" : "dash-animated"}  // NOSONAR — S3358: nested ternary acceptable in this localized context
+                  ${conn.isCritical ? "" : conn.isWarning ? "" : "dash-animated"}
                 `}
 								style={{
 									strokeDasharray: conn.isWarning ? "8,4" : "none",
 									filter: conn.isCritical
 										? "url(#glow-critical)"
-										: conn.isWarning  // NOSONAR — S3358: nested ternary acceptable in this localized context
+										: conn.isWarning
 											? "url(#glow-warning)"
 											: "url(#glow-normal)",
 								}}
 							/>
 
 							{/* Gradient overlay for long cables */}
-							{Math.sqrt(  // NOSONAR - typescript:S7769
+							{Math.sqrt(
 								(conn.toX - conn.fromX) ** 2 + (conn.toY - conn.fromY) ** 2,
 							) > 200 && (
 								<line
@@ -503,7 +503,7 @@ export function EngineeringCanvas({ onItemDrop }: EngineeringCanvasProps) {  // 
 									cx={(conn.fromX + conn.toX) / 2}
 									cy={(conn.fromY + conn.toY) / 2}
 									r="8"
-									fill="#ef4444"
+									fill="#64748b"
 									className="animate-pulse"
 								/>
 							)}
@@ -569,8 +569,8 @@ export function EngineeringCanvas({ onItemDrop }: EngineeringCanvasProps) {  // 
 								stroke={
 									isSelected
 										? "#3b82f6"
-										: dev.isOverloaded  // NOSONAR — S3358: nested ternary acceptable in this localized context
-											? "#ef4444"
+										: dev.isOverloaded
+											? "#64748b"
 											: dev.stressColor
 								}
 								strokeWidth={isSelected ? 3 : 2}
@@ -582,7 +582,7 @@ export function EngineeringCanvas({ onItemDrop }: EngineeringCanvasProps) {  // 
 								style={{
 									filter: dev.isOverloaded
 										? "url(#glow-critical)"
-										: dev.glowIntensity > 0.2  // NOSONAR — S3358: nested ternary acceptable in this localized context
+										: dev.glowIntensity > 0.2
 											? "url(#glow-normal)"
 											: "none",
 								}}
@@ -624,7 +624,7 @@ export function EngineeringCanvas({ onItemDrop }: EngineeringCanvasProps) {  // 
 										cx="50"
 										cy="10"
 										r="6"
-										fill="#ef4444"
+										fill="#64748b"
 										className="animate-pulse"
 									/>
 									<text

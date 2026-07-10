@@ -1,4 +1,4 @@
-// NOSONAR
+
 import { AlertTriangle, CheckCircle2, Save, X, XCircle } from "lucide-react";
 import type React from "react";
 import { useState } from "react";
@@ -196,7 +196,7 @@ export const DeviceProperties: React.FC<DevicePropertiesProps> = ({
 								type="number"
 								value={editedDevice.heightAFF || ""}
 								onChange={(e) =>
-									handleChange("heightAFF", parseFloat(e.target.value) || 0)  // NOSONAR - typescript:S7773
+									handleChange("heightAFF", parseFloat(e.target.value) || 0)
 								}
 								placeholder={t("fireAlarm.heightAffPlaceholder") || undefined}
 								className="bg-card border-border text-foreground"
@@ -258,7 +258,7 @@ export const DeviceProperties: React.FC<DevicePropertiesProps> = ({
 								type="number"
 								value={editedDevice.coverageArea || ""}
 								onChange={(e) =>
-									handleChange("coverageArea", parseFloat(e.target.value) || 0)  // NOSONAR - typescript:S7773
+									handleChange("coverageArea", parseFloat(e.target.value) || 0)
 								}
 								placeholder={
 									t("fireAlarm.coverageAreaPlaceholder") || undefined
@@ -275,7 +275,7 @@ export const DeviceProperties: React.FC<DevicePropertiesProps> = ({
 									className={
 										editedDevice.status === "normal"
 											? "bg-success/10 text-success border-success/30"
-											: editedDevice.status === "warning"  // NOSONAR — S3358: nested ternary acceptable in this localized context
+											: editedDevice.status === "warning"
 												? "bg-warning/10 text-warning border-warning/30"
 												: "bg-danger/10 text-danger border-danger/30"
 									}

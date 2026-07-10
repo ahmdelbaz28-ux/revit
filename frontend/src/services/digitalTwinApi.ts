@@ -1,4 +1,4 @@
-// NOSONAR
+
 /**
  * digitalTwinApi.ts - REST API Client for Digital Twin Backend (System A)
  *
@@ -52,12 +52,12 @@ export interface PaginatedResponse<T> {
 // ============================================================================
 
 class ApiClient {
-        private baseUrl: string; // NOSONAR — acceptable in this context
-        private defaultHeaders: Record<string, string>; // NOSONAR — acceptable in this context
+        private baseUrl: string;
+        private defaultHeaders: Record<string, string>;
         private wsConnection: WebSocket | null = null;
-        private wsCallbacks: Map<string, Set<(data: unknown) => void>> = new Map(); // NOSONAR — acceptable in this context
+        private wsCallbacks: Map<string, Set<(data: unknown) => void>> = new Map();
         private reconnectAttempts = 0;
-        private maxReconnectAttempts = 5; // NOSONAR — acceptable in this context
+        private maxReconnectAttempts = 5;
         private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
         constructor(baseUrl?: string) {
@@ -76,7 +76,7 @@ class ApiClient {
                 delete this.defaultHeaders.Authorization;
         }
 
-        private async fetchWithRetry<T>(  // NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+        private async fetchWithRetry<T>(
                 url: string,
                 options: RequestInit,
                 retries: number = MAX_RETRIES,
@@ -423,7 +423,7 @@ class ApiClient {
 
                 this.heartbeatTimer = setInterval(() => {
                         if (
-                                !this.wsConnection ||  // NOSONAR — S6582: structure acceptable
+                                !this.wsConnection ||
                                 this.wsConnection.readyState !== WebSocket.OPEN
                         ) {
                                 this.stopHeartbeat();
@@ -493,7 +493,7 @@ class ApiClient {
                         );
                 this.reconnectTimer = setTimeout(() => {
                         if (
-                                this.wsConnection &&  // NOSONAR — S6582: structure acceptable
+                                this.wsConnection &&
                                 this.wsConnection.readyState === WebSocket.CLOSED
                         ) {
                                 // RACE CONDITION FIX: Nullify wsConnection and clean up heartbeat

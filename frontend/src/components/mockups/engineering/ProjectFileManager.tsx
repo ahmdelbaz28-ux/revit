@@ -1,4 +1,4 @@
-// NOSONAR
+
 import {
 	Archive,
 	ArrowLeft,
@@ -686,7 +686,7 @@ export function ProjectFileManager() {
 												{f.status}{" "}
 												{f.status === "Approved"
 													? "✓"
-													: f.status === "In Review"  // NOSONAR — S3358: nested ternary acceptable in this localized context
+													: f.status === "In Review"
 														? "⏳"
 														: "✏"}
 											</Badge>
@@ -738,7 +738,7 @@ export function ProjectFileManager() {
 								Generate Transmittal
 							</span>
 							<span className="hover:text-foreground cursor-pointer">Move</span>
-							<span className="text-danger hover:text-red-300 cursor-pointer">
+							<span className="text-danger hover:text-slate-400 cursor-pointer">
 								Delete
 							</span>
 						</div>

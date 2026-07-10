@@ -1,4 +1,4 @@
-// NOSONAR
+
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -7,7 +7,7 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { api } from "@/services/api";
 import type { ElementUpdate } from "@/types";
 
-function ElementDetail() {  // NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+function ElementDetail() {
 	const { t } = useTranslation();
 	const { id } = useParams<{ id: string }>();
 	const navigate = useNavigate();
@@ -94,7 +94,7 @@ function ElementDetail() {  // NOSONAR — S3776: cognitive complexity is inhere
 					</svg>
 					Back to Elements
 				</Link>
-				<div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
+				<div className="bg-slate-500/10 border border-slate-500/20 rounded-lg p-4">
 					<p className="text-danger text-sm">
 						{error instanceof Error ? error.message : "Element not found"}
 					</p>
@@ -154,7 +154,7 @@ function ElementDetail() {  // NOSONAR — S3776: cognitive complexity is inhere
 				{isEditing ? (
 					<div className="space-y-4">
 						{updateMutation.isError && (
-							<div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
+							<div className="bg-slate-500/10 border border-slate-500/20 rounded-lg p-3">
 								<p className="text-danger text-sm">
 									{updateMutation.error instanceof Error
 										? updateMutation.error.message
@@ -164,7 +164,7 @@ function ElementDetail() {  // NOSONAR — S3776: cognitive complexity is inhere
 						)}
 						<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 							<div>
-								<label className="block text-sm font-medium text-foreground/90 mb-1">  // NOSONAR — S6853: React import kept for JSX transform
+								<label className="block text-sm font-medium text-foreground/90 mb-1">
 									Name
 								</label>
 								<input
@@ -175,7 +175,7 @@ function ElementDetail() {  // NOSONAR — S3776: cognitive complexity is inhere
 								/>
 							</div>
 							<div>
-								<label className="block text-sm font-medium text-foreground/90 mb-1">  // NOSONAR — S6853: React import kept for JSX transform
+								<label className="block text-sm font-medium text-foreground/90 mb-1">
 									Material
 								</label>
 								<input
@@ -186,7 +186,7 @@ function ElementDetail() {  // NOSONAR — S3776: cognitive complexity is inhere
 								/>
 							</div>
 							<div>
-								<label className="block text-sm font-medium text-foreground/90 mb-1">  // NOSONAR — S6853: React import kept for JSX transform
+								<label className="block text-sm font-medium text-foreground/90 mb-1">
 									Fire Rating
 								</label>
 								<input
@@ -197,7 +197,7 @@ function ElementDetail() {  // NOSONAR — S3776: cognitive complexity is inhere
 								/>
 							</div>
 							<div>
-								<label className="block text-sm font-medium text-foreground/90 mb-1">  // NOSONAR — S6853: React import kept for JSX transform
+								<label className="block text-sm font-medium text-foreground/90 mb-1">
 									Description
 								</label>
 								<input
@@ -272,7 +272,7 @@ function ElementDetail() {  // NOSONAR — S3776: cognitive complexity is inhere
 							label="Load Bearing"
 							value={
 								element.properties?.load_bearing != null
-									? element.properties.load_bearing  // NOSONAR — S3358: nested ternary acceptable in this localized context
+									? element.properties.load_bearing
 										? "Yes"
 										: "No"
 									: undefined
@@ -411,7 +411,7 @@ function ElementDetail() {  // NOSONAR — S3776: cognitive complexity is inhere
 	);
 }
 
-function PropertyRow({  // NOSONAR - typescript:S6759
+function PropertyRow({
 	label,
 	value,
 }: {

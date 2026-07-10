@@ -1,11 +1,11 @@
-// NOSONAR
+
 import {
 	AlertTriangle,
 	CheckCircle2,
 	HelpCircle as CircleHelp,
 	X,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";  // NOSONAR - typescript:S1128
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { HelpTopicId } from "@/help/types";
@@ -41,13 +41,13 @@ export interface ContextPanelSelection {
 	status: ContextPanelStatus;
 	properties: ContextPanelProperty[];
 	warnings?: ContextPanelWarning[];
-	helpTopicId?: HelpTopicId | string;  // NOSONAR - typescript:S6571
+	helpTopicId?: HelpTopicId | string;
 }
 
 export interface ContextPanelProps {
 	open: boolean;
 	selected: ContextPanelSelection | null;
-	contextId?: HelpTopicId | string;  // NOSONAR - typescript:S6571
+	contextId?: HelpTopicId | string;
 	className?: string;
 	onClose: () => void;
 	onCollapse?: (open: boolean) => void;
@@ -60,8 +60,8 @@ function getDocumentDirection(): "ltr" | "rtl" {
 
 function getHelpContextId(
 	selection: ContextPanelSelection | null,
-	contextId?: HelpTopicId | string,  // NOSONAR - typescript:S6571
-): HelpTopicId | string {  // NOSONAR - typescript:S6571
+	contextId?: HelpTopicId | string,
+): HelpTopicId | string {
 	if (selection?.helpTopicId) return selection.helpTopicId;
 	if (contextId) return contextId;
 
@@ -85,7 +85,7 @@ function getStatusClasses(status: ContextPanelStatus) {
 			return "border-warning/30 bg-amber-500/10 text-amber-300";
 		case "fault":
 		case "offline":
-			return "border-danger/30 bg-red-500/10 text-red-300";
+			return "border-danger/30 bg-slate-500/10 text-slate-400";
 		case "maintenance":
 			return "border-border/30 bg-slate-500/10 text-foreground/90";
 	}
@@ -98,11 +98,11 @@ function getWarningClasses(severity: ContextPanelSeverity) {
 		case "warning":
 			return "border-amber-500/25 bg-amber-500/10 text-amber-200";
 		case "critical":
-			return "border-danger/30 bg-red-500/10 text-red-200";
+			return "border-danger/30 bg-slate-500/10 text-red-200";
 	}
 }
 
-export function ContextPanel({  // NOSONAR - typescript:S6759
+export function ContextPanel({
 	open,
 	selected,
 	contextId,
@@ -152,7 +152,7 @@ export function ContextPanel({  // NOSONAR - typescript:S6759
 			dir={isRtl ? "rtl" : "ltr"}
 			aria-hidden={!visible}
 		>
-			<div  // NOSONAR — S6819: non-null assertion acceptable
+			<div
 				className={`absolute inset-0 bg-black/35 transition-opacity duration-300 ${visible ? "opacity-100" : "opacity-0"}`}
 				role="button"
 				tabIndex={0}

@@ -1,4 +1,4 @@
-// NOSONAR
+
 import React from "react";
 import { ErrorRecoveryView, getErrorContextId } from "./ErrorRecoveryView";
 

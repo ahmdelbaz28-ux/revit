@@ -1,4 +1,4 @@
-// NOSONAR
+
 import { Battery, Box, Eye, Power, Siren, Wifi, Zap } from "lucide-react";
 import type React from "react";
 import type { DeviceType } from "@/store/simpleStore";
@@ -88,7 +88,7 @@ interface EngineeringLibraryProps {
 	onDragStart: (item: LibraryItem) => void;
 }
 
-export function EngineeringLibrary({ onDragStart }: EngineeringLibraryProps) {  // NOSONAR - typescript:S6759
+export function EngineeringLibrary({ onDragStart }: EngineeringLibraryProps) {
 	const handleDrag = (e: React.DragEvent, item: LibraryItem) => {
 		e.dataTransfer.setData("application/json", JSON.stringify(item));
 		e.dataTransfer.effectAllowed = "copy";

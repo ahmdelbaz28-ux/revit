@@ -1,4 +1,4 @@
-// NOSONAR
+
 import {
         ChevronDown,
         ChevronRight,
@@ -73,7 +73,7 @@ const ZoneNode: React.FC<ZoneNodeProps> = ({
 
         // Determine status color based on devices
         const getStatusColor = () => {
-                if (zone.devices.some((d) => d.status === "fault")) return "text-red-500";
+                if (zone.devices.some((d) => d.status === "fault")) return "text-slate-400";
                 if (zone.devices.some((d) => d.status === "warning"))
                         return "text-amber-500";
                 return "text-emerald-500";
@@ -88,13 +88,13 @@ const ZoneNode: React.FC<ZoneNodeProps> = ({
                         case "warning":
                                 return "text-amber-500 bg-amber-500/10";
                         case "fault":
-                                return "text-red-500 bg-red-500/10";
+                                return "text-slate-400 bg-slate-500/10";
                 }
         };
 
         return (
                 <div className="select-none">
-                        <div  // NOSONAR — S6819: non-null assertion acceptable
+                        <div
                                 className={`flex items-center gap-2 py-1 px-2 rounded hover:bg-secondary cursor-pointer ${
                                         selectedDevice && zone.devices.some((d) => d.id === selectedDevice)
                                                 ? "bg-secondary"
@@ -122,7 +122,7 @@ const ZoneNode: React.FC<ZoneNodeProps> = ({
                                 }}
                         >
                                 {zone.children && zone.children.length > 0 ? (
-                                        expanded ? (  // NOSONAR — S3358: nested ternary acceptable in this localized context
+                                        expanded ? (
                                                 <ChevronDown className="h-4 w-4" />
                                         ) : (
                                                 <ChevronRight className="h-4 w-4" />
@@ -155,7 +155,7 @@ const ZoneNode: React.FC<ZoneNodeProps> = ({
                                         ))}
 
                                         {zone.devices.map((device) => (
-                                                <div  // NOSONAR — S6819: non-null assertion acceptable
+                                                <div
                                                         key={device.id}
                                                         className={`flex items-center gap-2 py-1 px-2 rounded hover:bg-secondary cursor-pointer ${
                                                                 selectedDevice === device.id ? "bg-secondary" : ""

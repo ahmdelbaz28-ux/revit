@@ -1,4 +1,4 @@
-import { ShieldCheck, Globe, HelpCircle, Search, Settings } from "lucide-react";
+import { Globe, HelpCircle, Search, Settings, Zap } from "lucide-react";
 import type React from "react";
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
@@ -59,75 +59,78 @@ const TopBar: React.FC<TopBarProps> = ({
         const pageName = routeLabels[location.pathname] || "BAZSPARK";
 
         return (
-                <header className="h-12 bg-card border-b border-border flex items-center px-4 gap-3 shrink-0">
-                        <ShieldCheck className="h-4 w-4 text-primary shrink-0" />
-                        <span className="text-foreground font-semibold text-sm tracking-tight hidden sm:inline">
-                                BAZSPARK
-                        </span>
-
-                        <div className="h-4 w-px bg-border hidden sm:block" />
-
-                        <span className="text-muted-foreground text-sm truncate">
-                                {pageName}
-                        </span>
+                <header
+                        className="h-16 glass flex items-center px-6 gap-4 shrink-0 sticky top-0 z-40"
+                        style={{ borderBottom: "1px solid rgba(255,255,255,0.1)" }}
+                >
+                        {/* Left — logo + page title */}
+                        <div className="flex items-center gap-3 min-w-0">
+                                <div className="h-8 w-8 rounded-lg flex items-center justify-center shrink-0 bg-cyan-400/10 border border-cyan-400/20">
+                                        <Zap className="h-4 w-4 text-cyan-300" fill="currentColor" />
+                                </div>
+                                <h1 className="text-foreground font-semibold text-[16px] tracking-tight truncate ml-1">
+                                        {pageName}
+                                </h1>
+                        </div>
 
                         <div className="flex-1" />
 
-                        {/* Connection status indicator */}
-                        <div className="flex items-center gap-1.5">
+                        {/* Connection status — neutral slate when offline, no red */}
+                        <div className="flex items-center gap-2">
                                 <span
-                                        className={`h-2.5 w-2.5 rounded-full transition-all duration-300 ${isConnected ? "bg-green-500 shadow-green-500/50 shadow-md animate-pulse" : "bg-red-500 shadow-red-500/50 shadow-md"}`}
+                                        className={`h-2 w-2 rounded-full ${isConnected ? "bg-success" : "bg-slate-500"}`}
                                         title={isConnected ? "Connected" : "Disconnected"}
                                 />
-                                <span className="text-muted-foreground text-xs hidden md:inline">
+                                <span className="text-muted-foreground text-[13px] hidden md:inline">
                                         {isConnected ? "Online" : "Offline"}
                                 </span>
                         </div>
 
-                        <div className="h-5 w-px bg-secondary/50" />
+                        <div className="h-5 w-px bg-white/10" />
 
                         {/* Action buttons */}
                         <button
                                 onClick={onSearchOpen}
-                                className="p-1.5 text-muted-foreground hover:text-foreground transition-all duration-200 hover:scale-110 rounded"
+                                className="p-2 text-muted-foreground hover:text-cyan-300 hover:bg-white/5 transition-all duration-200 rounded-lg"
                                 aria-label="Search"
                                 title="Search (Ctrl+K)"
                         >
-                                <Search className="h-4 w-4" />
+                                <Search className="h-[18px] w-[18px]" />
                         </button>
 
                         <ContextualHelpButton />
 
                         <button
                                 onClick={onHelpOpen}
-                                className="p-1.5 text-muted-foreground hover:text-foreground transition-all duration-200 hover:scale-110 rounded"
+                                className="p-2 text-muted-foreground hover:text-cyan-300 hover:bg-white/5 transition-all duration-200 rounded-lg"
                                 aria-label="Help"
                                 data-onboarding="help-button"
                                 title="Global help (F1)"
                         >
-                                <HelpCircle className="h-4 w-4" />
+                                <HelpCircle className="h-[18px] w-[18px]" />
                         </button>
 
                         <Link
                                 to="/settings"
-                                className="p-1.5 text-muted-foreground hover:text-foreground transition-all duration-200 hover:scale-110 rounded"
+                                className="p-2 text-muted-foreground hover:text-cyan-300 hover:bg-white/5 transition-all duration-200 rounded-lg"
                                 aria-label="Settings"
                                 title="Settings"
                         >
-                                <Settings className="h-4 w-4" />
+                                <Settings className="h-[18px] w-[18px]" />
                         </Link>
 
+                        {/* Language selector */}
                         <div className="relative" ref={langRef}>
                                 <button
                                         onClick={() => setLangOpen(!langOpen)}
-                                        className="flex items-center gap-1 px-1.5 py-1 text-muted-foreground hover:text-foreground transition-all duration-200 hover:scale-105 text-xs rounded"
+                                        className="flex items-center gap-1.5 px-3 py-2 text-muted-foreground hover:text-cyan-300 hover:bg-white/5 transition-all duration-200 text-[13px] rounded-lg border border-white/10 font-medium"
                                         aria-label="Change language"
                                 >
                                         <Globe className="h-4 w-4" />
                                         {currentLanguage.toUpperCase()}
                                 </button>
                                 {langOpen && (
-                                        <div className="absolute right-0 top-full mt-1 bg-card backdrop-blur-sm border border-border/50 rounded shadow-lg z-50 min-w-[120px]">
+                                        <div className="absolute right-0 top-full mt-2 glass rounded-lg shadow-xl z-50 min-w-[120px] overflow-hidden">
                                                 {["en", "ar"].map((lang) => (
                                                         <button
                                                                 key={lang}
@@ -135,10 +138,10 @@ const TopBar: React.FC<TopBarProps> = ({
                                                                         onLanguageChange(lang);
                                                                         setLangOpen(false);
                                                                 }}
-                                                                className={`block w-full text-left px-3 py-1.5 text-xs transition-all duration-200 ${
+                                                                className={`block w-full text-left px-3 py-2.5 text-[13px] transition-all duration-200 ${
                                                                         currentLanguage === lang
-                                                                                ? "text-primary bg-primary/10"
-                                                                                : "text-foreground/90 hover:bg-secondary/50"
+                                                                                ? "text-cyan-300 bg-cyan-400/10"
+                                                                                : "text-foreground hover:bg-white/5"
                                                                 }`}
                                                         >
                                                                 {lang === "en" ? "English" : "العربية"}
@@ -148,7 +151,7 @@ const TopBar: React.FC<TopBarProps> = ({
                                 )}
                         </div>
 
-                        <div className="h-5 w-px bg-secondary/50" />
+                        <div className="h-5 w-px bg-white/10" />
 
                         <UserMenu />
                 </header>

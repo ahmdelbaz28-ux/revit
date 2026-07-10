@@ -1,4 +1,4 @@
-// NOSONAR
+
 import * as React from "react";
 import * as RechartsPrimitive from "recharts";
 
@@ -42,10 +42,10 @@ const ChartContainer = React.forwardRef<
 	}
 >(({ id, className, children, config, ...props }, ref) => {
 	const uniqueId = React.useId();
-	const chartId = `chart-${id || uniqueId.replace(/:/g, "")}`;  // NOSONAR - typescript:S7781
+	const chartId = `chart-${id || uniqueId.replace(/:/g, "")}`;
 
 	return (
-		<ChartContext.Provider value={{ config }}>  // NOSONAR — S6481: structure acceptable
+		<ChartContext.Provider value={{ config }}>
 			<div
 				data-chart={chartId}
 				ref={ref}

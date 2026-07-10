@@ -1,4 +1,4 @@
-// NOSONAR
+
 /**
  * GlobalHelpDrawer.tsx — Full help tree + user guide
  *
@@ -40,7 +40,7 @@ interface GlobalHelpDrawerProps {
 	initialTopicId?: HelpTopicId | null;
 }
 
-export function GlobalHelpDrawer({  // NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+export function GlobalHelpDrawer({
 	open,
 	onOpenChange,
 	initialTopicId,
@@ -276,7 +276,7 @@ export function GlobalHelpDrawer({  // NOSONAR — S3776: cognitive complexity i
 													: selectedTopic.warningsEn
 												).map((w, i) => (
 													<li
-														key={i}  // NOSONAR — S6479: array index key acceptable for static list
+														key={i}
 														className="text-sm text-amber-300 bg-amber-600/10 border border-amber-600/20 rounded p-2"
 													>
 														{w}

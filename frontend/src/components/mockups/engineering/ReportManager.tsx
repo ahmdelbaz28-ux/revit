@@ -1,4 +1,4 @@
-// NOSONAR
+
 import {
 	Calendar,
 	Check,
@@ -471,7 +471,7 @@ export function ReportManager() {
 									Report Identity
 								</h3>
 								<div className="space-y-1.5">
-									<label className="text-[10px] text-muted-foreground">  // NOSONAR — S6853: React import kept for JSX transform
+									<label className="text-[10px] text-muted-foreground">
 										Report Title
 									</label>
 									<Input
@@ -481,7 +481,7 @@ export function ReportManager() {
 								</div>
 								<div className="grid grid-cols-2 gap-3">
 									<div className="space-y-1.5">
-										<label className="text-[10px] text-muted-foreground">  // NOSONAR — S6853: React import kept for JSX transform
+										<label className="text-[10px] text-muted-foreground">
 											Report Number
 										</label>
 										<Input
@@ -490,7 +490,7 @@ export function ReportManager() {
 										/>
 									</div>
 									<div className="space-y-1.5">
-										<label className="text-[10px] text-muted-foreground">  // NOSONAR — S6853: React import kept for JSX transform
+										<label className="text-[10px] text-muted-foreground">
 											Revision
 										</label>
 										<div className="flex items-center">
@@ -515,7 +515,7 @@ export function ReportManager() {
 								</div>
 								<div className="grid grid-cols-2 gap-3">
 									<div className="space-y-1.5 relative">
-										<label className="text-[10px] text-muted-foreground">Date</label>  // NOSONAR — S6853: React import kept for JSX transform
+										<label className="text-[10px] text-muted-foreground">Date</label>
 										<Input
 											className="h-7 text-xs bg-background border-border text-foreground pl-7"
 											defaultValue="Nov 15, 2024"
@@ -523,8 +523,8 @@ export function ReportManager() {
 										<Calendar className="w-3 h-3 absolute left-2 top-7 text-muted-foreground" />
 									</div>
 									<div className="space-y-1.5">
-										<label className="text-[10px] text-muted-foreground">Status</label>  // NOSONAR — S6853: React import kept for JSX transform
-										<select className="h-7 w-full text-xs bg-background border border-border rounded text-foreground px-2 outline-none">  // NOSONAR - typescript:S6772
+										<label className="text-[10px] text-muted-foreground">Status</label>
+										<select className="h-7 w-full text-xs bg-background border border-border rounded text-foreground px-2 outline-none">
 											<option>Issued for Construction</option>
 											<option>For Review</option>
 											<option>Draft</option>
@@ -727,7 +727,7 @@ export function ReportManager() {
 										{ label: "Appendix B — Manufacturer Data", checked: false },
 									].map((item, i) => (
 										<div
-											key={i}  // NOSONAR — S6479: array index key acceptable for static list
+											key={i}
 											className="flex items-center gap-2 group hover:bg-muted/50 p-1 rounded -mx-1"
 										>
 											<GripVertical className="w-3.5 h-3.5 text-muted-foreground/70 cursor-grab opacity-0 group-hover:opacity-100" />
@@ -918,7 +918,7 @@ export function ReportManager() {
 									/>
 								</div>
 								<div className="space-y-1.5">
-									<label className="text-[10px] text-muted-foreground">  // NOSONAR — S6853: React import kept for JSX transform
+									<label className="text-[10px] text-muted-foreground">
 										Recipients
 									</label>
 									<div className="min-h-7 bg-background border border-border rounded p-1 flex flex-wrap gap-1">

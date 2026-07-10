@@ -1,4 +1,4 @@
-// NOSONAR
+
 import { useEffect, useMemo, useState } from "react";
 import {
 	getFallbackHelpTopic,
@@ -65,7 +65,7 @@ function isKnownCategory(
 }
 
 function getTopicForContext(
-	contextId: HelpTopicId | string | null | undefined,  // NOSONAR - typescript:S6571
+	contextId: HelpTopicId | string | null | undefined,
 	search?: string,
 ): HelpTopic | null {
 	const context = contextId ?? "";
@@ -81,13 +81,13 @@ function getTopicForContext(
 }
 
 export const openHelp = (
-	contextId?: HelpTopicId | string,  // NOSONAR - typescript:S6571
+	contextId?: HelpTopicId | string,
 	search = "",
 ): void => {
 	setHelpState({
 		isHelpOpen: true,
 		selectedTopic: getTopicForContext(contextId, search),
-		searchQuery: search,  // NOSONAR: S3923 reviewed — conditional logic is intentional
+		searchQuery: search,
 		category: "all",
 	});
 };

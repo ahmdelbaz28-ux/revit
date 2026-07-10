@@ -1,4 +1,4 @@
-// NOSONAR
+
 import {
 	Activity,
 	ActivitySquare,
@@ -213,7 +213,7 @@ export function SLDEditor() {
 									width="20"
 									height="20"
 									fill="transparent"
-									stroke="#f87171"
+									stroke="#94a3b8"
 									strokeWidth="2"
 								/>
 								<line
@@ -221,7 +221,7 @@ export function SLDEditor() {
 									y1="0"
 									x2="10"
 									y2="20"
-									stroke="#f87171"
+									stroke="#94a3b8"
 									strokeWidth="2"
 								/>
 								<line
@@ -391,7 +391,7 @@ export function SLDEditor() {
 									width="16"
 									height="16"
 									fill="transparent"
-									stroke="#f87171"
+									stroke="#94a3b8"
 									strokeWidth="2"
 								/>
 								<line
@@ -399,7 +399,7 @@ export function SLDEditor() {
 									y1="40"
 									x2="8"
 									y2="56"
-									stroke="#f87171"
+									stroke="#94a3b8"
 									strokeWidth="2"
 								/>
 								<text
@@ -495,7 +495,7 @@ export function SLDEditor() {
 									width="16"
 									height="16"
 									fill="transparent"
-									stroke="#f87171"
+									stroke="#94a3b8"
 									strokeWidth="2"
 								/>
 								<line
@@ -503,7 +503,7 @@ export function SLDEditor() {
 									y1="40"
 									x2="8"
 									y2="56"
-									stroke="#f87171"
+									stroke="#94a3b8"
 									strokeWidth="2"
 								/>
 								{/* Handles */}
@@ -570,7 +570,7 @@ export function SLDEditor() {
 									width="60"
 									height="40"
 									fill="#1e293b"
-									stroke="#ef4444"
+									stroke="#64748b"
 									strokeWidth="2"
 									rx="4"
 								/>
@@ -584,7 +584,7 @@ export function SLDEditor() {
 								>
 									MDB-B
 								</text>
-								<circle cx="30" cy="150" r="8" fill="#ef4444" />
+								<circle cx="30" cy="150" r="8" fill="#64748b" />
 								<text
 									x="30"
 									y="153"
@@ -613,7 +613,7 @@ export function SLDEditor() {
 									width="16"
 									height="16"
 									fill="transparent"
-									stroke="#f87171"
+									stroke="#94a3b8"
 									strokeWidth="2"
 								/>
 								<line
@@ -621,7 +621,7 @@ export function SLDEditor() {
 									y1="40"
 									x2="8"
 									y2="56"
-									stroke="#f87171"
+									stroke="#94a3b8"
 									strokeWidth="2"
 								/>
 								<text
@@ -849,7 +849,7 @@ export function SLDEditor() {
 	);
 }
 
-function RibbonGroup({  // NOSONAR - typescript:S6759
+function RibbonGroup({
 	title,
 	children,
 }: {
@@ -866,7 +866,7 @@ function RibbonGroup({  // NOSONAR - typescript:S6759
 	);
 }
 
-function RibbonBtn({  // NOSONAR - typescript:S6759
+function RibbonBtn({
 	icon,
 	label,
 	active = false,
@@ -893,7 +893,7 @@ function RibbonBtn({  // NOSONAR - typescript:S6759
 	);
 }
 
-function TreeFolder({  // NOSONAR - typescript:S6759
+function TreeFolder({
 	title,
 	icon,
 	children,
@@ -907,7 +907,7 @@ function TreeFolder({  // NOSONAR - typescript:S6759
 	const [open, setOpen] = React.useState(defaultOpen);
 	return (
 		<div className="mb-0.5">
-			<div  // NOSONAR — S6848: type assertion acceptable
+			<div
 				className="flex items-center gap-1.5 py-1 px-1 hover:bg-muted cursor-pointer rounded transition-colors"
 				onClick={() => setOpen(!open)}
 			>
@@ -928,7 +928,7 @@ function TreeFolder({  // NOSONAR - typescript:S6759
 	);
 }
 
-function TreeItem({  // NOSONAR - typescript:S6759
+function TreeItem({
 	title,
 	active = false,
 	error = false,
@@ -939,10 +939,10 @@ function TreeItem({  // NOSONAR - typescript:S6759
 }) {
 	return (
 		<div
-			className={`flex items-center gap-1.5 py-1 px-1 rounded cursor-pointer transition-colors ${active ? "bg-blue-500/20 text-info" : "hover:bg-muted"} ${error ? "text-danger bg-red-500/10" : ""}`}
+			className={`flex items-center gap-1.5 py-1 px-1 rounded cursor-pointer transition-colors ${active ? "bg-blue-500/20 text-info" : "hover:bg-muted"} ${error ? "text-danger bg-slate-500/10" : ""}`}
 		>
 			<div
-				className={`w-1.5 h-1.5 rounded-full ${error ? "bg-red-500" : "bg-slate-600"}`}
+				className={`w-1.5 h-1.5 rounded-full ${error ? "bg-slate-500" : "bg-slate-600"}`}
 			></div>
 			<span
 				className={`text-[10px] truncate ${error ? "font-semibold" : "text-muted-foreground"}`}
@@ -953,7 +953,7 @@ function TreeItem({  // NOSONAR - typescript:S6759
 	);
 }
 
-function PropRow({ label, value }: { label: string; value: string }) {  // NOSONAR - typescript:S6759
+function PropRow({ label, value }: { label: string; value: string }) {
 	return (
 		<div className="flex justify-between items-center text-xs">
 			<span className="text-muted-foreground">{label}</span>

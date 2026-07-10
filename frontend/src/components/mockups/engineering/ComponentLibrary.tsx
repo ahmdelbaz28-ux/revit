@@ -1,4 +1,4 @@
-// NOSONAR
+
 import {
 	ChevronDown,
 	ChevronRight,
@@ -157,7 +157,7 @@ export function ComponentLibrary() {
 					<ScrollArea className="flex-1 p-3">
 						<div className="space-y-1">
 							{categories.map((cat, i) => (
-								<div key={i} className="mb-2">  // NOSONAR — S6479: array index key acceptable for static list
+								<div key={i} className="mb-2">
 									<div className="flex items-center gap-1.5 py-1.5 px-2 rounded-md hover:bg-muted/50 cursor-pointer text-sm font-medium text-foreground">
 										{cat.open ? (
 											<ChevronDown className="h-3 w-3" />
@@ -169,7 +169,7 @@ export function ComponentLibrary() {
 									{cat.open && (
 										<div className="ml-5 pl-2 border-l border-border/50 flex flex-col gap-0.5 mt-1">
 											{cat.children.map((child) => (
-												<div  // NOSONAR — S6848: type assertion acceptable
+												<div
 													key={child}
 													className={`py-1.5 px-2 text-xs rounded-md cursor-pointer transition-colors ${activeCategory === child ? "bg-primary/20 text-primary font-medium" : "text-muted-foreground hover:text-foreground hover:bg-muted/30"}`}
 													onClick={() => setActiveCategory(child)}
@@ -219,7 +219,7 @@ export function ComponentLibrary() {
 					<ScrollArea className="flex-1 p-6">
 						<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pb-10">
 							{components.map((comp) => (
-								<div  // NOSONAR — S6848: type assertion acceptable
+								<div
 									key={comp.id}
 									className={`group bg-card border rounded-lg overflow-hidden transition-all hover:border-primary/50 hover:shadow-[0_0_15px_rgba(0,168,255,0.1)] cursor-pointer flex flex-col ${selectedComp === comp.id ? "border-primary shadow-[0_0_10px_rgba(0,168,255,0.2)]" : "border-border/60"}`}
 									onClick={() => setSelectedComp(comp.id)}
@@ -412,7 +412,7 @@ export function ComponentLibrary() {
 	);
 }
 
-function ToolBtn({  // NOSONAR - typescript:S6759
+function ToolBtn({
 	icon,
 	active = false,
 }: {
@@ -428,7 +428,7 @@ function ToolBtn({  // NOSONAR - typescript:S6759
 	);
 }
 
-function SpecRow({ label, value }: { label: string; value: string }) {  // NOSONAR - typescript:S6759
+function SpecRow({ label, value }: { label: string; value: string }) {
 	return (
 		<div className="flex justify-between items-center text-xs py-0.5">
 			<span className="text-muted-foreground">{label}</span>
@@ -439,7 +439,7 @@ function SpecRow({ label, value }: { label: string; value: string }) {  // NOSON
 	);
 }
 
-function AbstractSymbol({  // NOSONAR - typescript:S6759
+function AbstractSymbol({
 	id,
 	large = false,
 }: {
@@ -465,7 +465,7 @@ function AbstractSymbol({  // NOSONAR - typescript:S6759
 					<circle cx="30" cy="30" r="16" />
 					<path d="M14 30 L46 30 M30 14 L30 46" />
 				</>
-			) : id % 2 === 0 ? (  // NOSONAR — S3358: nested ternary acceptable in this localized context
+			) : id % 2 === 0 ? (
 				// Breaker symbol
 				<>
 					<path d="M30 10 L30 20 M30 40 L30 50" />

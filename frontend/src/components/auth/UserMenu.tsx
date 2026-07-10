@@ -25,7 +25,7 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 const ROLE_BADGE_COLORS: Record<string, string> = {
-	admin: "bg-red-500/15 text-red-300 border-danger/30",
+	admin: "bg-slate-500/15 text-slate-400 border-danger/30",
 	engineer: "bg-primary/15 text-orange-300 border-primary/30",
 	viewer: "bg-slate-500/15 text-foreground/90 border-border/30",
 };
@@ -85,7 +85,7 @@ export function UserMenu() {
 				<DropdownMenuSeparator />
 				<DropdownMenuItem
 					onClick={handleLogout}
-					className="text-danger focus:text-red-300 focus:bg-red-500/10 cursor-pointer"
+					className="text-danger focus:text-slate-400 focus:bg-slate-500/10 cursor-pointer"
 				>
 					<LogOut className="h-4 w-4 mr-2" />
 					Sign out

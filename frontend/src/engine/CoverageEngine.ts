@@ -1,4 +1,4 @@
-// NOSONAR
+
 /**
  * CoverageEngine.ts - NFPA 72 Coverage Calculation Engine
  * Calculates detector coverage per NFPA 72 requirements
@@ -107,9 +107,9 @@ export function calculateRoomCoverage(
 	const cols = Math.ceil(room.width / gridSize);
 	const rows = Math.ceil(room.length / gridSize);
 
-	const grid: boolean[][] = Array(rows)  // NOSONAR - typescript:S7723
+	const grid: boolean[][] = Array(rows)
 		.fill(null)
-		.map(() => Array(cols).fill(false));  // NOSONAR - typescript:S7723
+		.map(() => Array(cols).fill(false));
 
 	// Mark covered areas
 	detectors.forEach((detector) => {
@@ -168,7 +168,7 @@ export function calculateRoomCoverage(
 		roomId: room.id,
 		roomName: room.name,
 		detectorCount: detectors.length,
-		coveragePercentage: parseFloat(coveragePercentage.toFixed(2)),  // NOSONAR - typescript:S7773
+		coveragePercentage: parseFloat(coveragePercentage.toFixed(2)),
 		pass,
 		uncoveredAreas,
 		nfpaReference,
@@ -201,7 +201,7 @@ export function calculateCoverage(
 		summary: {
 			totalRooms,
 			totalDetectors,
-			coveragePercentage: parseFloat(overallCoverage.toFixed(2)),  // NOSONAR - typescript:S7773
+			coveragePercentage: parseFloat(overallCoverage.toFixed(2)),
 			passedRooms,
 			failedRooms,
 		},

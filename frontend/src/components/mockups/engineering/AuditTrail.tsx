@@ -1,4 +1,4 @@
-// NOSONAR
+
 import {
 	Activity,
 	AlertTriangle,
@@ -588,7 +588,7 @@ function LogRow({ time, user, action, type, msg, file, dev, isSystem }: any) {
 	);
 }
 
-function PropRow({ label, value }: { label: string; value: string }) {  // NOSONAR - typescript:S6759
+function PropRow({ label, value }: { label: string; value: string }) {
 	return (
 		<div className="flex justify-between items-center text-xs">
 			<span className="text-muted-foreground">{label}</span>

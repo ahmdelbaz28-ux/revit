@@ -1,62 +1,62 @@
-/* ── V223: Engineering type scale (IBM Plex Sans / Arial — AutoCAD style) ── */
+/* ── Inter type scale (clean, modern, professional) ── */
 
 h1 {
-	font-size: 1.125rem;
-	font-weight: 600;
-	letter-spacing: -0.01em;
-	color: var(--color-foreground);
+        font-size: 1.125rem;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+        color: var(--color-foreground);
 }
 
 h2 {
-	font-size: 1rem;
-	font-weight: 600;
-	color: var(--color-foreground);
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--color-foreground);
 }
 
 h3 {
-	font-size: 0.875rem;
-	font-weight: 600;
-	color: var(--color-foreground);
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--color-foreground);
 }
 
 h4 {
-	font-size: 0.875rem;
-	font-weight: 500;
-	color: var(--color-foreground);
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: var(--color-foreground);
 }
 
 h5 {
-	font-size: 0.75rem;
-	font-weight: 600;
-	color: var(--color-foreground);
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--color-foreground);
 }
 
 h6 {
-	font-size: 0.75rem;
-	font-weight: 500;
-	color: var(--color-muted-foreground);
+        font-size: 0.75rem;
+        font-weight: 500;
+        color: var(--color-muted-foreground);
 }
 
-/* Numeric data — IBM Plex Mono (clean, tabular, like AutoCAD coordinate display) */
+/* Numeric data — JetBrains Mono (clean, tabular) */
 .font-mono {
-	font-family: "IBM Plex Mono", "Courier New", ui-monospace, monospace;
+        font-family: "JetBrains Mono", "Courier New", ui-monospace, monospace;
 }
 
 .number-display {
-	font-family: "IBM Plex Mono", "Courier New", ui-monospace, monospace;
-	font-variant-numeric: tabular-nums;
+        font-family: "JetBrains Mono", "Courier New", ui-monospace, monospace;
+        font-variant-numeric: tabular-nums;
 }
 
 /* Status text — use CSS vars directly */
 .status-pass {
-	color: var(--color-success);
+        color: var(--color-success);
 }
 .status-warning {
-	color: var(--color-warning);
+        color: var(--color-warning);
 }
 .status-fail {
-	color: var(--color-danger);
+        color: var(--color-danger);
 }
 .status-info {
-	color: var(--color-info);
+        color: var(--color-info);
 }

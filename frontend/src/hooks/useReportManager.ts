@@ -1,4 +1,4 @@
-// NOSONAR
+
 /**
  * useReportManager.ts - Professional Report Generation Engine
  * 15 report templates with multi-format export (PDF, Excel, CSV, JSON)
@@ -593,7 +593,7 @@ export function useReportManager() {
 			);
 
 			return {
-				id: `RPT_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,  // NOSONAR — safe in UI context
+				id: `RPT_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
 				type,
 				name: template.name,
 				timestamp: new Date(),
@@ -648,7 +648,7 @@ export function useReportManager() {
 	};
 }
 
-function generateReportSections(  // NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+function generateReportSections(
 	type: ReportType,
 	devices: DeviceData[],
 	connections: ConnectionData[],
@@ -820,9 +820,9 @@ function generateReportSections(  // NOSONAR — S3776: cognitive complexity is 
 							Math.sqrt(incidentEnergy * 100).toFixed(0),
 							incidentEnergy > 40
 								? "4"
-								: incidentEnergy > 12  // NOSONAR — S3358: nested ternary acceptable in this localized context
+								: incidentEnergy > 12
 									? "3"
-									: incidentEnergy > 8  // NOSONAR — S3358: nested ternary acceptable in this localized context
+									: incidentEnergy > 8
 										? "2"
 										: "1",
 						]),
@@ -873,9 +873,9 @@ function generateReportSections(  // NOSONAR — S3776: cognitive complexity is 
 			const conduitData = connections.slice(0, 10).map((c, i) => {
 				// Estimate fill from cable size string (e.g., "2.5mm²", "4mm²", "1.5mm²")
 				// Default: 1 cable per conduit for estimation, NEC Table 4 EMT 25mm = 366mm²
-				const cableAreaMatch = c.cableSize?.match(/([\d.]+)/);  // NOSONAR - typescript:S6594
+				const cableAreaMatch = c.cableSize?.match(/([\d.]+)/);
 				const cableAreaMm2 = cableAreaMatch
-					? parseFloat(cableAreaMatch[1])  // NOSONAR - typescript:S7773
+					? parseFloat(cableAreaMatch[1])
 					: 2.5;
 				const conduitInternalArea = 366; // EMT 25mm per NEC Table 4
 				const numCables = 2; // Assume 2 cables per conduit for estimation
@@ -967,7 +967,7 @@ function generateReportSections(  // NOSONAR — S3776: cognitive complexity is 
 		case "BOM_SUMMARY": {
 			// SAFETY NOTE: Unit costs are estimated averages for fire alarm components.
 			// These are NOT procurement prices — always verify with suppliers.
-			// Using deterministic estimates per device type to avoid Math.random() fabrication.  // NOSONAR — safe in UI context
+			// Using deterministic estimates per device type to avoid Math.random() fabrication.
 			const COST_ESTIMATES: Record<string, number> = {
 				smoke_detector: 85,
 				heat_detector: 65,
@@ -993,7 +993,7 @@ function generateReportSections(  // NOSONAR — S3776: cognitive complexity is 
 						COST_ESTIMATES[d.type.toLowerCase()] ||
 						(d.category === "FIRE_ALARM"
 							? 100
-							: d.category === "DATA_NETWORK"  // NOSONAR — S3358: nested ternary acceptable in this localized context
+							: d.category === "DATA_NETWORK"
 								? 200
 								: 75);
 					byType[d.type] = { count: 0, unitCost: estimatedCost };
@@ -1040,7 +1040,7 @@ function generateReportSections(  // NOSONAR — S3776: cognitive complexity is 
 				for (let j = i + 1; j < devices.length; j++) {
 					const dx = devices[i].x - devices[j].x;
 					const dy = devices[i].y - devices[j].y;
-					const dist = Math.sqrt(dx * dx + dy * dy);  // NOSONAR - typescript:S7769
+					const dist = Math.sqrt(dx * dx + dy * dy);
 					if (dist < clearance) {
 						clashes.push({
 							id: `CLASH-${clashes.length + 1}`,
@@ -1409,28 +1409,28 @@ function generateRecommendations(
 	const recs: string[] = [];
 	if (type === "LOAD_CALCULATION") {
 		recs.push("Consider load diversity for more accurate demand calculation.");
-		recs.push("Verify future expansion capacity in main distribution panel.");  // NOSONAR - typescript:S7778
+		recs.push("Verify future expansion capacity in main distribution panel.");
 	}
 	if (type === "VOLTAGE_DROP") {
 		recs.push("Increase conductor size for runs exceeding 3% voltage drop.");
-		recs.push("Consider relocating loads closer to source for long runs.");  // NOSONAR - typescript:S7778
+		recs.push("Consider relocating loads closer to source for long runs.");
 	}
 	if (type === "BOM_SUMMARY") {
 		recs.push("Include 10-15% spare capacity for future expansion.");
-		recs.push("Verify lead times for specialized equipment.");  // NOSONAR - typescript:S7778
+		recs.push("Verify lead times for specialized equipment.");
 	}
 	if (type === "CODE_COMPLIANCE") {
 		recs.push(
 			"Schedule review with local authority having jurisdiction (AHJ).",
 		);
-		recs.push("Document all deviations and obtain written approvals.");  // NOSONAR - typescript:S7778
+		recs.push("Document all deviations and obtain written approvals.");
 	}
 	if (recs.length === 0)
 		recs.push("Review all findings with qualified engineering staff.");
 	return recs;
 }
 
-export function exportReport(  // NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+export function exportReport(
 	report: GeneratedReport,
 	format: ExportFormat,
 ): void {
@@ -1480,7 +1480,7 @@ export function exportReport(  // NOSONAR — S3776: cognitive complexity is inh
 		case "html": {
 			let html = `<!DOCTYPE html><html><head><title>${report.name}</title>`;
 			html +=
-				"<style>body{font-family:Arial,sans-serif;margin:40px;color:#333}table{border-collapse:collapse;width:100%;margin:20px 0}th,td{border:1px solid #ddd;padding:8px;text-align:left}th{background:#f5f5f5}h1{color:#1a56db}h2{color:#333;margin-top:30px}.warning{color:#dc2626}.summary{background:#f0f9ff;padding:20px;border-radius:8px}</style>";
+				"<style>body{font-family:Arial,sans-serif;margin:40px;color:#333}table{border-collapse:collapse;width:100%;margin:20px 0}th,td{border:1px solid #ddd;padding:8px;text-align:left}th{background:#f5f5f5}h1{color:#1a56db}h2{color:#333;margin-top:30px}.warning{color:#475569}.summary{background:#f0f9ff;padding:20px;border-radius:8px}</style>";
 			html += "</head><body>";
 			html += `<h1>${report.name}</h1>`;
 			html += `<p>Generated: ${report.timestamp.toLocaleString()}</p>`;
@@ -1559,7 +1559,7 @@ export function exportReport(  // NOSONAR — S3776: cognitive complexity is inh
 		case "pdf": {
 			let html = `<!DOCTYPE html><html><head><title>${report.name}</title>`;
 			html +=
-				"<style>@media print{body{margin:0}}body{font-family:Arial,sans-serif;margin:40px;color:#333}table{border-collapse:collapse;width:100%;margin:20px 0}th,td{border:1px solid #ddd;padding:8px}th{background:#f5f5f5}h1{color:#1a56db;border-bottom:2px solid #1a56db;padding-bottom:10px}h2{color:#333;margin-top:30px;page-break-after:avoid}.warning{color:#dc2626}.summary{background:#f0f9ff;padding:20px;border-radius:8px;margin:20px 0}.page-break{page-break-before:always}</style>";
+				"<style>@media print{body{margin:0}}body{font-family:Arial,sans-serif;margin:40px;color:#333}table{border-collapse:collapse;width:100%;margin:20px 0}th,td{border:1px solid #ddd;padding:8px}th{background:#f5f5f5}h1{color:#1a56db;border-bottom:2px solid #1a56db;padding-bottom:10px}h2{color:#333;margin-top:30px;page-break-after:avoid}.warning{color:#475569}.summary{background:#f0f9ff;padding:20px;border-radius:8px;margin:20px 0}.page-break{page-break-before:always}</style>";
 			html += "</head><body>";
 			html += `<h1>${report.name}</h1>`;
 			html += `<p>Generated: ${report.timestamp.toLocaleString()}</p>`;

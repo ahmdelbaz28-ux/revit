@@ -1,4 +1,4 @@
-// NOSONAR
+
 "use client";
 
 import { cva, type VariantProps } from "class-variance-authority";
@@ -84,7 +84,7 @@ function Field({
 	...props
 }: React.ComponentProps<"div"> & VariantProps<typeof fieldVariants>) {
 	return (
-		<div  // NOSONAR — S6819: non-null assertion acceptable
+		<div
 			role="group"
 			data-slot="field"
 			data-orientation={orientation}

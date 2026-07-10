@@ -1,4 +1,4 @@
-// NOSONAR
+
 /**
  * ContextualHelpButton.tsx — Per-page help button
  *
@@ -21,12 +21,12 @@ interface ContextualHelpButtonProps {
         label?: string;
 }
 
-export function ContextualHelpButton({  // NOSONAR - typescript:S6759
+export function ContextualHelpButton({
         route,
         label,
 }: ContextualHelpButtonProps) {
         const location = useLocation();
-        const { t, i18n } = useTranslation(); // NOSONAR — acceptable in this context
+        const { t, i18n } = useTranslation();
         const currentRoute = route || location.pathname;
 
         // Find the best matching help topic for the current route
@@ -72,7 +72,7 @@ export function ContextualHelpButton({  // NOSONAR - typescript:S6759
                                 {steps.length > 0 && (
                                         <ol className="text-xs text-muted-foreground list-decimal list-inside space-y-1">
                                                 {steps.slice(0, 5).map((step, i) => (
-                                                        <li key={i}>{step}</li>  // NOSONAR — S6479: array index key acceptable for static list
+                                                        <li key={i}>{step}</li>
                                                 ))}
                                         </ol>
                                 )}

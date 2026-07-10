@@ -1,4 +1,4 @@
-// NOSONAR
+
 import { Activity, AlertTriangle, CheckCircle, Wrench } from "lucide-react";
 import React from "react";
 import { Button } from "@/components/ui/button";
@@ -104,13 +104,13 @@ export function SystemAnalyzer() {
 							key={issue.id}
 							className={`p-3 rounded-lg border ${
 								issue.type === "critical"
-									? "bg-red-900/20 border-red-500/50"
+									? "bg-red-900/20 border-slate-500/50"
 									: "bg-amber-900/20 border-amber-500/50"
 							}`}
 						>
 							<div className="flex items-start gap-3">
 								<AlertTriangle
-									className={`h-5 w-5 shrink-0 ${issue.type === "critical" ? "text-red-500" : "text-amber-500"}`}
+									className={`h-5 w-5 shrink-0 ${issue.type === "critical" ? "text-slate-400" : "text-amber-500"}`}
 								/>
 								<div className="flex-1">
 									<h3 className="text-sm font-bold text-foreground">

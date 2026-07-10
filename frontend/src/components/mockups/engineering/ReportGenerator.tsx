@@ -1,4 +1,4 @@
-// NOSONAR
+
 import {
 	AlertCircle,
 	Check,
@@ -24,7 +24,7 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export function ReportGenerator() {
-	const [progress, _setProgress] = useState(65);  // NOSONAR - typescript:S6754
+	const [progress, _setProgress] = useState(65);
 
 	return (
 		<div className="flex flex-col h-screen w-screen overflow-hidden bg-background text-foreground dark font-sans">
@@ -562,7 +562,7 @@ export function ReportGenerator() {
 								</div>
 
 								<div className="space-y-1.5">
-									<label className="text-xs font-medium text-foreground/90">  // NOSONAR — S6853: React import kept for JSX transform
+									<label className="text-xs font-medium text-foreground/90">
 										Standard / Template
 									</label>
 									<div className="grid grid-cols-3 gap-1">
@@ -579,7 +579,7 @@ export function ReportGenerator() {
 								</div>
 
 								<div className="space-y-1.5">
-									<label className="text-xs font-medium text-foreground/90">  // NOSONAR — S6853: React import kept for JSX transform
+									<label className="text-xs font-medium text-foreground/90">
 										Company Logo
 									</label>
 									<div className="border border-dashed border-border rounded-md p-3 flex flex-col items-center justify-center bg-card/50 cursor-pointer hover:bg-card">
@@ -592,7 +592,7 @@ export function ReportGenerator() {
 
 								<div className="grid grid-cols-2 gap-3">
 									<div className="space-y-1.5">
-										<label className="text-xs font-medium text-foreground/90">  // NOSONAR — S6853: React import kept for JSX transform
+										<label className="text-xs font-medium text-foreground/90">
 											Language
 										</label>
 										<div className="flex items-center justify-between bg-background border border-border rounded px-2 py-1.5 cursor-pointer">
@@ -601,7 +601,7 @@ export function ReportGenerator() {
 										</div>
 									</div>
 									<div className="space-y-1.5">
-										<label className="text-xs font-medium text-foreground/90">  // NOSONAR — S6853: React import kept for JSX transform
+										<label className="text-xs font-medium text-foreground/90">
 											Page Size
 										</label>
 										<div className="flex items-center justify-between bg-background border border-border rounded px-2 py-1.5 cursor-pointer">
@@ -612,29 +612,29 @@ export function ReportGenerator() {
 								</div>
 
 								<div className="space-y-2 pt-2">
-									<label className="text-xs font-medium text-foreground/90">  // NOSONAR — S6853: React import kept for JSX transform
+									<label className="text-xs font-medium text-foreground/90">
 										Include Sections
 									</label>
 									<div className="space-y-2">
-										<label className="flex items-center gap-2 cursor-pointer">  // NOSONAR — S6853: React import kept for JSX transform
+										<label className="flex items-center gap-2 cursor-pointer">
 											<div className="w-3.5 h-3.5 bg-primary rounded-[2px] flex items-center justify-center">
 												<Check className="h-2.5 w-2.5 text-primary-foreground" />
 											</div>
 											<span className="text-xs">Executive Summary</span>
 										</label>
-										<label className="flex items-center gap-2 cursor-pointer">  // NOSONAR — S6853: React import kept for JSX transform
+										<label className="flex items-center gap-2 cursor-pointer">
 											<div className="w-3.5 h-3.5 bg-primary rounded-[2px] flex items-center justify-center">
 												<Check className="h-2.5 w-2.5 text-primary-foreground" />
 											</div>
 											<span className="text-xs">Detailed Calculations</span>
 										</label>
-										<label className="flex items-center gap-2 cursor-pointer">  // NOSONAR — S6853: React import kept for JSX transform
+										<label className="flex items-center gap-2 cursor-pointer">
 											<div className="w-3.5 h-3.5 bg-primary rounded-[2px] flex items-center justify-center">
 												<Check className="h-2.5 w-2.5 text-primary-foreground" />
 											</div>
 											<span className="text-xs">References & Codes</span>
 										</label>
-										<label className="flex items-center gap-2 cursor-pointer">  // NOSONAR — S6853: React import kept for JSX transform
+										<label className="flex items-center gap-2 cursor-pointer">
 											<div className="w-3.5 h-3.5 border border-border rounded-[2px]"></div>
 											<span className="text-xs">Appendix</span>
 										</label>
@@ -709,7 +709,7 @@ export function ReportGenerator() {
 										</div>
 									</div>
 									<div className="space-y-1.5">
-										<label className="text-[10px] text-muted-foreground">  // NOSONAR — S6853: React import kept for JSX transform
+										<label className="text-[10px] text-muted-foreground">
 											Stamp
 										</label>
 										<div className="flex items-center justify-between bg-background border border-border rounded px-2 py-1.5 cursor-pointer">
@@ -795,7 +795,7 @@ export function ReportGenerator() {
 	);
 }
 
-function TreeFolder({  // NOSONAR - typescript:S6759
+function TreeFolder({
 	title,
 	children,
 	defaultOpen = false,
@@ -807,7 +807,7 @@ function TreeFolder({  // NOSONAR - typescript:S6759
 	const [open, setOpen] = useState(defaultOpen);
 	return (
 		<div className="mb-1">
-			<div  // NOSONAR — S6848: type assertion acceptable
+			<div
 				className="flex items-center gap-1.5 py-1.5 px-2 hover:bg-muted cursor-pointer rounded-md transition-colors"
 				onClick={() => setOpen(!open)}
 			>
@@ -825,7 +825,7 @@ function TreeFolder({  // NOSONAR - typescript:S6759
 	);
 }
 
-function TreeItem({  // NOSONAR - typescript:S6759
+function TreeItem({
 	title,
 	active = false,
 }: {

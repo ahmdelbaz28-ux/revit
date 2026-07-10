@@ -1,4 +1,4 @@
-// NOSONAR
+
 import { useEffect } from "react";
 
 interface AccessibleToastProps {
@@ -8,7 +8,7 @@ interface AccessibleToastProps {
 	onClose: () => void;
 }
 
-export function AccessibleToast({  // NOSONAR - typescript:S6759
+export function AccessibleToast({
 	message,
 	type = "info",
 	duration = 5000,

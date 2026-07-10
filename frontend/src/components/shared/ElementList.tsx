@@ -1,4 +1,4 @@
-// NOSONAR
+
 /**
  * ElementList.tsx — Sortable, filterable element table
  */
@@ -33,7 +33,7 @@ interface ElementListProps {
         onDelete?: (element: ElementItem) => void;
 }
 
-export function ElementList({  // NOSONAR - typescript:S6759
+export function ElementList({
         elements,
         loading,
         onView,
@@ -62,8 +62,8 @@ export function ElementList({  // NOSONAR - typescript:S6759
         if (loading) {
                 return (
                         <div className="space-y-2">
-                                {[...Array(5)].map((_, i) => (  // NOSONAR - typescript:S7723
-                                        <div key={i} className="h-12 bg-card rounded animate-pulse" />  // NOSONAR — S6479: array index key acceptable for static list
+                                {[...Array(5)].map((_, i) => (
+                                        <div key={i} className="h-12 bg-card rounded animate-pulse" />
                                 ))}
                         </div>
                 );
@@ -153,7 +153,7 @@ export function ElementList({  // NOSONAR - typescript:S6759
                                                                                                         size="sm"
                                                                                                         variant="ghost"
                                                                                                         onClick={() => onDelete(el)}
-                                                                                                        className="text-danger hover:text-red-300"
+                                                                                                        className="text-danger hover:text-slate-400"
                                                                                                 >
                                                                                                         <Trash2 className="h-4 w-4" />
                                                                                                 </Button>

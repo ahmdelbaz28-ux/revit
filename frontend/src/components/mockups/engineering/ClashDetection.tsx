@@ -1,4 +1,4 @@
-// NOSONAR
+
 import {
 	AlertCircle,
 	AlertTriangle,
@@ -161,7 +161,7 @@ export function ClashDetection() {
 					<ScrollArea className="flex-1">
 						<div className="p-2 space-y-2">
 							{clashes.map((clash) => (
-								<div  // NOSONAR — S6848: type assertion acceptable
+								<div
 									key={clash.id}
 									className={`p-3 rounded-md border cursor-pointer transition-all hover:bg-muted/50 ${activeClash === clash.id ? "bg-primary/10 border-primary/50" : "bg-card border-border/50"}`}
 									onClick={() => setActiveClash(clash.id)}
@@ -243,16 +243,16 @@ export function ClashDetection() {
 
 							{/* Clash Highlight */}
 							<div
-								className="absolute top-[170px] left-[270px] w-[120px] h-[100px] border-4 border-red-500 bg-red-500/20 rounded-full animate-pulse shadow-[0_0_30px_rgba(239,68,68,0.6)]"
+								className="absolute top-[170px] left-[270px] w-[120px] h-[100px] border-4 border-slate-500 bg-slate-500/20 rounded-full animate-pulse shadow-[0_0_30px_rgba(100, 116, 139,0.6)]"
 								style={{ transform: "translateZ(140px)" }}
 							></div>
 							<div
-								className="absolute top-[220px] left-[330px] w-2 h-2 bg-red-400 rounded-full"
+								className="absolute top-[220px] left-[330px] w-2 h-2 bg-slate-500 rounded-full"
 								style={{
 									transform: "translateZ(180px) rotateX(-60deg) rotateZ(45deg)",
 								}}
 							>
-								<div className="absolute -top-12 -left-6 bg-red-500 text-white text-[10px] px-2 py-1 rounded whitespace-nowrap font-mono">
+								<div className="absolute -top-12 -left-6 bg-slate-500 text-white text-[10px] px-2 py-1 rounded whitespace-nowrap font-mono">
 									CLH-014
 								</div>
 							</div>
@@ -481,10 +481,10 @@ export function ClashDetection() {
 	);
 }
 
-function SeverityBadge({ severity }: { severity: string }) {  // NOSONAR - typescript:S6759
+function SeverityBadge({ severity }: { severity: string }) {
 	let color = "bg-yellow-500/20 text-yellow-500 border-yellow-500/30";
 	if (severity === "Critical")
-		color = "bg-red-500/20 text-danger border-danger/30";
+		color = "bg-slate-500/20 text-danger border-danger/30";
 	if (severity === "Major")
 		color = "bg-primary/20 text-primary border-primary/30";
 
@@ -498,7 +498,7 @@ function SeverityBadge({ severity }: { severity: string }) {  // NOSONAR - types
 	);
 }
 
-function StatusIcon({ status }: { status: string }) {  // NOSONAR - typescript:S6759
+function StatusIcon({ status }: { status: string }) {
 	if (status === "Resolved")
 		return <CheckCircle2 className="h-4 w-4 text-emerald-500" />;
 	if (status === "Accepted")
@@ -506,7 +506,7 @@ function StatusIcon({ status }: { status: string }) {  // NOSONAR - typescript:S
 	return <AlertCircle className="h-4 w-4 text-muted-foreground" />;
 }
 
-function ToolBtn({  // NOSONAR - typescript:S6759
+function ToolBtn({
 	icon,
 	active = false,
 }: {
@@ -534,7 +534,7 @@ function Zap(props: any) {
 			stroke="currentColor"
 			strokeWidth="2"
 			strokeLinecap="round"
-			strokeLinelinejoin="round"  // NOSONAR — S6747: JSX acceptable
+			strokeLinelinejoin="round"
 			{...props}
 		>
 			<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>

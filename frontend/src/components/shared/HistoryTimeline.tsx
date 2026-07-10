@@ -1,4 +1,4 @@
-// NOSONAR
+
 /**
  * HistoryTimeline.tsx — Timeline view for conversion history
  */
@@ -54,7 +54,7 @@ export function HistoryTimeline() {
         const statusColors: Record<string, string> = {
                 success: "bg-emerald-500",
                 partial: "bg-amber-500",
-                failed: "bg-red-500",
+                failed: "bg-slate-500",
         };
 
         return (
@@ -68,11 +68,11 @@ export function HistoryTimeline() {
                         <CardContent>
                                 {loading ? (
                                         <div className="space-y-3">
-                                                {[...Array(3)].map((_, i) => (  // NOSONAR - typescript:S7723
-                                                        <Skeleton key={i} className="h-16 w-full bg-secondary" />  // NOSONAR — S6479: array index key acceptable for static list
+                                                {[...Array(3)].map((_, i) => (
+                                                        <Skeleton key={i} className="h-16 w-full bg-secondary" />
                                                 ))}
                                         </div>
-                                ) : versions.length === 0 ? (  // NOSONAR — S3358: nested ternary acceptable in this localized context
+                                ) : versions.length === 0 ? (
                                         <p className="text-center text-muted-foreground py-8">
                                                 No conversion history available
                                         </p>

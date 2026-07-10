@@ -1,4 +1,4 @@
-// NOSONAR
+
 import { Activity, Factory, MapPin, ShieldAlert } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -73,7 +73,7 @@ export function RiskAssessment() {
 			</h2>
 
 			<div className="space-y-2">
-				<label className="text-xs font-bold text-muted-foreground">  // NOSONAR — S6853: React import kept for JSX transform
+				<label className="text-xs font-bold text-muted-foreground">
 					Project Location Type
 				</label>
 				<Select onValueChange={(v) => setZone(v as ZoneType)}>
@@ -107,7 +107,7 @@ export function RiskAssessment() {
 						Applicable Codes & Actions
 					</div>
 					{rules.map((rule, idx) => (
-						<Card key={idx} className="bg-orange-950/20 border-primary/30">  // NOSONAR — S6479: array index key acceptable for static list
+						<Card key={idx} className="bg-orange-950/20 border-primary/30">
 							<CardContent className="p-3 space-y-2">
 								<div className="flex justify-between items-center">
 									<span className="text-xs font-mono bg-primary/20 text-orange-300 px-2 py-0.5 rounded">

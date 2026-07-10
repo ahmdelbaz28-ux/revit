@@ -1,4 +1,4 @@
-// NOSONAR
+
 import DxfParser from "dxf-parser";
 import { saveAs } from "file-saver";
 import { AlertCircle, Download, Upload } from "lucide-react";
@@ -26,12 +26,12 @@ export function ImportExportManager() {
                 if (!file) return;
 
                 const reader = new FileReader();
-                reader.onload = (event) => {  // NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+                reader.onload = (event) => {
                         try {
                                 const parser = new DxfParser();
                                 const result = event.target?.result;
                                 if (typeof result !== "string") {
-                                        throw new Error("Invalid file content");  // NOSONAR - typescript:S7786
+                                        throw new Error("Invalid file content");
                                 }
                                 const dxfData = parser.parseSync(result);
 
@@ -191,7 +191,7 @@ export function ImportExportManager() {
                                 alert("Failed to parse DXF file. Ensure it is a valid ASCII DXF.");
                         }
                 };
-                reader.readAsText(file);  // NOSONAR - typescript:S7756
+                reader.readAsText(file);
                 // Reset input
                 if (fileInputRef.current) fileInputRef.current.value = "";
         };

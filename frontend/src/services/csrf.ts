@@ -1,4 +1,4 @@
-// NOSONAR
+
 /**
  * csrf.ts — CSRF token manager (Double Submit Cookie pattern).
  *
@@ -34,8 +34,8 @@ let fetchPromise: Promise<string | null> | null = null;
  */
 function readCookieToken(): string | null {
         if (typeof document === "undefined") return null;
-        const match = document.cookie.match(  // NOSONAR - typescript:S6594
-                new RegExp(`(?:^|;\\s*)${CSRF_COOKIE_NAME}=([^;]+)`),  // NOSONAR - typescript:S7780
+        const match = document.cookie.match(
+                new RegExp(`(?:^|;\\s*)${CSRF_COOKIE_NAME}=([^;]+)`),
         );
         return match ? decodeURIComponent(match[1]) : null;
 }

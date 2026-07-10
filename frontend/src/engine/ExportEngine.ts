@@ -1,4 +1,4 @@
-// NOSONAR
+
 /**
  * ExportEngine.ts - Professional Export Functions
  * Generates industry-standard Excel and DXF files
@@ -468,9 +468,9 @@ export function exportToPdfReport(data: PdfReportData): string {
   <h2>Engineering Calculations</h2>
   <table>
     <tr><th>Parameter</th><th>Value</th></tr>
-    ${data.calculations.voltageDrop !== undefined ? `<tr><td>Voltage Drop</td><td>${data.calculations.voltageDrop}%</td></tr>` : ""}  // NOSONAR — S3358: nested ternary acceptable in this localized context
-    ${data.calculations.shortCircuit !== undefined ? `<tr><td>Short Circuit Current</td><td>${data.calculations.shortCircuit} kA</td></tr>` : ""}  // NOSONAR — S3358: nested ternary acceptable in this localized context
-    ${data.calculations.cableSize !== undefined ? `<tr><td>Recommended Cable Size</td><td>${data.calculations.cableSize} mm²</td></tr>` : ""}  // NOSONAR — S3358: nested ternary acceptable in this localized context
+    ${data.calculations.voltageDrop !== undefined ? `<tr><td>Voltage Drop</td><td>${data.calculations.voltageDrop}%</td></tr>` : ""}
+    ${data.calculations.shortCircuit !== undefined ? `<tr><td>Short Circuit Current</td><td>${data.calculations.shortCircuit} kA</td></tr>` : ""}
+    ${data.calculations.cableSize !== undefined ? `<tr><td>Recommended Cable Size</td><td>${data.calculations.cableSize} mm²</td></tr>` : ""}
   </table>
   `
 			: ""

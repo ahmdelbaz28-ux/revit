@@ -1,4 +1,4 @@
-// NOSONAR
+
 /**
  * FileUploader.tsx — Drag & Drop file uploader for DWG/RVT files
  */
@@ -15,7 +15,7 @@ interface FileUploaderProps {
 	maxSize?: number; // MB
 }
 
-export function FileUploader({  // NOSONAR - typescript:S6759
+export function FileUploader({
 	accept = ".dwg,.dxf,.rvt",
 	label = "Upload File",
 	onUpload,
@@ -66,7 +66,7 @@ export function FileUploader({  // NOSONAR - typescript:S6759
 	return (
 		<div className="space-y-3">
 			<label className="text-sm font-medium text-foreground/90">{label}</label>
-			<div  // NOSONAR — S6819: non-null assertion acceptable
+			<div
 				className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer ${
 					dragging
 						? "border-primary bg-primary/10"

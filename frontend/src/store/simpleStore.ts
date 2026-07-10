@@ -1,4 +1,4 @@
-// NOSONAR
+
 import { useEffect, useRef, useState } from "react";
 
 // --- Types ---
@@ -70,9 +70,9 @@ export interface AppState {
 	canvasElements: CanvasElement[];
 	helpOpen: boolean;
 	eventLogs: LogEntry[];
-	dataMode: "live" | "simulation" | "demo" | "mock";  // NOSONAR - typescript:S4323
+	dataMode: "live" | "simulation" | "demo" | "mock";
 	liveData: Record<string, unknown>;
-	connectionStatus: "connected" | "disconnected" | "connecting";  // NOSONAR - typescript:S4323
+	connectionStatus: "connected" | "disconnected" | "connecting";
 	voiceActive: boolean;
 	faults: Array<{ id: string; type: string; timestamp: number }>;
 	setDataMode: (mode: "live" | "simulation" | "demo" | "mock") => void;

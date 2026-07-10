@@ -1,4 +1,4 @@
-// NOSONAR
+
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -92,7 +92,7 @@ function Connections() {
 
 			{/* Error */}
 			{error && (
-				<div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
+				<div className="bg-slate-500/10 border border-slate-500/20 rounded-lg p-4">
 					<p className="text-danger text-sm">
 						{t("connectionsPage.failedToLoad")}
 					</p>
@@ -266,7 +266,7 @@ function Connections() {
 							<button
 								onClick={() => deleteMutation.mutate(deleteTarget)}
 								disabled={deleteMutation.isPending}
-								className="px-4 py-2 bg-danger hover:bg-red-500 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
+								className="px-4 py-2 bg-danger hover:bg-slate-500 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
 							>
 								{deleteMutation.isPending
 									? t("common.deleting")
@@ -282,7 +282,7 @@ function Connections() {
 
 // ===== Create Connection Modal =====
 
-function CreateConnectionModal({  // NOSONAR - typescript:S6759
+function CreateConnectionModal({
 	onClose,
 	onSuccess,
 }: {
@@ -316,7 +316,7 @@ function CreateConnectionModal({  // NOSONAR - typescript:S6759
 				</h3>
 
 				{createMutation.isError && (
-					<div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 mb-4">
+					<div className="bg-slate-500/10 border border-slate-500/20 rounded-lg p-3 mb-4">
 						<p className="text-danger text-sm">
 							{createMutation.error instanceof Error
 								? createMutation.error.message

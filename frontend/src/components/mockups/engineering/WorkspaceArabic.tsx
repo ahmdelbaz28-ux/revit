@@ -1,4 +1,4 @@
-// NOSONAR
+
 import {
 	Activity,
 	ArrowRight,
@@ -206,7 +206,7 @@ export function WorkspaceArabic() {
 							"BIM-Model.rvt",
 							"Load-Calc.xlsx",
 						].map((file) => (
-							<div  // NOSONAR — S6848: type assertion acceptable
+							<div
 								key={file}
 								className={`px-4 py-2 text-xs border-r flex items-center gap-2 cursor-pointer ${activeFile === file ? "bg-[#0f1115] text-primary border-t-2 border-t-primary" : "text-muted-foreground hover:bg-muted"}`}
 								onClick={() => setActiveFile(file)} onKeyDown={(e) => { if (e.key === "Enter") (() => setActiveFile(file))(); }}							>
@@ -240,7 +240,7 @@ export function WorkspaceArabic() {
 							>
 								{Array.from({ length: 40 }).map((_, i) => (
 									<div
-										key={i}  // NOSONAR — S6479: array index key acceptable for static list
+										key={i}
 										className="absolute border-l border-muted-foreground/30 h-full"
 										style={{ left: `${i * 50}px` }}
 									></div>
@@ -257,7 +257,7 @@ export function WorkspaceArabic() {
 							>
 								{Array.from({ length: 20 }).map((_, i) => (
 									<div
-										key={i}  // NOSONAR — S6479: array index key acceptable for static list
+										key={i}
 										className="absolute border-t border-muted-foreground/30 w-full"
 										style={{ top: `${i * 50}px` }}
 									></div>
@@ -468,18 +468,18 @@ export function WorkspaceArabic() {
 				className={`flex flex-col border-t bg-card/95 backdrop-blur-md transition-all duration-300 ease-in-out shrink-0 overflow-hidden ${isErrorLogExpanded ? "h-48" : "h-7"}`}
 			>
 				{/* Header row (always visible) */}
-				<div  // NOSONAR — S6848: type assertion acceptable
+				<div
 					className="h-7 flex items-center justify-between px-2 border-b cursor-pointer select-none shrink-0"
 					onClick={() => setIsErrorLogExpanded(!isErrorLogExpanded)} onKeyDown={(e) => { if (e.key === "Enter") (() => setIsErrorLogExpanded(!isErrorLogExpanded))(); }}				>
 					<div className="flex items-center gap-3">
-						<div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
+						<div className="w-2 h-2 rounded-full bg-slate-500 animate-pulse"></div>
 						<span className="text-[11px] font-semibold tracking-wider text-foreground">
 							سجل الهندسة
 						</span>
 						<div className="flex gap-1.5 items-center">
 							<Badge
 								variant="destructive"
-								className="h-4 text-[9px] px-1.5 py-0 border-red-500/50 bg-red-500"
+								className="h-4 text-[9px] px-1.5 py-0 border-slate-500/50 bg-slate-500"
 							>
 								3 أخطاء
 							</Badge>
@@ -640,7 +640,7 @@ export function WorkspaceArabic() {
 	);
 }
 
-function LogEntry({  // NOSONAR - typescript:S6759
+function LogEntry({
 	level,
 	time,
 	source,
@@ -656,14 +656,14 @@ function LogEntry({  // NOSONAR - typescript:S6759
 
 	return (
 		<div
-			className={`flex items-center px-4 py-1.5 border-b border-border/30 hover:bg-muted/30 group ${isError ? "bg-red-950/20 border-r-2 border-r-red-500" : isWarn ? "bg-orange-950/20 border-r-2 border-r-orange-500" : "border-r-2 border-r-transparent"}`}  // NOSONAR — S3358: nested ternary acceptable in this localized context
+			className={`flex items-center px-4 py-1.5 border-b border-border/30 hover:bg-muted/30 group ${isError ? "bg-red-950/20 border-r-2 border-r-red-500" : isWarn ? "bg-orange-950/20 border-r-2 border-r-orange-500" : "border-r-2 border-r-transparent"}`}
 		>
 			<div className="w-[80px] shrink-0 text-muted-foreground" dir="ltr">
 				{time}
 			</div>
 			<div className="w-[60px] shrink-0" dir="ltr">
 				<span
-					className={`${isError ? "text-danger" : isWarn ? "text-primary" : "text-muted-foreground"}`}  // NOSONAR — S3358: nested ternary acceptable in this localized context
+					className={`${isError ? "text-danger" : isWarn ? "text-primary" : "text-muted-foreground"}`}
 				>
 					{level}
 				</span>
@@ -687,7 +687,7 @@ function LogEntry({  // NOSONAR - typescript:S6759
 	);
 }
 
-function RibbonBtn({ icon, label }: { icon: React.ReactNode; label: string }) {  // NOSONAR - typescript:S6759
+function RibbonBtn({ icon, label }: { icon: React.ReactNode; label: string }) {
 	return (
 		<div className="flex flex-col items-center justify-center w-16 h-12 rounded hover:bg-muted cursor-pointer transition-colors group">
 			<div className="text-muted-foreground group-hover:text-primary mb-1 [&>svg]:w-4 [&>svg]:h-4">
@@ -700,7 +700,7 @@ function RibbonBtn({ icon, label }: { icon: React.ReactNode; label: string }) { 
 	);
 }
 
-function TreeNode({  // NOSONAR - typescript:S6759
+function TreeNode({
 	title,
 	children,
 	defaultOpen = false,
@@ -712,7 +712,7 @@ function TreeNode({  // NOSONAR - typescript:S6759
 	const [open, setOpen] = useState(defaultOpen);
 	return (
 		<div className="select-none">
-			<div  // NOSONAR — S6848: type assertion acceptable
+			<div
 				className="flex items-center gap-1 py-1 hover:bg-muted/50 cursor-pointer rounded px-1"
 				onClick={() => setOpen(!open)} onKeyDown={(e) => { if (e.key === "Enter") (() => setOpen(!open))(); }}			>
 				<Triangle
@@ -730,7 +730,7 @@ function TreeNode({  // NOSONAR - typescript:S6759
 	);
 }
 
-function FileNode({  // NOSONAR - typescript:S6759
+function FileNode({
 	title,
 	type,
 	active = false,
@@ -759,7 +759,7 @@ function FileNode({  // NOSONAR - typescript:S6759
 	);
 }
 
-function LayerRow({  // NOSONAR - typescript:S6759
+function LayerRow({
 	name,
 	color,
 	active = false,
@@ -800,7 +800,7 @@ function LayerRow({  // NOSONAR - typescript:S6759
 	);
 }
 
-function ToolBtn({  // NOSONAR - typescript:S6759
+function ToolBtn({
 	icon,
 	active = false,
 }: {
@@ -816,7 +816,7 @@ function ToolBtn({  // NOSONAR - typescript:S6759
 	);
 }
 
-function PropRow({ label, value }: { label: string; value: string }) {  // NOSONAR - typescript:S6759
+function PropRow({ label, value }: { label: string; value: string }) {
 	return (
 		<div className="flex justify-between items-center text-xs">
 			<span className="text-muted-foreground">{label}</span>

@@ -1,4 +1,4 @@
-// NOSONAR
+
 /**
  * CadRevitExportEngine.ts - CAD/BIM Export Engine
  * Exports to AutoCAD DXF, Revit JSON, and IFC (IFC2x3/IFC4) formats
@@ -222,11 +222,11 @@ export function exportToIFC(
 	ifc += "FILE_DESCRIPTION(('ViewDefinition [CoordinationView]'),'2;1');\n";
 	ifc +=
 		"FILE_NAME('" +
-		project.name.replace(/'/g, "''") +  // NOSONAR - typescript:S7781
+		project.name.replace(/'/g, "''") +
 		".ifc','" +
 		timestamp +
 		"',('" +
-		project.author.replace(/'/g, "''") +  // NOSONAR - typescript:S7781
+		project.author.replace(/'/g, "''") +
 		"'),(''),'Express Data Manager Version 1.0.0','" +
 		schema +
 		"','');\n";
@@ -278,7 +278,7 @@ export function exportToIFC(
 		"=IFCPROJECT('" +
 		projectId +
 		"',$,'" +
-		project.name.replace(/'/g, "''") +  // NOSONAR - typescript:S7781
+		project.name.replace(/'/g, "''") +
 		"',$,$,$,$,(" +
 		getId("unit") +
 		")," +
@@ -353,7 +353,7 @@ export function exportToIFC(
 			"('" +
 			generateGUID() +
 			"',$,'" +
-			device.name.replace(/'/g, "''") +  // NOSONAR - typescript:S7781
+			device.name.replace(/'/g, "''") +
 			"',$,$," +
 			getId(`placement_${device.id}`) +
 			",''," +
@@ -411,11 +411,11 @@ export function exportToIFC(
 			generateGUID() +
 			",$," +
 			"'" +
-			device.type.replace(/'/g, "''") +  // NOSONAR - typescript:S7781
+			device.type.replace(/'/g, "''") +
 			" Properties',$,(" +
 			nextId() +
 			",'" +
-			device.category.replace(/'/g, "''") +  // NOSONAR - typescript:S7781
+			device.category.replace(/'/g, "''") +
 			"')," +
 			nextId() +
 			",'" +
@@ -469,7 +469,7 @@ export function exportToIFC(
 	ifc +=
 		personId +
 		"=IFCPERSON($,'" +
-		project.author.replace(/'/g, "''") +  // NOSONAR - typescript:S7781
+		project.author.replace(/'/g, "''") +
 		"',$,$,$,$,$,$);\n";
 
 	ifc += "ENDSEC;\n";
@@ -485,7 +485,7 @@ export function exportToIFC(
 
 function generateGUID(): string {
 	return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
-		const r = (Math.random() * 16) | 0;  // NOSONAR — safe in UI context
+		const r = (Math.random() * 16) | 0;
 		const v = c === "x" ? r : (r & 0x3) | 0x8;
 		return v.toString(16);
 	});

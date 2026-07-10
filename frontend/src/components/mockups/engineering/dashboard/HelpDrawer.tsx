@@ -1,4 +1,4 @@
-// NOSONAR
+
 import { Book, FileText, LifeBuoy, X } from "lucide-react";
 
 interface HelpDrawerProps {
@@ -6,7 +6,7 @@ interface HelpDrawerProps {
 	onHelpToggle: () => void;
 }
 
-export function HelpDrawer({ helpOpen, onHelpToggle }: HelpDrawerProps) {  // NOSONAR - typescript:S6759
+export function HelpDrawer({ helpOpen, onHelpToggle }: HelpDrawerProps) {
 	return (
 		<div
 			className={`absolute top-14 right-0 bottom-0 w-80 bg-card border-l border-border shadow-xl transform transition-transform duration-300 ease-in-out z-50 ${

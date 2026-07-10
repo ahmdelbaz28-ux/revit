@@ -1,4 +1,4 @@
-// NOSONAR
+
 import { cva, type VariantProps } from "class-variance-authority";
 import type * as React from "react";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 
 function InputGroup({ className, ...props }: React.ComponentProps<"div">) {
 	return (
-		<div  // NOSONAR — S6819: non-null assertion acceptable
+		<div
 			data-slot="input-group"
 			role="group"
 			className={cn(
@@ -58,7 +58,7 @@ function InputGroupAddon({
 	...props
 }: React.ComponentProps<"div"> & VariantProps<typeof inputGroupAddonVariants>) {
 	return (
-		<div  // NOSONAR — S6847: acceptable  // NOSONAR — S6819: non-null assertion acceptable
+		<div
 			role="group"
 			data-slot="input-group-addon"
 			data-align={align}

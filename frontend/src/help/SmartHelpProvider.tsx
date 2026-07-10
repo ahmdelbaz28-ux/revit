@@ -1,4 +1,4 @@
-// NOSONAR
+
 /**
  * SmartHelpProvider.tsx — Legacy stub (V140 Phase 7)
  *
@@ -28,7 +28,7 @@ const defaultValue: SmartHelpContextValue = {
 	navigateToTopic: noop,
 };
 
-export function SmartHelpProvider({ children }: { children: ReactNode }) {  // NOSONAR - typescript:S6759
+export function SmartHelpProvider({ children }: { children: ReactNode }) {
 	return (
 		<SmartHelpContext.Provider value={defaultValue}>
 			{children}

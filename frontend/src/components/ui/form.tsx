@@ -1,4 +1,4 @@
-// NOSONAR
+
 import type * as LabelPrimitive from "@radix-ui/react-label";
 import { Slot } from "@radix-ui/react-slot";
 import * as React from "react";
@@ -33,7 +33,7 @@ const FormField = <
 	...props
 }: ControllerProps<TFieldValues, TName>) => {
 	return (
-		<FormFieldContext.Provider value={{ name: props.name }}>  // NOSONAR — S6481: structure acceptable
+		<FormFieldContext.Provider value={{ name: props.name }}>
 			<Controller {...props} />
 		</FormFieldContext.Provider>
 	);
@@ -79,7 +79,7 @@ const FormItem = React.forwardRef<
 	const id = React.useId();
 
 	return (
-		<FormItemContext.Provider value={{ id }}>  // NOSONAR — S6481: structure acceptable
+		<FormItemContext.Provider value={{ id }}>
 			<div ref={ref} className={cn("space-y-2", className)} {...props} />
 		</FormItemContext.Provider>
 	);

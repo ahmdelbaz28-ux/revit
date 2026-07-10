@@ -1,11 +1,11 @@
-// NOSONAR
+
 interface ControlPanelProps {
 	isFaulty: (id: string) => boolean;
 	onFaultToggle: (id: string) => void;
 	onStressTest: () => void;
 }
 
-export function ControlPanel({  // NOSONAR - typescript:S6759
+export function ControlPanel({
 	isFaulty,
 	onFaultToggle,
 	onStressTest,

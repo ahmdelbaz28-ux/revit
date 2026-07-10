@@ -1,4 +1,4 @@
-// NOSONAR
+
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -140,7 +140,7 @@ function Elements() {
 
                         {/* Error */}
                         {error && (
-                                <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
+                                <div className="bg-slate-500/10 border border-slate-500/20 rounded-lg p-4">
                                         <p className="text-danger text-sm">{t("elements.failedToLoad")}</p>
                                 </div>
                         )}
@@ -396,7 +396,7 @@ function Elements() {
 
 // ===== Create Element Modal =====
 
-function CreateElementModal({  // NOSONAR - typescript:S6759
+function CreateElementModal({
         onClose,
         onSuccess,
 }: {
@@ -421,8 +421,8 @@ function CreateElementModal({  // NOSONAR - typescript:S6759
                                 description: description || undefined,
                                 material: material || undefined,
                                 fire_rating: fireRating || undefined,
-                                height: height ? parseFloat(height) : undefined,  // NOSONAR - typescript:S7773
-                                width: width ? parseFloat(width) : undefined,  // NOSONAR - typescript:S7773
+                                height: height ? parseFloat(height) : undefined,
+                                width: width ? parseFloat(width) : undefined,
                                 load_bearing: loadBearing,
                         };
 
@@ -445,7 +445,7 @@ function CreateElementModal({  // NOSONAR - typescript:S6759
                                 </h3>
 
                                 {createMutation.isError && (
-                                        <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 mb-4">
+                                        <div className="bg-slate-500/10 border border-slate-500/20 rounded-lg p-3 mb-4">
                                                 <p className="text-danger text-sm">
                                                         {createMutation.error instanceof Error
                                                                 ? createMutation.error.message
@@ -555,7 +555,7 @@ function CreateElementModal({  // NOSONAR - typescript:S6759
                                                         id="load-bearing"
                                                         checked={loadBearing}
                                                         onCheckedChange={(checked) => setLoadBearing(Boolean(checked))}
-                                                        className="data-[state=checked]:bg-danger data-[state=checked]:border-red-600"
+                                                        className="data-[state=checked]:bg-danger data-[state=checked]:border-slate-600"
                                                 />
                                                 <label htmlFor="load-bearing" className="text-sm text-foreground/90">
                                                         {t("elements.loadBearing")}

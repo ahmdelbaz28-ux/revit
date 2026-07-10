@@ -1,4 +1,4 @@
-// NOSONAR
+
 /**
  * ConfigEditor.tsx — JSON config editor with validation
  */
@@ -24,7 +24,7 @@ interface ConfigEditorProps {
 	saveConfig: (config: Record<string, unknown>) => Promise<void>;
 }
 
-export function ConfigEditor({  // NOSONAR - typescript:S6759
+export function ConfigEditor({
 	title,
 	description,
 	loadConfig,

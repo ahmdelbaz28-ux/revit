@@ -1,4 +1,4 @@
-// NOSONAR
+
 import type React from "react";
 import { useCallback, useEffect, useRef } from "react";
 
@@ -13,7 +13,7 @@ interface ConfirmDialogProps {
 	variant?: "danger" | "warning" | "default";
 }
 
-export function ConfirmDialog({  // NOSONAR - typescript:S6759
+export function ConfirmDialog({
 	isOpen,
 	title,
 	message,
@@ -38,7 +38,7 @@ export function ConfirmDialog({  // NOSONAR - typescript:S6759
 			return () => clearTimeout(timer);
 		} else {
 			// Return focus to the trigger element when dialog closes
-			if (previousFocusRef.current) {  // NOSONAR — S6660: acceptable
+			if (previousFocusRef.current) {
 				previousFocusRef.current.focus();
 				previousFocusRef.current = null;
 			}
@@ -68,7 +68,7 @@ export function ConfirmDialog({  // NOSONAR - typescript:S6759
 						last.focus();
 					}
 				} else {
-					if (document.activeElement === last) {  // NOSONAR — S6660: acceptable
+					if (document.activeElement === last) {
 						e.preventDefault();
 						first.focus();
 					}
@@ -87,7 +87,7 @@ export function ConfirmDialog({  // NOSONAR - typescript:S6759
 	};
 
 	return (
-		<div  // NOSONAR — S6847: acceptable  // NOSONAR — S6819: non-null assertion acceptable
+		<div
 			role="dialog"
 			aria-modal="true"
 			aria-labelledby="confirm-dialog-title"

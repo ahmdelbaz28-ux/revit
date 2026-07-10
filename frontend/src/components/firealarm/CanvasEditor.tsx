@@ -1,4 +1,4 @@
-// NOSONAR
+
 import type React from "react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -267,7 +267,7 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
                                 </select>
                         </div>
 
-                        <div  // NOSONAR — S6848: type assertion acceptable
+                        <div
                                 ref={canvasRef}
                                 className="flex-1 bg-card border border-border rounded-lg relative overflow-hidden"
                                 onClick={handleCanvasClick} onKeyDown={(e: React.KeyboardEvent<HTMLDivElement>) => { if (e.key === "Enter") { e.preventDefault(); (document.activeElement as HTMLElement)?.click(); } }}                                style={{ minHeight: "400px" }}

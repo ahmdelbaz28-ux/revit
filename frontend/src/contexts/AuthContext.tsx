@@ -1,4 +1,4 @@
-// NOSONAR
+
 /**
  * AuthContext.tsx — Global authentication state for the entire app.
  *
@@ -42,7 +42,7 @@ interface AuthContextValue extends AuthState {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-export function AuthProvider({ children }: { children: ReactNode }) {  // NOSONAR - typescript:S6759
+export function AuthProvider({ children }: { children: ReactNode }) {
         const [state, setState] = useState<AuthState>({
                 isAuthenticated: false,
                 role: null,
@@ -136,7 +136,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {  // NOSONA
         }, []);
 
         return (
-                <AuthContext.Provider value={{ ...state, login, logout, refresh }}>  // NOSONAR — S6481: structure acceptable
+                <AuthContext.Provider value={{ ...state, login, logout, refresh }}>
                         {children}
                 </AuthContext.Provider>
         );

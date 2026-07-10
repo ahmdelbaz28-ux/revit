@@ -1,4 +1,4 @@
-// NOSONAR
+
 /**
  * fullApi.ts — Comprehensive API client covering ALL backend endpoints.
  *
@@ -62,7 +62,7 @@ async function apiCall<T>(
 ): Promise<T> {
         const headers: Record<string, string> = {
                 "Content-Type": "application/json",
-                ...((options.headers as Record<string, string>) || {}),  // NOSONAR - typescript:S7744
+                ...((options.headers as Record<string, string>) || {}),
         };
         const apiKey = getApiKey();
         if (apiKey) {
@@ -712,7 +712,7 @@ export const monitorApi = {
         /** GET /monitor/agent-activity */
         getAgentActivity: (params?: { limit?: number }) =>
                 apiCall(
-                        `/monitor/agent-activity${params?.limit ? `?limit=${params.limit}` : ""}`, // NOSONAR — acceptable in this context
+                        `/monitor/agent-activity${params?.limit ? `?limit=${params.limit}` : ""}`,
                 ),
 
         /** GET /monitor/security-alerts */
@@ -722,7 +722,7 @@ export const monitorApi = {
                 if (params?.severity) query.set("severity", params.severity);
                 const qs = query.toString();
                 return apiCall(
-                        `/monitor/security-alerts${qs ? `?${qs}` : ""}`, // NOSONAR — acceptable in this context
+                        `/monitor/security-alerts${qs ? `?${qs}` : ""}`,
                 );
         },
 

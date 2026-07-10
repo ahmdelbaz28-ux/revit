@@ -1,4 +1,4 @@
-// NOSONAR
+
 import {
 	AlertTriangle,
 	CheckCircle,
@@ -78,7 +78,7 @@ export function CableCalculator() {
 								</h3>
 								<div className="space-y-3">
 									<div className="grid grid-cols-3 items-center gap-2">
-										<label className="text-xs text-muted-foreground col-span-1">  // NOSONAR — S6853: React import kept for JSX transform
+										<label className="text-xs text-muted-foreground col-span-1">
 											Circuit Name
 										</label>
 										<Input
@@ -87,7 +87,7 @@ export function CableCalculator() {
 										/>
 									</div>
 									<div className="grid grid-cols-3 items-center gap-2">
-										<label className="text-xs text-muted-foreground col-span-1">  // NOSONAR — S6853: React import kept for JSX transform
+										<label className="text-xs text-muted-foreground col-span-1">
 											Circuit Type
 										</label>
 										<div className="col-span-2 flex items-center justify-between border rounded-md px-2 h-7 bg-background text-xs cursor-pointer">
@@ -96,7 +96,7 @@ export function CableCalculator() {
 										</div>
 									</div>
 									<div className="grid grid-cols-3 items-center gap-2">
-										<label className="text-xs text-muted-foreground col-span-1">  // NOSONAR — S6853: React import kept for JSX transform
+										<label className="text-xs text-muted-foreground col-span-1">
 											Inst. Method
 										</label>
 										<div className="col-span-2 flex items-center justify-between border rounded-md px-2 h-7 bg-background text-xs cursor-pointer relative pr-8">
@@ -111,7 +111,7 @@ export function CableCalculator() {
 									</div>
 									<div className="grid grid-cols-3 gap-2">
 										<div className="space-y-1">
-											<label className="text-[10px] text-muted-foreground">  // NOSONAR — S6853: React import kept for JSX transform
+											<label className="text-[10px] text-muted-foreground">
 												Voltage (V)
 											</label>
 											<Input
@@ -120,7 +120,7 @@ export function CableCalculator() {
 											/>
 										</div>
 										<div className="space-y-1">
-											<label className="text-[10px] text-muted-foreground">  // NOSONAR — S6853: React import kept for JSX transform
+											<label className="text-[10px] text-muted-foreground">
 												Freq (Hz)
 											</label>
 											<Input
@@ -129,7 +129,7 @@ export function CableCalculator() {
 											/>
 										</div>
 										<div className="space-y-1">
-											<label className="text-[10px] text-muted-foreground">  // NOSONAR — S6853: React import kept for JSX transform
+											<label className="text-[10px] text-muted-foreground">
 												PF
 											</label>
 											<Input
@@ -148,7 +148,7 @@ export function CableCalculator() {
 								</h3>
 								<div className="space-y-3">
 									<div className="grid grid-cols-3 items-center gap-2">
-										<label className="text-xs text-muted-foreground col-span-1">  // NOSONAR — S6853: React import kept for JSX transform
+										<label className="text-xs text-muted-foreground col-span-1">
 											Load Type
 										</label>
 										<div className="col-span-2 flex items-center justify-between border rounded-md px-2 h-7 bg-background text-xs cursor-pointer">
@@ -158,7 +158,7 @@ export function CableCalculator() {
 									</div>
 									<div className="grid grid-cols-3 gap-2">
 										<div className="space-y-1 col-span-1">
-											<label className="text-[10px] text-muted-foreground">  // NOSONAR — S6853: React import kept for JSX transform
+											<label className="text-[10px] text-muted-foreground">
 												Conn. Load (kW)
 											</label>
 											<Input
@@ -167,7 +167,7 @@ export function CableCalculator() {
 											/>
 										</div>
 										<div className="space-y-1 col-span-1">
-											<label className="text-[10px] text-muted-foreground">  // NOSONAR — S6853: React import kept for JSX transform
+											<label className="text-[10px] text-muted-foreground">
 												Demand Factor
 											</label>
 											<Input
@@ -176,7 +176,7 @@ export function CableCalculator() {
 											/>
 										</div>
 										<div className="space-y-1 col-span-1">
-											<label className="text-[10px] text-muted-foreground">  // NOSONAR — S6853: React import kept for JSX transform
+											<label className="text-[10px] text-muted-foreground">
 												Starting Cur.
 											</label>
 											<Input
@@ -209,7 +209,7 @@ export function CableCalculator() {
 								</h3>
 								<div className="space-y-3">
 									<div className="grid grid-cols-3 items-center gap-2">
-										<label className="text-xs text-muted-foreground col-span-1">  // NOSONAR — S6853: React import kept for JSX transform
+										<label className="text-xs text-muted-foreground col-span-1">
 											Length
 										</label>
 										<div className="col-span-2 flex items-center">
@@ -225,7 +225,7 @@ export function CableCalculator() {
 										</div>
 									</div>
 									<div className="grid grid-cols-3 items-center gap-2">
-										<label className="text-xs text-muted-foreground col-span-1">  // NOSONAR — S6853: React import kept for JSX transform
+										<label className="text-xs text-muted-foreground col-span-1">
 											Ambient Temp
 										</label>
 										<div className="col-span-2 flex items-center gap-2">
@@ -240,7 +240,7 @@ export function CableCalculator() {
 										</div>
 									</div>
 									<div className="grid grid-cols-3 items-center gap-2">
-										<label className="text-xs text-muted-foreground col-span-1">  // NOSONAR — S6853: React import kept for JSX transform
+										<label className="text-xs text-muted-foreground col-span-1">
 											Grouped Circ.
 										</label>
 										<Input
@@ -249,7 +249,7 @@ export function CableCalculator() {
 										/>
 									</div>
 									<div className="grid grid-cols-3 items-center gap-2 opacity-50">
-										<label className="text-xs text-muted-foreground col-span-1">  // NOSONAR — S6853: React import kept for JSX transform
+										<label className="text-xs text-muted-foreground col-span-1">
 											Depth of burial
 										</label>
 										<Input
@@ -299,7 +299,7 @@ export function CableCalculator() {
 								</h3>
 								<div className="space-y-3">
 									<div className="grid grid-cols-3 items-center gap-2">
-										<label className="text-xs text-muted-foreground col-span-1">  // NOSONAR — S6853: React import kept for JSX transform
+										<label className="text-xs text-muted-foreground col-span-1">
 											Type
 										</label>
 										<div className="col-span-2 flex items-center justify-between border rounded-md px-2 h-7 bg-background text-xs cursor-pointer">
@@ -309,7 +309,7 @@ export function CableCalculator() {
 									</div>
 									<div className="grid grid-cols-3 gap-2">
 										<div className="space-y-1 col-span-1">
-											<label className="text-[10px] text-muted-foreground">  // NOSONAR — S6853: React import kept for JSX transform
+											<label className="text-[10px] text-muted-foreground">
 												Rating (A)
 											</label>
 											<Input
@@ -318,7 +318,7 @@ export function CableCalculator() {
 											/>
 										</div>
 										<div className="space-y-1 col-span-1">
-											<label className="text-[10px] text-muted-foreground">  // NOSONAR — S6853: React import kept for JSX transform
+											<label className="text-[10px] text-muted-foreground">
 												Trip Char.
 											</label>
 											<div className="flex items-center justify-between border rounded-md px-2 h-7 bg-background text-[10px] cursor-pointer">
@@ -327,7 +327,7 @@ export function CableCalculator() {
 											</div>
 										</div>
 										<div className="space-y-1 col-span-1">
-											<label className="text-[10px] text-muted-foreground">  // NOSONAR — S6853: React import kept for JSX transform
+											<label className="text-[10px] text-muted-foreground">
 												SC Rating
 											</label>
 											<Input
@@ -413,7 +413,7 @@ export function CableCalculator() {
 											style={{ width: "76%" }}
 										></div>
 										<div
-											className="absolute top-0 bottom-0 border-l-2 border-red-500 border-dashed"
+											className="absolute top-0 bottom-0 border-l-2 border-slate-500 border-dashed"
 											style={{ left: "100%" }}
 										></div>
 										{/* Visual 5% limit line at 100% of the bar if we consider 5% as max */}

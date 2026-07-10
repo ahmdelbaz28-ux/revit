@@ -1,4 +1,4 @@
-// NOSONAR
+
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -102,7 +102,7 @@ function Conflicts() {
 			)}
 
 			{detectMutation.isError && (
-				<div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
+				<div className="bg-slate-500/10 border border-slate-500/20 rounded-lg p-4">
 					<p className="text-danger text-sm">
 						{detectMutation.error instanceof Error
 							? detectMutation.error.message
@@ -113,7 +113,7 @@ function Conflicts() {
 
 			{/* Error */}
 			{error && (
-				<div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
+				<div className="bg-slate-500/10 border border-slate-500/20 rounded-lg p-4">
 					<p className="text-danger text-sm">{t("conflicts.failedToLoad")}</p>
 				</div>
 			)}
@@ -319,7 +319,7 @@ function Conflicts() {
 						</p>
 
 						{resolveMutation.isError && (
-							<div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 mb-4">
+							<div className="bg-slate-500/10 border border-slate-500/20 rounded-lg p-3 mb-4">
 								<p className="text-danger text-sm">
 									{resolveMutation.error instanceof Error
 										? resolveMutation.error.message
@@ -338,7 +338,7 @@ function Conflicts() {
 									<RadioGroupItem
 										value="LAST_WRITE_WINS"
 										id="last-write"
-										className="mt-0.5 data-[state=checked]:border-red-500 data-[state=checked]:bg-red-500"
+										className="mt-0.5 data-[state=checked]:border-slate-500 data-[state=checked]:bg-slate-500"
 									/>
 									<div className="space-y-1">
 										<label
@@ -356,7 +356,7 @@ function Conflicts() {
 									<RadioGroupItem
 										value="SEMANTIC_MERGE"
 										id="semantic-merge"
-										className="mt-0.5 data-[state=checked]:border-red-500 data-[state=checked]:bg-red-500"
+										className="mt-0.5 data-[state=checked]:border-slate-500 data-[state=checked]:bg-slate-500"
 									/>
 									<div className="space-y-1">
 										<label

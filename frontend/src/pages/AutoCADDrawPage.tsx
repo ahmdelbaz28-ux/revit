@@ -1,4 +1,4 @@
-// NOSONAR
+
 /**
  * AutoCADDrawPage.tsx — Drawing tools for AutoCAD
  */
@@ -44,7 +44,7 @@ export function AutoCADDrawPage() {
 	const [textLayer, setTextLayer] = useState("");
 
 	const parsePoint = (s: string): number[] => {
-		return s.split(",").map((v) => parseFloat(v.trim()));  // NOSONAR - typescript:S7773
+		return s.split(",").map((v) => parseFloat(v.trim()));
 	};
 
 	const drawLine = async () => {
@@ -85,7 +85,7 @@ export function AutoCADDrawPage() {
 		try {
 			await autocadService.drawCircle(
 				parsePoint(circleCenter),
-				parseFloat(circleRadius),  // NOSONAR - typescript:S7773
+				parseFloat(circleRadius),
 				circleLayer || undefined,
 			);
 			toast.success("Circle drawn");
@@ -104,7 +104,7 @@ export function AutoCADDrawPage() {
 			await autocadService.drawText(
 				parsePoint(textPoint),
 				textContent,
-				parseFloat(textHeight),  // NOSONAR - typescript:S7773
+				parseFloat(textHeight),
 				textLayer || undefined,
 			);
 			toast.success("Text drawn");

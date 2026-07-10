@@ -1,4 +1,4 @@
-// NOSONAR
+
 import { HelpCircle, Moon, Shield, Sun, Wifi, WifiOff } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
@@ -14,8 +14,8 @@ const PULSE_STYLE = `
   background-color: #22c55e;
 }
 .status-solid-disconnected {
-  background-color: #ef4444;
-  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.3);
+  background-color: #64748b;
+  box-shadow: 0 0 0 3px rgba(100, 116, 139, 0.3);
 }
 `;
 
@@ -28,7 +28,7 @@ interface HeaderProps {
 	onHelpToggle: () => void;
 }
 
-export function Header({  // NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+export function Header({
 	theme,
 	dataMode,
 	connectionStatus,
@@ -75,7 +75,7 @@ export function Header({  // NOSONAR — S3776: cognitive complexity is inherent
 			// Realistic jitter: 18–36 ms
 			setLatency(Math.round(18 + crypto.getRandomValues(new Uint32Array(1))[0] / 0xFFFFFFFF * 18));
 			setPacketLoss(
-				crypto.getRandomValues(new Uint32Array(1))[0] / 0xFFFFFFFF < 0.05 ? parseFloat((crypto.getRandomValues(new Uint32Array(1))[0] / 0xFFFFFFFF * 0.4).toFixed(1)) : 0,  // NOSONAR - typescript:S7773
+				crypto.getRandomValues(new Uint32Array(1))[0] / 0xFFFFFFFF < 0.05 ? parseFloat((crypto.getRandomValues(new Uint32Array(1))[0] / 0xFFFFFFFF * 0.4).toFixed(1)) : 0,
 			);
 		}, 1000);
 
@@ -107,10 +107,10 @@ export function Header({  // NOSONAR — S3776: cognitive complexity is inherent
 						style={{
 							background: isConnected
 								? "rgba(34,197,94,0.08)"
-								: "rgba(239,68,68,0.10)",
+								: "rgba(100, 116, 139,0.10)",
 							border: isConnected
 								? "1px solid rgba(34,197,94,0.25)"
-								: "1px solid rgba(239,68,68,0.35)",
+								: "1px solid rgba(100, 116, 139,0.35)",
 						}}
 					>
 						{/* Pulsating dot */}
@@ -126,11 +126,11 @@ export function Header({  // NOSONAR — S3776: cognitive complexity is inherent
 						{isConnected ? (
 							<Wifi className="h-3 w-3 text-green-500" />
 						) : (
-							<WifiOff className="h-3 w-3 text-red-500" />
+							<WifiOff className="h-3 w-3 text-slate-400" />
 						)}
 						<span
 							className="text-[10px] font-bold uppercase"
-							style={{ color: isConnected ? "#22c55e" : "#ef4444" }}
+							style={{ color: isConnected ? "#22c55e" : "#64748b" }}
 						>
 							{isConnected ? "LIVE" : "OFFLINE"}
 						</span>
@@ -153,7 +153,7 @@ export function Header({  // NOSONAR — S3776: cognitive complexity is inherent
 							>
 								<span
 									className="text-[9px] font-black uppercase tracking-widest"
-									style={{ color: isConnected ? "#22c55e" : "#ef4444" }}
+									style={{ color: isConnected ? "#22c55e" : "#64748b" }}
 								>
 									Telemetry Dashboard
 								</span>
@@ -162,8 +162,8 @@ export function Header({  // NOSONAR — S3776: cognitive complexity is inherent
 									style={{
 										background: isConnected
 											? "rgba(34,197,94,0.15)"
-											: "rgba(239,68,68,0.15)",
-										color: isConnected ? "#22c55e" : "#ef4444",
+											: "rgba(100, 116, 139,0.15)",
+										color: isConnected ? "#22c55e" : "#64748b",
 									}}
 								>
 									{isConnected ? "● CONNECTED" : "● OFFLINE"}
@@ -178,9 +178,9 @@ export function Header({  // NOSONAR — S3776: cognitive complexity is inherent
 									valueColor={
 										latency < 30
 											? "#22c55e"
-											: latency < 80  // NOSONAR — S3358: nested ternary acceptable in this localized context
+											: latency < 80
 												? "#f59e0b"
-												: "#ef4444"
+												: "#64748b"
 									}
 								/>
 								<TooltipRow
@@ -279,9 +279,9 @@ export function Header({  // NOSONAR — S3776: cognitive complexity is inherent
 					id="connection-lost-banner"
 					className="text-xs font-bold py-2 px-6 flex items-center justify-between"
 					style={{
-						background: "rgba(239,68,68,0.12)",
-						borderBottom: "2px solid #ef4444",
-						color: "#ef4444",
+						background: "rgba(100, 116, 139,0.12)",
+						borderBottom: "2px solid #64748b",
+						color: "#64748b",
 					}}
 				>
 					<span>⛔ CONNECTION LOST — DISPLAYING LAST KNOWN VALUES</span>
@@ -295,7 +295,7 @@ export function Header({  // NOSONAR — S3776: cognitive complexity is inherent
 }
 
 // ─── Helper sub-component ─────────────────────────────────────────────────────
-function TooltipRow({  // NOSONAR - typescript:S6759
+function TooltipRow({
 	label,
 	value,
 	valueColor = "rgba(226,232,240,0.9)",

@@ -1,4 +1,3 @@
-// NOSONAR
 import {
         AlertTriangle,
         ArrowRightLeft,
@@ -24,7 +23,8 @@ import {
         Network,
         Workflow as WorkflowIcon,
         Settings2,
-        ShieldCheck,
+        Info,
+        Zap,
 } from "lucide-react";
 import type React from "react";
 import { useState } from "react";
@@ -39,7 +39,6 @@ interface NavItem {
         dataOnboarding?: string;
 }
 
-// V140 FIX + Phase 6: Use i18n keys + correct paths + new CAD/BIM routes
 const navItems: NavItem[] = [
         {
                 labelKey: "nav.dashboard",
@@ -81,7 +80,6 @@ const navItems: NavItem[] = [
                 path: "/fire-alarm/designer",
                 dataOnboarding: "nav-fire-alarm-designer",
         },
-        // V140 Phase 6: New AutoCAD / Revit / Digital Twin routes
         {
                 labelKey: "nav.autocad",
                 defaultLabel: "AutoCAD",
@@ -204,39 +202,33 @@ interface SidebarProps {
         compact?: boolean;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ compact = false }) => {
+const Sidebar: React.FC<SidebarProps> = () => {
         const [collapsed, setCollapsed] = useState(false);
-        const [hoveredItem, setHoveredItem] = useState<string | null>(null);
         const location = useLocation();
         const { t } = useTranslation();
         const isRTL = document.documentElement.dir === "rtl";
 
-        const width = collapsed
-                ? compact  // NOSONAR — S3358: nested ternary acceptable in this localized context
-                        ? "w-12"
-                        : "w-16"
-                : compact  // NOSONAR — S3358: nested ternary acceptable in this localized context
-                        ? "w-48"
-                        : "w-56";
+        const width = collapsed ? "w-16" : "w-60";
 
         return (
                 <aside
-                        className={`${width} h-full bg-card backdrop-blur-sm border-${
-                                isRTL ? "l" : "r"
-                        } border-border/50 flex flex-col transition-all duration-300 ${
-                                isRTL ? "order-last" : "order-first"
-                        }`}
+                        className={`${width} h-full glass flex flex-col transition-all duration-300 ${isRTL ? "order-last" : "order-first"}`}
+                        style={{
+                                borderRight: isRTL ? "none" : "1px solid rgba(255,255,255,0.1)",
+                                borderLeft: isRTL ? "1px solid rgba(255,255,255,0.1)" : "none",
+                        }}
                 >
-                        <div className="flex items-center gap-2 px-3 py-2.5 border-b border-border shrink-0">
-                                <div className="h-8 w-8 rounded-md bg-primary flex items-center justify-center shrink-0">
-                                        <ShieldCheck className="h-4 w-4 text-primary-foreground" />
+                        {/* Brand header — BAZSPARK with softened cyan accent */}
+                        <div className="flex items-center gap-3 px-5 h-16 shrink-0 border-b border-white/10">
+                                <div className="h-9 w-9 rounded-xl flex items-center justify-center shrink-0 bg-cyan-400/10 border border-cyan-400/20">
+                                        <Zap className="h-5 w-5 text-cyan-300" fill="currentColor" />
                                 </div>
                                 {!collapsed && (
-                                        <div className="flex flex-col leading-tight">
-                                                <span className="text-foreground font-semibold text-sm tracking-tight">
+                                        <div className="flex flex-col leading-relaxed">
+                                                <span className="text-foreground font-semibold text-[15px] tracking-tight">
                                                         BAZSPARK
                                                 </span>
-                                                <span className="text-[10px] text-muted-foreground uppercase tracking-wider">
+                                                <span className="text-[11px] text-muted-foreground uppercase tracking-wider mt-0.5">
                                                         FireAI Digital Twin
                                                 </span>
                                         </div>
@@ -244,78 +236,71 @@ const Sidebar: React.FC<SidebarProps> = ({ compact = false }) => {
                         </div>
 
                         <nav
-                                className="flex-1 py-2 overflow-y-auto overflow-x-hidden"
+                                className="flex-1 py-3 overflow-y-auto overflow-x-hidden"
                                 aria-label="Primary navigation"
                         >
                                 {navItems.map((item) => {
-                                        // V140 FIX: Match both exact path and sub-paths (e.g. /elements/123 matches /elements)
                                         const isActive =
                                                 location.pathname === item.path ||
                                                 (item.path !== "/dashboard" &&
                                                         location.pathname.startsWith(`${item.path}/`));
-                                        const isHovered = hoveredItem === item.path;
                                         const labelText = t(item.labelKey, item.defaultLabel);
                                         return (
-                                                <div key={item.path} className="relative">
+                                                <div key={item.path} className="relative px-3 mb-1">
                                                         <Link
                                                                 to={item.path}
-                                                                className={`flex items-center gap-3 px-3 py-2 mx-1 rounded-md transition-all duration-200 ${
+                                                                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
                                                                         isActive
-                                                                                ? "bg-card border-l-2 border-primary text-primary shadow-lg shadow-orange-500/20"
-                                                                                : "text-muted-foreground hover:bg-card/60 hover:text-foreground"
-                                                                } ${compact && !collapsed ? "py-1.5 text-sm" : ""}`}
-                                                                onMouseEnter={() => setHoveredItem(item.path)}
-                                                                onMouseLeave={() => setHoveredItem(null)}
+                                                                                ? "bg-cyan-400/10 text-cyan-300 border border-cyan-400/20"
+                                                                                : "text-muted-foreground hover:bg-white/5 hover:text-foreground border border-transparent"
+                                                                }`}
                                                                 title={collapsed ? labelText : undefined}
                                                                 data-onboarding={item.dataOnboarding}
                                                         >
                                                                 <item.icon
-                                                                        className={`shrink-0 transition-transform duration-300 ${
-                                                                                isActive
-                                                                                        ? "text-primary scale-110"
-                                                                                        : isHovered  // NOSONAR — S3358: nested ternary acceptable in this localized context
-                                                                                                ? "scale-105 text-orange-300"
-                                                                                                : "text-muted-foreground"
-                                                                        } ${compact && !collapsed ? "h-4 w-4" : "h-5 w-5"}`}
+                                                                        className={`shrink-0 h-[18px] w-[18px] ${isActive ? "text-cyan-300" : ""}`}
                                                                 />
                                                                 {!collapsed && (
-                                                                        <span
-                                                                                className={`truncate transition-all duration-200 ${compact && !collapsed ? "text-xs" : "text-sm"}`}
-                                                                        >
+                                                                        <span className="truncate text-[13px] font-medium tracking-wide">
                                                                                 {labelText}
                                                                         </span>
                                                                 )}
                                                         </Link>
-                                                        {collapsed && isHovered && (
-                                                                <div
-                                                                        className={`absolute top-1/2 -translate-y-1/2 px-2 py-1 bg-card backdrop-blur-sm text-foreground text-xs rounded shadow-lg z-50 whitespace-nowrap ${isRTL ? "right-full mr-2" : "left-full ml-2"}`}
-                                                                >
-                                                                        {labelText}
-                                                                </div>
-                                                        )}
                                                 </div>
                                         );
                                 })}
                         </nav>
 
-                        <button
-                                onClick={() => setCollapsed(!collapsed)}
-                                className="flex items-center justify-center py-2 border-t border-border/50 text-muted-foreground hover:text-foreground/90 transition-all duration-200 hover:bg-card/40 shrink-0"
-                                aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-                                data-onboarding="sidebar-toggle"
-                        >
-                                {collapsed ? (
-                                        isRTL ? (  // NOSONAR — S3358: nested ternary acceptable in this localized context
-                                                <ChevronLeft className="h-4 w-4 transition-transform duration-200" />
-                                        ) : (
-                                                <ChevronRight className="h-4 w-4 transition-transform duration-200" />
-                                        )
-                                ) : isRTL ? (  // NOSONAR — S3358: nested ternary acceptable in this localized context
-                                        <ChevronRight className="h-4 w-4 transition-transform duration-200" />
-                                ) : (
-                                        <ChevronLeft className="h-4 w-4 transition-transform duration-200" />
+                        {/* Footer — About + collapse */}
+                        <div className="border-t border-white/10 shrink-0 p-3">
+                                {!collapsed && (
+                                        <Link
+                                                to="/settings"
+                                                className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-white/5 hover:text-foreground transition-all duration-200"
+                                        >
+                                                <Info className="h-[18px] w-[18px] shrink-0" />
+                                                <span className="text-[13px] font-medium">About BAZSPARK</span>
+                                        </Link>
                                 )}
-                        </button>
+                                <button
+                                        onClick={() => setCollapsed(!collapsed)}
+                                        className="flex items-center justify-center w-full py-2.5 rounded-lg text-muted-foreground hover:text-cyan-400 hover:bg-white/5 transition-all duration-200 mt-1"
+                                        aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+                                        data-onboarding="sidebar-toggle"
+                                >
+                                        {collapsed ? (
+                                                isRTL ? (
+                                                        <ChevronLeft className="h-4 w-4" />
+                                                ) : (
+                                                        <ChevronRight className="h-4 w-4" />
+                                                )
+                                        ) : isRTL ? (
+                                                <ChevronRight className="h-4 w-4" />
+                                        ) : (
+                                                <ChevronLeft className="h-4 w-4" />
+                                        )}
+                                </button>
+                        </div>
                 </aside>
         );
 };

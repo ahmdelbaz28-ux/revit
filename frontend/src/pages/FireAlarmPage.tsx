@@ -1,4 +1,4 @@
-// NOSONAR
+
 /**
  * FireAlarmPage.tsx - Main Fire Alarm System Dashboard
  *
@@ -263,7 +263,7 @@ export function FireAlarmPage() {
         const [zonesLoading, setZonesLoading] = useState(false);
 
         useEffect(() => {
-                const fetchZones = async () => {  // NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+                const fetchZones = async () => {
                         setZonesLoading(true);
                         try {
                                 const projects = await api.getProjects({ page: 1, page_size: 1 });

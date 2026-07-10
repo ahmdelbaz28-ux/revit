@@ -1,4 +1,4 @@
-// NOSONAR
+
 /**
  * VisualizationUtils.ts - Color Mapping for Thermal Visualization
  * Maps electrical values to color gradients based on IEC/NEC thresholds
@@ -66,7 +66,7 @@ export const THERMAL_SCALE: ColorScale = {
 		{ value: 3, hex: "#84cc16", label: "Low" }, // Lime
 		{ value: 5, hex: "#f59e0b", label: "Warning" }, // Amber
 		{ value: 7, hex: "#f97316", label: "High" }, // Orange
-		{ value: 10, hex: "#ef4444", label: "Critical" }, // Red
+		{ value: 10, hex: "#64748b", label: "Critical" }, // Red
 	],
 };
 
@@ -76,18 +76,18 @@ export const LOAD_SCALE: ColorScale = {
 		{ value: 0, hex: "#10b981", label: "0%" },
 		{ value: 50, hex: "#84cc16", label: "50%" },
 		{ value: 80, hex: "#facc15", label: "80%" },
-		{ value: 100, hex: "#ef4444", label: "100%" },
+		{ value: 100, hex: "#64748b", label: "100%" },
 	],
 };
 
 export const FREQUENCY_SCALE: ColorScale = {
 	name: "Frequency",
 	stops: [
-		{ value: 49.5, hex: "#ef4444", label: "49.5Hz" },
+		{ value: 49.5, hex: "#64748b", label: "49.5Hz" },
 		{ value: 49.8, hex: "#f59e0b", label: "49.8Hz" },
 		{ value: 50.0, hex: "#10b981", label: "50Hz" },
 		{ value: 50.2, hex: "#f59e0b", label: "50.2Hz" },
-		{ value: 50.5, hex: "#ef4444", label: "50.5Hz" },
+		{ value: 50.5, hex: "#64748b", label: "50.5Hz" },
 	],
 };
 
@@ -98,7 +98,7 @@ export const HEAT_SCALE: ColorScale = {
 		{ value: 30, hex: "#10b981", label: "Normal" }, // Green
 		{ value: 60, hex: "#f59e0b", label: "Warm" }, // Yellow
 		{ value: 80, hex: "#f97316", label: "Hot" }, // Orange
-		{ value: 100, hex: "#ef4444", label: "Overheating" }, // Red
+		{ value: 100, hex: "#64748b", label: "Overheating" }, // Red
 	],
 };
 
@@ -143,8 +143,8 @@ export function getColorForValue(value: number, scale: ColorScale): string {
 	}
 
 	// Value is above maximum
-	if (value >= stops[stops.length - 1].value) {  // NOSONAR - typescript:S7755
-		return stops[stops.length - 1].hex;  // NOSONAR - typescript:S7755
+	if (value >= stops[stops.length - 1].value) {
+		return stops[stops.length - 1].hex;
 	}
 
 	// Find the two stops the value falls between
@@ -176,9 +176,9 @@ export function hexToRgb(hex: string): { r: number; g: number; b: number } {
 	const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
 	return result
 		? {
-				r: parseInt(result[1], 16),  // NOSONAR - typescript:S7773
-				g: parseInt(result[2], 16),  // NOSONAR - typescript:S7773
-				b: parseInt(result[3], 16),  // NOSONAR - typescript:S7773
+				r: parseInt(result[1], 16),
+				g: parseInt(result[2], 16),
+				b: parseInt(result[3], 16),
 			}
 		: { r: 0, g: 0, b: 0 };
 }
@@ -268,7 +268,7 @@ export function getShortCircuitColor(percentageOfBreaking: number): string {
 			{ value: 30, hex: "#84cc16" },
 			{ value: 50, hex: "#f59e0b" },
 			{ value: 80, hex: "#f97316" },
-			{ value: 100, hex: "#ef4444" },
+			{ value: 100, hex: "#64748b" },
 		],
 	});
 }
@@ -412,11 +412,11 @@ export function getCriticalAnimation(): string {
     @keyframes criticalPulse {
       0%, 100% { 
         opacity: 1;
-        filter: drop-shadow(0 0 8px #ef4444);
+        filter: drop-shadow(0 0 8px #64748b);
       }
       50% { 
         opacity: 0.7;
-        filter: drop-shadow(0 0 16px #ef4444);
+        filter: drop-shadow(0 0 16px #64748b);
       }
     }
   `;
@@ -470,7 +470,7 @@ export function calculateGlowIntensity(stress: StressResult): GlowConfig {
 	switch (stress.level) {
 		case "CRITICAL":
 			return {
-				color: "#ef4444",
+				color: "#64748b",
 				intensity: 1,
 				blur: 12,
 			};

@@ -1,4 +1,4 @@
-// NOSONAR
+
 /**
  * CalculationEngine.ts - Pure Electrical Engineering Calculations
  * Based on IEC 60364, IEC 60909, and NEC standards
@@ -195,7 +195,7 @@ const VOLTAGE_DROP_LIMITS: Record<CircuitType, number> = {
  * - sinφ = √(1 - cos²φ)
  * - Phase multiplier: 2 for single-phase (out+return), √3 for three-phase
  */
-export function calculateVoltageDrop(  // NOSONAR — S107: parameter count acceptable
+export function calculateVoltageDrop(
 	current: number,
 	length: number,
 	material: CableMaterial,
@@ -296,7 +296,7 @@ export function calculateShortCircuit(
 	// Total impedance = source + cable
 	const Rtotal = R * L + Rsource;
 	const Xtotal = X * L + Xsource;
-	const Z = Math.sqrt(Rtotal * Rtotal + Xtotal * Xtotal);  // NOSONAR - typescript:S7769
+	const Z = Math.sqrt(Rtotal * Rtotal + Xtotal * Xtotal);
 
 	// Guard against division by zero (shouldn't happen with source impedance, but defensive)
 	if (Z === 0) {
@@ -636,7 +636,7 @@ export interface EngineeringReport {
 	timestamp: number;
 }
 
-export function generateCompleteReport(  // NOSONAR — S107: parameter count acceptable
+export function generateCompleteReport(
 	current: number,
 	length: number,
 	material: CableMaterial,

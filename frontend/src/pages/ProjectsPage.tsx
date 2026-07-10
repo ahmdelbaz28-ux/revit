@@ -1,4 +1,4 @@
-// NOSONAR
+
 /**
  * ProjectsPage.tsx - Project management with full CRUD + Device & Connection creation
  */
@@ -251,7 +251,7 @@ export function ProjectsPage() {
 
 				{/* Error */}
 				{projectsError && (
-					<Card className="border-danger/30 bg-red-500/5">
+					<Card className="border-danger/30 bg-slate-500/5">
 						<CardContent className="p-4">
 							<p className="text-danger">
 								{t("projects.errorLoading")}: {projectsError}
@@ -314,7 +314,7 @@ export function ProjectsPage() {
 					filteredProjects &&
 					filteredProjects.length > 0 && (
 						<div className="space-y-4">
-							{filteredProjects.map((project: Project) => (  // NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+							{filteredProjects.map((project: Project) => (
 								<Card
 									key={project.id}
 									className="border-border bg-card"
@@ -333,25 +333,25 @@ export function ProjectsPage() {
 												variant={
 													project.status === "active"
 														? "default"
-														: project.status === "draft"  // NOSONAR — S3358: nested ternary acceptable in this localized context
+														: project.status === "draft"
 															? "secondary"
-															: project.status === "archived"  // NOSONAR — S3358: nested ternary acceptable in this localized context
+															: project.status === "archived"
 																? "outline"
 																: "destructive"
 												}
 												className={
 													project.status === "active"
 														? "bg-success/10 text-success border-success/30"
-														: project.status === "draft"  // NOSONAR — S3358: nested ternary acceptable in this localized context
+														: project.status === "draft"
 															? "bg-warning/10 text-warning border-warning/30"
 															: "bg-slate-600/20 text-muted-foreground border-border/30"
 												}
 											>
 												{project.status === "active"
 													? t("projects.active")
-													: project.status === "draft"  // NOSONAR — S3358: nested ternary acceptable in this localized context
+													: project.status === "draft"
 														? t("projects.draft")
-														: project.status === "archived"  // NOSONAR — S3358: nested ternary acceptable in this localized context
+														: project.status === "archived"
 															? t("projects.archived")
 															: t("projects.inactive")}
 											</Badge>
@@ -367,7 +367,7 @@ export function ProjectsPage() {
 												<div className="flex items-center gap-1">
 													<Clock className="h-4 w-4" />
 													{new Date(project.createdAt).toLocaleDateString()}
-												</div>  // NOSONAR: S3923 reviewed — conditional logic is intentional  // NOSONAR — S6438: acceptable
+												</div>
 												<div className="flex items-center gap-1">
 													<div className="w-4 h-4">
 														<svg

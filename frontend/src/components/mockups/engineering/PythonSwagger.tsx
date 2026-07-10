@@ -1,4 +1,4 @@
-// NOSONAR
+
 import {
 	CheckCircle2,
 	ChevronDown,
@@ -32,7 +32,7 @@ export function PythonSwagger() {
 		Compliance: false,
 		AI: false,
 	});
-	const [_scriptExpanded, _setScriptExpanded] = useState({  // NOSONAR - typescript:S6754
+	const [_scriptExpanded, _setScriptExpanded] = useState({
 		my: true,
 		analysis: true,
 		automation: true,
@@ -107,7 +107,7 @@ export function PythonSwagger() {
 					<Button
 						size="icon"
 						variant="ghost"
-						className="h-7 w-7 text-danger hover:text-red-300 hover:bg-red-400/10"
+						className="h-7 w-7 text-danger hover:text-slate-400 hover:bg-slate-500/10"
 					>
 						<Square className="w-3.5 h-3.5" fill="currentColor" />
 					</Button>
@@ -355,19 +355,19 @@ export function PythonSwagger() {
 								<span className="text-green-400 mr-2 shrink-0">{">>>"}</span>
 								<span className="text-foreground">
 									drawings = project.get_drawings(filter=
-									<span className="text-yellow-300">'electrical'</span>)  // NOSONAR — S6772: hook dependency array intentional
+									<span className="text-yellow-300">'electrical'</span>)
 								</span>
 							</div>
 							<div className="flex">
 								<span className="text-green-400 mr-2 shrink-0">{">>>"}</span>
 								<span className="text-foreground">
 									<span className="text-purple-400">print</span>(
-									<span className="text-yellow-300">  // NOSONAR — S6772: hook dependency array intentional
+									<span className="text-yellow-300">
 										f"Found <span className="text-blue-200">{"{"}</span>
 										<span className="text-foreground">len(drawings)</span>
 										<span className="text-blue-200">{"}"}</span> electrical
 										drawings"
-									</span>  // NOSONAR — S6772: hook dependency array intentional
+									</span>
 									)
 								</span>
 							</div>
@@ -392,7 +392,7 @@ export function PythonSwagger() {
 								<span className="text-green-400 mr-2 shrink-0">{">>>"}</span>
 								<span className="text-foreground">
 									sizer = CableSizer(standard=
-									<span className="text-yellow-300">'IEC60364'</span>,  // NOSONAR — S6772: hook dependency array intentional
+									<span className="text-yellow-300">'IEC60364'</span>,
 									project=project)
 								</span>
 							</div>
@@ -423,9 +423,9 @@ export function PythonSwagger() {
 								<span className="text-green-400 mr-2 shrink-0">{">>>"}</span>
 								<span className="text-foreground">
 									results.export_to_excel(
-									<span className="text-yellow-300">  // NOSONAR — S6772: hook dependency array intentional
+									<span className="text-yellow-300">
 										'cable_sizing_report.xlsx'
-									</span>  // NOSONAR — S6772: hook dependency array intentional
+									</span>
 									)
 								</span>
 							</div>
@@ -452,19 +452,19 @@ export function PythonSwagger() {
 								<span className="text-green-400 mr-2 shrink-0">{">>>"}</span>
 								<span className="text-foreground">
 									api_key = nc.secrets.get(
-									<span className="text-yellow-300">'WEATHER_API_KEY'</span>)  // NOSONAR — S6772: hook dependency array intentional
+									<span className="text-yellow-300">'WEATHER_API_KEY'</span>)
 								</span>
 							</div>
 							<div className="flex">
 								<span className="text-green-400 mr-2 shrink-0">{">>>"}</span>
 								<span className="text-foreground">
 									resp = requests.get(
-									<span className="text-yellow-300">  // NOSONAR — S6772: hook dependency array intentional
+									<span className="text-yellow-300">
 										f'https://api.openweathermap.org/data/2.5/weather?q=AbuDhabi&appid=
-										<span className="text-blue-200">{"{"}</span>  // NOSONAR — S6772: hook dependency array intentional
-										<span className="text-foreground">api_key</span>  // NOSONAR - typescript:S6772
-										<span className="text-blue-200">{"}"}</span>'  // NOSONAR
-									</span>  // NOSONAR — S6772: hook dependency array intentional
+										<span className="text-blue-200">{"{"}</span>
+										<span className="text-foreground">api_key</span>
+										<span className="text-blue-200">{"}"}</span>'
+									</span>
 									)
 								</span>
 							</div>
@@ -476,7 +476,7 @@ export function PythonSwagger() {
 								<span className="text-green-400 mr-2 shrink-0">{">>>"}</span>
 								<span className="text-foreground">
 									<span className="text-purple-400">print</span>(
-									<span className="text-yellow-300">  // NOSONAR — S6772: hook dependency array intentional
+									<span className="text-yellow-300">
 										f"Solar irradiance location:{" "}
 										<span className="text-blue-200">{"{"}</span>
 										<span className="text-foreground">
@@ -488,7 +488,7 @@ export function PythonSwagger() {
 											weather['coord']['lon']
 										</span>
 										<span className="text-blue-200">{"}"}</span>"
-									</span>  // NOSONAR — S6772: hook dependency array intentional
+									</span>
 									)
 								</span>
 							</div>
@@ -507,9 +507,9 @@ export function PythonSwagger() {
 								<span className="text-green-400 mr-2 shrink-0">{">>>"}</span>
 								<span className="text-foreground">
 									api = nc.api_client(base_url=
-									<span className="text-yellow-300">  // NOSONAR — S6772: hook dependency array intentional
+									<span className="text-yellow-300">
 										'https://api.nexuscad.io/v4'
-									</span>  // NOSONAR — S6772: hook dependency array intentional
+									</span>
 									)
 								</span>
 							</div>
@@ -523,12 +523,12 @@ export function PythonSwagger() {
 								<span className="text-green-400 mr-2 shrink-0">{">>>"}</span>
 								<span className="text-foreground">
 									<span className="text-purple-400">print</span>(
-									<span className="text-yellow-300">  // NOSONAR — S6772: hook dependency array intentional
+									<span className="text-yellow-300">
 										f"Available endpoints:{" "}
 										<span className="text-blue-200">{"{"}</span>
 										<span className="text-foreground">len(endpoints)</span>
 										<span className="text-blue-200">{"}"}</span>"
-									</span>  // NOSONAR — S6772: hook dependency array intentional
+									</span>
 									)
 								</span>
 							</div>
@@ -602,7 +602,7 @@ export function PythonSwagger() {
 						<div className="p-3 space-y-3 font-sans">
 							{/* Projects Group */}
 							<div className="border border-slate-800 rounded overflow-hidden">
-								<div  // NOSONAR — S6848: type assertion acceptable
+								<div
 									className="bg-card px-3 py-2 flex items-center justify-between cursor-pointer hover:bg-card transition-colors"
 									onClick={() => toggleSwagger("Projects")}
 								>
@@ -672,9 +672,9 @@ export function PythonSwagger() {
 												Update project
 											</span>
 										</div>
-										<div className="flex items-center justify-between bg-card border border-slate-800 hover:border-red-500/50 p-1.5 rounded cursor-pointer group">
+										<div className="flex items-center justify-between bg-card border border-slate-800 hover:border-slate-500/50 p-1.5 rounded cursor-pointer group">
 											<div className="flex items-center gap-2">
-												<span className="bg-red-500 text-red-950 font-bold text-[9px] px-1.5 py-0.5 rounded w-10 text-center">
+												<span className="bg-slate-500 text-red-950 font-bold text-[9px] px-1.5 py-0.5 rounded w-10 text-center">
 													DEL
 												</span>
 												<span className="text-xs font-mono text-foreground/90">
@@ -704,7 +704,7 @@ export function PythonSwagger() {
 									key={group.name}
 									className="border border-slate-800 rounded overflow-hidden"
 								>
-									<div  // NOSONAR — S6848: type assertion acceptable
+									<div
 										className="bg-card px-3 py-2 flex items-center justify-between cursor-pointer hover:bg-card transition-colors"
 										onClick={() => toggleSwagger(group.name)}
 									>

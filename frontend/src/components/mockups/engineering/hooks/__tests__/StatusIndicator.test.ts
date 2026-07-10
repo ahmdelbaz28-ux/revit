@@ -24,7 +24,7 @@ function getBannerVisible(connectionStatus: string): boolean {
 }
 
 function getIndicatorColor(connectionStatus: string): string {
-	return connectionStatus === "connected" ? "#22c55e" : "#ef4444";
+	return connectionStatus === "connected" ? "#22c55e" : "#64748b";
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -85,6 +85,6 @@ describe("Status Indicator — Connection State Logic", () => {
 	// ── TEST 6 ─────────────────────────────────────────────────────────────────
 	it("uses green color token when connected and red when disconnected", () => {
 		expect(getIndicatorColor("connected")).toBe("#22c55e");
-		expect(getIndicatorColor("disconnected")).toBe("#ef4444");
+		expect(getIndicatorColor("disconnected")).toBe("#64748b");
 	});
 });

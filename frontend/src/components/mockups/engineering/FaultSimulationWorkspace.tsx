@@ -1,4 +1,4 @@
-// NOSONAR
+
 import { actions, useStore } from "@/store/simpleStore";
 import {
 	ControlPanel,
@@ -22,7 +22,7 @@ export function FaultSimulationWorkspace() {
 	const { isFaulty, toggleFault } = useFaultLogic();
 
 	const themeClass =
-		theme === "dark" ? "dark" : theme === "blue" ? "theme-blue" : "";  // NOSONAR — S3358: nested ternary acceptable in this localized context
+		theme === "dark" ? "dark" : theme === "blue" ? "theme-blue" : "";
 
 	return (
 		<div

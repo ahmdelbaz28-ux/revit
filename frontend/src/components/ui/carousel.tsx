@@ -1,4 +1,4 @@
-// NOSONAR
+
 import useEmblaCarousel, {
 	type UseEmblaCarouselType,
 } from "embla-carousel-react";
@@ -120,7 +120,7 @@ const Carousel = React.forwardRef<
 
 		return (
 			<CarouselContext.Provider
-				value={{  // NOSONAR — S6481: structure acceptable
+				value={{
 					carouselRef,
 					api: api,
 					opts,
@@ -132,7 +132,7 @@ const Carousel = React.forwardRef<
 					canScrollNext,
 				}}
 			>
-				<div  // NOSONAR — S6819: non-null assertion acceptable
+				<div
 					ref={ref}
 					onKeyDownCapture={handleKeyDown}
 					className={cn("relative", className)}
@@ -177,7 +177,7 @@ const CarouselItem = React.forwardRef<
 	const { orientation } = useCarousel();
 
 	return (
-		<div  // NOSONAR — S6819: non-null assertion acceptable
+		<div
 			ref={ref}
 			role="group"
 			aria-roledescription="slide"

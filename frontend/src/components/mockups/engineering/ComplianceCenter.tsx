@@ -1,4 +1,4 @@
-// NOSONAR
+
 import {
 	AlertOctagon,
 	AlertTriangle,
@@ -67,7 +67,7 @@ export function ComplianceCenter() {
 			{/* Status Banner */}
 			<div className="h-8 bg-card/80 border-b flex items-center px-4 gap-4 text-xs font-medium shrink-0">
 				<div className="flex-1 h-1.5 rounded-full overflow-hidden flex">
-					<div className="bg-red-500 w-[2%]" title="Critical (3)"></div>
+					<div className="bg-slate-500 w-[2%]" title="Critical (3)"></div>
 					<div className="bg-orange-400 w-[5%]" title="Warnings (8)"></div>
 					<div className="bg-emerald-500 w-[93%]" title="Passed (127)"></div>
 				</div>
@@ -138,12 +138,12 @@ export function ComplianceCenter() {
 								</TabsTrigger>
 								<TabsTrigger
 									value="critical"
-									className="text-xs px-3 data-[state=active]:bg-red-500/20 data-[state=active]:text-danger"
+									className="text-xs px-3 data-[state=active]:bg-slate-500/20 data-[state=active]:text-danger"
 								>
 									Critical{" "}
 									<Badge
 										variant="secondary"
-										className="ml-1 text-[9px] px-1 py-0 h-4 bg-red-500 text-white"
+										className="ml-1 text-[9px] px-1 py-0 h-4 bg-slate-500 text-white"
 									>
 										3
 									</Badge>
@@ -255,7 +255,7 @@ export function ComplianceCenter() {
 							</span>
 							<Badge
 								variant="outline"
-								className="bg-red-500/20 text-danger border-danger/30"
+								className="bg-slate-500/20 text-danger border-danger/30"
 							>
 								Critical
 							</Badge>
@@ -362,7 +362,7 @@ export function ComplianceCenter() {
 	);
 }
 
-function StandardGroup({ title, items }: { title: string; items: any[] }) {  // NOSONAR - typescript:S6759
+function StandardGroup({ title, items }: { title: string; items: any[] }) {
 	return (
 		<div className="mb-4">
 			<div className="text-xs font-semibold text-foreground mb-2 flex items-center">
@@ -371,7 +371,7 @@ function StandardGroup({ title, items }: { title: string; items: any[] }) {  // 
 			<div className="space-y-1 pl-4 border-l border-border/30 ml-1.5">
 				{items.map((item, i) => (
 					<div
-						key={i}  // NOSONAR — S6479: array index key acceptable for static list
+						key={i}
 						className="flex items-center justify-between py-1 px-2 hover:bg-muted/50 rounded-md"
 					>
 						<div className="flex items-center gap-2">
@@ -419,7 +419,7 @@ function IssueCard({ active, severity, std, title, desc, actions }: any) {
 					<div className="flex items-center gap-2 mb-1">
 						<Badge
 							variant="outline"
-							className={`text-[9px] px-1 py-0 h-4 border-muted-foreground/30 ${isCrit ? "text-danger bg-red-500/10" : "text-primary bg-primary/10"}`}
+							className={`text-[9px] px-1 py-0 h-4 border-muted-foreground/30 ${isCrit ? "text-danger bg-slate-500/10" : "text-primary bg-primary/10"}`}
 						>
 							{severity}
 						</Badge>
@@ -432,7 +432,7 @@ function IssueCard({ active, severity, std, title, desc, actions }: any) {
 					<div className="flex gap-2">
 						{actions.map((act: string, i: number) => (
 							<Button
-								key={i}  // NOSONAR — S6479: array index key acceptable for static list
+								key={i}
 								variant={i === 0 ? "secondary" : "outline"}
 								size="sm"
 								className="h-6 text-[10px] px-2 bg-background border-muted"

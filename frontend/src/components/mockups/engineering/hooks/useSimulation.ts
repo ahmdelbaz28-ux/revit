@@ -1,4 +1,4 @@
-// NOSONAR
+
 import { useEffect } from "react";
 import { actions, useStore } from "@/store/simpleStore";
 
@@ -18,9 +18,9 @@ export function useSimulation() {
 				const currentCurrent = (liveData.current as number) || 15;
 				const currentFreq = (liveData.frequency as number) || 50;
 
-				const deltaV = (Math.random() - 0.5) * 2;  // NOSONAR — safe in UI context
-				const deltaI = (Math.random() - 0.5) * 0.2;  // NOSONAR — safe in UI context
-				const deltaF = (Math.random() - 0.5) * 0.02;  // NOSONAR — safe in UI context
+				const deltaV = (Math.random() - 0.5) * 2;
+				const deltaI = (Math.random() - 0.5) * 0.2;
+				const deltaF = (Math.random() - 0.5) * 0.02;
 
 				actions.updateLiveData({
 					voltage: Math.min(240, Math.max(200, currentVoltage + deltaV)),

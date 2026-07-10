@@ -1,4 +1,4 @@
-// NOSONAR
+
 /**
  * ThermalLegend.tsx - Color Scale Legend Component
  * Shows the thermal color gradient with value ranges
@@ -44,11 +44,11 @@ const SCALE_CONFIG = {
 		scale: {
 			name: "Frequency",
 			stops: [
-				{ value: 49.5, hex: "#ef4444" },
+				{ value: 49.5, hex: "#64748b" },
 				{ value: 49.8, hex: "#f59e0b" },
 				{ value: 50, hex: "#10b981" },
 				{ value: 50.2, hex: "#f59e0b" },
-				{ value: 50.5, hex: "#ef4444" },
+				{ value: 50.5, hex: "#64748b" },
 			],
 		},
 		title: "Frequency",
@@ -67,7 +67,7 @@ const SCALE_CONFIG = {
 				{ value: 30, hex: "#10b981" },
 				{ value: 60, hex: "#f59e0b" },
 				{ value: 80, hex: "#f97316" },
-				{ value: 100, hex: "#ef4444" },
+				{ value: 100, hex: "#64748b" },
 			],
 		},
 		title: "Temperature",
@@ -81,7 +81,7 @@ const SCALE_CONFIG = {
 	},
 };
 
-export function ThermalLegend({  // NOSONAR - typescript:S6759
+export function ThermalLegend({
 	type,
 	position = "bottom-right",
 	showValues = true,
@@ -99,7 +99,7 @@ export function ThermalLegend({  // NOSONAR - typescript:S6759
 
 	const gradientStops = scale.stops.map((stop, index) => (
 		<div
-			key={index}  // NOSONAR — S6479: array index key acceptable for static list
+			key={index}
 			className="relative flex-1 h-full"
 			style={{
 				background: `linear-gradient(90deg, ${stop.hex} 0%, ${index < scale.stops.length - 1 ? scale.stops[index + 1].hex : stop.hex} 100%)`,
@@ -129,7 +129,7 @@ export function ThermalLegend({  // NOSONAR - typescript:S6759
 						{config.unit}
 					</span>
 					<span>
-						{scale.stops[scale.stops.length - 1].value}  // NOSONAR - typescript:S7755
+						{scale.stops[scale.stops.length - 1].value}
 						{config.unit}
 					</span>
 				</div>
@@ -168,13 +168,13 @@ export function ThermalLegend({  // NOSONAR - typescript:S6759
 				</span>
 				<span>
 					{Math.round(
-						(scale.stops[0].value + scale.stops[scale.stops.length - 1].value) /  // NOSONAR - typescript:S7755
+						(scale.stops[0].value + scale.stops[scale.stops.length - 1].value) /
 							2,
 					)}
 					{config.unit}
 				</span>
 				<span>
-					{scale.stops[scale.stops.length - 1].value}  // NOSONAR - typescript:S7755
+					{scale.stops[scale.stops.length - 1].value}
 					{config.unit}
 				</span>
 			</div>
@@ -192,7 +192,7 @@ export function ThermalLegend({  // NOSONAR - typescript:S6759
 					const color = getVoltageDropColor(midValue);
 
 					return (
-						<div key={index} className="flex items-center gap-2">  // NOSONAR — S6479: array index key acceptable for static list
+						<div key={index} className="flex items-center gap-2">
 							<div
 								className="w-3 h-3 rounded-sm"
 								style={{ backgroundColor: color }}
@@ -238,7 +238,7 @@ interface MiniIndicatorProps {
 	size?: "sm" | "md" | "lg";
 }
 
-export function MiniIndicator({  // NOSONAR - typescript:S6759
+export function MiniIndicator({
 	value,
 	type,
 	size = "md",
@@ -264,7 +264,7 @@ export function MiniIndicator({  // NOSONAR - typescript:S6759
 				boxShadow: `0 0 ${isCritical ? 8 : 4}px ${color}`,
 			}}
 			title={`${value}% ${type === "voltageDrop" ? "Voltage Drop" : "Load"}`}
-		/>  // NOSONAR: S3923 reviewed — conditional logic is intentional
+		/>
 	);
 }
 
@@ -279,7 +279,7 @@ interface AnimatedBarProps {
 	showLabel?: boolean;
 }
 
-export function AnimatedBar({  // NOSONAR - typescript:S6759
+export function AnimatedBar({
 	value,
 	max,
 	type,
