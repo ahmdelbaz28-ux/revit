@@ -5,149 +5,149 @@
 @import "tailwindcss";
 
 :root {
-	/* ── Surface palette (dark-but-not-black, 3% elevation steps) ─────── */
-	--color-background: #0f172a;          /* slate-900 navy-charcoal */
-	--color-foreground: #e6edf3;          /* cool off-white (NOT pure white) */
-	--color-card: #172033;                /* +3% white → elevated surface */
-	--color-card-foreground: #e6edf3;
-	--color-popover: #172033;
-	--color-popover-foreground: #e6edf3;
+        /* ── Surface palette (dark-but-not-black, 3% elevation steps) ─────── */
+        --color-background: #0f172a;          /* slate-900 navy-charcoal */
+        --color-foreground: #e6edf3;          /* cool off-white (NOT pure white) */
+        --color-card: #172033;                /* +3% white → elevated surface */
+        --color-card-foreground: #e6edf3;
+        --color-popover: #172033;
+        --color-popover-foreground: #e6edf3;
 
-	/* ── Action colors ────────────────────────────────────────────────── */
-	--color-primary: #2f81f7;             /* calm cyan-blue (GitHub accent) */
-	--color-primary-foreground: #ffffff;  /* white on blue (use semibold ≥15px) */
-	--color-secondary: #1e293b;           /* recessed surface */
-	--color-secondary-foreground: #cbd5e1;
-	--color-muted: #1e293b;               /* hover/recessed */
-	--color-muted-foreground: #94a3b8;    /* secondary text (7:1 AAA) */
-	--color-accent: #2dd4bf;              /* teal — active tab / selected row only */
-	--color-accent-foreground: #052e2b;
+        /* ── Action colors ────────────────────────────────────────────────── */
+        --color-primary: #2f81f7;             /* calm cyan-blue (GitHub accent) */
+        --color-primary-foreground: #ffffff;  /* white on blue (use semibold ≥15px) */
+        --color-secondary: #1e293b;           /* recessed surface */
+        --color-secondary-foreground: #cbd5e1;
+        --color-muted: #1e293b;               /* hover/recessed */
+        --color-muted-foreground: #94a3b8;    /* secondary text (7:1 AAA) */
+        --color-accent: #2dd4bf;              /* teal — active tab / selected row only */
+        --color-accent-foreground: #052e2b;
 
-	/* ── Structural ──────────────────────────────────────────────────── */
-	--color-border: #2a3a52;              /* subtle but visible */
-	--color-input: #334155;               /* stronger border for form fields */
-	--color-ring: #2f81f7;               /* focus ring = primary */
+        /* ── Structural ──────────────────────────────────────────────────── */
+        --color-border: #2a3a52;              /* subtle but visible */
+        --color-input: #334155;               /* stronger border for form fields */
+        --color-ring: #2f81f7;               /* focus ring = primary */
 
-	/* ── Destructive (deep red for filled buttons) ───────────────────── */
-	--color-destructive: #dc2626;
-	--color-destructive-foreground: #ffffff;
+        /* ── Destructive (deep red for filled buttons) ───────────────────── */
+        --color-destructive: #dc2626;
+        --color-destructive-foreground: #ffffff;
 
-	/* ── Status (NFPA 79 / IEC 60204-1 — never deviate) ─────────────── */
-	--color-success: #3fb950;             /* GREEN = normal / safe / run */
-	--color-warning: #d29922;             /* AMBER = caution / attention */
-	--color-danger: #f85149;              /* RED = fault / alarm (status text) */
-	--color-info: #38bdf8;                /* BLUE = mandatory / informational */
+        /* ── Status (NFPA 79 / IEC 60204-1 — never deviate) ─────────────── */
+        --color-success: #3fb950;             /* GREEN = normal / safe / run */
+        --color-warning: #d29922;             /* AMBER = caution / attention */
+        --color-danger: #f85149;              /* RED = fault / alarm (status text) */
+        --color-info: #38bdf8;                /* BLUE = mandatory / informational */
 
-	--radius: 0.5rem;                     /* 8px — balanced for engineering */
-	--radius-sm: 0.375rem;               /* 6px */
+        --radius: 0.5rem;                     /* 8px — balanced for engineering */
+        --radius-sm: 0.375rem;               /* 6px */
 }
 
 @theme {
-	--color-background: var(--color-background);
-	--color-foreground: var(--color-foreground);
-	--color-primary: var(--color-primary);
-	--color-primary-foreground: var(--color-primary-foreground);
-	--color-secondary: var(--color-secondary);
-	--color-secondary-foreground: var(--color-secondary-foreground);
-	--color-muted: var(--color-muted);
-	--color-muted-foreground: var(--color-muted-foreground);
-	--color-accent: var(--color-accent);
-	--color-accent-foreground: var(--color-accent-foreground);
-	--color-border: var(--color-border);
-	--color-input: var(--color-input);
-	--color-ring: var(--color-ring);
-	--color-card: var(--color-card);
-	--color-card-foreground: var(--color-card-foreground);
-	--color-popover: var(--color-popover);
-	--color-popover-foreground: var(--color-popover-foreground);
-	--color-destructive: var(--color-destructive);
-	--color-destructive-foreground: var(--color-destructive-foreground);
-	--color-success: var(--color-success);
-	--color-warning: var(--color-warning);
-	--color-danger: var(--color-danger);
-	--color-info: var(--color-info);
-	--radius: var(--radius);
+        --color-background: var(--color-background);
+        --color-foreground: var(--color-foreground);
+        --color-primary: var(--color-primary);
+        --color-primary-foreground: var(--color-primary-foreground);
+        --color-secondary: var(--color-secondary);
+        --color-secondary-foreground: var(--color-secondary-foreground);
+        --color-muted: var(--color-muted);
+        --color-muted-foreground: var(--color-muted-foreground);
+        --color-accent: var(--color-accent);
+        --color-accent-foreground: var(--color-accent-foreground);
+        --color-border: var(--color-border);
+        --color-input: var(--color-input);
+        --color-ring: var(--color-ring);
+        --color-card: var(--color-card);
+        --color-card-foreground: var(--color-card-foreground);
+        --color-popover: var(--color-popover);
+        --color-popover-foreground: var(--color-popover-foreground);
+        --color-destructive: var(--color-destructive);
+        --color-destructive-foreground: var(--color-destructive-foreground);
+        --color-success: var(--color-success);
+        --color-warning: var(--color-warning);
+        --color-danger: var(--color-danger);
+        --color-info: var(--color-info);
+        --radius: var(--radius);
 }
 
 * {
-	margin: 0;
-	padding: 0;
-	box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
 }
 
 body {
-	font-family: Inter, system-ui, -apple-system, sans-serif;
-	background-color: var(--color-background);
-	color: var(--color-foreground);
-	-webkit-font-smoothing: antialiased;
-	-moz-osx-font-smoothing: grayscale;
-	overflow-x: hidden;
-	font-feature-settings: "cv11", "ss01";
-	font-variation-settings: "opsz" 32;
+        /* V223: IBM Plex Sans — AutoCAD-style clean engineering font.
+           Falls back to Arial (AutoCAD's actual default) then Helvetica. */
+        font-family: "IBM Plex Sans", Arial, Helvetica, sans-serif;
+        background-color: var(--color-background);
+        color: var(--color-foreground);
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        overflow-x: hidden;
 }
 
 #root {
-	min-height: 100vh;
+        min-height: 100vh;
 }
 
 /* SAFETY-CRITICAL: visible focus indicators for keyboard navigation */
 *:focus-visible {
-	outline: 2px solid var(--color-ring);
-	outline-offset: 2px;
-	border-radius: 4px;
+        outline: 2px solid var(--color-ring);
+        outline-offset: 2px;
+        border-radius: 4px;
 }
 
 *:focus:not(:focus-visible) {
-	outline: none;
+        outline: none;
 }
 
 /* Scrollbar — subtle, engineering-style */
 ::-webkit-scrollbar {
-	width: 8px;
-	height: 8px;
+        width: 8px;
+        height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-	background: transparent;
+        background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-	background: var(--color-border);
-	border-radius: 4px;
+        background: var(--color-border);
+        border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-	background: var(--color-muted-foreground);
+        background: var(--color-muted-foreground);
 }
 
 /* ── Minimal animations (legitimate UI feedback only) ───────────────── */
 
 @keyframes fade-in {
-	from { opacity: 0; }
-	to   { opacity: 1; }
+        from { opacity: 0; }
+        to   { opacity: 1; }
 }
 
 .fade-in {
-	animation: fade-in 200ms ease-out;
+        animation: fade-in 200ms ease-out;
 }
 
 /* Status pulse — for LIVE telemetry heartbeats ONLY, never compliance status */
 @keyframes status-pulse {
-	0%, 100% { opacity: 1; }
-	50%      { opacity: 0.5; }
+        0%, 100% { opacity: 1; }
+        50%      { opacity: 0.5; }
 }
 
 .animate-status-pulse {
-	animation: status-pulse 2s ease-in-out infinite;
+        animation: status-pulse 2s ease-in-out infinite;
 }
 
 /* ── Icon stroke width override (lucide-react) ──────────────────────── */
 /* 1.5px stroke for all icons — reduces visual noise at 16px size */
 svg.lucide {
-	stroke-width: 1.5;
+        stroke-width: 1.5;
 }
 
 /* ── Button label weight (WCAG large-text for white-on-blue) ────────── */
 button {
-	font-weight: 500;
+        font-weight: 500;
 }

@@ -1,4 +1,4 @@
-/* ── Engineering type scale (dense, hierarchy via weight not size) ──────── */
+/* ── V223: Engineering type scale (IBM Plex Sans / Arial — AutoCAD style) ── */
 
 h1 {
 	font-size: 1.125rem;
@@ -37,13 +37,13 @@ h6 {
 	color: var(--color-muted-foreground);
 }
 
-/* Numeric data — always mono + tabular for alignment */
+/* Numeric data — IBM Plex Mono (clean, tabular, like AutoCAD coordinate display) */
 .font-mono {
-	font-family: "JetBrains Mono", ui-monospace, monospace;
+	font-family: "IBM Plex Mono", "Courier New", ui-monospace, monospace;
 }
 
 .number-display {
-	font-family: "JetBrains Mono", ui-monospace, monospace;
+	font-family: "IBM Plex Mono", "Courier New", ui-monospace, monospace;
 	font-variant-numeric: tabular-nums;
 }
 

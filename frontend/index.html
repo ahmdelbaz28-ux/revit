@@ -15,11 +15,12 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
 
-    <!-- V214: Professional fonts — Inter (UI) + JetBrains Mono (data) -->
+    <!-- V223: Engineering fonts — Arial/Helvetica (AutoCAD style) + JetBrains Mono (data) -->
+    <!-- Arial is the AutoCAD default UI font — clean, neutral, no decorative elements -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
 
@@ -66,8 +67,8 @@
       body {
         margin: 0;
         padding: 0;
-        font-family: Inter, system-ui, -apple-system, sans-serif;
-        background-color: #0b1220;
+        font-family: "IBM Plex Sans", Arial, Helvetica, sans-serif;
+        background-color: #0f172a;
         color: #e6edf3;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
@@ -83,15 +84,15 @@
         align-items: center;
         justify-content: center;
         height: 100vh;
-        background-color: #0b1220;
-        color: #8b95a7;
-        font-family: Inter, system-ui, sans-serif;
+        background-color: #0f172a;
+        color: #94a3b8;
+        font-family: "IBM Plex Sans", Arial, Helvetica, sans-serif;
       }
       .app-loader-spinner {
         width: 32px;
         height: 32px;
-        border: 2px solid #2a3441;
-        border-top-color: #3b82f6;
+        border: 2px solid #2a3a52;
+        border-top-color: #2f81f7;
         border-radius: 50%;
         animation: spin 0.8s linear infinite;
       }
