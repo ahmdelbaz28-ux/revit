@@ -2,6 +2,7 @@
 import {
         AlertTriangle,
         ArrowRightLeft,
+        Activity,
         Box,
         Ship,
         Building2,
@@ -18,6 +19,7 @@ import {
         LayoutDashboard,
         PencilRuler,
         Settings,
+        CloudSun,
         Settings2,
         ShieldCheck,
 } from "lucide-react";
@@ -137,6 +139,18 @@ const navItems: NavItem[] = [
                 icon: FileText,
                 path: "/reports",
                 dataOnboarding: "nav-reports",
+        },
+        {
+                labelKey: "nav.environment",
+                defaultLabel: "Environment",
+                icon: CloudSun,
+                path: "/environment",
+        },
+        {
+                labelKey: "nav.monitor",
+                defaultLabel: "Monitor",
+                icon: Activity,
+                path: "/monitor",
         },
         {
                 labelKey: "nav.elements",

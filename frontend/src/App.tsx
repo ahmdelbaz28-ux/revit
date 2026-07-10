@@ -23,6 +23,7 @@ import Conflicts from "./pages/Conflicts";
 import Connections from "./pages/Connections";
 import { DashboardPage } from "./pages/DashboardPage";
 import { DigitalTwinConfigPage } from "./pages/DigitalTwinConfigPage";
+import { EnvironmentPage } from "./pages/EnvironmentPage";
 import { DigitalTwinConvertPage } from "./pages/DigitalTwinConvertPage";
 import { DigitalTwinHistoryPage } from "./pages/DigitalTwinHistoryPage";
 import { DigitalTwinPage } from "./pages/DigitalTwinPage";
@@ -33,8 +34,10 @@ import { FACPPage } from "./pages/FACPPage";
 import { FireAlarmPage } from "./pages/FireAlarmPage";
 import { LoginPage } from "./pages/LoginPage";
 import { MarinePage } from "./pages/MarinePage";
+import { MonitorPage } from "./pages/MonitorPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 import { ProjectsPage } from "./pages/ProjectsPage";
+import { ReportGeneratorPage } from "./pages/ReportGeneratorPage";
 import { ReportsPage } from "./pages/ReportsPage";
 import { RevitCreatePage } from "./pages/RevitCreatePage";
 import { RevitElementsPage } from "./pages/RevitElementsPage";
@@ -128,7 +131,10 @@ function App() {
                 { path: "/engineering", element: <EngineeringPage /> },
                 { path: "/marine", element: <MarinePage /> },
                 { path: "/facp", element: <FACPPage /> },
+                { path: "/environment", element: <EnvironmentPage /> },
+                { path: "/monitor", element: <MonitorPage /> },
                 { path: "/reports", element: <ReportsPage /> },
+                { path: "/reports/generate", element: <ReportGeneratorPage /> },
                 { path: "/settings", element: <SettingsPage /> },
                 { path: "/settings/cad", element: <CADSettingsPage /> },
                 { path: "/digital-twin", element: <DigitalTwinPage /> },
