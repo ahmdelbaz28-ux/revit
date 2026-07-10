@@ -89,11 +89,11 @@ export const DeviceProperties: React.FC<DevicePropertiesProps> = ({
 
 	if (!device) {
 		return (
-			<div className="fixed top-4 right-4 w-80 bg-slate-800 border border-slate-700 rounded-lg shadow-lg z-50">
-				<Card className="border-slate-700 bg-slate-800">
+			<div className="fixed top-4 right-4 w-80 bg-card border border-border rounded-lg shadow-lg z-50">
+				<Card className="border-border bg-card">
 					<CardHeader className="pb-3">
 						<div className="flex justify-between items-center">
-							<CardTitle className="text-lg text-slate-100">
+							<CardTitle className="text-lg text-foreground">
 								{t("fireAlarm.deviceProperties")}
 							</CardTitle>
 							<Button variant="ghost" size="sm" onClick={onClose}>
@@ -102,7 +102,7 @@ export const DeviceProperties: React.FC<DevicePropertiesProps> = ({
 						</div>
 					</CardHeader>
 					<CardContent>
-						<p className="text-slate-400">{t("fireAlarm.selectDevice")}</p>
+						<p className="text-muted-foreground">{t("fireAlarm.selectDevice")}</p>
 					</CardContent>
 				</Card>
 			</div>
@@ -110,11 +110,11 @@ export const DeviceProperties: React.FC<DevicePropertiesProps> = ({
 	}
 
 	return (
-		<div className="fixed top-4 right-4 w-80 bg-slate-800 border border-slate-700 rounded-lg shadow-lg z-50">
-			<Card className="border-slate-700 bg-slate-800">
+		<div className="fixed top-4 right-4 w-80 bg-card border border-border rounded-lg shadow-lg z-50">
+			<Card className="border-border bg-card">
 				<CardHeader className="pb-3">
 					<div className="flex justify-between items-center">
-						<CardTitle className="text-lg text-slate-100">
+						<CardTitle className="text-lg text-foreground">
 							{t("fireAlarm.deviceProperties")}
 						</CardTitle>
 						<Button variant="ghost" size="sm" onClick={onClose}>
@@ -125,39 +125,39 @@ export const DeviceProperties: React.FC<DevicePropertiesProps> = ({
 				<CardContent>
 					<div className="space-y-4">
 						<div>
-							<Label className="text-slate-300">{t("fireAlarm.address")}</Label>
+							<Label className="text-foreground/90">{t("fireAlarm.address")}</Label>
 							<Input
 								value={editedDevice.address || ""}
 								onChange={(e) => handleChange("address", e.target.value)}
 								placeholder={t("fireAlarm.addressPlaceholder") || undefined}
-								className="bg-slate-900 border-slate-600 text-slate-100"
+								className="bg-card border-border text-foreground"
 							/>
 						</div>
 
 						<div>
-							<Label className="text-slate-300">{t("fireAlarm.zone")}</Label>
+							<Label className="text-foreground/90">{t("fireAlarm.zone")}</Label>
 							<Input
 								value={editedDevice.zone || ""}
 								onChange={(e) => handleChange("zone", e.target.value)}
 								placeholder={t("fireAlarm.zonePlaceholder") || undefined}
-								className="bg-slate-900 border-slate-600 text-slate-100"
+								className="bg-card border-border text-foreground"
 							/>
 						</div>
 
 						<div>
-							<Label className="text-slate-300">
+							<Label className="text-foreground/90">
 								{t("fireAlarm.location")}
 							</Label>
 							<Input
 								value={editedDevice.location || ""}
 								onChange={(e) => handleChange("location", e.target.value)}
 								placeholder={t("fireAlarm.locationPlaceholder") || undefined}
-								className="bg-slate-900 border-slate-600 text-slate-100"
+								className="bg-card border-border text-foreground"
 							/>
 						</div>
 
 						<div>
-							<Label className="text-slate-300">
+							<Label className="text-foreground/90">
 								{t("fireAlarm.detectorType")}
 							</Label>
 							<Select
@@ -166,10 +166,10 @@ export const DeviceProperties: React.FC<DevicePropertiesProps> = ({
 									handleChange("detectorType", value)
 								}
 							>
-								<SelectTrigger className="bg-slate-900 border-slate-600 text-slate-100">
+								<SelectTrigger className="bg-card border-border text-foreground">
 									<SelectValue />
 								</SelectTrigger>
-								<SelectContent className="bg-slate-800 border-slate-700">
+								<SelectContent className="bg-card border-border">
 									<SelectItem value="smoke">
 										{t("fireAlarm.smokeDet")}
 									</SelectItem>
@@ -189,7 +189,7 @@ export const DeviceProperties: React.FC<DevicePropertiesProps> = ({
 						</div>
 
 						<div>
-							<Label className="text-slate-300">
+							<Label className="text-foreground/90">
 								{t("fireAlarm.heightAff")}
 							</Label>
 							<Input
@@ -199,12 +199,12 @@ export const DeviceProperties: React.FC<DevicePropertiesProps> = ({
 									handleChange("heightAFF", parseFloat(e.target.value) || 0)  // NOSONAR - typescript:S7773
 								}
 								placeholder={t("fireAlarm.heightAffPlaceholder") || undefined}
-								className="bg-slate-900 border-slate-600 text-slate-100"
+								className="bg-card border-border text-foreground"
 							/>
 						</div>
 
 						<div>
-							<Label className="text-slate-300">
+							<Label className="text-foreground/90">
 								{t("fireAlarm.manufacturer")}
 							</Label>
 							<Input
@@ -213,22 +213,22 @@ export const DeviceProperties: React.FC<DevicePropertiesProps> = ({
 								placeholder={
 									t("fireAlarm.manufacturerPlaceholder") || undefined
 								}
-								className="bg-slate-900 border-slate-600 text-slate-100"
+								className="bg-card border-border text-foreground"
 							/>
 						</div>
 
 						<div>
-							<Label className="text-slate-300">{t("fireAlarm.model")}</Label>
+							<Label className="text-foreground/90">{t("fireAlarm.model")}</Label>
 							<Input
 								value={editedDevice.modelNumber || ""}
 								onChange={(e) => handleChange("modelNumber", e.target.value)}
 								placeholder={t("fireAlarm.modelPlaceholder") || undefined}
-								className="bg-slate-900 border-slate-600 text-slate-100"
+								className="bg-card border-border text-foreground"
 							/>
 						</div>
 
 						<div>
-							<Label className="text-slate-300">
+							<Label className="text-foreground/90">
 								{t("fireAlarm.sensitivity")}
 							</Label>
 							<Select
@@ -237,10 +237,10 @@ export const DeviceProperties: React.FC<DevicePropertiesProps> = ({
 									handleChange("sensitivityLevel", value)
 								}
 							>
-								<SelectTrigger className="bg-slate-900 border-slate-600 text-slate-100">
+								<SelectTrigger className="bg-card border-border text-foreground">
 									<SelectValue />
 								</SelectTrigger>
-								<SelectContent className="bg-slate-800 border-slate-700">
+								<SelectContent className="bg-card border-border">
 									<SelectItem value="high">{t("fireAlarm.high")}</SelectItem>
 									<SelectItem value="standard">
 										{t("fireAlarm.standard")}
@@ -251,7 +251,7 @@ export const DeviceProperties: React.FC<DevicePropertiesProps> = ({
 						</div>
 
 						<div>
-							<Label className="text-slate-300">
+							<Label className="text-foreground/90">
 								{t("fireAlarm.coverageArea")}
 							</Label>
 							<Input
@@ -263,21 +263,21 @@ export const DeviceProperties: React.FC<DevicePropertiesProps> = ({
 								placeholder={
 									t("fireAlarm.coverageAreaPlaceholder") || undefined
 								}
-								className="bg-slate-900 border-slate-600 text-slate-100"
+								className="bg-card border-border text-foreground"
 							/>
 						</div>
 
 						<div>
-							<Label className="text-slate-300">{t("fireAlarm.status")}</Label>
+							<Label className="text-foreground/90">{t("fireAlarm.status")}</Label>
 							<div className="flex items-center gap-2">
 								<Badge
 									variant="secondary"
 									className={
 										editedDevice.status === "normal"
-											? "bg-emerald-600/20 text-emerald-400 border-emerald-500/30"
+											? "bg-success/10 text-success border-success/30"
 											: editedDevice.status === "warning"  // NOSONAR — S3358: nested ternary acceptable in this localized context
-												? "bg-amber-600/20 text-amber-400 border-amber-500/30"
-												: "bg-red-600/20 text-red-400 border-red-500/30"
+												? "bg-warning/10 text-warning border-warning/30"
+												: "bg-danger/10 text-danger border-danger/30"
 									}
 								>
 									{editedDevice.status === "normal" && (
@@ -295,20 +295,20 @@ export const DeviceProperties: React.FC<DevicePropertiesProps> = ({
 						</div>
 
 						<div>
-							<Label className="text-slate-300">
+							<Label className="text-foreground/90">
 								{t("fireAlarm.lastTest")}
 							</Label>
 							<Input
 								type="date"
 								value={editedDevice.lastTestDate || ""}
 								onChange={(e) => handleChange("lastTestDate", e.target.value)}
-								className="bg-slate-900 border-slate-600 text-slate-100"
+								className="bg-card border-border text-foreground"
 							/>
 						</div>
 
 						<div className="flex gap-2 pt-2">
 							<Button
-								className="flex-1 bg-red-600 hover:bg-red-700 text-white border-none"
+								className="flex-1 bg-danger hover:bg-danger/90 text-white border-none"
 								onClick={handleSave}
 							>
 								<Save className="h-4 w-4 mr-2" />
@@ -316,7 +316,7 @@ export const DeviceProperties: React.FC<DevicePropertiesProps> = ({
 							</Button>
 							<Button
 								variant="outline"
-								className="border-slate-600 text-slate-300"
+								className="border-border text-foreground/90"
 								onClick={onClose}
 							>
 								{t("common.cancel")}

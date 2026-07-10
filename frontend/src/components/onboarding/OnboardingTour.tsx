@@ -101,7 +101,7 @@ export const OnboardingTour: React.FC = () => {
 		setIsMounted(true);
 		// V181 FIX: Do NOT auto-start the onboarding tour after 1 second.
 		// The previous behavior (setTimeout 1000ms → setIsVisible(true)) caused
-		// a full-screen bg-slate-950/80 overlay to appear over EVERY new visitor's
+		// a full-screen bg-background/80 overlay to appear over EVERY new visitor's
 		// first session, making the entire UI look "dimmed/empty" (the overlay
 		// sat at z-[9998] above all content). This was the ROOT CAUSE of the
 		// 'pages look dim' issue reported by the operator — not the CSS vars,
@@ -194,7 +194,7 @@ export const OnboardingTour: React.FC = () => {
 		<>
 			<div
 				ref={overlayRef}
-				className="fixed inset-0 z-[9998] bg-slate-950/80"
+				className="fixed inset-0 z-[9998] bg-background/80"
 				aria-hidden="true"
 			/>
 
@@ -211,26 +211,26 @@ export const OnboardingTour: React.FC = () => {
 			/>
 
 			<div
-				className="fixed z-[9999] w-72 bg-slate-900 border border-slate-700 rounded-lg shadow-2xl"
+				className="fixed z-[9999] w-72 bg-card border border-border rounded-lg shadow-2xl"
 				style={tooltipStyle}
 			>
 				<div className="p-4">
 					<div className="flex items-start justify-between mb-2">
-						<h3 className="text-orange-400 font-semibold text-sm">
+						<h3 className="text-primary font-semibold text-sm">
 							{step.title}
 						</h3>
 						<button
 							onClick={skipTour}
-							className="text-slate-500 hover:text-slate-300 text-xs"
+							className="text-muted-foreground hover:text-foreground/90 text-xs"
 						>
 							Skip
 						</button>
 					</div>
 
-					<p className="text-slate-300 text-sm mb-4">{step.content}</p>
+					<p className="text-foreground/90 text-sm mb-4">{step.content}</p>
 
 					<div className="flex items-center justify-between">
-						<span className="text-slate-500 text-xs">
+						<span className="text-muted-foreground text-xs">
 							Step {currentStep + 1} of {TOUR_STEPS.length}
 						</span>
 
@@ -238,14 +238,14 @@ export const OnboardingTour: React.FC = () => {
 							{!isFirst && (
 								<button
 									onClick={prevStep}
-									className="px-3 py-1 text-slate-400 hover:text-slate-200 text-xs border border-slate-700 rounded"
+									className="px-3 py-1 text-muted-foreground hover:text-foreground text-xs border border-border rounded"
 								>
 									← Previous
 								</button>
 							)}
 							<button
 								onClick={nextStep}
-								className="px-3 py-1 bg-orange-600 hover:bg-orange-500 text-white text-xs rounded"
+								className="px-3 py-1 bg-primary hover:bg-primary text-white text-xs rounded"
 							>
 								{isLast ? "Done" : "Next"} →
 							</button>

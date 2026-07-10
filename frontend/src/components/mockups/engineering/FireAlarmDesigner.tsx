@@ -145,17 +145,17 @@ export function FireAlarmDesigner() {
 				{/* Header */}
 				<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
 					<div>
-						<h1 className="text-2xl font-bold text-slate-100">
+						<h1 className="text-2xl font-bold text-foreground">
 							{t("fireAlarm.designer")}
 						</h1>
-						<p className="text-sm text-slate-400 mt-1">
+						<p className="text-sm text-muted-foreground mt-1">
 							{t("fireAlarm.designerSubtitle")}
 						</p>
 					</div>
 					<div className="flex gap-2">
 						<Button
 							variant="outline"
-							className="border-slate-600 text-slate-300 hover:bg-slate-800"
+							className="border-border text-foreground/90 hover:bg-card"
 							onClick={handleSaveProject}
 						>
 							<Save className="h-4 w-4 mr-1" />
@@ -163,7 +163,7 @@ export function FireAlarmDesigner() {
 						</Button>
 						<Button
 							variant="outline"
-							className="border-slate-600 text-slate-300 hover:bg-slate-800"
+							className="border-border text-foreground/90 hover:bg-card"
 							onClick={handleExport}
 						>
 							<Download className="h-4 w-4 mr-1" />
@@ -171,7 +171,7 @@ export function FireAlarmDesigner() {
 						</Button>
 						<Button
 							variant="outline"
-							className="border-slate-600 text-slate-300 hover:bg-slate-800"
+							className="border-border text-foreground/90 hover:bg-card"
 							onClick={handleImport}
 						>
 							<Upload className="h-4 w-4 mr-1" />
@@ -181,36 +181,36 @@ export function FireAlarmDesigner() {
 				</div>
 
 				{/* Project Info */}
-				<Card className="border-slate-700 bg-slate-800">
+				<Card className="border-border bg-card">
 					<CardHeader className="pb-3">
-						<CardTitle className="text-lg text-slate-100">
+						<CardTitle className="text-lg text-foreground">
 							{t("fireAlarm.projectInfo")}
 						</CardTitle>
-						<CardDescription className="text-slate-400">
+						<CardDescription className="text-muted-foreground">
 							{t("fireAlarm.projectDetails")}
 						</CardDescription>
 					</CardHeader>
 					<CardContent>
 						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 							<div className="space-y-2">
-								<Label className="text-slate-300">
+								<Label className="text-foreground/90">
 									{t("fireAlarm.projectName")}
 								</Label>
 								<Input
 									value={projectName}
 									onChange={(e) => setProjectName(e.target.value)}
-									className="bg-slate-900 border-slate-600 text-slate-100"
+									className="bg-card border-border text-foreground"
 									placeholder={t("fireAlarm.projectNamePlaceholder")}
 								/>
 							</div>
 							<div className="space-y-2">
-								<Label className="text-slate-300">
+								<Label className="text-foreground/90">
 									{t("fireAlarm.description")}
 								</Label>
 								<Input
 									value={projectDescription}
 									onChange={(e) => setProjectDescription(e.target.value)}
-									className="bg-slate-900 border-slate-600 text-slate-100"
+									className="bg-card border-border text-foreground"
 									placeholder={t("fireAlarm.descriptionPlaceholder")}
 								/>
 							</div>
@@ -219,12 +219,12 @@ export function FireAlarmDesigner() {
 				</Card>
 
 				{/* Toolbar */}
-				<Card className="border-slate-700 bg-slate-800">
+				<Card className="border-border bg-card">
 					<CardHeader className="pb-3">
-						<CardTitle className="text-lg text-slate-100">
+						<CardTitle className="text-lg text-foreground">
 							{t("fireAlarm.tools")}
 						</CardTitle>
-						<CardDescription className="text-slate-400">
+						<CardDescription className="text-muted-foreground">
 							{t("fireAlarm.designTools")}
 						</CardDescription>
 					</CardHeader>
@@ -232,7 +232,7 @@ export function FireAlarmDesigner() {
 						<div className="flex flex-wrap gap-3">
 							<Button
 								variant="outline"
-								className="border-slate-600 text-slate-300 hover:bg-slate-800"
+								className="border-border text-foreground/90 hover:bg-card"
 								onClick={() => handleAddDetector("smoke")}
 							>
 								<Plus className="h-4 w-4 mr-1" />
@@ -240,7 +240,7 @@ export function FireAlarmDesigner() {
 							</Button>
 							<Button
 								variant="outline"
-								className="border-slate-600 text-slate-300 hover:bg-slate-800"
+								className="border-border text-foreground/90 hover:bg-card"
 								onClick={() => handleAddDetector("heat")}
 							>
 								<Plus className="h-4 w-4 mr-1" />
@@ -248,7 +248,7 @@ export function FireAlarmDesigner() {
 							</Button>
 							<Button
 								variant="outline"
-								className="border-slate-600 text-slate-300 hover:bg-slate-800"
+								className="border-border text-foreground/90 hover:bg-card"
 								onClick={() => handleAddDetector("pull")}
 							>
 								<Plus className="h-4 w-4 mr-1" />
@@ -256,7 +256,7 @@ export function FireAlarmDesigner() {
 							</Button>
 							<Button
 								variant="outline"
-								className="border-slate-600 text-slate-300 hover:bg-slate-800"
+								className="border-border text-foreground/90 hover:bg-card"
 								onClick={() => handleAddDetector("horns")}
 							>
 								<Plus className="h-4 w-4 mr-1" />
@@ -264,7 +264,7 @@ export function FireAlarmDesigner() {
 							</Button>
 							<Button
 								variant="outline"
-								className="border-slate-600 text-slate-300 hover:bg-slate-800"
+								className="border-border text-foreground/90 hover:bg-card"
 								onClick={handleClearCanvas}
 							>
 								<Trash2 className="h-4 w-4 mr-1" />
@@ -272,17 +272,17 @@ export function FireAlarmDesigner() {
 							</Button>
 							<Separator
 								orientation="vertical"
-								className="h-8 mx-2 bg-slate-700"
+								className="h-8 mx-2 bg-secondary"
 							/>
 							<div className="flex items-center gap-2">
-								<Label className="text-slate-300">{t("fireAlarm.grid")}</Label>
+								<Label className="text-foreground/90">{t("fireAlarm.grid")}</Label>
 								<Button
 									variant={showGrid ? "default" : "outline"}
 									size="sm"
 									className={
 										showGrid
-											? "bg-slate-600 hover:bg-slate-700"
-											: "border-slate-600 text-slate-300 hover:bg-slate-800"
+											? "bg-slate-600 hover:bg-secondary"
+											: "border-border text-foreground/90 hover:bg-card"
 									}
 									onClick={() => setShowGrid(!showGrid)}
 								>
@@ -294,14 +294,14 @@ export function FireAlarmDesigner() {
 								</Button>
 							</div>
 							<div className="flex items-center gap-2">
-								<Label className="text-slate-300">{t("fireAlarm.snap")}</Label>
+								<Label className="text-foreground/90">{t("fireAlarm.snap")}</Label>
 								<Button
 									variant={snapToGrid ? "default" : "outline"}
 									size="sm"
 									className={
 										snapToGrid
-											? "bg-slate-600 hover:bg-slate-700"
-											: "border-slate-600 text-slate-300 hover:bg-slate-800"
+											? "bg-slate-600 hover:bg-secondary"
+											: "border-border text-foreground/90 hover:bg-card"
 									}
 									onClick={() => setSnapToGrid(!snapToGrid)}
 								>
@@ -313,15 +313,15 @@ export function FireAlarmDesigner() {
 								</Button>
 							</div>
 							<div className="flex items-center gap-2">
-								<Label className="text-slate-300">{t("fireAlarm.units")}</Label>
+								<Label className="text-foreground/90">{t("fireAlarm.units")}</Label>
 								<Select
 									value={units}
 									onValueChange={(v: "metric" | "imperial") => setUnits(v)}
 								>
-									<SelectTrigger className="w-24 bg-slate-900 border-slate-600 text-slate-100">
+									<SelectTrigger className="w-24 bg-card border-border text-foreground">
 										<SelectValue />
 									</SelectTrigger>
-									<SelectContent className="bg-slate-800 border-slate-700">
+									<SelectContent className="bg-card border-border">
 										<SelectItem value="metric">
 											{t("fireAlarm.metric")}
 										</SelectItem>
@@ -336,12 +336,12 @@ export function FireAlarmDesigner() {
 				</Card>
 
 				{/* Canvas Editor */}
-				<Card className="border-slate-700 bg-slate-800">
+				<Card className="border-border bg-card">
 					<CardHeader className="pb-3">
-						<CardTitle className="text-lg text-slate-100">
+						<CardTitle className="text-lg text-foreground">
 							{t("fireAlarm.designCanvas")}
 						</CardTitle>
-						<CardDescription className="text-slate-400">
+						<CardDescription className="text-muted-foreground">
 							{t("fireAlarm.designCanvasDesc")}
 						</CardDescription>
 					</CardHeader>
@@ -354,46 +354,46 @@ export function FireAlarmDesigner() {
 				</Card>
 
 				{/* Detector Stats */}
-				<Card className="border-slate-700 bg-slate-800">
+				<Card className="border-border bg-card">
 					<CardHeader className="pb-3">
-						<CardTitle className="text-lg text-slate-100">
+						<CardTitle className="text-lg text-foreground">
 							{t("fireAlarm.statistics")}
 						</CardTitle>
-						<CardDescription className="text-slate-400">
+						<CardDescription className="text-muted-foreground">
 							{t("fireAlarm.systemStatistics")}
 						</CardDescription>
 					</CardHeader>
 					<CardContent>
 						<div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-							<div className="bg-slate-900/50 p-4 rounded-lg">
-								<div className="text-2xl font-bold text-slate-100">
+							<div className="bg-muted/50 p-4 rounded-lg">
+								<div className="text-2xl font-bold text-foreground">
 									{detectors.length}
 								</div>
-								<div className="text-sm text-slate-400">
+								<div className="text-sm text-muted-foreground">
 									{t("fireAlarm.totalDetectors")}
 								</div>
 							</div>
-							<div className="bg-slate-900/50 p-4 rounded-lg">
-								<div className="text-2xl font-bold text-emerald-400">
+							<div className="bg-muted/50 p-4 rounded-lg">
+								<div className="text-2xl font-bold text-success">
 									{detectors.filter((d) => d.status === "normal").length}
 								</div>
-								<div className="text-sm text-slate-400">
+								<div className="text-sm text-muted-foreground">
 									{t("fireAlarm.normal")}
 								</div>
 							</div>
-							<div className="bg-slate-900/50 p-4 rounded-lg">
-								<div className="text-2xl font-bold text-amber-400">
+							<div className="bg-muted/50 p-4 rounded-lg">
+								<div className="text-2xl font-bold text-warning">
 									{detectors.filter((d) => d.status === "warning").length}
 								</div>
-								<div className="text-sm text-slate-400">
+								<div className="text-sm text-muted-foreground">
 									{t("fireAlarm.warning")}
 								</div>
 							</div>
-							<div className="bg-slate-900/50 p-4 rounded-lg">
-								<div className="text-2xl font-bold text-red-400">
+							<div className="bg-muted/50 p-4 rounded-lg">
+								<div className="text-2xl font-bold text-danger">
 									{detectors.filter((d) => d.status === "fault").length}
 								</div>
-								<div className="text-sm text-slate-400">
+								<div className="text-sm text-muted-foreground">
 									{t("fireAlarm.fault")}
 								</div>
 							</div>

@@ -7,10 +7,10 @@ export function DigitalTwinHistoryPage() {
 	return (
 		<div className="flex-1 overflow-auto p-6 max-w-4xl mx-auto space-y-6">
 			<div>
-				<h1 className="text-2xl font-bold text-slate-100">
+				<h1 className="text-2xl font-bold text-foreground">
 					Digital Twin — History
 				</h1>
-				<p className="text-sm text-slate-400 mt-1">
+				<p className="text-sm text-muted-foreground mt-1">
 					View conversion history and rollback to previous versions
 				</p>
 			</div>

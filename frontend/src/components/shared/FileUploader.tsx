@@ -65,12 +65,12 @@ export function FileUploader({  // NOSONAR - typescript:S6759
 
 	return (
 		<div className="space-y-3">
-			<label className="text-sm font-medium text-slate-300">{label}</label>
+			<label className="text-sm font-medium text-foreground/90">{label}</label>
 			<div  // NOSONAR — S6819: non-null assertion acceptable
 				className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer ${
 					dragging
-						? "border-orange-500 bg-orange-500/10"
-						: "border-slate-600 hover:border-slate-500 bg-slate-800/50"
+						? "border-primary bg-primary/10"
+						: "border-border hover:border-border bg-muted/50"
 				}`}
 				onDragOver={(e) => {
 					e.preventDefault();
@@ -99,22 +99,22 @@ export function FileUploader({  // NOSONAR - typescript:S6759
 						if (file) setSelectedFile(file);
 					}}
 				/>
-				<Upload className="h-10 w-10 text-slate-500 mx-auto mb-3" />
-				<p className="text-sm text-slate-400">
+				<Upload className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+				<p className="text-sm text-muted-foreground">
 					{dragging ? "Drop file here" : "Drag & drop or click to browse"}
 				</p>
-				<p className="text-xs text-slate-500 mt-1">
+				<p className="text-xs text-muted-foreground mt-1">
 					Accepted: {accept} (max {maxSize}MB)
 				</p>
 			</div>
 			{selectedFile && (
-				<div className="flex items-center gap-3 p-3 bg-slate-800 rounded-lg border border-slate-700">
-					<FileText className="h-5 w-5 text-orange-400 shrink-0" />
+				<div className="flex items-center gap-3 p-3 bg-card rounded-lg border border-border">
+					<FileText className="h-5 w-5 text-primary shrink-0" />
 					<div className="flex-1 min-w-0">
-						<p className="text-sm text-slate-200 truncate">
+						<p className="text-sm text-foreground truncate">
 							{selectedFile.name}
 						</p>
-						<p className="text-xs text-slate-500">
+						<p className="text-xs text-muted-foreground">
 							{(selectedFile.size / 1024).toFixed(1)} KB
 						</p>
 					</div>
@@ -123,7 +123,7 @@ export function FileUploader({  // NOSONAR - typescript:S6759
 						type="button"
 						onClick={handleUpload}
 						disabled={uploading}
-						className="bg-orange-600 hover:bg-orange-700 text-white"
+						className="bg-primary hover:bg-orange-700 text-white"
 					>
 						{uploading ? "Uploading..." : "Upload"}
 					</Button>

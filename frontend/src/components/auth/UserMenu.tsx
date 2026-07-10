@@ -25,9 +25,9 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 const ROLE_BADGE_COLORS: Record<string, string> = {
-	admin: "bg-red-500/15 text-red-300 border-red-500/30",
-	engineer: "bg-orange-500/15 text-orange-300 border-orange-500/30",
-	viewer: "bg-slate-500/15 text-slate-300 border-slate-500/30",
+	admin: "bg-red-500/15 text-red-300 border-danger/30",
+	engineer: "bg-primary/15 text-orange-300 border-primary/30",
+	viewer: "bg-slate-500/15 text-foreground/90 border-border/30",
 };
 
 export function UserMenu() {
@@ -40,7 +40,7 @@ export function UserMenu() {
 				variant="outline"
 				size="sm"
 				onClick={() => navigate("/login")}
-				className="border-slate-700 text-slate-300 hover:bg-slate-800"
+				className="border-border text-foreground/90 hover:bg-card"
 			>
 				Sign In
 			</Button>
@@ -63,7 +63,7 @@ export function UserMenu() {
 				<Button
 					variant="ghost"
 					size="sm"
-					className="gap-2 text-slate-300 hover:bg-slate-800"
+					className="gap-2 text-foreground/90 hover:bg-card"
 					aria-label="User menu"
 				>
 					<User className="h-4 w-4" />
@@ -72,7 +72,7 @@ export function UserMenu() {
 			</DropdownMenuTrigger>
 			<DropdownMenuContent align="end" className="w-56">
 				<DropdownMenuLabel className="flex items-center gap-2">
-					<ShieldCheck className="h-4 w-4 text-orange-500" />
+					<ShieldCheck className="h-4 w-4 text-primary" />
 					<div className="flex flex-col">
 						<span className="text-sm font-medium">Signed in</span>
 						<span
@@ -85,7 +85,7 @@ export function UserMenu() {
 				<DropdownMenuSeparator />
 				<DropdownMenuItem
 					onClick={handleLogout}
-					className="text-red-400 focus:text-red-300 focus:bg-red-500/10 cursor-pointer"
+					className="text-danger focus:text-red-300 focus:bg-red-500/10 cursor-pointer"
 				>
 					<LogOut className="h-4 w-4 mr-2" />
 					Sign out

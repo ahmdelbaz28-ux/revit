@@ -196,22 +196,22 @@ export function EngineeringPage() {
                         <div className="p-6 max-w-4xl mx-auto space-y-6">
                                 {/* Header */}
                                 <div>
-                                        <h1 className="text-2xl font-bold text-slate-100">
+                                        <h1 className="text-2xl font-bold text-foreground">
                                                 {t("engineering.title")}
                                         </h1>
-                                        <p className="text-sm text-slate-400 mt-1">
+                                        <p className="text-sm text-muted-foreground mt-1">
                                                 {t("engineering.subtitle")}
                                         </p>
                                 </div>
 
                                 {/* Tabs */}
-                                <div className="flex flex-wrap gap-2 border-b border-slate-700 pb-2">
+                                <div className="flex flex-wrap gap-2 border-b border-border pb-2">
                                         <Button
                                                 variant={activeTab === "voltage-drop" ? "default" : "outline"}
                                                 className={
                                                         activeTab === "voltage-drop"
-                                                                ? "bg-red-600 hover:bg-red-700 text-white border-none"
-                                                                : "border-slate-600 text-slate-300 hover:bg-slate-800"
+                                                                ? "bg-danger hover:bg-danger/90 text-white border-none"
+                                                                : "border-border text-foreground/90 hover:bg-card"
                                                 }
                                                 onClick={() => setActiveTab("voltage-drop")}
                                         >
@@ -222,8 +222,8 @@ export function EngineeringPage() {
                                                 variant={activeTab === "cable-sizing" ? "default" : "outline"}
                                                 className={
                                                         activeTab === "cable-sizing"
-                                                                ? "bg-red-600 hover:bg-red-700 text-white border-none"
-                                                                : "border-slate-600 text-slate-300 hover:bg-slate-800"
+                                                                ? "bg-danger hover:bg-danger/90 text-white border-none"
+                                                                : "border-border text-foreground/90 hover:bg-card"
                                                 }
                                                 onClick={() => setActiveTab("cable-sizing")}
                                         >
@@ -234,8 +234,8 @@ export function EngineeringPage() {
                                                 variant={activeTab === "battery-calc" ? "default" : "outline"}
                                                 className={
                                                         activeTab === "battery-calc"
-                                                                ? "bg-red-600 hover:bg-red-700 text-white border-none"
-                                                                : "border-slate-600 text-slate-300 hover:bg-slate-800"
+                                                                ? "bg-danger hover:bg-danger/90 text-white border-none"
+                                                                : "border-border text-foreground/90 hover:bg-card"
                                                 }
                                                 onClick={() => setActiveTab("battery-calc")}
                                         >
@@ -246,20 +246,20 @@ export function EngineeringPage() {
 
                                 {/* Voltage Drop Calculator */}
                                 {activeTab === "voltage-drop" && (
-                                        <Card className="border-slate-700 bg-slate-800">
+                                        <Card className="border-border bg-card">
                                                 <CardHeader>
-                                                        <CardTitle className="text-lg text-slate-100 flex items-center gap-2">
+                                                        <CardTitle className="text-lg text-foreground flex items-center gap-2">
                                                                 <Zap className="h-5 w-5" />
                                                                 {t("engineering.voltageDrop")}
                                                         </CardTitle>
-                                                        <CardDescription className="text-slate-400">
+                                                        <CardDescription className="text-muted-foreground">
                                                                 {t("engineering.voltageDropDesc")}
                                                         </CardDescription>
                                                 </CardHeader>
                                                 <CardContent className="space-y-4">
                                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                                 <div className="space-y-2">
-                                                                        <Label className="text-slate-300">
+                                                                        <Label className="text-foreground/90">
                                                                                 {t("engineering.current")}
                                                                         </Label>
                                                                         <Input
@@ -271,12 +271,12 @@ export function EngineeringPage() {
                                                                                                 current: e.target.value,
                                                                                         })
                                                                                 }
-                                                                                className="bg-slate-900 border-slate-600 text-slate-100"
+                                                                                className="bg-card border-border text-foreground"
                                                                                 placeholder="A"
                                                                         />
                                                                 </div>
                                                                 <div className="space-y-2">
-                                                                        <Label className="text-slate-300">
+                                                                        <Label className="text-foreground/90">
                                                                                 {t("engineering.length")}
                                                                         </Label>
                                                                         <Input
@@ -288,12 +288,12 @@ export function EngineeringPage() {
                                                                                                 length: e.target.value,
                                                                                         })
                                                                                 }
-                                                                                className="bg-slate-900 border-slate-600 text-slate-100"
+                                                                                className="bg-card border-border text-foreground"
                                                                                 placeholder="m"
                                                                         />
                                                                 </div>
                                                                 <div className="space-y-2">
-                                                                        <Label className="text-slate-300">
+                                                                        <Label className="text-foreground/90">
                                                                                 {t("engineering.cableSize")}
                                                                         </Label>
                                                                         <Input
@@ -305,12 +305,12 @@ export function EngineeringPage() {
                                                                                                 cableSize: e.target.value,
                                                                                         })
                                                                                 }
-                                                                                className="bg-slate-900 border-slate-600 text-slate-100"
+                                                                                className="bg-card border-border text-foreground"
                                                                                 placeholder="mm²"
                                                                         />
                                                                 </div>
                                                                 <div className="space-y-2">
-                                                                        <Label className="text-slate-300">
+                                                                        <Label className="text-foreground/90">
                                                                                 {t("engineering.voltage")}
                                                                         </Label>
                                                                         <Input
@@ -322,12 +322,12 @@ export function EngineeringPage() {
                                                                                                 voltage: e.target.value,
                                                                                         })
                                                                                 }
-                                                                                className="bg-slate-900 border-slate-600 text-slate-100"
+                                                                                className="bg-card border-border text-foreground"
                                                                                 placeholder="V"
                                                                         />
                                                                 </div>
                                                                 <div className="space-y-2">
-                                                                        <Label className="text-slate-300">
+                                                                        <Label className="text-foreground/90">
                                                                                 {t("engineering.material")}
                                                                         </Label>
                                                                         <Select
@@ -339,10 +339,10 @@ export function EngineeringPage() {
                                                                                         })
                                                                                 }
                                                                         >
-                                                                                <SelectTrigger className="bg-slate-900 border-slate-600 text-slate-100">
+                                                                                <SelectTrigger className="bg-card border-border text-foreground">
                                                                                         <SelectValue />
                                                                                 </SelectTrigger>
-                                                                                <SelectContent className="bg-slate-800 border-slate-700">
+                                                                                <SelectContent className="bg-card border-border">
                                                                                         <SelectItem value="cu">
                                                                                                 {t("engineering.copper")}
                                                                                         </SelectItem>
@@ -357,10 +357,10 @@ export function EngineeringPage() {
                                                         <Separator />
 
                                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                                <Card className="border-slate-700 bg-slate-900/50">
+                                                                <Card className="border-border bg-muted/50">
                                                                         <CardHeader>
                                                                                 <div className="flex items-center justify-between">
-                                                                                        <CardTitle className="text-slate-200 text-sm">
+                                                                                        <CardTitle className="text-foreground text-sm">
                                                                                                 {t("engineering.results")}
                                                                                         </CardTitle>
                                                                                         <ExplainButton
@@ -378,18 +378,18 @@ export function EngineeringPage() {
                                                                         <CardContent>
                                                                                 <div className="space-y-2">
                                                                                         <div className="flex justify-between">
-                                                                                                <span className="text-slate-400">
+                                                                                                <span className="text-muted-foreground">
                                                                                                         {t("engineering.percentage")}
                                                                                                 </span>
-                                                                                                <span className="font-mono text-slate-200">
+                                                                                                <span className="font-mono text-foreground">
                                                                                                         {vDropResult.percentage}%
                                                                                                 </span>
                                                                                         </div>
                                                                                         <div className="flex justify-between">
-                                                                                                <span className="text-slate-400">
+                                                                                                <span className="text-muted-foreground">
                                                                                                         {t("engineering.absolute")}
                                                                                                 </span>
-                                                                                                <span className="font-mono text-slate-200">
+                                                                                                <span className="font-mono text-foreground">
                                                                                                         {vDropResult.absolute}V
                                                                                                 </span>
                                                                                         </div>
@@ -397,9 +397,9 @@ export function EngineeringPage() {
                                                                         </CardContent>
                                                                 </Card>
 
-                                                                <Card className="border-slate-700 bg-slate-900/50">
+                                                                <Card className="border-border bg-muted/50">
                                                                         <CardHeader>
-                                                                                <CardTitle className="text-slate-200 text-sm">
+                                                                                <CardTitle className="text-foreground text-sm">
                                                                                         {t("engineering.status")}
                                                                                 </CardTitle>
                                                                         </CardHeader>
@@ -414,10 +414,10 @@ export function EngineeringPage() {
                                                                                         }
                                                                                         className={
                                                                                                 vDropResult.percentage < 3
-                                                                                                        ? "bg-emerald-600/20 text-emerald-400 border-emerald-500/30"
+                                                                                                        ? "bg-success/10 text-success border-success/30"
                                                                                                         : vDropResult.percentage < 5  // NOSONAR — S3358: nested ternary acceptable in this localized context
-                                                                                                                ? "bg-amber-600/20 text-amber-400 border-amber-500/30"
-                                                                                                                : "bg-red-600/20 text-red-400 border-red-500/30"
+                                                                                                                ? "bg-warning/10 text-warning border-warning/30"
+                                                                                                                : "bg-danger/10 text-danger border-danger/30"
                                                                                         }
                                                                                 >
                                                                                         {vDropResult.percentage < 3
@@ -435,20 +435,20 @@ export function EngineeringPage() {
 
                                 {/* Cable Sizing Calculator */}
                                 {activeTab === "cable-sizing" && (
-                                        <Card className="border-slate-700 bg-slate-800">
+                                        <Card className="border-border bg-card">
                                                 <CardHeader>
-                                                        <CardTitle className="text-lg text-slate-100 flex items-center gap-2">
+                                                        <CardTitle className="text-lg text-foreground flex items-center gap-2">
                                                                 <Cable className="h-5 w-5" />
                                                                 {t("engineering.cableSizing")}
                                                         </CardTitle>
-                                                        <CardDescription className="text-slate-400">
+                                                        <CardDescription className="text-muted-foreground">
                                                                 {t("engineering.cableSizingDesc")}
                                                         </CardDescription>
                                                 </CardHeader>
                                                 <CardContent className="space-y-4">
                                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                                 <div className="space-y-2">
-                                                                        <Label className="text-slate-300">
+                                                                        <Label className="text-foreground/90">
                                                                                 {t("engineering.loadCurrent")}
                                                                         </Label>
                                                                         <Input
@@ -460,12 +460,12 @@ export function EngineeringPage() {
                                                                                                 loadCurrent: e.target.value,
                                                                                         })
                                                                                 }
-                                                                                className="bg-slate-900 border-slate-600 text-slate-100"
+                                                                                className="bg-card border-border text-foreground"
                                                                                 placeholder="A"
                                                                         />
                                                                 </div>
                                                                 <div className="space-y-2">
-                                                                        <Label className="text-slate-300">
+                                                                        <Label className="text-foreground/90">
                                                                                 {t("engineering.length")}
                                                                         </Label>
                                                                         <Input
@@ -477,12 +477,12 @@ export function EngineeringPage() {
                                                                                                 length: e.target.value,
                                                                                         })
                                                                                 }
-                                                                                className="bg-slate-900 border-slate-600 text-slate-100"
+                                                                                className="bg-card border-border text-foreground"
                                                                                 placeholder="m"
                                                                         />
                                                                 </div>
                                                                 <div className="space-y-2">
-                                                                        <Label className="text-slate-300">
+                                                                        <Label className="text-foreground/90">
                                                                                 {t("engineering.ambientTemp")}
                                                                         </Label>
                                                                         <Input
@@ -494,12 +494,12 @@ export function EngineeringPage() {
                                                                                                 ambientTemp: e.target.value,
                                                                                         })
                                                                                 }
-                                                                                className="bg-slate-900 border-slate-600 text-slate-100"
+                                                                                className="bg-card border-border text-foreground"
                                                                                 placeholder="°C"
                                                                         />
                                                                 </div>
                                                                 <div className="space-y-2">
-                                                                        <Label className="text-slate-300">
+                                                                        <Label className="text-foreground/90">
                                                                                 {t("engineering.installationMethod")}
                                                                         </Label>
                                                                         <Select
@@ -511,10 +511,10 @@ export function EngineeringPage() {
                                                                                         })
                                                                                 }
                                                                         >
-                                                                                <SelectTrigger className="bg-slate-900 border-slate-600 text-slate-100">
+                                                                                <SelectTrigger className="bg-card border-border text-foreground">
                                                                                         <SelectValue />
                                                                                 </SelectTrigger>
-                                                                                <SelectContent className="bg-slate-800 border-slate-700">
+                                                                                <SelectContent className="bg-card border-border">
                                                                                         <SelectItem value="free-air">
                                                                                                 {t("engineering.freeAir")}
                                                                                         </SelectItem>
@@ -532,10 +532,10 @@ export function EngineeringPage() {
                                                         <Separator />
 
                                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                                <Card className="border-slate-700 bg-slate-900/50">
+                                                                <Card className="border-border bg-muted/50">
                                                                         <CardHeader>
                                                                                 <div className="flex items-center justify-between">
-                                                                                        <CardTitle className="text-slate-200 text-sm">
+                                                                                        <CardTitle className="text-foreground text-sm">
                                                                                                 {t("engineering.results")}
                                                                                         </CardTitle>
                                                                                         <ExplainButton
@@ -552,34 +552,34 @@ export function EngineeringPage() {
                                                                         <CardContent>
                                                                                 <div className="space-y-2">
                                                                                         <div className="flex justify-between">
-                                                                                                <span className="text-slate-400">
+                                                                                                <span className="text-muted-foreground">
                                                                                                         {t("engineering.recommendedSize")}
                                                                                                 </span>
-                                                                                                <span className="font-mono text-slate-200">
+                                                                                                <span className="font-mono text-foreground">
                                                                                                         {cableResult.recommendedSize} mm²
                                                                                                 </span>
                                                                                         </div>
                                                                                         <div className="flex justify-between">
-                                                                                                <span className="text-slate-400">
+                                                                                                <span className="text-muted-foreground">
                                                                                                         {t("engineering.baseAmpacity")}
                                                                                                 </span>
-                                                                                                <span className="font-mono text-slate-200">
+                                                                                                <span className="font-mono text-foreground">
                                                                                                         {cableResult.baseAmpacity} A
                                                                                                 </span>
                                                                                         </div>
                                                                                         <div className="flex justify-between">
-                                                                                                <span className="text-slate-400">
+                                                                                                <span className="text-muted-foreground">
                                                                                                         {t("engineering.deratingFactor")}
                                                                                                 </span>
-                                                                                                <span className="font-mono text-slate-200">
+                                                                                                <span className="font-mono text-foreground">
                                                                                                         {cableResult.deratingFactor}
                                                                                                 </span>
                                                                                         </div>
                                                                                         <div className="flex justify-between">
-                                                                                                <span className="text-slate-400">
+                                                                                                <span className="text-muted-foreground">
                                                                                                         {t("engineering.finalAmpacity")}
                                                                                                 </span>
-                                                                                                <span className="font-mono text-slate-200">
+                                                                                                <span className="font-mono text-foreground">
                                                                                                         {cableResult.finalAmpacity} A
                                                                                                 </span>
                                                                                         </div>
@@ -587,14 +587,14 @@ export function EngineeringPage() {
                                                                         </CardContent>
                                                                 </Card>
 
-                                                                <Card className="border-slate-700 bg-slate-900/50">
+                                                                <Card className="border-border bg-muted/50">
                                                                         <CardHeader>
-                                                                                <CardTitle className="text-slate-200 text-sm">
+                                                                                <CardTitle className="text-foreground text-sm">
                                                                                         {t("engineering.status")}
                                                                                 </CardTitle>
                                                                         </CardHeader>
                                                                         <CardContent>
-                                                                                <Badge className="bg-emerald-600/20 text-emerald-400 border-emerald-500/30">
+                                                                                <Badge className="bg-success/10 text-success border-success/30">
                                                                                         {t("engineering.suitable")}
                                                                                 </Badge>
                                                                         </CardContent>
@@ -606,20 +606,20 @@ export function EngineeringPage() {
 
                                 {/* Battery Calculation */}
                                 {activeTab === "battery-calc" && (
-                                        <Card className="border-slate-700 bg-slate-800">
+                                        <Card className="border-border bg-card">
                                                 <CardHeader>
-                                                        <CardTitle className="text-lg text-slate-100 flex items-center gap-2">
+                                                        <CardTitle className="text-lg text-foreground flex items-center gap-2">
                                                                 <Battery className="h-5 w-5" />
                                                                 {t("engineering.batteryCalculation")}
                                                         </CardTitle>
-                                                        <CardDescription className="text-slate-400">
+                                                        <CardDescription className="text-muted-foreground">
                                                                 {t("engineering.batteryCalculationDesc")}
                                                         </CardDescription>
                                                 </CardHeader>
                                                 <CardContent className="space-y-4">
                                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                                 <div className="space-y-2">
-                                                                        <Label className="text-slate-300">
+                                                                        <Label className="text-foreground/90">
                                                                                 {t("engineering.standbyDevices")}
                                                                         </Label>
                                                                         <Input
@@ -631,12 +631,12 @@ export function EngineeringPage() {
                                                                                                 standbyDevices: e.target.value,
                                                                                         })
                                                                                 }
-                                                                                className="bg-slate-900 border-slate-600 text-slate-100"
+                                                                                className="bg-card border-border text-foreground"
                                                                                 placeholder="#"
                                                                         />
                                                                 </div>
                                                                 <div className="space-y-2">
-                                                                        <Label className="text-slate-300">
+                                                                        <Label className="text-foreground/90">
                                                                                 {t("engineering.standbyCurrent")}
                                                                         </Label>
                                                                         <Input
@@ -648,12 +648,12 @@ export function EngineeringPage() {
                                                                                                 standbyCurrent: e.target.value,
                                                                                         })
                                                                                 }
-                                                                                className="bg-slate-900 border-slate-600 text-slate-100"
+                                                                                className="bg-card border-border text-foreground"
                                                                                 placeholder="mA"
                                                                         />
                                                                 </div>
                                                                 <div className="space-y-2">
-                                                                        <Label className="text-slate-300">
+                                                                        <Label className="text-foreground/90">
                                                                                 {t("engineering.alarmDevices")}
                                                                         </Label>
                                                                         <Input
@@ -665,12 +665,12 @@ export function EngineeringPage() {
                                                                                                 alarmDevices: e.target.value,
                                                                                         })
                                                                                 }
-                                                                                className="bg-slate-900 border-slate-600 text-slate-100"
+                                                                                className="bg-card border-border text-foreground"
                                                                                 placeholder="#"
                                                                         />
                                                                 </div>
                                                                 <div className="space-y-2">
-                                                                        <Label className="text-slate-300">
+                                                                        <Label className="text-foreground/90">
                                                                                 {t("engineering.alarmCurrent")}
                                                                         </Label>
                                                                         <Input
@@ -682,12 +682,12 @@ export function EngineeringPage() {
                                                                                                 alarmCurrent: e.target.value,
                                                                                         })
                                                                                 }
-                                                                                className="bg-slate-900 border-slate-600 text-slate-100"
+                                                                                className="bg-card border-border text-foreground"
                                                                                 placeholder="mA"
                                                                         />
                                                                 </div>
                                                                 <div className="space-y-2">
-                                                                        <Label className="text-slate-300">
+                                                                        <Label className="text-foreground/90">
                                                                                 {t("engineering.standbyHours")}
                                                                         </Label>
                                                                         <Input
@@ -699,12 +699,12 @@ export function EngineeringPage() {
                                                                                                 standbyHours: e.target.value,
                                                                                         })
                                                                                 }
-                                                                                className="bg-slate-900 border-slate-600 text-slate-100"
+                                                                                className="bg-card border-border text-foreground"
                                                                                 placeholder="hours"
                                                                         />
                                                                 </div>
                                                                 <div className="space-y-2">
-                                                                        <Label className="text-slate-300">
+                                                                        <Label className="text-foreground/90">
                                                                                 {t("engineering.alarmMinutes")}
                                                                         </Label>
                                                                         <Input
@@ -716,7 +716,7 @@ export function EngineeringPage() {
                                                                                                 alarmMinutes: e.target.value,
                                                                                         })
                                                                                 }
-                                                                                className="bg-slate-900 border-slate-600 text-slate-100"
+                                                                                className="bg-card border-border text-foreground"
                                                                                 placeholder="minutes"
                                                                         />
                                                                 </div>
@@ -725,10 +725,10 @@ export function EngineeringPage() {
                                                         <Separator />
 
                                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                                <Card className="border-slate-700 bg-slate-900/50">
+                                                                <Card className="border-border bg-muted/50">
                                                                         <CardHeader>
                                                                                 <div className="flex items-center justify-between">
-                                                                                        <CardTitle className="text-slate-200 text-sm">
+                                                                                        <CardTitle className="text-foreground text-sm">
                                                                                                 {t("engineering.results")}
                                                                                         </CardTitle>
                                                                                         <ExplainButton
@@ -746,26 +746,26 @@ export function EngineeringPage() {
                                                                         <CardContent>
                                                                                 <div className="space-y-2">
                                                                                         <div className="flex justify-between">
-                                                                                                <span className="text-slate-400">
+                                                                                                <span className="text-muted-foreground">
                                                                                                         {t("engineering.totalStandbyCurrent")}
                                                                                                 </span>
-                                                                                                <span className="font-mono text-slate-200">
+                                                                                                <span className="font-mono text-foreground">
                                                                                                         {batteryResult.totalStandbyCurrent} mA
                                                                                                 </span>
                                                                                         </div>
                                                                                         <div className="flex justify-between">
-                                                                                                <span className="text-slate-400">
+                                                                                                <span className="text-muted-foreground">
                                                                                                         {t("engineering.totalAlarmCurrent")}
                                                                                                 </span>
-                                                                                                <span className="font-mono text-slate-200">
+                                                                                                <span className="font-mono text-foreground">
                                                                                                         {batteryResult.totalAlarmCurrent} mA
                                                                                                 </span>
                                                                                         </div>
                                                                                         <div className="flex justify-between">
-                                                                                                <span className="text-slate-400">
+                                                                                                <span className="text-muted-foreground">
                                                                                                         {t("engineering.requiredCapacity")}
                                                                                                 </span>
-                                                                                                <span className="font-mono text-slate-200">
+                                                                                                <span className="font-mono text-foreground">
                                                                                                         {batteryResult.requiredCapacity} Ah
                                                                                                 </span>
                                                                                         </div>
@@ -773,19 +773,19 @@ export function EngineeringPage() {
                                                                         </CardContent>
                                                                 </Card>
 
-                                                                <Card className="border-slate-700 bg-slate-900/50">
+                                                                <Card className="border-border bg-muted/50">
                                                                         <CardHeader>
-                                                                                <CardTitle className="text-slate-200 text-sm">
+                                                                                <CardTitle className="text-foreground text-sm">
                                                                                         {t("engineering.recommendations")}
                                                                                 </CardTitle>
                                                                         </CardHeader>
                                                                         <CardContent>
                                                                                 <div className="space-y-2">
                                                                                         <div className="flex justify-between">
-                                                                                                <span className="text-slate-400">
+                                                                                                <span className="text-muted-foreground">
                                                                                                         {t("engineering.recommendedBattery")}
                                                                                                 </span>
-                                                                                                <span className="font-mono text-slate-200">
+                                                                                                <span className="font-mono text-foreground">
                                                                                                         {batteryResult.recommendedBattery}
                                                                                                 </span>
                                                                                         </div>

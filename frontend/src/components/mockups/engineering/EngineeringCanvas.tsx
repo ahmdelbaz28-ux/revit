@@ -326,7 +326,7 @@ export function EngineeringCanvas({ onItemDrop }: EngineeringCanvasProps) {  // 
 
 					<div className="flex items-center gap-2 text-[10px]">
 						<span className="text-white/50 w-20">Critical:</span>
-						<span className="font-mono text-red-400">
+						<span className="font-mono text-danger">
 							{thermalConnections.filter((c) => c.isCritical).length}
 						</span>
 					</div>

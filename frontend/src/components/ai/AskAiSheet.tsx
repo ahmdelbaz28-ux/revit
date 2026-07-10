@@ -89,19 +89,19 @@ export function AskAiSheet({
                 <Sheet open={open} onOpenChange={onOpenChange}>
                         <SheetContent
                                 side="right"
-                                className="w-[480px] sm:max-w-[480px] p-0 flex flex-col bg-slate-900 border-slate-700"
+                                className="w-[480px] sm:max-w-[480px] p-0 flex flex-col bg-card border-border"
                         >
                                 {/* Header */}
-                                <SheetHeader className="px-4 py-3 border-b border-slate-700 bg-slate-800">
+                                <SheetHeader className="px-4 py-3 border-b border-border bg-card">
                                         <div className="flex items-center gap-3">
-                                                <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-red-600/20 border border-red-600/30">
+                                                <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-danger/10 border border-red-600/30">
                                                         <Sparkles className="w-5 h-5 text-red-500" />
                                                 </div>
                                                 <div className="flex-1 min-w-0">
-                                                        <SheetTitle className="text-slate-100 text-base font-semibold">
+                                                        <SheetTitle className="text-foreground text-base font-semibold">
                                                                 {t("ai.title", "Ask AI Copilot")}
                                                         </SheetTitle>
-                                                        <SheetDescription className="text-slate-400 text-xs">
+                                                        <SheetDescription className="text-muted-foreground text-xs">
                                                                 {t("ai.subtitle", "Engineering assistant — NFPA 72 & NEC")}
                                                         </SheetDescription>
                                                 </div>
@@ -111,7 +111,7 @@ export function AskAiSheet({
                                                         onClick={clearChat}
                                                         disabled={messages.length === 0 || loading}
                                                         title={t("ai.clearChat", "Clear chat")}
-                                                        className="h-8 w-8 text-slate-400 hover:text-slate-200"
+                                                        className="h-8 w-8 text-muted-foreground hover:text-foreground"
                                                 >
                                                         <Trash2 className="w-4 h-4" />
                                                 </Button>
@@ -123,13 +123,13 @@ export function AskAiSheet({
                                         <div className="py-4 space-y-4 min-h-full">
                                                 {messages.length === 0 && (
                                                         <div className="flex flex-col items-center justify-center py-12 text-center">
-                                                                <div className="w-16 h-16 rounded-full bg-red-600/10 flex items-center justify-center mb-4">
+                                                                <div className="w-16 h-16 rounded-full bg-danger/10 flex items-center justify-center mb-4">
                                                                         <Bot className="w-8 h-8 text-red-500" />
                                                                 </div>
-                                                                <p className="text-slate-300 text-sm font-medium mb-1">
+                                                                <p className="text-foreground/90 text-sm font-medium mb-1">
                                                                         {t("ai.welcome", "Ask me anything about fire alarm engineering")}
                                                                 </p>
-                                                                <p className="text-slate-500 text-xs max-w-xs">
+                                                                <p className="text-muted-foreground text-xs max-w-xs">
                                                                         {t(
                                                                                 "ai.welcomeDesc",
                                                                                 "NFPA 72 spacing, voltage drop, battery sizing, FACP selection, and more",
@@ -147,10 +147,10 @@ export function AskAiSheet({
 
                                                 {loading && (
                                                         <div className="flex items-start gap-2.5">
-                                                                <div className="flex-shrink-0 w-7 h-7 rounded-full bg-slate-800 flex items-center justify-center">
+                                                                <div className="flex-shrink-0 w-7 h-7 rounded-full bg-card flex items-center justify-center">
                                                                         <Bot className="w-4 h-4 text-red-500" />
                                                                 </div>
-                                                                <div className="bg-slate-800 rounded-2xl rounded-tl-sm px-3.5 py-2.5">
+                                                                <div className="bg-card rounded-md rounded-tl-sm px-3.5 py-2.5">
                                                                         <div className="flex items-center gap-1.5">
                                                                                 <span className="w-1.5 h-1.5 bg-slate-500 rounded-full animate-bounce [animation-delay:-0.3s]" />
                                                                                 <span className="w-1.5 h-1.5 bg-slate-500 rounded-full animate-bounce [animation-delay:-0.15s]" />
@@ -161,7 +161,7 @@ export function AskAiSheet({
                                                 )}
 
                                                 {error && (
-                                                        <div className="flex items-start gap-2 text-sm text-red-400 bg-red-950/30 border border-red-900/50 rounded-lg p-3">
+                                                        <div className="flex items-start gap-2 text-sm text-danger bg-red-950/30 border border-red-900/50 rounded-lg p-3">
                                                                 <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
                                                                 <span>{error}</span>
                                                         </div>
@@ -177,7 +177,7 @@ export function AskAiSheet({
                                                                 <Badge
                                                                         key={prompt}
                                                                         variant="outline"
-                                                                        className="cursor-pointer text-xs text-slate-300 border-slate-600 hover:border-red-600/50 hover:text-red-400 transition-colors"
+                                                                        className="cursor-pointer text-xs text-foreground/90 border-border hover:border-red-600/50 hover:text-danger transition-colors"
                                                                         onClick={() => handleQuickPrompt(prompt)}
                                                                 >
                                                                         {prompt}
@@ -190,7 +190,7 @@ export function AskAiSheet({
                                 {/* Input bar */}
                                 <form
                                         onSubmit={handleSubmit}
-                                        className="px-4 py-3 border-t border-slate-700 bg-slate-800"
+                                        className="px-4 py-3 border-t border-border bg-card"
                                 >
                                         <div className="flex items-center gap-2">
                                                 <Input
@@ -204,18 +204,18 @@ export function AskAiSheet({
                                                                 "Ask about NFPA 72, voltage drop, battery sizing...",
                                                         )}
                                                         disabled={loading}
-                                                        className="flex-1 bg-slate-900 border-slate-600 text-slate-100 placeholder:text-slate-500 focus-visible:ring-red-600"
+                                                        className="flex-1 bg-card border-border text-foreground placeholder:text-muted-foreground focus-visible:ring-red-600"
                                                 />
                                                 <Button
                                                         type="submit"
                                                         size="icon"
                                                         disabled={!input.trim() || loading}
-                                                        className="bg-red-600 hover:bg-red-700 text-white flex-shrink-0"
+                                                        className="bg-danger hover:bg-danger/90 text-white flex-shrink-0"
                                                 >
                                                         <Send className="w-4 h-4" />
                                                 </Button>
                                         </div>
-                                        <p className="text-[10px] text-slate-500 mt-1.5 text-center">
+                                        <p className="text-[10px] text-muted-foreground mt-1.5 text-center">
                                                 {t(
                                                         "ai.disclaimer",
                                                         "⚠️ AI-generated — verify against NFPA 72 code before use",
@@ -234,13 +234,13 @@ function MessageBubble({ message }: { readonly message: ChatMessage }) {
         if (isUser) {
                 return (
                         <div className="flex items-start gap-2.5 justify-end">
-                                <div className="bg-red-600 text-white rounded-2xl rounded-tr-sm px-3.5 py-2 max-w-[85%]">
+                                <div className="bg-danger text-white rounded-md rounded-tr-sm px-3.5 py-2 max-w-[85%]">
                                         <p className="text-sm whitespace-pre-wrap break-words">
                                                 {message.content}
                                         </p>
                                 </div>
-                                <div className="flex-shrink-0 w-7 h-7 rounded-full bg-slate-700 flex items-center justify-center">
-                                        <User className="w-4 h-4 text-slate-300" />
+                                <div className="flex-shrink-0 w-7 h-7 rounded-full bg-secondary flex items-center justify-center">
+                                        <User className="w-4 h-4 text-foreground/90" />
                                 </div>
                         </div>
                 );
@@ -248,11 +248,11 @@ function MessageBubble({ message }: { readonly message: ChatMessage }) {
 
         return (
                 <div className="flex items-start gap-2.5">
-                        <div className="flex-shrink-0 w-7 h-7 rounded-full bg-slate-800 flex items-center justify-center">
+                        <div className="flex-shrink-0 w-7 h-7 rounded-full bg-card flex items-center justify-center">
                                 <Bot className="w-4 h-4 text-red-500" />
                         </div>
                         <div className="max-w-[85%]">
-                                <div className="bg-slate-800 text-slate-100 rounded-2xl rounded-tl-sm px-3.5 py-2">
+                                <div className="bg-card text-foreground rounded-md rounded-tl-sm px-3.5 py-2">
                                         <p className="text-sm whitespace-pre-wrap break-words">
                                                 {message.content}
                                                 {message.isStreaming && (
@@ -262,14 +262,14 @@ function MessageBubble({ message }: { readonly message: ChatMessage }) {
                                 </div>
                                 <div className="flex items-center gap-2 mt-1 px-1">
                                         {message.isStreaming ? (
-                                                <span className="text-[10px] text-red-400 animate-pulse">
+                                                <span className="text-[10px] text-danger animate-pulse">
                                                         typing...
                                                 </span>
                                         ) : (
                                                 <>
-                                                        <span className="text-[10px] text-slate-500">{message.model}</span>
+                                                        <span className="text-[10px] text-muted-foreground">{message.model}</span>
                                                         {message.source && (
-                                                                <span className="text-[10px] text-slate-600">· {message.source}</span>
+                                                                <span className="text-[10px] text-muted-foreground/70">· {message.source}</span>
                                                         )}
                                                 </>
                                         )}

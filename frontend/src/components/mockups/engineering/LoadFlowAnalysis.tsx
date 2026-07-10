@@ -22,7 +22,7 @@ export function LoadFlowAnalysis() {
 					</div>
 					<Separator orientation="vertical" className="h-5" />
 					<div className="flex space-x-1 text-xs">
-						<button className="px-3 py-1 rounded bg-blue-500/10 text-blue-400 font-medium border border-blue-500/20">
+						<button className="px-3 py-1 rounded bg-blue-500/10 text-info font-medium border border-blue-500/20">
 							Load Flow
 						</button>
 						<button className="px-3 py-1 rounded text-muted-foreground hover:bg-muted">
@@ -40,36 +40,36 @@ export function LoadFlowAnalysis() {
 					</div>
 				</div>
 				<div className="flex items-center gap-4">
-					<span className="text-xs text-emerald-400 font-mono hidden md:inline">
+					<span className="text-xs text-success font-mono hidden md:inline">
 						Converged in 7 iterations — 0.3s — Newton-Raphson
 					</span>
 					<div className="flex items-center gap-2">
 						<Button
 							variant="outline"
 							size="sm"
-							className="h-8 text-xs border-slate-700 hover:bg-slate-800"
+							className="h-8 text-xs border-border hover:bg-card"
 						>
-							<Settings className="h-3.5 w-3.5 mr-1" /> Settings
+							<Settings className="h-4 w-4 mr-1" /> Settings
 						</Button>
 						<Button
 							variant="outline"
 							size="sm"
-							className="h-8 text-xs border-slate-700 hover:bg-slate-800"
+							className="h-8 text-xs border-border hover:bg-card"
 						>
-							<Download className="h-3.5 w-3.5 mr-1" /> Export
+							<Download className="h-4 w-4 mr-1" /> Export
 						</Button>
 						<Button
 							size="sm"
 							variant="destructive"
-							className="h-8 text-xs bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700"
+							className="h-8 text-xs bg-card text-foreground/90 hover:bg-secondary border border-border"
 						>
-							<Square className="h-3.5 w-3.5 mr-1" fill="currentColor" /> Stop
+							<Square className="h-4 w-4 mr-1" fill="currentColor" /> Stop
 						</Button>
 						<Button
 							size="sm"
 							className="h-8 text-xs bg-blue-600 hover:bg-blue-500 text-white"
 						>
-							<Play className="h-3.5 w-3.5 mr-1" fill="currentColor" /> Run
+							<Play className="h-4 w-4 mr-1" fill="currentColor" /> Run
 							Analysis
 						</Button>
 					</div>
@@ -86,47 +86,47 @@ export function LoadFlowAnalysis() {
 					<ScrollArea className="flex-1 p-2">
 						<div className="text-[11px] font-mono space-y-1">
 							{/* Fake Tree */}
-							<div className="flex items-center gap-1 py-1 text-slate-300 hover:bg-muted rounded px-1 cursor-pointer">
+							<div className="flex items-center gap-1 py-1 text-foreground/90 hover:bg-muted rounded px-1 cursor-pointer">
 								<div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></div>
 								System (11kV Utility)
 							</div>
-							<div className="pl-4 border-l border-slate-700/50 ml-2 space-y-1">
-								<div className="flex items-center gap-1 py-1 text-slate-300 hover:bg-muted rounded px-1 cursor-pointer">
+							<div className="pl-4 border-l border-border/50 ml-2 space-y-1">
+								<div className="flex items-center gap-1 py-1 text-foreground/90 hover:bg-muted rounded px-1 cursor-pointer">
 									<div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></div>
 									Bus 1: UTL-11KV
 								</div>
-								<div className="pl-4 border-l border-slate-700/50 ml-2 space-y-1">
-									<div className="flex items-center gap-1 py-1 text-slate-300 hover:bg-muted rounded px-1 cursor-pointer">
+								<div className="pl-4 border-l border-border/50 ml-2 space-y-1">
+									<div className="flex items-center gap-1 py-1 text-foreground/90 hover:bg-muted rounded px-1 cursor-pointer">
 										<div className="w-1.5 h-1.5 rounded-full bg-orange-400 shrink-0"></div>
 										T1: 11kV/480V 2500kVA
 									</div>
-									<div className="pl-4 border-l border-slate-700/50 ml-2 space-y-1">
-										<div className="flex items-center gap-1 py-1 text-slate-300 hover:bg-muted rounded px-1 cursor-pointer">
+									<div className="pl-4 border-l border-border/50 ml-2 space-y-1">
+										<div className="flex items-center gap-1 py-1 text-foreground/90 hover:bg-muted rounded px-1 cursor-pointer">
 											<div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></div>
 											Bus 2: MSB-480V
 										</div>
-										<div className="pl-4 border-l border-slate-700/50 ml-2 space-y-1">
-											<div className="flex items-center gap-1 py-1 text-slate-300 hover:bg-muted rounded px-1 cursor-pointer">
+										<div className="pl-4 border-l border-border/50 ml-2 space-y-1">
+											<div className="flex items-center gap-1 py-1 text-foreground/90 hover:bg-muted rounded px-1 cursor-pointer">
 												<div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></div>
 												CB-F1: Feeder 1
 											</div>
-											<div className="pl-4 border-l border-slate-700/50 ml-2 space-y-1">
-												<div className="flex items-center gap-1 py-1 text-slate-300 hover:bg-muted rounded px-1 cursor-pointer">
+											<div className="pl-4 border-l border-border/50 ml-2 space-y-1">
+												<div className="flex items-center gap-1 py-1 text-foreground/90 hover:bg-muted rounded px-1 cursor-pointer">
 													<div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></div>
 													Bus 3: MDB-A-480V
 												</div>
 											</div>
-											<div className="flex items-center gap-1 py-1 text-orange-300 bg-orange-500/10 rounded px-1 cursor-pointer">
-												<div className="w-1.5 h-1.5 rounded-full bg-orange-500 shrink-0"></div>
+											<div className="flex items-center gap-1 py-1 text-orange-300 bg-primary/10 rounded px-1 cursor-pointer">
+												<div className="w-1.5 h-1.5 rounded-full bg-primary shrink-0"></div>
 												CB-F2: Feeder 2
 											</div>
-											<div className="pl-4 border-l border-orange-500/30 ml-2 space-y-1">
-												<div className="flex items-center gap-1 py-1 text-orange-400 font-bold hover:bg-muted rounded px-1 cursor-pointer">
-													<div className="w-1.5 h-1.5 rounded-full bg-orange-500 shrink-0"></div>
+											<div className="pl-4 border-l border-primary/30 ml-2 space-y-1">
+												<div className="flex items-center gap-1 py-1 text-primary font-bold hover:bg-muted rounded px-1 cursor-pointer">
+													<div className="w-1.5 h-1.5 rounded-full bg-primary shrink-0"></div>
 													Bus 4: MDB-B-480V
 												</div>
 											</div>
-											<div className="flex items-center gap-1 py-1 text-slate-300 hover:bg-muted rounded px-1 cursor-pointer">
+											<div className="flex items-center gap-1 py-1 text-foreground/90 hover:bg-muted rounded px-1 cursor-pointer">
 												<div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></div>
 												CB-E: Emergency
 											</div>
@@ -573,23 +573,23 @@ export function LoadFlowAnalysis() {
 					</svg>
 
 					{/* Legend Overlay */}
-					<div className="absolute right-4 bottom-4 bg-slate-900 border border-slate-700 p-3 rounded-md backdrop-blur-sm shadow-xl text-xs">
-						<div className="font-bold text-slate-300 mb-2">Color Coding</div>
+					<div className="absolute right-4 bottom-4 bg-card border border-border p-3 rounded-md backdrop-blur-sm shadow-xl text-xs">
+						<div className="font-bold text-foreground/90 mb-2">Color Coding</div>
 						<div className="flex items-center gap-2 mb-1">
 							<div className="w-3 h-3 bg-emerald-500 rounded-sm"></div>{" "}
-							<span className="text-slate-400">
+							<span className="text-muted-foreground">
 								Normal (≥0.95 pu / &lt;90%)
 							</span>
 						</div>
 						<div className="flex items-center gap-2 mb-1">
-							<div className="w-3 h-3 bg-orange-500 rounded-sm"></div>{" "}
-							<span className="text-slate-400">
+							<div className="w-3 h-3 bg-primary rounded-sm"></div>{" "}
+							<span className="text-muted-foreground">
 								Warning (0.90-0.95 / &gt;90%)
 							</span>
 						</div>
 						<div className="flex items-center gap-2">
 							<div className="w-3 h-3 bg-red-500 rounded-sm"></div>{" "}
-							<span className="text-slate-400">
+							<span className="text-muted-foreground">
 								Critical (&lt;0.90 / &gt;100%)
 							</span>
 						</div>
@@ -604,11 +604,11 @@ export function LoadFlowAnalysis() {
 					<ScrollArea className="flex-1">
 						<div className="p-4 space-y-6">
 							{/* Warnings Box */}
-							<div className="border border-orange-500/50 bg-orange-500/10 rounded-md p-3">
-								<div className="flex items-center gap-2 text-orange-400 font-bold text-xs mb-2 uppercase">
+							<div className="border border-primary/50 bg-primary/10 rounded-md p-3">
+								<div className="flex items-center gap-2 text-primary font-bold text-xs mb-2 uppercase">
 									<AlertTriangle className="h-4 w-4" /> System Warnings
 								</div>
-								<ul className="text-xs text-slate-300 space-y-2 list-disc pl-4">
+								<ul className="text-xs text-foreground/90 space-y-2 list-disc pl-4">
 									<li>
 										Bus <span className="font-mono text-orange-300">MDB-B</span>{" "}
 										voltage 0.981 pu — below 0.985 pu threshold
@@ -622,7 +622,7 @@ export function LoadFlowAnalysis() {
 								<Button
 									size="sm"
 									variant="outline"
-									className="w-full mt-3 h-7 text-[10px] border-orange-500/30 text-orange-400 bg-transparent hover:bg-orange-500/20"
+									className="w-full mt-3 h-7 text-[10px] border-primary/30 text-primary bg-transparent hover:bg-primary/20"
 								>
 									View Recommendations
 								</Button>
@@ -633,9 +633,9 @@ export function LoadFlowAnalysis() {
 								<h4 className="text-xs font-bold text-muted-foreground uppercase border-b border-border/50 pb-1 mb-2">
 									Bus Voltage Profile
 								</h4>
-								<div className="bg-slate-900 rounded border border-slate-800 overflow-hidden">
+								<div className="bg-card rounded border border-slate-800 overflow-hidden">
 									<table className="w-full text-left text-[11px]">
-										<thead className="bg-slate-800 text-slate-400">
+										<thead className="bg-card text-muted-foreground">
 											<tr>
 												<th className="px-2 py-1.5 font-medium">Bus</th>
 												<th className="px-2 py-1.5 font-medium">pu</th>
@@ -646,31 +646,31 @@ export function LoadFlowAnalysis() {
 											<tr>
 												<td className="px-2 py-1.5">UTL-11KV</td>
 												<td className="px-2 py-1.5">1.040</td>
-												<td className="px-2 py-1.5 text-emerald-400">Normal</td>
+												<td className="px-2 py-1.5 text-success">Normal</td>
 											</tr>
 											<tr>
 												<td className="px-2 py-1.5">MSB-480V</td>
 												<td className="px-2 py-1.5">1.000</td>
-												<td className="px-2 py-1.5 text-slate-400">Swing</td>
+												<td className="px-2 py-1.5 text-muted-foreground">Swing</td>
 											</tr>
 											<tr>
 												<td className="px-2 py-1.5">MDB-A</td>
 												<td className="px-2 py-1.5">0.998</td>
-												<td className="px-2 py-1.5 text-emerald-400">Normal</td>
+												<td className="px-2 py-1.5 text-success">Normal</td>
 											</tr>
-											<tr className="bg-orange-500/10">
-												<td className="px-2 py-1.5 text-orange-400">MDB-B</td>
-												<td className="px-2 py-1.5 text-orange-400 font-bold">
+											<tr className="bg-primary/10">
+												<td className="px-2 py-1.5 text-primary">MDB-B</td>
+												<td className="px-2 py-1.5 text-primary font-bold">
 													0.981
 												</td>
-												<td className="px-2 py-1.5 text-orange-400 font-bold">
+												<td className="px-2 py-1.5 text-primary font-bold">
 													Warning
 												</td>
 											</tr>
 											<tr>
 												<td className="px-2 py-1.5">ATS-480V</td>
 												<td className="px-2 py-1.5">0.997</td>
-												<td className="px-2 py-1.5 text-emerald-400">Normal</td>
+												<td className="px-2 py-1.5 text-success">Normal</td>
 											</tr>
 										</tbody>
 									</table>
@@ -682,9 +682,9 @@ export function LoadFlowAnalysis() {
 								<h4 className="text-xs font-bold text-muted-foreground uppercase border-b border-border/50 pb-1 mb-2">
 									Branch Loading
 								</h4>
-								<div className="bg-slate-900 rounded border border-slate-800 overflow-hidden">
+								<div className="bg-card rounded border border-slate-800 overflow-hidden">
 									<table className="w-full text-left text-[11px]">
-										<thead className="bg-slate-800 text-slate-400">
+										<thead className="bg-card text-muted-foreground">
 											<tr>
 												<th className="px-2 py-1.5 font-medium">Branch</th>
 												<th className="px-2 py-1.5 font-medium">% Load</th>
@@ -692,29 +692,29 @@ export function LoadFlowAnalysis() {
 											</tr>
 										</thead>
 										<tbody className="divide-y divide-slate-800 font-mono">
-											<tr className="bg-orange-500/10">
-												<td className="px-2 py-1.5 text-orange-400">T1 Main</td>
-												<td className="px-2 py-1.5 text-orange-400 font-bold">
+											<tr className="bg-primary/10">
+												<td className="px-2 py-1.5 text-primary">T1 Main</td>
+												<td className="px-2 py-1.5 text-primary font-bold">
 													98.2%
 												</td>
-												<td className="px-2 py-1.5 text-orange-400 font-bold">
+												<td className="px-2 py-1.5 text-primary font-bold">
 													Warning
 												</td>
 											</tr>
 											<tr>
 												<td className="px-2 py-1.5">Feeder F1</td>
 												<td className="px-2 py-1.5">53.5%</td>
-												<td className="px-2 py-1.5 text-emerald-400">Normal</td>
+												<td className="px-2 py-1.5 text-success">Normal</td>
 											</tr>
 											<tr>
 												<td className="px-2 py-1.5">Feeder F2</td>
 												<td className="px-2 py-1.5">61.1%</td>
-												<td className="px-2 py-1.5 text-emerald-400">Normal</td>
+												<td className="px-2 py-1.5 text-success">Normal</td>
 											</tr>
 											<tr>
 												<td className="px-2 py-1.5">Emergency</td>
 												<td className="px-2 py-1.5">9.0%</td>
-												<td className="px-2 py-1.5 text-emerald-400">Normal</td>
+												<td className="px-2 py-1.5 text-success">Normal</td>
 											</tr>
 										</tbody>
 									</table>
@@ -728,21 +728,21 @@ export function LoadFlowAnalysis() {
 								</h4>
 								<div className="space-y-2 text-xs">
 									<div className="flex justify-between">
-										<span className="text-slate-400">Generation</span>
+										<span className="text-muted-foreground">Generation</span>
 										<span className="font-mono">1,523 kW + 499 kVAR</span>
 									</div>
 									<div className="flex justify-between">
-										<span className="text-slate-400">Total Load</span>
+										<span className="text-muted-foreground">Total Load</span>
 										<span className="font-mono">1,498 kW + 879 kVAR</span>
 									</div>
 									<div className="flex justify-between">
-										<span className="text-slate-400">Total Losses</span>
-										<span className="font-mono text-red-400">
+										<span className="text-muted-foreground">Total Losses</span>
+										<span className="font-mono text-danger">
 											25.3 kW (1.66%)
 										</span>
 									</div>
 									<div className="flex justify-between">
-										<span className="text-slate-400">Power Factor</span>
+										<span className="text-muted-foreground">Power Factor</span>
 										<span className="font-mono">0.864 lag</span>
 									</div>
 								</div>

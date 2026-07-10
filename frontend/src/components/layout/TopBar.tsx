@@ -1,4 +1,4 @@
-import { Flame, Globe, HelpCircle, Search, Settings } from "lucide-react";
+import { ShieldCheck, Globe, HelpCircle, Search, Settings } from "lucide-react";
 import type React from "react";
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
@@ -59,17 +59,16 @@ const TopBar: React.FC<TopBarProps> = ({
         const pageName = routeLabels[location.pathname] || "BAZSPARK";
 
         return (
-                <header className="h-12 bg-slate-900 backdrop-blur-sm border-b border-slate-700/50 flex items-center px-4 gap-3 shrink-0">
-                        <Flame className="h-5 w-5 text-orange-500 shrink-0 transition-transform duration-300 hover:scale-110" />
-                        <span className="text-white font-semibold text-sm tracking-wide hidden sm:inline">
+                <header className="h-12 bg-card border-b border-border flex items-center px-4 gap-3 shrink-0">
+                        <ShieldCheck className="h-4 w-4 text-primary shrink-0" />
+                        <span className="text-foreground font-semibold text-sm tracking-tight hidden sm:inline">
                                 BAZSPARK
                         </span>
 
-                        <div className="h-5 w-px bg-slate-700/50 hidden sm:block" />
+                        <div className="h-4 w-px bg-border hidden sm:block" />
 
-                        <span className="text-slate-300 text-sm relative pb-1 truncate">
+                        <span className="text-muted-foreground text-sm truncate">
                                 {pageName}
-                                <span className="absolute bottom-0 left-0 w-full h-0.5 bg-red-500 scale-x-100 transition-transform duration-300 origin-left" />
                         </span>
 
                         <div className="flex-1" />
@@ -80,17 +79,17 @@ const TopBar: React.FC<TopBarProps> = ({
                                         className={`h-2.5 w-2.5 rounded-full transition-all duration-300 ${isConnected ? "bg-green-500 shadow-green-500/50 shadow-md animate-pulse" : "bg-red-500 shadow-red-500/50 shadow-md"}`}
                                         title={isConnected ? "Connected" : "Disconnected"}
                                 />
-                                <span className="text-slate-400 text-xs hidden md:inline">
+                                <span className="text-muted-foreground text-xs hidden md:inline">
                                         {isConnected ? "Online" : "Offline"}
                                 </span>
                         </div>
 
-                        <div className="h-5 w-px bg-slate-700/50" />
+                        <div className="h-5 w-px bg-secondary/50" />
 
                         {/* Action buttons */}
                         <button
                                 onClick={onSearchOpen}
-                                className="p-1.5 text-slate-400 hover:text-slate-200 transition-all duration-200 hover:scale-110 rounded"
+                                className="p-1.5 text-muted-foreground hover:text-foreground transition-all duration-200 hover:scale-110 rounded"
                                 aria-label="Search"
                                 title="Search (Ctrl+K)"
                         >
@@ -101,7 +100,7 @@ const TopBar: React.FC<TopBarProps> = ({
 
                         <button
                                 onClick={onHelpOpen}
-                                className="p-1.5 text-slate-400 hover:text-slate-200 transition-all duration-200 hover:scale-110 rounded"
+                                className="p-1.5 text-muted-foreground hover:text-foreground transition-all duration-200 hover:scale-110 rounded"
                                 aria-label="Help"
                                 data-onboarding="help-button"
                                 title="Global help (F1)"
@@ -111,7 +110,7 @@ const TopBar: React.FC<TopBarProps> = ({
 
                         <Link
                                 to="/settings"
-                                className="p-1.5 text-slate-400 hover:text-slate-200 transition-all duration-200 hover:scale-110 rounded"
+                                className="p-1.5 text-muted-foreground hover:text-foreground transition-all duration-200 hover:scale-110 rounded"
                                 aria-label="Settings"
                                 title="Settings"
                         >
@@ -121,14 +120,14 @@ const TopBar: React.FC<TopBarProps> = ({
                         <div className="relative" ref={langRef}>
                                 <button
                                         onClick={() => setLangOpen(!langOpen)}
-                                        className="flex items-center gap-1 px-1.5 py-1 text-slate-400 hover:text-slate-200 transition-all duration-200 hover:scale-105 text-xs rounded"
+                                        className="flex items-center gap-1 px-1.5 py-1 text-muted-foreground hover:text-foreground transition-all duration-200 hover:scale-105 text-xs rounded"
                                         aria-label="Change language"
                                 >
-                                        <Globe className="h-3.5 w-3.5" />
+                                        <Globe className="h-4 w-4" />
                                         {currentLanguage.toUpperCase()}
                                 </button>
                                 {langOpen && (
-                                        <div className="absolute right-0 top-full mt-1 bg-slate-800 backdrop-blur-sm border border-slate-700/50 rounded shadow-lg z-50 min-w-[120px]">
+                                        <div className="absolute right-0 top-full mt-1 bg-card backdrop-blur-sm border border-border/50 rounded shadow-lg z-50 min-w-[120px]">
                                                 {["en", "ar"].map((lang) => (
                                                         <button
                                                                 key={lang}
@@ -138,8 +137,8 @@ const TopBar: React.FC<TopBarProps> = ({
                                                                 }}
                                                                 className={`block w-full text-left px-3 py-1.5 text-xs transition-all duration-200 ${
                                                                         currentLanguage === lang
-                                                                                ? "text-orange-400 bg-orange-500/10"
-                                                                                : "text-slate-300 hover:bg-slate-700/50"
+                                                                                ? "text-primary bg-primary/10"
+                                                                                : "text-foreground/90 hover:bg-secondary/50"
                                                                 }`}
                                                         >
                                                                 {lang === "en" ? "English" : "العربية"}
@@ -149,7 +148,7 @@ const TopBar: React.FC<TopBarProps> = ({
                                 )}
                         </div>
 
-                        <div className="h-5 w-px bg-slate-700/50" />
+                        <div className="h-5 w-px bg-secondary/50" />
 
                         <UserMenu />
                 </header>

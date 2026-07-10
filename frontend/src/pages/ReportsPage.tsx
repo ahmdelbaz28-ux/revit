@@ -219,13 +219,13 @@ export function ReportsPage() {
                                                 (id) => (
                                                         <div
                                                                 key={id}
-                                                                className="flex items-center justify-between p-3 rounded-lg bg-slate-900/50 border border-slate-700/50"
+                                                                className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border border-border/50"
                                                         >
                                                                 <div className="flex items-center gap-3">
                                                                         <Skeleton className="h-8 w-8 rounded" />
                                                                         <div className="space-y-2">
-                                                                                <Skeleton className="h-4 w-40 bg-slate-700" />
-                                                                                <Skeleton className="h-3 w-32 bg-slate-700" />
+                                                                                <Skeleton className="h-4 w-40 bg-secondary" />
+                                                                                <Skeleton className="h-3 w-32 bg-secondary" />
                                                                         </div>
                                                                 </div>
                                                                 <div className="flex items-center gap-2">
@@ -242,7 +242,7 @@ export function ReportsPage() {
                 if (reportsError) {
                         return (
                                 <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
-                                        <p className="text-red-400 text-sm">
+                                        <p className="text-danger text-sm">
                                                 {t("reports.errorLoading")}: {reportsError}
                                         </p>
                                 </div>
@@ -251,7 +251,7 @@ export function ReportsPage() {
 
                 if (!reports || reports.length === 0) {
                         return (
-                                <div className="text-center py-8 text-slate-400">
+                                <div className="text-center py-8 text-muted-foreground">
                                         <FileText className="h-8 w-8 mx-auto mb-3 opacity-50" />
                                         <p>{t("reports.noReports")}</p>
                                         <p className="text-sm mt-1">{t("reports.createFirst")}</p>
@@ -265,19 +265,19 @@ export function ReportsPage() {
                                         {reports.map((report) => (
                                                 <div
                                                         key={report.id}
-                                                        className="flex items-center justify-between p-3 rounded-lg bg-slate-900/50 border border-slate-700/50"
+                                                        className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border border-border/50"
                                                 >
                                                         <div className="flex items-center gap-3">
                                                                 <div className="w-8 h-8 rounded bg-blue-500/10 flex items-center justify-center">
-                                                                        <FileText className="h-4 w-4 text-blue-400" />
+                                                                        <FileText className="h-4 w-4 text-info" />
                                                                 </div>
                                                                 <div>
-                                                                        <div className="text-sm font-medium text-slate-200">
+                                                                        <div className="text-sm font-medium text-foreground">
                                                                                 {report.type
                                                                                         .replace("-", " ")
                                                                                         .replace(/\b\w/g, (l) => l.toUpperCase())}
                                                                         </div>
-                                                                        <div className="text-xs text-slate-400 flex items-center gap-3">
+                                                                        <div className="text-xs text-muted-foreground flex items-center gap-3">
                                                                                 <span className="flex items-center gap-1">
                                                                                         <Calendar className="h-3 w-3" />
                                                                                         {new Date(report.createdAt).toLocaleDateString()}
@@ -300,10 +300,10 @@ export function ReportsPage() {
                                                                         }
                                                                         className={
                                                                                 report.status === "completed"
-                                                                                        ? "bg-emerald-600/20 text-emerald-400 border-emerald-500/30"
+                                                                                        ? "bg-success/10 text-success border-success/30"
                                                                                         : report.status === "pending"  // NOSONAR — S3358: nested ternary acceptable in this localized context
-                                                                                                ? "bg-amber-600/20 text-amber-400 border-amber-500/30"
-                                                                                                : "bg-red-600/20 text-red-400 border-red-500/30"
+                                                                                                ? "bg-warning/10 text-warning border-warning/30"
+                                                                                                : "bg-danger/10 text-danger border-danger/30"
                                                                         }
                                                                 >
                                                                         {report.status}
@@ -311,7 +311,7 @@ export function ReportsPage() {
                                                                 <Button
                                                                         variant="outline"
                                                                         size="sm"
-                                                                        className="border-slate-600 text-slate-300"
+                                                                        className="border-border text-foreground/90"
                                                                         onClick={() => {
                                                                                 try {
                                                                                         const payload = JSON.stringify(report, null, 2);
@@ -334,7 +334,7 @@ export function ReportsPage() {
                                                                         title={t("common.download")}
                                                                         disabled={report.status !== "completed"}
                                                                 >
-                                                                        <Download className="h-3.5 w-3.5" />
+                                                                        <Download className="h-4 w-4" />
                                                                 </Button>
                                                         </div>
                                                 </div>
@@ -350,16 +350,16 @@ export function ReportsPage() {
                                 {/* Header */}
                                 <div className="flex items-center justify-between">
                                         <div>
-                                                <h1 className="text-2xl font-bold text-slate-100">
+                                                <h1 className="text-2xl font-bold text-foreground">
                                                         {t("reports.title")}
                                                 </h1>
-                                                <p className="text-sm text-slate-400 mt-1">
+                                                <p className="text-sm text-muted-foreground mt-1">
                                                         {t("reports.subtitle")}
                                                 </p>
                                         </div>
                                         <Button
                                                 variant="outline"
-                                                className="border-slate-600 text-slate-300 hover:bg-slate-800"
+                                                className="border-border text-foreground/90 hover:bg-card"
                                                 onClick={() => refetchReports()}
                                         >
                                                 <Clock className="h-4 w-4 mr-1" />
@@ -369,9 +369,9 @@ export function ReportsPage() {
 
                                 {/* Error banner */}
                                 {generateError && (
-                                        <Card className="border-red-500/30 bg-red-500/5">
+                                        <Card className="border-danger/30 bg-red-500/5">
                                                 <CardContent className="p-3">
-                                                        <p className="text-sm text-red-400">
+                                                        <p className="text-sm text-danger">
                                                                 {t("reports.reportGenerationFailed")}: {generateError}
                                                         </p>
                                                 </CardContent>
@@ -379,26 +379,26 @@ export function ReportsPage() {
                                 )}
 
                                 {/* Report Generation Card */}
-                                <Card className="border-slate-700 bg-slate-800">
+                                <Card className="border-border bg-card">
                                         <CardHeader className="pb-3">
-                                                <CardTitle className="text-lg text-slate-100">
+                                                <CardTitle className="text-lg text-foreground">
                                                         {t("reports.generate")}
                                                 </CardTitle>
-                                                <CardDescription className="text-slate-400">
+                                                <CardDescription className="text-muted-foreground">
                                                         {t("reports.parameters")}
                                                 </CardDescription>
                                         </CardHeader>
                                         <CardContent className="space-y-4">
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                         <div className="space-y-2">
-                                                                <Label className="text-slate-300">
+                                                                <Label className="text-foreground/90">
                                                                         {t("reports.reportType")}
                                                                 </Label>
                                                                 <Select value={reportType} onValueChange={setReportType}>
-                                                                        <SelectTrigger className="bg-slate-900 border-slate-600 text-slate-100">
+                                                                        <SelectTrigger className="bg-card border-border text-foreground">
                                                                                 <SelectValue />
                                                                         </SelectTrigger>
-                                                                        <SelectContent className="bg-slate-800 border-slate-700">
+                                                                        <SelectContent className="bg-card border-border">
                                                                                 <SelectItem value="voltage-drop">
                                                                                         {t("reports.voltageDropAnalysis")}
                                                                                 </SelectItem>
@@ -433,7 +433,7 @@ export function ReportsPage() {
                                                                 </Select>
                                                         </div>
                                                         <div className="space-y-2">
-                                                                <Label className="text-slate-300">
+                                                                <Label className="text-foreground/90">
                                                                         {t("reports.executionParams")}
                                                                 </Label>
                                                                 <Select
@@ -442,10 +442,10 @@ export function ReportsPage() {
                                                                                 setExecParams((p) => ({ ...p, kernel_coverage: v }))
                                                                         }
                                                                 >
-                                                                        <SelectTrigger className="bg-slate-900 border-slate-600 text-slate-100">
+                                                                        <SelectTrigger className="bg-card border-border text-foreground">
                                                                                 <SelectValue />
                                                                         </SelectTrigger>
-                                                                        <SelectContent className="bg-slate-800 border-slate-700">
+                                                                        <SelectContent className="bg-card border-border">
                                                                                 <SelectItem value="minimal">Minimal Coverage</SelectItem>
                                                                                 <SelectItem value="standard">Standard Coverage</SelectItem>
                                                                                 <SelectItem value="full">Full Coverage</SelectItem>
@@ -457,7 +457,7 @@ export function ReportsPage() {
 
                                                 <div className="flex items-center gap-4 pt-2">
                                                         <div className="flex items-center gap-2">
-                                                                <Label className="flex items-center gap-2 text-slate-300 cursor-pointer">
+                                                                <Label className="flex items-center gap-2 text-foreground/90 cursor-pointer">
                                                                         <input
                                                                                 type="checkbox"
                                                                                 checked={execParams.deterministic_analysis}
@@ -467,13 +467,13 @@ export function ReportsPage() {
                                                                                                 deterministic_analysis: e.target.checked,
                                                                                         }))
                                                                                 }
-                                                                                className="rounded bg-slate-900 border-slate-600 text-red-500 focus:ring-red-500"
+                                                                                className="rounded bg-card border-border text-red-500 focus:ring-red-500"
                                                                         />  // NOSONAR — S6772: hook dependency array intentional
                                                                         Deterministic Analysis
                                                                 </Label>
                                                         </div>
                                                         <div className="flex items-center gap-2">
-                                                                <Label className="flex items-center gap-2 text-slate-300 cursor-pointer">
+                                                                <Label className="flex items-center gap-2 text-foreground/90 cursor-pointer">
                                                                         <input
                                                                                 type="checkbox"
                                                                                 checked={execParams.nfpa_compliance}
@@ -483,7 +483,7 @@ export function ReportsPage() {
                                                                                                 nfpa_compliance: e.target.checked,
                                                                                         }))
                                                                                 }
-                                                                                className="rounded bg-slate-900 border-slate-600 text-red-500 focus:ring-red-500"
+                                                                                className="rounded bg-card border-border text-red-500 focus:ring-red-500"
                                                                         />  // NOSONAR — S6772: hook dependency array intentional
                                                                         NFPA Compliance
                                                                 </Label>
@@ -491,7 +491,7 @@ export function ReportsPage() {
                                                 </div>
 
                                                 <Button
-                                                        className="bg-red-600 hover:bg-red-700 text-white border-none"
+                                                        className="bg-danger hover:bg-danger/90 text-white border-none"
                                                         onClick={handleGenerate}
                                                         disabled={generating}
                                                 >
@@ -511,10 +511,10 @@ export function ReportsPage() {
                                 </Card>
 
                                 {/* Battery Calculation Report Preview */}
-                                <Card className="border-slate-700 bg-slate-800">
+                                <Card className="border-border bg-card">
                                         <CardHeader className="pb-3">
                                                 <div className="flex items-center justify-between">
-                                                        <CardTitle className="text-lg text-slate-100">
+                                                        <CardTitle className="text-lg text-foreground">
                                                                 {t("reports.batteryCalculations")}
                                                         </CardTitle>
                                                         <ExplainButton
@@ -528,42 +528,42 @@ export function ReportsPage() {
                                                                 }}
                                                         />
                                                 </div>
-                                                <CardDescription className="text-slate-400">
+                                                <CardDescription className="text-muted-foreground">
                                                         {t("reports.batteryCalculationsDesc")}
                                                 </CardDescription>
                                         </CardHeader>
                                         <CardContent>
                                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                                        <div className="bg-slate-900/50 p-4 rounded-lg">
-                                                                <div className="text-2xl font-bold text-slate-100">
+                                                        <div className="bg-muted/50 p-4 rounded-lg">
+                                                                <div className="text-2xl font-bold text-foreground">
                                                                         {batteryCalculation.totalStandbyCurrent}
                                                                 </div>
-                                                                <div className="text-sm text-slate-400">
+                                                                <div className="text-sm text-muted-foreground">
                                                                         {t("reports.totalStandbyCurrent")}
                                                                 </div>
                                                         </div>
-                                                        <div className="bg-slate-900/50 p-4 rounded-lg">
-                                                                <div className="text-2xl font-bold text-slate-100">
+                                                        <div className="bg-muted/50 p-4 rounded-lg">
+                                                                <div className="text-2xl font-bold text-foreground">
                                                                         {batteryCalculation.totalAlarmCurrent}
                                                                 </div>
-                                                                <div className="text-sm text-slate-400">
+                                                                <div className="text-sm text-muted-foreground">
                                                                         {t("reports.totalAlarmCurrent")}
                                                                 </div>
                                                         </div>
-                                                        <div className="bg-slate-900/50 p-4 rounded-lg">
-                                                                <div className="text-2xl font-bold text-slate-100">
+                                                        <div className="bg-muted/50 p-4 rounded-lg">
+                                                                <div className="text-2xl font-bold text-foreground">
                                                                         {batteryCalculation.requiredCapacity}
                                                                 </div>
-                                                                <div className="text-sm text-slate-400">
+                                                                <div className="text-sm text-muted-foreground">
                                                                         {t("reports.requiredCapacity")}
                                                                 </div>
                                                         </div>
                                                 </div>
                                                 <div className="mt-4">
-                                                        <div className="text-sm font-medium text-slate-300 mb-2">
+                                                        <div className="text-sm font-medium text-foreground/90 mb-2">
                                                                 {t("reports.recommendedBattery")}
                                                         </div>
-                                                        <div className="text-lg font-semibold text-emerald-400">
+                                                        <div className="text-lg font-semibold text-success">
                                                                 {batteryCalculation.recommendedBattery.voltage}V{" "}
                                                                 {batteryCalculation.recommendedBattery.capacity}Ah
                                                         </div>
@@ -572,10 +572,10 @@ export function ReportsPage() {
                                 </Card>
 
                                 {/* Coverage Analysis Report Preview */}
-                                <Card className="border-slate-700 bg-slate-800">
+                                <Card className="border-border bg-card">
                                         <CardHeader className="pb-3">
                                                 <div className="flex items-center justify-between">
-                                                        <CardTitle className="text-lg text-slate-100">
+                                                        <CardTitle className="text-lg text-foreground">
                                                                 {t("reports.coverageAnalysis")}
                                                         </CardTitle>
                                                         <ExplainButton
@@ -588,41 +588,41 @@ export function ReportsPage() {
                                                                 }}
                                                         />
                                                 </div>
-                                                <CardDescription className="text-slate-400">
+                                                <CardDescription className="text-muted-foreground">
                                                         {t("reports.coverageAnalysisDesc")}
                                                 </CardDescription>
                                         </CardHeader>
                                         <CardContent>
                                                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                                                        <div className="bg-slate-900/50 p-4 rounded-lg">
-                                                                <div className="text-2xl font-bold text-slate-100">
+                                                        <div className="bg-muted/50 p-4 rounded-lg">
+                                                                <div className="text-2xl font-bold text-foreground">
                                                                         {coverageCalculation.summary.totalRooms}
                                                                 </div>
-                                                                <div className="text-sm text-slate-400">
+                                                                <div className="text-sm text-muted-foreground">
                                                                         {t("reports.totalRooms")}
                                                                 </div>
                                                         </div>
-                                                        <div className="bg-slate-900/50 p-4 rounded-lg">
-                                                                <div className="text-2xl font-bold text-slate-100">
+                                                        <div className="bg-muted/50 p-4 rounded-lg">
+                                                                <div className="text-2xl font-bold text-foreground">
                                                                         {coverageCalculation.summary.totalDetectors}
                                                                 </div>
-                                                                <div className="text-sm text-slate-400">
+                                                                <div className="text-sm text-muted-foreground">
                                                                         {t("reports.totalDetectors")}
                                                                 </div>
                                                         </div>
-                                                        <div className="bg-slate-900/50 p-4 rounded-lg">
-                                                                <div className="text-2xl font-bold text-slate-100">
+                                                        <div className="bg-muted/50 p-4 rounded-lg">
+                                                                <div className="text-2xl font-bold text-foreground">
                                                                         {coverageCalculation.summary.coveragePercentage}%
                                                                 </div>
-                                                                <div className="text-sm text-slate-400">
+                                                                <div className="text-sm text-muted-foreground">
                                                                         {t("reports.overallCoverage")}
                                                                 </div>
                                                         </div>
-                                                        <div className="bg-slate-900/50 p-4 rounded-lg">
-                                                                <div className="text-2xl font-bold text-emerald-400">
+                                                        <div className="bg-muted/50 p-4 rounded-lg">
+                                                                <div className="text-2xl font-bold text-success">
                                                                         {coverageCalculation.summary.passedRooms}
                                                                 </div>
-                                                                <div className="text-sm text-slate-400">
+                                                                <div className="text-sm text-muted-foreground">
                                                                         {t("reports.passedRooms")}
                                                                 </div>
                                                         </div>
@@ -631,12 +631,12 @@ export function ReportsPage() {
                                 </Card>
 
                                 {/* Report History */}
-                                <Card className="border-slate-700 bg-slate-800">
+                                <Card className="border-border bg-card">
                                         <CardHeader className="pb-3">
-                                                <CardTitle className="text-lg text-slate-100">
+                                                <CardTitle className="text-lg text-foreground">
                                                         {t("reports.history")}
                                                 </CardTitle>
-                                                <CardDescription className="text-slate-400">
+                                                <CardDescription className="text-muted-foreground">
                                                         {reportsLoading
                                                                 ? t("reports.loading")
                                                                 : `${reports?.length || 0} ${t("reports.reports")}`}

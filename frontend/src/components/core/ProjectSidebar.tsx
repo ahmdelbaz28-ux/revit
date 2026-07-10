@@ -34,7 +34,7 @@ export function ProjectSidebar() {
 								onClick={() => actions.selectElement(el.id)}
 							>
 								<div className="flex items-center gap-2 truncate">
-									<Box className="h-3.5 w-3.5 text-blue-400" />
+									<Box className="h-4 w-4 text-info" />
 									<span className="text-xs truncate">{el.id}</span>
 								</div>
 								<Button

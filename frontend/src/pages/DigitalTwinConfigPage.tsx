@@ -27,10 +27,10 @@ export function DigitalTwinConfigPage() {
 	return (
 		<div className="flex-1 overflow-auto p-6 max-w-4xl mx-auto space-y-6">
 			<div>
-				<h1 className="text-2xl font-bold text-slate-100">
+				<h1 className="text-2xl font-bold text-foreground">
 					Digital Twin — Configuration
 				</h1>
-				<p className="text-sm text-slate-400 mt-1">
+				<p className="text-sm text-muted-foreground mt-1">
 					Edit conversion settings and view available mappings
 				</p>
 			</div>
@@ -44,25 +44,25 @@ export function DigitalTwinConfigPage() {
 					await digitalTwinService.setConfig(config);
 				}}
 			/>
-			<Card className="border-slate-700 bg-slate-800">
+			<Card className="border-border bg-card">
 				<CardHeader>
-					<CardTitle className="text-slate-100">
+					<CardTitle className="text-foreground">
 						Available Mappings ({mappings.length})
 					</CardTitle>
 				</CardHeader>
 				<CardContent>
 					{mappings.length === 0 ? (
-						<p className="text-slate-500 text-sm">No mappings available</p>
+						<p className="text-muted-foreground text-sm">No mappings available</p>
 					) : (
 						<div className="space-y-2">
 							{mappings.map((m, i) => (
 								<div
 									key={i}  // NOSONAR — S6479: array index key acceptable for static list
-									className="flex items-center gap-2 p-2 bg-slate-900/50 rounded border border-slate-700"
+									className="flex items-center gap-2 p-2 bg-muted/50 rounded border border-border"
 								>
 									<Badge
 										variant="outline"
-										className="border-slate-600 text-slate-300"
+										className="border-border text-foreground/90"
 									>
 										{typeof m === "object" && m
 											? String(
@@ -71,7 +71,7 @@ export function DigitalTwinConfigPage() {
 												)
 											: `Mapping ${i + 1}`}
 									</Badge>
-									<pre className="text-xs text-slate-500 flex-1 overflow-auto">
+									<pre className="text-xs text-muted-foreground flex-1 overflow-auto">
 										{JSON.stringify(m, null, 2)}
 									</pre>
 								</div>

@@ -104,15 +104,15 @@ export function RevitPage() {
 		<div className="flex-1 overflow-auto p-6 max-w-6xl mx-auto space-y-6">
 			<div className="flex items-center justify-between">
 				<div>
-					<h1 className="text-2xl font-bold text-slate-100">Revit Dashboard</h1>
-					<p className="text-sm text-slate-400 mt-1">
+					<h1 className="text-2xl font-bold text-foreground">Revit Dashboard</h1>
+					<p className="text-sm text-muted-foreground mt-1">
 						Connect, read, and manage RVT files
 					</p>
 				</div>
 				<Badge
 					variant={connected ? "default" : "outline"}
 					className={
-						connected ? "bg-emerald-600" : "border-slate-600 text-slate-400"
+						connected ? "bg-emerald-600" : "border-border text-muted-foreground"
 					}
 				>
 					{connected ? (
@@ -128,12 +128,12 @@ export function RevitPage() {
 			</div>
 
 			<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-				<Card className="border-slate-700 bg-slate-800">
+				<Card className="border-border bg-card">
 					<CardHeader>
-						<CardTitle className="flex items-center gap-2 text-slate-100">
-							<Power className="h-5 w-5 text-orange-400" /> Connection
+						<CardTitle className="flex items-center gap-2 text-foreground">
+							<Power className="h-5 w-5 text-primary" /> Connection
 						</CardTitle>
-						<CardDescription className="text-slate-400">
+						<CardDescription className="text-muted-foreground">
 							Connect to Revit instance
 						</CardDescription>
 					</CardHeader>
@@ -144,7 +144,7 @@ export function RevitPage() {
 								onCheckedChange={setVisible}
 								id="revit-visible"
 							/>
-							<Label htmlFor="revit-visible" className="text-slate-300">
+							<Label htmlFor="revit-visible" className="text-foreground/90">
 								Visible window
 							</Label>
 						</div>
@@ -172,31 +172,31 @@ export function RevitPage() {
 					</CardContent>
 				</Card>
 
-				<Card className="border-slate-700 bg-slate-800">
+				<Card className="border-border bg-card">
 					<CardHeader>
-						<CardTitle className="flex items-center gap-2 text-slate-100">
-							<Activity className="h-5 w-5 text-orange-400" /> Status
+						<CardTitle className="flex items-center gap-2 text-foreground">
+							<Activity className="h-5 w-5 text-primary" /> Status
 						</CardTitle>
-						<CardDescription className="text-slate-400">
+						<CardDescription className="text-muted-foreground">
 							Current Revit status
 						</CardDescription>
 					</CardHeader>
 					<CardContent>
 						{status ? (
-							<pre className="text-xs text-slate-400 bg-slate-900 p-3 rounded overflow-auto max-h-48">
+							<pre className="text-xs text-muted-foreground bg-card p-3 rounded overflow-auto max-h-48">
 								{JSON.stringify(status, null, 2)}
 							</pre>
 						) : (
-							<p className="text-slate-500 text-sm">Not connected</p>
+							<p className="text-muted-foreground text-sm">Not connected</p>
 						)}
 					</CardContent>
 				</Card>
 			</div>
 
-			<Card className="border-slate-700 bg-slate-800">
+			<Card className="border-border bg-card">
 				<CardHeader>
-					<CardTitle className="flex items-center gap-2 text-slate-100">
-						<FileText className="h-5 w-5 text-orange-400" /> Read RVT File
+					<CardTitle className="flex items-center gap-2 text-foreground">
+						<FileText className="h-5 w-5 text-primary" /> Read RVT File
 					</CardTitle>
 				</CardHeader>
 				<CardContent className="space-y-3">
@@ -205,12 +205,12 @@ export function RevitPage() {
 							placeholder="/path/to/file.rvt"
 							value={filepath}
 							onChange={(e) => setFilepath(e.target.value)}
-							className="bg-slate-900 border-slate-700 text-slate-100"
+							className="bg-card border-border text-foreground"
 						/>
 						<Button
 							onClick={handleReadRvt}
 							disabled={!connected}
-							className="bg-orange-600 hover:bg-orange-700 text-white"
+							className="bg-primary hover:bg-orange-700 text-white"
 						>
 							Read
 						</Button>

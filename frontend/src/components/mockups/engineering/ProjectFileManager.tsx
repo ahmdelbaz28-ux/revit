@@ -226,62 +226,62 @@ export function ProjectFileManager() {
 		if (status === "Approved")
 			return "bg-green-500/20 text-green-400 border-green-500/30";
 		if (status === "In Review")
-			return "bg-orange-500/20 text-orange-400 border-orange-500/30";
-		return "bg-slate-500/20 text-slate-400 border-slate-500/30";
+			return "bg-primary/20 text-primary border-primary/30";
+		return "bg-slate-500/20 text-muted-foreground border-border/30";
 	};
 
 	const getApprovalColor = (approval: string) => {
 		if (approval.includes("Construction"))
-			return "bg-blue-500/20 text-blue-400 border-blue-500/30";
+			return "bg-blue-500/20 text-info border-blue-500/30";
 		if (approval.includes("Review"))
-			return "bg-orange-500/20 text-orange-400 border-orange-500/30";
+			return "bg-primary/20 text-primary border-primary/30";
 		if (approval.includes("Information"))
 			return "bg-purple-500/20 text-purple-400 border-purple-500/30";
-		return "bg-slate-500/20 text-slate-400 border-slate-500/30";
+		return "bg-slate-500/20 text-muted-foreground border-border/30";
 	};
 
 	const getFileIcon = (type: string, className?: string) => {
 		switch (type) {
 			case "DWG":
-				return <FileIcon className={`text-blue-400 ${className}`} />;
+				return <FileIcon className={`text-info ${className}`} />;
 			case "PDF":
-				return <FileText className={`text-red-400 ${className}`} />;
+				return <FileText className={`text-danger ${className}`} />;
 			case "XLSX":
 				return <TableProperties className={`text-green-400 ${className}`} />;
 			case "DOCX":
-				return <FileBox className={`text-blue-400 ${className}`} />;
+				return <FileBox className={`text-info ${className}`} />;
 			default:
-				return <File className={`text-slate-400 ${className}`} />;
+				return <File className={`text-muted-foreground ${className}`} />;
 		}
 	};
 
 	const selectedFile = files.find((f) => f.id === selectedFileId);
 
 	return (
-		<div className="flex flex-col h-screen w-screen overflow-hidden bg-slate-900 text-slate-100 font-sans dark">
+		<div className="flex flex-col h-screen w-screen overflow-hidden bg-card text-foreground font-sans dark">
 			{/* Top Menu Bar */}
-			<div className="h-9 flex items-center justify-between px-4 bg-slate-950 border-b border-slate-800 shrink-0">
-				<div className="flex text-xs space-x-4 text-slate-400">
-					<span className="text-slate-100 font-bold flex items-center gap-2">
+			<div className="h-9 flex items-center justify-between px-4 bg-background border-b border-slate-800 shrink-0">
+				<div className="flex text-xs space-x-4 text-muted-foreground">
+					<span className="text-foreground font-bold flex items-center gap-2">
 						<Box className="w-3.5 h-3.5 text-blue-500" /> NexusCAD
 					</span>
-					<span className="hover:text-slate-100 cursor-pointer">File</span>
-					<span className="hover:text-slate-100 cursor-pointer">Edit</span>
-					<span className="hover:text-slate-100 cursor-pointer">View</span>
-					<span className="hover:text-slate-100 cursor-pointer">Project</span>
-					<span className="hover:text-slate-100 cursor-pointer">
+					<span className="hover:text-foreground cursor-pointer">File</span>
+					<span className="hover:text-foreground cursor-pointer">Edit</span>
+					<span className="hover:text-foreground cursor-pointer">View</span>
+					<span className="hover:text-foreground cursor-pointer">Project</span>
+					<span className="hover:text-foreground cursor-pointer">
 						Version Control
 					</span>
-					<span className="hover:text-slate-100 cursor-pointer">Tools</span>
-					<span className="hover:text-slate-100 cursor-pointer">Help</span>
+					<span className="hover:text-foreground cursor-pointer">Tools</span>
+					<span className="hover:text-foreground cursor-pointer">Help</span>
 				</div>
 				<div className="flex items-center gap-3">
 					<div className="relative">
-						<Search className="h-3 w-3 absolute left-2 top-1/2 -translate-y-1/2 text-slate-500" />
+						<Search className="h-3 w-3 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
 						<input
 							type="text"
 							placeholder="Search files..."
-							className="bg-slate-800 border-slate-700 rounded text-xs pl-7 pr-2 py-1 w-48 text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-blue-500"
+							className="bg-card border-border rounded text-xs pl-7 pr-2 py-1 w-48 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-blue-500"
 						/>
 					</div>
 					<Button
@@ -294,76 +294,76 @@ export function ProjectFileManager() {
 					<Button
 						size="sm"
 						variant="outline"
-						className="h-6 text-[11px] px-3 border-slate-700 hover:bg-slate-800 text-slate-300 rounded flex gap-1 items-center"
+						className="h-6 text-[11px] px-3 border-border hover:bg-card text-foreground/90 rounded flex gap-1 items-center"
 					>
 						<Upload className="w-3 h-3" /> Upload
 					</Button>
 					<Button
 						size="sm"
 						variant="outline"
-						className="h-6 text-[11px] px-3 border-slate-700 hover:bg-slate-800 text-slate-300 rounded flex gap-1 items-center"
+						className="h-6 text-[11px] px-3 border-border hover:bg-card text-foreground/90 rounded flex gap-1 items-center"
 					>
-						<RefreshCw className="w-3 h-3 text-emerald-400" /> Sync Cloud
+						<RefreshCw className="w-3 h-3 text-success" /> Sync Cloud
 					</Button>
 				</div>
 			</div>
 
 			{/* Second Toolbar */}
-			<div className="h-10 flex items-center justify-between px-4 bg-slate-900 border-b border-slate-800 shrink-0">
+			<div className="h-10 flex items-center justify-between px-4 bg-card border-b border-slate-800 shrink-0">
 				<div className="flex items-center gap-3">
-					<div className="flex gap-1 mr-2 text-slate-400">
+					<div className="flex gap-1 mr-2 text-muted-foreground">
 						<Button
 							variant="ghost"
 							size="icon"
-							className="h-6 w-6 rounded hover:bg-slate-800"
+							className="h-6 w-6 rounded hover:bg-card"
 						>
 							<ArrowLeft className="w-3.5 h-3.5" />
 						</Button>
 						<Button
 							variant="ghost"
 							size="icon"
-							className="h-6 w-6 rounded hover:bg-slate-800"
+							className="h-6 w-6 rounded hover:bg-card"
 						>
 							<ArrowRight className="w-3.5 h-3.5" />
 						</Button>
 						<Button
 							variant="ghost"
 							size="icon"
-							className="h-6 w-6 rounded hover:bg-slate-800"
+							className="h-6 w-6 rounded hover:bg-card"
 						>
 							<ArrowUp className="w-3.5 h-3.5" />
 						</Button>
 						<Button
 							variant="ghost"
 							size="icon"
-							className="h-6 w-6 rounded hover:bg-slate-800"
+							className="h-6 w-6 rounded hover:bg-card"
 						>
 							<RefreshCw className="w-3.5 h-3.5" />
 						</Button>
 					</div>
-					<div className="flex items-center text-xs text-slate-400 gap-2 bg-slate-950 px-3 py-1 rounded border border-slate-800">
-						<span className="hover:text-blue-400 cursor-pointer">
+					<div className="flex items-center text-xs text-muted-foreground gap-2 bg-background px-3 py-1 rounded border border-slate-800">
+						<span className="hover:text-info cursor-pointer">
 							NexusCAD Pro
 						</span>{" "}
 						<ChevronRight className="w-3 h-3" />
-						<span className="hover:text-blue-400 cursor-pointer">Projects</span>{" "}
+						<span className="hover:text-info cursor-pointer">Projects</span>{" "}
 						<ChevronRight className="w-3 h-3" />
-						<span className="hover:text-blue-400 cursor-pointer text-slate-200">
+						<span className="hover:text-info cursor-pointer text-foreground">
 							Tower-B Office Complex
 						</span>{" "}
-						<ChevronRight className="w-3 h-3 text-slate-600" />
-						<span className="hover:text-blue-400 cursor-pointer text-blue-400 font-medium">
+						<ChevronRight className="w-3 h-3 text-muted-foreground/70" />
+						<span className="hover:text-info cursor-pointer text-info font-medium">
 							Electrical
 						</span>
 					</div>
 				</div>
 				<div className="flex items-center gap-4">
 					<div className="flex items-center gap-2">
-						<div className="flex bg-slate-950 rounded border border-slate-800 overflow-hidden">
+						<div className="flex bg-background rounded border border-slate-800 overflow-hidden">
 							<Button
 								variant="ghost"
 								size="sm"
-								className={`h-6 w-8 rounded-none px-0 ${activeView === "Grid" ? "bg-slate-800 text-blue-400" : "text-slate-500 hover:text-slate-300"}`}
+								className={`h-6 w-8 rounded-none px-0 ${activeView === "Grid" ? "bg-card text-info" : "text-muted-foreground hover:text-foreground/90"}`}
 								onClick={() => setActiveView("Grid")}
 							>
 								<Grid className="w-3.5 h-3.5" />
@@ -371,7 +371,7 @@ export function ProjectFileManager() {
 							<Button
 								variant="ghost"
 								size="sm"
-								className={`h-6 w-8 rounded-none px-0 ${activeView === "List" ? "bg-slate-800 text-blue-400" : "text-slate-500 hover:text-slate-300"}`}
+								className={`h-6 w-8 rounded-none px-0 ${activeView === "List" ? "bg-card text-info" : "text-muted-foreground hover:text-foreground/90"}`}
 								onClick={() => setActiveView("List")}
 							>
 								<List className="w-3.5 h-3.5" />
@@ -379,7 +379,7 @@ export function ProjectFileManager() {
 							<Button
 								variant="ghost"
 								size="sm"
-								className={`h-6 w-8 rounded-none px-0 ${activeView === "Tree" ? "bg-slate-800 text-blue-400" : "text-slate-500 hover:text-slate-300"}`}
+								className={`h-6 w-8 rounded-none px-0 ${activeView === "Tree" ? "bg-card text-info" : "text-muted-foreground hover:text-foreground/90"}`}
 								onClick={() => setActiveView("Tree")}
 							>
 								<TableProperties className="w-3.5 h-3.5" />
@@ -387,21 +387,21 @@ export function ProjectFileManager() {
 							<Button
 								variant="ghost"
 								size="sm"
-								className={`h-6 w-8 rounded-none px-0 ${activeView === "Timeline" ? "bg-slate-800 text-blue-400" : "text-slate-500 hover:text-slate-300"}`}
+								className={`h-6 w-8 rounded-none px-0 ${activeView === "Timeline" ? "bg-card text-info" : "text-muted-foreground hover:text-foreground/90"}`}
 								onClick={() => setActiveView("Timeline")}
 							>
 								<Clock className="w-3.5 h-3.5" />
 							</Button>
 						</div>
 					</div>
-					<Separator orientation="vertical" className="h-5 bg-slate-800" />
+					<Separator orientation="vertical" className="h-5 bg-card" />
 					<div className="flex gap-2 items-center text-xs">
 						<Badge
 							variant="outline"
-							className="bg-slate-800/50 text-slate-300 border-slate-700 h-6 cursor-pointer hover:bg-slate-800 pr-1"
+							className="bg-muted/50 text-foreground/90 border-border h-6 cursor-pointer hover:bg-card pr-1"
 						>
 							DWG{" "}
-							<X className="w-3 h-3 ml-1 text-slate-500 hover:text-slate-200" />
+							<X className="w-3 h-3 ml-1 text-muted-foreground hover:text-foreground" />
 						</Badge>
 						<Badge
 							variant="outline"
@@ -412,22 +412,22 @@ export function ProjectFileManager() {
 						</Badge>
 						<Badge
 							variant="outline"
-							className="bg-slate-800/50 text-slate-300 border-slate-700 h-6 cursor-pointer hover:bg-slate-800 pr-1"
+							className="bg-muted/50 text-foreground/90 border-border h-6 cursor-pointer hover:bg-card pr-1"
 						>
 							Rev 14+{" "}
-							<X className="w-3 h-3 ml-1 text-slate-500 hover:text-slate-200" />
+							<X className="w-3 h-3 ml-1 text-muted-foreground hover:text-foreground" />
 						</Badge>
 						<Badge
 							variant="outline"
-							className="bg-slate-800/50 text-slate-300 border-slate-700 h-6 cursor-pointer hover:bg-slate-800 pr-1"
+							className="bg-muted/50 text-foreground/90 border-border h-6 cursor-pointer hover:bg-card pr-1"
 						>
 							Modified this week{" "}
-							<X className="w-3 h-3 ml-1 text-slate-500 hover:text-slate-200" />
+							<X className="w-3 h-3 ml-1 text-muted-foreground hover:text-foreground" />
 						</Badge>
 						<Button
 							variant="ghost"
 							size="sm"
-							className="h-6 text-[11px] text-slate-400 border border-dashed border-slate-700 px-2"
+							className="h-6 text-[11px] text-muted-foreground border border-dashed border-border px-2"
 						>
 							+ Add Filter
 						</Button>
@@ -437,42 +437,42 @@ export function ProjectFileManager() {
 
 			<div className="flex flex-1 overflow-hidden">
 				{/* Left Sidebar */}
-				<div className="w-[240px] flex flex-col border-r border-slate-800 bg-slate-900/50 shrink-0">
+				<div className="w-[240px] flex flex-col border-r border-slate-800 bg-muted/50 shrink-0">
 					<ScrollArea className="flex-1">
 						<div className="p-3">
 							<div className="mb-4">
-								<div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2 px-2">
+								<div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2 px-2">
 									Quick Access
 								</div>
 								<div className="space-y-0.5">
-									<div className="flex items-center gap-2 text-xs px-2 py-1.5 rounded hover:bg-slate-800 cursor-pointer text-slate-300">
-										<Clock3 className="w-3.5 h-3.5 text-slate-400" /> Recent
+									<div className="flex items-center gap-2 text-xs px-2 py-1.5 rounded hover:bg-card cursor-pointer text-foreground/90">
+										<Clock3 className="w-3.5 h-3.5 text-muted-foreground" /> Recent
 										Files
 									</div>
-									<div className="flex items-center gap-2 text-xs px-2 py-1.5 rounded hover:bg-slate-800 cursor-pointer text-slate-300">
+									<div className="flex items-center gap-2 text-xs px-2 py-1.5 rounded hover:bg-card cursor-pointer text-foreground/90">
 										<Star className="w-3.5 h-3.5 text-yellow-500" /> Starred
 										Items
-										<span className="ml-auto text-[10px] bg-slate-800 text-slate-400 px-1.5 rounded">
+										<span className="ml-auto text-[10px] bg-card text-muted-foreground px-1.5 rounded">
 											3
 										</span>
 									</div>
-									<div className="flex items-center gap-2 text-xs px-2 py-1.5 rounded hover:bg-slate-800 cursor-pointer text-slate-300">
-										<Users className="w-3.5 h-3.5 text-blue-400" /> Shared with
+									<div className="flex items-center gap-2 text-xs px-2 py-1.5 rounded hover:bg-card cursor-pointer text-foreground/90">
+										<Users className="w-3.5 h-3.5 text-info" /> Shared with
 										Me
-										<span className="ml-auto text-[10px] bg-slate-800 text-slate-400 px-1.5 rounded">
+										<span className="ml-auto text-[10px] bg-card text-muted-foreground px-1.5 rounded">
 											8
 										</span>
 									</div>
-									<div className="flex items-center gap-2 text-xs px-2 py-1.5 rounded hover:bg-slate-800 cursor-pointer text-slate-300">
-										<Eye className="w-3.5 h-3.5 text-orange-400" /> Pending
+									<div className="flex items-center gap-2 text-xs px-2 py-1.5 rounded hover:bg-card cursor-pointer text-foreground/90">
+										<Eye className="w-3.5 h-3.5 text-primary" /> Pending
 										Review
-										<span className="ml-auto text-[10px] bg-orange-500 text-white px-1.5 rounded">
+										<span className="ml-auto text-[10px] bg-primary text-white px-1.5 rounded">
 											3
 										</span>
 									</div>
-									<div className="flex items-center gap-2 text-xs px-2 py-1.5 rounded hover:bg-slate-800 cursor-pointer text-slate-300">
-										<Upload className="w-3.5 h-3.5 text-slate-400" /> My Uploads
-										<span className="ml-auto text-[10px] bg-slate-800 text-slate-400 px-1.5 rounded">
+									<div className="flex items-center gap-2 text-xs px-2 py-1.5 rounded hover:bg-card cursor-pointer text-foreground/90">
+										<Upload className="w-3.5 h-3.5 text-muted-foreground" /> My Uploads
+										<span className="ml-auto text-[10px] bg-card text-muted-foreground px-1.5 rounded">
 											12
 										</span>
 									</div>
@@ -480,48 +480,48 @@ export function ProjectFileManager() {
 							</div>
 
 							<div>
-								<div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2 px-2">
+								<div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2 px-2">
 									Project Tree
 								</div>
 								<div className="space-y-0.5 font-sans text-xs">
-									<div className="flex items-center gap-1.5 px-1 py-1 rounded hover:bg-slate-800 cursor-pointer text-slate-200 font-medium">
-										<ChevronDown className="w-3.5 h-3.5 text-slate-400" />
-										<FolderOpen className="w-3.5 h-3.5 text-blue-400" />
+									<div className="flex items-center gap-1.5 px-1 py-1 rounded hover:bg-card cursor-pointer text-foreground font-medium">
+										<ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
+										<FolderOpen className="w-3.5 h-3.5 text-info" />
 										Tower-B Office Complex
 									</div>
 									<div className="pl-4 space-y-0.5">
-										<div className="flex items-center gap-1.5 px-1 py-1 rounded hover:bg-slate-800 cursor-pointer text-slate-200 font-medium">
-											<ChevronDown className="w-3.5 h-3.5 text-slate-400" />
-											<FolderOpen className="w-3.5 h-3.5 text-blue-400" />
+										<div className="flex items-center gap-1.5 px-1 py-1 rounded hover:bg-card cursor-pointer text-foreground font-medium">
+											<ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
+											<FolderOpen className="w-3.5 h-3.5 text-info" />
 											01_Electrical
 										</div>
 										<div className="pl-4 space-y-0.5">
-											<div className="flex items-center gap-1.5 px-1 py-1 rounded hover:bg-slate-800 cursor-pointer text-slate-300">
-												<ChevronDown className="w-3.5 h-3.5 text-slate-400" />
-												<FolderOpen className="w-3.5 h-3.5 text-slate-500" />
+											<div className="flex items-center gap-1.5 px-1 py-1 rounded hover:bg-card cursor-pointer text-foreground/90">
+												<ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
+												<FolderOpen className="w-3.5 h-3.5 text-muted-foreground" />
 												01.1_Power Distribution
 											</div>
 											<div className="pl-4 space-y-0.5">
-												<div className="flex items-center justify-between px-1 py-1 rounded hover:bg-slate-800 cursor-pointer text-slate-400">
+												<div className="flex items-center justify-between px-1 py-1 rounded hover:bg-card cursor-pointer text-muted-foreground">
 													<div className="flex items-center gap-1.5">
-														<FolderOpen className="w-3.5 h-3.5 text-slate-600" />{" "}
+														<FolderOpen className="w-3.5 h-3.5 text-muted-foreground/70" />{" "}
 														01.1.1_High Voltage
 													</div>
-													<span className="text-[9px] text-slate-600">2</span>
+													<span className="text-[9px] text-muted-foreground/70">2</span>
 												</div>
-												<div className="flex items-center justify-between px-1 py-1 rounded bg-blue-500/10 cursor-pointer text-blue-400 font-medium">
+												<div className="flex items-center justify-between px-1 py-1 rounded bg-blue-500/10 cursor-pointer text-info font-medium">
 													<div className="flex items-center gap-1.5">
-														<FolderOpen className="w-3.5 h-3.5 text-blue-400 fill-blue-400/20" />{" "}
+														<FolderOpen className="w-3.5 h-3.5 text-info fill-blue-400/20" />{" "}
 														01.1.2_Low Voltage
 													</div>
-													<span className="text-[9px] text-blue-400">8</span>
+													<span className="text-[9px] text-info">8</span>
 												</div>
-												<div className="flex items-center justify-between px-1 py-1 rounded hover:bg-slate-800 cursor-pointer text-slate-400">
+												<div className="flex items-center justify-between px-1 py-1 rounded hover:bg-card cursor-pointer text-muted-foreground">
 													<div className="flex items-center gap-1.5">
-														<FolderOpen className="w-3.5 h-3.5 text-slate-600" />{" "}
+														<FolderOpen className="w-3.5 h-3.5 text-muted-foreground/70" />{" "}
 														01.1.3_UPS & Emergency
 													</div>
-													<span className="text-[9px] text-slate-600">3</span>
+													<span className="text-[9px] text-muted-foreground/70">3</span>
 												</div>
 											</div>
 											{[
@@ -535,10 +535,10 @@ export function ProjectFileManager() {
 											].map((item) => (
 												<div
 													key={item}
-													className="flex items-center gap-1.5 px-1 py-1 rounded hover:bg-slate-800 cursor-pointer text-slate-300"
+													className="flex items-center gap-1.5 px-1 py-1 rounded hover:bg-card cursor-pointer text-foreground/90"
 												>
-													<ChevronRight className="w-3.5 h-3.5 text-slate-500" />
-													<FolderOpen className="w-3.5 h-3.5 text-slate-500" />
+													<ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
+													<FolderOpen className="w-3.5 h-3.5 text-muted-foreground" />
 													{item}
 												</div>
 											))}
@@ -556,10 +556,10 @@ export function ProjectFileManager() {
 										].map((item) => (
 											<div
 												key={item}
-												className="flex items-center gap-1.5 px-1 py-1 rounded hover:bg-slate-800 cursor-pointer text-slate-300"
+												className="flex items-center gap-1.5 px-1 py-1 rounded hover:bg-card cursor-pointer text-foreground/90"
 											>
-												<ChevronRight className="w-3.5 h-3.5 text-slate-500" />
-												<FolderOpen className="w-3.5 h-3.5 text-slate-500" />
+												<ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
+												<FolderOpen className="w-3.5 h-3.5 text-muted-foreground" />
 												{item}
 											</div>
 										))}
@@ -569,29 +569,29 @@ export function ProjectFileManager() {
 						</div>
 					</ScrollArea>
 
-					<div className="p-3 border-t border-slate-800 bg-slate-900">
+					<div className="p-3 border-t border-slate-800 bg-card">
 						<div className="flex gap-2 mb-3">
 							<Button
 								variant="outline"
 								size="sm"
-								className="h-7 text-[10px] flex-1 border-slate-700 hover:bg-slate-800"
+								className="h-7 text-[10px] flex-1 border-border hover:bg-card"
 							>
 								<Plus className="w-3 h-3 mr-1" /> Folder
 							</Button>
 							<Button
 								variant="outline"
 								size="sm"
-								className="h-7 text-[10px] flex-1 border-slate-700 hover:bg-slate-800"
+								className="h-7 text-[10px] flex-1 border-border hover:bg-card"
 							>
 								<Upload className="w-3 h-3 mr-1" /> Files
 							</Button>
 						</div>
 						<div className="space-y-1">
-							<div className="flex justify-between text-[10px] text-slate-400">
+							<div className="flex justify-between text-[10px] text-muted-foreground">
 								<span>Storage</span>
 								<span>4.7 GB / 50 GB</span>
 							</div>
-							<div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
+							<div className="h-1.5 w-full bg-card rounded-full overflow-hidden">
 								<div
 									className="h-full bg-blue-500"
 									style={{ width: "9.4%" }}
@@ -602,40 +602,40 @@ export function ProjectFileManager() {
 				</div>
 
 				{/* Main File List */}
-				<div className="flex-1 flex flex-col min-w-0 bg-slate-950">
+				<div className="flex-1 flex flex-col min-w-0 bg-background">
 					<div className="flex-1 overflow-auto relative">
 						<table className="w-full text-left text-[11px] whitespace-nowrap">
-							<thead className="sticky top-0 bg-slate-900 border-b border-slate-800 text-slate-400 z-10">
+							<thead className="sticky top-0 bg-card border-b border-slate-800 text-muted-foreground z-10">
 								<tr>
 									<th className="w-8 px-4 py-2 font-medium">
 										<input
 											type="checkbox"
-											className="rounded border-slate-600 bg-slate-800 accent-blue-500"
+											className="rounded border-border bg-card accent-blue-500"
 										/>
 									</th>
 									<th className="w-8 px-2 py-2 font-medium"></th>
-									<th className="px-4 py-2 font-medium cursor-pointer hover:text-slate-200">
+									<th className="px-4 py-2 font-medium cursor-pointer hover:text-foreground">
 										Name <ChevronDown className="w-3 h-3 inline-block" />
 									</th>
-									<th className="px-4 py-2 font-medium cursor-pointer hover:text-slate-200">
+									<th className="px-4 py-2 font-medium cursor-pointer hover:text-foreground">
 										Type
 									</th>
-									<th className="px-4 py-2 font-medium cursor-pointer hover:text-slate-200">
+									<th className="px-4 py-2 font-medium cursor-pointer hover:text-foreground">
 										Size
 									</th>
-									<th className="px-4 py-2 font-medium cursor-pointer hover:text-slate-200">
+									<th className="px-4 py-2 font-medium cursor-pointer hover:text-foreground">
 										Revision
 									</th>
-									<th className="px-4 py-2 font-medium cursor-pointer hover:text-slate-200">
+									<th className="px-4 py-2 font-medium cursor-pointer hover:text-foreground">
 										Modified
 									</th>
-									<th className="px-4 py-2 font-medium cursor-pointer hover:text-slate-200">
+									<th className="px-4 py-2 font-medium cursor-pointer hover:text-foreground">
 										Modified By
 									</th>
-									<th className="px-4 py-2 font-medium cursor-pointer hover:text-slate-200">
+									<th className="px-4 py-2 font-medium cursor-pointer hover:text-foreground">
 										Status
 									</th>
-									<th className="px-4 py-2 font-medium cursor-pointer hover:text-slate-200">
+									<th className="px-4 py-2 font-medium cursor-pointer hover:text-foreground">
 										Approval
 									</th>
 									<th className="px-4 py-2 font-medium"></th>
@@ -645,7 +645,7 @@ export function ProjectFileManager() {
 								{files.map((f) => (
 									<tr
 										key={f.id}
-										className={`group cursor-pointer ${selectedFileId === f.id ? "bg-blue-500/10 hover:bg-blue-500/15" : "hover:bg-slate-800/50"}`}
+										className={`group cursor-pointer ${selectedFileId === f.id ? "bg-blue-500/10 hover:bg-blue-500/15" : "hover:bg-muted/50"}`}
 										onClick={() => setSelectedFileId(f.id)}
 									>
 										<td className="px-4 py-2.5">
@@ -653,22 +653,22 @@ export function ProjectFileManager() {
 												type="checkbox"
 												checked={selectedFileId === f.id}
 												readOnly
-												className="rounded border-slate-600 bg-slate-800 accent-blue-500"
+												className="rounded border-border bg-card accent-blue-500"
 											/>
 										</td>
 										<td className="px-2 py-2.5">
 											{getFileIcon(f.type, "w-4 h-4")}
 										</td>
-										<td className="px-4 py-2.5 font-medium text-slate-200 truncate max-w-[200px]">
+										<td className="px-4 py-2.5 font-medium text-foreground truncate max-w-[200px]">
 											{f.name}
 										</td>
-										<td className="px-4 py-2.5 text-slate-500">{f.type}</td>
-										<td className="px-4 py-2.5 text-slate-400">{f.size}</td>
-										<td className="px-4 py-2.5 text-slate-400">{f.rev}</td>
-										<td className="px-4 py-2.5 text-slate-400">{f.date}</td>
+										<td className="px-4 py-2.5 text-muted-foreground">{f.type}</td>
+										<td className="px-4 py-2.5 text-muted-foreground">{f.size}</td>
+										<td className="px-4 py-2.5 text-muted-foreground">{f.rev}</td>
+										<td className="px-4 py-2.5 text-muted-foreground">{f.date}</td>
 										<td className="px-4 py-2.5">
-											<div className="flex items-center gap-1.5 text-slate-300">
-												<div className="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center text-[9px] font-bold border border-slate-700">
+											<div className="flex items-center gap-1.5 text-foreground/90">
+												<div className="w-5 h-5 rounded-full bg-card flex items-center justify-center text-[9px] font-bold border border-border">
 													{f.author
 														.split(" ")
 														.map((n) => n[0])
@@ -703,7 +703,7 @@ export function ProjectFileManager() {
 											<Button
 												variant="ghost"
 												size="icon"
-												className="h-6 w-6 text-slate-400 hover:text-slate-100"
+												className="h-6 w-6 text-muted-foreground hover:text-foreground"
 											>
 												<MoreHorizontal className="w-4 h-4" />
 											</Button>
@@ -715,30 +715,30 @@ export function ProjectFileManager() {
 					</div>
 
 					{/* Bottom Bar */}
-					<div className="h-8 border-t border-slate-800 bg-slate-900 flex items-center justify-between px-4 text-[10px] text-slate-400 shrink-0">
+					<div className="h-8 border-t border-slate-800 bg-card flex items-center justify-between px-4 text-[10px] text-muted-foreground shrink-0">
 						<div className="flex items-center gap-3">
 							<span>
 								15 files | {selectedFileId ? "1 selected" : "0 selected"} |
 								Total: 291.9 MB
 							</span>
-							<Separator orientation="vertical" className="h-3 bg-slate-700" />
+							<Separator orientation="vertical" className="h-3 bg-secondary" />
 							<span>
 								Project: Tower-B | 01.1.2_Low Voltage |{" "}
-								<span className="text-blue-400">Filter active</span>
+								<span className="text-info">Filter active</span>
 							</span>
 						</div>
 						<div className="flex items-center gap-2">
-							<span className="hover:text-slate-200 cursor-pointer">
+							<span className="hover:text-foreground cursor-pointer">
 								Bulk Download
 							</span>
-							<span className="hover:text-slate-200 cursor-pointer">
+							<span className="hover:text-foreground cursor-pointer">
 								Bulk Share
 							</span>
-							<span className="hover:text-slate-200 cursor-pointer">
+							<span className="hover:text-foreground cursor-pointer">
 								Generate Transmittal
 							</span>
-							<span className="hover:text-slate-200 cursor-pointer">Move</span>
-							<span className="text-red-400 hover:text-red-300 cursor-pointer">
+							<span className="hover:text-foreground cursor-pointer">Move</span>
+							<span className="text-danger hover:text-red-300 cursor-pointer">
 								Delete
 							</span>
 						</div>
@@ -747,7 +747,7 @@ export function ProjectFileManager() {
 
 				{/* Right Inspector */}
 				{selectedFile && (
-					<div className="w-[320px] flex flex-col border-l border-slate-800 bg-slate-900 shrink-0">
+					<div className="w-[320px] flex flex-col border-l border-slate-800 bg-card shrink-0">
 						<ScrollArea className="flex-1">
 							<div className="p-4 space-y-6">
 								{/* Header */}
@@ -756,10 +756,10 @@ export function ProjectFileManager() {
 										{getFileIcon(selectedFile.type, "w-6 h-6")}
 									</div>
 									<div>
-										<h3 className="font-bold text-slate-100 text-sm leading-tight break-words">
+										<h3 className="font-bold text-foreground text-sm leading-tight break-words">
 											{selectedFile.name}
 										</h3>
-										<div className="text-xs text-slate-400 mt-1">
+										<div className="text-xs text-muted-foreground mt-1">
 											{selectedFile.rev} | {selectedFile.size} |{" "}
 											{selectedFile.type}
 										</div>
@@ -767,9 +767,9 @@ export function ProjectFileManager() {
 								</div>
 
 								{/* Status */}
-								<div className="space-y-2 bg-slate-950 p-3 rounded border border-slate-800">
+								<div className="space-y-2 bg-background p-3 rounded border border-slate-800">
 									<div className="flex justify-between items-center text-xs">
-										<span className="text-slate-500">Approval</span>
+										<span className="text-muted-foreground">Approval</span>
 										<Badge
 											variant="outline"
 											className={`h-5 px-1.5 ${getApprovalColor(selectedFile.approval)}`}
@@ -778,7 +778,7 @@ export function ProjectFileManager() {
 										</Badge>
 									</div>
 									<div className="flex justify-between items-center text-xs">
-										<span className="text-slate-500">Review Status</span>
+										<span className="text-muted-foreground">Review Status</span>
 										<Badge
 											variant="outline"
 											className={`h-5 px-1.5 ${getStatusColor(selectedFile.status)}`}
@@ -787,9 +787,9 @@ export function ProjectFileManager() {
 										</Badge>
 									</div>
 									<div className="flex justify-between items-center text-xs pt-2 border-t border-slate-800">
-										<span className="text-slate-500">Lock</span>
-										<span className="text-slate-300 flex items-center gap-1">
-											<Lock className="w-3 h-3 text-orange-400" /> Checked out
+										<span className="text-muted-foreground">Lock</span>
+										<span className="text-foreground/90 flex items-center gap-1">
+											<Lock className="w-3 h-3 text-primary" /> Checked out
 											by {selectedFile.author}
 										</span>
 									</div>
@@ -797,99 +797,99 @@ export function ProjectFileManager() {
 
 								{/* Properties */}
 								<div>
-									<h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">
+									<h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
 										Properties
 									</h4>
 									<div className="space-y-1.5 text-xs">
 										<div className="grid grid-cols-[100px_1fr] gap-2">
-											<span className="text-slate-500">Created</span>
-											<span className="text-slate-300">
+											<span className="text-muted-foreground">Created</span>
+											<span className="text-foreground/90">
 												Oct 15, 2024 — Ahmed Al-Rashidi
 											</span>
 										</div>
 										<div className="grid grid-cols-[100px_1fr] gap-2">
-											<span className="text-slate-500">Modified</span>
-											<span className="text-slate-300">
+											<span className="text-muted-foreground">Modified</span>
+											<span className="text-foreground/90">
 												{selectedFile.date} — {selectedFile.author}
 											</span>
 										</div>
 										<div className="grid grid-cols-[100px_1fr] gap-2">
-											<span className="text-slate-500">Format</span>
-											<span className="text-slate-300">
+											<span className="text-muted-foreground">Format</span>
+											<span className="text-foreground/90">
 												AutoCAD 2024 (.dwg)
 											</span>
 										</div>
 										<div className="grid grid-cols-[100px_1fr] gap-2">
-											<span className="text-slate-500">SHA-256</span>
-											<span className="text-slate-400 font-mono text-[10px]">
+											<span className="text-muted-foreground">SHA-256</span>
+											<span className="text-muted-foreground font-mono text-[10px]">
 												a3f7...d291
 											</span>
 										</div>
 										<div className="grid grid-cols-[100px_1fr] gap-2">
-											<span className="text-slate-500">Project Code</span>
-											<span className="text-slate-300">TWR-B-EL-MS-001</span>
+											<span className="text-muted-foreground">Project Code</span>
+											<span className="text-foreground/90">TWR-B-EL-MS-001</span>
 										</div>
 									</div>
 								</div>
 
 								{/* Revision History */}
 								<div>
-									<h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">
+									<h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
 										Revision History
 									</h4>
-									<div className="relative border-l border-slate-700 ml-2 space-y-4 pb-2">
+									<div className="relative border-l border-border ml-2 space-y-4 pb-2">
 										<div className="relative pl-4">
 											<div className="absolute w-2 h-2 bg-blue-500 rounded-full -left-[4.5px] top-1.5"></div>
 											<div className="text-xs">
-												<span className="font-semibold text-slate-200">
+												<span className="font-semibold text-foreground">
 													Rev 14
 												</span>{" "}
-												<span className="text-slate-500">
+												<span className="text-muted-foreground">
 													— {selectedFile.date}
 												</span>
 											</div>
-											<div className="text-[11px] text-slate-400 mt-0.5">
+											<div className="text-[11px] text-muted-foreground mt-0.5">
 												{selectedFile.author} — "Final compliance corrections"
 											</div>
-											<Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 h-4 px-1 text-[8px] mt-1 hover:bg-blue-500/20">
+											<Badge className="bg-blue-500/20 text-info border-blue-500/30 h-4 px-1 text-[8px] mt-1 hover:bg-blue-500/20">
 												CURRENT
 											</Badge>
 										</div>
 										<div className="relative pl-4">
 											<div className="absolute w-2 h-2 bg-slate-600 rounded-full -left-[4.5px] top-1.5"></div>
 											<div className="text-xs">
-												<span className="font-semibold text-slate-300">
+												<span className="font-semibold text-foreground/90">
 													Rev 13
 												</span>{" "}
-												<span className="text-slate-500">
+												<span className="text-muted-foreground">
 													— Yesterday 16:45
 												</span>
 											</div>
-											<div className="text-[11px] text-slate-400 mt-0.5">
+											<div className="text-[11px] text-muted-foreground mt-0.5">
 												Sarah — "Updated panel LP-3A"
 											</div>
 										</div>
 										<div className="relative pl-4">
 											<div className="absolute w-2 h-2 bg-slate-600 rounded-full -left-[4.5px] top-1.5"></div>
 											<div className="text-xs">
-												<span className="font-semibold text-slate-300">
+												<span className="font-semibold text-foreground/90">
 													Rev 12
 												</span>{" "}
-												<span className="text-slate-500">— Nov 12 11:20</span>
+												<span className="text-muted-foreground">— Nov 12 11:20</span>
 											</div>
-											<div className="text-[11px] text-slate-400 mt-0.5">
+											<div className="text-[11px] text-muted-foreground mt-0.5">
 												Ahmed — "Added coordination notes"
 											</div>
 										</div>
 										<div className="relative pl-4">
 											<div className="absolute w-2 h-2 bg-green-500 rounded-full -left-[4.5px] top-1.5"></div>
 											<div className="text-xs">
-												<span className="font-semibold text-slate-300">
+												<span className="font-semibold text-foreground/90">
 													Rev 11
 												</span>{" "}
-												<span className="text-slate-500">— Nov 10</span>
+												<span className="text-muted-foreground">— Nov 10</span>
 											</div>
-											<div className="text-[11px] text-slate-400 mt-0.5">
+											<div className="text-[11px] text-muted-foreground mt-0.5">
 												Marcus — "Approved for client review"
 											</div>
 											<Badge className="bg-green-500/20 text-green-400 border-green-500/30 h-4 px-1 text-[8px] mt-1 hover:bg-green-500/20">
@@ -899,7 +899,7 @@ export function ProjectFileManager() {
 									</div>
 									<Button
 										variant="ghost"
-										className="w-full text-[10px] text-blue-400 mt-2 h-6"
+										className="w-full text-[10px] text-info mt-2 h-6"
 									>
 										Show all 14 revisions...
 									</Button>
@@ -907,23 +907,23 @@ export function ProjectFileManager() {
 
 								{/* Dependencies */}
 								<div>
-									<h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">
+									<h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
 										Dependencies
 									</h4>
-									<div className="bg-slate-950 rounded border border-slate-800 p-2">
-										<div className="text-xs text-slate-300 mb-1.5 flex items-center gap-1.5">
-											<LinkIcon className="w-3 h-3 text-slate-500" /> References
+									<div className="bg-background rounded border border-slate-800 p-2">
+										<div className="text-xs text-foreground/90 mb-1.5 flex items-center gap-1.5">
+											<LinkIcon className="w-3 h-3 text-muted-foreground" /> References
 											4 files:
 										</div>
-										<ul className="text-[10px] text-slate-400 space-y-1 pl-4 list-disc marker:text-slate-700">
+										<ul className="text-[10px] text-muted-foreground space-y-1 pl-4 list-disc marker:text-slate-700">
 											<li>Tower-B-Panel-Schedule-MDB-A.xlsx</li>
 											<li>Tower-B-SLD-Main.dwg</li>
 											<li>Tower-B-Load-Calculations.pdf</li>
 											<li>LV-Switchgear-Spec.docx</li>
 										</ul>
-										<Separator className="my-2 bg-slate-800" />
-										<div className="text-xs text-slate-300 flex items-center gap-1.5">
-											<LinkIcon className="w-3 h-3 text-slate-500" /> Referenced
+										<Separator className="my-2 bg-card" />
+										<div className="text-xs text-foreground/90 flex items-center gap-1.5">
+											<LinkIcon className="w-3 h-3 text-muted-foreground" /> Referenced
 											by 2 files
 										</div>
 									</div>
@@ -931,20 +931,20 @@ export function ProjectFileManager() {
 
 								{/* Permissions */}
 								<div>
-									<h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">
+									<h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
 										Permissions
 									</h4>
-									<div className="text-xs space-y-1.5 text-slate-400">
+									<div className="text-xs space-y-1.5 text-muted-foreground">
 										<div className="flex justify-between">
-											<span className="text-slate-500">Your access:</span>{" "}
-											<span className="text-slate-300">Full Control</span>
+											<span className="text-muted-foreground">Your access:</span>{" "}
+											<span className="text-foreground/90">Full Control</span>
 										</div>
 										<div className="flex justify-between">
-											<span className="text-slate-500">Team access:</span>{" "}
+											<span className="text-muted-foreground">Team access:</span>{" "}
 											<span>Edit (6 users), View (12)</span>
 										</div>
 										<div className="flex justify-between">
-											<span className="text-slate-500">External:</span>{" "}
+											<span className="text-muted-foreground">External:</span>{" "}
 											<span>View only (3 clients)</span>
 										</div>
 									</div>
@@ -953,7 +953,7 @@ export function ProjectFileManager() {
 						</ScrollArea>
 
 						{/* Actions Grid */}
-						<div className="p-4 border-t border-slate-800 bg-slate-950 space-y-2">
+						<div className="p-4 border-t border-slate-800 bg-background space-y-2">
 							<div className="grid grid-cols-2 gap-2">
 								<Button
 									size="sm"
@@ -964,75 +964,75 @@ export function ProjectFileManager() {
 								<Button
 									size="sm"
 									variant="outline"
-									className="h-7 text-xs border-slate-700 hover:bg-slate-800"
+									className="h-7 text-xs border-border hover:bg-card"
 								>
 									Download
 								</Button>
 								<Button
 									size="sm"
 									variant="outline"
-									className="h-7 text-xs border-slate-700 hover:bg-slate-800"
+									className="h-7 text-xs border-border hover:bg-card"
 								>
 									Share
 								</Button>
 								<Button
 									size="sm"
 									variant="outline"
-									className="h-7 text-xs border-slate-700 hover:bg-slate-800"
+									className="h-7 text-xs border-border hover:bg-card"
 								>
 									Copy Link
 								</Button>
 							</div>
-							<Separator className="bg-slate-800" />
+							<Separator className="bg-card" />
 							<div className="grid grid-cols-2 gap-2">
 								<Button
 									size="sm"
 									variant="outline"
-									className="h-7 text-xs border-slate-700 hover:bg-slate-800 text-orange-400 hover:text-orange-300"
+									className="h-7 text-xs border-border hover:bg-card text-primary hover:text-orange-300"
 								>
 									Check Out
 								</Button>
 								<Button
 									size="sm"
 									variant="outline"
-									className="h-7 text-xs border-slate-700 hover:bg-slate-800"
+									className="h-7 text-xs border-border hover:bg-card"
 								>
 									New Revision
 								</Button>
 								<Button
 									size="sm"
 									variant="outline"
-									className="h-7 text-xs border-slate-700 hover:bg-slate-800 text-[10px]"
+									className="h-7 text-xs border-border hover:bg-card text-[10px]"
 								>
 									View History
 								</Button>
 								<Button
 									size="sm"
 									variant="outline"
-									className="h-7 text-xs border-slate-700 hover:bg-slate-800 text-[10px]"
+									className="h-7 text-xs border-border hover:bg-card text-[10px]"
 								>
 									Compare Revs
 								</Button>
 							</div>
-							<Separator className="bg-slate-800" />
+							<Separator className="bg-card" />
 							<Button
 								size="sm"
 								variant="outline"
-								className="w-full h-7 text-xs border-slate-700 hover:bg-slate-800 text-green-400"
+								className="w-full h-7 text-xs border-border hover:bg-card text-green-400"
 							>
 								Submit for Review
 							</Button>
 							<Button
 								size="sm"
 								variant="outline"
-								className="w-full h-7 text-xs border-slate-700 hover:bg-slate-800"
+								className="w-full h-7 text-xs border-border hover:bg-card"
 							>
 								Generate Transmittal
 							</Button>
 							<Button
 								size="sm"
 								variant="ghost"
-								className="w-full h-7 text-xs text-slate-500 hover:text-slate-300 hover:bg-slate-800"
+								className="w-full h-7 text-xs text-muted-foreground hover:text-foreground/90 hover:bg-card"
 							>
 								<Archive className="w-3.5 h-3.5 mr-1.5" /> Archive
 							</Button>

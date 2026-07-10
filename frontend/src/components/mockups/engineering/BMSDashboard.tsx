@@ -24,16 +24,16 @@ export function BMSDashboard() {
 	const [_activeZone, _setActiveZone] = useState("Server Room");  // NOSONAR - typescript:S6754
 
 	return (
-		<div className="flex flex-col h-screen w-screen overflow-hidden bg-slate-900 text-slate-100 font-sans">
+		<div className="flex flex-col h-screen w-screen overflow-hidden bg-card text-foreground font-sans">
 			{/* Top Toolbar */}
-			<div className="h-14 flex items-center justify-between px-4 bg-slate-800 border-b border-slate-700 shrink-0">
+			<div className="h-14 flex items-center justify-between px-4 bg-card border-b border-border shrink-0">
 				<div className="flex items-center gap-4">
-					<div className="flex items-center gap-2 text-blue-400 font-bold tracking-wide">
+					<div className="flex items-center gap-2 text-info font-bold tracking-wide">
 						<Building2 className="h-5 w-5" />
 						<span>NexusCAD Pro — BMS Integration</span>
 					</div>
 					<Separator orientation="vertical" className="h-6 bg-slate-600" />
-					<div className="text-sm font-medium text-slate-300">
+					<div className="text-sm font-medium text-foreground/90">
 						Project: Tower-B Office Complex
 					</div>
 				</div>
@@ -42,49 +42,49 @@ export function BMSDashboard() {
 					<TabsList className="bg-transparent gap-1">
 						<TabsTrigger
 							value="overview"
-							className="data-[state=active]:bg-slate-700 data-[state=active]:text-blue-400"
+							className="data-[state=active]:bg-secondary data-[state=active]:text-info"
 						>
 							Overview
 						</TabsTrigger>
 						<TabsTrigger
 							value="hvac"
-							className="data-[state=active]:bg-slate-700 data-[state=active]:text-blue-400"
+							className="data-[state=active]:bg-secondary data-[state=active]:text-info"
 						>
 							HVAC
 						</TabsTrigger>
 						<TabsTrigger
 							value="electrical"
-							className="data-[state=active]:bg-slate-700 data-[state=active]:text-blue-400"
+							className="data-[state=active]:bg-secondary data-[state=active]:text-info"
 						>
 							Electrical
 						</TabsTrigger>
 						<TabsTrigger
 							value="lighting"
-							className="data-[state=active]:bg-slate-700 data-[state=active]:text-blue-400"
+							className="data-[state=active]:bg-secondary data-[state=active]:text-info"
 						>
 							Lighting
 						</TabsTrigger>
 						<TabsTrigger
 							value="energy"
-							className="data-[state=active]:bg-slate-700 data-[state=active]:text-blue-400"
+							className="data-[state=active]:bg-secondary data-[state=active]:text-info"
 						>
 							Energy
 						</TabsTrigger>
 						<TabsTrigger
 							value="alarms"
-							className="data-[state=active]:bg-slate-700 data-[state=active]:text-blue-400"
+							className="data-[state=active]:bg-secondary data-[state=active]:text-info"
 						>
 							Alarms
 						</TabsTrigger>
 						<TabsTrigger
 							value="schedules"
-							className="data-[state=active]:bg-slate-700 data-[state=active]:text-blue-400"
+							className="data-[state=active]:bg-secondary data-[state=active]:text-info"
 						>
 							Schedules
 						</TabsTrigger>
 						<TabsTrigger
 							value="reports"
-							className="data-[state=active]:bg-slate-700 data-[state=active]:text-blue-400"
+							className="data-[state=active]:bg-secondary data-[state=active]:text-info"
 						>
 							Reports
 						</TabsTrigger>
@@ -92,35 +92,35 @@ export function BMSDashboard() {
 				</Tabs>
 
 				<div className="flex items-center gap-4 text-sm">
-					<div className="flex flex-col items-end text-xs text-slate-400 font-mono">
-						<span className="text-slate-200">14:52:33</span>
+					<div className="flex flex-col items-end text-xs text-muted-foreground font-mono">
+						<span className="text-foreground">14:52:33</span>
 						<span>15 May 2026</span>
 					</div>
 					<Separator orientation="vertical" className="h-6 bg-slate-600" />
-					<div className="flex items-center gap-1 text-slate-300">
+					<div className="flex items-center gap-1 text-foreground/90">
 						<Thermometer className="h-4 w-4" />
 						<span>34°C</span>
 					</div>
 					<Separator orientation="vertical" className="h-6 bg-slate-600" />
 					<div className="relative cursor-pointer">
-						<Bell className="h-5 w-5 text-slate-300 hover:text-white" />
-						<Badge className="absolute -top-2 -right-2 h-4 w-4 p-0 flex items-center justify-center bg-red-500 text-[9px] hover:bg-red-600">
+						<Bell className="h-5 w-5 text-foreground/90 hover:text-white" />
+						<Badge className="absolute -top-2 -right-2 h-4 w-4 p-0 flex items-center justify-center bg-red-500 text-[9px] hover:bg-danger">
 							3
 						</Badge>
 					</div>
 					<Separator orientation="vertical" className="h-6 bg-slate-600" />
-					<div className="flex items-center gap-2 text-slate-300 cursor-pointer hover:text-white">
+					<div className="flex items-center gap-2 text-foreground/90 cursor-pointer hover:text-white">
 						<User className="h-4 w-4" />
 						<span>Ahmed</span>
 					</div>
-					<Settings className="h-5 w-5 text-slate-400 cursor-pointer hover:text-white" />
+					<Settings className="h-5 w-5 text-muted-foreground cursor-pointer hover:text-white" />
 				</div>
 			</div>
 
 			<div className="flex flex-1 overflow-hidden">
 				{/* Left Panel */}
-				<div className="w-[220px] bg-slate-800 border-r border-slate-700 flex flex-col shrink-0">
-					<div className="p-3 text-xs font-semibold uppercase tracking-wider text-slate-500 border-b border-slate-700">
+				<div className="w-[220px] bg-card border-r border-border flex flex-col shrink-0">
+					<div className="p-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground border-b border-border">
 						Building Navigator
 					</div>
 					<ScrollArea className="flex-1 p-2">
@@ -151,18 +151,18 @@ export function BMSDashboard() {
 				</div>
 
 				{/* Center Canvas */}
-				<div className="flex-1 bg-slate-900 relative overflow-hidden flex flex-col">
+				<div className="flex-1 bg-card relative overflow-hidden flex flex-col">
 					<div className="absolute inset-0 p-8 flex items-center justify-center">
 						{/* SVG Floor Plan */}
-						<div className="relative w-full max-w-4xl aspect-[4/3] border-2 border-slate-600 bg-slate-800/50 rounded-sm">
+						<div className="relative w-full max-w-4xl aspect-[4/3] border-2 border-border bg-muted/50 rounded-sm">
 							{/* Outer walls */}
 
 							{/* Office Zone A */}
-							<div className="absolute top-0 left-0 w-[40%] h-[60%] border-r border-b border-slate-600 bg-green-500/10 p-2 flex flex-col">
-								<span className="text-xs font-bold text-slate-300">
+							<div className="absolute top-0 left-0 w-[40%] h-[60%] border-r border-b border-border bg-green-500/10 p-2 flex flex-col">
+								<span className="text-xs font-bold text-foreground/90">
 									Office Zone A
 								</span>
-								<div className="mt-auto text-[10px] text-slate-400 font-mono">
+								<div className="mt-auto text-[10px] text-muted-foreground font-mono">
 									22.4°C | 65% RH | CO2: 412ppm | Occ: 24/30
 								</div>
 								<Thermometer className="absolute top-2 right-2 h-4 w-4 text-green-400" />
@@ -187,11 +187,11 @@ export function BMSDashboard() {
 							</div>
 
 							{/* Office Zone B */}
-							<div className="absolute top-0 left-[40%] w-[40%] h-[60%] border-r border-b border-slate-600 bg-green-500/10 p-2 flex flex-col">
-								<span className="text-xs font-bold text-slate-300">
+							<div className="absolute top-0 left-[40%] w-[40%] h-[60%] border-r border-b border-border bg-green-500/10 p-2 flex flex-col">
+								<span className="text-xs font-bold text-foreground/90">
 									Office Zone B
 								</span>
-								<div className="mt-auto text-[10px] text-slate-400 font-mono">
+								<div className="mt-auto text-[10px] text-muted-foreground font-mono">
 									23.1°C | 61% RH | CO2: 438ppm | Occ: 18/30
 								</div>
 								<Thermometer className="absolute top-2 right-2 h-4 w-4 text-green-400" />
@@ -200,8 +200,8 @@ export function BMSDashboard() {
 							</div>
 
 							{/* Server Room */}
-							<div className="absolute top-0 right-0 w-[20%] h-[40%] border-b border-slate-600 bg-red-500/20 p-2 flex flex-col shadow-[inset_0_0_20px_rgba(239,68,68,0.5)] animate-pulse">
-								<span className="text-xs font-bold text-slate-100 flex items-center gap-1">
+							<div className="absolute top-0 right-0 w-[20%] h-[40%] border-b border-border bg-red-500/20 p-2 flex flex-col shadow-[inset_0_0_20px_rgba(239,68,68,0.5)] animate-pulse">
+								<span className="text-xs font-bold text-foreground flex items-center gap-1">
 									<AlertTriangle className="h-3 w-3 text-red-500" />
 									Server Room
 								</span>
@@ -212,31 +212,31 @@ export function BMSDashboard() {
 							</div>
 
 							{/* Meeting Room 201 */}
-							<div className="absolute top-[60%] left-0 w-[25%] h-[40%] border-r border-slate-600 bg-blue-500/10 p-2 flex flex-col">
-								<span className="text-xs font-bold text-slate-300">
+							<div className="absolute top-[60%] left-0 w-[25%] h-[40%] border-r border-border bg-blue-500/10 p-2 flex flex-col">
+								<span className="text-xs font-bold text-foreground/90">
 									Meeting 201
 								</span>
-								<div className="mt-auto text-[10px] text-slate-400 font-mono">
+								<div className="mt-auto text-[10px] text-muted-foreground font-mono">
 									21.5°C | Unoccupied
 								</div>
 							</div>
 
 							{/* Meeting Room 202 */}
-							<div className="absolute top-[60%] left-[25%] w-[25%] h-[40%] border-r border-slate-600 bg-green-500/10 p-2 flex flex-col">
-								<span className="text-xs font-bold text-slate-300">
+							<div className="absolute top-[60%] left-[25%] w-[25%] h-[40%] border-r border-border bg-green-500/10 p-2 flex flex-col">
+								<span className="text-xs font-bold text-foreground/90">
 									Meeting 202
 								</span>
-								<div className="mt-auto text-[10px] text-slate-400 font-mono">
+								<div className="mt-auto text-[10px] text-muted-foreground font-mono">
 									22.8°C | Occupied
 								</div>
 							</div>
 
 							{/* Corridor */}
-							<div className="absolute top-[60%] left-[50%] right-0 h-[40%] bg-slate-800 p-2 flex flex-col border-t border-slate-600">
-								<span className="text-xs font-bold text-slate-400">
+							<div className="absolute top-[60%] left-[50%] right-0 h-[40%] bg-card p-2 flex flex-col border-t border-border">
+								<span className="text-xs font-bold text-muted-foreground">
 									Corridor
 								</span>
-								<div className="mt-auto text-[10px] text-slate-500 font-mono">
+								<div className="mt-auto text-[10px] text-muted-foreground font-mono">
 									23.5°C
 								</div>
 							</div>
@@ -264,19 +264,19 @@ export function BMSDashboard() {
 					</div>
 
 					{/* Zoom/Pan controls */}
-					<div className="absolute bottom-4 right-4 flex bg-slate-800 rounded border border-slate-700 shadow-lg">
+					<div className="absolute bottom-4 right-4 flex bg-card rounded border border-border shadow-lg">
 						<Button
 							variant="ghost"
 							size="icon"
-							className="h-8 w-8 text-slate-400 hover:text-white"
+							className="h-8 w-8 text-muted-foreground hover:text-white"
 						>
 							<Plus className="h-4 w-4" />
 						</Button>
-						<Separator orientation="vertical" className="h-8 bg-slate-700" />
+						<Separator orientation="vertical" className="h-8 bg-secondary" />
 						<Button
 							variant="ghost"
 							size="icon"
-							className="h-8 w-8 text-slate-400 hover:text-white"
+							className="h-8 w-8 text-muted-foreground hover:text-white"
 						>
 							<span className="text-lg leading-none">-</span>
 						</Button>
@@ -284,15 +284,15 @@ export function BMSDashboard() {
 				</div>
 
 				{/* Right Panel */}
-				<div className="w-[300px] bg-slate-800 border-l border-slate-700 flex flex-col shrink-0 overflow-y-auto">
-					<div className="p-3 border-b border-slate-700 flex justify-between items-start bg-slate-800/50">
+				<div className="w-[300px] bg-card border-l border-border flex flex-col shrink-0 overflow-y-auto">
+					<div className="p-3 border-b border-border flex justify-between items-start bg-muted/50">
 						<div>
-							<div className="text-sm font-bold text-slate-200">
+							<div className="text-sm font-bold text-foreground">
 								Server Room
 							</div>
-							<div className="text-xs text-slate-400">Level 2 • 24.5 m²</div>
+							<div className="text-xs text-muted-foreground">Level 2 • 24.5 m²</div>
 						</div>
-						<Badge className="bg-red-500/20 text-red-400 border border-red-500/50 hover:bg-red-500/30">
+						<Badge className="bg-red-500/20 text-danger border border-red-500/50 hover:bg-red-500/30">
 							ALARM
 						</Badge>
 					</div>
@@ -300,7 +300,7 @@ export function BMSDashboard() {
 					<div className="p-4 space-y-6">
 						{/* Live Points */}
 						<div>
-							<h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+							<h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
 								Live Points
 							</h3>
 							<div className="space-y-1">
@@ -314,9 +314,9 @@ export function BMSDashboard() {
 									label="Return Air Temp"
 									value="19.8°C"
 									status="HIGH ALARM"
-									color="text-red-400"
+									color="text-danger"
 									bg="bg-red-500/10"
-									border="border-red-500/30"
+									border="border-danger/30"
 								/>
 								<PointRow
 									label="Humidity"
@@ -334,19 +334,19 @@ export function BMSDashboard() {
 									label="FCU-2-SR Status"
 									value="ON - Max"
 									status="Running"
-									color="text-blue-400"
+									color="text-info"
 								/>
 								<PointRow
 									label="CRAC Unit-1"
 									value="ON"
 									status="Running"
-									color="text-blue-400"
+									color="text-info"
 								/>
 								<PointRow
 									label="CRAC Unit-2"
 									value="ON - FAULT"
 									status="FAULT"
-									color="text-red-400"
+									color="text-danger"
 									bg="bg-red-500/10"
 								/>
 							</div>
@@ -354,25 +354,25 @@ export function BMSDashboard() {
 
 						{/* Active Alarms */}
 						<div>
-							<h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+							<h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
 								Active Alarms
 							</h3>
 							<div className="space-y-2">
-								<div className="p-2 bg-slate-900 border border-red-500/30 rounded text-xs">
-									<div className="flex justify-between font-mono text-[10px] text-red-400 mb-1">
+								<div className="p-2 bg-card border border-danger/30 rounded text-xs">
+									<div className="flex justify-between font-mono text-[10px] text-danger mb-1">
 										<span>ALM-2847</span>
 										<span>14:43</span>
 									</div>
-									<div className="text-slate-300">
+									<div className="text-foreground/90">
 										Return air temp 19.8°C &gt; 19.0°C limit
 									</div>
 								</div>
-								<div className="p-2 bg-slate-900 border border-red-500/30 rounded text-xs">
-									<div className="flex justify-between font-mono text-[10px] text-red-400 mb-1">
+								<div className="p-2 bg-card border border-danger/30 rounded text-xs">
+									<div className="flex justify-between font-mono text-[10px] text-danger mb-1">
 										<span>ALM-2851</span>
 										<span>14:51</span>
 									</div>
-									<div className="text-slate-300">
+									<div className="text-foreground/90">
 										CRAC Unit-2 fault — compressor trip
 									</div>
 								</div>
@@ -380,14 +380,14 @@ export function BMSDashboard() {
 									<Button
 										size="sm"
 										variant="secondary"
-										className="w-full text-xs h-7 bg-slate-700 hover:bg-slate-600"
+										className="w-full text-xs h-7 bg-secondary hover:bg-slate-600"
 									>
 										Acknowledge
 									</Button>
 									<Button
 										size="sm"
 										variant="outline"
-										className="w-full text-xs h-7 border-slate-600"
+										className="w-full text-xs h-7 border-border"
 									>
 										Dispatch
 									</Button>
@@ -397,12 +397,12 @@ export function BMSDashboard() {
 
 						{/* Manual Override */}
 						<div>
-							<h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+							<h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
 								Control Override
 							</h3>
-							<div className="space-y-3 p-3 bg-slate-900 rounded border border-slate-700">
+							<div className="space-y-3 p-3 bg-card rounded border border-border">
 								<div className="flex items-center justify-between">
-									<span className="text-xs text-slate-300">FCU-2-SR Mode</span>
+									<span className="text-xs text-foreground/90">FCU-2-SR Mode</span>
 									<div className="flex items-center gap-2">
 										<span className="text-[10px] text-yellow-400 font-mono">
 											MANUAL
@@ -411,9 +411,9 @@ export function BMSDashboard() {
 									</div>
 								</div>
 								<div className="flex items-center justify-between">
-									<span className="text-xs text-slate-300">CRAC Unit-1</span>
+									<span className="text-xs text-foreground/90">CRAC Unit-1</span>
 									<div className="flex items-center gap-2">
-										<span className="text-[10px] text-slate-400 font-mono">
+										<span className="text-[10px] text-muted-foreground font-mono">
 											AUTO
 										</span>
 										<Switch />
@@ -424,14 +424,14 @@ export function BMSDashboard() {
 
 						{/* Setpoints */}
 						<div>
-							<h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+							<h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
 								Setpoints
 							</h3>
 							<div className="space-y-2">
-								<div className="flex items-center justify-between p-2 bg-slate-900 rounded border border-slate-700">
-									<span className="text-xs text-slate-300">Cooling SP</span>
+								<div className="flex items-center justify-between p-2 bg-card rounded border border-border">
+									<span className="text-xs text-foreground/90">Cooling SP</span>
 									<div className="flex items-center gap-2">
-										<span className="text-sm font-mono text-blue-400">
+										<span className="text-sm font-mono text-info">
 											18.0°C
 										</span>
 										<div className="flex flex-col">
@@ -452,14 +452,14 @@ export function BMSDashboard() {
 										</div>
 									</div>
 								</div>
-								<div className="flex items-center justify-between p-2 bg-slate-900 rounded border border-slate-700">
-									<span className="text-xs text-slate-300">Humidity SP</span>
+								<div className="flex items-center justify-between p-2 bg-card rounded border border-border">
+									<span className="text-xs text-foreground/90">Humidity SP</span>
 									<div className="flex items-center gap-2">
-										<span className="text-sm font-mono text-blue-400">45%</span>
+										<span className="text-sm font-mono text-info">45%</span>
 										<Button
 											size="sm"
 											variant="ghost"
-											className="h-6 text-[10px] text-blue-400 hover:text-blue-300"
+											className="h-6 text-[10px] text-info hover:text-blue-300"
 										>
 											Apply
 										</Button>
@@ -470,10 +470,10 @@ export function BMSDashboard() {
 
 						{/* Trend Chart */}
 						<div>
-							<h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+							<h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
 								Trend (2h)
 							</h3>
-							<div className="h-20 bg-slate-900 border border-slate-700 rounded relative p-2">
+							<div className="h-20 bg-card border border-border rounded relative p-2">
 								<div className="absolute top-4 left-0 w-full h-[1px] bg-red-500/50 border-b border-dashed border-red-500/50"></div>
 								<svg
 									className="w-full h-full preserve-aspect-ratio-none"
@@ -487,7 +487,7 @@ export function BMSDashboard() {
 										strokeWidth="2"
 									/>
 								</svg>
-								<div className="absolute bottom-1 right-2 text-[9px] text-slate-500">
+								<div className="absolute bottom-1 right-2 text-[9px] text-muted-foreground">
 									19.8°C
 								</div>
 							</div>
@@ -497,25 +497,25 @@ export function BMSDashboard() {
 			</div>
 
 			{/* Bottom Status Bar */}
-			<div className="h-8 bg-slate-900 border-t border-slate-700 flex items-center justify-between px-4 text-[10px] font-mono shrink-0">
-				<div className="flex items-center gap-4 text-slate-400">
+			<div className="h-8 bg-card border-t border-border flex items-center justify-between px-4 text-[10px] font-mono shrink-0">
+				<div className="flex items-center gap-4 text-muted-foreground">
 					<span>System: 847 pts</span>
-					<Separator orientation="vertical" className="h-4 bg-slate-700" />
-					<span className="text-red-400">3 Alarm</span>
-					<Separator orientation="vertical" className="h-4 bg-slate-700" />
-					<span className="text-orange-400">12 Warn</span>
-					<Separator orientation="vertical" className="h-4 bg-slate-700" />
+					<Separator orientation="vertical" className="h-4 bg-secondary" />
+					<span className="text-danger">3 Alarm</span>
+					<Separator orientation="vertical" className="h-4 bg-secondary" />
+					<span className="text-primary">12 Warn</span>
+					<Separator orientation="vertical" className="h-4 bg-secondary" />
 					<span className="text-green-400">834 Norm</span>
 				</div>
-				<div className="flex items-center gap-4 text-slate-400">
+				<div className="flex items-center gap-4 text-muted-foreground">
 					<span>Energy today: 4,823 kWh</span>
-					<Separator orientation="vertical" className="h-4 bg-slate-700" />
+					<Separator orientation="vertical" className="h-4 bg-secondary" />
 					<span>Peak: 1.24 MW @ 11:20</span>
-					<Separator orientation="vertical" className="h-4 bg-slate-700" />
+					<Separator orientation="vertical" className="h-4 bg-secondary" />
 					<span className="text-green-400 flex items-center gap-1">
 						<CheckCircle2 className="h-3 w-3" /> BMS Server Online
 					</span>
-					<Separator orientation="vertical" className="h-4 bg-slate-700" />
+					<Separator orientation="vertical" className="h-4 bg-secondary" />
 					<span>BACnet/IP</span>
 				</div>
 			</div>
@@ -538,7 +538,7 @@ function NavNode({  // NOSONAR - typescript:S6759
 }) {
 	const colors = {
 		normal: "bg-green-500",
-		warning: "bg-orange-500",
+		warning: "bg-primary",
 		alarm: "bg-red-500 animate-pulse",
 		offline: "bg-slate-500",
 	};
@@ -546,14 +546,14 @@ function NavNode({  // NOSONAR - typescript:S6759
 	return (
 		<div className="select-none">
 			<div
-				className={`flex items-center gap-1.5 py-1 px-2 rounded cursor-pointer hover:bg-slate-700/50 ${active ? "bg-slate-700 text-white font-medium" : "text-slate-300"}`}
+				className={`flex items-center gap-1.5 py-1 px-2 rounded cursor-pointer hover:bg-secondary/50 ${active ? "bg-secondary text-white font-medium" : "text-foreground/90"}`}
 			>
 				<div className="w-4 h-4 flex items-center justify-center">
 					{children ? (
 						expanded ? (  // NOSONAR — S3358: nested ternary acceptable in this localized context
-							<ChevronDown className="h-3 w-3 text-slate-500" />
+							<ChevronDown className="h-3 w-3 text-muted-foreground" />
 						) : (
-							<ChevronRight className="h-3 w-3 text-slate-500" />
+							<ChevronRight className="h-3 w-3 text-muted-foreground" />
 						)
 					) : (
 						<div className="w-1 h-1" />
@@ -563,7 +563,7 @@ function NavNode({  // NOSONAR - typescript:S6759
 				<span className="text-xs truncate">{title}</span>
 			</div>
 			{expanded && children && (
-				<div className="ml-3 pl-2 border-l border-slate-700 flex flex-col gap-0.5 mt-0.5">
+				<div className="ml-3 pl-2 border-l border-border flex flex-col gap-0.5 mt-0.5">
 					{children}
 				</div>
 			)}
@@ -576,7 +576,7 @@ function PointRow({  // NOSONAR - typescript:S6759
 	value,
 	status,
 	color,
-	bg = "bg-slate-900",
+	bg = "bg-card",
 	border = "border-slate-800",
 }: {
 	label: string;
@@ -590,13 +590,13 @@ function PointRow({  // NOSONAR - typescript:S6759
 		<div
 			className={`flex items-center justify-between p-1.5 rounded border ${bg} ${border}`}
 		>
-			<span className="text-xs text-slate-300">{label}</span>
+			<span className="text-xs text-foreground/90">{label}</span>
 			<div className="flex items-center gap-2">
-				<span className="text-xs font-mono font-medium text-slate-200">
+				<span className="text-xs font-mono font-medium text-foreground">
 					{value}
 				</span>
 				<span
-					className={`text-[9px] uppercase px-1 rounded bg-slate-800 ${color}`}
+					className={`text-[9px] uppercase px-1 rounded bg-card ${color}`}
 				>
 					{status}
 				</span>

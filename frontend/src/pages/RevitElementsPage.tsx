@@ -57,22 +57,22 @@ export function RevitElementsPage() {
 		<div className="flex-1 overflow-auto p-6 max-w-6xl mx-auto space-y-6">
 			<div className="flex items-center justify-between">
 				<div>
-					<h1 className="text-2xl font-bold text-slate-100">Revit Elements</h1>
-					<p className="text-sm text-slate-400 mt-1">
+					<h1 className="text-2xl font-bold text-foreground">Revit Elements</h1>
+					<p className="text-sm text-muted-foreground mt-1">
 						View, filter, and manage Revit elements
 					</p>
 				</div>
 				<Button
 					onClick={fetchElements}
 					variant="outline"
-					className="border-slate-600 text-slate-300"
+					className="border-border text-foreground/90"
 				>
 					<RefreshCw className="h-4 w-4 mr-2" /> Refresh
 				</Button>
 			</div>
-			<Card className="border-slate-700 bg-slate-800">
+			<Card className="border-border bg-card">
 				<CardHeader>
-					<CardTitle className="text-slate-100">
+					<CardTitle className="text-foreground">
 						Elements ({elements.length})
 					</CardTitle>
 				</CardHeader>

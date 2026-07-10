@@ -17,28 +17,28 @@ const DEVICES: PaletteItem[] = [
 		label: "Generator",
 		icon: <Zap size={16} />,
 		defaultLoad: 500,
-		color: "text-amber-400",
+		color: "text-warning",
 	},
 	{
 		type: "BATTERY",
 		label: "Battery Bank",
 		icon: <Battery size={16} />,
 		defaultLoad: 300,
-		color: "text-emerald-400",
+		color: "text-success",
 	},
 	{
 		type: "LOAD",
 		label: "Critical Load",
 		icon: <Power size={16} />,
 		defaultLoad: 150,
-		color: "text-blue-400",
+		color: "text-info",
 	},
 	{
 		type: "PANEL",
 		label: "Distribution Panel",
 		icon: <Box size={16} />,
 		defaultLoad: 50,
-		color: "text-slate-400",
+		color: "text-muted-foreground",
 	},
 ];
 

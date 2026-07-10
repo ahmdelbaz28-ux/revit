@@ -146,71 +146,71 @@ export function RevitCreatePage() {
 		}
 	};
 
-	const inputClass = "bg-slate-900 border-slate-700 text-slate-100";
+	const inputClass = "bg-card border-border text-foreground";
 
 	return (
 		<div className="flex-1 overflow-auto p-6 max-w-4xl mx-auto space-y-6">
 			<div>
-				<h1 className="text-2xl font-bold text-slate-100">
+				<h1 className="text-2xl font-bold text-foreground">
 					Create Revit Elements
 				</h1>
-				<p className="text-sm text-slate-400 mt-1">
+				<p className="text-sm text-muted-foreground mt-1">
 					Create walls, floors, columns, beams, doors, and windows
 				</p>
 			</div>
 
 			<Tabs value={activeTab} onValueChange={setActiveTab}>
-				<TabsList className="bg-slate-800 border border-slate-700 flex-wrap">
+				<TabsList className="bg-card border border-border flex-wrap">
 					<TabsTrigger
 						value="wall"
-						className="data-[state=active]:bg-orange-600 data-[state=active]:text-white"
+						className="data-[state=active]:bg-primary data-[state=active]:text-white"
 					>
 						<Ruler className="h-4 w-4 mr-1" /> Wall
 					</TabsTrigger>
 					<TabsTrigger
 						value="floor"
-						className="data-[state=active]:bg-orange-600 data-[state=active]:text-white"
+						className="data-[state=active]:bg-primary data-[state=active]:text-white"
 					>
 						<Square className="h-4 w-4 mr-1" /> Floor
 					</TabsTrigger>
 					<TabsTrigger
 						value="column"
-						className="data-[state=active]:bg-orange-600 data-[state=active]:text-white"
+						className="data-[state=active]:bg-primary data-[state=active]:text-white"
 					>
 						<Columns3 className="h-4 w-4 mr-1" /> Column
 					</TabsTrigger>
 					<TabsTrigger
 						value="beam"
-						className="data-[state=active]:bg-orange-600 data-[state=active]:text-white"
+						className="data-[state=active]:bg-primary data-[state=active]:text-white"
 					>
 						<Box className="h-4 w-4 mr-1" /> Beam
 					</TabsTrigger>
 					<TabsTrigger
 						value="door"
-						className="data-[state=active]:bg-orange-600 data-[state=active]:text-white"
+						className="data-[state=active]:bg-primary data-[state=active]:text-white"
 					>
 						<DoorOpen className="h-4 w-4 mr-1" /> Door
 					</TabsTrigger>
 					<TabsTrigger
 						value="window"
-						className="data-[state=active]:bg-orange-600 data-[state=active]:text-white"
+						className="data-[state=active]:bg-primary data-[state=active]:text-white"
 					>
 						<AppWindow className="h-4 w-4 mr-1" /> Window
 					</TabsTrigger>
 				</TabsList>
 
 				<TabsContent value="wall">
-					<Card className="border-slate-700 bg-slate-800">
+					<Card className="border-border bg-card">
 						<CardHeader>
-							<CardTitle className="text-slate-100">Create Wall</CardTitle>
-							<CardDescription className="text-slate-400">
+							<CardTitle className="text-foreground">Create Wall</CardTitle>
+							<CardDescription className="text-muted-foreground">
 								Draw a wall between two points
 							</CardDescription>
 						</CardHeader>
 						<CardContent className="space-y-3">
 							<div className="grid grid-cols-2 gap-3">
 								<div>
-									<Label className="text-slate-300">Start (x,y,z mm)</Label>
+									<Label className="text-foreground/90">Start (x,y,z mm)</Label>
 									<Input
 										value={wallStart}
 										onChange={(e) => setWallStart(e.target.value)}
@@ -218,7 +218,7 @@ export function RevitCreatePage() {
 									/>
 								</div>
 								<div>
-									<Label className="text-slate-300">End (x,y,z mm)</Label>
+									<Label className="text-foreground/90">End (x,y,z mm)</Label>
 									<Input
 										value={wallEnd}
 										onChange={(e) => setWallEnd(e.target.value)}
@@ -228,7 +228,7 @@ export function RevitCreatePage() {
 							</div>
 							<div className="grid grid-cols-2 gap-3">
 								<div>
-									<Label className="text-slate-300">Height (mm)</Label>
+									<Label className="text-foreground/90">Height (mm)</Label>
 									<Input
 										value={wallHeight}
 										onChange={(e) => setWallHeight(e.target.value)}
@@ -236,7 +236,7 @@ export function RevitCreatePage() {
 									/>
 								</div>
 								<div>
-									<Label className="text-slate-300">Level</Label>
+									<Label className="text-foreground/90">Level</Label>
 									<Input
 										value={wallLevel}
 										onChange={(e) => setWallLevel(e.target.value)}
@@ -245,7 +245,7 @@ export function RevitCreatePage() {
 								</div>
 							</div>
 							<div>
-								<Label className="text-slate-300">Wall Type</Label>
+								<Label className="text-foreground/90">Wall Type</Label>
 								<Input
 									value={wallType}
 									onChange={(e) => setWallType(e.target.value)}
@@ -255,7 +255,7 @@ export function RevitCreatePage() {
 							<Button
 								onClick={() => handleCreate("wall")}
 								disabled={creating}
-								className="bg-orange-600 hover:bg-orange-700 text-white"
+								className="bg-primary hover:bg-orange-700 text-white"
 							>
 								{creating ? (
 									<Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -267,16 +267,16 @@ export function RevitCreatePage() {
 				</TabsContent>
 
 				<TabsContent value="floor">
-					<Card className="border-slate-700 bg-slate-800">
+					<Card className="border-border bg-card">
 						<CardHeader>
-							<CardTitle className="text-slate-100">Create Floor</CardTitle>
-							<CardDescription className="text-slate-400">
+							<CardTitle className="text-foreground">Create Floor</CardTitle>
+							<CardDescription className="text-muted-foreground">
 								Create floor from boundary points
 							</CardDescription>
 						</CardHeader>
 						<CardContent className="space-y-3">
 							<div>
-								<Label className="text-slate-300">
+								<Label className="text-foreground/90">
 									Boundary Points (x,y,z separated by ;)
 								</Label>
 								<Input
@@ -287,7 +287,7 @@ export function RevitCreatePage() {
 							</div>
 							<div className="grid grid-cols-2 gap-3">
 								<div>
-									<Label className="text-slate-300">Level</Label>
+									<Label className="text-foreground/90">Level</Label>
 									<Input
 										value={floorLevel}
 										onChange={(e) => setFloorLevel(e.target.value)}
@@ -295,7 +295,7 @@ export function RevitCreatePage() {
 									/>
 								</div>
 								<div>
-									<Label className="text-slate-300">Floor Type</Label>
+									<Label className="text-foreground/90">Floor Type</Label>
 									<Input
 										value={floorType}
 										onChange={(e) => setFloorType(e.target.value)}
@@ -306,7 +306,7 @@ export function RevitCreatePage() {
 							<Button
 								onClick={() => handleCreate("floor")}
 								disabled={creating}
-								className="bg-orange-600 hover:bg-orange-700 text-white"
+								className="bg-primary hover:bg-orange-700 text-white"
 							>
 								{creating ? (
 									<Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -318,16 +318,16 @@ export function RevitCreatePage() {
 				</TabsContent>
 
 				<TabsContent value="column">
-					<Card className="border-slate-700 bg-slate-800">
+					<Card className="border-border bg-card">
 						<CardHeader>
-							<CardTitle className="text-slate-100">Create Column</CardTitle>
-							<CardDescription className="text-slate-400">
+							<CardTitle className="text-foreground">Create Column</CardTitle>
+							<CardDescription className="text-muted-foreground">
 								Place a structural column
 							</CardDescription>
 						</CardHeader>
 						<CardContent className="space-y-3">
 							<div>
-								<Label className="text-slate-300">Location (x,y,z mm)</Label>
+								<Label className="text-foreground/90">Location (x,y,z mm)</Label>
 								<Input
 									value={colLocation}
 									onChange={(e) => setColLocation(e.target.value)}
@@ -336,7 +336,7 @@ export function RevitCreatePage() {
 							</div>
 							<div className="grid grid-cols-3 gap-3">
 								<div>
-									<Label className="text-slate-300">Height (mm)</Label>
+									<Label className="text-foreground/90">Height (mm)</Label>
 									<Input
 										value={colHeight}
 										onChange={(e) => setColHeight(e.target.value)}
@@ -344,7 +344,7 @@ export function RevitCreatePage() {
 									/>
 								</div>
 								<div>
-									<Label className="text-slate-300">Level</Label>
+									<Label className="text-foreground/90">Level</Label>
 									<Input
 										value={colLevel}
 										onChange={(e) => setColLevel(e.target.value)}
@@ -352,7 +352,7 @@ export function RevitCreatePage() {
 									/>
 								</div>
 								<div>
-									<Label className="text-slate-300">Column Type</Label>
+									<Label className="text-foreground/90">Column Type</Label>
 									<Input
 										value={colType}
 										onChange={(e) => setColType(e.target.value)}
@@ -363,7 +363,7 @@ export function RevitCreatePage() {
 							<Button
 								onClick={() => handleCreate("column")}
 								disabled={creating}
-								className="bg-orange-600 hover:bg-orange-700 text-white"
+								className="bg-primary hover:bg-orange-700 text-white"
 							>
 								{creating ? (
 									<Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -375,17 +375,17 @@ export function RevitCreatePage() {
 				</TabsContent>
 
 				<TabsContent value="beam">
-					<Card className="border-slate-700 bg-slate-800">
+					<Card className="border-border bg-card">
 						<CardHeader>
-							<CardTitle className="text-slate-100">Create Beam</CardTitle>
-							<CardDescription className="text-slate-400">
+							<CardTitle className="text-foreground">Create Beam</CardTitle>
+							<CardDescription className="text-muted-foreground">
 								Place a structural beam
 							</CardDescription>
 						</CardHeader>
 						<CardContent className="space-y-3">
 							<div className="grid grid-cols-2 gap-3">
 								<div>
-									<Label className="text-slate-300">Start (x,y,z mm)</Label>
+									<Label className="text-foreground/90">Start (x,y,z mm)</Label>
 									<Input
 										value={beamStart}
 										onChange={(e) => setBeamStart(e.target.value)}
@@ -393,7 +393,7 @@ export function RevitCreatePage() {
 									/>
 								</div>
 								<div>
-									<Label className="text-slate-300">End (x,y,z mm)</Label>
+									<Label className="text-foreground/90">End (x,y,z mm)</Label>
 									<Input
 										value={beamEnd}
 										onChange={(e) => setBeamEnd(e.target.value)}
@@ -403,7 +403,7 @@ export function RevitCreatePage() {
 							</div>
 							<div className="grid grid-cols-2 gap-3">
 								<div>
-									<Label className="text-slate-300">Level</Label>
+									<Label className="text-foreground/90">Level</Label>
 									<Input
 										value={beamLevel}
 										onChange={(e) => setBeamLevel(e.target.value)}
@@ -411,7 +411,7 @@ export function RevitCreatePage() {
 									/>
 								</div>
 								<div>
-									<Label className="text-slate-300">Beam Type</Label>
+									<Label className="text-foreground/90">Beam Type</Label>
 									<Input
 										value={beamType}
 										onChange={(e) => setBeamType(e.target.value)}
@@ -422,7 +422,7 @@ export function RevitCreatePage() {
 							<Button
 								onClick={() => handleCreate("beam")}
 								disabled={creating}
-								className="bg-orange-600 hover:bg-orange-700 text-white"
+								className="bg-primary hover:bg-orange-700 text-white"
 							>
 								{creating ? (
 									<Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -434,16 +434,16 @@ export function RevitCreatePage() {
 				</TabsContent>
 
 				<TabsContent value="door">
-					<Card className="border-slate-700 bg-slate-800">
+					<Card className="border-border bg-card">
 						<CardHeader>
-							<CardTitle className="text-slate-100">Create Door</CardTitle>
-							<CardDescription className="text-slate-400">
+							<CardTitle className="text-foreground">Create Door</CardTitle>
+							<CardDescription className="text-muted-foreground">
 								Place a door in a wall
 							</CardDescription>
 						</CardHeader>
 						<CardContent className="space-y-3">
 							<div>
-								<Label className="text-slate-300">Host Wall ID</Label>
+								<Label className="text-foreground/90">Host Wall ID</Label>
 								<Input
 									placeholder="Wall element ID"
 									value={doorWall}
@@ -452,7 +452,7 @@ export function RevitCreatePage() {
 								/>
 							</div>
 							<div>
-								<Label className="text-slate-300">Location (x,y,z mm)</Label>
+								<Label className="text-foreground/90">Location (x,y,z mm)</Label>
 								<Input
 									value={doorLocation}
 									onChange={(e) => setDoorLocation(e.target.value)}
@@ -461,7 +461,7 @@ export function RevitCreatePage() {
 							</div>
 							<div className="grid grid-cols-2 gap-3">
 								<div>
-									<Label className="text-slate-300">Family Type</Label>
+									<Label className="text-foreground/90">Family Type</Label>
 									<Input
 										value={doorType}
 										onChange={(e) => setDoorType(e.target.value)}
@@ -469,7 +469,7 @@ export function RevitCreatePage() {
 									/>
 								</div>
 								<div>
-									<Label className="text-slate-300">Level</Label>
+									<Label className="text-foreground/90">Level</Label>
 									<Input
 										value={doorLevel}
 										onChange={(e) => setDoorLevel(e.target.value)}
@@ -480,7 +480,7 @@ export function RevitCreatePage() {
 							<Button
 								onClick={() => handleCreate("door")}
 								disabled={creating}
-								className="bg-orange-600 hover:bg-orange-700 text-white"
+								className="bg-primary hover:bg-orange-700 text-white"
 							>
 								{creating ? (
 									<Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -492,16 +492,16 @@ export function RevitCreatePage() {
 				</TabsContent>
 
 				<TabsContent value="window">
-					<Card className="border-slate-700 bg-slate-800">
+					<Card className="border-border bg-card">
 						<CardHeader>
-							<CardTitle className="text-slate-100">Create Window</CardTitle>
-							<CardDescription className="text-slate-400">
+							<CardTitle className="text-foreground">Create Window</CardTitle>
+							<CardDescription className="text-muted-foreground">
 								Place a window in a wall
 							</CardDescription>
 						</CardHeader>
 						<CardContent className="space-y-3">
 							<div>
-								<Label className="text-slate-300">Host Wall ID</Label>
+								<Label className="text-foreground/90">Host Wall ID</Label>
 								<Input
 									placeholder="Wall element ID"
 									value={winWall}
@@ -510,7 +510,7 @@ export function RevitCreatePage() {
 								/>
 							</div>
 							<div>
-								<Label className="text-slate-300">Location (x,y,z mm)</Label>
+								<Label className="text-foreground/90">Location (x,y,z mm)</Label>
 								<Input
 									value={winLocation}
 									onChange={(e) => setWinLocation(e.target.value)}
@@ -519,7 +519,7 @@ export function RevitCreatePage() {
 							</div>
 							<div className="grid grid-cols-2 gap-3">
 								<div>
-									<Label className="text-slate-300">Family Type</Label>
+									<Label className="text-foreground/90">Family Type</Label>
 									<Input
 										value={winType}
 										onChange={(e) => setWinType(e.target.value)}
@@ -527,7 +527,7 @@ export function RevitCreatePage() {
 									/>
 								</div>
 								<div>
-									<Label className="text-slate-300">Level</Label>
+									<Label className="text-foreground/90">Level</Label>
 									<Input
 										value={winLevel}
 										onChange={(e) => setWinLevel(e.target.value)}
@@ -538,7 +538,7 @@ export function RevitCreatePage() {
 							<Button
 								onClick={() => handleCreate("window")}
 								disabled={creating}
-								className="bg-orange-600 hover:bg-orange-700 text-white"
+								className="bg-primary hover:bg-orange-700 text-white"
 							>
 								{creating ? (
 									<Loader2 className="h-4 w-4 mr-2 animate-spin" />

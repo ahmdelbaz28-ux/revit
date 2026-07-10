@@ -261,16 +261,16 @@ export function DigitalTwinPage() {
                                 {/* Header */}
                                 <div className="flex items-center justify-between">
                                         <div>
-                                                <h1 className="text-2xl font-bold text-slate-100">
+                                                <h1 className="text-2xl font-bold text-foreground">
                                                         Digital Twin Conversion
                                                 </h1>
-                                                <p className="text-sm text-slate-400 mt-1">
+                                                <p className="text-sm text-muted-foreground mt-1">
                                                         Bidirectional AutoCAD ↔ Revit conversion with semantic mapping
                                                 </p>
                                         </div>
                                         <Button
                                                 variant="outline"
-                                                className="border-slate-600 text-slate-300 hover:bg-slate-800"
+                                                className="border-border text-foreground/90 hover:bg-card"
                                                 onClick={fetchVersionHistory}
                                         >
                                                 <History className="h-4 w-4 mr-2" />
@@ -280,24 +280,24 @@ export function DigitalTwinPage() {
 
                                 {/* Main Tabs */}
                                 <Tabs value={activeTab} onValueChange={setActiveTab}>
-                                        <TabsList className="bg-slate-800 border border-slate-700">
+                                        <TabsList className="bg-card border border-border">
                                                 <TabsTrigger
                                                         value="convert"
-                                                        className="data-[state=active]:bg-slate-700"
+                                                        className="data-[state=active]:bg-secondary"
                                                 >
                                                         <ArrowRightLeft className="h-4 w-4 mr-2" />
                                                         Convert
                                                 </TabsTrigger>
                                                 <TabsTrigger
                                                         value="settings"
-                                                        className="data-[state=active]:bg-slate-700"
+                                                        className="data-[state=active]:bg-secondary"
                                                 >
                                                         <Settings className="h-4 w-4 mr-2" />
                                                         Settings
                                                 </TabsTrigger>
                                                 <TabsTrigger
                                                         value="history"
-                                                        className="data-[state=active]:bg-slate-700"
+                                                        className="data-[state=active]:bg-secondary"
                                                 >
                                                         <Clock className="h-4 w-4 mr-2" />
                                                         History
@@ -307,18 +307,18 @@ export function DigitalTwinPage() {
                                         {/* Convert Tab */}
                                         <TabsContent value="convert" className="space-y-6">
                                                 {/* File Upload */}
-                                                <Card className="border-slate-700 bg-slate-800">
+                                                <Card className="border-border bg-card">
                                                         <CardHeader>
-                                                                <CardTitle className="text-lg text-slate-100 flex items-center gap-2">
-                                                                        <FileUp className="h-5 w-5 text-blue-400" />
+                                                                <CardTitle className="text-lg text-foreground flex items-center gap-2">
+                                                                        <FileUp className="h-5 w-5 text-info" />
                                                                         Upload File
                                                                 </CardTitle>
-                                                                <CardDescription className="text-slate-400">
+                                                                <CardDescription className="text-muted-foreground">
                                                                         Select AutoCAD DWG/DXF or Revit RVT file for conversion
                                                                 </CardDescription>
                                                         </CardHeader>
                                                         <CardContent className="space-y-4">
-                                                                <div className="border-2 border-dashed border-slate-600 rounded-lg p-8 text-center hover:border-slate-500 transition-colors">
+                                                                <div className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-border transition-colors">
                                                                         <input
                                                                                 type="file"
                                                                                 accept=".dwg,.dxf,.rvt"
@@ -327,25 +327,25 @@ export function DigitalTwinPage() {
                                                                                 id="file-upload"
                                                                         />
                                                                         <label htmlFor="file-upload" className="cursor-pointer">
-                                                                                <Upload className="h-12 w-12 mx-auto text-slate-400 mb-4" />
-                                                                                <p className="text-slate-300 font-medium mb-2">
+                                                                                <Upload className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                                                                                <p className="text-foreground/90 font-medium mb-2">
                                                                                         {selectedFile
                                                                                                 ? selectedFile.name
                                                                                                 : "Click to upload or drag and drop"}
                                                                                 </p>
-                                                                                <p className="text-xs text-slate-500">
+                                                                                <p className="text-xs text-muted-foreground">
                                                                                         Supports: DWG, DXF, RVT (Max 100MB)
                                                                                 </p>
                                                                         </label>
                                                                 </div>
 
                                                                 {selectedFile && (
-                                                                        <div className="flex items-center gap-4 p-4 bg-slate-900/50 rounded-lg">
+                                                                        <div className="flex items-center gap-4 p-4 bg-muted/50 rounded-lg">
                                                                                 <div className="flex-1">
-                                                                                        <p className="text-sm font-medium text-slate-200">
+                                                                                        <p className="text-sm font-medium text-foreground">
                                                                                                 {selectedFile.name}
                                                                                         </p>
-                                                                                        <p className="text-xs text-slate-400">
+                                                                                        <p className="text-xs text-muted-foreground">
                                                                                                 {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
                                                                                         </p>
                                                                                 </div>
@@ -366,15 +366,15 @@ export function DigitalTwinPage() {
                                                 </Card>
 
                                                 {/* Conversion Action */}
-                                                <Card className="border-slate-700 bg-slate-800">
+                                                <Card className="border-border bg-card">
                                                         <CardHeader>
-                                                                <CardTitle className="text-lg text-slate-100">
+                                                                <CardTitle className="text-lg text-foreground">
                                                                         Start Conversion
                                                                 </CardTitle>
                                                         </CardHeader>
                                                         <CardContent>
                                                                 <Button
-                                                                        className="w-full bg-red-600 hover:bg-red-700 text-white border-none h-12"
+                                                                        className="w-full bg-danger hover:bg-danger/90 text-white border-none h-12"
                                                                         onClick={handleConvert}
                                                                         disabled={!selectedFile || converting}
                                                                 >
@@ -396,14 +396,14 @@ export function DigitalTwinPage() {
                                                 {/* Conversion Result */}
                                                 {conversionResult && (
                                                         <Card
-                                                                className={`border-slate-700 bg-slate-800 ${conversionResult.success ? "border-emerald-500/50" : "border-red-500/50"}`}
+                                                                className={`border-border bg-card ${conversionResult.success ? "border-emerald-500/50" : "border-red-500/50"}`}
                                                         >
                                                                 <CardHeader>
-                                                                        <CardTitle className="text-lg text-slate-100 flex items-center gap-2">
+                                                                        <CardTitle className="text-lg text-foreground flex items-center gap-2">
                                                                                 {conversionResult.success ? (
-                                                                                        <CheckCircle2 className="h-5 w-5 text-emerald-400" />
+                                                                                        <CheckCircle2 className="h-5 w-5 text-success" />
                                                                                 ) : (
-                                                                                        <AlertCircle className="h-5 w-5 text-red-400" />
+                                                                                        <AlertCircle className="h-5 w-5 text-danger" />
                                                                                 )}
                                                                                 Conversion{" "}
                                                                                 {conversionResult.success ? "Completed" : "Failed"}
@@ -412,28 +412,28 @@ export function DigitalTwinPage() {
                                                                 <CardContent className="space-y-4">
                                                                         <div className="grid grid-cols-2 gap-4 text-sm">
                                                                                 <div>
-                                                                                        <Label className="text-slate-400">Source File</Label>
-                                                                                        <p className="text-slate-200">
+                                                                                        <Label className="text-muted-foreground">Source File</Label>
+                                                                                        <p className="text-foreground">
                                                                                                 {conversionResult.source_file}
                                                                                         </p>
                                                                                 </div>
                                                                                 <div>
-                                                                                        <Label className="text-slate-400">Target File</Label>
-                                                                                        <p className="text-slate-200">
+                                                                                        <Label className="text-muted-foreground">Target File</Label>
+                                                                                        <p className="text-foreground">
                                                                                                 {conversionResult.target_file}
                                                                                         </p>
                                                                                 </div>
                                                                                 <div>
-                                                                                        <Label className="text-slate-400">
+                                                                                        <Label className="text-muted-foreground">
                                                                                                 Elements Converted
                                                                                         </Label>
-                                                                                        <p className="text-slate-200">
+                                                                                        <p className="text-foreground">
                                                                                                 {conversionResult.elements_converted}
                                                                                         </p>
                                                                                 </div>
                                                                                 <div>
-                                                                                        <Label className="text-slate-400">Duration</Label>
-                                                                                        <p className="text-slate-200">
+                                                                                        <Label className="text-muted-foreground">Duration</Label>
+                                                                                        <p className="text-foreground">
                                                                                                 {conversionResult.duration_seconds.toFixed(2)}s
                                                                                         </p>
                                                                                 </div>
@@ -458,9 +458,9 @@ export function DigitalTwinPage() {
                                                                         )}
 
                                                                         {conversionResult.errors.length > 0 && (
-                                                                                <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
+                                                                                <div className="p-4 bg-red-500/10 border border-danger/30 rounded-lg">
                                                                                         <div className="flex items-start gap-2">
-                                                                                                <AlertCircle className="h-5 w-5 text-red-400 mt-0.5" />
+                                                                                                <AlertCircle className="h-5 w-5 text-danger mt-0.5" />
                                                                                                 <div className="flex-1">
                                                                                                         <p className="text-sm font-medium text-red-200 mb-2">
                                                                                                                 Errors
@@ -482,12 +482,12 @@ export function DigitalTwinPage() {
                                         {/* Settings Tab */}
                                         <TabsContent value="settings" className="space-y-6">
                                                 {/* Layer Mapping */}
-                                                <Card className="border-slate-700 bg-slate-800">
+                                                <Card className="border-border bg-card">
                                                         <CardHeader>
-                                                                <CardTitle className="text-lg text-slate-100">
+                                                                <CardTitle className="text-lg text-foreground">
                                                                         Layer to Category Mapping
                                                                 </CardTitle>
-                                                                <CardDescription className="text-slate-400">
+                                                                <CardDescription className="text-muted-foreground">
                                                                         Map AutoCAD layers to Revit categories
                                                                 </CardDescription>
                                                         </CardHeader>
@@ -505,7 +505,7 @@ export function DigitalTwinPage() {
                                                                                                 newMapping[e.target.value] = category;
                                                                                                 setLayerMapping(newMapping);
                                                                                         }}
-                                                                                        className="bg-slate-900 border-slate-600 text-slate-100"
+                                                                                        className="bg-card border-border text-foreground"
                                                                                         placeholder="AutoCAD Layer"
                                                                                 />
                                                                                 <Input
@@ -516,14 +516,14 @@ export function DigitalTwinPage() {
                                                                                                         [layer]: e.target.value,
                                                                                                 });
                                                                                         }}
-                                                                                        className="bg-slate-900 border-slate-600 text-slate-100"
+                                                                                        className="bg-card border-border text-foreground"
                                                                                         placeholder="Revit Category"
                                                                                 />
                                                                         </div>
                                                                 ))}
                                                                 <Button
                                                                         variant="outline"
-                                                                        className="w-full border-slate-600 text-slate-300"
+                                                                        className="w-full border-border text-foreground/90"
                                                                         onClick={() => {
                                                                                 const newLayer = prompt("Enter AutoCAD layer name:");
                                                                                 if (newLayer) {
@@ -537,12 +537,12 @@ export function DigitalTwinPage() {
                                                 </Card>
 
                                                 {/* Block to Family Mapping */}
-                                                <Card className="border-slate-700 bg-slate-800">
+                                                <Card className="border-border bg-card">
                                                         <CardHeader>
-                                                                <CardTitle className="text-lg text-slate-100">
+                                                                <CardTitle className="text-lg text-foreground">
                                                                         Block to Family Mapping
                                                                 </CardTitle>
-                                                                <CardDescription className="text-slate-400">
+                                                                <CardDescription className="text-muted-foreground">
                                                                         Map AutoCAD blocks to Revit families
                                                                 </CardDescription>
                                                         </CardHeader>
@@ -560,7 +560,7 @@ export function DigitalTwinPage() {
                                                                                                 newMapping[e.target.value] = family;
                                                                                                 setBlockMapping(newMapping);
                                                                                         }}
-                                                                                        className="bg-slate-900 border-slate-600 text-slate-100"
+                                                                                        className="bg-card border-border text-foreground"
                                                                                         placeholder="AutoCAD Block"
                                                                                 />
                                                                                 <Input
@@ -571,7 +571,7 @@ export function DigitalTwinPage() {
                                                                                                         [block]: e.target.value,
                                                                                                 });
                                                                                         }}
-                                                                                        className="bg-slate-900 border-slate-600 text-slate-100"
+                                                                                        className="bg-card border-border text-foreground"
                                                                                         placeholder="Revit Family"
                                                                                 />
                                                                         </div>
@@ -580,37 +580,37 @@ export function DigitalTwinPage() {
                                                 </Card>
 
                                                 {/* Conversion Settings */}
-                                                <Card className="border-slate-700 bg-slate-800">
+                                                <Card className="border-border bg-card">
                                                         <CardHeader>
-                                                                <CardTitle className="text-lg text-slate-100">
+                                                                <CardTitle className="text-lg text-foreground">
                                                                         Conversion Settings
                                                                 </CardTitle>
                                                         </CardHeader>
                                                         <CardContent className="space-y-4">
                                                                 <div className="grid grid-cols-2 gap-4">
                                                                         <div className="space-y-2">
-                                                                                <Label className="text-slate-300">Default Level</Label>
+                                                                                <Label className="text-foreground/90">Default Level</Label>
                                                                                 <Input
                                                                                         value={defaultLevel}
                                                                                         onChange={(e) => setDefaultLevel(e.target.value)}
-                                                                                        className="bg-slate-900 border-slate-600 text-slate-100"
+                                                                                        className="bg-card border-border text-foreground"
                                                                                 />
                                                                         </div>
                                                                         <div className="space-y-2">
-                                                                                <Label className="text-slate-300">Level Height (mm)</Label>
+                                                                                <Label className="text-foreground/90">Level Height (mm)</Label>
                                                                                 <Input
                                                                                         type="number"
                                                                                         value={levelHeight}
                                                                                         onChange={(e) =>
                                                                                                 setLevelHeight(parseInt(e.target.value, 10))  // NOSONAR - typescript:S7773
                                                                                         }
-                                                                                        className="bg-slate-900 border-slate-600 text-slate-100"
+                                                                                        className="bg-card border-border text-foreground"
                                                                                 />
                                                                         </div>
                                                                         <div className="space-y-2">
-                                                                                <Label className="text-slate-300">Source Units</Label>
+                                                                                <Label className="text-foreground/90">Source Units</Label>
                                                                                 <Select value={sourceUnits} onValueChange={setSourceUnits}>
-                                                                                        <SelectTrigger className="bg-slate-900 border-slate-600 text-slate-100">
+                                                                                        <SelectTrigger className="bg-card border-border text-foreground">
                                                                                                 <SelectValue />
                                                                                         </SelectTrigger>
                                                                                         <SelectContent>
@@ -622,9 +622,9 @@ export function DigitalTwinPage() {
                                                                                 </Select>
                                                                         </div>
                                                                         <div className="space-y-2">
-                                                                                <Label className="text-slate-300">Target Units</Label>
+                                                                                <Label className="text-foreground/90">Target Units</Label>
                                                                                 <Select value={targetUnits} onValueChange={setTargetUnits}>
-                                                                                        <SelectTrigger className="bg-slate-900 border-slate-600 text-slate-100">
+                                                                                        <SelectTrigger className="bg-card border-border text-foreground">
                                                                                                 <SelectValue />
                                                                                         </SelectTrigger>
                                                                                         <SelectContent>
@@ -637,7 +637,7 @@ export function DigitalTwinPage() {
                                                                         </div>
                                                                 </div>
                                                                 <Button
-                                                                        className="w-full bg-red-600 hover:bg-red-700 text-white border-none"
+                                                                        className="w-full bg-danger hover:bg-danger/90 text-white border-none"
                                                                         onClick={saveConversionSettings}
                                                                 >
                                                                         Save Conversion Settings
@@ -648,23 +648,23 @@ export function DigitalTwinPage() {
 
                                         {/* History Tab */}
                                         <TabsContent value="history">
-                                                <Card className="border-slate-700 bg-slate-800">
+                                                <Card className="border-border bg-card">
                                                         <CardHeader>
-                                                                <CardTitle className="text-lg text-slate-100 flex items-center gap-2">
-                                                                        <History className="h-5 w-5 text-blue-400" />
+                                                                <CardTitle className="text-lg text-foreground flex items-center gap-2">
+                                                                        <History className="h-5 w-5 text-info" />
                                                                         Conversion History
                                                                 </CardTitle>
-                                                                <CardDescription className="text-slate-400">
+                                                                <CardDescription className="text-muted-foreground">
                                                                         View past conversions and rollback to previous versions
                                                                 </CardDescription>
                                                         </CardHeader>
                                                         <CardContent>
                                                                 {loadingHistory ? (
                                                                         <div className="flex items-center justify-center py-12">
-                                                                                <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+                                                                                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                                                                         </div>
                                                                 ) : versions.length === 0 ? (  // NOSONAR — S3358: nested ternary acceptable in this localized context
-                                                                        <div className="text-center py-12 text-slate-400">
+                                                                        <div className="text-center py-12 text-muted-foreground">
                                                                                 <Clock className="h-12 w-12 mx-auto mb-4 opacity-50" />
                                                                                 <p>No conversion history yet</p>
                                                                         </div>
@@ -673,7 +673,7 @@ export function DigitalTwinPage() {
                                                                                 {versions.map((version) => (
                                                                                         <div
                                                                                                 key={version.version_id}
-                                                                                                className="p-4 bg-slate-900/50 rounded-lg border border-slate-700"
+                                                                                                className="p-4 bg-muted/50 rounded-lg border border-border"
                                                                                         >
                                                                                                 <div className="flex items-start justify-between mb-3">
                                                                                                         <div className="flex items-center gap-3">
@@ -688,14 +688,14 @@ export function DigitalTwinPage() {
                                                                                                                 >
                                                                                                                         {version.status}
                                                                                                                 </Badge>
-                                                                                                                <span className="text-sm text-slate-400">
+                                                                                                                <span className="text-sm text-muted-foreground">
                                                                                                                         {new Date(version.timestamp).toLocaleString()}
                                                                                                                 </span>
                                                                                                         </div>
                                                                                                         <Button
                                                                                                                 variant="outline"
                                                                                                                 size="sm"
-                                                                                                                className="border-slate-600 text-slate-300 hover:bg-slate-800"
+                                                                                                                className="border-border text-foreground/90 hover:bg-card"
                                                                                                                 onClick={() => handleRollback(version.version_id)}
                                                                                                         >
                                                                                                                 <RefreshCw className="h-4 w-4 mr-2" />
@@ -704,28 +704,28 @@ export function DigitalTwinPage() {
                                                                                                 </div>
                                                                                                 <div className="grid grid-cols-2 gap-4 text-sm">
                                                                                                         <div>
-                                                                                                                <Label className="text-slate-400">Source</Label>
-                                                                                                                <p className="text-slate-200">
+                                                                                                                <Label className="text-muted-foreground">Source</Label>
+                                                                                                                <p className="text-foreground">
                                                                                                                         {version.source_file}
                                                                                                                 </p>
                                                                                                         </div>
                                                                                                         <div>
-                                                                                                                <Label className="text-slate-400">Target</Label>
-                                                                                                                <p className="text-slate-200">
+                                                                                                                <Label className="text-muted-foreground">Target</Label>
+                                                                                                                <p className="text-foreground">
                                                                                                                         {version.target_file}
                                                                                                                 </p>
                                                                                                         </div>
                                                                                                         <div>
-                                                                                                                <Label className="text-slate-400">Type</Label>
-                                                                                                                <p className="text-slate-200">
+                                                                                                                <Label className="text-muted-foreground">Type</Label>
+                                                                                                                <p className="text-foreground">
                                                                                                                         {version.conversion_type === "autocad_to_revit"
                                                                                                                                 ? "AutoCAD → Revit"
                                                                                                                                 : "Revit → AutoCAD"}
                                                                                                                 </p>
                                                                                                         </div>
                                                                                                         <div>
-                                                                                                                <Label className="text-slate-400">Elements</Label>
-                                                                                                                <p className="text-slate-200">
+                                                                                                                <Label className="text-muted-foreground">Elements</Label>
+                                                                                                                <p className="text-foreground">
                                                                                                                         {version.elements_count}
                                                                                                                 </p>
                                                                                                         </div>

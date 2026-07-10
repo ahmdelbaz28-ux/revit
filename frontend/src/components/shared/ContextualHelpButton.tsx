@@ -67,10 +67,10 @@ export function ContextualHelpButton({  // NOSONAR - typescript:S6759
 
                 toast(
                         <div className="space-y-2 max-w-md">
-                                <h3 className="font-bold text-slate-100">{title}</h3>
-                                <p className="text-sm text-slate-400">{desc}</p>
+                                <h3 className="font-bold text-foreground">{title}</h3>
+                                <p className="text-sm text-muted-foreground">{desc}</p>
                                 {steps.length > 0 && (
-                                        <ol className="text-xs text-slate-500 list-decimal list-inside space-y-1">
+                                        <ol className="text-xs text-muted-foreground list-decimal list-inside space-y-1">
                                                 {steps.slice(0, 5).map((step, i) => (
                                                         <li key={i}>{step}</li>  // NOSONAR — S6479: array index key acceptable for static list
                                                 ))}
@@ -91,7 +91,7 @@ export function ContextualHelpButton({  // NOSONAR - typescript:S6759
                 <button
                         type="button"
                         onClick={handleClick}
-                        className="p-1.5 text-slate-400 hover:text-orange-400 hover:bg-slate-800 transition-all duration-200 hover:scale-110 rounded flex items-center gap-1"
+                        className="p-1.5 text-muted-foreground hover:text-primary hover:bg-card transition-all duration-200 hover:scale-110 rounded flex items-center gap-1"
                         title={
                                 label ||
                                 (i18n.language === "ar" ? "مساعدة هذه الصفحة" : "Help for this page")

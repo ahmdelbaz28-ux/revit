@@ -126,16 +126,16 @@ export function SettingsPage() {
 				{/* Header */}
 				<div className="flex items-center justify-between">
 					<div>
-						<h1 className="text-2xl font-bold text-slate-100">
+						<h1 className="text-2xl font-bold text-foreground">
 							{t("settings.title")}
 						</h1>
-						<p className="text-sm text-slate-400 mt-1">
+						<p className="text-sm text-muted-foreground mt-1">
 							{t("settings.subtitle")}
 						</p>
 					</div>
 					<Button
 						variant="outline"
-						className="border-slate-600 text-slate-300 hover:bg-slate-800"
+						className="border-border text-foreground/90 hover:bg-card"
 						onClick={() => refetchHealth()}
 					>
 						<Activity className="h-4 w-4 mr-1" />
@@ -144,13 +144,13 @@ export function SettingsPage() {
 				</div>
 
 				{/* System Health */}
-				<Card className="border-slate-700 bg-slate-800">
+				<Card className="border-border bg-card">
 					<CardHeader className="pb-3">
-						<CardTitle className="text-lg text-slate-100 flex items-center gap-2">
-							<Activity className="h-5 w-5 text-blue-400" />
+						<CardTitle className="text-lg text-foreground flex items-center gap-2">
+							<Activity className="h-5 w-5 text-info" />
 							{t("settings.systemHealth")}
 						</CardTitle>
-						<CardDescription className="text-slate-400">
+						<CardDescription className="text-muted-foreground">
 							{healthLoading
 								? "Checking system status..."
 								: "Current system status and performance metrics"}
@@ -160,9 +160,9 @@ export function SettingsPage() {
 						<div className="flex items-center gap-4 text-sm">
 							<div className="flex items-center gap-2">
 								{connected ? (
-									<CheckCircle2 className="h-5 w-5 text-emerald-400" />
+									<CheckCircle2 className="h-5 w-5 text-success" />
 								) : (
-									<XCircle className="h-5 w-5 text-red-400" />
+									<XCircle className="h-5 w-5 text-danger" />
 								)}
 								<span>{connected ? "Connected" : "Disconnected"}</span>
 							</div>
@@ -170,21 +170,21 @@ export function SettingsPage() {
 								<>
 									<Separator
 										orientation="vertical"
-										className="h-5 bg-slate-700"
+										className="h-5 bg-secondary"
 									/>
 									<div className="flex items-center gap-2">
 										<span>API v{health.version}</span>
 									</div>
 									<Separator
 										orientation="vertical"
-										className="h-5 bg-slate-700"
+										className="h-5 bg-secondary"
 									/>
 									<div className="flex items-center gap-2">
 										<span>DB: {health.database}</span>
 									</div>
 									<Separator
 										orientation="vertical"
-										className="h-5 bg-slate-700"
+										className="h-5 bg-secondary"
 									/>
 									<div className="flex items-center gap-2">
 										<span>
@@ -198,28 +198,28 @@ export function SettingsPage() {
 				</Card>
 
 				{/* Report Generator Quick Access */}
-				<Card className="border-slate-700 bg-slate-800">
+				<Card className="border-border bg-card">
 					<CardHeader className="pb-3">
-						<CardTitle className="text-lg text-slate-100">
+						<CardTitle className="text-lg text-foreground">
 							{t("settings.advancedReportGenerator")}
 						</CardTitle>
-						<CardDescription className="text-slate-400">
+						<CardDescription className="text-muted-foreground">
 							{t("settings.reportGeneratorDesc")}
 						</CardDescription>
 					</CardHeader>
 					<CardContent>
 						<div className="flex flex-col sm:flex-row gap-4">
 							<div className="flex-1">
-								<h3 className="font-medium text-slate-200 mb-2">
+								<h3 className="font-medium text-foreground mb-2">
 									{t("settings.comprehensiveReportGeneration")}
 								</h3>
-								<p className="text-sm text-slate-400">
+								<p className="text-sm text-muted-foreground">
 									{t("settings.comprehensiveReportDesc")}
 								</p>
 							</div>
 							<Button
 								onClick={() => navigate("/reports")}
-								className="bg-red-600 hover:bg-red-700 text-white border-none flex items-center gap-2"
+								className="bg-danger hover:bg-danger/90 text-white border-none flex items-center gap-2"
 								aria-label={t("settings.openReportGenerator")}
 							>
 								<Calculator className="h-4 w-4" />
@@ -231,28 +231,28 @@ export function SettingsPage() {
 
 				{/* Settings Tabs */}
 				<Tabs value={activeTab} onValueChange={setActiveTab}>
-					<TabsList className="bg-slate-800 border border-slate-700">
+					<TabsList className="bg-card border border-border">
 						<TabsTrigger
 							value="general"
-							className="data-[state=active]:bg-slate-700 data-[state=active]:text-slate-100"
+							className="data-[state=active]:bg-secondary data-[state=active]:text-foreground"
 						>
 							<Settings className="h-4 w-4 mr-1" /> {t("settings.general")}
 						</TabsTrigger>
 						<TabsTrigger
 							value="security"
-							className="data-[state=active]:bg-slate-700 data-[state=active]:text-slate-100"
+							className="data-[state=active]:bg-secondary data-[state=active]:text-foreground"
 						>
 							<Shield className="h-4 w-4 mr-1" /> {t("settings.security")}
 						</TabsTrigger>
 						<TabsTrigger
 							value="api"
-							className="data-[state=active]:bg-slate-700 data-[state=active]:text-slate-100"
+							className="data-[state=active]:bg-secondary data-[state=active]:text-foreground"
 						>
 							<Database className="h-4 w-4 mr-1" /> {t("settings.api")}
 						</TabsTrigger>
 						<TabsTrigger
 							value="reports"
-							className="data-[state=active]:bg-slate-700 data-[state=active]:text-slate-100"
+							className="data-[state=active]:bg-secondary data-[state=active]:text-foreground"
 						>
 							<Calculator className="h-4 w-4 mr-1" /> {t("settings.reports")}
 						</TabsTrigger>
@@ -260,25 +260,25 @@ export function SettingsPage() {
 
 					{/* General Settings */}
 					<TabsContent value="general">
-						<Card className="border-slate-700 bg-slate-800">
+						<Card className="border-border bg-card">
 							<CardHeader className="pb-3">
-								<CardTitle className="text-lg text-slate-100">
+								<CardTitle className="text-lg text-foreground">
 									{t("settings.general")}
 								</CardTitle>
-								<CardDescription className="text-slate-400">
+								<CardDescription className="text-muted-foreground">
 									{t("settings.generalDescription")}
 								</CardDescription>
 							</CardHeader>
 							<CardContent className="space-y-4">
 								<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 									<div className="space-y-2">
-										<Label className="text-slate-300">
+										<Label className="text-foreground/90">
 											{t("settings.theme")}
 										</Label>
 										<select
 											value={theme}
 											onChange={(e) => setTheme(e.target.value)}
-											className="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-slate-100"
+											className="w-full bg-card border border-border rounded px-3 py-2 text-foreground"
 										>
 											<option value="light">{t("settings.light")}</option>
 											<option value="dark">{t("settings.dark")}</option>
@@ -286,13 +286,13 @@ export function SettingsPage() {
 										</select>
 									</div>
 									<div className="space-y-2">
-										<Label className="text-slate-300">
+										<Label className="text-foreground/90">
 											{t("settings.language")}
 										</Label>
 										<select
 											value={language}
 											onChange={(e) => setLanguage(e.target.value)}
-											className="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-slate-100"
+											className="w-full bg-card border border-border rounded px-3 py-2 text-foreground"
 										>
 											<option value="en">English</option>
 											<option value="es">Español</option>
@@ -303,22 +303,22 @@ export function SettingsPage() {
 								</div>
 								<div className="flex items-center justify-between py-3">
 									<div>
-										<Label className="text-slate-300">
+										<Label className="text-foreground/90">
 											{t("settings.notifications")}
 										</Label>
-										<p className="text-xs text-slate-400 mt-1">
+										<p className="text-xs text-muted-foreground mt-1">
 											{t("settings.notificationsDescription")}
 										</p>
 									</div>
 									<Switch
 										checked={notifications}
 										onCheckedChange={setNotifications}
-										className="data-[state=checked]:bg-red-600"
+										className="data-[state=checked]:bg-danger"
 									/>
 								</div>
 								<div className="pt-4">
 									<Button
-										className="bg-red-600 hover:bg-red-700 text-white border-none"
+										className="bg-danger hover:bg-danger/90 text-white border-none"
 										onClick={handleSaveGeneral}
 									>
 										{t("settings.save")}
@@ -330,33 +330,33 @@ export function SettingsPage() {
 
 					{/* Security Settings */}
 					<TabsContent value="security">
-						<Card className="border-slate-700 bg-slate-800">
+						<Card className="border-border bg-card">
 							<CardHeader className="pb-3">
-								<CardTitle className="text-lg text-slate-100">
+								<CardTitle className="text-lg text-foreground">
 									{t("settings.security")}
 								</CardTitle>
-								<CardDescription className="text-slate-400">
+								<CardDescription className="text-muted-foreground">
 									{t("settings.securityDescription")}
 								</CardDescription>
 							</CardHeader>
 							<CardContent className="space-y-4">
 								<div className="flex items-center justify-between py-3">
 									<div>
-										<Label className="text-slate-300">
+										<Label className="text-foreground/90">
 											{t("settings.twoFactorAuth")}
 										</Label>
-										<p className="text-xs text-slate-400 mt-1">
+										<p className="text-xs text-muted-foreground mt-1">
 											{t("settings.twoFactorAuthDescription")}
 										</p>
 									</div>
 									<Switch
 										checked={twoFactorAuth}
 										onCheckedChange={setTwoFactorAuth}
-										className="data-[state=checked]:bg-red-600"
+										className="data-[state=checked]:bg-danger"
 									/>
 								</div>
 								<div className="space-y-2">
-									<Label className="text-slate-300">
+									<Label className="text-foreground/90">
 										{t("settings.passwordExpiry")}
 									</Label>
 									<Input
@@ -365,15 +365,15 @@ export function SettingsPage() {
 										onChange={(e) =>
 											setPasswordExpiry(parseInt(e.target.value, 10))  // NOSONAR - typescript:S7773
 										}
-										className="bg-slate-900 border-slate-600 text-slate-100"
+										className="bg-card border-border text-foreground"
 									/>
-									<p className="text-xs text-slate-400">
+									<p className="text-xs text-muted-foreground">
 										{t("settings.passwordExpiryDescription")}
 									</p>
 								</div>
 								<div className="pt-4">
 									<Button
-										className="bg-red-600 hover:bg-red-700 text-white border-none"
+										className="bg-danger hover:bg-danger/90 text-white border-none"
 										onClick={handleSaveSecurity}
 									>
 										{t("settings.save")}
@@ -385,19 +385,19 @@ export function SettingsPage() {
 
 					{/* API Settings */}
 					<TabsContent value="api">
-						<Card className="border-slate-700 bg-slate-800">
+						<Card className="border-border bg-card">
 							<CardHeader className="pb-3">
-								<CardTitle className="text-lg text-slate-100">
+								<CardTitle className="text-lg text-foreground">
 									{t("settings.api")}
 								</CardTitle>
-								<CardDescription className="text-slate-400">
+								<CardDescription className="text-muted-foreground">
 									{t("settings.apiDescription")}
 								</CardDescription>
 							</CardHeader>
 							<CardContent className="space-y-4">
 								<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 									<div className="space-y-2">
-										<Label className="text-slate-300">
+										<Label className="text-foreground/90">
 											{t("settings.apiTimeout")}
 										</Label>
 										<Input
@@ -406,14 +406,14 @@ export function SettingsPage() {
 											onChange={(e) =>
 												setApiTimeout(parseInt(e.target.value, 10))  // NOSONAR - typescript:S7773
 											}
-											className="bg-slate-900 border-slate-600 text-slate-100"
+											className="bg-card border-border text-foreground"
 										/>
-										<p className="text-xs text-slate-400">
+										<p className="text-xs text-muted-foreground">
 											{t("settings.apiTimeoutDescription")}
 										</p>
 									</div>
 									<div className="space-y-2">
-										<Label className="text-slate-300">
+										<Label className="text-foreground/90">
 											{t("settings.retryAttempts")}
 										</Label>
 										<Input
@@ -422,16 +422,16 @@ export function SettingsPage() {
 											onChange={(e) =>
 												setRetryAttempts(parseInt(e.target.value, 10))  // NOSONAR - typescript:S7773
 											}
-											className="bg-slate-900 border-slate-600 text-slate-100"
+											className="bg-card border-border text-foreground"
 										/>
-										<p className="text-xs text-slate-400">
+										<p className="text-xs text-muted-foreground">
 											{t("settings.retryAttemptsDescription")}
 										</p>
 									</div>
 								</div>
 								<div className="pt-4">
 									<Button
-										className="bg-red-600 hover:bg-red-700 text-white border-none"
+										className="bg-danger hover:bg-danger/90 text-white border-none"
 										onClick={handleSaveApi}
 									>
 										{t("settings.save")}
@@ -443,71 +443,71 @@ export function SettingsPage() {
 
 					{/* Report Settings */}
 					<TabsContent value="reports">
-						<Card className="border-slate-700 bg-slate-800">
+						<Card className="border-border bg-card">
 							<CardHeader className="pb-3">
-								<CardTitle className="text-lg text-slate-100">
+								<CardTitle className="text-lg text-foreground">
 									{t("settings.reports")}
 								</CardTitle>
-								<CardDescription className="text-slate-400">
+								<CardDescription className="text-muted-foreground">
 									{t("settings.reportGeneratorDesc")}
 								</CardDescription>
 							</CardHeader>
 							<CardContent className="space-y-4">
 								<div className="flex items-center justify-between py-3">
 									<div>
-										<Label className="text-slate-300">
+										<Label className="text-foreground/90">
 											{t("settings.autoSaveReports")}
 										</Label>
-										<p className="text-xs text-slate-400 mt-1">
+										<p className="text-xs text-muted-foreground mt-1">
 											{t("settings.autoSaveReportsDesc")}
 										</p>
 									</div>
 									<Switch
 										checked={autoSaveReports}
 										onCheckedChange={setAutoSaveReports}
-										className="data-[state=checked]:bg-red-600"
+										className="data-[state=checked]:bg-danger"
 									/>
 								</div>
 								<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 									<div className="space-y-2">
-										<Label className="text-slate-300">
+										<Label className="text-foreground/90">
 											{t("settings.reportFormat")}
 										</Label>
 										<select
 											value={reportFormat}
 											onChange={(e) => setReportFormat(e.target.value)}
-											className="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-slate-100"
+											className="w-full bg-card border border-border rounded px-3 py-2 text-foreground"
 										>
 											<option value="pdf">PDF</option>
 											<option value="json">JSON</option>
 											<option value="excel">Excel</option>
 											<option value="xml">XML</option>
 										</select>
-										<p className="text-xs text-slate-400">
+										<p className="text-xs text-muted-foreground">
 											{t("settings.reportFormatDesc")}
 										</p>
 									</div>
 									<div className="space-y-2">
-										<Label className="text-slate-300">
+										<Label className="text-foreground/90">
 											{t("settings.reportQuality")}
 										</Label>
 										<select
 											value={reportQuality}
 											onChange={(e) => setReportQuality(e.target.value)}
-											className="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-slate-100"
+											className="w-full bg-card border border-border rounded px-3 py-2 text-foreground"
 										>
 											<option value="low">Low (Fast)</option>
 											<option value="medium">Medium</option>
 											<option value="high">High (Detailed)</option>
 										</select>
-										<p className="text-xs text-slate-400">
+										<p className="text-xs text-muted-foreground">
 											{t("settings.reportQualityDesc")}
 										</p>
 									</div>
 								</div>
 								<div className="pt-4">
 									<Button
-										className="bg-red-600 hover:bg-red-700 text-white border-none"
+										className="bg-danger hover:bg-danger/90 text-white border-none"
 										onClick={handleSaveReports}
 									>
 										{t("settings.saveReportSettings")}

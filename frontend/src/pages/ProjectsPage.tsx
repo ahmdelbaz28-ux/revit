@@ -141,15 +141,15 @@ export function ProjectsPage() {
 				{/* Header */}
 				<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
 					<div>
-						<h1 className="text-2xl font-bold text-slate-100">
+						<h1 className="text-2xl font-bold text-foreground">
 							{t("projects.title")}
 						</h1>
-						<p className="text-sm text-slate-400 mt-1">
+						<p className="text-sm text-muted-foreground mt-1">
 							{t("projects.subtitle")}
 						</p>
 					</div>
 					<Button
-						className="bg-red-600 hover:bg-red-700 text-white border-none"
+						className="bg-danger hover:bg-danger/90 text-white border-none"
 						onClick={() => setShowCreateForm(true)}
 					>
 						<FolderPlus className="h-4 w-4 mr-1" />
@@ -159,15 +159,15 @@ export function ProjectsPage() {
 
 				{/* Create Project Form */}
 				{showCreateForm && (
-					<Card className="border-slate-700 bg-slate-800">
+					<Card className="border-border bg-card">
 						<CardHeader>
-							<CardTitle className="text-lg text-slate-100">
+							<CardTitle className="text-lg text-foreground">
 								{t("projects.createProject")}
 							</CardTitle>
 						</CardHeader>
 						<CardContent className="space-y-4">
 							<div className="space-y-2">
-								<Label className="text-slate-300">
+								<Label className="text-foreground/90">
 									{t("projects.projectName")}
 								</Label>
 								<Input
@@ -176,11 +176,11 @@ export function ProjectsPage() {
 										setNewProject((p) => ({ ...p, name: e.target.value }))
 									}
 									placeholder={t("projects.projectName")}
-									className="bg-slate-900 border-slate-600 text-slate-100"
+									className="bg-card border-border text-foreground"
 								/>
 							</div>
 							<div className="space-y-2">
-								<Label className="text-slate-300">
+								<Label className="text-foreground/90">
 									{t("projects.description")}
 								</Label>
 								<Input
@@ -192,13 +192,13 @@ export function ProjectsPage() {
 										}))
 									}
 									placeholder={t("projects.description")}
-									className="bg-slate-900 border-slate-600 text-slate-100"
+									className="bg-card border-border text-foreground"
 								/>
 							</div>
 							<div className="flex justify-end gap-3 pt-2">
 								<Button
 									variant="outline"
-									className="border-slate-600 text-slate-300"
+									className="border-border text-foreground/90"
 									onClick={() => {
 										setShowCreateForm(false);
 										setNewProject({ name: "", description: "" });
@@ -207,7 +207,7 @@ export function ProjectsPage() {
 									{t("common.cancel")}
 								</Button>
 								<Button
-									className="bg-red-600 hover:bg-red-700 text-white border-none"
+									className="bg-danger hover:bg-danger/90 text-white border-none"
 									onClick={handleCreate}
 									disabled={creating || !newProject.name.trim()}
 								>
@@ -228,10 +228,10 @@ export function ProjectsPage() {
 				{/* Filters */}
 				<div className="flex flex-wrap items-center gap-3">
 					<Select value={statusFilter} onValueChange={setStatusFilter}>
-						<SelectTrigger className="w-[180px] bg-slate-800 border-slate-600 text-white">
+						<SelectTrigger className="w-[180px] bg-card border-border text-white">
 							<SelectValue placeholder={t("projects.allStatuses")} />
 						</SelectTrigger>
-						<SelectContent className="bg-slate-800 border-slate-600 text-white">
+						<SelectContent className="bg-card border-border text-white">
 							<SelectItem value="all">{t("projects.allStatuses")}</SelectItem>
 							<SelectItem value="active">{t("projects.active")}</SelectItem>
 							<SelectItem value="inactive">{t("projects.inactive")}</SelectItem>
@@ -241,7 +241,7 @@ export function ProjectsPage() {
 					</Select>
 					<Button
 						variant="outline"
-						className="border-slate-600 text-slate-300 hover:bg-slate-800"
+						className="border-border text-foreground/90 hover:bg-card"
 						onClick={() => refetch()}
 					>
 						<RefreshCw className="h-4 w-4 mr-1" />
@@ -251,9 +251,9 @@ export function ProjectsPage() {
 
 				{/* Error */}
 				{projectsError && (
-					<Card className="border-red-500/30 bg-red-500/5">
+					<Card className="border-danger/30 bg-red-500/5">
 						<CardContent className="p-4">
-							<p className="text-red-400">
+							<p className="text-danger">
 								{t("projects.errorLoading")}: {projectsError}
 							</p>
 						</CardContent>
@@ -264,19 +264,19 @@ export function ProjectsPage() {
 				{projectsLoading && (
 					<div className="space-y-4">
 						{["skeleton-0", "skeleton-1", "skeleton-2"].map((id) => (
-							<Card key={id} className="border-slate-700 bg-slate-800">
+							<Card key={id} className="border-border bg-card">
 								<CardHeader className="pb-3">
 									<div className="flex items-center justify-between">
 										<div>
-											<Skeleton className="h-5 w-48 bg-slate-700" />
-											<Skeleton className="h-4 w-32 bg-slate-700 mt-2" />
+											<Skeleton className="h-5 w-48 bg-secondary" />
+											<Skeleton className="h-4 w-32 bg-secondary mt-2" />
 										</div>
 										<Skeleton className="h-9 w-24 rounded" />
 									</div>
 								</CardHeader>
 								<CardContent>
 									<div className="flex items-center justify-between">
-										<div className="flex items-center gap-4 text-sm text-slate-400">
+										<div className="flex items-center gap-4 text-sm text-muted-foreground">
 											<Skeleton className="h-4 w-24" />
 											<Skeleton className="h-4 w-20" />
 											<Skeleton className="h-4 w-16" />
@@ -317,15 +317,15 @@ export function ProjectsPage() {
 							{filteredProjects.map((project: Project) => (  // NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
 								<Card
 									key={project.id}
-									className="border-slate-700 bg-slate-800"
+									className="border-border bg-card"
 								>
 									<CardHeader className="pb-3">
 										<div className="flex items-start justify-between">
 											<div>
-												<CardTitle className="text-lg text-slate-100">
+												<CardTitle className="text-lg text-foreground">
 													{project.name}
 												</CardTitle>
-												<CardDescription className="text-slate-400 mt-1">
+												<CardDescription className="text-muted-foreground mt-1">
 													{project.description || t("common.noData")}
 												</CardDescription>
 											</div>
@@ -341,10 +341,10 @@ export function ProjectsPage() {
 												}
 												className={
 													project.status === "active"
-														? "bg-emerald-600/20 text-emerald-400 border-emerald-500/30"
+														? "bg-success/10 text-success border-success/30"
 														: project.status === "draft"  // NOSONAR — S3358: nested ternary acceptable in this localized context
-															? "bg-amber-600/20 text-amber-400 border-amber-500/30"
-															: "bg-slate-600/20 text-slate-400 border-slate-500/30"
+															? "bg-warning/10 text-warning border-warning/30"
+															: "bg-slate-600/20 text-muted-foreground border-border/30"
 												}
 											>
 												{project.status === "active"
@@ -359,7 +359,7 @@ export function ProjectsPage() {
 									</CardHeader>
 									<CardContent>
 										<div className="flex items-center justify-between">
-											<div className="flex items-center gap-4 text-sm text-slate-400">
+											<div className="flex items-center gap-4 text-sm text-muted-foreground">
 												<div className="flex items-center gap-1">
 													<User className="h-4 w-4" />
 													{project.author}
@@ -391,7 +391,7 @@ export function ProjectsPage() {
 												<Button
 													variant="outline"
 													size="sm"
-													className="border-slate-600 text-slate-300"
+													className="border-border text-foreground/90"
 													onClick={() => setSyncTarget(project)}
 												>
 													{syncing && syncTarget?.id === project.id ? (
@@ -403,7 +403,7 @@ export function ProjectsPage() {
 												<Button
 													variant="outline"
 													size="sm"
-													className="border-slate-600 text-slate-300"
+													className="border-border text-foreground/90"
 													onClick={() => {
 														window.location.hash = `/projects/${project.id}`;
 													}}
@@ -413,7 +413,7 @@ export function ProjectsPage() {
 												<Button
 													variant="outline"
 													size="sm"
-													className="border-slate-600 text-slate-300"
+													className="border-border text-foreground/90"
 													onClick={() => setDeleteTarget(project)}
 												>
 													<Trash2 className="h-4 w-4" />
@@ -429,23 +429,23 @@ export function ProjectsPage() {
 				{/* Sync Confirmation Modal */}
 				{syncTarget && (
 					<div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-						<div className="bg-slate-800 border border-slate-700 rounded-xl max-w-md w-full p-6">
-							<h3 className="text-lg font-semibold text-slate-100">
+						<div className="bg-card border border-border rounded-md max-w-md w-full p-6">
+							<h3 className="text-lg font-semibold text-foreground">
 								{t("projects.sync")}
 							</h3>
-							<p className="text-slate-400 mt-2">
+							<p className="text-muted-foreground mt-2">
 								{t("projects.syncConfirm", { name: syncTarget.name })}
 							</p>
 							<div className="flex justify-end gap-3 mt-6">
 								<Button
 									variant="outline"
-									className="border-slate-600 text-slate-300"
+									className="border-border text-foreground/90"
 									onClick={() => setSyncTarget(null)}
 								>
 									{t("common.cancel")}
 								</Button>
 								<Button
-									className="bg-red-600 hover:bg-red-700 text-white border-none"
+									className="bg-danger hover:bg-danger/90 text-white border-none"
 									onClick={handleSync}
 									disabled={syncing}
 								>
@@ -466,11 +466,11 @@ export function ProjectsPage() {
 				{/* Delete Confirmation Modal */}
 				{deleteTarget && (
 					<div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-						<div className="bg-slate-800 border border-slate-700 rounded-xl max-w-md w-full p-6">
-							<h3 className="text-lg font-semibold text-slate-100">
+						<div className="bg-card border border-border rounded-md max-w-md w-full p-6">
+							<h3 className="text-lg font-semibold text-foreground">
 								{t("projects.deleteProject")}
 							</h3>
-							<p className="text-slate-400 mt-2">
+							<p className="text-muted-foreground mt-2">
 								{t("projects.deleteConfirmMessage", {
 									name: deleteTarget.name,
 								})}
@@ -478,13 +478,13 @@ export function ProjectsPage() {
 							<div className="flex justify-end gap-3 mt-6">
 								<Button
 									variant="outline"
-									className="border-slate-600 text-slate-300"
+									className="border-border text-foreground/90"
 									onClick={() => setDeleteTarget(null)}
 								>
 									{t("common.cancel")}
 								</Button>
 								<Button
-									className="bg-red-600 hover:bg-red-700 text-white border-none"
+									className="bg-danger hover:bg-danger/90 text-white border-none"
 									onClick={handleDelete}
 									disabled={deleting}
 								>

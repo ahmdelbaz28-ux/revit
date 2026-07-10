@@ -42,7 +42,7 @@ export function FaultSimulationWorkspace() {
 					{/* Main Content Area */}
 					<div className="flex-1 p-6 flex gap-6 overflow-hidden">
 						{/* 3D Scene & Gauges (Left) */}
-						<div className="flex-1 bg-card rounded-xl border border-border p-6 flex flex-col relative overflow-hidden">
+						<div className="flex-1 bg-card rounded-md border border-border p-6 flex flex-col relative overflow-hidden">
 							<div className="flex items-center justify-between mb-4">
 								<div className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
 									Live Simulation Grid
@@ -55,7 +55,7 @@ export function FaultSimulationWorkspace() {
 							</div>
 
 							{/* Simulation Warning */}
-							<div className="absolute bottom-4 left-4 text-[10px] text-orange-500 bg-orange-500/10 px-2 py-1 rounded border border-orange-500/20">
+							<div className="absolute bottom-4 left-4 text-[10px] text-primary bg-primary/10 px-2 py-1 rounded border border-primary/20">
 								SIMULATION MODE ONLY - NOT FOR ENGINEERING DECISIONS
 							</div>
 						</div>

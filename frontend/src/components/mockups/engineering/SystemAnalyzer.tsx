@@ -120,7 +120,7 @@ export function SystemAnalyzer() {
 										{issue.description}
 									</p>
 									<div className="mt-2 bg-background/50 p-2 rounded text-xs border border-border">
-										<span className="font-bold text-blue-400">
+										<span className="font-bold text-info">
 											💡 Suggestion:
 										</span>{" "}
 										{issue.solution}

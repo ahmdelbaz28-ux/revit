@@ -105,7 +105,7 @@ function App() {
         const SkipLink = (
                 <a
                         href="#main-content"
-                        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:bg-orange-500 focus:text-white focus:px-4 focus:py-2 focus:rounded focus:shadow-lg focus:outline-none"
+                        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:bg-primary focus:text-white focus:px-4 focus:py-2 focus:rounded focus:shadow-lg focus:outline-none"
                 >
                         Skip to main content
                 </a>
@@ -155,7 +155,7 @@ function App() {
 
         return (
                 <AuthProvider>
-                        <div className="h-screen bg-slate-950 text-slate-100">
+                        <div className="h-screen bg-background text-foreground">
                                 {SkipLink}
                                 {isPublicRoute ? (
                                         publicRoutes

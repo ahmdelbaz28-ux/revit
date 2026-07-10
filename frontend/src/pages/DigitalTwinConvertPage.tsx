@@ -28,17 +28,17 @@ export function DigitalTwinConvertPage() {
 		<div className="flex-1 overflow-auto p-6 max-w-6xl mx-auto space-y-6">
 			<div className="flex items-center justify-between">
 				<div>
-					<h1 className="text-2xl font-bold text-slate-100">
+					<h1 className="text-2xl font-bold text-foreground">
 						Digital Twin — Convert
 					</h1>
-					<p className="text-sm text-slate-400 mt-1">
+					<p className="text-sm text-muted-foreground mt-1">
 						Bidirectional conversion between AutoCAD and Revit
 					</p>
 				</div>
 				{status && (
 					<Badge
 						variant="outline"
-						className="border-emerald-600/30 text-emerald-400"
+						className="border-emerald-600/30 text-success"
 					>
 						Service: {String(status.status || "unknown")}
 					</Badge>

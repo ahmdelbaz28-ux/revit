@@ -120,14 +120,14 @@ export function GlobalHelpDrawer({  // NOSONAR — S3776: cognitive complexity i
 		<Sheet open={open} onOpenChange={onOpenChange}>
 			<SheetContent
 				side={isAr ? "left" : "right"}
-				className="w-full sm:w-[600px] bg-slate-900 border-slate-700 p-0 flex flex-col"
+				className="w-full sm:w-[600px] bg-card border-border p-0 flex flex-col"
 			>
-				<SheetHeader className="px-6 py-4 border-b border-slate-700 shrink-0">
-					<SheetTitle className="flex items-center gap-2 text-slate-100">
-						<BookOpen className="h-5 w-5 text-orange-400" />
+				<SheetHeader className="px-6 py-4 border-b border-border shrink-0">
+					<SheetTitle className="flex items-center gap-2 text-foreground">
+						<BookOpen className="h-5 w-5 text-primary" />
 						{isAr ? "دليل المستخدم الكامل" : "Complete User Guide"}
 					</SheetTitle>
-					<SheetDescription className="text-slate-400">
+					<SheetDescription className="text-muted-foreground">
 						{isAr
 							? `${totalTopics} موضوع مساعدة — ثنائي اللغة (عربي/إنجليزي)`
 							: `${totalTopics} help topics — bilingual (Arabic/English)`}
@@ -136,14 +136,14 @@ export function GlobalHelpDrawer({  // NOSONAR — S3776: cognitive complexity i
 
 				<div className="flex-1 flex overflow-hidden">
 					{/* Tree sidebar */}
-					<div className="w-56 shrink-0 border-r border-slate-700 overflow-y-auto bg-slate-950/50">
+					<div className="w-56 shrink-0 border-r border-border overflow-y-auto bg-background/50">
 						<ScrollArea className="h-full">
 							<div className="p-2 space-y-1">
 								{HELP_TREE.map((node) => (
 									<div key={node.category}>
 										<button
 											onClick={() => toggleCategory(node.category)}
-											className="w-full flex items-center gap-1 px-2 py-1.5 rounded text-sm text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition-colors"
+											className="w-full flex items-center gap-1 px-2 py-1.5 rounded text-sm text-muted-foreground hover:bg-card hover:text-foreground transition-colors"
 										>
 											{expandedCategories.has(node.category) ? (
 												<ChevronDown className="h-3 w-3 shrink-0" />
@@ -166,8 +166,8 @@ export function GlobalHelpDrawer({  // NOSONAR — S3776: cognitive complexity i
 															onClick={() => setSelectedTopicId(topicId)}
 															className={`w-full text-left px-2 py-1 rounded text-xs transition-colors ${
 																selectedTopicId === topicId
-																	? "bg-orange-600/20 text-orange-400 font-medium"
-																	: "text-slate-500 hover:bg-slate-800 hover:text-slate-300"
+																	? "bg-primary/20 text-primary font-medium"
+																	: "text-muted-foreground hover:bg-card hover:text-foreground/90"
 															}`}
 														>
 															{isAr ? topic.titleAr : topic.titleEn}
@@ -189,10 +189,10 @@ export function GlobalHelpDrawer({  // NOSONAR — S3776: cognitive complexity i
 								<div className="p-6 space-y-4" dir={isAr ? "rtl" : "ltr"}>
 									{/* Title */}
 									<div>
-										<h2 className="text-xl font-bold text-slate-100">
+										<h2 className="text-xl font-bold text-foreground">
 											{isAr ? selectedTopic.titleAr : selectedTopic.titleEn}
 										</h2>
-										<p className="text-sm text-slate-500 mt-1">
+										<p className="text-sm text-muted-foreground mt-1">
 											{isAr ? selectedTopic.titleEn : selectedTopic.titleAr}
 										</p>
 									</div>
@@ -201,13 +201,13 @@ export function GlobalHelpDrawer({  // NOSONAR — S3776: cognitive complexity i
 									<div className="flex items-center gap-2">
 										<Badge
 											variant="outline"
-											className="border-emerald-600/30 text-emerald-400"
+											className="border-emerald-600/30 text-success"
 										>
 											EN
 										</Badge>
 										<Badge
 											variant="outline"
-											className="border-orange-600/30 text-orange-400"
+											className="border-orange-600/30 text-primary"
 										>
 											AR
 										</Badge>
@@ -215,7 +215,7 @@ export function GlobalHelpDrawer({  // NOSONAR — S3776: cognitive complexity i
 											<Button
 												size="sm"
 												variant="ghost"
-												className="text-xs text-slate-400 hover:text-orange-400"
+												className="text-xs text-muted-foreground hover:text-primary"
 												onClick={() => {
 													window.location.href = selectedTopic.navigateTo!;
 												}}
@@ -227,10 +227,10 @@ export function GlobalHelpDrawer({  // NOSONAR — S3776: cognitive complexity i
 
 									{/* Description */}
 									<div className="space-y-2">
-										<h3 className="text-sm font-medium text-orange-400">
+										<h3 className="text-sm font-medium text-primary">
 											{isAr ? "الوصف" : "Description"}
 										</h3>
-										<p className="text-sm text-slate-300">
+										<p className="text-sm text-foreground/90">
 											{isAr
 												? selectedTopic.descriptionAr
 												: selectedTopic.descriptionEn}
@@ -240,7 +240,7 @@ export function GlobalHelpDrawer({  // NOSONAR — S3776: cognitive complexity i
 									{/* Steps */}
 									{selectedTopic.stepsEn.length > 0 && (
 										<div className="space-y-2">
-											<h3 className="text-sm font-medium text-orange-400 flex items-center gap-1">
+											<h3 className="text-sm font-medium text-primary flex items-center gap-1">
 												<CheckCircle2 className="h-4 w-4" />
 												{isAr ? "الخطوات" : "Steps"}
 											</h3>
@@ -251,9 +251,9 @@ export function GlobalHelpDrawer({  // NOSONAR — S3776: cognitive complexity i
 												).map((step, i) => (
 													<li
 														key={`${i}-${step.substring(0, 20)}`}
-														className="flex gap-3 text-sm text-slate-300"
+														className="flex gap-3 text-sm text-foreground/90"
 													>
-														<span className="shrink-0 w-5 h-5 rounded-full bg-orange-600/20 text-orange-400 flex items-center justify-center text-xs font-bold">
+														<span className="shrink-0 w-5 h-5 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold">
 															{i + 1}
 														</span>
 														<span>{step}</span>
@@ -266,7 +266,7 @@ export function GlobalHelpDrawer({  // NOSONAR — S3776: cognitive complexity i
 									{/* Warnings */}
 									{selectedTopic.warningsEn.length > 0 && (
 										<div className="space-y-2">
-											<h3 className="text-sm font-medium text-red-400 flex items-center gap-1">
+											<h3 className="text-sm font-medium text-danger flex items-center gap-1">
 												<AlertTriangle className="h-4 w-4" />
 												{isAr ? "تحذيرات" : "Warnings"}
 											</h3>
@@ -289,7 +289,7 @@ export function GlobalHelpDrawer({  // NOSONAR — S3776: cognitive complexity i
 									{/* Related topics */}
 									{selectedTopic.relatedTopics.length > 0 && (
 										<div className="space-y-2">
-											<h3 className="text-sm font-medium text-blue-400 flex items-center gap-1">
+											<h3 className="text-sm font-medium text-info flex items-center gap-1">
 												<Lightbulb className="h-4 w-4" />
 												{isAr ? "مواضيع ذات صلة" : "Related Topics"}
 											</h3>
@@ -301,7 +301,7 @@ export function GlobalHelpDrawer({  // NOSONAR — S3776: cognitive complexity i
 														<button
 															key={rtId}
 															onClick={() => setSelectedTopicId(rtId)}
-															className="text-xs px-2 py-1 rounded border border-slate-700 text-slate-400 hover:border-orange-600/30 hover:text-orange-400 transition-colors"
+															className="text-xs px-2 py-1 rounded border border-border text-muted-foreground hover:border-orange-600/30 hover:text-primary transition-colors"
 														>
 															{isAr ? rt.titleAr : rt.titleEn}
 														</button>
@@ -312,7 +312,7 @@ export function GlobalHelpDrawer({  // NOSONAR — S3776: cognitive complexity i
 									)}
 								</div>
 							) : (
-								<div className="p-6 text-center text-slate-500">
+								<div className="p-6 text-center text-muted-foreground">
 									<BookOpen className="h-12 w-12 mx-auto mb-3 opacity-50" />
 									<p>
 										{isAr

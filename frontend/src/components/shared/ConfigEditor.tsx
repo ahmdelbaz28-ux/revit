@@ -88,18 +88,18 @@ export function ConfigEditor({  // NOSONAR - typescript:S6759
 	const hasChanges = configText !== original;
 
 	return (
-		<Card className="border-slate-700 bg-slate-800">
+		<Card className="border-border bg-card">
 			<CardHeader>
-				<CardTitle className="text-slate-100">{title}</CardTitle>
+				<CardTitle className="text-foreground">{title}</CardTitle>
 				{description && (
-					<CardDescription className="text-slate-400">
+					<CardDescription className="text-muted-foreground">
 						{description}
 					</CardDescription>
 				)}
 			</CardHeader>
 			<CardContent className="space-y-3">
 				{loading ? (
-					<div className="h-64 bg-slate-900 rounded animate-pulse" />
+					<div className="h-64 bg-card rounded animate-pulse" />
 				) : (
 					<>
 						<div className="flex items-center gap-2">
@@ -110,7 +110,7 @@ export function ConfigEditor({  // NOSONAR - typescript:S6759
 							) : (
 								<Badge
 									variant="outline"
-									className="border-emerald-600/30 text-emerald-400 gap-1"
+									className="border-emerald-600/30 text-success gap-1"
 								>
 									<CheckCircle2 className="h-3 w-3" /> Valid JSON
 								</Badge>
@@ -118,7 +118,7 @@ export function ConfigEditor({  // NOSONAR - typescript:S6759
 							{hasChanges && (
 								<Badge
 									variant="outline"
-									className="border-amber-600/30 text-amber-400"
+									className="border-amber-600/30 text-warning"
 								>
 									Unsaved changes
 								</Badge>
@@ -130,14 +130,14 @@ export function ConfigEditor({  // NOSONAR - typescript:S6759
 								setConfigText(e.target.value);
 								validate();
 							}}
-							className="font-mono text-sm bg-slate-900 border-slate-700 text-slate-100 min-h-[300px]"
+							className="font-mono text-sm bg-card border-border text-foreground min-h-[300px]"
 							spellCheck={false}
 						/>
-						{error && <p className="text-xs text-red-400 font-mono">{error}</p>}
+						{error && <p className="text-xs text-danger font-mono">{error}</p>}
 						<Button
 							onClick={handleSave}
 							disabled={!hasChanges || saving || !!error}
-							className="bg-orange-600 hover:bg-orange-700 text-white"
+							className="bg-primary hover:bg-orange-700 text-white"
 						>
 							{saving ? (
 								<>

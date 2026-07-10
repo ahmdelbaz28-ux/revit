@@ -138,7 +138,7 @@ export function Header({  // NOSONAR — S3776: cognitive complexity is inherent
 						{/* ── Rich Data Tooltip ───────────────────────────────────── */}
 						<div
 							ref={tooltipRef}
-							className="absolute top-full right-0 mt-2 w-60 rounded-xl shadow-2xl z-50 pointer-events-none
+							className="absolute top-full right-0 mt-2 w-60 rounded-md shadow-2xl z-50 pointer-events-none
                          opacity-0 group-hover:opacity-100 transition-opacity duration-200"
 							style={{
 								background: "rgba(15,23,42,0.97)",
@@ -222,14 +222,14 @@ export function Header({  // NOSONAR — S3776: cognitive complexity is inherent
 							onClick={() => onThemeChange("light")}
 							className={`p-1.5 rounded-md ${theme === "light" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"}`}
 						>
-							<Sun className="h-3.5 w-3.5" />
+							<Sun className="h-4 w-4" />
 						</button>
 						<button
 							id="theme-btn-dark"
 							onClick={() => onThemeChange("dark")}
 							className={`p-1.5 rounded-md ${theme === "dark" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"}`}
 						>
-							<Moon className="h-3.5 w-3.5" />
+							<Moon className="h-4 w-4" />
 						</button>
 						<button
 							id="theme-btn-blue"

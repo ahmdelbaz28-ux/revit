@@ -81,7 +81,7 @@ export function ConfirmDialog({  // NOSONAR - typescript:S6759
 	if (!isOpen) return null;
 
 	const variantClasses = {
-		danger: "bg-red-600 hover:bg-red-700 focus:ring-red-500",
+		danger: "bg-danger hover:bg-danger/90 focus:ring-red-500",
 		warning: "bg-yellow-600 hover:bg-yellow-700 focus:ring-yellow-500",
 		default: "bg-blue-600 hover:bg-blue-700 focus:ring-blue-500",
 	};
@@ -100,7 +100,7 @@ export function ConfirmDialog({  // NOSONAR - typescript:S6759
 		>
 			<div
 				ref={dialogRef}
-				className="bg-slate-800 rounded-lg p-6 max-w-md w-full mx-4 shadow-xl"
+				className="bg-card rounded-lg p-6 max-w-md w-full mx-4 shadow-xl"
 			>
 				<h2
 					id="confirm-dialog-title"
@@ -108,14 +108,14 @@ export function ConfirmDialog({  // NOSONAR - typescript:S6759
 				>
 					{title}
 				</h2>
-				<p id="confirm-dialog-message" className="text-slate-300 mb-6">
+				<p id="confirm-dialog-message" className="text-foreground/90 mb-6">
 					{message}
 				</p>
 				<div className="flex justify-end gap-3">
 					<button
 						ref={cancelButtonRef}
 						onClick={onCancel}
-						className="px-4 py-2 text-slate-200 bg-slate-700 rounded hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-slate-500"
+						className="px-4 py-2 text-foreground bg-secondary rounded hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-slate-500"
 					>
 						{cancelLabel}
 					</button>

@@ -453,105 +453,105 @@ export const SymbolLibrary: React.FC = () => {
 	const { t } = useTranslation();
 
 	return (
-		<div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
-			<h3 className="text-lg font-semibold text-slate-100 mb-3">
+		<div className="bg-card border border-border rounded-lg p-4">
+			<h3 className="text-lg font-semibold text-foreground mb-3">
 				{t("fireAlarm.symbolLibrary")}
 			</h3>
 			<div className="grid grid-cols-5 gap-3">
 				<div className="flex flex-col items-center">
 					<SmokeDetector size="md" type="smoke" />
-					<span className="text-xs text-slate-400 mt-1">
+					<span className="text-xs text-muted-foreground mt-1">
 						{t("fireAlarm.smokeDet")}
 					</span>
 				</div>
 				<div className="flex flex-col items-center">
 					<HeatDetector size="md" type="heat" />
-					<span className="text-xs text-slate-400 mt-1">
+					<span className="text-xs text-muted-foreground mt-1">
 						{t("fireAlarm.heatDet")}
 					</span>
 				</div>
 				<div className="flex flex-col items-center">
 					<PullStation size="md" type="pull" />
-					<span className="text-xs text-slate-400 mt-1">
+					<span className="text-xs text-muted-foreground mt-1">
 						{t("fireAlarm.pullStation")}
 					</span>
 				</div>
 				<div className="flex flex-col items-center">
 					<HornStrobe size="md" type="horns" />
-					<span className="text-xs text-slate-400 mt-1">
+					<span className="text-xs text-muted-foreground mt-1">
 						{t("fireAlarm.hornStrobe")}
 					</span>
 				</div>
 				<div className="flex flex-col items-center">
 					<Speaker size="md" type="speaker" />
-					<span className="text-xs text-slate-400 mt-1">
+					<span className="text-xs text-muted-foreground mt-1">
 						{t("fireAlarm.speaker")}
 					</span>
 				</div>
 				<div className="flex flex-col items-center">
 					<FACP size="md" type="facp" />  // NOSONAR - typescript:S6770
-					<span className="text-xs text-slate-400 mt-1">
+					<span className="text-xs text-muted-foreground mt-1">
 						{t("fireAlarm.facp")}
 					</span>
 				</div>
 				<div className="flex flex-col items-center">
 					<DuctDetector size="md" type="duct" />
-					<span className="text-xs text-slate-400 mt-1">
+					<span className="text-xs text-muted-foreground mt-1">
 						{t("fireAlarm.ductDetector")}
 					</span>
 				</div>
 				<div className="flex flex-col items-center">
 					<AspiratingDetector size="md" type="aspirating" />
-					<span className="text-xs text-slate-400 mt-1">
+					<span className="text-xs text-muted-foreground mt-1">
 						{t("fireAlarm.aspirating")}
 					</span>
 				</div>
 				<div className="flex flex-col items-center">
 					<FlowSwitch size="md" type="flow" />
-					<span className="text-xs text-slate-400 mt-1">
+					<span className="text-xs text-muted-foreground mt-1">
 						{t("fireAlarm.flowSwitch")}
 					</span>
 				</div>
 				<div className="flex flex-col items-center">
 					<TamperSwitch size="md" type="tamper" />
-					<span className="text-xs text-slate-400 mt-1">
+					<span className="text-xs text-muted-foreground mt-1">
 						{t("fireAlarm.tamperSwitch")}
 					</span>
 				</div>
 			</div>
 
 			<div className="mt-4">
-				<h4 className="text-sm font-medium text-slate-300 mb-2">
+				<h4 className="text-sm font-medium text-foreground/90 mb-2">
 					{t("fireAlarm.statusLegend")}
 				</h4>
 				<div className="flex flex-wrap gap-3">
 					<div className="flex items-center gap-2">
 						<div className="w-4 h-4 rounded-full bg-green-500"></div>
-						<span className="text-xs text-slate-400">
+						<span className="text-xs text-muted-foreground">
 							{t("fireAlarm.normal")}
 						</span>
 					</div>
 					<div className="flex items-center gap-2">
 						<div className="w-4 h-4 rounded-full bg-blue-500"></div>
-						<span className="text-xs text-slate-400">
+						<span className="text-xs text-muted-foreground">
 							{t("fireAlarm.active")}
 						</span>
 					</div>
 					<div className="flex items-center gap-2">
 						<div className="w-4 h-4 rounded-full bg-red-500"></div>
-						<span className="text-xs text-slate-400">
+						<span className="text-xs text-muted-foreground">
 							{t("fireAlarm.fault")}
 						</span>
 					</div>
 					<div className="flex items-center gap-2">
 						<div className="w-4 h-4 rounded-full bg-gray-500"></div>
-						<span className="text-xs text-slate-400">
+						<span className="text-xs text-muted-foreground">
 							{t("fireAlarm.disabled")}
 						</span>
 					</div>
 					<div className="flex items-center gap-2">
 						<div className="w-4 h-4 rounded-full bg-amber-500"></div>
-						<span className="text-xs text-slate-400">
+						<span className="text-xs text-muted-foreground">
 							{t("fireAlarm.selected")}
 						</span>
 					</div>

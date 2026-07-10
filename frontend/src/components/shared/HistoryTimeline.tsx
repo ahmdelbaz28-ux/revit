@@ -58,10 +58,10 @@ export function HistoryTimeline() {
 	};
 
 	return (
-		<Card className="border-slate-700 bg-slate-800">
+		<Card className="border-border bg-card">
 			<CardHeader>
-				<CardTitle className="flex items-center gap-2 text-slate-100">
-					<History className="h-5 w-5 text-orange-400" />
+				<CardTitle className="flex items-center gap-2 text-foreground">
+					<History className="h-5 w-5 text-primary" />
 					Conversion History
 				</CardTitle>
 			</CardHeader>
@@ -69,11 +69,11 @@ export function HistoryTimeline() {
 				{loading ? (
 					<div className="space-y-3">
 						{[...Array(3)].map((_, i) => (  // NOSONAR - typescript:S7723
-							<Skeleton key={i} className="h-16 w-full bg-slate-700" />  // NOSONAR — S6479: array index key acceptable for static list
+							<Skeleton key={i} className="h-16 w-full bg-secondary" />  // NOSONAR — S6479: array index key acceptable for static list
 						))}
 					</div>
 				) : versions.length === 0 ? (  // NOSONAR — S3358: nested ternary acceptable in this localized context
-					<p className="text-center text-slate-500 py-8">
+					<p className="text-center text-muted-foreground py-8">
 						No conversion history available
 					</p>
 				) : (
@@ -81,7 +81,7 @@ export function HistoryTimeline() {
 						{versions.map((v, idx) => (
 							<div
 								key={v.version_id || idx}
-								className="relative flex items-start gap-4 p-3 bg-slate-900/50 rounded-lg border border-slate-700"
+								className="relative flex items-start gap-4 p-3 bg-muted/50 rounded-lg border border-border"
 							>
 								<div
 									className={`h-3 w-3 rounded-full mt-1 shrink-0 ${statusColors[v.status] || "bg-slate-500"}`}
@@ -90,22 +90,22 @@ export function HistoryTimeline() {
 									<div className="flex items-center gap-2 flex-wrap">
 										<Badge
 											variant="outline"
-											className="border-slate-600 text-slate-300 text-xs"
+											className="border-border text-foreground/90 text-xs"
 										>
 											{v.conversion_type}
 										</Badge>
-										<span className="text-xs text-slate-500 flex items-center gap-1">
+										<span className="text-xs text-muted-foreground flex items-center gap-1">
 											<Clock className="h-3 w-3" />
 											{new Date(v.timestamp).toLocaleString()}
 										</span>
 									</div>
-									<div className="mt-1 flex items-center gap-2 text-xs text-slate-400">
+									<div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
 										<FileUp className="h-3 w-3" />
 										<span className="truncate">{v.source_file}</span>
 										<FileDown className="h-3 w-3 ml-1" />
 										<span className="truncate">{v.target_file}</span>
 									</div>
-									<div className="mt-1 text-xs text-slate-500">
+									<div className="mt-1 text-xs text-muted-foreground">
 										{v.elements_count} elements · {v.status}
 									</div>
 								</div>
@@ -114,7 +114,7 @@ export function HistoryTimeline() {
 									variant="outline"
 									onClick={() => handleRollback(v.version_id)}
 									disabled={rollingBack === v.version_id}
-									className="border-slate-600 text-slate-300 hover:bg-slate-800 shrink-0"
+									className="border-border text-foreground/90 hover:bg-card shrink-0"
 								>
 									<RotateCcw className="h-3 w-3 mr-1" />
 									{rollingBack === v.version_id

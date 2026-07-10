@@ -80,7 +80,7 @@ function Elements() {
                                         <h1 className="text-2xl font-bold text-white">
                                                 {t("elements.title")}
                                         </h1>
-                                        <p className="text-slate-400 text-sm mt-1">
+                                        <p className="text-muted-foreground text-sm mt-1">
                                                 {data
                                                         ? t("elements.totalElements", { count: data?.total ?? 0 })
                                                         : t("common.loading")}
@@ -88,7 +88,7 @@ function Elements() {
                                 </div>
                                 <button
                                         onClick={() => setShowCreateModal(true)}
-                                        className="inline-flex items-center gap-2 px-4 py-2 bg-orange-600 hover:bg-orange-500 text-white text-sm font-medium rounded-lg transition-colors"
+                                        className="inline-flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary text-white text-sm font-medium rounded-lg transition-colors"
                                 >
                                         <svg
                                                 width="16"
@@ -115,7 +115,7 @@ function Elements() {
                                                 setTypeFilter(e.target.value);
                                                 setPage(1);
                                         }}
-                                        className="bg-slate-800 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:border-orange-500 focus:outline-none"
+                                        className="bg-card border border-border text-white text-sm rounded-lg px-3 py-2 focus:border-primary focus:outline-none"
                                 >
                                         <option value="">{t("elements.allTypes")}</option>
                                         {ELEMENT_TYPES.map((type) => (
@@ -131,7 +131,7 @@ function Elements() {
                                                         setTypeFilter("");
                                                         setPage(1);
                                                 }}
-                                                className="text-sm text-slate-400 hover:text-white p-0 h-auto"
+                                                className="text-sm text-muted-foreground hover:text-white p-0 h-auto"
                                         >
                                                 ✕ {t("common.clearFilter")}
                                         </Button>
@@ -141,61 +141,61 @@ function Elements() {
                         {/* Error */}
                         {error && (
                                 <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
-                                        <p className="text-red-400 text-sm">{t("elements.failedToLoad")}</p>
+                                        <p className="text-danger text-sm">{t("elements.failedToLoad")}</p>
                                 </div>
                         )}
 
                         {/* Loading */}
                         {isLoading && (
                                 <div className="flex items-center justify-center py-12">
-                                        <div className="w-8 h-8 border-2 border-slate-600 border-t-orange-500 rounded-full animate-spin" />
+                                        <div className="w-8 h-8 border-2 border-border border-t-orange-500 rounded-full animate-spin" />
                                 </div>
                         )}
 
                         {/* Table */}
                         {data && !isLoading && (
                                 <>
-                                        <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
+                                        <div className="bg-card border border-border rounded-md overflow-hidden">
                                                 <div className="overflow-x-auto">
                                                         <table
                                                                 className="w-full text-sm"
                                                                 aria-label={t("elements.title")}
                                                         >
                                                                 <thead>
-                                                                        <tr className="border-b border-slate-700 bg-slate-800/50">
+                                                                        <tr className="border-b border-border bg-muted/50">
                                                                                 <th
                                                                                         scope="col"
-                                                                                        className="text-left text-slate-400 font-medium px-4 py-3"
+                                                                                        className="text-left text-muted-foreground font-medium px-4 py-3"
                                                                                 >
                                                                                         {t("elements.name")}
                                                                                 </th>
                                                                                 <th
                                                                                         scope="col"
-                                                                                        className="text-left text-slate-400 font-medium px-4 py-3"
+                                                                                        className="text-left text-muted-foreground font-medium px-4 py-3"
                                                                                 >
                                                                                         {t("elements.type")}
                                                                                 </th>
                                                                                 <th
                                                                                         scope="col"
-                                                                                        className="text-left text-slate-400 font-medium px-4 py-3"
+                                                                                        className="text-left text-muted-foreground font-medium px-4 py-3"
                                                                                 >
                                                                                         {t("elements.area")}
                                                                                 </th>
                                                                                 <th
                                                                                         scope="col"
-                                                                                        className="text-left text-slate-400 font-medium px-4 py-3"
+                                                                                        className="text-left text-muted-foreground font-medium px-4 py-3"
                                                                                 >
                                                                                         {t("elements.version")}
                                                                                 </th>
                                                                                 <th
                                                                                         scope="col"
-                                                                                        className="text-left text-slate-400 font-medium px-4 py-3"
+                                                                                        className="text-left text-muted-foreground font-medium px-4 py-3"
                                                                                 >
                                                                                         {t("elements.modified")}
                                                                                 </th>
                                                                                 <th
                                                                                         scope="col"
-                                                                                        className="text-right text-slate-400 font-medium px-4 py-3"
+                                                                                        className="text-right text-muted-foreground font-medium px-4 py-3"
                                                                                 >
                                                                                         {t("elements.actions")}
                                                                                 </th>
@@ -214,7 +214,7 @@ function Elements() {
                                                                                                                         fill="none"
                                                                                                                         stroke="currentColor"
                                                                                                                         strokeWidth="1.5"
-                                                                                                                        className="h-12 w-12 text-slate-600"
+                                                                                                                        className="h-12 w-12 text-muted-foreground/70"
                                                                                                                 >
                                                                                                                         <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                                                                                                                 </svg>
@@ -228,30 +228,30 @@ function Elements() {
                                                                                 items.map((element) => (
                                                                                         <tr
                                                                                                 key={element.element_id}
-                                                                                                className="border-b border-slate-700/50 hover:bg-slate-700/30 transition-colors"
+                                                                                                className="border-b border-border/50 hover:bg-secondary/30 transition-colors"
                                                                                         >
                                                                                                 <td className="px-4 py-3">
                                                                                                         <Link
                                                                                                                 to={`/elements/${element.element_id}`}
-                                                                                                                className="text-white hover:text-orange-400 font-medium transition-colors"
+                                                                                                                className="text-white hover:text-primary font-medium transition-colors"
                                                                                                         >
                                                                                                                 {element.properties?.name ?? "Unnamed"}
                                                                                                         </Link>
                                                                                                 </td>
                                                                                                 <td className="px-4 py-3">
-                                                                                                        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-slate-700 text-slate-300">
+                                                                                                        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-secondary text-foreground/90">
                                                                                                                 {element.properties?.element_type ?? "unknown"}
                                                                                                         </span>
                                                                                                 </td>
-                                                                                                <td className="px-4 py-3 text-slate-300">
+                                                                                                <td className="px-4 py-3 text-foreground/90">
                                                                                                         {element.geometry?.area != null
                                                                                                                 ? `${element.geometry.area.toFixed(2)} m²`
                                                                                                                 : "—"}
                                                                                                 </td>
-                                                                                                <td className="px-4 py-3 text-slate-300">
+                                                                                                <td className="px-4 py-3 text-foreground/90">
                                                                                                         v{element.version}
                                                                                                 </td>
-                                                                                                <td className="px-4 py-3 text-slate-400 text-xs">
+                                                                                                <td className="px-4 py-3 text-muted-foreground text-xs">
                                                                                                         {element.last_modified_timestamp
                                                                                                                 ? new Date(
                                                                                                                                 element.last_modified_timestamp,
@@ -262,7 +262,7 @@ function Elements() {
                                                                                                         <div className="flex items-center justify-end gap-2">
                                                                                                                 <Link
                                                                                                                         to={`/elements/${element.element_id}`}
-                                                                                                                        className="text-slate-400 hover:text-white transition-colors px-2 py-1"
+                                                                                                                        className="text-muted-foreground hover:text-white transition-colors px-2 py-1"
                                                                                                                         title="View"
                                                                                                                 >
                                                                                                                         <svg
@@ -283,7 +283,7 @@ function Elements() {
                                                                                                                         variant="ghost"
                                                                                                                         size="icon"
                                                                                                                         onClick={() => setDeleteTarget(element)}
-                                                                                                                        className="text-slate-400 hover:text-red-400 transition-colors p-0 h-auto"
+                                                                                                                        className="text-muted-foreground hover:text-danger transition-colors p-0 h-auto"
                                                                                                                         title={t("common.delete")}
                                                                                                                 >
                                                                                                                         <svg
@@ -313,14 +313,14 @@ function Elements() {
                                         {/* Pagination */}
                                         {totalPages > 1 && (
                                                 <div className="flex items-center justify-between">
-                                                        <p className="text-sm text-slate-400">
+                                                        <p className="text-sm text-muted-foreground">
                                                                 {t("common.page")} {page} {t("common.of")} {totalPages}
                                                         </p>
                                                         <div className="flex gap-2">
                                                                 <button
                                                                         onClick={() => setPage((p) => Math.max(1, p - 1))}
                                                                         disabled={page <= 1}
-                                                                        className="px-3 py-1.5 bg-slate-700 text-white text-sm rounded-lg disabled:opacity-40 hover:bg-slate-600 transition-colors"
+                                                                        className="px-3 py-1.5 bg-secondary text-white text-sm rounded-lg disabled:opacity-40 hover:bg-slate-600 transition-colors"
                                                                         aria-label={t("common.previous")}
                                                                 >
                                                                         {t("common.previous")}
@@ -328,7 +328,7 @@ function Elements() {
                                                                 <button
                                                                         onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                                                                         disabled={page >= totalPages}
-                                                                        className="px-3 py-1.5 bg-slate-700 text-white text-sm rounded-lg disabled:opacity-40 hover:bg-slate-600 transition-colors"
+                                                                        className="px-3 py-1.5 bg-secondary text-white text-sm rounded-lg disabled:opacity-40 hover:bg-slate-600 transition-colors"
                                                                         aria-label={t("common.next")}
                                                                 >
                                                                         {t("common.next")}
@@ -353,17 +353,17 @@ function Elements() {
                         {/* Delete Confirmation Modal */}
                         {deleteTarget && (
                                 <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-                                        <div className="bg-slate-800 border border-slate-700 rounded-xl max-w-md w-full p-6">
+                                        <div className="bg-card border border-border rounded-md max-w-md w-full p-6">
                                                 <h3 className="text-lg font-semibold text-white mb-2">
                                                         {t("elements.deleteElement")}
                                                 </h3>
-                                                <p className="text-slate-400 text-sm mb-4">
+                                                <p className="text-muted-foreground text-sm mb-4">
                                                         {t("elements.deleteConfirmation", {
                                                                 name: deleteTarget.properties?.name ?? deleteTarget.element_id,
                                                         })}
                                                 </p>
                                                 {deleteMutation.isError && (
-                                                        <p className="text-red-400 text-sm mb-3">
+                                                        <p className="text-danger text-sm mb-3">
                                                                 {t("elements.deleteFailed")}:{" "}
                                                                 {deleteMutation.error instanceof Error
                                                                         ? deleteMutation.error.message
@@ -373,14 +373,14 @@ function Elements() {
                                                 <div className="flex justify-end gap-3">
                                                         <button
                                                                 onClick={() => setDeleteTarget(null)}
-                                                                className="px-4 py-2 text-sm text-slate-300 hover:text-white transition-colors"
+                                                                className="px-4 py-2 text-sm text-foreground/90 hover:text-white transition-colors"
                                                         >
                                                                 {t("common.cancel")}
                                                         </button>
                                                         <Button
                                                                 onClick={() => deleteMutation.mutate(deleteTarget.element_id)}
                                                                 disabled={deleteMutation.isPending}
-                                                                className="bg-red-600 hover:bg-red-700 text-white border-none"
+                                                                className="bg-danger hover:bg-danger/90 text-white border-none"
                                                         >
                                                                 {deleteMutation.isPending
                                                                         ? t("elements.deleting")
@@ -439,14 +439,14 @@ function CreateElementModal({  // NOSONAR - typescript:S6759
 
         return (
                 <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-                        <div className="bg-slate-800 border border-slate-700 rounded-xl max-w-lg w-full p-6 max-h-[90vh] overflow-y-auto custom-scrollbar">
+                        <div className="bg-card border border-border rounded-md max-w-lg w-full p-6 max-h-[90vh] overflow-y-auto custom-scrollbar">
                                 <h3 className="text-lg font-semibold text-white mb-4">
                                         {t("elements.createElement")}
                                 </h3>
 
                                 {createMutation.isError && (
                                         <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 mb-4">
-                                                <p className="text-red-400 text-sm">
+                                                <p className="text-danger text-sm">
                                                         {createMutation.error instanceof Error
                                                                 ? createMutation.error.message
                                                                 : t("elements.creationFailed")}
@@ -456,26 +456,26 @@ function CreateElementModal({  // NOSONAR - typescript:S6759
 
                                 <div className="space-y-4">
                                         <div>
-                                                <label className="block text-sm font-medium text-slate-300 mb-1">
+                                                <label className="block text-sm font-medium text-foreground/90 mb-1">
                                                         {t("elements.name")} *
                                                 </label>
                                                 <Input
                                                         value={name}
                                                         onChange={(e) => setName(e.target.value)}
-                                                        className="bg-slate-900 border-slate-600 text-white"
+                                                        className="bg-card border-border text-white"
                                                         placeholder={t("elements.elementNamePlaceholder")}
                                                 />
                                         </div>
 
                                         <div>
-                                                <label className="block text-sm font-medium text-slate-300 mb-1">
+                                                <label className="block text-sm font-medium text-foreground/90 mb-1">
                                                         {t("elements.type")} *
                                                 </label>
                                                 <Select value={elementType} onValueChange={setElementType}>
-                                                        <SelectTrigger className="bg-slate-900 border-slate-600 text-white">
+                                                        <SelectTrigger className="bg-card border-border text-white">
                                                                 <SelectValue />
                                                         </SelectTrigger>
-                                                        <SelectContent className="bg-slate-800 border-slate-700 text-white">
+                                                        <SelectContent className="bg-card border-border text-white">
                                                                 {ELEMENT_TYPES.map((type) => (
                                                                         <SelectItem key={type.value} value={type.value}>
                                                                                 {t(type.labelKey)}
@@ -487,26 +487,26 @@ function CreateElementModal({  // NOSONAR - typescript:S6759
 
                                         <div className="grid grid-cols-2 gap-4">
                                                 <div>
-                                                        <label className="block text-sm font-medium text-slate-300 mb-1">
+                                                        <label className="block text-sm font-medium text-foreground/90 mb-1">
                                                                 {t("elements.height")}
                                                         </label>
                                                         <Input
                                                                 type="number"
                                                                 value={height}
                                                                 onChange={(e) => setHeight(e.target.value)}
-                                                                className="bg-slate-900 border-slate-600 text-white"
+                                                                className="bg-card border-border text-white"
                                                                 placeholder="m"
                                                         />
                                                 </div>
                                                 <div>
-                                                        <label className="block text-sm font-medium text-slate-300 mb-1">
+                                                        <label className="block text-sm font-medium text-foreground/90 mb-1">
                                                                 {t("elements.width")}
                                                         </label>
                                                         <Input
                                                                 type="number"
                                                                 value={width}
                                                                 onChange={(e) => setWidth(e.target.value)}
-                                                                className="bg-slate-900 border-slate-600 text-white"
+                                                                className="bg-card border-border text-white"
                                                                 placeholder="m"
                                                         />
                                                 </div>
@@ -514,38 +514,38 @@ function CreateElementModal({  // NOSONAR - typescript:S6759
 
                                         <div className="grid grid-cols-2 gap-4">
                                                 <div>
-                                                        <label className="block text-sm font-medium text-slate-300 mb-1">
+                                                        <label className="block text-sm font-medium text-foreground/90 mb-1">
                                                                 {t("elements.material")}
                                                         </label>
                                                         <Input
                                                                 value={material}
                                                                 onChange={(e) => setMaterial(e.target.value)}
-                                                                className="bg-slate-900 border-slate-600 text-white"
+                                                                className="bg-card border-border text-white"
                                                                 placeholder={t("elements.materialPlaceholder")}
                                                         />
                                                 </div>
                                                 <div>
-                                                        <label className="block text-sm font-medium text-slate-300 mb-1">
+                                                        <label className="block text-sm font-medium text-foreground/90 mb-1">
                                                                 {t("elements.fireRating")}
                                                         </label>
                                                         <Input
                                                                 value={fireRating}
                                                                 onChange={(e) => setFireRating(e.target.value)}
-                                                                className="bg-slate-900 border-slate-600 text-white"
+                                                                className="bg-card border-border text-white"
                                                                 placeholder={t("elements.fireRatingPlaceholder")}
                                                         />
                                                 </div>
                                         </div>
 
                                         <div>
-                                                <label className="block text-sm font-medium text-slate-300 mb-1">
+                                                <label className="block text-sm font-medium text-foreground/90 mb-1">
                                                         {t("elements.description")}
                                                 </label>
                                                 <Textarea
                                                         value={description}
                                                         onChange={(e) => setDescription(e.target.value)}
                                                         rows={2}
-                                                        className="bg-slate-900 border-slate-600 text-white resize-none"
+                                                        className="bg-card border-border text-white resize-none"
                                                         placeholder={t("elements.descriptionPlaceholder")}
                                                 />
                                         </div>
@@ -555,9 +555,9 @@ function CreateElementModal({  // NOSONAR - typescript:S6759
                                                         id="load-bearing"
                                                         checked={loadBearing}
                                                         onCheckedChange={(checked) => setLoadBearing(Boolean(checked))}
-                                                        className="data-[state=checked]:bg-red-600 data-[state=checked]:border-red-600"
+                                                        className="data-[state=checked]:bg-danger data-[state=checked]:border-red-600"
                                                 />
-                                                <label htmlFor="load-bearing" className="text-sm text-slate-300">
+                                                <label htmlFor="load-bearing" className="text-sm text-foreground/90">
                                                         {t("elements.loadBearing")}
                                                 </label>
                                         </div>
@@ -566,7 +566,7 @@ function CreateElementModal({  // NOSONAR - typescript:S6759
                                 <div className="flex justify-end gap-3 mt-6">
                                         <Button
                                                 variant="outline"
-                                                className="border-slate-600 text-slate-300"
+                                                className="border-border text-foreground/90"
                                                 onClick={onClose}
                                         >
                                                 {t("common.cancel")}
@@ -574,7 +574,7 @@ function CreateElementModal({  // NOSONAR - typescript:S6759
                                         <Button
                                                 onClick={() => createMutation.mutate()}
                                                 disabled={!name || createMutation.isPending}
-                                                className="bg-red-600 hover:bg-red-700 text-white border-none"
+                                                className="bg-danger hover:bg-danger/90 text-white border-none"
                                         >
                                                 {createMutation.isPending
                                                         ? t("common.creating")

@@ -69,7 +69,7 @@ export function RiskAssessment() {
 	return (
 		<div className="p-4 space-y-4 h-full overflow-y-auto">
 			<h2 className="text-lg font-bold text-foreground flex items-center gap-2">
-				<ShieldAlert className="text-orange-500" /> Risk Assessment
+				<ShieldAlert className="text-primary" /> Risk Assessment
 			</h2>
 
 			<div className="space-y-2">
@@ -103,19 +103,19 @@ export function RiskAssessment() {
 
 			{zone && (
 				<div className="space-y-3 mt-4 animate-in fade-in slide-in-from-bottom-4">
-					<div className="text-xs font-bold text-orange-400 uppercase tracking-wider">
+					<div className="text-xs font-bold text-primary uppercase tracking-wider">
 						Applicable Codes & Actions
 					</div>
 					{rules.map((rule, idx) => (
-						<Card key={idx} className="bg-orange-950/20 border-orange-500/30">  // NOSONAR — S6479: array index key acceptable for static list
+						<Card key={idx} className="bg-orange-950/20 border-primary/30">  // NOSONAR — S6479: array index key acceptable for static list
 							<CardContent className="p-3 space-y-2">
 								<div className="flex justify-between items-center">
-									<span className="text-xs font-mono bg-orange-500/20 text-orange-300 px-2 py-0.5 rounded">
+									<span className="text-xs font-mono bg-primary/20 text-orange-300 px-2 py-0.5 rounded">
 										{rule.code}
 									</span>
 								</div>
 								<p className="text-xs text-foreground">{rule.requirement}</p>
-								<div className="pt-2 border-t border-orange-500/20">
+								<div className="pt-2 border-t border-primary/20">
 									<p className="text-xs text-blue-300 font-bold">
 										✅ Auto-Action:
 									</p>
@@ -125,7 +125,7 @@ export function RiskAssessment() {
 						</Card>
 					))}
 					<Button
-						className="w-full mt-4 bg-orange-600 hover:bg-orange-700"
+						className="w-full mt-4 bg-primary hover:bg-orange-700"
 						onClick={() => alert("Risk Report Added to Project Files")}
 					>
 						Download Compliance Certificate

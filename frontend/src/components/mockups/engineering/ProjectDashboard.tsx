@@ -36,13 +36,13 @@ export function ProjectDashboard() {
 							Project Command Center
 						</h1>
 						<div className="text-xs text-muted-foreground flex items-center gap-2 mt-0.5">
-							<span className="font-semibold text-slate-300">
+							<span className="font-semibold text-foreground/90">
 								Tower-B Office Complex
 							</span>
 							<span>•</span>
 							<span>
 								Phase:{" "}
-								<span className="text-blue-400 font-medium">
+								<span className="text-info font-medium">
 									Construction Documents
 								</span>
 							</span>
@@ -53,19 +53,19 @@ export function ProjectDashboard() {
 				</div>
 
 				<div className="flex items-center gap-4">
-					<div className="text-[10px] font-mono text-emerald-400 flex items-center gap-1.5 animate-pulse">
+					<div className="text-[10px] font-mono text-success flex items-center gap-1.5 animate-pulse">
 						<div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div> Last
 						updated: 2 mins ago
 					</div>
 					<div className="flex gap-2">
 						<Button variant="outline" size="sm" className="h-8 text-xs bg-card">
-							<BarChart2 className="h-3.5 w-3.5 mr-1.5" /> Add Widget
+							<BarChart2 className="h-4 w-4 mr-1.5" /> Add Widget
 						</Button>
 						<Button variant="outline" size="sm" className="h-8 text-xs bg-card">
-							<FileDown className="h-3.5 w-3.5 mr-1.5" /> Export Dashboard
+							<FileDown className="h-4 w-4 mr-1.5" /> Export Dashboard
 						</Button>
 						<Button variant="outline" size="sm" className="h-8 text-xs bg-card">
-							<Share2 className="h-3.5 w-3.5 mr-1.5" /> Share
+							<Share2 className="h-4 w-4 mr-1.5" /> Share
 						</Button>
 						<Button variant="ghost" size="icon" className="h-8 w-8">
 							<Maximize className="h-4 w-4" />
@@ -79,22 +79,22 @@ export function ProjectDashboard() {
 					{/* Top KPI Row */}
 					<div className="grid grid-cols-4 gap-4">
 						{/* Card 1 */}
-						<div className="bg-card/50 border border-slate-800 rounded-xl p-5 shadow-lg backdrop-blur-sm">
+						<div className="bg-card/50 border border-slate-800 rounded-md p-5 shadow-lg backdrop-blur-sm">
 							<div className="flex justify-between items-start mb-2">
 								<div className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
 									Overall Progress
 								</div>
-								<Activity className="h-4 w-4 text-blue-400" />
+								<Activity className="h-4 w-4 text-info" />
 							</div>
 							<div className="flex items-end gap-3 mb-3">
 								<div className="text-4xl font-bold font-mono tracking-tighter">
 									73%
 								</div>
-								<Badge className="mb-1 bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/10">
+								<Badge className="mb-1 bg-emerald-500/10 text-success border-emerald-500/20 hover:bg-emerald-500/10">
 									On Schedule
 								</Badge>
 							</div>
-							<div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden mb-2">
+							<div className="w-full h-1.5 bg-card rounded-full overflow-hidden mb-2">
 								<div
 									className="h-full bg-blue-500 rounded-full"
 									style={{ width: "73%" }}
@@ -106,23 +106,23 @@ export function ProjectDashboard() {
 						</div>
 
 						{/* Card 2 */}
-						<div className="bg-card/50 border border-slate-800 rounded-xl p-5 shadow-lg backdrop-blur-sm">
+						<div className="bg-card/50 border border-slate-800 rounded-md p-5 shadow-lg backdrop-blur-sm">
 							<div className="flex justify-between items-start mb-2">
 								<div className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
 									Compliance Score
 								</div>
-								<ShieldAlert className="h-4 w-4 text-emerald-400" />
+								<ShieldAlert className="h-4 w-4 text-success" />
 							</div>
 							<div className="flex items-end gap-3 mb-3">
-								<div className="text-4xl font-bold font-mono tracking-tighter text-emerald-400">
+								<div className="text-4xl font-bold font-mono tracking-tighter text-success">
 									94.7<span className="text-2xl">%</span>
 								</div>
-								<div className="text-xs font-mono text-emerald-400 flex items-center mb-1 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
+								<div className="text-xs font-mono text-success flex items-center mb-1 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
 									<ArrowUpRight className="h-3 w-3 mr-0.5" /> 2.1%
 								</div>
 							</div>
 							<div className="flex items-center gap-2 text-xs">
-								<Badge className="bg-red-500 text-white hover:bg-red-600 border-transparent shadow-[0_0_10px_rgba(239,68,68,0.5)]">
+								<Badge className="bg-red-500 text-white hover:bg-danger border-transparent shadow-[0_0_10px_rgba(239,68,68,0.5)]">
 									3 Critical Issues
 								</Badge>
 								<span className="text-muted-foreground">needs review</span>
@@ -130,18 +130,18 @@ export function ProjectDashboard() {
 						</div>
 
 						{/* Card 3 */}
-						<div className="bg-card/50 border border-slate-800 rounded-xl p-5 shadow-lg backdrop-blur-sm">
+						<div className="bg-card/50 border border-slate-800 rounded-md p-5 shadow-lg backdrop-blur-sm">
 							<div className="flex justify-between items-start mb-2">
 								<div className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
 									Active Drawings
 								</div>
-								<FolderOpen className="h-4 w-4 text-orange-400" />
+								<FolderOpen className="h-4 w-4 text-primary" />
 							</div>
 							<div className="flex items-end gap-3 mb-4">
 								<div className="text-4xl font-bold font-mono tracking-tighter">
 									48
 								</div>
-								<div className="text-xs text-slate-400 mb-1">Rev 14 latest</div>
+								<div className="text-xs text-muted-foreground mb-1">Rev 14 latest</div>
 							</div>
 							<div className="flex h-2 rounded-full overflow-hidden w-full gap-0.5">
 								<div
@@ -168,7 +168,7 @@ export function ProjectDashboard() {
 						</div>
 
 						{/* Card 4 */}
-						<div className="bg-card/50 border border-slate-800 rounded-xl p-5 shadow-lg backdrop-blur-sm">
+						<div className="bg-card/50 border border-slate-800 rounded-md p-5 shadow-lg backdrop-blur-sm">
 							<div className="flex justify-between items-start mb-2">
 								<div className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
 									Team Activity
@@ -182,7 +182,7 @@ export function ProjectDashboard() {
 								<Avatar initials="AH" color="bg-blue-600" />
 								<Avatar initials="SJ" color="bg-emerald-600" />
 								<Avatar initials="MK" color="bg-purple-600" />
-								<Avatar initials="FT" color="bg-orange-600" />
+								<Avatar initials="FT" color="bg-primary" />
 								<Avatar initials="JD" color="bg-cyan-600" />
 							</div>
 							<div className="text-xs text-muted-foreground flex justify-between items-center">
@@ -304,7 +304,7 @@ export function ProjectDashboard() {
 							>
 								<div className="overflow-hidden border border-slate-800 rounded-lg">
 									<table className="w-full text-left text-sm">
-										<thead className="bg-slate-800/50 text-slate-400 text-xs uppercase tracking-wider font-semibold border-b border-slate-700">
+										<thead className="bg-muted/50 text-muted-foreground text-xs uppercase tracking-wider font-semibold border-b border-border">
 											<tr>
 												<th className="px-4 py-3">Milestone</th>
 												<th className="px-4 py-3">Due Date</th>
@@ -321,7 +321,7 @@ export function ProjectDashboard() {
 													Nov 30
 												</td>
 												<td className="px-4 py-3">
-													<Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
+													<Badge className="bg-emerald-500/10 text-success border-emerald-500/20">
 														On Track
 													</Badge>
 												</td>
@@ -337,7 +337,7 @@ export function ProjectDashboard() {
 													Dec 05
 												</td>
 												<td className="px-4 py-3">
-													<Badge className="bg-orange-500/10 text-orange-400 border-orange-500/20">
+													<Badge className="bg-primary/10 text-primary border-primary/20">
 														At Risk
 													</Badge>
 												</td>
@@ -353,7 +353,7 @@ export function ProjectDashboard() {
 													Dec 10
 												</td>
 												<td className="px-4 py-3">
-													<Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
+													<Badge className="bg-emerald-500/10 text-success border-emerald-500/20">
 														On Track
 													</Badge>
 												</td>
@@ -369,7 +369,7 @@ export function ProjectDashboard() {
 													Dec 15
 												</td>
 												<td className="px-4 py-3">
-													<Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
+													<Badge className="bg-emerald-500/10 text-success border-emerald-500/20">
 														On Track
 													</Badge>
 												</td>
@@ -393,7 +393,7 @@ export function ProjectDashboard() {
 								<div className="flex flex-col items-center justify-center py-6">
 									{/* CSS Donut Chart */}
 									<div
-										className="relative w-48 h-48 rounded-full bg-slate-800 flex items-center justify-center mb-6"
+										className="relative w-48 h-48 rounded-full bg-card flex items-center justify-center mb-6"
 										style={{
 											background:
 												"conic-gradient(#ef4444 0% 25%, #f97316 25% 75%, #eab308 75% 100%)",
@@ -416,8 +416,8 @@ export function ProjectDashboard() {
 												Critical
 											</div>
 										</div>
-										<div className="bg-orange-500/10 border border-orange-500/20 rounded p-2 text-center">
-											<div className="text-lg font-bold text-orange-400 font-mono">
+										<div className="bg-primary/10 border border-primary/20 rounded p-2 text-center">
+											<div className="text-lg font-bold text-primary font-mono">
 												23
 											</div>
 											<div className="text-[10px] text-muted-foreground uppercase">
@@ -453,7 +453,7 @@ export function ProjectDashboard() {
 											Total: 50.0 GB
 										</div>
 									</div>
-									<div className="h-3 w-full bg-slate-800 rounded-full flex overflow-hidden mb-4">
+									<div className="h-3 w-full bg-card rounded-full flex overflow-hidden mb-4">
 										<div
 											className="bg-blue-500 h-full"
 											style={{ width: "45%" }}
@@ -532,7 +532,7 @@ export function ProjectDashboard() {
 									/>
 									<div className="pt-3 border-t border-slate-800 mt-2 flex justify-between items-center">
 										<span className="font-bold text-sm">Total Hours</span>
-										<span className="font-mono font-bold text-blue-400">
+										<span className="font-mono font-bold text-info">
 											200 / 230h
 										</span>
 									</div>
@@ -546,24 +546,24 @@ export function ProjectDashboard() {
 							>
 								<div className="grid grid-cols-2 gap-4">
 									<div className="bg-card/50 border border-slate-800 p-3 rounded-lg text-center">
-										<div className="text-2xl font-bold font-mono text-emerald-400 mb-1">
+										<div className="text-2xl font-bold font-mono text-success mb-1">
 											83%
 										</div>
 										<div className="text-[10px] text-muted-foreground uppercase">
 											Comments Resolved
 										</div>
-										<div className="text-[10px] font-mono text-slate-500 mt-1">
+										<div className="text-[10px] font-mono text-muted-foreground mt-1">
 											34 of 41
 										</div>
 									</div>
 									<div className="bg-card/50 border border-slate-800 p-3 rounded-lg text-center">
-										<div className="text-2xl font-bold font-mono text-orange-400 mb-1">
+										<div className="text-2xl font-bold font-mono text-primary mb-1">
 											3
 										</div>
 										<div className="text-[10px] text-muted-foreground uppercase">
 											Approvals Pending
 										</div>
-										<div className="text-[10px] font-mono text-slate-500 mt-1">
+										<div className="text-[10px] font-mono text-muted-foreground mt-1">
 											Due today
 										</div>
 									</div>
@@ -587,12 +587,12 @@ function Widget({  // NOSONAR - typescript:S6759
 	children: React.ReactNode;
 }) {
 	return (
-		<div className="bg-card border border-slate-800 rounded-xl p-5 shadow-sm">
+		<div className="bg-card border border-slate-800 rounded-md p-5 shadow-sm">
 			<div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-800">
-				<div className="p-1.5 rounded-md bg-slate-800 text-slate-300">
+				<div className="p-1.5 rounded-md bg-card text-foreground/90">
 					{icon}
 				</div>
-				<h3 className="font-bold text-sm text-slate-100 tracking-wide uppercase">
+				<h3 className="font-bold text-sm text-foreground tracking-wide uppercase">
 					{title}
 				</h3>
 			</div>
@@ -615,12 +615,12 @@ function ProgressBar({  // NOSONAR - typescript:S6759
 	return (
 		<div>
 			<div className="flex justify-between items-end mb-1.5">
-				<span className="text-xs font-medium text-slate-300">{label}</span>
+				<span className="text-xs font-medium text-foreground/90">{label}</span>
 				<span className="text-[10px] font-mono text-muted-foreground">
 					{count} ({percent}%)
 				</span>
 			</div>
-			<div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+			<div className="w-full h-2 bg-card rounded-full overflow-hidden">
 				<div
 					className={`h-full rounded-full ${color}`}
 					style={{ width: `${percent}%` }}
@@ -652,10 +652,10 @@ function TimelineItem({  // NOSONAR - typescript:S6759
 			</div>
 			<div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-3 rounded-lg border border-slate-800 bg-card/50 shadow-sm ml-4 md:ml-0 md:group-odd:mr-4 md:group-even:ml-4">
 				<div className="flex items-center justify-between mb-1">
-					<span className="font-bold text-xs text-slate-200">{user}</span>
-					<span className="text-[10px] font-mono text-slate-500">{time}</span>
+					<span className="font-bold text-xs text-foreground">{user}</span>
+					<span className="text-[10px] font-mono text-muted-foreground">{time}</span>
 				</div>
-				<div className="text-xs text-slate-400 leading-relaxed">{text}</div>
+				<div className="text-xs text-muted-foreground leading-relaxed">{text}</div>
 			</div>
 		</div>
 	);
@@ -677,15 +677,15 @@ function HourRow({  // NOSONAR - typescript:S6759
 
 	return (
 		<div className="flex items-center justify-between gap-4">
-			<span className="text-xs text-slate-300 w-32 truncate">{label}</span>
-			<div className="flex-1 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+			<span className="text-xs text-foreground/90 w-32 truncate">{label}</span>
+			<div className="flex-1 h-1.5 bg-card rounded-full overflow-hidden">
 				<div
 					className={`h-full rounded-full ${isOver ? "bg-red-500" : color}`}
 					style={{ width: `${percent}%` }}
 				></div>
 			</div>
 			<span
-				className={`text-[10px] font-mono w-16 text-right ${isOver ? "text-red-400 font-bold" : "text-muted-foreground"}`}
+				className={`text-[10px] font-mono w-16 text-right ${isOver ? "text-danger font-bold" : "text-muted-foreground"}`}
 			>
 				{used}/{budget}h
 			</span>

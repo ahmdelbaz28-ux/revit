@@ -16,7 +16,7 @@ export function MCCDesigner() {
 					</div>
 					<Separator orientation="vertical" className="h-5" />
 					<div className="flex space-x-1 text-xs">
-						<button className="px-3 py-1 rounded bg-blue-500/10 text-blue-400 font-medium border border-blue-500/20">
+						<button className="px-3 py-1 rounded bg-blue-500/10 text-info font-medium border border-blue-500/20">
 							MCC-1
 						</button>
 						<button className="px-3 py-1 rounded text-muted-foreground hover:bg-muted">
@@ -34,36 +34,36 @@ export function MCCDesigner() {
 					<Button
 						variant="outline"
 						size="sm"
-						className="h-8 text-xs border-slate-700 hover:bg-slate-800"
+						className="h-8 text-xs border-border hover:bg-card"
 					>
-						<Plus className="h-3.5 w-3.5 mr-1" /> Add Section
+						<Plus className="h-4 w-4 mr-1" /> Add Section
 					</Button>
 					<Button
 						variant="outline"
 						size="sm"
-						className="h-8 text-xs border-slate-700 hover:bg-slate-800"
+						className="h-8 text-xs border-border hover:bg-card"
 					>
-						<Plus className="h-3.5 w-3.5 mr-1" /> Add Bucket
+						<Plus className="h-4 w-4 mr-1" /> Add Bucket
 					</Button>
 					<Button
 						variant="outline"
 						size="sm"
-						className="h-8 text-xs border-slate-700 hover:bg-slate-800"
+						className="h-8 text-xs border-border hover:bg-card"
 					>
-						<Settings className="h-3.5 w-3.5 mr-1" /> Validate
+						<Settings className="h-4 w-4 mr-1" /> Validate
 					</Button>
 					<Button
 						variant="outline"
 						size="sm"
-						className="h-8 text-xs border-slate-700 hover:bg-slate-800"
+						className="h-8 text-xs border-border hover:bg-card"
 					>
-						<FileText className="h-3.5 w-3.5 mr-1" /> Generate Schedule
+						<FileText className="h-4 w-4 mr-1" /> Generate Schedule
 					</Button>
 					<Button
 						size="sm"
 						className="h-8 text-xs bg-blue-600 hover:bg-blue-500 text-white"
 					>
-						<Download className="h-3.5 w-3.5 mr-1" /> Export to DWG
+						<Download className="h-4 w-4 mr-1" /> Export to DWG
 					</Button>
 				</div>
 			</div>
@@ -77,7 +77,7 @@ export function MCCDesigner() {
 					<ScrollArea className="flex-1">
 						<div className="p-3 space-y-5">
 							<div>
-								<div className="text-[10px] font-bold text-slate-500 uppercase mb-2">
+								<div className="text-[10px] font-bold text-muted-foreground uppercase mb-2">
 									Starters
 								</div>
 								<div className="grid grid-cols-2 gap-2">
@@ -93,7 +93,7 @@ export function MCCDesigner() {
 							</div>
 
 							<div>
-								<div className="text-[10px] font-bold text-slate-500 uppercase mb-2">
+								<div className="text-[10px] font-bold text-muted-foreground uppercase mb-2">
 									Protection
 								</div>
 								<div className="grid grid-cols-2 gap-2">
@@ -102,14 +102,14 @@ export function MCCDesigner() {
 									<PaletteItem
 										label="Main Inc."
 										size="6U-12U"
-										bg="bg-emerald-500/10 border-emerald-500/30"
+										bg="bg-emerald-500/10 border-success/30"
 									/>
 									<PaletteItem label="Bus Plug" size="2U" />
 								</div>
 							</div>
 
 							<div>
-								<div className="text-[10px] font-bold text-slate-500 uppercase mb-2">
+								<div className="text-[10px] font-bold text-muted-foreground uppercase mb-2">
 									Monitoring & Misc
 								</div>
 								<div className="grid grid-cols-2 gap-2">
@@ -118,12 +118,12 @@ export function MCCDesigner() {
 									<PaletteItem
 										label="Space"
 										size="Any"
-										border="border-dashed border-slate-600"
+										border="border-dashed border-border"
 									/>
 									<PaletteItem
 										label="Spare"
 										size="Any"
-										border="border-dashed border-slate-600"
+										border="border-dashed border-border"
 									/>
 								</div>
 							</div>
@@ -134,32 +134,32 @@ export function MCCDesigner() {
 				{/* Center - Visual */}
 				<div className="flex-1 relative bg-[#111827] overflow-y-auto flex justify-center p-8">
 					{/* MCC Panel Container */}
-					<div className="flex gap-1 h-[800px] p-2 bg-slate-800 border-2 border-slate-600 shadow-2xl rounded-sm">
+					<div className="flex gap-1 h-[800px] p-2 bg-card border-2 border-border shadow-2xl rounded-sm">
 						{/* Section 1 */}
 						<div className="w-[200px] h-full flex flex-col gap-1 border-r border-slate-900 pr-1">
-							<div className="h-6 bg-slate-900 flex justify-center items-center text-[10px] text-slate-400 font-mono">
+							<div className="h-6 bg-card flex justify-center items-center text-[10px] text-muted-foreground font-mono">
 								SEC 1
 							</div>
 							<Bucket
 								title="MAIN — 800A — 3Φ 480V"
 								units={8}
-								color="bg-slate-900 border-emerald-500/50"
-								text="text-emerald-400"
+								color="bg-card border-emerald-500/50"
+								text="text-success"
 							/>
-							<div className="h-[40px] flex items-center justify-center bg-slate-900/50 border border-slate-700">
-								<div className="w-full h-2 bg-orange-500/20 flex justify-between px-2">
-									<div className="h-full w-1/4 bg-orange-500/50"></div>
+							<div className="h-[40px] flex items-center justify-center bg-muted/50 border border-border">
+								<div className="w-full h-2 bg-primary/20 flex justify-between px-2">
+									<div className="h-full w-1/4 bg-primary/50"></div>
 								</div>
 							</div>
 							<Bucket title="PM-1, ION9000" units={4} />
-							<div className="flex-1 border-2 border-dashed border-slate-700 bg-slate-900/30 flex justify-center items-center">
-								<span className="text-slate-600 text-xs font-mono">SPACE</span>
+							<div className="flex-1 border-2 border-dashed border-border bg-card/30 flex justify-center items-center">
+								<span className="text-muted-foreground/70 text-xs font-mono">SPACE</span>
 							</div>
 						</div>
 
 						{/* Section 2 */}
 						<div className="w-[200px] h-full flex flex-col gap-1 border-r border-slate-900 pr-1 px-1">
-							<div className="h-6 bg-slate-900 flex justify-center items-center text-[10px] text-slate-400 font-mono">
+							<div className="h-6 bg-card flex justify-center items-center text-[10px] text-muted-foreground font-mono">
 								SEC 2
 							</div>
 							<Bucket
@@ -194,32 +194,32 @@ export function MCCDesigner() {
 							/>
 
 							{/* Highlighted Fault Bucket */}
-							<div className="h-[120px] bg-slate-900 border-2 border-blue-500 relative flex flex-col p-2 shadow-[0_0_15px_rgba(59,130,246,0.3)]">
+							<div className="h-[120px] bg-card border-2 border-blue-500 relative flex flex-col p-2 shadow-[0_0_15px_rgba(59,130,246,0.3)]">
 								<div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-red-500 animate-pulse shadow-[0_0_5px_red]"></div>
 								<div className="text-xs font-bold text-white mb-1">
 									F2-06: Condenser Water
 								</div>
-								<div className="text-[10px] text-slate-400 font-mono">
+								<div className="text-[10px] text-muted-foreground font-mono">
 									20HP • 27A
 								</div>
 								<div className="mt-auto flex gap-2">
 									<div className="w-4 h-4 bg-red-500/20 border border-red-500 rounded-sm"></div>
-									<div className="w-4 h-4 bg-slate-800 border border-slate-600 rounded-sm"></div>
+									<div className="w-4 h-4 bg-card border border-border rounded-sm"></div>
 								</div>
 							</div>
 
-							<div className="h-[90px] border-2 border-dashed border-slate-600 bg-slate-900/30 flex justify-center items-center flex-col">
-								<span className="text-slate-500 text-xs font-mono">F2-07</span>
-								<span className="text-slate-600 text-xs font-mono">SPARE</span>
+							<div className="h-[90px] border-2 border-dashed border-border bg-card/30 flex justify-center items-center flex-col">
+								<span className="text-muted-foreground text-xs font-mono">F2-07</span>
+								<span className="text-muted-foreground/70 text-xs font-mono">SPARE</span>
 							</div>
-							<div className="flex-1 border-2 border-dashed border-slate-700 bg-slate-900/30 flex justify-center items-center">
-								<span className="text-slate-600 text-xs font-mono">SPACE</span>
+							<div className="flex-1 border-2 border-dashed border-border bg-card/30 flex justify-center items-center">
+								<span className="text-muted-foreground/70 text-xs font-mono">SPACE</span>
 							</div>
 						</div>
 
 						{/* Section 3 */}
 						<div className="w-[200px] h-full flex flex-col gap-1 pl-1">
-							<div className="h-6 bg-slate-900 flex justify-center items-center text-[10px] text-slate-400 font-mono">
+							<div className="h-6 bg-card flex justify-center items-center text-[10px] text-muted-foreground font-mono">
 								SEC 3
 							</div>
 							<Bucket
@@ -260,8 +260,8 @@ export function MCCDesigner() {
 								color="bg-blue-900/20 border-blue-800"
 								text="text-blue-100"
 							/>
-							<div className="flex-1 border-2 border-dashed border-slate-600 bg-slate-900/30 flex justify-center items-center flex-col">
-								<span className="text-slate-500 text-xs font-mono">
+							<div className="flex-1 border-2 border-dashed border-border bg-card/30 flex justify-center items-center flex-col">
+								<span className="text-muted-foreground text-xs font-mono">
 									SPARE x2
 								</span>
 							</div>
@@ -281,7 +281,7 @@ export function MCCDesigner() {
 								<div className="flex items-center gap-2 mb-2">
 									<Badge
 										variant="outline"
-										className="bg-blue-500/10 text-blue-400 border-blue-500/30 text-xs"
+										className="bg-blue-500/10 text-info border-blue-500/30 text-xs"
 									>
 										F2-06
 									</Badge>
@@ -299,32 +299,32 @@ export function MCCDesigner() {
 
 							{/* Fault Details */}
 							<div className="border border-red-500/50 bg-red-500/10 rounded-md p-3 space-y-2">
-								<div className="flex items-center gap-2 text-red-400 font-bold text-xs uppercase">
+								<div className="flex items-center gap-2 text-danger font-bold text-xs uppercase">
 									<AlertCircle className="h-4 w-4" /> Fault Detected
 								</div>
-								<div className="text-xs text-slate-300">
-									<span className="text-slate-400">Code:</span> OL-01 (Overload
+								<div className="text-xs text-foreground/90">
+									<span className="text-muted-foreground">Code:</span> OL-01 (Overload
 									Trip)
 								</div>
-								<div className="text-xs text-slate-300">
-									<span className="text-slate-400">Trip Current:</span> 34.2A
+								<div className="text-xs text-foreground/90">
+									<span className="text-muted-foreground">Trip Current:</span> 34.2A
 									(125% FLA)
 								</div>
-								<div className="text-xs text-slate-300">
-									<span className="text-slate-400">Time:</span> 14:23:07
+								<div className="text-xs text-foreground/90">
+									<span className="text-muted-foreground">Time:</span> 14:23:07
 								</div>
 								<div className="flex gap-2 mt-2 pt-2 border-t border-red-500/20">
 									<Button
 										size="sm"
 										variant="destructive"
-										className="h-7 text-[10px] w-full bg-red-600"
+										className="h-7 text-[10px] w-full bg-danger"
 									>
 										Reset Fault
 									</Button>
 									<Button
 										size="sm"
 										variant="outline"
-										className="h-7 text-[10px] w-full border-red-500/30 text-red-400 bg-transparent"
+										className="h-7 text-[10px] w-full border-danger/30 text-danger bg-transparent"
 									>
 										History
 									</Button>
@@ -375,30 +375,30 @@ export function MCCDesigner() {
 
 			{/* Bottom Console */}
 			<div className="h-12 border-t bg-card flex items-center justify-between px-4 text-[11px] shrink-0">
-				<div className="flex items-center gap-4 text-slate-300">
+				<div className="flex items-center gap-4 text-foreground/90">
 					<span className="font-semibold text-white">MCC-1 Summary:</span>
 					<span>15 feeders</span>
 					<Separator orientation="vertical" className="h-4" />
-					<span className="text-emerald-400">12 running</span>
-					<span className="text-red-400">1 fault</span>
-					<span className="text-slate-500">2 spare</span>
+					<span className="text-success">12 running</span>
+					<span className="text-danger">1 fault</span>
+					<span className="text-muted-foreground">2 spare</span>
 				</div>
 
 				<div className="flex items-center gap-4">
 					<div className="flex flex-col items-end">
 						<div className="flex gap-2">
-							<span className="text-slate-400">Connected: 440kW</span>
-							<span className="text-blue-400">Demand: 374kW (85%)</span>
+							<span className="text-muted-foreground">Connected: 440kW</span>
+							<span className="text-info">Demand: 374kW (85%)</span>
 						</div>
 						<div className="flex items-center gap-2 mt-0.5">
-							<span className="text-slate-400">Bus: 800A</span>
-							<div className="w-32 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+							<span className="text-muted-foreground">Bus: 800A</span>
+							<div className="w-32 h-1.5 bg-card rounded-full overflow-hidden">
 								<div
 									className="bg-emerald-500 h-full"
 									style={{ width: "76.5%" }}
 								></div>
 							</div>
-							<span className="text-emerald-400 font-mono">612A</span>
+							<span className="text-success font-mono">612A</span>
 						</div>
 					</div>
 				</div>
@@ -410,8 +410,8 @@ export function MCCDesigner() {
 function PaletteItem({  // NOSONAR - typescript:S6759
 	label,
 	size,
-	bg = "bg-slate-800",
-	border = "border border-slate-700",
+	bg = "bg-card",
+	border = "border border-border",
 }: {
 	label: string;
 	size: string;
@@ -422,8 +422,8 @@ function PaletteItem({  // NOSONAR - typescript:S6759
 		<div
 			className={`p-2 rounded cursor-grab hover:ring-1 ring-blue-500 transition-all ${bg} ${border}`}
 		>
-			<div className="text-[10px] font-semibold text-slate-200">{label}</div>
-			<div className="text-[9px] text-slate-500 font-mono mt-1">{size}</div>
+			<div className="text-[10px] font-semibold text-foreground">{label}</div>
+			<div className="text-[9px] text-muted-foreground font-mono mt-1">{size}</div>
 		</div>
 	);
 }
@@ -433,7 +433,7 @@ function Bucket({  // NOSONAR - typescript:S6759
 	sub,
 	status,
 	units,
-	color = "bg-slate-900 border-slate-700",
+	color = "bg-card border-border",
 	text = "text-white",
 }: {
 	title: string;
@@ -452,7 +452,7 @@ function Bucket({  // NOSONAR - typescript:S6759
 
 	return (
 		<div
-			className={`${color} border relative flex flex-col p-2 hover:border-slate-500 cursor-pointer`}
+			className={`${color} border relative flex flex-col p-2 hover:border-border cursor-pointer`}
 			style={{ height: `${height}px` }}
 		>
 			{dot && (
@@ -463,10 +463,10 @@ function Bucket({  // NOSONAR - typescript:S6759
 			<div className={`text-xs font-bold ${text} truncate mb-0.5 w-[90%]`}>
 				{title}
 			</div>
-			{sub && <div className="text-[10px] text-slate-400 font-mono">{sub}</div>}
+			{sub && <div className="text-[10px] text-muted-foreground font-mono">{sub}</div>}
 			<div className="mt-auto flex gap-1">
-				<div className="w-3 h-3 bg-slate-800 border border-slate-600 rounded-sm"></div>
-				<div className="w-3 h-3 bg-slate-800 border border-slate-600 rounded-sm"></div>
+				<div className="w-3 h-3 bg-card border border-border rounded-sm"></div>
+				<div className="w-3 h-3 bg-card border border-border rounded-sm"></div>
 			</div>
 		</div>
 	);
@@ -485,7 +485,7 @@ function PropRow({  // NOSONAR - typescript:S6759
 		<div className="flex justify-between items-center text-xs">
 			<span className="text-muted-foreground">{label}</span>
 			<span
-				className={`font-mono ${link ? "text-blue-400 hover:underline cursor-pointer" : "text-foreground text-right"}`}
+				className={`font-mono ${link ? "text-info hover:underline cursor-pointer" : "text-foreground text-right"}`}
 			>
 				{value}
 			</span>

@@ -30,7 +30,7 @@ import { Separator } from "@/components/ui/separator";
 export function FileManager() {
 	return (
 		<div className="w-screen h-screen bg-background/80 backdrop-blur-md flex items-center justify-center p-8 font-sans dark text-foreground">
-			<div className="w-full max-w-[1200px] h-full max-h-[800px] bg-[#0f1115] border border-white/10 shadow-2xl rounded-xl flex flex-col overflow-hidden ring-1 ring-primary/20">
+			<div className="w-full max-w-[1200px] h-full max-h-[800px] bg-[#0f1115] border border-white/10 shadow-2xl rounded-md flex flex-col overflow-hidden ring-1 ring-primary/20">
 				{/* Header */}
 				<div className="h-16 border-b border-white/10 flex items-center justify-between px-6 bg-[#15181e]">
 					<div className="flex flex-col">
@@ -111,7 +111,7 @@ export function FileManager() {
 							<div className="flex gap-2">
 								<Badge
 									variant="outline"
-									className="bg-[#15181e] border-white/10 text-xs text-slate-300 font-normal"
+									className="bg-[#15181e] border-white/10 text-xs text-foreground/90 font-normal"
 								>
 									All Files
 								</Badge>
@@ -193,8 +193,8 @@ export function FileManager() {
 					{/* Right Sidebar - Inspector */}
 					<div className="w-80 border-l border-white/10 bg-[#15181e] flex flex-col">
 						<div className="p-6 border-b border-white/5 flex flex-col items-center justify-center text-center">
-							<div className="w-20 h-20 bg-blue-500/10 rounded-xl border border-blue-500/30 flex items-center justify-center mb-4">
-								<Layout className="w-10 h-10 text-blue-400" />
+							<div className="w-20 h-20 bg-blue-500/10 rounded-md border border-blue-500/30 flex items-center justify-center mb-4">
+								<Layout className="w-10 h-10 text-info" />
 							</div>
 							<h3 className="font-semibold text-white text-sm break-all">
 								Tower-B-Electrical-Rev14.dwg
@@ -226,22 +226,22 @@ export function FileManager() {
 										Workflow
 									</h4>
 									<div className="flex justify-between items-center">
-										<span className="text-xs text-slate-400">
+										<span className="text-xs text-muted-foreground">
 											Current Status
 										</span>
-										<Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20">
+										<Badge className="bg-emerald-500/10 text-success border-success/30 hover:bg-emerald-500/20">
 											Approved
 										</Badge>
 									</div>
 									<div className="flex justify-between items-center mt-2">
-										<span className="text-xs text-slate-400">
+										<span className="text-xs text-muted-foreground">
 											Collaborators
 										</span>
 										<div className="flex -space-x-2">
 											<div className="w-6 h-6 rounded-full bg-blue-600 border border-[#15181e] text-[8px] flex items-center justify-center font-bold">
 												JS
 											</div>
-											<div className="w-6 h-6 rounded-full bg-orange-600 border border-[#15181e] text-[8px] flex items-center justify-center font-bold">
+											<div className="w-6 h-6 rounded-full bg-primary border border-[#15181e] text-[8px] flex items-center justify-center font-bold">
 												AW
 											</div>
 											<div className="w-6 h-6 rounded-full bg-slate-600 border border-[#15181e] text-[8px] flex items-center justify-center font-bold">
@@ -265,25 +265,25 @@ export function FileManager() {
 												Rev 14{" "}
 												<span className="text-primary ml-1">(Current)</span>
 											</div>
-											<div className="text-[10px] text-slate-500">
+											<div className="text-[10px] text-muted-foreground">
 												Today, 14:32 by J. Smith
 											</div>
 										</div>
 										<div className="relative">
 											<div className="absolute w-2 h-2 bg-slate-600 rounded-full -left-[17px] top-1.5 ring-4 ring-[#15181e]"></div>
-											<div className="text-xs font-medium text-slate-300">
+											<div className="text-xs font-medium text-foreground/90">
 												Rev 13
 											</div>
-											<div className="text-[10px] text-slate-500">
+											<div className="text-[10px] text-muted-foreground">
 												Yesterday by A. Wong
 											</div>
 										</div>
 										<div className="relative">
 											<div className="absolute w-2 h-2 bg-slate-600 rounded-full -left-[17px] top-1.5 ring-4 ring-[#15181e]"></div>
-											<div className="text-xs font-medium text-slate-300">
+											<div className="text-xs font-medium text-foreground/90">
 												Rev 12
 											</div>
-											<div className="text-[10px] text-slate-500">
+											<div className="text-[10px] text-muted-foreground">
 												Oct 12 by J. Smith
 											</div>
 										</div>
@@ -302,16 +302,16 @@ export function FileManager() {
 											References 3 files:
 										</div>
 										<div className="space-y-2">
-											<div className="flex items-center gap-2 text-xs text-slate-400">
-												<Box className="w-3 h-3 text-orange-400" />{" "}
+											<div className="flex items-center gap-2 text-xs text-muted-foreground">
+												<Box className="w-3 h-3 text-primary" />{" "}
 												Structural-BIM.rvt
 											</div>
-											<div className="flex items-center gap-2 text-xs text-slate-400">
-												<Layout className="w-3 h-3 text-blue-400" />{" "}
+											<div className="flex items-center gap-2 text-xs text-muted-foreground">
+												<Layout className="w-3 h-3 text-info" />{" "}
 												Site-Plan.dwg
 											</div>
-											<div className="flex items-center gap-2 text-xs text-slate-400">
-												<FileText className="w-3 h-3 text-emerald-400" />{" "}
+											<div className="flex items-center gap-2 text-xs text-muted-foreground">
+												<FileText className="w-3 h-3 text-success" />{" "}
 												Equipment-Specs.xlsx
 											</div>
 										</div>
@@ -344,7 +344,7 @@ export function FileManager() {
 				</div>
 
 				{/* Bottom Status Bar */}
-				<div className="h-8 border-t border-white/10 bg-[#0a0a0c] flex items-center justify-between px-6 text-[10px] font-mono text-slate-500">
+				<div className="h-8 border-t border-white/10 bg-[#0a0a0c] flex items-center justify-between px-6 text-[10px] font-mono text-muted-foreground">
 					<div className="flex items-center gap-4">
 						<div className="flex items-center gap-2">
 							<RefreshCw className="w-3 h-3 animate-spin text-primary" />
@@ -388,7 +388,7 @@ function NavGroup({  // NOSONAR - typescript:S6759
 	return (
 		<div className="mb-1">
 			<div
-				className={`flex items-center gap-2 px-3 py-2 rounded-md cursor-pointer ${active ? "bg-white/5 text-white font-medium" : "text-slate-400 hover:bg-white/5 hover:text-slate-200"}`}
+				className={`flex items-center gap-2 px-3 py-2 rounded-md cursor-pointer ${active ? "bg-white/5 text-white font-medium" : "text-muted-foreground hover:bg-white/5 hover:text-foreground"}`}
 			>
 				<div
 					className={`[&>svg]:w-4 [&>svg]:h-4 ${active ? "text-primary" : ""}`}
@@ -409,7 +409,7 @@ function NavGroup({  // NOSONAR - typescript:S6759
 function NavItem({ title, active }: { title: string; active?: boolean }) {  // NOSONAR - typescript:S6759
 	return (
 		<div
-			className={`px-3 py-1.5 rounded text-xs cursor-pointer truncate ${active ? "bg-primary/10 text-primary font-medium" : "text-slate-500 hover:bg-white/5 hover:text-slate-300"}`}
+			className={`px-3 py-1.5 rounded text-xs cursor-pointer truncate ${active ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-white/5 hover:text-foreground/90"}`}
 		>
 			{title}
 		</div>
@@ -434,12 +434,12 @@ function FileCard({  // NOSONAR - typescript:S6759
 	selected?: boolean;
 }) {
 	let Icon = Layout;
-	let iconColor = "text-blue-400";
+	let iconColor = "text-info";
 	let iconBg = "bg-blue-400/10 border-blue-400/20";
 
 	if (type === "rvt") {
 		Icon = Box;
-		iconColor = "text-orange-400";
+		iconColor = "text-primary";
 		iconBg = "bg-orange-400/10 border-orange-400/20";
 	} else if (type === "ifc") {
 		Icon = Box;
@@ -447,19 +447,19 @@ function FileCard({  // NOSONAR - typescript:S6759
 		iconBg = "bg-green-400/10 border-green-400/20";
 	} else if (type === "pdf") {
 		Icon = FileText;
-		iconColor = "text-red-400";
+		iconColor = "text-danger";
 		iconBg = "bg-red-400/10 border-red-400/20";
 	} else if (type === "xlsx") {
 		Icon = FileText;
-		iconColor = "text-emerald-400";
+		iconColor = "text-success";
 		iconBg = "bg-emerald-400/10 border-emerald-400/20";
 	}
 
-	let statusColor = "bg-slate-500/10 text-slate-400 border-slate-500/30";
+	let statusColor = "bg-slate-500/10 text-muted-foreground border-border/30";
 	if (status === "Approved")
-		statusColor = "bg-emerald-500/10 text-emerald-400 border-emerald-500/30";
+		statusColor = "bg-emerald-500/10 text-success border-success/30";
 	if (status === "In Review")
-		statusColor = "bg-orange-500/10 text-orange-400 border-orange-500/30";
+		statusColor = "bg-primary/10 text-primary border-primary/30";
 
 	return (
 		<div
@@ -474,7 +474,7 @@ function FileCard({  // NOSONAR - typescript:S6759
 				<Button
 					variant="ghost"
 					size="icon"
-					className="w-6 h-6 text-slate-500 opacity-0 group-hover:opacity-100 hover:text-white"
+					className="w-6 h-6 text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-white"
 				>
 					<MoreHorizontal className="w-4 h-4" />
 				</Button>
@@ -487,7 +487,7 @@ function FileCard({  // NOSONAR - typescript:S6759
 				>
 					{name}
 				</div>
-				<div className="flex items-center gap-2 text-[10px] text-slate-400 font-mono">
+				<div className="flex items-center gap-2 text-[10px] text-muted-foreground font-mono">
 					<span>{size}</span>
 					<span>•</span>
 					<span>{date}</span>
@@ -502,7 +502,7 @@ function FileCard({  // NOSONAR - typescript:S6759
 					>
 						{status}
 					</Badge>
-					<span className="text-slate-500 font-mono">v{rev}</span>
+					<span className="text-muted-foreground font-mono">v{rev}</span>
 				</div>
 				<div className="w-5 h-5 rounded-full bg-blue-600 border border-[#15181e] text-[8px] flex items-center justify-center font-bold text-white">
 					JS
@@ -523,7 +523,7 @@ function PropRow({  // NOSONAR - typescript:S6759
 }) {
 	return (
 		<div className="flex justify-between items-center text-xs">
-			<span className="text-slate-400">{label}</span>
+			<span className="text-muted-foreground">{label}</span>
 			<span className={`text-white ${mono ? "font-mono text-[10px]" : ""}`}>
 				{value}
 			</span>

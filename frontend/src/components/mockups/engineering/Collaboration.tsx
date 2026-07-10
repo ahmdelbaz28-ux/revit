@@ -51,7 +51,7 @@ export function Collaboration() {
 			name: "Marcus Williams",
 			role: "Struct. Lead",
 			initials: "MW",
-			color: "bg-orange-500",
+			color: "bg-primary",
 			status: "away",
 			action: "Reviewing: Load Calcs",
 		},
@@ -81,7 +81,7 @@ export function Collaboration() {
 			<div className="h-16 flex items-center justify-between px-6 border-b bg-card shrink-0">
 				<div className="flex items-center gap-4">
 					<div className="w-10 h-10 rounded-md bg-blue-500/20 flex items-center justify-center border border-blue-500/30">
-						<Users className="h-5 w-5 text-blue-400" />
+						<Users className="h-5 w-5 text-info" />
 					</div>
 					<div>
 						<h1 className="font-bold tracking-wide text-lg leading-tight">
@@ -89,7 +89,7 @@ export function Collaboration() {
 						</h1>
 						<div className="text-[10px] font-mono text-muted-foreground flex items-center gap-2">
 							<span>
-								Session: <span className="text-slate-300">SES-2024-4821</span>
+								Session: <span className="text-foreground/90">SES-2024-4821</span>
 							</span>
 							<span>•</span>
 							<span className="flex items-center gap-1">
@@ -201,13 +201,13 @@ export function Collaboration() {
 								<div className="text-xs font-semibold uppercase text-muted-foreground mb-3">
 									Voice Call
 								</div>
-								<div className="bg-slate-900 border border-slate-700 rounded-lg p-3 relative overflow-hidden">
+								<div className="bg-card border border-border rounded-lg p-3 relative overflow-hidden">
 									<div className="absolute inset-0 bg-emerald-500/5"></div>
 
 									<div className="flex items-center justify-between mb-3 relative z-10">
 										<div className="flex items-center gap-2">
 											<div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-											<span className="text-xs font-semibold text-emerald-400">
+											<span className="text-xs font-semibold text-success">
 												Live (3)
 											</span>
 										</div>
@@ -249,30 +249,30 @@ export function Collaboration() {
 										<Button
 											variant="secondary"
 											size="icon"
-											className="h-8 w-8 rounded-full bg-slate-700 hover:bg-slate-600 border-none"
+											className="h-8 w-8 rounded-full bg-secondary hover:bg-slate-600 border-none"
 										>
-											<Mic className="h-3.5 w-3.5" />
+											<Mic className="h-4 w-4" />
 										</Button>
 										<Button
 											variant="secondary"
 											size="icon"
-											className="h-8 w-8 rounded-full bg-slate-700 hover:bg-slate-600 border-none"
+											className="h-8 w-8 rounded-full bg-secondary hover:bg-slate-600 border-none"
 										>
-											<Video className="h-3.5 w-3.5" />
+											<Video className="h-4 w-4" />
 										</Button>
 										<Button
 											variant="secondary"
 											size="icon"
-											className="h-8 w-8 rounded-full bg-slate-700 hover:bg-slate-600 border-none"
+											className="h-8 w-8 rounded-full bg-secondary hover:bg-slate-600 border-none"
 										>
-											<MonitorPlay className="h-3.5 w-3.5" />
+											<MonitorPlay className="h-4 w-4" />
 										</Button>
 										<Button
 											variant="destructive"
 											size="icon"
 											className="h-8 w-8 rounded-full"
 										>
-											<Phone className="h-3.5 w-3.5 rotate-[135deg]" />
+											<Phone className="h-4 w-4 rotate-[135deg]" />
 										</Button>
 									</div>
 								</div>
@@ -285,7 +285,7 @@ export function Collaboration() {
 				<div className="flex-1 flex flex-col bg-[#0f1115] relative border-r border-border/50">
 					{/* Mini Canvas Preview */}
 					<div
-						className="h-[60%] border-b relative overflow-hidden bg-slate-950"
+						className="h-[60%] border-b relative overflow-hidden bg-background"
 						style={{
 							backgroundImage: "radial-gradient(#1e293b 1px, transparent 1px)",
 							backgroundSize: "20px 20px",
@@ -293,12 +293,12 @@ export function Collaboration() {
 					>
 						{/* Drawing content */}
 						<div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[300px]">
-							<div className="absolute inset-0 border-2 border-slate-700"></div>
+							<div className="absolute inset-0 border-2 border-border"></div>
 							<div className="absolute top-[100px] left-[50px] w-[400px] h-0.5 bg-primary/40"></div>
 							<div className="absolute top-[200px] left-[50px] w-[400px] h-0.5 bg-primary/40"></div>
 
-							<div className="absolute top-[80px] left-[150px] w-8 h-10 border border-primary bg-slate-900"></div>
-							<div className="absolute top-[180px] left-[250px] w-8 h-10 border border-primary bg-slate-900"></div>
+							<div className="absolute top-[80px] left-[150px] w-8 h-10 border border-primary bg-card"></div>
+							<div className="absolute top-[180px] left-[250px] w-8 h-10 border border-primary bg-card"></div>
 
 							{/* Highlight selection */}
 							<div className="absolute top-[70px] left-[140px] w-[100px] h-[120px] bg-blue-500/10 border border-blue-500/50"></div>
@@ -327,9 +327,9 @@ export function Collaboration() {
 
 							{/* Annotation */}
 							<div className="absolute top-[150px] left-[260px] z-10">
-								<div className="w-4 h-4 rounded-full bg-orange-500/20 border-2 border-orange-500 flex items-center justify-center animate-pulse"></div>
+								<div className="w-4 h-4 rounded-full bg-primary/20 border-2 border-primary flex items-center justify-center animate-pulse"></div>
 								<div className="absolute top-2 left-6 bg-card border border-border p-2 rounded-md shadow-lg w-[160px]">
-									<div className="text-[9px] font-bold text-orange-400 mb-1">
+									<div className="text-[9px] font-bold text-primary mb-1">
 										Marcus W.
 									</div>
 									<div className="text-[10px] leading-tight">
@@ -360,7 +360,7 @@ export function Collaboration() {
 									time="2 min ago"
 									text={
 										<span>
-											<span className="font-semibold text-slate-200">
+											<span className="font-semibold text-foreground">
 												Sarah Chen
 											</span>{" "}
 											added Smoke Detector SD-051 in Room 312
@@ -373,7 +373,7 @@ export function Collaboration() {
 									time="4 min ago"
 									text={
 										<span>
-											<span className="font-semibold text-slate-200">
+											<span className="font-semibold text-foreground">
 												Fatima Al-Zahra
 											</span>{" "}
 											commented on Panel LP-3A: "Verify load schedule before
@@ -387,7 +387,7 @@ export function Collaboration() {
 									time="7 min ago"
 									text={
 										<span>
-											<span className="font-semibold text-slate-200">
+											<span className="font-semibold text-foreground">
 												Ahmed Al-Rashidi
 											</span>{" "}
 											ran compliance check — 3 issues found
@@ -395,12 +395,12 @@ export function Collaboration() {
 									}
 								/>
 								<ActivityItem
-									color="bg-orange-500"
+									color="bg-primary"
 									initials="MW"
 									time="12 min ago"
 									text={
 										<span>
-											<span className="font-semibold text-slate-200">
+											<span className="font-semibold text-foreground">
 												Marcus Williams
 											</span>{" "}
 											approved Revision 14 of Electrical Floor Plan
@@ -408,11 +408,11 @@ export function Collaboration() {
 									}
 								/>
 								<ActivityItem
-									color="bg-slate-700"
+									color="bg-secondary"
 									initials="SYS"
 									time="18 min ago"
 									text={
-										<span className="text-emerald-400 font-mono">
+										<span className="text-success font-mono">
 											System: Auto-save complete — all changes synchronized
 										</span>
 									}
@@ -457,7 +457,7 @@ export function Collaboration() {
 								</Badge>
 								<Badge
 									variant="outline"
-									className="text-[10px] cursor-pointer text-orange-400 border-orange-500/30"
+									className="text-[10px] cursor-pointer text-primary border-primary/30"
 								>
 									Unresolved
 								</Badge>
@@ -474,13 +474,13 @@ export function Collaboration() {
 									{/* Thread 1 */}
 									<div className="bg-card border rounded-lg p-3">
 										<div className="flex justify-between items-start mb-3">
-											<div className="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
-												<MessageSquare className="h-3.5 w-3.5 text-primary" />{" "}
+											<div className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+												<MessageSquare className="h-4 w-4 text-primary" />{" "}
 												Panel LP-3A
 											</div>
 											<Badge
 												variant="outline"
-												className="text-[9px] h-4 px-1 text-orange-400 border-orange-500/30"
+												className="text-[9px] h-4 px-1 text-primary border-primary/30"
 											>
 												Unresolved
 											</Badge>
@@ -495,7 +495,7 @@ export function Collaboration() {
 												</Avatar>
 												<div>
 													<div className="flex items-center gap-2">
-														<span className="text-[10px] font-semibold text-slate-300">
+														<span className="text-[10px] font-semibold text-foreground/90">
 															Fatima A.
 														</span>
 														<span className="text-[9px] text-muted-foreground">
@@ -516,7 +516,7 @@ export function Collaboration() {
 												</Avatar>
 												<div>
 													<div className="flex items-center gap-2">
-														<span className="text-[10px] font-semibold text-slate-300">
+														<span className="text-[10px] font-semibold text-foreground/90">
 															Ahmed (You)
 														</span>
 														<span className="text-[9px] text-muted-foreground">
@@ -544,13 +544,13 @@ export function Collaboration() {
 									{/* Thread 2 */}
 									<div className="bg-card border border-emerald-500/20 rounded-lg p-3">
 										<div className="flex justify-between items-start mb-3">
-											<div className="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
-												<MessageSquare className="h-3.5 w-3.5 text-emerald-500" />{" "}
+											<div className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+												<MessageSquare className="h-4 w-4 text-emerald-500" />{" "}
 												Cable Route Level 3
 											</div>
 											<Badge
 												variant="outline"
-												className="text-[9px] h-4 px-1 text-emerald-400 border-emerald-500/30"
+												className="text-[9px] h-4 px-1 text-success border-success/30"
 											>
 												<CheckCircle2 className="w-3 h-3 mr-1" />
 												Resolved
@@ -559,13 +559,13 @@ export function Collaboration() {
 										<div className="space-y-3 pl-2 border-l-2 border-emerald-500/20">
 											<div className="flex gap-2">
 												<Avatar className="h-5 w-5">
-													<AvatarFallback className="bg-orange-500 text-[8px]">
+													<AvatarFallback className="bg-primary text-[8px]">
 														MW
 													</AvatarFallback>
 												</Avatar>
 												<div>
 													<div className="flex items-center gap-2">
-														<span className="text-[10px] font-semibold text-slate-300">
+														<span className="text-[10px] font-semibold text-foreground/90">
 															Marcus W.
 														</span>
 														<span className="text-[9px] text-muted-foreground">
@@ -595,7 +595,7 @@ export function Collaboration() {
 								<div className="text-xs font-semibold uppercase text-muted-foreground mb-1 mt-1">
 									Current Stage
 								</div>
-								<h3 className="text-lg font-bold text-slate-200 mb-4">
+								<h3 className="text-lg font-bold text-foreground mb-4">
 									Engineering Review
 								</h3>
 
@@ -640,7 +640,7 @@ export function Collaboration() {
 											className="text-[10px] bg-muted py-1"
 										>
 											<Avatar className="w-4 h-4 mr-1">
-												<AvatarFallback className="bg-orange-500 text-[6px]">
+												<AvatarFallback className="bg-primary text-[6px]">
 													MW
 												</AvatarFallback>
 											</Avatar>{" "}
@@ -676,8 +676,8 @@ function ActivityItem({ color, initials, text, time, isSystem = false }: any) {
 	return (
 		<div className="flex gap-3">
 			{isSystem ? (
-				<div className="w-7 h-7 rounded bg-slate-800 border border-slate-700 flex items-center justify-center shrink-0 mt-0.5">
-					<Settings className="w-3.5 h-3.5 text-slate-400" />
+				<div className="w-7 h-7 rounded bg-card border border-border flex items-center justify-center shrink-0 mt-0.5">
+					<Settings className="w-3.5 h-3.5 text-muted-foreground" />
 				</div>
 			) : (
 				<Avatar className="w-7 h-7 shrink-0 mt-0.5">

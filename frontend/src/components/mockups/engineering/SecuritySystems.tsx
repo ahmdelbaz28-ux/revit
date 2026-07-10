@@ -21,9 +21,9 @@ export function SecuritySystems() {
 	const [_activeCam, _setActiveCam] = useState("CAM-EXT-01");  // NOSONAR - typescript:S6754
 
 	return (
-		<div className="flex flex-col h-screen w-screen overflow-hidden bg-slate-900 text-slate-100 font-sans">
+		<div className="flex flex-col h-screen w-screen overflow-hidden bg-card text-foreground font-sans">
 			{/* Top Toolbar */}
-			<div className="h-14 flex items-center justify-between px-4 border-b border-slate-700 bg-slate-800 shrink-0">
+			<div className="h-14 flex items-center justify-between px-4 border-b border-border bg-card shrink-0">
 				<div className="flex items-center gap-4">
 					<div className="flex items-center gap-2 text-indigo-400 font-bold tracking-wide">
 						<Shield className="h-5 w-5" />
@@ -48,14 +48,14 @@ export function SecuritySystems() {
 					<Button
 						size="sm"
 						variant="outline"
-						className="h-8 text-xs border-slate-600 text-slate-300"
+						className="h-8 text-xs border-border text-foreground/90"
 					>
 						Coverage Analysis
 					</Button>
 					<Button
 						size="icon"
 						variant="ghost"
-						className="h-8 w-8 text-slate-400"
+						className="h-8 w-8 text-muted-foreground"
 					>
 						<Settings className="w-4 h-4" />
 					</Button>
@@ -64,8 +64,8 @@ export function SecuritySystems() {
 
 			<div className="flex flex-1 overflow-hidden">
 				{/* Left Tree */}
-				<div className="w-[240px] flex flex-col border-r border-slate-700 bg-slate-800 shrink-0">
-					<div className="p-3 text-xs font-semibold uppercase tracking-wider text-slate-400 border-b border-slate-700 bg-slate-900/50 flex justify-between">
+				<div className="w-[240px] flex flex-col border-r border-border bg-card shrink-0">
+					<div className="p-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground border-b border-border bg-muted/50 flex justify-between">
 						<span>System Tree</span>
 						<Search className="h-3 w-3" />
 					</div>
@@ -101,7 +101,7 @@ export function SecuritySystems() {
 						backgroundSize: "40px 40px",
 					}}
 				>
-					<div className="absolute top-4 left-4 z-10 bg-slate-900 border border-slate-700 px-3 py-1.5 rounded flex items-center gap-2 backdrop-blur">
+					<div className="absolute top-4 left-4 z-10 bg-card border border-border px-3 py-1.5 rounded flex items-center gap-2 backdrop-blur">
 						<span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
 						<span className="text-xs font-mono text-indigo-400">
 							Coverage: 93.4%
@@ -110,16 +110,16 @@ export function SecuritySystems() {
 							orientation="vertical"
 							className="h-3 bg-slate-600 mx-1"
 						/>
-						<span className="text-[10px] text-slate-400 uppercase">
+						<span className="text-[10px] text-muted-foreground uppercase">
 							Ground Floor / Exterior
 						</span>
 					</div>
 
 					<div className="absolute inset-0 flex items-center justify-center">
 						{/* SVG Floor Plan */}
-						<div className="relative w-full max-w-4xl aspect-[16/9] border-2 border-slate-800 bg-slate-900/40 rounded-sm">
+						<div className="relative w-full max-w-4xl aspect-[16/9] border-2 border-slate-800 bg-card/40 rounded-sm">
 							{/* Building Outline */}
-							<div className="absolute top-[20%] left-[20%] w-[60%] h-[60%] border border-slate-600 bg-slate-800/30 backdrop-blur-sm"></div>
+							<div className="absolute top-[20%] left-[20%] w-[60%] h-[60%] border border-border bg-card/30 backdrop-blur-sm"></div>
 							{/* Entrances */}
 							<div className="absolute bottom-[20%] left-[45%] w-[10%] h-2 bg-slate-500"></div>
 
@@ -201,11 +201,11 @@ export function SecuritySystems() {
 				</div>
 
 				{/* Right Panel */}
-				<div className="w-[300px] bg-slate-800 border-l border-slate-700 flex flex-col shrink-0">
-					<div className="p-3 border-b border-slate-700 flex justify-between items-center bg-slate-900/50">
+				<div className="w-[300px] bg-card border-l border-border flex flex-col shrink-0">
+					<div className="p-3 border-b border-border flex justify-between items-center bg-muted/50">
 						<div className="flex items-center gap-2">
 							<Camera className="h-4 w-4 text-indigo-400" />
-							<span className="font-bold text-slate-200">CAM-EXT-01</span>
+							<span className="font-bold text-foreground">CAM-EXT-01</span>
 						</div>
 						<Badge className="bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 hover:bg-indigo-500/20">
 							PTZ ONLINE
@@ -215,7 +215,7 @@ export function SecuritySystems() {
 					<ScrollArea className="flex-1">
 						<div className="p-3 space-y-5">
 							{/* Live Feed Placeholder */}
-							<div className="rounded overflow-hidden border border-slate-700 bg-black relative aspect-video shadow-inner">
+							<div className="rounded overflow-hidden border border-border bg-black relative aspect-video shadow-inner">
 								<div
 									className="absolute inset-0"
 									style={{
@@ -235,21 +235,21 @@ export function SecuritySystems() {
 								{/* PTZ Controls overlay */}
 								<div className="absolute bottom-2 right-2 grid grid-cols-3 gap-0.5 opacity-50 hover:opacity-100 transition-opacity">
 									<div></div>
-									<div className="w-4 h-4 bg-slate-800 border border-slate-600 rounded flex items-center justify-center text-[8px] cursor-pointer text-white">
+									<div className="w-4 h-4 bg-card border border-border rounded flex items-center justify-center text-[8px] cursor-pointer text-white">
 										▲
 									</div>
 									<div></div>
-									<div className="w-4 h-4 bg-slate-800 border border-slate-600 rounded flex items-center justify-center text-[8px] cursor-pointer text-white">
+									<div className="w-4 h-4 bg-card border border-border rounded flex items-center justify-center text-[8px] cursor-pointer text-white">
 										◀
 									</div>
-									<div className="w-4 h-4 bg-slate-800 border border-slate-600 rounded flex items-center justify-center text-[8px] cursor-pointer text-indigo-400 font-bold">
+									<div className="w-4 h-4 bg-card border border-border rounded flex items-center justify-center text-[8px] cursor-pointer text-indigo-400 font-bold">
 										H
 									</div>
-									<div className="w-4 h-4 bg-slate-800 border border-slate-600 rounded flex items-center justify-center text-[8px] cursor-pointer text-white">
+									<div className="w-4 h-4 bg-card border border-border rounded flex items-center justify-center text-[8px] cursor-pointer text-white">
 										▶
 									</div>
 									<div></div>
-									<div className="w-4 h-4 bg-slate-800 border border-slate-600 rounded flex items-center justify-center text-[8px] cursor-pointer text-white">
+									<div className="w-4 h-4 bg-card border border-border rounded flex items-center justify-center text-[8px] cursor-pointer text-white">
 										▼
 									</div>
 									<div></div>
@@ -258,10 +258,10 @@ export function SecuritySystems() {
 
 							{/* Specs */}
 							<div>
-								<h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+								<h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
 									Camera Specs
 								</h3>
-								<div className="space-y-1 bg-slate-900/50 p-2 rounded border border-slate-700/50">
+								<div className="space-y-1 bg-muted/50 p-2 rounded border border-border/50">
 									<PropRow label="Type" value="IP PTZ Dome" />
 									<PropRow label="Resolution" value="4K (8MP)" />
 									<PropRow label="Optical Zoom" value="30x" />
@@ -274,10 +274,10 @@ export function SecuritySystems() {
 
 							{/* Installation */}
 							<div>
-								<h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+								<h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
 									Installation
 								</h3>
-								<div className="space-y-1 bg-slate-900/50 p-2 rounded border border-slate-700/50">
+								<div className="space-y-1 bg-muted/50 p-2 rounded border border-border/50">
 									<PropRow label="Mounting" value="Pole mount, 5.5m" />
 									<PropRow label="Cable" value="Cat6A + PoE++" />
 									<PropRow label="PoE Switch" value="SW-EXT-01, Pt 1" />
@@ -286,28 +286,28 @@ export function SecuritySystems() {
 
 							{/* Related Access Control */}
 							<div>
-								<h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1">
+								<h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1">
 									<Lock className="w-3 h-3" /> Linked Access Point
 								</h3>
-								<div className="bg-slate-900 border border-slate-700 p-2 rounded">
+								<div className="bg-card border border-border p-2 rounded">
 									<div className="flex justify-between items-center mb-2">
-										<span className="text-xs text-slate-300 font-medium">
+										<span className="text-xs text-foreground/90 font-medium">
 											Main Entrance Door
 										</span>
 										<Badge className="bg-green-500/20 text-green-400 border border-green-500/30 text-[9px] px-1 py-0 h-4">
 											SECURE
 										</Badge>
 									</div>
-									<div className="text-[10px] text-slate-400 mb-2">
+									<div className="text-[10px] text-muted-foreground mb-2">
 										Suprema BioEntry W2 (Bio/Card)
 									</div>
-									<div className="flex items-center gap-2 p-1.5 bg-slate-800 rounded text-xs border border-slate-700">
+									<div className="flex items-center gap-2 p-1.5 bg-card rounded text-xs border border-border">
 										<UserCheck className="w-3 h-3 text-indigo-400" />
 										<div className="flex flex-col">
-											<span className="text-slate-300">
+											<span className="text-foreground/90">
 												Access granted: Ahmed A.
 											</span>
-											<span className="text-[9px] font-mono text-slate-500">
+											<span className="text-[9px] font-mono text-muted-foreground">
 												14:43:07 today
 											</span>
 										</div>
@@ -320,17 +320,17 @@ export function SecuritySystems() {
 			</div>
 
 			{/* Bottom Bar */}
-			<div className="h-8 bg-slate-900 border-t border-slate-700 flex items-center justify-between px-4 text-[10px] font-mono shrink-0">
-				<div className="flex items-center gap-4 text-slate-400">
+			<div className="h-8 bg-card border-t border-border flex items-center justify-between px-4 text-[10px] font-mono shrink-0">
+				<div className="flex items-center gap-4 text-muted-foreground">
 					<span>CCTV: 32 active | 0 offline</span>
-					<Separator orientation="vertical" className="h-4 bg-slate-700" />
+					<Separator orientation="vertical" className="h-4 bg-secondary" />
 					<span className="text-indigo-400">Storage: 14.2TB / 48TB (30%)</span>
-					<Separator orientation="vertical" className="h-4 bg-slate-700" />
+					<Separator orientation="vertical" className="h-4 bg-secondary" />
 					<span>
 						ACS: 24 readers |{" "}
-						<span className="text-orange-400">3 door warnings</span>
+						<span className="text-primary">3 door warnings</span>
 					</span>
-					<Separator orientation="vertical" className="h-4 bg-slate-700" />
+					<Separator orientation="vertical" className="h-4 bg-secondary" />
 					<span className="text-green-400 flex items-center gap-1">
 						<Shield className="w-3 h-3" /> IDS: ARMED
 					</span>
@@ -365,7 +365,7 @@ function TabBtn({  // NOSONAR - typescript:S6759
 }) {
 	return (
 		<button
-			className={`px-3 py-1.5 text-xs font-medium rounded-t-sm transition-colors ${active ? "bg-slate-900 text-indigo-400 border-t-2 border-indigo-500" : "text-slate-400 hover:bg-slate-700/50 hover:text-slate-200"}`}
+			className={`px-3 py-1.5 text-xs font-medium rounded-t-sm transition-colors ${active ? "bg-card text-indigo-400 border-t-2 border-indigo-500" : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"}`}
 		>
 			{label}
 		</button>
@@ -386,14 +386,14 @@ function NavNode({  // NOSONAR - typescript:S6759
 	return (
 		<div className="select-none">
 			<div
-				className={`flex items-center gap-1.5 py-1 px-2 rounded cursor-pointer hover:bg-slate-700/50 ${active ? "bg-indigo-500/20 text-indigo-400 font-medium" : "text-slate-300"}`}
+				className={`flex items-center gap-1.5 py-1 px-2 rounded cursor-pointer hover:bg-secondary/50 ${active ? "bg-indigo-500/20 text-indigo-400 font-medium" : "text-foreground/90"}`}
 			>
 				<div className="w-4 h-4 flex items-center justify-center">
 					{children ? (
 						expanded ? (  // NOSONAR — S3358: nested ternary acceptable in this localized context
-							<ChevronDown className="h-3 w-3 text-slate-500" />
+							<ChevronDown className="h-3 w-3 text-muted-foreground" />
 						) : (
-							<ChevronRight className="h-3 w-3 text-slate-500" />
+							<ChevronRight className="h-3 w-3 text-muted-foreground" />
 						)
 					) : (
 						<div className="w-1 h-1" />
@@ -402,7 +402,7 @@ function NavNode({  // NOSONAR - typescript:S6759
 				<span className="text-xs truncate">{title}</span>
 			</div>
 			{expanded && children && (
-				<div className="ml-3 pl-2 border-l border-slate-700 flex flex-col gap-0.5 mt-0.5">
+				<div className="ml-3 pl-2 border-l border-border flex flex-col gap-0.5 mt-0.5">
 					{children}
 				</div>
 			)}
@@ -413,8 +413,8 @@ function NavNode({  // NOSONAR - typescript:S6759
 function PropRow({ label, value }: { label: string; value: string }) {  // NOSONAR - typescript:S6759
 	return (
 		<div className="flex justify-between py-0.5 text-xs">
-			<span className="text-slate-400">{label}</span>
-			<span className="text-slate-200 font-mono text-[10px]">{value}</span>
+			<span className="text-muted-foreground">{label}</span>
+			<span className="text-foreground font-mono text-[10px]">{value}</span>
 		</div>
 	);
 }
@@ -440,14 +440,14 @@ function CamSymbol({  // NOSONAR - typescript:S6759
 			style={{ left: x, top: y, transform: "translate(-50%, -50%)" }}
 		>
 			<div
-				className={`w-5 h-5 rounded-full border-2 bg-slate-800 flex items-center justify-center z-10 ${selected ? "border-indigo-400 shadow-[0_0_10px_rgba(99,102,241,0.5)]" : "border-slate-400"}`}
+				className={`w-5 h-5 rounded-full border-2 bg-card flex items-center justify-center z-10 ${selected ? "border-indigo-400 shadow-[0_0_10px_rgba(99,102,241,0.5)]" : "border-slate-400"}`}
 			>
 				<Camera
-					className={`w-2.5 h-2.5 ${selected ? "text-indigo-400" : "text-slate-400"}`}
+					className={`w-2.5 h-2.5 ${selected ? "text-indigo-400" : "text-muted-foreground"}`}
 				/>
 			</div>
 			<div
-				className={`mt-0.5 text-[8px] font-mono whitespace-nowrap bg-slate-900 px-1 py-0.5 rounded border ${selected ? "border-indigo-500 text-indigo-300" : "border-slate-700 text-slate-400"}`}
+				className={`mt-0.5 text-[8px] font-mono whitespace-nowrap bg-card px-1 py-0.5 rounded border ${selected ? "border-indigo-500 text-indigo-300" : "border-border text-muted-foreground"}`}
 			>
 				{label}
 			</div>

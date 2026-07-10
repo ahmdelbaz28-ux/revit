@@ -84,7 +84,7 @@ export function Settings() {
 							/>
 
 							<div className="my-4" />
-							<div className="px-3 mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-500">
+							<div className="px-3 mb-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
 								System
 							</div>
 
@@ -120,7 +120,7 @@ export function Settings() {
 							/>
 
 							<div className="my-4" />
-							<div className="px-3 mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-500">
+							<div className="px-3 mb-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
 								Account
 							</div>
 
@@ -152,7 +152,7 @@ export function Settings() {
 
 					<div className="px-10 pt-8 pb-4 border-b border-white/5 relative z-10">
 						<h2 className="text-2xl font-bold text-white mb-1">{activeTab}</h2>
-						<p className="text-sm text-slate-400">
+						<p className="text-sm text-muted-foreground">
 							Configure visual output, hardware acceleration, and interface
 							appearance.
 						</p>
@@ -311,7 +311,7 @@ export function Settings() {
 												<ColorSwatch color="bg-cyan-500" />
 												<ColorSwatch color="bg-emerald-500" />
 												<ColorSwatch color="bg-amber-500" />
-												<ColorSwatch color="bg-orange-500" />
+												<ColorSwatch color="bg-primary" />
 												<ColorSwatch color="bg-violet-500" />
 											</div>
 										</SettingRow>
@@ -322,7 +322,7 @@ export function Settings() {
 										>
 											<div className="flex items-center gap-2">
 												<div className="w-6 h-6 rounded bg-[#0f1115] border border-white/20"></div>
-												<span className="text-xs font-mono text-slate-400">
+												<span className="text-xs font-mono text-muted-foreground">
 													#0f1115
 												</span>
 											</div>
@@ -337,13 +337,13 @@ export function Settings() {
 								<div className="bg-[#15181e] border border-white/5 rounded-lg p-4 mb-6 flex items-center justify-between">
 									<div className="flex items-center gap-3">
 										<div className="w-10 h-10 rounded bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
-											<Cpu className="w-5 h-5 text-emerald-400" />
+											<Cpu className="w-5 h-5 text-success" />
 										</div>
 										<div>
 											<div className="text-sm font-semibold text-white">
 												NVIDIA RTX 4090 (24GB)
 											</div>
-											<div className="text-xs text-emerald-400 font-mono mt-0.5">
+											<div className="text-xs text-success font-mono mt-0.5">
 												Active Compute Device • Driver 536.23
 											</div>
 										</div>
@@ -368,7 +368,7 @@ export function Settings() {
 											step={1024}
 											className="w-32"
 										/>
-										<span className="text-xs font-mono ml-3 text-amber-400">
+										<span className="text-xs font-mono ml-3 text-warning">
 											8192 MB
 										</span>
 									</SettingRow>
@@ -430,11 +430,11 @@ function NavItem({  // NOSONAR - typescript:S6759
 }) {
 	return (
 		<div  // NOSONAR — S6848: type assertion acceptable
-			className={`flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-colors group ${active ? "bg-primary/10 text-primary" : "text-slate-400 hover:bg-white/5 hover:text-white"}`}
+			className={`flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-colors group ${active ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-white/5 hover:text-white"}`}
 			onClick={onClick}
 		>
 			<div
-				className={`[&>svg]:w-4 [&>svg]:h-4 ${active ? "text-primary" : "text-slate-500 group-hover:text-slate-300"}`}
+				className={`[&>svg]:w-4 [&>svg]:h-4 ${active ? "text-primary" : "text-muted-foreground group-hover:text-foreground/90"}`}
 			>
 				{icon}
 			</div>
@@ -469,7 +469,7 @@ function SettingRow({  // NOSONAR - typescript:S6759
 		<div className="flex items-center justify-between p-3 rounded-lg hover:bg-white/[0.02] transition-colors -mx-3">
 			<div>
 				<div className="text-sm font-medium text-white mb-0.5">{title}</div>
-				<div className="text-xs text-slate-500">{desc}</div>
+				<div className="text-xs text-muted-foreground">{desc}</div>
 			</div>
 			<div className="flex items-center">{children}</div>
 		</div>
@@ -479,7 +479,7 @@ function SettingRow({  // NOSONAR - typescript:S6759
 function ThemeCard({ mode, active }: { mode: string; active?: boolean }) {  // NOSONAR - typescript:S6759
 	return (
 		<div
-			className={`flex flex-col gap-2 p-3 rounded-xl border cursor-pointer transition-all w-32 ${active ? "bg-primary/5 border-primary ring-1 ring-primary/30" : "bg-[#15181e] border-white/5 hover:border-white/20"}`}
+			className={`flex flex-col gap-2 p-3 rounded-md border cursor-pointer transition-all w-32 ${active ? "bg-primary/5 border-primary ring-1 ring-primary/30" : "bg-[#15181e] border-white/5 hover:border-white/20"}`}
 		>
 			<div
 				className={`w-full h-16 rounded-md overflow-hidden flex flex-col border ${active ? "border-primary/50" : "border-white/10"}`}

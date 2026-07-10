@@ -129,20 +129,20 @@ export function ClashDetection() {
 					<div className="text-xs text-muted-foreground hidden lg:flex items-center gap-3">
 						<span>Last run: 3 minutes ago</span>
 						<span className="text-amber-500 font-medium">47 clashes found</span>
-						<span className="text-red-400">12 Critical</span>
-						<span className="text-orange-400">23 Major</span>
+						<span className="text-danger">12 Critical</span>
+						<span className="text-primary">23 Major</span>
 						<span className="text-yellow-400">12 Minor</span>
 					</div>
 					<Separator orientation="vertical" className="h-6 hidden lg:block" />
 					<div className="flex items-center gap-2">
 						<Button variant="outline" size="sm" className="h-8 gap-1">
-							<Filter className="h-3.5 w-3.5" /> Filter
+							<Filter className="h-4 w-4" /> Filter
 						</Button>
 						<Button variant="outline" size="sm" className="h-8 gap-1">
-							<Download className="h-3.5 w-3.5" /> Export
+							<Download className="h-4 w-4" /> Export
 						</Button>
 						<Button size="sm" className="h-8 gap-1">
-							<Play className="h-3.5 w-3.5" /> Run Detection
+							<Play className="h-4 w-4" /> Run Detection
 						</Button>
 						<Button variant="ghost" size="icon" className="h-8 w-8">
 							<Settings className="h-4 w-4" />
@@ -209,7 +209,7 @@ export function ClashDetection() {
 						>
 							{/* Floor Slab */}
 							<div
-								className="absolute inset-0 bg-slate-800 border border-slate-600 shadow-[0_0_50px_rgba(0,0,0,0.5)]"
+								className="absolute inset-0 bg-card border border-border shadow-[0_0_50px_rgba(0,0,0,0.5)]"
 								style={{ transform: "translateZ(-100px)" }}
 							>
 								{/* Grid lines */}
@@ -225,7 +225,7 @@ export function ClashDetection() {
 
 							{/* Structural Beam */}
 							<div
-								className="absolute top-[200px] left-0 w-[600px] h-[40px] bg-slate-600 border border-slate-500"
+								className="absolute top-[200px] left-0 w-[600px] h-[40px] bg-slate-600 border border-border"
 								style={{ transform: "translateZ(150px)" }}
 							></div>
 
@@ -308,12 +308,12 @@ export function ClashDetection() {
 				<div className="w-[320px] flex flex-col border-l bg-card/30 shrink-0">
 					<div className="p-4 border-b bg-card/50 flex flex-col gap-3">
 						<div className="flex items-center justify-between">
-							<div className="text-lg font-mono font-bold text-red-400">
+							<div className="text-lg font-mono font-bold text-danger">
 								CLH-014
 							</div>
 							<Badge
 								variant="outline"
-								className="text-red-400 border-red-500/30"
+								className="text-danger border-danger/30"
 							>
 								Hard Clash
 							</Badge>
@@ -331,7 +331,7 @@ export function ClashDetection() {
 									Elements Involved
 								</div>
 								<div className="p-3 bg-muted/30 border rounded-md text-xs space-y-2">
-									<div className="flex items-center gap-2 text-blue-400 font-medium mb-1">
+									<div className="flex items-center gap-2 text-info font-medium mb-1">
 										<div className="w-2 h-2 rounded-full bg-blue-500"></div>{" "}
 										Element A: HVAC Duct
 									</div>
@@ -346,7 +346,7 @@ export function ClashDetection() {
 								</div>
 
 								<div className="p-3 bg-muted/30 border rounded-md text-xs space-y-2">
-									<div className="flex items-center gap-2 text-slate-300 font-medium mb-1">
+									<div className="flex items-center gap-2 text-foreground/90 font-medium mb-1">
 										<div className="w-2 h-2 rounded-full bg-slate-400"></div>{" "}
 										Element B: Structural Beam
 									</div>
@@ -367,7 +367,7 @@ export function ClashDetection() {
 								</div>
 								<div className="p-3 bg-card border border-primary/30 rounded-md">
 									<div className="flex items-center gap-2 text-primary font-medium text-xs mb-2">
-										<Zap className="h-3.5 w-3.5" /> AI Recommendation
+										<Zap className="h-4 w-4" /> AI Recommendation
 									</div>
 									<p className="text-xs text-muted-foreground mb-3">
 										Reroute duct 450mm to the east or lower beam elevation by
@@ -401,7 +401,7 @@ export function ClashDetection() {
 
 								<div className="space-y-3">
 									<div className="flex gap-2">
-										<div className="w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center text-[10px] font-bold shrink-0">
+										<div className="w-6 h-6 rounded-full bg-blue-500/20 text-info flex items-center justify-center text-[10px] font-bold shrink-0">
 											SC
 										</div>
 										<div className="text-xs">
@@ -418,7 +418,7 @@ export function ClashDetection() {
 										</div>
 									</div>
 									<div className="flex gap-2">
-										<div className="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-[10px] font-bold shrink-0">
+										<div className="w-6 h-6 rounded-full bg-emerald-500/20 text-success flex items-center justify-center text-[10px] font-bold shrink-0">
 											MW
 										</div>
 										<div className="text-xs">
@@ -453,10 +453,10 @@ export function ClashDetection() {
 				<div className="flex items-center gap-4">
 					<span>Clash Summary:</span>
 					<span className="text-foreground">47 Total</span>
-					<span className="text-red-400">12 Critical</span>
-					<span className="text-orange-400">23 Major</span>
+					<span className="text-danger">12 Critical</span>
+					<span className="text-primary">23 Major</span>
 					<span className="text-yellow-400">12 Minor</span>
-					<span className="text-emerald-400">8 Resolved</span>
+					<span className="text-success">8 Resolved</span>
 				</div>
 				<div className="flex items-center gap-4">
 					<div className="flex items-center gap-2">
@@ -484,9 +484,9 @@ export function ClashDetection() {
 function SeverityBadge({ severity }: { severity: string }) {  // NOSONAR - typescript:S6759
 	let color = "bg-yellow-500/20 text-yellow-500 border-yellow-500/30";
 	if (severity === "Critical")
-		color = "bg-red-500/20 text-red-400 border-red-500/30";
+		color = "bg-red-500/20 text-danger border-danger/30";
 	if (severity === "Major")
-		color = "bg-orange-500/20 text-orange-400 border-orange-500/30";
+		color = "bg-primary/20 text-primary border-primary/30";
 
 	return (
 		<Badge
@@ -500,10 +500,10 @@ function SeverityBadge({ severity }: { severity: string }) {  // NOSONAR - types
 
 function StatusIcon({ status }: { status: string }) {  // NOSONAR - typescript:S6759
 	if (status === "Resolved")
-		return <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />;
+		return <CheckCircle2 className="h-4 w-4 text-emerald-500" />;
 	if (status === "Accepted")
-		return <Info className="h-3.5 w-3.5 text-blue-400" />;
-	return <AlertCircle className="h-3.5 w-3.5 text-muted-foreground" />;
+		return <Info className="h-4 w-4 text-info" />;
+	return <AlertCircle className="h-4 w-4 text-muted-foreground" />;
 }
 
 function ToolBtn({  // NOSONAR - typescript:S6759

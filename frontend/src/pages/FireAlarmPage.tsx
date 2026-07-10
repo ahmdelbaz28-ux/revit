@@ -339,9 +339,9 @@ export function FireAlarmPage() {
                         aria-label={t("fireAlarm.dashboard")}
                 >
                         {/* Zone Navigator - Left sidebar */}
-                        <div className="w-64 h-full bg-slate-900 border-r border-slate-700 p-2">
+                        <div className="w-64 h-full bg-card border-r border-border p-2">
                                 {zonesLoading ? (
-                                        <Skeleton className="h-full w-full bg-slate-800" />
+                                        <Skeleton className="h-full w-full bg-card" />
                                 ) : (
                                         <ZoneNavigator
                                                 zones={zones.length > 0 ? zones : mockZones}
@@ -355,8 +355,8 @@ export function FireAlarmPage() {
                         {/* Main Content Area */}
                         <div className="flex-1 flex flex-col">
                                 {/* Top Toolbar */}
-                                <div className="h-14 flex items-center px-4 border-b border-slate-700 bg-slate-800">
-                                        <h1 className="text-lg font-semibold text-slate-100">
+                                <div className="h-14 flex items-center px-4 border-b border-border bg-card">
+                                        <h1 className="text-lg font-semibold text-foreground">
                                                 {t("fireAlarm.designer")}
                                         </h1>
                                         <div className="ml-auto flex gap-2 items-center">
@@ -369,7 +369,7 @@ export function FireAlarmPage() {
                                                 <Button
                                                         variant="outline"
                                                         size="sm"
-                                                        className="border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-slate-100 transition-colors"
+                                                        className="border-border text-foreground/90 hover:bg-secondary hover:text-foreground transition-colors"
                                                         onClick={handleUndo}
                                                         disabled={history.length === 0}
                                                         aria-label={t("common.undo")}
@@ -391,7 +391,7 @@ export function FireAlarmPage() {
                                                 <Button
                                                         variant="outline"
                                                         size="sm"
-                                                        className="border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-slate-100 transition-colors"
+                                                        className="border-border text-foreground/90 hover:bg-secondary hover:text-foreground transition-colors"
                                                         onClick={handleRedo}
                                                         disabled={redoStack.length === 0}
                                                         aria-label={t("common.redo")}
@@ -412,7 +412,7 @@ export function FireAlarmPage() {
                                                 </Button>
                                                 <Button
                                                         size="sm"
-                                                        className="bg-orange-600 hover:bg-orange-700 text-white border-none transition-colors"
+                                                        className="bg-primary hover:bg-orange-700 text-white border-none transition-colors"
                                                         onClick={handleSave}
                                                         aria-label={t("common.save")}
                                                 >
@@ -433,7 +433,7 @@ export function FireAlarmPage() {
                                                 </Button>
                                                 {saveStatus && (
                                                         <span
-                                                                className="text-xs text-emerald-400 ml-2"
+                                                                className="text-xs text-success ml-2"
                                                                 role="status"
                                                                 aria-live="polite"
                                                         >
@@ -453,14 +453,14 @@ export function FireAlarmPage() {
                                         </div>
 
                                         {/* Symbol Library - Right sidebar */}
-                                        <div className="w-80 border-l border-slate-700 p-4 bg-slate-800">
+                                        <div className="w-80 border-l border-border p-4 bg-card">
                                                 <SymbolLibrary />
 
                                                 <div className="mt-6">
-                                                        <Card className="border-slate-700 bg-slate-800">
+                                                        <Card className="border-border bg-card">
                                                                 <CardHeader>
                                                                         <div className="flex items-center justify-between">
-                                                                                <CardTitle className="text-lg text-slate-100">
+                                                                                <CardTitle className="text-lg text-foreground">
                                                                                         {t("fireAlarm.projectInfo")}
                                                                                 </CardTitle>
                                                                                 <ExplainButton
@@ -475,52 +475,52 @@ export function FireAlarmPage() {
                                                                                         }}
                                                                                 />
                                                                         </div>
-                                                                        <CardDescription className="text-slate-400">
+                                                                        <CardDescription className="text-muted-foreground">
                                                                                 {t("fireAlarm.projectDetails")}
                                                                         </CardDescription>
                                                                 </CardHeader>
                                                                 <CardContent>
                                                                         <div className="space-y-3">
                                                                                 <div className="flex justify-between">
-                                                                                        <span className="text-slate-400">
+                                                                                        <span className="text-muted-foreground">
                                                                                                 {t("fireAlarm.totalDetectors")}
                                                                                         </span>
-                                                                                        <span className="text-slate-200">{detectors.length}</span>
+                                                                                        <span className="text-foreground">{detectors.length}</span>
                                                                                 </div>
                                                                                 <div className="flex justify-between">
-                                                                                        <span className="text-slate-400">
+                                                                                        <span className="text-muted-foreground">
                                                                                                 {t("fireAlarm.smokeDetectors")}
                                                                                         </span>
-                                                                                        <span className="text-slate-200">
+                                                                                        <span className="text-foreground">
                                                                                                 {detectors.filter((d) => d.type === "smoke").length}
                                                                                         </span>
                                                                                 </div>
                                                                                 <div className="flex justify-between">
-                                                                                        <span className="text-slate-400">
+                                                                                        <span className="text-muted-foreground">
                                                                                                 {t("fireAlarm.heatDetectors")}
                                                                                         </span>
-                                                                                        <span className="text-slate-200">
+                                                                                        <span className="text-foreground">
                                                                                                 {detectors.filter((d) => d.type === "heat").length}
                                                                                         </span>
                                                                                 </div>
                                                                                 <div className="flex justify-between">
-                                                                                        <span className="text-slate-400">
+                                                                                        <span className="text-muted-foreground">
                                                                                                 {t("fireAlarm.normal")}
                                                                                         </span>
                                                                                         <Badge
                                                                                                 variant="secondary"
-                                                                                                className="bg-emerald-600/20 text-emerald-400 border-emerald-500/30"
+                                                                                                className="bg-success/10 text-success border-success/30"
                                                                                         >
                                                                                                 {detectors.filter((d) => d.status === "normal").length}
                                                                                         </Badge>
                                                                                 </div>
                                                                                 <div className="flex justify-between">
-                                                                                        <span className="text-slate-400">
+                                                                                        <span className="text-muted-foreground">
                                                                                                 {t("fireAlarm.warning")}
                                                                                         </span>
                                                                                         <Badge
                                                                                                 variant="secondary"
-                                                                                                className="bg-amber-600/20 text-amber-400 border-amber-500/30"
+                                                                                                className="bg-warning/10 text-warning border-warning/30"
                                                                                         >
                                                                                                 {detectors.filter((d) => d.status === "warning").length}
                                                                                         </Badge>

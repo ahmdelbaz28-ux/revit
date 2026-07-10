@@ -227,27 +227,27 @@ export function CADSettingsPage() {  // NOSONAR — S3776: cognitive complexity 
                         <div className="p-6 max-w-5xl mx-auto space-y-6">
                                 {/* Header */}
                                 <div>
-                                        <h1 className="text-2xl font-bold text-slate-100">
+                                        <h1 className="text-2xl font-bold text-foreground">
                                                 CAD/BIM Connection Settings
                                         </h1>
-                                        <p className="text-sm text-slate-400 mt-1">
+                                        <p className="text-sm text-muted-foreground mt-1">
                                                 Configure AutoCAD and Revit connections for file operations
                                         </p>
                                 </div>
 
                                 {/* Main Tabs */}
                                 <Tabs value={activeTab} onValueChange={setActiveTab}>
-                                        <TabsList className="bg-slate-800 border border-slate-700">
+                                        <TabsList className="bg-card border border-border">
                                                 <TabsTrigger
                                                         value="autocad"
-                                                        className="data-[state=active]:bg-slate-700"
+                                                        className="data-[state=active]:bg-secondary"
                                                 >
                                                         <Monitor className="h-4 w-4 mr-2" />
                                                         AutoCAD
                                                 </TabsTrigger>
                                                 <TabsTrigger
                                                         value="revit"
-                                                        className="data-[state=active]:bg-slate-700"
+                                                        className="data-[state=active]:bg-secondary"
                                                 >
                                                         <FileText className="h-4 w-4 mr-2" />
                                                         Revit
@@ -257,17 +257,17 @@ export function CADSettingsPage() {  // NOSONAR — S3776: cognitive complexity 
                                         {/* AutoCAD Tab */}
                                         <TabsContent value="autocad" className="space-y-6">
                                                 {/* Connection Status */}
-                                                <Card className="border-slate-700 bg-slate-800">
+                                                <Card className="border-border bg-card">
                                                         <CardHeader>
-                                                                <CardTitle className="text-lg text-slate-100 flex items-center justify-between">
+                                                                <CardTitle className="text-lg text-foreground flex items-center justify-between">
                                                                         <span className="flex items-center gap-2">
-                                                                                <Monitor className="h-5 w-5 text-blue-400" />
+                                                                                <Monitor className="h-5 w-5 text-info" />
                                                                                 AutoCAD Connection Status
                                                                         </span>
                                                                         <Button
                                                                                 variant="outline"
                                                                                 size="sm"
-                                                                                className="border-slate-600 text-slate-300 hover:bg-slate-800"
+                                                                                className="border-border text-foreground/90 hover:bg-card"
                                                                                 onClick={checkAutoCADConnection}
                                                                                 disabled={checkingAcad}
                                                                         >
@@ -283,16 +283,16 @@ export function CADSettingsPage() {  // NOSONAR — S3776: cognitive complexity 
                                                                 {acadStatus ? (
                                                                         <div className="flex items-center gap-4">
                                                                                 {acadStatus.connected ? (
-                                                                                        <CheckCircle2 className="h-8 w-8 text-emerald-400" />
+                                                                                        <CheckCircle2 className="h-8 w-8 text-success" />
                                                                                 ) : (
-                                                                                        <XCircle className="h-8 w-8 text-red-400" />
+                                                                                        <XCircle className="h-8 w-8 text-danger" />
                                                                                 )}
                                                                                 <div className="flex-1">
-                                                                                        <p className="text-sm font-medium text-slate-200">
+                                                                                        <p className="text-sm font-medium text-foreground">
                                                                                                 {acadStatus.connected ? "Connected" : "Disconnected"}
                                                                                         </p>
                                                                                         {acadStatus.connected && (
-                                                                                                <div className="text-xs text-slate-400 mt-1 space-y-1">
+                                                                                                <div className="text-xs text-muted-foreground mt-1 space-y-1">
                                                                                                         <p>Version: {acadStatus.version}</p>
                                                                                                         <p>Document: {acadStatus.document}</p>
                                                                                                         <p>
@@ -309,7 +309,7 @@ export function CADSettingsPage() {  // NOSONAR — S3776: cognitive complexity 
                                                                                 </Badge>
                                                                         </div>
                                                                 ) : (
-                                                                        <div className="text-center py-6 text-slate-400">
+                                                                        <div className="text-center py-6 text-muted-foreground">
                                                                                 <AlertCircle className="h-12 w-12 mx-auto mb-3 opacity-50" />
                                                                                 <p>Connection status unknown</p>
                                                                                 <p className="text-xs mt-1">Click refresh to check</p>
@@ -319,29 +319,29 @@ export function CADSettingsPage() {  // NOSONAR — S3776: cognitive complexity 
                                                 </Card>
 
                                                 {/* AutoCAD Configuration */}
-                                                <Card className="border-slate-700 bg-slate-800">
+                                                <Card className="border-border bg-card">
                                                         <CardHeader>
-                                                                <CardTitle className="text-lg text-slate-100 flex items-center gap-2">
-                                                                        <Settings className="h-5 w-5 text-blue-400" />
+                                                                <CardTitle className="text-lg text-foreground flex items-center gap-2">
+                                                                        <Settings className="h-5 w-5 text-info" />
                                                                         AutoCAD Configuration
                                                                 </CardTitle>
-                                                                <CardDescription className="text-slate-400">
+                                                                <CardDescription className="text-muted-foreground">
                                                                         Configure AutoCAD installation and default settings
                                                                 </CardDescription>
                                                         </CardHeader>
                                                         <CardContent className="space-y-4">
                                                                 <div className="space-y-2">
-                                                                        <Label className="text-slate-300">Installation Path</Label>
+                                                                        <Label className="text-foreground/90">Installation Path</Label>
                                                                         <div className="flex gap-2">
                                                                                 <Input
                                                                                         value={acadPath}
                                                                                         onChange={(e) => setAcadPath(e.target.value)}
                                                                                         placeholder="C:\Program Files\Autodesk\AutoCAD 2024"
-                                                                                        className="bg-slate-900 border-slate-600 text-slate-100 flex-1"
+                                                                                        className="bg-card border-border text-foreground flex-1"
                                                                                 />
                                                                                 <Button
                                                                                         variant="outline"
-                                                                                        className="border-slate-600 text-slate-300 hover:bg-slate-800"
+                                                                                        className="border-border text-foreground/90 hover:bg-card"
                                                                                         onClick={() => {
 													// V194 (TD-3) FIX: Use hidden file input to let the user select the
 													// AutoCAD executable. Browsers cannot return full paths for
@@ -365,16 +365,16 @@ export function CADSettingsPage() {  // NOSONAR — S3776: cognitive complexity 
                                                                                         <FolderOpen className="h-4 w-4" />
                                                                                 </Button>
                                                                         </div>
-                                                                        <p className="text-xs text-slate-400">
+                                                                        <p className="text-xs text-muted-foreground">
                                                                                 Path to AutoCAD executable (acad.exe)
                                                                         </p>
                                                                 </div>
 
                                                                 <div className="grid grid-cols-2 gap-4">
                                                                         <div className="space-y-2">
-                                                                                <Label className="text-slate-300">Version</Label>
+                                                                                <Label className="text-foreground/90">Version</Label>
                                                                                 <Select value={acadVersion} onValueChange={setAcadVersion}>
-                                                                                        <SelectTrigger className="bg-slate-900 border-slate-600 text-slate-100">
+                                                                                        <SelectTrigger className="bg-card border-border text-foreground">
                                                                                                 <SelectValue />
                                                                                         </SelectTrigger>
                                                                                         <SelectContent>
@@ -388,9 +388,9 @@ export function CADSettingsPage() {  // NOSONAR — S3776: cognitive complexity 
                                                                         </div>
 
                                                                         <div className="space-y-2">
-                                                                                <Label className="text-slate-300">Default Units</Label>
+                                                                                <Label className="text-foreground/90">Default Units</Label>
                                                                                 <Select value={acadUnits} onValueChange={setAcadUnits}>
-                                                                                        <SelectTrigger className="bg-slate-900 border-slate-600 text-slate-100">
+                                                                                        <SelectTrigger className="bg-card border-border text-foreground">
                                                                                                 <SelectValue />
                                                                                         </SelectTrigger>
                                                                                         <SelectContent>
@@ -404,17 +404,17 @@ export function CADSettingsPage() {  // NOSONAR — S3776: cognitive complexity 
                                                                 </div>
 
                                                                 <div className="space-y-2">
-                                                                        <Label className="text-slate-300">Default Template</Label>
+                                                                        <Label className="text-foreground/90">Default Template</Label>
                                                                         <div className="flex gap-2">
                                                                                 <Input
                                                                                         value={acadTemplate}
                                                                                         onChange={(e) => setAcadTemplate(e.target.value)}
                                                                                         placeholder="C:\Templates\architectural.dwt"
-                                                                                        className="bg-slate-900 border-slate-600 text-slate-100 flex-1"
+                                                                                        className="bg-card border-border text-foreground flex-1"
                                                                                 />
                                                                                 <Button
                                                                                         variant="outline"
-                                                                                        className="border-slate-600 text-slate-300 hover:bg-slate-800"
+                                                                                        className="border-border text-foreground/90 hover:bg-card"
                                                                                         onClick={() => {
                                                                                                 toast.info("File browser not implemented yet");
                                                                                         }}
@@ -422,13 +422,13 @@ export function CADSettingsPage() {  // NOSONAR — S3776: cognitive complexity 
                                                                                         <FolderOpen className="h-4 w-4" />
                                                                                 </Button>
                                                                         </div>
-                                                                        <p className="text-xs text-slate-400">
+                                                                        <p className="text-xs text-muted-foreground">
                                                                                 Default .dwt template file for new drawings
                                                                         </p>
                                                                 </div>
 
                                                                 <Button
-                                                                        className="w-full bg-red-600 hover:bg-red-700 text-white border-none"
+                                                                        className="w-full bg-danger hover:bg-danger/90 text-white border-none"
                                                                         onClick={saveAutoCADSettings}
                                                                 >
                                                                         Save AutoCAD Settings
@@ -440,17 +440,17 @@ export function CADSettingsPage() {  // NOSONAR — S3776: cognitive complexity 
                                         {/* Revit Tab */}
                                         <TabsContent value="revit" className="space-y-6">
                                                 {/* Connection Status */}
-                                                <Card className="border-slate-700 bg-slate-800">
+                                                <Card className="border-border bg-card">
                                                         <CardHeader>
-                                                                <CardTitle className="text-lg text-slate-100 flex items-center justify-between">
+                                                                <CardTitle className="text-lg text-foreground flex items-center justify-between">
                                                                         <span className="flex items-center gap-2">
-                                                                                <FileText className="h-5 w-5 text-blue-400" />
+                                                                                <FileText className="h-5 w-5 text-info" />
                                                                                 Revit Connection Status
                                                                         </span>
                                                                         <Button
                                                                                 variant="outline"
                                                                                 size="sm"
-                                                                                className="border-slate-600 text-slate-300 hover:bg-slate-800"
+                                                                                className="border-border text-foreground/90 hover:bg-card"
                                                                                 onClick={checkRevitConnection}
                                                                                 disabled={checkingRevit}
                                                                         >
@@ -466,16 +466,16 @@ export function CADSettingsPage() {  // NOSONAR — S3776: cognitive complexity 
                                                                 {revitStatus ? (
                                                                         <div className="flex items-center gap-4">
                                                                                 {revitStatus.connected ? (
-                                                                                        <CheckCircle2 className="h-8 w-8 text-emerald-400" />
+                                                                                        <CheckCircle2 className="h-8 w-8 text-success" />
                                                                                 ) : (
-                                                                                        <XCircle className="h-8 w-8 text-red-400" />
+                                                                                        <XCircle className="h-8 w-8 text-danger" />
                                                                                 )}
                                                                                 <div className="flex-1">
-                                                                                        <p className="text-sm font-medium text-slate-200">
+                                                                                        <p className="text-sm font-medium text-foreground">
                                                                                                 {revitStatus.connected ? "Connected" : "Disconnected"}
                                                                                         </p>
                                                                                         {revitStatus.connected && (
-                                                                                                <div className="text-xs text-slate-400 mt-1 space-y-1">
+                                                                                                <div className="text-xs text-muted-foreground mt-1 space-y-1">
                                                                                                         <p>Version: {revitStatus.version}</p>
                                                                                                         <p>Document: {revitStatus.document}</p>
                                                                                                         <p>
@@ -494,7 +494,7 @@ export function CADSettingsPage() {  // NOSONAR — S3776: cognitive complexity 
                                                                                 </Badge>
                                                                         </div>
                                                                 ) : (
-                                                                        <div className="text-center py-6 text-slate-400">
+                                                                        <div className="text-center py-6 text-muted-foreground">
                                                                                 <AlertCircle className="h-12 w-12 mx-auto mb-3 opacity-50" />
                                                                                 <p>Connection status unknown</p>
                                                                                 <p className="text-xs mt-1">Click refresh to check</p>
@@ -504,29 +504,29 @@ export function CADSettingsPage() {  // NOSONAR — S3776: cognitive complexity 
                                                 </Card>
 
                                                 {/* Revit Configuration */}
-                                                <Card className="border-slate-700 bg-slate-800">
+                                                <Card className="border-border bg-card">
                                                         <CardHeader>
-                                                                <CardTitle className="text-lg text-slate-100 flex items-center gap-2">
-                                                                        <Wrench className="h-5 w-5 text-blue-400" />
+                                                                <CardTitle className="text-lg text-foreground flex items-center gap-2">
+                                                                        <Wrench className="h-5 w-5 text-info" />
                                                                         Revit Configuration
                                                                 </CardTitle>
-                                                                <CardDescription className="text-slate-400">
+                                                                <CardDescription className="text-muted-foreground">
                                                                         Configure Revit installation and default settings
                                                                 </CardDescription>
                                                         </CardHeader>
                                                         <CardContent className="space-y-4">
                                                                 <div className="space-y-2">
-                                                                        <Label className="text-slate-300">Installation Path</Label>
+                                                                        <Label className="text-foreground/90">Installation Path</Label>
                                                                         <div className="flex gap-2">
                                                                                 <Input
                                                                                         value={revitPath}
                                                                                         onChange={(e) => setRevitPath(e.target.value)}
                                                                                         placeholder="C:\Program Files\Autodesk\Revit 2024"
-                                                                                        className="bg-slate-900 border-slate-600 text-slate-100 flex-1"
+                                                                                        className="bg-card border-border text-foreground flex-1"
                                                                                 />
                                                                                 <Button
                                                                                         variant="outline"
-                                                                                        className="border-slate-600 text-slate-300 hover:bg-slate-800"
+                                                                                        className="border-border text-foreground/90 hover:bg-card"
                                                                                         onClick={() => {
                                                                                                 toast.info("File browser not implemented yet");
                                                                                         }}
@@ -534,19 +534,19 @@ export function CADSettingsPage() {  // NOSONAR — S3776: cognitive complexity 
                                                                                         <FolderOpen className="h-4 w-4" />
                                                                                 </Button>
                                                                         </div>
-                                                                        <p className="text-xs text-slate-400">
+                                                                        <p className="text-xs text-muted-foreground">
                                                                                 Path to Revit executable (Revit.exe)
                                                                         </p>
                                                                 </div>
 
                                                                 <div className="grid grid-cols-2 gap-4">
                                                                         <div className="space-y-2">
-                                                                                <Label className="text-slate-300">Version</Label>
+                                                                                <Label className="text-foreground/90">Version</Label>
                                                                                 <Select
                                                                                         value={revitVersion}
                                                                                         onValueChange={setRevitVersion}
                                                                                 >
-                                                                                        <SelectTrigger className="bg-slate-900 border-slate-600 text-slate-100">
+                                                                                        <SelectTrigger className="bg-card border-border text-foreground">
                                                                                                 <SelectValue />
                                                                                         </SelectTrigger>
                                                                                         <SelectContent>
@@ -560,9 +560,9 @@ export function CADSettingsPage() {  // NOSONAR — S3776: cognitive complexity 
                                                                         </div>
 
                                                                         <div className="space-y-2">
-                                                                                <Label className="text-slate-300">Default Units</Label>
+                                                                                <Label className="text-foreground/90">Default Units</Label>
                                                                                 <Select value={revitUnits} onValueChange={setRevitUnits}>
-                                                                                        <SelectTrigger className="bg-slate-900 border-slate-600 text-slate-100">
+                                                                                        <SelectTrigger className="bg-card border-border text-foreground">
                                                                                                 <SelectValue />
                                                                                         </SelectTrigger>
                                                                                         <SelectContent>
@@ -576,17 +576,17 @@ export function CADSettingsPage() {  // NOSONAR — S3776: cognitive complexity 
                                                                 </div>
 
                                                                 <div className="space-y-2">
-                                                                        <Label className="text-slate-300">Default Template</Label>
+                                                                        <Label className="text-foreground/90">Default Template</Label>
                                                                         <div className="flex gap-2">
                                                                                 <Input
                                                                                         value={revitTemplate}
                                                                                         onChange={(e) => setRevitTemplate(e.target.value)}
                                                                                         placeholder="C:\Templates\Architectural-Template.rte"
-                                                                                        className="bg-slate-900 border-slate-600 text-slate-100 flex-1"
+                                                                                        className="bg-card border-border text-foreground flex-1"
                                                                                 />
                                                                                 <Button
                                                                                         variant="outline"
-                                                                                        className="border-slate-600 text-slate-300 hover:bg-slate-800"
+                                                                                        className="border-border text-foreground/90 hover:bg-card"
                                                                                         onClick={() => {
                                                                                                 toast.info("File browser not implemented yet");
                                                                                         }}
@@ -594,13 +594,13 @@ export function CADSettingsPage() {  // NOSONAR — S3776: cognitive complexity 
                                                                                         <FolderOpen className="h-4 w-4" />
                                                                                 </Button>
                                                                         </div>
-                                                                        <p className="text-xs text-slate-400">
+                                                                        <p className="text-xs text-muted-foreground">
                                                                                 Default .rte template file for new projects
                                                                         </p>
                                                                 </div>
 
                                                                 <Button
-                                                                        className="w-full bg-red-600 hover:bg-red-700 text-white border-none"
+                                                                        className="w-full bg-danger hover:bg-danger/90 text-white border-none"
                                                                         onClick={saveRevitSettings}
                                                                 >
                                                                         Save Revit Settings

@@ -41,42 +41,42 @@ export function ErrorRecoveryView({  // NOSONAR - typescript:S6759
 	const name = error?.name ?? "Error";
 
 	return (
-		<div className="flex min-h-screen flex-1 items-center justify-center bg-slate-950 p-6">
-			<div className="w-full max-w-3xl rounded-3xl border border-red-500/30 bg-slate-950/90 p-6 shadow-2xl shadow-black/40">
+		<div className="flex min-h-screen flex-1 items-center justify-center bg-background p-6">
+			<div className="w-full max-w-3xl rounded-3xl border border-danger/30 bg-background/90 p-6 shadow-2xl shadow-black/40">
 				<div className="flex items-start gap-4">
-					<div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-red-500/30 bg-red-500/10 text-red-400">
+					<div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-danger/30 bg-red-500/10 text-danger">
 						<AlertTriangle className="h-6 w-6" />
 					</div>
 					<div className="min-w-0 flex-1">
-						<p className="text-xs font-semibold uppercase tracking-[0.22em] text-red-400">
+						<p className="text-xs font-semibold uppercase tracking-[0.22em] text-danger">
 							Error Recovery
 						</p>
-						<h1 className="mt-2 text-xl font-semibold text-slate-100">
+						<h1 className="mt-2 text-xl font-semibold text-foreground">
 							A component failed to render
 						</h1>
-						<p className="mt-2 text-sm leading-6 text-slate-400">
+						<p className="mt-2 text-sm leading-6 text-muted-foreground">
 							The application kept running, but this screen needs attention
 							before engineering work continues.
 						</p>
 
 						<div className="mt-5 grid gap-3 sm:grid-cols-2">
-							<div className="rounded-2xl border border-slate-800 bg-slate-900 p-4">
-								<p className="text-xs uppercase tracking-[0.18em] text-slate-500">
+							<div className="rounded-md border border-slate-800 bg-card p-4">
+								<p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
 									Error context ID
 								</p>
-								<p className="mt-2 break-all font-mono text-sm text-slate-200">
+								<p className="mt-2 break-all font-mono text-sm text-foreground">
 									{errorContextId}
 								</p>
 							</div>
-							<div className="rounded-2xl border border-slate-800 bg-slate-900 p-4">
-								<p className="text-xs uppercase tracking-[0.18em] text-slate-500">
+							<div className="rounded-md border border-slate-800 bg-card p-4">
+								<p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
 									Error type
 								</p>
-								<p className="mt-2 font-mono text-sm text-slate-200">{name}</p>
+								<p className="mt-2 font-mono text-sm text-foreground">{name}</p>
 							</div>
 						</div>
 
-						<div className="mt-4 rounded-2xl border border-red-500/20 bg-red-500/10 p-4">
+						<div className="mt-4 rounded-md border border-red-500/20 bg-red-500/10 p-4">
 							<p className="text-xs uppercase tracking-[0.18em] text-red-300">
 								Error details
 							</p>
@@ -86,11 +86,11 @@ export function ErrorRecoveryView({  // NOSONAR - typescript:S6759
 						</div>
 
 						{details && (
-							<details className="mt-4 rounded-2xl border border-slate-800 bg-slate-900/50 p-4">
-								<summary className="cursor-pointer text-sm font-medium text-slate-200">
+							<details className="mt-4 rounded-md border border-slate-800 bg-muted/50 p-4">
+								<summary className="cursor-pointer text-sm font-medium text-foreground">
 									Component stack
 								</summary>
-								<pre className="mt-3 max-h-64 overflow-auto whitespace-pre-wrap break-words font-mono text-xs leading-5 text-slate-400">
+								<pre className="mt-3 max-h-64 overflow-auto whitespace-pre-wrap break-words font-mono text-xs leading-5 text-muted-foreground">
 									{details}
 								</pre>
 							</details>
@@ -99,7 +99,7 @@ export function ErrorRecoveryView({  // NOSONAR - typescript:S6759
 						<div className="mt-6 flex flex-col gap-3 sm:flex-row">
 							<Button
 								type="button"
-								className="flex-1 bg-red-600 text-white hover:bg-red-700"
+								className="flex-1 bg-danger text-white hover:bg-danger/90"
 								onClick={() => setHelpOpen(true)}
 							>
 								<BookOpenText className="h-4 w-4" />
@@ -108,7 +108,7 @@ export function ErrorRecoveryView({  // NOSONAR - typescript:S6759
 							<Button
 								type="button"
 								variant="outline"
-								className="flex-1 border-slate-700 text-slate-100 hover:bg-slate-800 hover:text-slate-100"
+								className="flex-1 border-border text-foreground hover:bg-card hover:text-foreground"
 								onClick={reload ?? (() => window.location.reload())}
 							>
 								<RotateCcw className="h-4 w-4" />

@@ -21,7 +21,7 @@ import {
 
 export function MultilingualDemo() {
 	return (
-		<div className="min-h-screen bg-slate-950 text-slate-100 font-sans p-6 overflow-y-auto">
+		<div className="min-h-screen bg-background text-foreground font-sans p-6 overflow-y-auto">
 			{/* Header */}
 			<div className="max-w-7xl mx-auto space-y-8">
 				<div className="flex items-center justify-between">
@@ -29,7 +29,7 @@ export function MultilingualDemo() {
 						<h1 className="text-2xl font-bold tracking-tight text-white mb-2">
 							NexusCAD Pro — Language & Localization System
 						</h1>
-						<p className="text-sm text-slate-400">
+						<p className="text-sm text-muted-foreground">
 							Supporting Arabic (RTL), English (LTR), and French (LTR) — ISO
 							639-1 compliant
 						</p>
@@ -38,7 +38,7 @@ export function MultilingualDemo() {
 						<Button
 							variant="outline"
 							size="sm"
-							className="bg-slate-900 border-slate-700"
+							className="bg-card border-border"
 						>
 							<Settings className="w-4 h-4 mr-2" />
 							Language Settings
@@ -46,7 +46,7 @@ export function MultilingualDemo() {
 						<Button
 							variant="outline"
 							size="sm"
-							className="bg-slate-900 border-slate-700"
+							className="bg-card border-border"
 						>
 							<Plus className="w-4 h-4 mr-2" />
 							Add Language
@@ -68,7 +68,7 @@ export function MultilingualDemo() {
 						id="EN"
 						name="English"
 						badge="Active"
-						badgeColor="bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
+						badgeColor="bg-emerald-500/20 text-success border-success/30"
 						direction="LTR direction"
 						completion="100% translated"
 						isActive
@@ -77,7 +77,7 @@ export function MultilingualDemo() {
 						id="AR"
 						name="العربية"
 						badge="Active Demo"
-						badgeColor="bg-blue-500/20 text-blue-400 border-blue-500/30"
+						badgeColor="bg-blue-500/20 text-info border-blue-500/30"
 						direction="RTL — Right to Left"
 						completion="98% translated"
 						isActive={false}
@@ -86,7 +86,7 @@ export function MultilingualDemo() {
 						id="FR"
 						name="Français"
 						badge="Available"
-						badgeColor="bg-slate-500/20 text-slate-400 border-slate-500/30"
+						badgeColor="bg-slate-500/20 text-muted-foreground border-border/30"
 						direction="LTR direction"
 						completion="95% translated"
 						isActive={false}
@@ -99,37 +99,37 @@ export function MultilingualDemo() {
 					<div className="flex flex-col gap-3">
 						<div className="flex items-center justify-between pb-2 border-b border-slate-800">
 							<div className="flex items-center gap-2">
-								<span className="font-semibold text-slate-200">English</span>
+								<span className="font-semibold text-foreground">English</span>
 								<Badge
 									variant="outline"
-									className="text-[10px] px-1 py-0 border-slate-700 text-slate-400"
+									className="text-[10px] px-1 py-0 border-border text-muted-foreground"
 								>
 									LTR
 								</Badge>
 							</div>
-							<span className="text-xs text-emerald-400">100%</span>
+							<span className="text-xs text-success">100%</span>
 						</div>
 
-						<div className="bg-slate-900 rounded-lg border border-slate-800 overflow-hidden flex flex-col h-[320px]">
+						<div className="bg-card rounded-lg border border-slate-800 overflow-hidden flex flex-col h-[320px]">
 							{/* Header */}
-							<div className="h-8 border-b border-slate-800 flex items-center justify-between px-3 bg-slate-900/50">
-								<span className="text-xs font-semibold text-slate-200">
+							<div className="h-8 border-b border-slate-800 flex items-center justify-between px-3 bg-muted/50">
+								<span className="text-xs font-semibold text-foreground">
 									Engineering Log
 								</span>
-								<span className="text-[10px] text-slate-500 flex gap-2">
-									<span className="text-red-400">3 Errors</span>
-									<span className="text-orange-400">5 Warnings</span>
-									<span className="text-blue-400">12 Info</span>
+								<span className="text-[10px] text-muted-foreground flex gap-2">
+									<span className="text-danger">3 Errors</span>
+									<span className="text-primary">5 Warnings</span>
+									<span className="text-info">12 Info</span>
 								</span>
 							</div>
 							{/* Tabs */}
-							<div className="flex text-[10px] font-mono border-b border-slate-800 bg-slate-900">
-								<div className="px-3 py-1.5 border-b-2 border-blue-500 text-blue-400">
+							<div className="flex text-[10px] font-mono border-b border-slate-800 bg-card">
+								<div className="px-3 py-1.5 border-b-2 border-blue-500 text-info">
 									Errors
 								</div>
-								<div className="px-3 py-1.5 text-slate-500">Warnings</div>
-								<div className="px-3 py-1.5 text-slate-500">Output</div>
-								<div className="px-3 py-1.5 text-slate-500">Commands</div>
+								<div className="px-3 py-1.5 text-muted-foreground">Warnings</div>
+								<div className="px-3 py-1.5 text-muted-foreground">Output</div>
+								<div className="px-3 py-1.5 text-muted-foreground">Commands</div>
 							</div>
 							{/* Content */}
 							<div className="flex-1 bg-[#0a0a0a] overflow-hidden p-1 space-y-1">
@@ -147,12 +147,12 @@ export function MultilingualDemo() {
 								/>
 							</div>
 							{/* Footer */}
-							<div className="h-7 border-t border-slate-800 flex items-center justify-between px-3 bg-slate-900/50">
-								<span className="text-[9px] font-mono text-slate-500">
+							<div className="h-7 border-t border-slate-800 flex items-center justify-between px-3 bg-muted/50">
+								<span className="text-[9px] font-mono text-muted-foreground">
 									X: 2847.32 | Y: 1203.48 | Layer: Electrical | Project: Tower-B
 									| Rev: 14
 								</span>
-								<div className="flex items-center text-[10px] text-slate-400 gap-1 cursor-pointer">
+								<div className="flex items-center text-[10px] text-muted-foreground gap-1 cursor-pointer">
 									Hide Panel <ChevronDown className="w-3 h-3" />
 								</div>
 							</div>
@@ -161,47 +161,47 @@ export function MultilingualDemo() {
 
 					{/* Arabic Column */}
 					<div className="flex flex-col gap-3 relative">
-						<div className="absolute left-[-12px] top-0 bottom-0 w-px bg-slate-800"></div>
+						<div className="absolute left-[-12px] top-0 bottom-0 w-px bg-card"></div>
 
 						<div
 							className="flex items-center justify-between pb-2 border-b border-slate-800"
 							dir="rtl"
 						>
 							<div className="flex items-center gap-2">
-								<span className="font-semibold text-slate-200">العربية</span>
+								<span className="font-semibold text-foreground">العربية</span>
 								<Badge
 									variant="outline"
-									className="text-[10px] px-1 py-0 border-slate-700 text-slate-400"
+									className="text-[10px] px-1 py-0 border-border text-muted-foreground"
 								>
 									RTL
 								</Badge>
 							</div>
-							<span className="text-xs text-emerald-400">98%</span>
+							<span className="text-xs text-success">98%</span>
 						</div>
 
 						<div
-							className="bg-slate-900 rounded-lg border border-slate-800 overflow-hidden flex flex-col h-[320px]"
+							className="bg-card rounded-lg border border-slate-800 overflow-hidden flex flex-col h-[320px]"
 							dir="rtl"
 						>
 							{/* Header */}
-							<div className="h-8 border-b border-slate-800 flex items-center justify-between px-3 bg-slate-900/50">
-								<span className="text-xs font-semibold text-slate-200">
+							<div className="h-8 border-b border-slate-800 flex items-center justify-between px-3 bg-muted/50">
+								<span className="text-xs font-semibold text-foreground">
 									سجل الهندسة
 								</span>
-								<span className="text-[10px] text-slate-500 flex gap-2">
-									<span className="text-red-400">3 أخطاء</span>
-									<span className="text-orange-400">5 تحذيرات</span>
-									<span className="text-blue-400">12 معلومة</span>
+								<span className="text-[10px] text-muted-foreground flex gap-2">
+									<span className="text-danger">3 أخطاء</span>
+									<span className="text-primary">5 تحذيرات</span>
+									<span className="text-info">12 معلومة</span>
 								</span>
 							</div>
 							{/* Tabs */}
-							<div className="flex text-[10px] font-mono border-b border-slate-800 bg-slate-900">
-								<div className="px-3 py-1.5 border-b-2 border-blue-500 text-blue-400">
+							<div className="flex text-[10px] font-mono border-b border-slate-800 bg-card">
+								<div className="px-3 py-1.5 border-b-2 border-blue-500 text-info">
 									الأخطاء
 								</div>
-								<div className="px-3 py-1.5 text-slate-500">التحذيرات</div>
-								<div className="px-3 py-1.5 text-slate-500">المخرجات</div>
-								<div className="px-3 py-1.5 text-slate-500">الأوامر</div>
+								<div className="px-3 py-1.5 text-muted-foreground">التحذيرات</div>
+								<div className="px-3 py-1.5 text-muted-foreground">المخرجات</div>
+								<div className="px-3 py-1.5 text-muted-foreground">الأوامر</div>
 							</div>
 							{/* Content */}
 							<div className="flex-1 bg-[#0a0a0a] overflow-hidden p-1 space-y-1">
@@ -210,12 +210,12 @@ export function MultilingualDemo() {
 								<DemoErrorRow text="لوحة LP-3A: ملصق وميض القوس مفقود. طاقة الحادثة 52.4 cal/cm²" />
 							</div>
 							{/* Footer */}
-							<div className="h-7 border-t border-slate-800 flex items-center justify-between px-3 bg-slate-900/50">
-								<span className="text-[9px] font-mono text-slate-500">
+							<div className="h-7 border-t border-slate-800 flex items-center justify-between px-3 bg-muted/50">
+								<span className="text-[9px] font-mono text-muted-foreground">
 									س: 2847.32 | ص: 1203.48 | الطبقة: الكهربائي | المشروع: برج-ب |
 									المراجعة: 14
 								</span>
-								<div className="flex items-center text-[10px] text-slate-400 gap-1 cursor-pointer">
+								<div className="flex items-center text-[10px] text-muted-foreground gap-1 cursor-pointer">
 									إخفاء اللوحة <ChevronDown className="w-3 h-3" />
 								</div>
 							</div>
@@ -224,14 +224,14 @@ export function MultilingualDemo() {
 
 					{/* French Column */}
 					<div className="flex flex-col gap-3 relative">
-						<div className="absolute left-[-12px] top-0 bottom-0 w-px bg-slate-800"></div>
+						<div className="absolute left-[-12px] top-0 bottom-0 w-px bg-card"></div>
 
 						<div className="flex items-center justify-between pb-2 border-b border-slate-800">
 							<div className="flex items-center gap-2">
-								<span className="font-semibold text-slate-200">Français</span>
+								<span className="font-semibold text-foreground">Français</span>
 								<Badge
 									variant="outline"
-									className="text-[10px] px-1 py-0 border-slate-700 text-slate-400"
+									className="text-[10px] px-1 py-0 border-border text-muted-foreground"
 								>
 									LTR
 								</Badge>
@@ -239,26 +239,26 @@ export function MultilingualDemo() {
 							<span className="text-xs text-yellow-500">95%</span>
 						</div>
 
-						<div className="bg-slate-900 rounded-lg border border-slate-800 overflow-hidden flex flex-col h-[320px]">
+						<div className="bg-card rounded-lg border border-slate-800 overflow-hidden flex flex-col h-[320px]">
 							{/* Header */}
-							<div className="h-8 border-b border-slate-800 flex items-center justify-between px-3 bg-slate-900/50">
-								<span className="text-xs font-semibold text-slate-200">
+							<div className="h-8 border-b border-slate-800 flex items-center justify-between px-3 bg-muted/50">
+								<span className="text-xs font-semibold text-foreground">
 									Journal d'ingénierie
 								</span>
-								<span className="text-[10px] text-slate-500 flex gap-2">
-									<span className="text-red-400">3 Erreurs</span>
-									<span className="text-orange-400">5 Avertissements</span>
-									<span className="text-blue-400">12 Infos</span>
+								<span className="text-[10px] text-muted-foreground flex gap-2">
+									<span className="text-danger">3 Erreurs</span>
+									<span className="text-primary">5 Avertissements</span>
+									<span className="text-info">12 Infos</span>
 								</span>
 							</div>
 							{/* Tabs */}
-							<div className="flex text-[10px] font-mono border-b border-slate-800 bg-slate-900">
-								<div className="px-3 py-1.5 border-b-2 border-blue-500 text-blue-400">
+							<div className="flex text-[10px] font-mono border-b border-slate-800 bg-card">
+								<div className="px-3 py-1.5 border-b-2 border-blue-500 text-info">
 									Erreurs
 								</div>
-								<div className="px-3 py-1.5 text-slate-500">Avertissements</div>
-								<div className="px-3 py-1.5 text-slate-500">Sortie</div>
-								<div className="px-3 py-1.5 text-slate-500">Commandes</div>
+								<div className="px-3 py-1.5 text-muted-foreground">Avertissements</div>
+								<div className="px-3 py-1.5 text-muted-foreground">Sortie</div>
+								<div className="px-3 py-1.5 text-muted-foreground">Commandes</div>
 							</div>
 							{/* Content */}
 							<div className="flex-1 bg-[#0a0a0a] overflow-hidden p-1 space-y-1">
@@ -276,12 +276,12 @@ export function MultilingualDemo() {
 								/>
 							</div>
 							{/* Footer */}
-							<div className="h-7 border-t border-slate-800 flex items-center justify-between px-3 bg-slate-900/50">
-								<span className="text-[9px] font-mono text-slate-500">
+							<div className="h-7 border-t border-slate-800 flex items-center justify-between px-3 bg-muted/50">
+								<span className="text-[9px] font-mono text-muted-foreground">
 									X: 2847.32 | Y: 1203.48 | Calque: Électrique | Projet: Tour-B
 									| Rév: 14
 								</span>
-								<div className="flex items-center text-[10px] text-slate-400 gap-1 cursor-pointer">
+								<div className="flex items-center text-[10px] text-muted-foreground gap-1 cursor-pointer">
 									Masquer le panneau <ChevronDown className="w-3 h-3" />
 								</div>
 							</div>
@@ -292,39 +292,39 @@ export function MultilingualDemo() {
 				<div className="grid grid-cols-2 gap-8 pt-8">
 					{/* Section: Auto-Expand Behavior */}
 					<div className="space-y-4">
-						<h3 className="text-lg font-semibold text-slate-200">
+						<h3 className="text-lg font-semibold text-foreground">
 							Auto-Expand on Error Behavior
 						</h3>
 						<div className="space-y-3">
 							<div className="flex items-center gap-4">
-								<div className="w-48 h-16 bg-slate-900 border border-slate-800 rounded relative overflow-hidden">
-									<div className="absolute bottom-0 w-full h-2 bg-slate-800 border-t border-slate-700"></div>
+								<div className="w-48 h-16 bg-card border border-slate-800 rounded relative overflow-hidden">
+									<div className="absolute bottom-0 w-full h-2 bg-card border-t border-border"></div>
 								</div>
-								<span className="text-sm text-slate-400">
+								<span className="text-sm text-muted-foreground">
 									1. No errors — panel collapsed
 								</span>
 							</div>
 							<div className="flex items-center gap-4">
-								<div className="w-48 h-16 bg-slate-900 border border-slate-800 rounded relative overflow-hidden shadow-[0_0_15px_rgba(239,68,68,0.15)]">
-									<div className="absolute bottom-0 w-full h-8 bg-slate-800 border-t border-red-500/50 flex flex-col">
+								<div className="w-48 h-16 bg-card border border-slate-800 rounded relative overflow-hidden shadow-[0_0_15px_rgba(239,68,68,0.15)]">
+									<div className="absolute bottom-0 w-full h-8 bg-card border-t border-red-500/50 flex flex-col">
 										<div className="h-2 w-full bg-red-500/10"></div>
 										<div className="flex-1 bg-red-950/20"></div>
 									</div>
-									<div className="absolute top-2 right-2 text-[8px] text-red-400 animate-pulse">
+									<div className="absolute top-2 right-2 text-[8px] text-danger animate-pulse">
 										Auto-expanding...
 									</div>
 								</div>
-								<span className="text-sm text-slate-400">
+								<span className="text-sm text-muted-foreground">
 									2. New error detected — panel auto-expands
 								</span>
 							</div>
 							<div className="flex items-center gap-4">
-								<div className="w-48 h-16 bg-slate-900 border border-slate-800 rounded relative overflow-hidden">
-									<div className="absolute bottom-0 w-full h-2 bg-slate-800 border-t border-slate-700 flex justify-end items-center pr-2">
+								<div className="w-48 h-16 bg-card border border-slate-800 rounded relative overflow-hidden">
+									<div className="absolute bottom-0 w-full h-2 bg-card border-t border-border flex justify-end items-center pr-2">
 										<div className="w-3 h-1.5 bg-red-500 rounded-sm"></div>
 									</div>
 								</div>
-								<span className="text-sm text-slate-400">
+								<span className="text-sm text-muted-foreground">
 									3. User dismisses — collapses, badge remains
 								</span>
 							</div>
@@ -333,10 +333,10 @@ export function MultilingualDemo() {
 
 					{/* RTL Layout Engine */}
 					<div className="space-y-4">
-						<h3 className="text-lg font-semibold text-slate-200">
+						<h3 className="text-lg font-semibold text-foreground">
 							RTL Layout Engine
 						</h3>
-						<ul className="list-disc pl-4 space-y-2 text-sm text-slate-400">
+						<ul className="list-disc pl-4 space-y-2 text-sm text-muted-foreground">
 							<li>
 								Automatic mirror of all panels, toolbars, and navigation for RTL
 								languages
@@ -348,24 +348,24 @@ export function MultilingualDemo() {
 							<li>Mixed-direction text handled via Unicode BiDi algorithm</li>
 						</ul>
 						<div className="flex gap-4 mt-4">
-							<div className="flex-1 h-24 bg-slate-900 border border-slate-800 rounded p-2 flex">
-								<div className="w-1/4 h-full bg-slate-800 rounded-sm mr-2 border-r-2 border-blue-500"></div>
-								<div className="flex-1 h-full bg-slate-950 rounded-sm"></div>
-								<div className="w-1/3 h-full bg-slate-800 rounded-sm ml-2"></div>
+							<div className="flex-1 h-24 bg-card border border-slate-800 rounded p-2 flex">
+								<div className="w-1/4 h-full bg-card rounded-sm mr-2 border-r-2 border-blue-500"></div>
+								<div className="flex-1 h-full bg-background rounded-sm"></div>
+								<div className="w-1/3 h-full bg-card rounded-sm ml-2"></div>
 							</div>
 							<div className="flex items-center">
-								<ArrowRight className="text-slate-600" />
+								<ArrowRight className="text-muted-foreground/70" />
 							</div>
 							<div
-								className="flex-1 h-24 bg-slate-900 border border-slate-800 rounded p-2 flex"
+								className="flex-1 h-24 bg-card border border-slate-800 rounded p-2 flex"
 								dir="rtl"
 							>
-								<div className="w-1/4 h-full bg-slate-800 rounded-sm ml-2 border-l-2 border-blue-500"></div>
-								<div className="flex-1 h-full bg-slate-950 rounded-sm"></div>
-								<div className="w-1/3 h-full bg-slate-800 rounded-sm mr-2"></div>
+								<div className="w-1/4 h-full bg-card rounded-sm ml-2 border-l-2 border-blue-500"></div>
+								<div className="flex-1 h-full bg-background rounded-sm"></div>
+								<div className="w-1/3 h-full bg-card rounded-sm mr-2"></div>
 							</div>
 						</div>
-						<div className="flex justify-between text-[10px] text-slate-500 px-8">
+						<div className="flex justify-between text-[10px] text-muted-foreground px-8">
 							<span>LTR Default</span>
 							<span>RTL Mirrored</span>
 						</div>
@@ -374,24 +374,24 @@ export function MultilingualDemo() {
 
 				{/* Terminology Table */}
 				<div className="pt-8 pb-12">
-					<h3 className="text-lg font-semibold text-slate-200 mb-4">
+					<h3 className="text-lg font-semibold text-foreground mb-4">
 						Supported Engineering Terminology Databases
 					</h3>
-					<div className="border border-slate-800 rounded-lg overflow-hidden bg-slate-900/50">
+					<div className="border border-slate-800 rounded-lg overflow-hidden bg-muted/50">
 						<Table>
-							<TableHeader className="bg-slate-900 border-b border-slate-800">
+							<TableHeader className="bg-card border-b border-slate-800">
 								<TableRow className="hover:bg-transparent border-slate-800">
-									<TableHead className="text-slate-300">Domain</TableHead>
-									<TableHead className="text-slate-300 text-right">
+									<TableHead className="text-foreground/90">Domain</TableHead>
+									<TableHead className="text-foreground/90 text-right">
 										EN Terms
 									</TableHead>
-									<TableHead className="text-slate-300 text-right">
+									<TableHead className="text-foreground/90 text-right">
 										AR Terms
 									</TableHead>
-									<TableHead className="text-slate-300 text-right">
+									<TableHead className="text-foreground/90 text-right">
 										FR Terms
 									</TableHead>
-									<TableHead className="text-slate-300 text-center">
+									<TableHead className="text-foreground/90 text-center">
 										Status
 									</TableHead>
 								</TableRow>
@@ -467,27 +467,27 @@ function LanguageCard({  // NOSONAR - typescript:S6759
 }) {
 	return (
 		<Card
-			className={`bg-slate-900 border ${isActive ? "border-blue-500/50" : "border-slate-800"} p-4 flex flex-col gap-3 relative overflow-hidden group`}
+			className={`bg-card border ${isActive ? "border-blue-500/50" : "border-slate-800"} p-4 flex flex-col gap-3 relative overflow-hidden group`}
 		>
 			{isActive && (
 				<div className="absolute top-0 left-0 right-0 h-0.5 bg-blue-500" />
 			)}
 			<div className="flex justify-between items-start">
 				<div className="flex items-center gap-3">
-					<div className="w-8 h-8 rounded bg-slate-800 flex items-center justify-center font-bold text-slate-300 border border-slate-700">
+					<div className="w-8 h-8 rounded bg-card flex items-center justify-center font-bold text-foreground/90 border border-border">
 						{id}
 					</div>
 					<div>
-						<h3 className="font-semibold text-slate-200">{name}</h3>
-						<p className="text-xs text-slate-500">{direction}</p>
+						<h3 className="font-semibold text-foreground">{name}</h3>
+						<p className="text-xs text-muted-foreground">{direction}</p>
 					</div>
 				</div>
 				<Badge className={`text-[10px] ${badgeColor}`}>{badge}</Badge>
 			</div>
 			<div className="pt-2 border-t border-slate-800 flex items-center justify-between">
 				<div className="flex flex-col gap-1">
-					<span className="text-xs text-slate-400">{completion}</span>
-					<div className="w-32 h-1 bg-slate-800 rounded-full overflow-hidden">
+					<span className="text-xs text-muted-foreground">{completion}</span>
+					<div className="w-32 h-1 bg-card rounded-full overflow-hidden">
 						<div
 							className={`h-full ${completion.startsWith("100") ? "bg-emerald-500" : "bg-blue-500"}`}
 							style={{ width: `${completion.split("%")[0]}%` }}
@@ -518,7 +518,7 @@ function DemoErrorRow({ text, ltr = false }: { text: string; ltr?: boolean }) { 
 			className={`text-[9px] font-mono p-1.5 bg-red-950/20 border border-red-900/30 rounded flex items-center gap-2 ${ltr ? "border-l-2 border-l-red-500" : "border-r-2 border-r-red-500"}`}
 		>
 			<div className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0"></div>
-			<span className="text-slate-300 truncate leading-tight">{text}</span>
+			<span className="text-foreground/90 truncate leading-tight">{text}</span>
 		</div>
 	);
 }
@@ -538,23 +538,23 @@ function TermRow({  // NOSONAR - typescript:S6759
 }) {
 	const isComplete = status === "Complete";
 	return (
-		<TableRow className="border-slate-800 hover:bg-slate-800/50">
-			<TableCell className="font-medium text-slate-300 py-3">
+		<TableRow className="border-slate-800 hover:bg-muted/50">
+			<TableCell className="font-medium text-foreground/90 py-3">
 				{domain}
 			</TableCell>
-			<TableCell className="text-right font-mono text-slate-400">
+			<TableCell className="text-right font-mono text-muted-foreground">
 				{en}
 			</TableCell>
-			<TableCell className="text-right font-mono text-slate-400">
+			<TableCell className="text-right font-mono text-muted-foreground">
 				{ar}
 			</TableCell>
-			<TableCell className="text-right font-mono text-slate-400">
+			<TableCell className="text-right font-mono text-muted-foreground">
 				{fr}
 			</TableCell>
 			<TableCell className="text-center">
 				<Badge
 					variant="outline"
-					className={`text-[10px] ${isComplete ? "text-emerald-400 border-emerald-500/30 bg-emerald-500/10" : "text-yellow-400 border-yellow-500/30 bg-yellow-500/10"}`}
+					className={`text-[10px] ${isComplete ? "text-success border-success/30 bg-emerald-500/10" : "text-yellow-400 border-yellow-500/30 bg-yellow-500/10"}`}
 				>
 					{status}
 				</Badge>

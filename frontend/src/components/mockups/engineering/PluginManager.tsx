@@ -69,15 +69,15 @@ export function PluginManager() {
 						<Search className="absolute left-2.5 top-2 h-4 w-4 text-muted-foreground" />
 						<Input
 							placeholder="Search 2,400+ plugins..."
-							className="pl-9 h-8 bg-[#0a0a0f] border-slate-700 text-xs focus-visible:ring-purple-500"
+							className="pl-9 h-8 bg-[#0a0a0f] border-border text-xs focus-visible:ring-purple-500"
 						/>
 					</div>
 					<div className="flex gap-2">
 						<Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs">
-							<UploadCloud className="h-3.5 w-3.5" /> Upload Plugin
+							<UploadCloud className="h-4 w-4" /> Upload Plugin
 						</Button>
 						<Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs">
-							<Key className="h-3.5 w-3.5" /> API Keys
+							<Key className="h-4 w-4" /> API Keys
 						</Button>
 					</div>
 				</div>
@@ -125,12 +125,12 @@ export function PluginManager() {
 				{/* Main Grid - Marketplace */}
 				<div className="flex-1 bg-[#0a0a0f] flex flex-col overflow-hidden">
 					<div className="px-6 py-4 border-b border-slate-800/50 bg-card/20 flex justify-between items-center shrink-0">
-						<h2 className="text-lg font-bold text-slate-100 tracking-tight">
+						<h2 className="text-lg font-bold text-foreground tracking-tight">
 							Featured & Popular
 						</h2>
 						<div className="text-xs text-muted-foreground flex items-center gap-2">
 							Sort by:{" "}
-							<span className="text-slate-200 font-medium cursor-pointer">
+							<span className="text-foreground font-medium cursor-pointer">
 								Most Popular ▼
 							</span>
 						</div>
@@ -180,7 +180,7 @@ export function PluginManager() {
 								downloads="8.9k"
 								price="$199/yr"
 								category="Electrical"
-								iconColor="bg-orange-500"
+								iconColor="bg-primary"
 								iconLetter="P"
 								action="Install"
 								onClick={() => setSelectedPlugin(3)}
@@ -288,7 +288,7 @@ export function PluginManager() {
 							<div className="p-6">
 								{/* Detail Header */}
 								<div className="flex gap-4 mb-6">
-									<div className="w-16 h-16 rounded-xl bg-red-500 flex items-center justify-center text-white text-3xl font-bold shadow-lg shadow-red-500/20 shrink-0">
+									<div className="w-16 h-16 rounded-md bg-red-500 flex items-center justify-center text-white text-3xl font-bold shadow-lg shadow-red-500/20 shrink-0">
 										A
 									</div>
 									<div>
@@ -297,31 +297,31 @@ export function PluginManager() {
 										</h2>
 										<div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
 											<span>ABB Digital</span>
-											<ShieldCheck className="h-3 w-3 text-blue-400" />
+											<ShieldCheck className="h-3 w-3 text-info" />
 										</div>
 										<div className="flex items-center gap-1 text-[10px] font-mono text-yellow-500">
 											<Star className="h-3 w-3 fill-yellow-500" />
 											<span>4.9/5.0</span>
-											<span className="text-slate-500">(847 reviews)</span>
+											<span className="text-muted-foreground">(847 reviews)</span>
 										</div>
 									</div>
 								</div>
 
 								<div className="grid grid-cols-2 gap-y-3 gap-x-2 text-[11px] mb-6 bg-card/50 p-3 rounded-lg border border-slate-800">
 									<div className="text-muted-foreground">Version:</div>
-									<div className="font-mono text-right text-slate-300">
+									<div className="font-mono text-right text-foreground/90">
 										3.4.2
 									</div>
 									<div className="text-muted-foreground">Updated:</div>
-									<div className="font-mono text-right text-slate-300">
+									<div className="font-mono text-right text-foreground/90">
 										Nov 12, 2024
 									</div>
 									<div className="text-muted-foreground">Requires:</div>
-									<div className="font-mono text-right text-slate-300">
+									<div className="font-mono text-right text-foreground/90">
 										NexusCAD 4.x+
 									</div>
 									<div className="text-muted-foreground">License:</div>
-									<div className="font-mono text-right text-slate-300">
+									<div className="font-mono text-right text-foreground/90">
 										Per-seat, Sub
 									</div>
 								</div>
@@ -332,10 +332,10 @@ export function PluginManager() {
 
 								{/* Description */}
 								<div className="mb-6">
-									<h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
+									<h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">
 										Description
 									</h3>
-									<p className="text-xs text-slate-300 leading-relaxed">
+									<p className="text-xs text-foreground/90 leading-relaxed">
 										Full IEEE 1584-2018 arc flash hazard analysis integrated
 										directly into NexusCAD. Auto-extracts system data from your
 										drawings, runs the complete analysis workflow, and generates
@@ -346,10 +346,10 @@ export function PluginManager() {
 
 								{/* Features */}
 								<div className="mb-6">
-									<h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
+									<h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">
 										Key Features
 									</h3>
-									<ul className="space-y-2 text-xs text-slate-300">
+									<ul className="space-y-2 text-xs text-foreground/90">
 										<li className="flex items-start gap-2">
 											<div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1 shrink-0"></div>{" "}
 											Auto-extract from SLD topology
@@ -379,45 +379,45 @@ export function PluginManager() {
 
 								{/* Screenshots Fake */}
 								<div className="mb-6">
-									<h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
+									<h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">
 										Screenshots
 									</h3>
 									<div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-										<div className="w-24 h-16 shrink-0 bg-slate-800 rounded border border-slate-700 flex items-center justify-center">
-											<Zap className="h-4 w-4 text-slate-600" />
+										<div className="w-24 h-16 shrink-0 bg-card rounded border border-border flex items-center justify-center">
+											<Zap className="h-4 w-4 text-muted-foreground/70" />
 										</div>
-										<div className="w-24 h-16 shrink-0 bg-slate-800 rounded border border-slate-700 flex items-center justify-center">
-											<Box className="h-4 w-4 text-slate-600" />
+										<div className="w-24 h-16 shrink-0 bg-card rounded border border-border flex items-center justify-center">
+											<Box className="h-4 w-4 text-muted-foreground/70" />
 										</div>
-										<div className="w-24 h-16 shrink-0 bg-slate-800 rounded border border-slate-700 flex items-center justify-center">
-											<FileCode2 className="h-4 w-4 text-slate-600" />
+										<div className="w-24 h-16 shrink-0 bg-card rounded border border-border flex items-center justify-center">
+											<FileCode2 className="h-4 w-4 text-muted-foreground/70" />
 										</div>
 									</div>
 								</div>
 
 								{/* Permissions */}
 								<div className="mb-6">
-									<h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
+									<h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">
 										Permissions Requested
 									</h3>
 									<div className="space-y-1.5">
 										<Badge
 											variant="outline"
-											className="text-[10px] font-normal w-full justify-start border-slate-700 bg-slate-800/50"
+											className="text-[10px] font-normal w-full justify-start border-border bg-muted/50"
 										>
 											<Search className="h-3 w-3 mr-2 text-muted-foreground" />{" "}
 											Read drawing data & properties
 										</Badge>
 										<Badge
 											variant="outline"
-											className="text-[10px] font-normal w-full justify-start border-slate-700 bg-slate-800/50"
+											className="text-[10px] font-normal w-full justify-start border-border bg-muted/50"
 										>
 											<FileCode2 className="h-3 w-3 mr-2 text-muted-foreground" />{" "}
 											Write annotations to canvas
 										</Badge>
 										<Badge
 											variant="outline"
-											className="text-[10px] font-normal w-full justify-start border-slate-700 bg-slate-800/50"
+											className="text-[10px] font-normal w-full justify-start border-border bg-muted/50"
 										>
 											<Box className="h-3 w-3 mr-2 text-muted-foreground" />{" "}
 											Access component library specs
@@ -429,19 +429,19 @@ export function PluginManager() {
 								<div className="flex flex-col gap-2">
 									<Button
 										variant="ghost"
-										className="h-8 text-xs justify-between w-full border border-slate-800 hover:bg-slate-800"
+										className="h-8 text-xs justify-between w-full border border-slate-800 hover:bg-card"
 									>
 										View Documentation <ExternalLink className="h-3 w-3" />
 									</Button>
 									<Button
 										variant="ghost"
-										className="h-8 text-xs justify-between w-full border border-slate-800 hover:bg-slate-800"
+										className="h-8 text-xs justify-between w-full border border-slate-800 hover:bg-card"
 									>
 										Publisher Website <ExternalLink className="h-3 w-3" />
 									</Button>
 									<Button
 										variant="ghost"
-										className="h-8 text-xs justify-between w-full border border-slate-800 hover:bg-slate-800 text-slate-400"
+										className="h-8 text-xs justify-between w-full border border-slate-800 hover:bg-card text-muted-foreground"
 									>
 										Report Issue <AlertCircle className="h-3 w-3" />
 									</Button>
@@ -460,7 +460,7 @@ export function PluginManager() {
 						installed
 					</span>
 					<Separator orientation="vertical" className="h-4" />
-					<span className="text-blue-400 cursor-pointer hover:underline">
+					<span className="text-info cursor-pointer hover:underline">
 						3 updates available
 					</span>
 					<Separator orientation="vertical" className="h-4" />
@@ -497,7 +497,7 @@ function CategoryItem({  // NOSONAR - typescript:S6759
 	return (
 		<div className="mb-0.5">
 			<div
-				className={`flex items-center justify-between px-3 py-2 rounded-md cursor-pointer transition-colors ${active ? "bg-primary/20 text-primary font-medium" : "text-slate-400 hover:bg-muted hover:text-slate-200"}`}
+				className={`flex items-center justify-between px-3 py-2 rounded-md cursor-pointer transition-colors ${active ? "bg-primary/20 text-primary font-medium" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}
 			>
 				<div className="flex items-center gap-2">
 					{children && (
@@ -529,7 +529,7 @@ function CategoryItem({  // NOSONAR - typescript:S6759
 
 function SubCategoryItem({ label }: { label: string }) {  // NOSONAR - typescript:S6759
 	return (
-		<div className="px-2 py-1.5 rounded text-[11px] text-slate-500 hover:text-slate-300 hover:bg-muted cursor-pointer transition-colors">
+		<div className="px-2 py-1.5 rounded text-[11px] text-muted-foreground hover:text-foreground/90 hover:bg-muted cursor-pointer transition-colors">
 			{label}
 		</div>
 	);
@@ -557,7 +557,7 @@ function PluginCard({
 			<Button
 				variant="secondary"
 				size="sm"
-				className="w-full h-8 text-xs bg-slate-800 text-emerald-400 hover:bg-slate-700"
+				className="w-full h-8 text-xs bg-card text-success hover:bg-secondary"
 			>
 				<CheckCircle className="h-3 w-3 mr-1.5" /> Installed
 			</Button>
@@ -577,7 +577,7 @@ function PluginCard({
 			<Button
 				variant="outline"
 				size="sm"
-				className="w-full h-8 text-xs border-slate-600 hover:bg-slate-800 hover:text-white"
+				className="w-full h-8 text-xs border-border hover:bg-card hover:text-white"
 			>
 				Install
 			</Button>
@@ -586,7 +586,7 @@ function PluginCard({
 
 	return (
 		<div  // NOSONAR — S6848: type assertion acceptable
-			className={`flex flex-col bg-card/40 border rounded-xl p-5 cursor-pointer transition-all hover:shadow-lg hover:border-slate-500 ${selected ? "border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.15)] bg-blue-950/10" : "border-slate-800"}`}
+			className={`flex flex-col bg-card/40 border rounded-md p-5 cursor-pointer transition-all hover:shadow-lg hover:border-border ${selected ? "border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.15)] bg-blue-950/10" : "border-slate-800"}`}
 			onClick={onClick}
 		>
 			<div className="flex gap-4 mb-4">
@@ -597,12 +597,12 @@ function PluginCard({
 				</div>
 				<div className="flex-1 min-w-0">
 					<div className="flex justify-between items-start mb-0.5">
-						<h3 className="font-bold text-sm text-slate-100 truncate pr-2">
+						<h3 className="font-bold text-sm text-foreground truncate pr-2">
 							{name}
 						</h3>
 						<Badge
 							variant="outline"
-							className="text-[9px] h-4 py-0 px-1 border-slate-700 bg-slate-800/50 text-slate-300 shrink-0"
+							className="text-[9px] h-4 py-0 px-1 border-border bg-muted/50 text-foreground/90 shrink-0"
 						>
 							{category}
 						</Badge>
@@ -610,22 +610,22 @@ function PluginCard({
 					<div className="flex items-center gap-1 text-[11px] text-muted-foreground">
 						<span className="truncate">{publisher}</span>
 						{verified && (
-							<ShieldCheck className="h-3 w-3 text-blue-400 shrink-0" />
+							<ShieldCheck className="h-3 w-3 text-info shrink-0" />
 						)}
 					</div>
 				</div>
 			</div>
 
-			<p className="text-xs text-slate-400 line-clamp-2 mb-4 flex-1">{desc}</p>
+			<p className="text-xs text-muted-foreground line-clamp-2 mb-4 flex-1">{desc}</p>
 
-			<div className="flex items-center justify-between text-[10px] font-mono text-slate-500 mb-4 pb-4 border-b border-slate-800/50">
+			<div className="flex items-center justify-between text-[10px] font-mono text-muted-foreground mb-4 pb-4 border-b border-slate-800/50">
 				<div className="flex items-center gap-1 text-yellow-500">
 					<Star className="h-3 w-3 fill-yellow-500" /> {rating}
 				</div>
 				<div className="flex items-center gap-1">
 					<Download className="h-3 w-3" /> {downloads}
 				</div>
-				<div className="font-sans font-medium text-slate-300">{price}</div>
+				<div className="font-sans font-medium text-foreground/90">{price}</div>
 			</div>
 
 			<div className="mt-auto">{actionBtn}</div>

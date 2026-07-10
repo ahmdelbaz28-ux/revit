@@ -51,7 +51,7 @@ function Conflicts() {
 					<h1 className="text-2xl font-bold text-white">
 						{t("conflicts.title")}
 					</h1>
-					<p className="text-slate-400 text-sm mt-1">
+					<p className="text-muted-foreground text-sm mt-1">
 						{conflicts
 							? `${unresolvedCount} ${t("conflicts.unresolved")} / ${resolvedCount} ${t("conflicts.resolved")}`
 							: t("common.loading")}
@@ -60,7 +60,7 @@ function Conflicts() {
 				<Button
 					onClick={() => detectMutation.mutate()}
 					disabled={detectMutation.isPending}
-					className="bg-red-600 hover:bg-red-700 text-white border-none"
+					className="bg-danger hover:bg-danger/90 text-white border-none"
 				>
 					{detectMutation.isPending ? (
 						<>
@@ -93,7 +93,7 @@ function Conflicts() {
 			{/* Detect result */}
 			{detectMutation.isSuccess && detectMutation.data && (
 				<div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-4">
-					<p className="text-emerald-400 text-sm">
+					<p className="text-success text-sm">
 						{t("conflicts.detectedConflicts", {
 							count: detectMutation.data.length,
 						})}
@@ -103,7 +103,7 @@ function Conflicts() {
 
 			{detectMutation.isError && (
 				<div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
-					<p className="text-red-400 text-sm">
+					<p className="text-danger text-sm">
 						{detectMutation.error instanceof Error
 							? detectMutation.error.message
 							: t("conflicts.failedToDetect")}
@@ -114,85 +114,85 @@ function Conflicts() {
 			{/* Error */}
 			{error && (
 				<div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
-					<p className="text-red-400 text-sm">{t("conflicts.failedToLoad")}</p>
+					<p className="text-danger text-sm">{t("conflicts.failedToLoad")}</p>
 				</div>
 			)}
 
 			{/* Loading */}
 			{isLoading && (
 				<div className="flex items-center justify-center py-12">
-					<div className="w-8 h-8 border-2 border-slate-600 border-t-orange-500 rounded-full animate-spin" />
+					<div className="w-8 h-8 border-2 border-border border-t-orange-500 rounded-full animate-spin" />
 				</div>
 			)}
 
 			{/* Summary cards */}
 			{conflictsData && !isLoading && (
 				<div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-					<div className="bg-slate-800 border border-slate-700 rounded-xl p-4">
+					<div className="bg-card border border-border rounded-md p-4">
 						<p className="text-2xl font-bold text-white">
 							{conflictsData.total}
 						</p>
-						<p className="text-slate-400 text-sm">
+						<p className="text-muted-foreground text-sm">
 							{t("conflicts.totalConflicts")}
 						</p>
 					</div>
-					<div className="bg-slate-800 border border-amber-500/20 rounded-xl p-4">
-						<p className="text-2xl font-bold text-amber-400">
+					<div className="bg-card border border-amber-500/20 rounded-md p-4">
+						<p className="text-2xl font-bold text-warning">
 							{unresolvedCount}
 						</p>
-						<p className="text-slate-400 text-sm">
+						<p className="text-muted-foreground text-sm">
 							{t("conflicts.unresolved")}
 						</p>
 					</div>
-					<div className="bg-slate-800 border border-emerald-500/20 rounded-xl p-4">
-						<p className="text-2xl font-bold text-emerald-400">
+					<div className="bg-card border border-emerald-500/20 rounded-md p-4">
+						<p className="text-2xl font-bold text-success">
 							{resolvedCount}
 						</p>
-						<p className="text-slate-400 text-sm">{t("conflicts.resolved")}</p>
+						<p className="text-muted-foreground text-sm">{t("conflicts.resolved")}</p>
 					</div>
 				</div>
 			)}
 
 			{/* Table */}
 			{conflictsData && !isLoading && (
-				<div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
+				<div className="bg-card border border-border rounded-md overflow-hidden">
 					<div className="overflow-x-auto">
 						<table className="w-full text-sm" aria-label={t("conflicts.title")}>
 							<thead>
-								<tr className="border-b border-slate-700 bg-slate-800/50">
+								<tr className="border-b border-border bg-muted/50">
 									<th
 										scope="col"
-										className="text-left text-slate-400 font-medium px-4 py-3"
+										className="text-left text-muted-foreground font-medium px-4 py-3"
 									>
 										{t("conflicts.element")}
 									</th>
 									<th
 										scope="col"
-										className="text-left text-slate-400 font-medium px-4 py-3"
+										className="text-left text-muted-foreground font-medium px-4 py-3"
 									>
 										{t("elements.type")}
 									</th>
 									<th
 										scope="col"
-										className="text-left text-slate-400 font-medium px-4 py-3"
+										className="text-left text-muted-foreground font-medium px-4 py-3"
 									>
 										{t("conflicts.sources")}
 									</th>
 									<th
 										scope="col"
-										className="text-left text-slate-400 font-medium px-4 py-3"
+										className="text-left text-muted-foreground font-medium px-4 py-3"
 									>
 										{t("conflicts.status")}
 									</th>
 									<th
 										scope="col"
-										className="text-left text-slate-400 font-medium px-4 py-3"
+										className="text-left text-muted-foreground font-medium px-4 py-3"
 									>
 										{t("conflicts.timestamp")}
 									</th>
 									<th
 										scope="col"
-										className="text-right text-slate-400 font-medium px-4 py-3"
+										className="text-right text-muted-foreground font-medium px-4 py-3"
 									>
 										{t("elements.actions")}
 									</th>
@@ -211,7 +211,7 @@ function Conflicts() {
 														fill="none"
 														stroke="currentColor"
 														strokeWidth="1.5"
-														className="h-12 w-12 text-slate-600"
+														className="h-12 w-12 text-muted-foreground/70"
 													>
 														<line x1="12" y1="22" x2="12" y2="2" />
 														<path d="M10 22a2 2 0 002-2V4a2 2 0 00-2-2h0a2 2 0 00-2 2v16a2 2 0 002 2h0z" />
@@ -230,36 +230,36 @@ function Conflicts() {
 									conflicts.map((conflict) => (
 										<tr
 											key={conflict.conflict_id}
-											className={`border-b border-slate-700/50 hover:bg-slate-700/30 transition-colors ${
+											className={`border-b border-border/50 hover:bg-secondary/30 transition-colors ${
 												conflict.resolved ? "opacity-60" : ""
 											}`}
 										>
 											<td className="px-4 py-3">
-												<span className="text-xs font-mono text-orange-400">
+												<span className="text-xs font-mono text-primary">
 													{conflict.element_id
 														? `${conflict.element_id.slice(0, 12)}…`
 														: "—"}
 												</span>
 											</td>
 											<td className="px-4 py-3">
-												<span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20">
+												<span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-amber-500/10 text-warning border border-amber-500/20">
 													{conflict.conflict_type}
 												</span>
 											</td>
 											<td className="px-4 py-3">
-												<div className="text-xs text-slate-400">
-													<span className="text-blue-400">
+												<div className="text-xs text-muted-foreground">
+													<span className="text-info">
 														{conflict.source_a}
 													</span>
 													{" vs "}
-													<span className="text-emerald-400">
+													<span className="text-success">
 														{conflict.source_b}
 													</span>
 												</div>
 											</td>
 											<td className="px-4 py-3">
 												{conflict.resolved ? (
-													<span className="inline-flex items-center gap-1 text-xs text-emerald-400">
+													<span className="inline-flex items-center gap-1 text-xs text-success">
 														<svg
 															width="12"
 															height="12"
@@ -275,13 +275,13 @@ function Conflicts() {
 														{t("conflicts.resolved")}
 													</span>
 												) : (
-													<span className="inline-flex items-center gap-1 text-xs text-amber-400">
+													<span className="inline-flex items-center gap-1 text-xs text-warning">
 														<span className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-pulse" />
 														{t("conflicts.unresolved")}
 													</span>
 												)}
 											</td>
-											<td className="px-4 py-3 text-slate-400 text-xs">
+											<td className="px-4 py-3 text-muted-foreground text-xs">
 												{conflict.timestamp
 													? new Date(conflict.timestamp).toLocaleDateString()
 													: "—"}
@@ -310,17 +310,17 @@ function Conflicts() {
 			{/* Resolve Modal */}
 			{resolveTarget && (
 				<div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-					<div className="bg-slate-800 border border-slate-700 rounded-xl max-w-md w-full p-6">
+					<div className="bg-card border border-border rounded-md max-w-md w-full p-6">
 						<h3 className="text-lg font-semibold text-white mb-2">
 							{t("conflicts.resolveConflict")}
 						</h3>
-						<p className="text-slate-400 text-sm mb-4">
+						<p className="text-muted-foreground text-sm mb-4">
 							{t("conflicts.selectResolutionStrategy")}
 						</p>
 
 						{resolveMutation.isError && (
 							<div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 mb-4">
-								<p className="text-red-400 text-sm">
+								<p className="text-danger text-sm">
 									{resolveMutation.error instanceof Error
 										? resolveMutation.error.message
 										: t("conflicts.resolutionFailed")}
@@ -334,7 +334,7 @@ function Conflicts() {
 								onValueChange={setResolveStrategy}
 								className="space-y-3"
 							>
-								<div className="flex items-start space-x-3 p-3 bg-slate-900/50 rounded-lg border border-slate-700 hover:border-red-500/30 transition-colors">
+								<div className="flex items-start space-x-3 p-3 bg-muted/50 rounded-lg border border-border hover:border-danger/30 transition-colors">
 									<RadioGroupItem
 										value="LAST_WRITE_WINS"
 										id="last-write"
@@ -347,12 +347,12 @@ function Conflicts() {
 										>
 											{t("conflicts.lastWriteWins")}
 										</label>
-										<p className="text-xs text-slate-400">
+										<p className="text-xs text-muted-foreground">
 											{t("conflicts.acceptMostRecent")}
 										</p>
 									</div>
 								</div>
-								<div className="flex items-start space-x-3 p-3 bg-slate-900/50 rounded-lg border border-slate-700 hover:border-red-500/30 transition-colors">
+								<div className="flex items-start space-x-3 p-3 bg-muted/50 rounded-lg border border-border hover:border-danger/30 transition-colors">
 									<RadioGroupItem
 										value="SEMANTIC_MERGE"
 										id="semantic-merge"
@@ -365,7 +365,7 @@ function Conflicts() {
 										>
 											{t("conflicts.semanticMerge")}
 										</label>
-										<p className="text-xs text-slate-400">
+										<p className="text-xs text-muted-foreground">
 											{t("conflicts.intelligentMerge")}
 										</p>
 									</div>
@@ -376,7 +376,7 @@ function Conflicts() {
 						<div className="flex justify-end gap-3">
 							<Button
 								variant="outline"
-								className="border-slate-600 text-slate-300"
+								className="border-border text-foreground/90"
 								onClick={() => setResolveTarget(null)}
 							>
 								{t("common.cancel")}

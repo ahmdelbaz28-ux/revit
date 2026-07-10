@@ -109,7 +109,7 @@ export function AICopilot() {
 					<div className="space-y-6">
 						{/* Message 1: User */}
 						<div className="flex flex-col gap-1 items-end">
-							<div className="bg-primary/20 text-white px-4 py-3 rounded-2xl rounded-tr-sm text-sm max-w-[85%] border border-primary/20 backdrop-blur-md">
+							<div className="bg-primary/20 text-white px-4 py-3 rounded-md rounded-tr-sm text-sm max-w-[85%] border border-primary/20 backdrop-blur-md">
 								Check the electrical panel LP-3A for NEC 2023 compliance
 							</div>
 						</div>
@@ -119,22 +119,22 @@ export function AICopilot() {
 								<Zap className="h-4 w-4 text-primary" />
 							</div>
 							<div className="flex flex-col gap-2 w-full">
-								<div className="bg-[#1a1d24] border border-white/10 px-4 py-3 rounded-2xl rounded-tl-sm text-sm text-slate-300">
+								<div className="bg-[#1a1d24] border border-white/10 px-4 py-3 rounded-md rounded-tl-sm text-sm text-foreground/90">
 									<p className="mb-2">
 										Analyzing panel{" "}
 										<span className="font-mono text-primary">LP-3A</span>...
 									</p>
-									<p className="text-amber-400 font-medium flex items-center gap-1 mb-2">
+									<p className="text-warning font-medium flex items-center gap-1 mb-2">
 										<AlertTriangle className="h-4 w-4" /> Found 2 compliance
 										issues:
 									</p>
-									<ol className="list-decimal pl-4 space-y-1 mb-3 text-slate-400">
+									<ol className="list-decimal pl-4 space-y-1 mb-3 text-muted-foreground">
 										<li>
 											Neutral bar spacing does not meet 408.36 requirements.
 										</li>
 										<li>Missing AFCI protection on branch circuits.</li>
 									</ol>
-									<p className="text-xs text-slate-500 italic">
+									<p className="text-xs text-muted-foreground italic">
 										Generating compliance report...
 									</p>
 								</div>
@@ -165,7 +165,7 @@ export function AICopilot() {
 						</div>
 						{/* Message 3: User */}
 						<div className="flex flex-col gap-1 items-end">
-							<div className="bg-primary/20 text-white px-4 py-3 rounded-2xl rounded-tr-sm text-sm max-w-[85%] border border-primary/20 backdrop-blur-md">
+							<div className="bg-primary/20 text-white px-4 py-3 rounded-md rounded-tr-sm text-sm max-w-[85%] border border-primary/20 backdrop-blur-md">
 								Generate a load calculation for building Tower-B
 							</div>
 						</div>
@@ -175,7 +175,7 @@ export function AICopilot() {
 								<Zap className="h-4 w-4 text-primary" />
 							</div>
 							<div className="flex flex-col gap-2 w-full">
-								<div className="bg-[#1a1d24] border border-white/10 px-4 py-3 rounded-2xl rounded-tl-sm text-sm text-slate-300">
+								<div className="bg-[#1a1d24] border border-white/10 px-4 py-3 rounded-md rounded-tl-sm text-sm text-foreground/90">
 									<p className="mb-3">
 										Running load calculation for{" "}
 										<span className="font-mono text-primary">Tower-B</span>...
@@ -183,7 +183,7 @@ export function AICopilot() {
 
 									<div className="bg-black/50 border border-white/5 rounded-md overflow-hidden mb-3">
 										<div className="grid grid-cols-2 text-xs border-b border-white/5">
-											<div className="p-2 text-slate-400">
+											<div className="p-2 text-muted-foreground">
 												Total connected load:
 											</div>
 											<div className="p-2 font-mono text-white text-right">
@@ -191,16 +191,16 @@ export function AICopilot() {
 											</div>
 										</div>
 										<div className="grid grid-cols-2 text-xs border-b border-white/5">
-											<div className="p-2 text-slate-400">Demand load:</div>
+											<div className="p-2 text-muted-foreground">Demand load:</div>
 											<div className="p-2 font-mono text-primary text-right">
 												1,923 kVA
 											</div>
 										</div>
 										<div className="grid grid-cols-2 text-xs bg-primary/5">
-											<div className="p-2 text-slate-300 font-medium">
+											<div className="p-2 text-foreground/90 font-medium">
 												Rec. service size:
 											</div>
-											<div className="p-2 font-mono text-emerald-400 text-right font-bold">
+											<div className="p-2 font-mono text-success text-right font-bold">
 												2,500A @ 480V 3Φ
 											</div>
 										</div>
@@ -221,11 +221,11 @@ export function AICopilot() {
 								<Zap className="h-4 w-4 text-background" />
 							</div>
 							<div className="flex flex-col gap-2 w-full">
-								<div className="bg-[#1a1d24] border border-primary/30 shadow-[0_0_15px_rgba(0,168,255,0.05)] px-4 py-3 rounded-2xl rounded-tl-sm text-sm text-slate-300">
+								<div className="bg-[#1a1d24] border border-primary/30 shadow-[0_0_15px_rgba(0,168,255,0.05)] px-4 py-3 rounded-md rounded-tl-sm text-sm text-foreground/90">
 									<p className="mb-2">
 										Routing optimization complete. Optimal path found.
 									</p>
-									<div className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 px-3 py-2 rounded text-xs mb-3 flex items-start gap-2">
+									<div className="bg-emerald-500/10 border border-success/30 text-success px-3 py-2 rounded text-xs mb-3 flex items-start gap-2">
 										<CheckSquare className="w-4 h-4 shrink-0 mt-0.5" />
 										<div>
 											<strong className="block mb-1">
@@ -275,7 +275,7 @@ export function AICopilot() {
 							<Badge
 								key={cmd}
 								variant="outline"
-								className="bg-[#1a1d24] border-white/10 text-slate-300 hover:bg-primary/20 hover:text-primary hover:border-primary/30 cursor-pointer font-normal py-1 px-3"
+								className="bg-[#1a1d24] border-white/10 text-foreground/90 hover:bg-primary/20 hover:text-primary hover:border-primary/30 cursor-pointer font-normal py-1 px-3"
 							>
 								{cmd}
 							</Badge>
@@ -305,7 +305,7 @@ export function AICopilot() {
 				</div>
 
 				{/* Settings Bar */}
-				<div className="h-8 bg-[#0a0a0c] border-t border-white/5 flex items-center justify-between px-4 text-[10px] font-mono text-slate-500">
+				<div className="h-8 bg-[#0a0a0c] border-t border-white/5 flex items-center justify-between px-4 text-[10px] font-mono text-muted-foreground">
 					<div className="flex items-center gap-3">
 						<span className="flex items-center gap-1">
 							<Cpu className="w-3 h-3" /> Expert

@@ -45,7 +45,7 @@ export function AccessibleToast({  // NOSONAR - typescript:S6759
 				<button
 					onClick={onClose}
 					aria-label="Dismiss notification"
-					className="ml-2 text-slate-400 hover:text-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-500 rounded"
+					className="ml-2 text-muted-foreground hover:text-foreground focus:outline-none focus:ring-2 focus:ring-slate-500 rounded"
 				>
 					×
 				</button>

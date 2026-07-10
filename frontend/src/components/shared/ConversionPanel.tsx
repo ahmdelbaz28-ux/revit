@@ -46,33 +46,33 @@ export function ConversionPanel() {
 	};
 
 	return (
-		<Card className="border-slate-700 bg-slate-800">
+		<Card className="border-border bg-card">
 			<CardHeader>
-				<CardTitle className="flex items-center gap-2 text-slate-100">
-					<ArrowRightLeft className="h-5 w-5 text-orange-400" />
+				<CardTitle className="flex items-center gap-2 text-foreground">
+					<ArrowRightLeft className="h-5 w-5 text-primary" />
 					Bidirectional Conversion
 				</CardTitle>
-				<CardDescription className="text-slate-400">
+				<CardDescription className="text-muted-foreground">
 					Convert between AutoCAD (DWG) and Revit (RVT) formats
 				</CardDescription>
 			</CardHeader>
 			<CardContent className="space-y-4">
 				<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 					<div className="space-y-2">
-						<Label className="text-slate-300">Source File</Label>
+						<Label className="text-foreground/90">Source File</Label>
 						<Input
 							placeholder="/path/to/file.dwg"
 							value={sourceFile}
 							onChange={(e) => setSourceFile(e.target.value)}
-							className="bg-slate-900 border-slate-700 text-slate-100"
+							className="bg-card border-border text-foreground"
 						/>
 					</div>
 					<div className="space-y-2">
-						<Label className="text-slate-300">Target Format</Label>
+						<Label className="text-foreground/90">Target Format</Label>
 						<select
 							value={targetFormat}
 							onChange={(e) => setTargetFormat(e.target.value)}
-							className="w-full bg-slate-900 border border-slate-700 text-slate-100 rounded-md px-3 py-2 text-sm"
+							className="w-full bg-card border border-border text-foreground rounded-md px-3 py-2 text-sm"
 						>
 							<option value="revit">Revit (RVT)</option>
 							<option value="autocad">AutoCAD (DWG)</option>
@@ -83,7 +83,7 @@ export function ConversionPanel() {
 				<Button
 					onClick={handleConvert}
 					disabled={state === "converting"}
-					className="w-full bg-orange-600 hover:bg-orange-700 text-white"
+					className="w-full bg-primary hover:bg-orange-700 text-white"
 				>
 					{state === "converting" ? (
 						<>
@@ -100,20 +100,20 @@ export function ConversionPanel() {
 				{state === "success" && result && (
 					<div className="p-3 bg-emerald-600/10 border border-emerald-600/30 rounded-lg">
 						<div className="flex items-center gap-2 mb-2">
-							<CheckCircle2 className="h-5 w-5 text-emerald-400" />
+							<CheckCircle2 className="h-5 w-5 text-success" />
 							<span className="text-sm text-emerald-300">
 								Conversion Successful
 							</span>
 						</div>
-						<pre className="text-xs text-slate-400 overflow-auto">
+						<pre className="text-xs text-muted-foreground overflow-auto">
 							{JSON.stringify(result, null, 2)}
 						</pre>
 					</div>
 				)}
 				{state === "error" && (
-					<div className="p-3 bg-red-600/10 border border-red-600/30 rounded-lg">
+					<div className="p-3 bg-danger/10 border border-red-600/30 rounded-lg">
 						<div className="flex items-center gap-2">
-							<XCircle className="h-5 w-5 text-red-400" />
+							<XCircle className="h-5 w-5 text-danger" />
 							<span className="text-sm text-red-300">Conversion Failed</span>
 						</div>
 					</div>

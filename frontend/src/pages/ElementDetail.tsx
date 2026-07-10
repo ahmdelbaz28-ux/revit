@@ -67,7 +67,7 @@ function ElementDetail() {  // NOSONAR — S3776: cognitive complexity is inhere
 	if (isLoading) {
 		return (
 			<div className="flex items-center justify-center py-12">
-				<div className="w-8 h-8 border-2 border-slate-600 border-t-orange-500 rounded-full animate-spin" />
+				<div className="w-8 h-8 border-2 border-border border-t-orange-500 rounded-full animate-spin" />
 			</div>
 		);
 	}
@@ -77,7 +77,7 @@ function ElementDetail() {  // NOSONAR — S3776: cognitive complexity is inhere
 			<div className="space-y-4">
 				<Link
 					to="/elements"
-					className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white transition-colors"
+					className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-white transition-colors"
 				>
 					<svg
 						width="16"
@@ -95,7 +95,7 @@ function ElementDetail() {  // NOSONAR — S3776: cognitive complexity is inhere
 					Back to Elements
 				</Link>
 				<div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
-					<p className="text-red-400 text-sm">
+					<p className="text-danger text-sm">
 						{error instanceof Error ? error.message : "Element not found"}
 					</p>
 				</div>
@@ -109,11 +109,11 @@ function ElementDetail() {  // NOSONAR — S3776: cognitive complexity is inhere
 			<div className="flex items-center gap-2 text-sm">
 				<Link
 					to="/elements"
-					className="text-slate-400 hover:text-white transition-colors"
+					className="text-muted-foreground hover:text-white transition-colors"
 				>
 					Elements
 				</Link>
-				<span className="text-slate-600">/</span>
+				<span className="text-muted-foreground/70">/</span>
 				<span className="text-white">
 					{element.properties?.name ?? element.element_id}
 				</span>
@@ -125,21 +125,21 @@ function ElementDetail() {  // NOSONAR — S3776: cognitive complexity is inhere
 					<h1 className="text-2xl font-bold text-white">
 						{element.properties?.name ?? "Unnamed Element"}
 					</h1>
-					<p className="text-slate-400 text-sm mt-1">
+					<p className="text-muted-foreground text-sm mt-1">
 						ID: {element.element_id} · Version {element.version}
 					</p>
 				</div>
 				<div className="flex gap-2">
 					<button
 						onClick={startEditing}
-						className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white text-sm font-medium rounded-lg transition-colors"
+						className="px-4 py-2 bg-secondary hover:bg-slate-600 text-white text-sm font-medium rounded-lg transition-colors"
 					>
 						Edit
 					</button>
 					<button
 						onClick={() => setShowDeleteConfirm(true)}
 						disabled={deleteMutation.isPending}
-						className="px-4 py-2 bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
+						className="px-4 py-2 bg-danger/10 hover:bg-danger text-danger hover:text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
 						aria-label={t("common.delete")}
 					>
 						{deleteMutation.isPending ? "Deleting..." : t("common.delete")}
@@ -148,14 +148,14 @@ function ElementDetail() {  // NOSONAR — S3776: cognitive complexity is inhere
 			</div>
 
 			{/* Properties */}
-			<div className="bg-slate-800 border border-slate-700 rounded-xl p-6">
+			<div className="bg-card border border-border rounded-md p-6">
 				<h2 className="text-lg font-semibold text-white mb-4">Properties</h2>
 
 				{isEditing ? (
 					<div className="space-y-4">
 						{updateMutation.isError && (
 							<div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
-								<p className="text-red-400 text-sm">
+								<p className="text-danger text-sm">
 									{updateMutation.error instanceof Error
 										? updateMutation.error.message
 										: "Failed to update"}
@@ -164,54 +164,54 @@ function ElementDetail() {  // NOSONAR — S3776: cognitive complexity is inhere
 						)}
 						<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 							<div>
-								<label className="block text-sm font-medium text-slate-300 mb-1">  // NOSONAR — S6853: React import kept for JSX transform
+								<label className="block text-sm font-medium text-foreground/90 mb-1">  // NOSONAR — S6853: React import kept for JSX transform
 									Name
 								</label>
 								<input
 									type="text"
 									value={editName}
 									onChange={(e) => setEditName(e.target.value)}
-									className="w-full bg-slate-900 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:border-orange-500 focus:outline-none"
+									className="w-full bg-card border border-border text-white text-sm rounded-lg px-3 py-2 focus:border-primary focus:outline-none"
 								/>
 							</div>
 							<div>
-								<label className="block text-sm font-medium text-slate-300 mb-1">  // NOSONAR — S6853: React import kept for JSX transform
+								<label className="block text-sm font-medium text-foreground/90 mb-1">  // NOSONAR — S6853: React import kept for JSX transform
 									Material
 								</label>
 								<input
 									type="text"
 									value={editMaterial}
 									onChange={(e) => setEditMaterial(e.target.value)}
-									className="w-full bg-slate-900 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:border-orange-500 focus:outline-none"
+									className="w-full bg-card border border-border text-white text-sm rounded-lg px-3 py-2 focus:border-primary focus:outline-none"
 								/>
 							</div>
 							<div>
-								<label className="block text-sm font-medium text-slate-300 mb-1">  // NOSONAR — S6853: React import kept for JSX transform
+								<label className="block text-sm font-medium text-foreground/90 mb-1">  // NOSONAR — S6853: React import kept for JSX transform
 									Fire Rating
 								</label>
 								<input
 									type="text"
 									value={editFireRating}
 									onChange={(e) => setEditFireRating(e.target.value)}
-									className="w-full bg-slate-900 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:border-orange-500 focus:outline-none"
+									className="w-full bg-card border border-border text-white text-sm rounded-lg px-3 py-2 focus:border-primary focus:outline-none"
 								/>
 							</div>
 							<div>
-								<label className="block text-sm font-medium text-slate-300 mb-1">  // NOSONAR — S6853: React import kept for JSX transform
+								<label className="block text-sm font-medium text-foreground/90 mb-1">  // NOSONAR — S6853: React import kept for JSX transform
 									Description
 								</label>
 								<input
 									type="text"
 									value={editDescription}
 									onChange={(e) => setEditDescription(e.target.value)}
-									className="w-full bg-slate-900 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:border-orange-500 focus:outline-none"
+									className="w-full bg-card border border-border text-white text-sm rounded-lg px-3 py-2 focus:border-primary focus:outline-none"
 								/>
 							</div>
 						</div>
 						<div className="flex justify-end gap-3">
 							<button
 								onClick={() => setIsEditing(false)}
-								className="px-4 py-2 text-sm text-slate-300 hover:text-white transition-colors"
+								className="px-4 py-2 text-sm text-foreground/90 hover:text-white transition-colors"
 							>
 								Cancel
 							</button>
@@ -227,7 +227,7 @@ function ElementDetail() {  // NOSONAR — S3776: cognitive complexity is inhere
 									});
 								}}
 								disabled={updateMutation.isPending}
-								className="px-4 py-2 bg-orange-600 hover:bg-orange-500 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
+								className="px-4 py-2 bg-primary hover:bg-primary text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
 							>
 								{updateMutation.isPending ? "Saving..." : "Save Changes"}
 							</button>
@@ -301,7 +301,7 @@ function ElementDetail() {  // NOSONAR — S3776: cognitive complexity is inhere
 			</div>
 
 			{/* Geometry */}
-			<div className="bg-slate-800 border border-slate-700 rounded-xl p-6">
+			<div className="bg-card border border-border rounded-md p-6">
 				<h2 className="text-lg font-semibold text-white mb-4">Geometry</h2>
 				{element.geometry ? (
 					<div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -323,8 +323,8 @@ function ElementDetail() {  // NOSONAR — S3776: cognitive complexity is inhere
 								value={`${element.geometry.points.length} points`}
 							/>
 							{element.geometry.points.length > 0 && (
-								<div className="mt-2 max-h-48 overflow-y-auto custom-scrollbar bg-slate-900 rounded-lg p-3">
-									<pre className="text-xs text-slate-400">
+								<div className="mt-2 max-h-48 overflow-y-auto custom-scrollbar bg-card rounded-lg p-3">
+									<pre className="text-xs text-muted-foreground">
 										{JSON.stringify(element.geometry.points, null, 2)}
 									</pre>
 								</div>
@@ -332,12 +332,12 @@ function ElementDetail() {  // NOSONAR — S3776: cognitive complexity is inhere
 						</div>
 					</div>
 				) : (
-					<p className="text-slate-500 text-sm">No geometry data available</p>
+					<p className="text-muted-foreground text-sm">No geometry data available</p>
 				)}
 			</div>
 
 			{/* Timestamps */}
-			<div className="bg-slate-800 border border-slate-700 rounded-xl p-6">
+			<div className="bg-card border border-border rounded-md p-6">
 				<h2 className="text-lg font-semibold text-white mb-4">Timestamps</h2>
 				<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
 					<PropertyRow
@@ -361,7 +361,7 @@ function ElementDetail() {  // NOSONAR — S3776: cognitive complexity is inhere
 			</div>
 
 			{/* Connections */}
-			<div className="bg-slate-800 border border-slate-700 rounded-xl p-6">
+			<div className="bg-card border border-border rounded-md p-6">
 				<h2 className="text-lg font-semibold text-white mb-4">
 					Connections ({connections.length})
 				</h2>
@@ -370,27 +370,27 @@ function ElementDetail() {  // NOSONAR — S3776: cognitive complexity is inhere
 						{connections.map((conn) => (
 							<div
 								key={conn.connection_id}
-								className="flex items-center gap-3 bg-slate-900/50 border border-slate-700/50 rounded-lg p-3"
+								className="flex items-center gap-3 bg-muted/50 border border-border/50 rounded-lg p-3"
 							>
-								<span className="text-orange-400 text-xs font-mono">
+								<span className="text-primary text-xs font-mono">
 									{conn.from_element_id === id ? "→" : "←"}
 								</span>
 								<Link
 									to={`/elements/${conn.from_element_id === id ? conn.to_element_id : conn.from_element_id}`}
-									className="text-sm text-white hover:text-orange-400 transition-colors"
+									className="text-sm text-white hover:text-primary transition-colors"
 								>
 									{conn.from_element_id === id
 										? conn.to_element_id
 										: conn.from_element_id}
 								</Link>
-								<span className="text-xs text-slate-500 bg-slate-700 px-2 py-0.5 rounded">
+								<span className="text-xs text-muted-foreground bg-secondary px-2 py-0.5 rounded">
 									{conn.relationship_type}
 								</span>
 							</div>
 						))}
 					</div>
 				) : (
-					<p className="text-slate-500 text-sm">No connections found</p>
+					<p className="text-muted-foreground text-sm">No connections found</p>
 				)}
 			</div>
 
@@ -420,7 +420,7 @@ function PropertyRow({  // NOSONAR - typescript:S6759
 }) {
 	return (
 		<div>
-			<p className="text-xs text-slate-500 mb-0.5">{label}</p>
+			<p className="text-xs text-muted-foreground mb-0.5">{label}</p>
 			<p className="text-sm text-white">{value ?? "—"}</p>
 		</div>
 	);

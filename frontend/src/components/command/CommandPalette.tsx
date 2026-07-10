@@ -222,9 +222,9 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
                                         }
                                 }}
                         />
-                        <div className="relative w-full max-w-xl mx-4 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl overflow-hidden">
-                                <div className="flex items-center gap-3 p-4 border-b border-slate-700">
-                                        <Search className="h-5 w-5 text-slate-400 shrink-0" />
+                        <div className="relative w-full max-w-xl mx-4 bg-card border border-border rounded-md shadow-2xl overflow-hidden">
+                                <div className="flex items-center gap-3 p-4 border-b border-border">
+                                        <Search className="h-5 w-5 text-muted-foreground shrink-0" />
                                         <input
                                                 ref={inputRef}
                                                 type="text"
@@ -232,12 +232,12 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
                                                 onChange={(e) => setQuery(e.target.value)}
                                                 onKeyDown={handleKeyDown}
                                                 placeholder="Type a command or search help..."
-                                                className="flex-1 bg-transparent text-slate-100 text-sm placeholder:text-slate-500 outline-none"
+                                                className="flex-1 bg-transparent text-foreground text-sm placeholder:text-muted-foreground outline-none"
                                         />
                                         <button
                                                 type="button"
                                                 onClick={() => onOpenChange(false)}
-                                                className="text-xs text-slate-500 border border-slate-700 rounded px-2 py-1 hover:text-slate-300"
+                                                className="text-xs text-muted-foreground border border-border rounded px-2 py-1 hover:text-foreground/90"
                                                 aria-label="Close command palette"
                                         >
                                                 ESC
@@ -246,7 +246,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
 
                                 <div ref={listRef} className="max-h-80 overflow-y-auto p-2">
                                         {results.length === 0 ? (
-                                                <div className="py-6 text-center text-sm text-slate-500">
+                                                <div className="py-6 text-center text-sm text-muted-foreground">
                                                         No results found
                                                 </div>
                                         ) : (
@@ -262,11 +262,11 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
                                                                                 className={cn(
                                                                                         "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors",
                                                                                         isActive
-                                                                                                ? "bg-slate-800 text-slate-100"
-                                                                                                : "text-slate-300 hover:bg-slate-800/60",
+                                                                                                ? "bg-card text-foreground"
+                                                                                                : "text-foreground/90 hover:bg-card/60",
                                                                                 )}
                                                                         >
-                                                                                <span className="flex h-8 w-8 items-center justify-center rounded bg-slate-800 text-slate-400">
+                                                                                <span className="flex h-8 w-8 items-center justify-center rounded bg-card text-muted-foreground">
                                                                                         {result.item.icon || <Search className="h-4 w-4" />}
                                                                                 </span>
                                                                                 <span className="flex-1 text-left">
@@ -274,7 +274,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
                                                                                 </span>
                                                                                 {result.item.shortcut && (
                                                                                         <span className="flex gap-1">
-                                                                                                <kbd className="hidden sm:inline-block rounded bg-slate-800 border border-slate-600 px-1.5 py-0.5 text-[10px] text-slate-400">
+                                                                                                <kbd className="hidden sm:inline-block rounded bg-card border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground">
                                                                                                         {result.item.shortcut}
                                                                                                 </kbd>
                                                                                         </span>
@@ -293,20 +293,20 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
                                                                         className={cn(
                                                                                 "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors",
                                                                                 isActive
-                                                                                        ? "bg-slate-800 text-slate-100"
-                                                                                        : "text-slate-300 hover:bg-slate-800/60",
+                                                                                        ? "bg-card text-foreground"
+                                                                                        : "text-foreground/90 hover:bg-card/60",
                                                                         )}
                                                                 >
-                                                                        <span className="flex h-8 w-8 items-center justify-center rounded bg-slate-800 text-slate-400">
+                                                                        <span className="flex h-8 w-8 items-center justify-center rounded bg-card text-muted-foreground">
                                                                                 <Search className="h-4 w-4" />
                                                                         </span>
                                                                         <span className="flex-1 text-left">
-                                                                                <span className="block text-slate-100">{title}</span>
-                                                                                <span className="block text-xs text-slate-500">
+                                                                                <span className="block text-foreground">{title}</span>
+                                                                                <span className="block text-xs text-muted-foreground">
                                                                                         {result.item.id}
                                                                                 </span>
                                                                         </span>
-                                                                        <span className="text-[10px] text-slate-500 border border-slate-700 rounded px-1.5 py-0.5">
+                                                                        <span className="text-[10px] text-muted-foreground border border-border rounded px-1.5 py-0.5">
                                                                                 HELP
                                                                         </span>
                                                                 </button>
@@ -315,17 +315,17 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
                                         )}
                                 </div>
 
-                                <div className="flex items-center justify-between border-t border-slate-700 px-4 py-2 text-xs text-slate-500">
+                                <div className="flex items-center justify-between border-t border-border px-4 py-2 text-xs text-muted-foreground">
                                         <span>{results.length} results</span>
                                         <div className="flex items-center gap-3">
                                                 <span className="flex items-center gap-1">
-                                                        <kbd className="rounded bg-slate-800 border border-slate-600 px-1 py-0.5 text-[10px]">
+                                                        <kbd className="rounded bg-card border border-border px-1 py-0.5 text-[10px]">
                                                                 ↑↓
                                                         </kbd>{" "}
                                                         navigate
                                                 </span>
                                                 <span className="flex items-center gap-1">
-                                                        <kbd className="rounded bg-slate-800 border border-slate-600 px-1 py-0.5 text-[10px]">
+                                                        <kbd className="rounded bg-card border border-border px-1 py-0.5 text-[10px]">
                                                                 ↵
                                                         </kbd>{" "}
                                                         select

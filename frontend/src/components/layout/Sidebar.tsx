@@ -9,7 +9,7 @@ import {
         ChevronLeft,
         ChevronRight,
         FileText,
-        Flame,
+        Siren,
         FolderKanban,
         History,
         Layers,
@@ -17,6 +17,7 @@ import {
         PencilRuler,
         Settings,
         Settings2,
+        ShieldCheck,
 } from "lucide-react";
 import type React from "react";
 import { useState } from "react";
@@ -57,7 +58,7 @@ const navItems: NavItem[] = [
         {
                 labelKey: "nav.fireAlarmDesigner",
                 defaultLabel: "Fire Alarm Designer",
-                icon: Flame,
+                icon: Siren,
                 path: "/fire-alarm/designer",
                 dataOnboarding: "nav-fire-alarm-designer",
         },
@@ -171,22 +172,22 @@ const Sidebar: React.FC<SidebarProps> = ({ compact = false }) => {
 
         return (
                 <aside
-                        className={`${width} h-full bg-slate-900 backdrop-blur-sm border-${
+                        className={`${width} h-full bg-card backdrop-blur-sm border-${
                                 isRTL ? "l" : "r"
-                        } border-slate-700/50 flex flex-col transition-all duration-300 ${
+                        } border-border/50 flex flex-col transition-all duration-300 ${
                                 isRTL ? "order-last" : "order-first"
                         }`}
                 >
-                        <div className="flex items-center gap-2 px-3 py-3 border-b border-slate-700/50 shrink-0">
-                                <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center shrink-0 shadow-md shadow-orange-500/20">
-                                        <Flame className="h-5 w-5 text-white" />
+                        <div className="flex items-center gap-2 px-3 py-2.5 border-b border-border shrink-0">
+                                <div className="h-8 w-8 rounded-md bg-primary flex items-center justify-center shrink-0">
+                                        <ShieldCheck className="h-4 w-4 text-primary-foreground" />
                                 </div>
                                 {!collapsed && (
                                         <div className="flex flex-col leading-tight">
-                                                <span className="text-white font-bold text-base tracking-wide">
+                                                <span className="text-foreground font-semibold text-sm tracking-tight">
                                                         BAZSPARK
                                                 </span>
-                                                <span className="text-[10px] text-slate-500 uppercase tracking-wider">
+                                                <span className="text-[10px] text-muted-foreground uppercase tracking-wider">
                                                         FireAI Digital Twin
                                                 </span>
                                         </div>
@@ -209,10 +210,10 @@ const Sidebar: React.FC<SidebarProps> = ({ compact = false }) => {
                                                 <div key={item.path} className="relative">
                                                         <Link
                                                                 to={item.path}
-                                                                className={`flex items-center gap-3 px-3 py-2 mx-1 rounded-xl transition-all duration-200 ${
+                                                                className={`flex items-center gap-3 px-3 py-2 mx-1 rounded-md transition-all duration-200 ${
                                                                         isActive
-                                                                                ? "bg-slate-800 border-l-2 border-orange-500 text-orange-400 shadow-lg shadow-orange-500/20"
-                                                                                : "text-slate-400 hover:bg-slate-800/60 hover:text-slate-200"
+                                                                                ? "bg-card border-l-2 border-primary text-primary shadow-lg shadow-orange-500/20"
+                                                                                : "text-muted-foreground hover:bg-card/60 hover:text-foreground"
                                                                 } ${compact && !collapsed ? "py-1.5 text-sm" : ""}`}
                                                                 onMouseEnter={() => setHoveredItem(item.path)}
                                                                 onMouseLeave={() => setHoveredItem(null)}
@@ -222,10 +223,10 @@ const Sidebar: React.FC<SidebarProps> = ({ compact = false }) => {
                                                                 <item.icon
                                                                         className={`shrink-0 transition-transform duration-300 ${
                                                                                 isActive
-                                                                                        ? "text-orange-400 scale-110"
+                                                                                        ? "text-primary scale-110"
                                                                                         : isHovered  // NOSONAR — S3358: nested ternary acceptable in this localized context
                                                                                                 ? "scale-105 text-orange-300"
-                                                                                                : "text-slate-500"
+                                                                                                : "text-muted-foreground"
                                                                         } ${compact && !collapsed ? "h-4 w-4" : "h-5 w-5"}`}
                                                                 />
                                                                 {!collapsed && (
@@ -238,7 +239,7 @@ const Sidebar: React.FC<SidebarProps> = ({ compact = false }) => {
                                                         </Link>
                                                         {collapsed && isHovered && (
                                                                 <div
-                                                                        className={`absolute top-1/2 -translate-y-1/2 px-2 py-1 bg-slate-800 backdrop-blur-sm text-slate-200 text-xs rounded shadow-lg z-50 whitespace-nowrap ${isRTL ? "right-full mr-2" : "left-full ml-2"}`}
+                                                                        className={`absolute top-1/2 -translate-y-1/2 px-2 py-1 bg-card backdrop-blur-sm text-foreground text-xs rounded shadow-lg z-50 whitespace-nowrap ${isRTL ? "right-full mr-2" : "left-full ml-2"}`}
                                                                 >
                                                                         {labelText}
                                                                 </div>
@@ -250,7 +251,7 @@ const Sidebar: React.FC<SidebarProps> = ({ compact = false }) => {
 
                         <button
                                 onClick={() => setCollapsed(!collapsed)}
-                                className="flex items-center justify-center py-2 border-t border-slate-700/50 text-slate-500 hover:text-slate-300 transition-all duration-200 hover:bg-slate-800/40 shrink-0"
+                                className="flex items-center justify-center py-2 border-t border-border/50 text-muted-foreground hover:text-foreground/90 transition-all duration-200 hover:bg-card/40 shrink-0"
                                 aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
                                 data-onboarding="sidebar-toggle"
                         >

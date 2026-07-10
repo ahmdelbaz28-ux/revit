@@ -95,9 +95,9 @@ const ZoneNode: React.FC<ZoneNodeProps> = ({
         return (
                 <div className="select-none">
                         <div  // NOSONAR — S6819: non-null assertion acceptable
-                                className={`flex items-center gap-2 py-1 px-2 rounded hover:bg-slate-700 cursor-pointer ${
+                                className={`flex items-center gap-2 py-1 px-2 rounded hover:bg-secondary cursor-pointer ${
                                         selectedDevice && zone.devices.some((d) => d.id === selectedDevice)
-                                                ? "bg-slate-700"
+                                                ? "bg-secondary"
                                                 : ""
                                 }`}
                                 style={{ paddingLeft: `${level * 20 + 8}px` }}
@@ -134,7 +134,7 @@ const ZoneNode: React.FC<ZoneNodeProps> = ({
                                 <span className="text-sm truncate">{zone.name}</span>
                                 {zone.devices.length > 0 && (
                                         <span
-                                                className={`ml-auto text-xs px-2 py-0.5 rounded-full ${getStatusColor()} bg-slate-800`}
+                                                className={`ml-auto text-xs px-2 py-0.5 rounded-full ${getStatusColor()} bg-card`}
                                         >
                                                 {zone.devices.length} {t("fireAlarm.devices")}
                                         </span>
@@ -157,8 +157,8 @@ const ZoneNode: React.FC<ZoneNodeProps> = ({
                                         {zone.devices.map((device) => (
                                                 <div  // NOSONAR — S6819: non-null assertion acceptable
                                                         key={device.id}
-                                                        className={`flex items-center gap-2 py-1 px-2 rounded hover:bg-slate-700 cursor-pointer ${
-                                                                selectedDevice === device.id ? "bg-slate-700" : ""
+                                                        className={`flex items-center gap-2 py-1 px-2 rounded hover:bg-secondary cursor-pointer ${
+                                                                selectedDevice === device.id ? "bg-secondary" : ""
                                                         }`}
                                                         style={{ paddingLeft: `${(level + 1) * 20 + 8}px` }}
                                                         role="button"
@@ -214,7 +214,7 @@ export const ZoneNavigator: React.FC<ZoneNavigatorProps> = ({
         return (
                 <div className="h-full overflow-y-auto">
                         <div className="mb-3 px-2">
-                                <h3 className="text-sm font-medium text-slate-300">
+                                <h3 className="text-sm font-medium text-foreground/90">
                                         {t("fireAlarm.systemNavigator")}
                                 </h3>
                         </div>

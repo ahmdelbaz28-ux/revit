@@ -42,7 +42,7 @@ function Connections() {
 					<h1 className="text-2xl font-bold text-white">
 						{t("connectionsPage.title")}
 					</h1>
-					<p className="text-slate-400 text-sm mt-1">
+					<p className="text-muted-foreground text-sm mt-1">
 						{connectionsData
 							? t("connectionsPage.totalConnections", {
 									count: connectionsData.total,
@@ -52,7 +52,7 @@ function Connections() {
 				</div>
 				<button
 					onClick={() => setShowCreateModal(true)}
-					className="inline-flex items-center gap-2 px-4 py-2 bg-orange-600 hover:bg-orange-500 text-white text-sm font-medium rounded-lg transition-colors"
+					className="inline-flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary text-white text-sm font-medium rounded-lg transition-colors"
 				>
 					<svg
 						width="16"
@@ -78,12 +78,12 @@ function Connections() {
 					value={elementFilter}
 					onChange={(e) => setElementFilter(e.target.value)}
 					placeholder={t("connectionsPage.elementFilter")}
-					className="bg-slate-800 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:border-orange-500 focus:outline-none w-full sm:w-72"
+					className="bg-card border border-border text-white text-sm rounded-lg px-3 py-2 focus:border-primary focus:outline-none w-full sm:w-72"
 				/>
 				{elementFilter && (
 					<button
 						onClick={() => setElementFilter("")}
-						className="text-sm text-slate-400 hover:text-white"
+						className="text-sm text-muted-foreground hover:text-white"
 					>
 						✕ {t("common.clear")}
 					</button>
@@ -93,7 +93,7 @@ function Connections() {
 			{/* Error */}
 			{error && (
 				<div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
-					<p className="text-red-400 text-sm">
+					<p className="text-danger text-sm">
 						{t("connectionsPage.failedToLoad")}
 					</p>
 				</div>
@@ -102,47 +102,47 @@ function Connections() {
 			{/* Loading */}
 			{isLoading && (
 				<div className="flex items-center justify-center py-12">
-					<div className="w-8 h-8 border-2 border-slate-600 border-t-orange-500 rounded-full animate-spin" />
+					<div className="w-8 h-8 border-2 border-border border-t-orange-500 rounded-full animate-spin" />
 				</div>
 			)}
 
 			{/* Table */}
 			{connectionsData && !isLoading && (
-				<div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
+				<div className="bg-card border border-border rounded-md overflow-hidden">
 					<div className="overflow-x-auto">
 						<table
 							className="w-full text-sm"
 							aria-label={t("connectionsPage.title")}
 						>
 							<thead>
-								<tr className="border-b border-slate-700 bg-slate-800/50">
+								<tr className="border-b border-border bg-muted/50">
 									<th
 										scope="col"
-										className="text-left text-slate-400 font-medium px-4 py-3"
+										className="text-left text-muted-foreground font-medium px-4 py-3"
 									>
 										{t("connectionsPage.sourceElement")}
 									</th>
 									<th
 										scope="col"
-										className="text-left text-slate-400 font-medium px-4 py-3"
+										className="text-left text-muted-foreground font-medium px-4 py-3"
 									>
 										{t("connectionsPage.targetElement")}
 									</th>
 									<th
 										scope="col"
-										className="text-left text-slate-400 font-medium px-4 py-3"
+										className="text-left text-muted-foreground font-medium px-4 py-3"
 									>
 										{t("connectionsPage.relationshipType")}
 									</th>
 									<th
 										scope="col"
-										className="text-left text-slate-400 font-medium px-4 py-3"
+										className="text-left text-muted-foreground font-medium px-4 py-3"
 									>
 										{t("common.active")}
 									</th>
 									<th
 										scope="col"
-										className="text-right text-slate-400 font-medium px-4 py-3"
+										className="text-right text-muted-foreground font-medium px-4 py-3"
 									>
 										{t("connectionsPage.actions")}
 									</th>
@@ -161,7 +161,7 @@ function Connections() {
 														fill="none"
 														stroke="currentColor"
 														strokeWidth="1.5"
-														className="h-12 w-12 text-slate-600"
+														className="h-12 w-12 text-muted-foreground/70"
 													>
 														<path d="M10 19h4m-2-17V4a2 2 0 00-2 2v3m6 12V7a4 4 0 00-8 0v12" />
 													</svg>
@@ -175,12 +175,12 @@ function Connections() {
 									connections.map((conn) => (
 										<tr
 											key={conn.connection_id}
-											className="border-b border-slate-700/50 hover:bg-slate-700/30 transition-colors"
+											className="border-b border-border/50 hover:bg-secondary/30 transition-colors"
 										>
 											<td className="px-4 py-3">
 												<Link
 													to={`/elements/${conn.from_element_id}`}
-													className="text-orange-400 hover:text-orange-300 text-xs font-mono"
+													className="text-primary hover:text-orange-300 text-xs font-mono"
 												>
 													{conn.from_element_id.slice(0, 12)}…
 												</Link>
@@ -188,27 +188,27 @@ function Connections() {
 											<td className="px-4 py-3">
 												<Link
 													to={`/elements/${conn.to_element_id}`}
-													className="text-orange-400 hover:text-orange-300 text-xs font-mono"
+													className="text-primary hover:text-orange-300 text-xs font-mono"
 												>
 													{conn.to_element_id.slice(0, 12)}…
 												</Link>
 											</td>
 											<td className="px-4 py-3">
-												<span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-slate-700 text-slate-300">
+												<span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-secondary text-foreground/90">
 													{conn.relationship_type}
 												</span>
 											</td>
 											<td className="px-4 py-3">
 												{conn.is_parametric ? (
-													<span className="text-emerald-400 text-xs">Yes</span>
+													<span className="text-success text-xs">Yes</span>
 												) : (
-													<span className="text-slate-500 text-xs">No</span>
+													<span className="text-muted-foreground text-xs">No</span>
 												)}
 											</td>
 											<td className="px-4 py-3 text-right">
 												<button
 													onClick={() => setDeleteTarget(conn.connection_id)}
-													className="text-slate-400 hover:text-red-400 transition-colors"
+													className="text-muted-foreground hover:text-danger transition-colors"
 													title="Delete"
 												>
 													<svg
@@ -249,24 +249,24 @@ function Connections() {
 			{/* Delete Confirmation */}
 			{deleteTarget && (
 				<div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-					<div className="bg-slate-800 border border-slate-700 rounded-xl max-w-md w-full p-6">
+					<div className="bg-card border border-border rounded-md max-w-md w-full p-6">
 						<h3 className="text-lg font-semibold text-white mb-2">
 							{t("connectionsPage.deleteConnection")}
 						</h3>
-						<p className="text-slate-400 text-sm mb-4">
+						<p className="text-muted-foreground text-sm mb-4">
 							{t("connectionsPage.deleteConfirmation")}
 						</p>
 						<div className="flex justify-end gap-3">
 							<button
 								onClick={() => setDeleteTarget(null)}
-								className="px-4 py-2 text-sm text-slate-300 hover:text-white transition-colors"
+								className="px-4 py-2 text-sm text-foreground/90 hover:text-white transition-colors"
 							>
 								{t("common.cancel")}
 							</button>
 							<button
 								onClick={() => deleteMutation.mutate(deleteTarget)}
 								disabled={deleteMutation.isPending}
-								className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
+								className="px-4 py-2 bg-danger hover:bg-red-500 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
 							>
 								{deleteMutation.isPending
 									? t("common.deleting")
@@ -310,14 +310,14 @@ function CreateConnectionModal({  // NOSONAR - typescript:S6759
 
 	return (
 		<div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-			<div className="bg-slate-800 border border-slate-700 rounded-xl max-w-md w-full p-6">
+			<div className="bg-card border border-border rounded-md max-w-md w-full p-6">
 				<h3 className="text-lg font-semibold text-white mb-4">
 					{t("connectionsPage.createConnection")}
 				</h3>
 
 				{createMutation.isError && (
 					<div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 mb-4">
-						<p className="text-red-400 text-sm">
+						<p className="text-danger text-sm">
 							{createMutation.error instanceof Error
 								? createMutation.error.message
 								: t("connectionsPage.failedToLoad")}
@@ -327,38 +327,38 @@ function CreateConnectionModal({  // NOSONAR - typescript:S6759
 
 				<div className="space-y-4">
 					<div>
-						<label className="block text-sm font-medium text-slate-300 mb-1">
+						<label className="block text-sm font-medium text-foreground/90 mb-1">
 							{t("connectionsPage.sourceElement")} *
 						</label>
 						<input
 							type="text"
 							value={fromId}
 							onChange={(e) => setFromId(e.target.value)}
-							className="w-full bg-slate-900 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:border-orange-500 focus:outline-none"
+							className="w-full bg-card border border-border text-white text-sm rounded-lg px-3 py-2 focus:border-primary focus:outline-none"
 							placeholder="Element UUID"
 						/>
 					</div>
 					<div>
-						<label className="block text-sm font-medium text-slate-300 mb-1">
+						<label className="block text-sm font-medium text-foreground/90 mb-1">
 							{t("connectionsPage.targetElement")} *
 						</label>
 						<input
 							type="text"
 							value={toId}
 							onChange={(e) => setToId(e.target.value)}
-							className="w-full bg-slate-900 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:border-orange-500 focus:outline-none"
+							className="w-full bg-card border border-border text-white text-sm rounded-lg px-3 py-2 focus:border-primary focus:outline-none"
 							placeholder="Element UUID"
 						/>
 					</div>
 					<div>
-						<label className="block text-sm font-medium text-slate-300 mb-1">
+						<label className="block text-sm font-medium text-foreground/90 mb-1">
 							{t("connectionsPage.relationshipType")} *
 						</label>
 						<input
 							type="text"
 							value={relationshipType}
 							onChange={(e) => setRelationshipType(e.target.value)}
-							className="w-full bg-slate-900 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:border-orange-500 focus:outline-none"
+							className="w-full bg-card border border-border text-white text-sm rounded-lg px-3 py-2 focus:border-primary focus:outline-none"
 							placeholder="e.g., adjacent, connected, contains"
 						/>
 					</div>
@@ -367,16 +367,16 @@ function CreateConnectionModal({  // NOSONAR - typescript:S6759
 							type="checkbox"
 							checked={isParametric}
 							onChange={(e) => setIsParametric(e.target.checked)}
-							className="rounded bg-slate-900 border-slate-600 text-orange-500 focus:ring-orange-500"
+							className="rounded bg-card border-border text-primary focus:ring-orange-500"
 						/>
-						<span className="text-sm text-slate-300">{t("common.active")}</span>
+						<span className="text-sm text-foreground/90">{t("common.active")}</span>
 					</label>
 				</div>
 
 				<div className="flex justify-end gap-3 mt-6">
 					<button
 						onClick={onClose}
-						className="px-4 py-2 text-sm text-slate-300 hover:text-white transition-colors"
+						className="px-4 py-2 text-sm text-foreground/90 hover:text-white transition-colors"
 					>
 						{t("common.cancel")}
 					</button>
@@ -385,7 +385,7 @@ function CreateConnectionModal({  // NOSONAR - typescript:S6759
 						disabled={
 							!fromId || !toId || !relationshipType || createMutation.isPending
 						}
-						className="px-4 py-2 bg-orange-600 hover:bg-orange-500 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
+						className="px-4 py-2 bg-primary hover:bg-primary text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
 					>
 						{createMutation.isPending
 							? t("common.creating")

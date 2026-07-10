@@ -51,19 +51,19 @@ export function PythonSwagger() {
 	}, []);
 
 	return (
-		<div className="flex flex-col h-screen w-screen overflow-hidden bg-slate-900 text-slate-100 font-sans dark">
+		<div className="flex flex-col h-screen w-screen overflow-hidden bg-card text-foreground font-sans dark">
 			{/* Top Toolbar */}
-			<div className="h-12 flex items-center justify-between px-4 border-b border-slate-800 bg-slate-950 shrink-0">
+			<div className="h-12 flex items-center justify-between px-4 border-b border-slate-800 bg-background shrink-0">
 				<div className="flex items-center gap-4">
 					<div className="flex items-center gap-2">
 						<div className="w-7 h-7 rounded bg-[#FFD43B] flex items-center justify-center border border-[#FFD43B]/20">
 							<span className="font-bold text-slate-900 text-xs">Py</span>
 						</div>
-						<h1 className="font-bold text-sm tracking-wide text-slate-200">
+						<h1 className="font-bold text-sm tracking-wide text-foreground">
 							Python Terminal & API Integration
 						</h1>
 					</div>
-					<Separator orientation="vertical" className="h-5 bg-slate-800" />
+					<Separator orientation="vertical" className="h-5 bg-card" />
 					<div className="flex text-xs space-x-1">
 						{[
 							"Terminal",
@@ -75,7 +75,7 @@ export function PythonSwagger() {
 						].map((tab) => (
 							<button
 								key={tab}
-								className={`px-3 py-1.5 rounded font-medium transition-colors ${activeTab === tab ? "bg-slate-800 text-blue-400" : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/50"}`}
+								className={`px-3 py-1.5 rounded font-medium transition-colors ${activeTab === tab ? "bg-card text-info" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"}`}
 								onClick={() => setActiveTab(tab)}
 							>
 								{tab}
@@ -86,7 +86,7 @@ export function PythonSwagger() {
 				<div className="flex items-center gap-3">
 					<Badge
 						variant="outline"
-						className="bg-slate-900 border-slate-700 text-slate-300 font-mono h-6 text-[10px]"
+						className="bg-card border-border text-foreground/90 font-mono h-6 text-[10px]"
 					>
 						Python 3.12.4
 					</Badge>
@@ -96,7 +96,7 @@ export function PythonSwagger() {
 					>
 						env: nexuscad-env
 					</Badge>
-					<Separator orientation="vertical" className="h-5 bg-slate-800 mx-1" />
+					<Separator orientation="vertical" className="h-5 bg-card mx-1" />
 					<Button
 						size="icon"
 						variant="ghost"
@@ -107,21 +107,21 @@ export function PythonSwagger() {
 					<Button
 						size="icon"
 						variant="ghost"
-						className="h-7 w-7 text-red-400 hover:text-red-300 hover:bg-red-400/10"
+						className="h-7 w-7 text-danger hover:text-red-300 hover:bg-red-400/10"
 					>
 						<Square className="w-3.5 h-3.5" fill="currentColor" />
 					</Button>
 					<Button
 						size="icon"
 						variant="ghost"
-						className="h-7 w-7 text-slate-400 hover:text-slate-200 hover:bg-slate-800"
+						className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-card"
 					>
 						<Trash2 className="w-4 h-4" />
 					</Button>
 					<Button
 						size="icon"
 						variant="ghost"
-						className="h-7 w-7 text-slate-400 hover:text-slate-200 hover:bg-slate-800"
+						className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-card"
 					>
 						<Settings className="w-4 h-4" />
 					</Button>
@@ -130,161 +130,161 @@ export function PythonSwagger() {
 
 			<div className="flex flex-1 overflow-hidden">
 				{/* Left Panel - Script Library */}
-				<div className="w-[300px] flex flex-col border-r border-slate-800 bg-slate-900/40 shrink-0">
-					<div className="p-2 border-b border-slate-800 bg-slate-900/60 font-semibold text-[11px] text-slate-400 uppercase tracking-wider">
+				<div className="w-[300px] flex flex-col border-r border-slate-800 bg-card/40 shrink-0">
+					<div className="p-2 border-b border-slate-800 bg-card/60 font-semibold text-[11px] text-muted-foreground uppercase tracking-wider">
 						Scripts
 					</div>
 					<ScrollArea className="flex-1 border-b border-slate-800">
-						<div className="p-2 text-xs font-mono text-slate-400 space-y-0.5">
-							<div className="flex items-center gap-1.5 py-1 px-1 rounded hover:bg-slate-800 cursor-pointer text-slate-200">
+						<div className="p-2 text-xs font-mono text-muted-foreground space-y-0.5">
+							<div className="flex items-center gap-1.5 py-1 px-1 rounded hover:bg-card cursor-pointer text-foreground">
 								<ChevronDown className="w-3.5 h-3.5" />{" "}
-								<FolderOpen className="w-3.5 h-3.5 text-blue-400" /> My Scripts
+								<FolderOpen className="w-3.5 h-3.5 text-info" /> My Scripts
 							</div>
 							<div className="pl-4 space-y-0.5 border-l border-slate-800 ml-2.5">
 								{/* analysis folder */}
-								<div className="flex items-center gap-1.5 py-1 px-1 rounded hover:bg-slate-800 cursor-pointer text-slate-300">
+								<div className="flex items-center gap-1.5 py-1 px-1 rounded hover:bg-card cursor-pointer text-foreground/90">
 									<ChevronDown className="w-3 h-3" />{" "}
-									<FolderOpen className="w-3.5 h-3.5 text-slate-500" />{" "}
+									<FolderOpen className="w-3.5 h-3.5 text-muted-foreground" />{" "}
 									analysis/
 								</div>
 								<div className="pl-4 space-y-0.5 border-l border-slate-800 ml-2">
-									<div className="flex items-center gap-1.5 py-1 px-1 rounded hover:bg-slate-800 cursor-pointer">
+									<div className="flex items-center gap-1.5 py-1 px-1 rounded hover:bg-card cursor-pointer">
 										<FileCode2 className="w-3.5 h-3.5 text-[#FFD43B]/70" />{" "}
 										load_flow_export.py
 									</div>
-									<div className="flex items-center gap-1.5 py-1 px-1 rounded bg-blue-500/15 text-blue-400 font-medium cursor-pointer">
+									<div className="flex items-center gap-1.5 py-1 px-1 rounded bg-blue-500/15 text-info font-medium cursor-pointer">
 										<FileCode2 className="w-3.5 h-3.5 text-[#FFD43B]" />{" "}
 										cable_sizing_batch.py
 									</div>
-									<div className="flex items-center gap-1.5 py-1 px-1 rounded hover:bg-slate-800 cursor-pointer">
+									<div className="flex items-center gap-1.5 py-1 px-1 rounded hover:bg-card cursor-pointer">
 										<FileCode2 className="w-3.5 h-3.5 text-[#FFD43B]/70" />{" "}
 										compliance_checker.py
 									</div>
-									<div className="flex items-center gap-1.5 py-1 px-1 rounded hover:bg-slate-800 cursor-pointer">
+									<div className="flex items-center gap-1.5 py-1 px-1 rounded hover:bg-card cursor-pointer">
 										<FileCode2 className="w-3.5 h-3.5 text-[#FFD43B]/70" />{" "}
 										arc_flash_calc.py
 									</div>
 								</div>
 
 								{/* automation folder */}
-								<div className="flex items-center gap-1.5 py-1 px-1 rounded hover:bg-slate-800 cursor-pointer text-slate-300">
+								<div className="flex items-center gap-1.5 py-1 px-1 rounded hover:bg-card cursor-pointer text-foreground/90">
 									<ChevronDown className="w-3 h-3" />{" "}
-									<FolderOpen className="w-3.5 h-3.5 text-slate-500" />{" "}
+									<FolderOpen className="w-3.5 h-3.5 text-muted-foreground" />{" "}
 									automation/
 								</div>
 								<div className="pl-4 space-y-0.5 border-l border-slate-800 ml-2">
-									<div className="flex items-center gap-1.5 py-1 px-1 rounded hover:bg-slate-800 cursor-pointer">
+									<div className="flex items-center gap-1.5 py-1 px-1 rounded hover:bg-card cursor-pointer">
 										<FileCode2 className="w-3.5 h-3.5 text-[#FFD43B]/70" />{" "}
 										auto_save_all.py
 									</div>
-									<div className="flex items-center gap-1.5 py-1 px-1 rounded hover:bg-slate-800 cursor-pointer">
+									<div className="flex items-center gap-1.5 py-1 px-1 rounded hover:bg-card cursor-pointer">
 										<FileCode2 className="w-3.5 h-3.5 text-[#FFD43B]/70" />{" "}
 										batch_export_pdf.py
 									</div>
-									<div className="flex items-center gap-1.5 py-1 px-1 rounded hover:bg-slate-800 cursor-pointer">
+									<div className="flex items-center gap-1.5 py-1 px-1 rounded hover:bg-card cursor-pointer">
 										<FileCode2 className="w-3.5 h-3.5 text-[#FFD43B]/70" />{" "}
 										drawing_renamer.py
 									</div>
-									<div className="flex items-center gap-1.5 py-1 px-1 rounded hover:bg-slate-800 cursor-pointer">
+									<div className="flex items-center gap-1.5 py-1 px-1 rounded hover:bg-card cursor-pointer">
 										<FileCode2 className="w-3.5 h-3.5 text-[#FFD43B]/70" />{" "}
 										revision_bump.py
 									</div>
 								</div>
 
 								{/* integrations folder */}
-								<div className="flex items-center gap-1.5 py-1 px-1 rounded hover:bg-slate-800 cursor-pointer text-slate-300">
+								<div className="flex items-center gap-1.5 py-1 px-1 rounded hover:bg-card cursor-pointer text-foreground/90">
 									<ChevronDown className="w-3 h-3" />{" "}
-									<FolderOpen className="w-3.5 h-3.5 text-slate-500" />{" "}
+									<FolderOpen className="w-3.5 h-3.5 text-muted-foreground" />{" "}
 									integrations/
 								</div>
 								<div className="pl-4 space-y-0.5 border-l border-slate-800 ml-2">
-									<div className="flex items-center gap-1.5 py-1 px-1 rounded hover:bg-slate-800 cursor-pointer">
+									<div className="flex items-center gap-1.5 py-1 px-1 rounded hover:bg-card cursor-pointer">
 										<FileCode2 className="w-3.5 h-3.5 text-[#FFD43B]/70" />{" "}
 										etap_sync.py
 									</div>
-									<div className="flex items-center gap-1.5 py-1 px-1 rounded hover:bg-slate-800 cursor-pointer">
+									<div className="flex items-center gap-1.5 py-1 px-1 rounded hover:bg-card cursor-pointer">
 										<FileCode2 className="w-3.5 h-3.5 text-[#FFD43B]/70" />{" "}
 										revit_link.py
 									</div>
-									<div className="flex items-center gap-1.5 py-1 px-1 rounded hover:bg-slate-800 cursor-pointer">
+									<div className="flex items-center gap-1.5 py-1 px-1 rounded hover:bg-card cursor-pointer">
 										<FileCode2 className="w-3.5 h-3.5 text-[#FFD43B]/70" />{" "}
 										sharepoint_upload.py
 									</div>
-									<div className="flex items-center gap-1.5 py-1 px-1 rounded hover:bg-slate-800 cursor-pointer">
+									<div className="flex items-center gap-1.5 py-1 px-1 rounded hover:bg-card cursor-pointer">
 										<FileCode2 className="w-3.5 h-3.5 text-[#FFD43B]/70" />{" "}
 										weather_api_fetch.py
 									</div>
 								</div>
 
 								{/* reporting folder */}
-								<div className="flex items-center gap-1.5 py-1 px-1 rounded hover:bg-slate-800 cursor-pointer text-slate-300">
+								<div className="flex items-center gap-1.5 py-1 px-1 rounded hover:bg-card cursor-pointer text-foreground/90">
 									<ChevronRight className="w-3 h-3" />{" "}
-									<FolderOpen className="w-3.5 h-3.5 text-slate-500" />{" "}
+									<FolderOpen className="w-3.5 h-3.5 text-muted-foreground" />{" "}
 									reporting/
 								</div>
 							</div>
 
-							<div className="flex items-center gap-1.5 py-1.5 px-1 rounded hover:bg-slate-800 cursor-pointer text-slate-300 mt-2">
-								<ChevronRight className="w-3.5 h-3.5 text-slate-500" />{" "}
-								<FolderOpen className="w-3.5 h-3.5 text-slate-500" /> Shared
+							<div className="flex items-center gap-1.5 py-1.5 px-1 rounded hover:bg-card cursor-pointer text-foreground/90 mt-2">
+								<ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />{" "}
+								<FolderOpen className="w-3.5 h-3.5 text-muted-foreground" /> Shared
 								Scripts{" "}
-								<span className="ml-auto text-[10px] text-slate-500">12</span>
+								<span className="ml-auto text-[10px] text-muted-foreground">12</span>
 							</div>
-							<div className="flex items-center gap-1.5 py-1.5 px-1 rounded hover:bg-slate-800 cursor-pointer text-slate-300">
-								<ChevronRight className="w-3.5 h-3.5 text-slate-500" />{" "}
-								<FolderOpen className="w-3.5 h-3.5 text-slate-500" /> System
+							<div className="flex items-center gap-1.5 py-1.5 px-1 rounded hover:bg-card cursor-pointer text-foreground/90">
+								<ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />{" "}
+								<FolderOpen className="w-3.5 h-3.5 text-muted-foreground" /> System
 								Scripts{" "}
-								<span className="ml-auto text-[10px] text-slate-500">8</span>
+								<span className="ml-auto text-[10px] text-muted-foreground">8</span>
 							</div>
-							<div className="flex items-center gap-1.5 py-1.5 px-1 rounded hover:bg-slate-800 cursor-pointer text-slate-300">
-								<ChevronRight className="w-3.5 h-3.5 text-slate-500" />{" "}
-								<FolderOpen className="w-3.5 h-3.5 text-slate-500" /> Examples/
+							<div className="flex items-center gap-1.5 py-1.5 px-1 rounded hover:bg-card cursor-pointer text-foreground/90">
+								<ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />{" "}
+								<FolderOpen className="w-3.5 h-3.5 text-muted-foreground" /> Examples/
 							</div>
 						</div>
 					</ScrollArea>
 
 					{/* Packages */}
-					<div className="h-[250px] flex flex-col bg-slate-900">
-						<div className="p-2 border-b border-slate-800 flex justify-between items-center bg-slate-900/60">
-							<span className="font-semibold text-[11px] text-slate-400 uppercase tracking-wider">
+					<div className="h-[250px] flex flex-col bg-card">
+						<div className="p-2 border-b border-slate-800 flex justify-between items-center bg-card/60">
+							<span className="font-semibold text-[11px] text-muted-foreground uppercase tracking-wider">
 								Installed Packages
 							</span>
-							<Package className="w-3 h-3 text-slate-500" />
+							<Package className="w-3 h-3 text-muted-foreground" />
 						</div>
 						<ScrollArea className="flex-1">
-							<div className="p-2 text-xs font-mono space-y-1 text-slate-400">
-								<div className="flex justify-between items-center py-1 hover:bg-slate-800 px-1 rounded">
+							<div className="p-2 text-xs font-mono space-y-1 text-muted-foreground">
+								<div className="flex justify-between items-center py-1 hover:bg-card px-1 rounded">
 									<span className="text-purple-400 font-medium">
 										nexuscad-api
 									</span>
 									<span className="text-[10px]">4.2.1</span>
 								</div>
-								<div className="flex justify-between items-center py-1 hover:bg-slate-800 px-1 rounded">
-									<span className="text-slate-300">numpy</span>
+								<div className="flex justify-between items-center py-1 hover:bg-card px-1 rounded">
+									<span className="text-foreground/90">numpy</span>
 									<span className="text-[10px]">1.26.4</span>
 								</div>
-								<div className="flex justify-between items-center py-1 hover:bg-slate-800 px-1 rounded">
-									<span className="text-slate-300">pandas</span>
+								<div className="flex justify-between items-center py-1 hover:bg-card px-1 rounded">
+									<span className="text-foreground/90">pandas</span>
 									<span className="text-[10px]">2.2.1</span>
 								</div>
-								<div className="flex justify-between items-center py-1 hover:bg-slate-800 px-1 rounded">
-									<span className="text-slate-300">openpyxl</span>
+								<div className="flex justify-between items-center py-1 hover:bg-card px-1 rounded">
+									<span className="text-foreground/90">openpyxl</span>
 									<span className="text-[10px]">3.1.2</span>
 								</div>
-								<div className="flex justify-between items-center py-1 hover:bg-slate-800 px-1 rounded">
-									<span className="text-slate-300">requests</span>
+								<div className="flex justify-between items-center py-1 hover:bg-card px-1 rounded">
+									<span className="text-foreground/90">requests</span>
 									<span className="text-[10px]">2.31.0</span>
 								</div>
-								<div className="flex justify-between items-center py-1 hover:bg-slate-800 px-1 rounded">
-									<span className="text-slate-300">shapely</span>
+								<div className="flex justify-between items-center py-1 hover:bg-card px-1 rounded">
+									<span className="text-foreground/90">shapely</span>
 									<span className="text-[10px]">2.0.4</span>
 								</div>
-								<div className="flex justify-between items-center py-1 hover:bg-slate-800 px-1 rounded">
-									<span className="text-slate-300">ifcopenshell</span>
+								<div className="flex justify-between items-center py-1 hover:bg-card px-1 rounded">
+									<span className="text-foreground/90">ifcopenshell</span>
 									<span className="text-[10px]">0.7.10</span>
 								</div>
-								<div className="flex justify-between items-center py-1 hover:bg-slate-800 px-1 rounded">
-									<span className="text-slate-300">pydantic</span>
+								<div className="flex justify-between items-center py-1 hover:bg-card px-1 rounded">
+									<span className="text-foreground/90">pydantic</span>
 									<span className="text-[10px]">2.6.4</span>
 								</div>
 							</div>
@@ -293,7 +293,7 @@ export function PythonSwagger() {
 							<Button
 								size="sm"
 								variant="outline"
-								className="w-full h-7 text-[10px] bg-slate-900 border-slate-700 text-slate-300 hover:bg-slate-800 border-dashed"
+								className="w-full h-7 text-[10px] bg-card border-border text-foreground/90 hover:bg-card border-dashed"
 							>
 								+ Install Package
 							</Button>
@@ -304,47 +304,47 @@ export function PythonSwagger() {
 				{/* Center Panel - Terminal */}
 				<div className="flex-1 flex flex-col bg-[#020617] border-r border-slate-800 min-w-0 font-mono">
 					<div className="h-10 border-b border-slate-800/80 flex items-center px-4 gap-3 bg-[#050B14]">
-						<span className="text-xs text-slate-400 flex items-center gap-2">
+						<span className="text-xs text-muted-foreground flex items-center gap-2">
 							<Terminal className="w-3.5 h-3.5 text-blue-500" /> NexusCAD Pro
 							Python Terminal — nexuscad-env
 						</span>
 					</div>
 
-					<ScrollArea className="flex-1 text-[13px] leading-relaxed p-4 pb-0 text-slate-300">
+					<ScrollArea className="flex-1 text-[13px] leading-relaxed p-4 pb-0 text-foreground/90">
 						<div className="pb-4 space-y-1">
-							<div className="text-slate-400">
+							<div className="text-muted-foreground">
 								NexusCAD Pro Python Terminal v4.2.1
 							</div>
-							<div className="text-slate-400">
+							<div className="text-muted-foreground">
 								Python 3.12.4 | nexuscad-env | Connected to:{" "}
-								<span className="text-blue-400">Tower-B Office Complex</span>
+								<span className="text-info">Tower-B Office Complex</span>
 							</div>
-							<div className="text-slate-400 mb-2">
+							<div className="text-muted-foreground mb-2">
 								Type <span className="text-yellow-200">help()</span> for
 								assistance,{" "}
 								<span className="text-yellow-200">nexuscad.docs()</span> for API
 								reference
 							</div>
-							<div className="text-slate-600 mb-4">
+							<div className="text-muted-foreground/70 mb-4">
 								━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 							</div>
 
 							<div className="flex">
 								<span className="text-green-400 mr-2 shrink-0">{">>>"}</span>
-								<span className="text-slate-100">
+								<span className="text-foreground">
 									<span className="text-purple-400">import</span> nexuscad{" "}
 									<span className="text-purple-400">as</span> nc
 								</span>
 							</div>
 							<div className="flex">
 								<span className="text-green-400 mr-2 shrink-0">{">>>"}</span>
-								<span className="text-slate-100">
+								<span className="text-foreground">
 									project = nc.get_current_project()
 								</span>
 							</div>
 							<div className="flex">
 								<span className="text-green-400 mr-2 shrink-0">{">>>"}</span>
-								<span className="text-slate-100">
+								<span className="text-foreground">
 									<span className="text-purple-400">print</span>(project.name)
 								</span>
 							</div>
@@ -353,18 +353,18 @@ export function PythonSwagger() {
 
 							<div className="flex">
 								<span className="text-green-400 mr-2 shrink-0">{">>>"}</span>
-								<span className="text-slate-100">
+								<span className="text-foreground">
 									drawings = project.get_drawings(filter=
 									<span className="text-yellow-300">'electrical'</span>)  // NOSONAR — S6772: hook dependency array intentional
 								</span>
 							</div>
 							<div className="flex">
 								<span className="text-green-400 mr-2 shrink-0">{">>>"}</span>
-								<span className="text-slate-100">
+								<span className="text-foreground">
 									<span className="text-purple-400">print</span>(
 									<span className="text-yellow-300">  // NOSONAR — S6772: hook dependency array intentional
 										f"Found <span className="text-blue-200">{"{"}</span>
-										<span className="text-slate-100">len(drawings)</span>
+										<span className="text-foreground">len(drawings)</span>
 										<span className="text-blue-200">{"}"}</span> electrical
 										drawings"
 									</span>  // NOSONAR — S6772: hook dependency array intentional
@@ -376,13 +376,13 @@ export function PythonSwagger() {
 
 							<div className="flex">
 								<span className="text-green-400 mr-2 shrink-0">{">>>"}</span>
-								<span className="text-slate-500 italic">
+								<span className="text-muted-foreground italic">
 									# Run batch cable sizing check
 								</span>
 							</div>
 							<div className="flex">
 								<span className="text-green-400 mr-2 shrink-0">{">>>"}</span>
-								<span className="text-slate-100">
+								<span className="text-foreground">
 									<span className="text-purple-400">from</span>{" "}
 									nexuscad.analysis{" "}
 									<span className="text-purple-400">import</span> CableSizer
@@ -390,7 +390,7 @@ export function PythonSwagger() {
 							</div>
 							<div className="flex">
 								<span className="text-green-400 mr-2 shrink-0">{">>>"}</span>
-								<span className="text-slate-100">
+								<span className="text-foreground">
 									sizer = CableSizer(standard=
 									<span className="text-yellow-300">'IEC60364'</span>,  // NOSONAR — S6772: hook dependency array intentional
 									project=project)
@@ -398,14 +398,14 @@ export function PythonSwagger() {
 							</div>
 							<div className="flex">
 								<span className="text-green-400 mr-2 shrink-0">{">>>"}</span>
-								<span className="text-slate-100">
+								<span className="text-foreground">
 									results = sizer.run_all()
 								</span>
 							</div>
-							<div className="text-slate-400">
+							<div className="text-muted-foreground">
 								[INFO] Analyzing 124 cable runs...
 							</div>
-							<div className="text-slate-400">
+							<div className="text-muted-foreground">
 								[INFO] Checking voltage drop (limit: 5.0%)...
 							</div>
 							<div className="text-yellow-400">
@@ -421,7 +421,7 @@ export function PythonSwagger() {
 
 							<div className="flex">
 								<span className="text-green-400 mr-2 shrink-0">{">>>"}</span>
-								<span className="text-slate-100">
+								<span className="text-foreground">
 									results.export_to_excel(
 									<span className="text-yellow-300">  // NOSONAR — S6772: hook dependency array intentional
 										'cable_sizing_report.xlsx'
@@ -429,7 +429,7 @@ export function PythonSwagger() {
 									)
 								</span>
 							</div>
-							<div className="text-slate-400">
+							<div className="text-muted-foreground">
 								[INFO] Exported to:
 								/projects/Tower-B/reports/cable_sizing_report.xlsx
 							</div>
@@ -438,31 +438,31 @@ export function PythonSwagger() {
 
 							<div className="flex">
 								<span className="text-green-400 mr-2 shrink-0">{">>>"}</span>
-								<span className="text-slate-500 italic">
+								<span className="text-muted-foreground italic">
 									# Connect to external weather API for solar calculations
 								</span>
 							</div>
 							<div className="flex">
 								<span className="text-green-400 mr-2 shrink-0">{">>>"}</span>
-								<span className="text-slate-100">
+								<span className="text-foreground">
 									<span className="text-purple-400">import</span> requests
 								</span>
 							</div>
 							<div className="flex">
 								<span className="text-green-400 mr-2 shrink-0">{">>>"}</span>
-								<span className="text-slate-100">
+								<span className="text-foreground">
 									api_key = nc.secrets.get(
 									<span className="text-yellow-300">'WEATHER_API_KEY'</span>)  // NOSONAR — S6772: hook dependency array intentional
 								</span>
 							</div>
 							<div className="flex">
 								<span className="text-green-400 mr-2 shrink-0">{">>>"}</span>
-								<span className="text-slate-100">
+								<span className="text-foreground">
 									resp = requests.get(
 									<span className="text-yellow-300">  // NOSONAR — S6772: hook dependency array intentional
 										f'https://api.openweathermap.org/data/2.5/weather?q=AbuDhabi&appid=
 										<span className="text-blue-200">{"{"}</span>  // NOSONAR — S6772: hook dependency array intentional
-										<span className="text-slate-100">api_key</span>  // NOSONAR - typescript:S6772
+										<span className="text-foreground">api_key</span>  // NOSONAR - typescript:S6772
 										<span className="text-blue-200">{"}"}</span>'  // NOSONAR
 									</span>  // NOSONAR — S6772: hook dependency array intentional
 									)
@@ -470,21 +470,21 @@ export function PythonSwagger() {
 							</div>
 							<div className="flex">
 								<span className="text-green-400 mr-2 shrink-0">{">>>"}</span>
-								<span className="text-slate-100">weather = resp.json()</span>
+								<span className="text-foreground">weather = resp.json()</span>
 							</div>
 							<div className="flex">
 								<span className="text-green-400 mr-2 shrink-0">{">>>"}</span>
-								<span className="text-slate-100">
+								<span className="text-foreground">
 									<span className="text-purple-400">print</span>(
 									<span className="text-yellow-300">  // NOSONAR — S6772: hook dependency array intentional
 										f"Solar irradiance location:{" "}
 										<span className="text-blue-200">{"{"}</span>
-										<span className="text-slate-100">
+										<span className="text-foreground">
 											weather['coord']['lat']
 										</span>
 										<span className="text-blue-200">{"}"}</span>,{" "}
 										<span className="text-blue-200">{"{"}</span>
-										<span className="text-slate-100">
+										<span className="text-foreground">
 											weather['coord']['lon']
 										</span>
 										<span className="text-blue-200">{"}"}</span>"
@@ -499,13 +499,13 @@ export function PythonSwagger() {
 
 							<div className="flex">
 								<span className="text-green-400 mr-2 shrink-0">{">>>"}</span>
-								<span className="text-slate-500 italic">
+								<span className="text-muted-foreground italic">
 									# Access Swagger API directly
 								</span>
 							</div>
 							<div className="flex">
 								<span className="text-green-400 mr-2 shrink-0">{">>>"}</span>
-								<span className="text-slate-100">
+								<span className="text-foreground">
 									api = nc.api_client(base_url=
 									<span className="text-yellow-300">  // NOSONAR — S6772: hook dependency array intentional
 										'https://api.nexuscad.io/v4'
@@ -515,18 +515,18 @@ export function PythonSwagger() {
 							</div>
 							<div className="flex">
 								<span className="text-green-400 mr-2 shrink-0">{">>>"}</span>
-								<span className="text-slate-100">
+								<span className="text-foreground">
 									endpoints = api.list_endpoints()
 								</span>
 							</div>
 							<div className="flex">
 								<span className="text-green-400 mr-2 shrink-0">{">>>"}</span>
-								<span className="text-slate-100">
+								<span className="text-foreground">
 									<span className="text-purple-400">print</span>(
 									<span className="text-yellow-300">  // NOSONAR — S6772: hook dependency array intentional
 										f"Available endpoints:{" "}
 										<span className="text-blue-200">{"{"}</span>
-										<span className="text-slate-100">len(endpoints)</span>
+										<span className="text-foreground">len(endpoints)</span>
 										<span className="text-blue-200">{"}"}</span>"
 									</span>  // NOSONAR — S6772: hook dependency array intentional
 									)
@@ -550,23 +550,23 @@ export function PythonSwagger() {
 						</span>
 						<input
 							type="text"
-							className="bg-transparent border-none outline-none text-slate-100 font-mono text-[13px] flex-1 placeholder:text-slate-600"
+							className="bg-transparent border-none outline-none text-foreground font-mono text-[13px] flex-1 placeholder:text-muted-foreground/70"
 							placeholder="Type python command..."
 						/>
 					</div>
 				</div>
 
 				{/* Right Panel - Swagger API Explorer */}
-				<div className="w-[340px] flex flex-col bg-slate-950 shrink-0">
-					<div className="h-14 border-b border-slate-800 flex justify-between items-center px-4 bg-slate-900 shadow-sm shrink-0">
+				<div className="w-[340px] flex flex-col bg-background shrink-0">
+					<div className="h-14 border-b border-slate-800 flex justify-between items-center px-4 bg-card shadow-sm shrink-0">
 						<div className="flex flex-col">
 							<div className="flex items-center gap-1.5">
 								<Globe className="w-3.5 h-3.5 text-purple-400" />{" "}
-								<span className="font-bold text-slate-100 text-sm">
+								<span className="font-bold text-foreground text-sm">
 									NexusCAD API v4
 								</span>
 							</div>
-							<span className="text-[10px] text-slate-500 font-mono mt-0.5">
+							<span className="text-[10px] text-muted-foreground font-mono mt-0.5">
 								OAS 3.1 — Swagger UI
 							</span>
 						</div>
@@ -578,20 +578,20 @@ export function PythonSwagger() {
 							<Lock className="w-3.5 h-3.5" />
 						</Button>
 					</div>
-					<div className="p-3 border-b border-slate-800 bg-slate-900/50 space-y-2">
+					<div className="p-3 border-b border-slate-800 bg-muted/50 space-y-2">
 						<div className="flex items-center justify-between text-xs">
-							<span className="text-slate-400 font-mono text-[10px]">
+							<span className="text-muted-foreground font-mono text-[10px]">
 								https://api.nexuscad.io/v4
 							</span>
 							<Badge
 								variant="outline"
-								className="h-5 text-[9px] border-slate-700 bg-slate-800 text-slate-300"
+								className="h-5 text-[9px] border-border bg-card text-foreground/90"
 							>
 								Try it out: ON
 							</Badge>
 						</div>
 						<div className="flex items-center justify-between text-xs">
-							<span className="text-slate-500">Auth:</span>
+							<span className="text-muted-foreground">Auth:</span>
 							<span className="text-green-400 flex items-center gap-1">
 								<Shield className="w-3 h-3" /> Bearer Token
 							</span>
@@ -603,85 +603,85 @@ export function PythonSwagger() {
 							{/* Projects Group */}
 							<div className="border border-slate-800 rounded overflow-hidden">
 								<div  // NOSONAR — S6848: type assertion acceptable
-									className="bg-slate-900 px-3 py-2 flex items-center justify-between cursor-pointer hover:bg-slate-800 transition-colors"
+									className="bg-card px-3 py-2 flex items-center justify-between cursor-pointer hover:bg-card transition-colors"
 									onClick={() => toggleSwagger("Projects")}
 								>
-									<h3 className="font-bold text-sm text-slate-200">Projects</h3>
+									<h3 className="font-bold text-sm text-foreground">Projects</h3>
 									<div className="flex items-center gap-2">
-										<Badge className="h-5 px-1.5 text-[9px] bg-slate-800 text-slate-400 hover:bg-slate-800">
+										<Badge className="h-5 px-1.5 text-[9px] bg-card text-muted-foreground hover:bg-card">
 											7
 										</Badge>
 										{swaggerExpanded.Projects ? (
-											<ChevronDown className="w-4 h-4 text-slate-500" />
+											<ChevronDown className="w-4 h-4 text-muted-foreground" />
 										) : (
-											<ChevronRight className="w-4 h-4 text-slate-500" />
+											<ChevronRight className="w-4 h-4 text-muted-foreground" />
 										)}
 									</div>
 								</div>
 								{swaggerExpanded.Projects && (
-									<div className="bg-slate-950 p-2 space-y-1.5 border-t border-slate-800">
-										<div className="flex items-center justify-between bg-slate-900 border border-slate-800 hover:border-green-500/50 p-1.5 rounded cursor-pointer group">
+									<div className="bg-background p-2 space-y-1.5 border-t border-slate-800">
+										<div className="flex items-center justify-between bg-card border border-slate-800 hover:border-green-500/50 p-1.5 rounded cursor-pointer group">
 											<div className="flex items-center gap-2">
 												<span className="bg-green-500 text-green-950 font-bold text-[9px] px-1.5 py-0.5 rounded w-10 text-center">
 													GET
 												</span>
-												<span className="text-xs font-mono text-slate-300">
+												<span className="text-xs font-mono text-foreground/90">
 													/projects
 												</span>
 											</div>
-											<span className="text-[10px] text-slate-500 truncate max-w-[100px]">
+											<span className="text-[10px] text-muted-foreground truncate max-w-[100px]">
 												List all projects
 											</span>
 										</div>
-										<div className="flex items-center justify-between bg-slate-900 border border-slate-800 hover:border-green-500/50 p-1.5 rounded cursor-pointer group">
+										<div className="flex items-center justify-between bg-card border border-slate-800 hover:border-green-500/50 p-1.5 rounded cursor-pointer group">
 											<div className="flex items-center gap-2">
 												<span className="bg-green-500 text-green-950 font-bold text-[9px] px-1.5 py-0.5 rounded w-10 text-center">
 													GET
 												</span>
-												<span className="text-xs font-mono text-slate-300">
+												<span className="text-xs font-mono text-foreground/90">
 													/projects/{"{id}"}
 												</span>
 											</div>
-											<span className="text-[10px] text-slate-500 truncate max-w-[100px]">
+											<span className="text-[10px] text-muted-foreground truncate max-w-[100px]">
 												Get project by ID
 											</span>
 										</div>
-										<div className="flex items-center justify-between bg-slate-900 border border-slate-800 hover:border-blue-500/50 p-1.5 rounded cursor-pointer group">
+										<div className="flex items-center justify-between bg-card border border-slate-800 hover:border-blue-500/50 p-1.5 rounded cursor-pointer group">
 											<div className="flex items-center gap-2">
 												<span className="bg-blue-500 text-blue-950 font-bold text-[9px] px-1.5 py-0.5 rounded w-10 text-center">
 													POST
 												</span>
-												<span className="text-xs font-mono text-slate-300">
+												<span className="text-xs font-mono text-foreground/90">
 													/projects
 												</span>
 											</div>
-											<span className="text-[10px] text-slate-500 truncate max-w-[100px]">
+											<span className="text-[10px] text-muted-foreground truncate max-w-[100px]">
 												Create new project
 											</span>
 										</div>
-										<div className="flex items-center justify-between bg-slate-900 border border-slate-800 hover:border-orange-500/50 p-1.5 rounded cursor-pointer group">
+										<div className="flex items-center justify-between bg-card border border-slate-800 hover:border-primary/50 p-1.5 rounded cursor-pointer group">
 											<div className="flex items-center gap-2">
-												<span className="bg-orange-500 text-orange-950 font-bold text-[9px] px-1.5 py-0.5 rounded w-10 text-center">
+												<span className="bg-primary text-orange-950 font-bold text-[9px] px-1.5 py-0.5 rounded w-10 text-center">
 													PUT
 												</span>
-												<span className="text-xs font-mono text-slate-300">
+												<span className="text-xs font-mono text-foreground/90">
 													/projects/{"{id}"}
 												</span>
 											</div>
-											<span className="text-[10px] text-slate-500 truncate max-w-[100px]">
+											<span className="text-[10px] text-muted-foreground truncate max-w-[100px]">
 												Update project
 											</span>
 										</div>
-										<div className="flex items-center justify-between bg-slate-900 border border-slate-800 hover:border-red-500/50 p-1.5 rounded cursor-pointer group">
+										<div className="flex items-center justify-between bg-card border border-slate-800 hover:border-red-500/50 p-1.5 rounded cursor-pointer group">
 											<div className="flex items-center gap-2">
 												<span className="bg-red-500 text-red-950 font-bold text-[9px] px-1.5 py-0.5 rounded w-10 text-center">
 													DEL
 												</span>
-												<span className="text-xs font-mono text-slate-300">
+												<span className="text-xs font-mono text-foreground/90">
 													/projects/{"{id}"}
 												</span>
 											</div>
-											<span className="text-[10px] text-slate-500 truncate max-w-[100px]">
+											<span className="text-[10px] text-muted-foreground truncate max-w-[100px]">
 												Delete project
 											</span>
 										</div>
@@ -705,51 +705,51 @@ export function PythonSwagger() {
 									className="border border-slate-800 rounded overflow-hidden"
 								>
 									<div  // NOSONAR — S6848: type assertion acceptable
-										className="bg-slate-900 px-3 py-2 flex items-center justify-between cursor-pointer hover:bg-slate-800 transition-colors"
+										className="bg-card px-3 py-2 flex items-center justify-between cursor-pointer hover:bg-card transition-colors"
 										onClick={() => toggleSwagger(group.name)}
 									>
-										<h3 className="font-bold text-sm text-slate-200">
+										<h3 className="font-bold text-sm text-foreground">
 											{group.name}
 										</h3>
 										<div className="flex items-center gap-2">
-											<Badge className="h-5 px-1.5 text-[9px] bg-slate-800 text-slate-400 hover:bg-slate-800">
+											<Badge className="h-5 px-1.5 text-[9px] bg-card text-muted-foreground hover:bg-card">
 												{group.count}
 											</Badge>
 											{swaggerExpanded[group.name] ? (
-												<ChevronDown className="w-4 h-4 text-slate-500" />
+												<ChevronDown className="w-4 h-4 text-muted-foreground" />
 											) : (
-												<ChevronRight className="w-4 h-4 text-slate-500" />
+												<ChevronRight className="w-4 h-4 text-muted-foreground" />
 											)}
 										</div>
 									</div>
 									{swaggerExpanded[group.name] && group.name === "Analysis" && (
-										<div className="bg-slate-950 p-2 space-y-1.5 border-t border-slate-800">
+										<div className="bg-background p-2 space-y-1.5 border-t border-slate-800">
 											<div className="flex items-center justify-between bg-blue-500/10 border border-blue-500/30 p-1.5 rounded cursor-pointer group">
 												<div className="flex items-center gap-2">
 													<span className="bg-blue-500 text-blue-950 font-bold text-[9px] px-1.5 py-0.5 rounded w-10 text-center">
 														POST
 													</span>
-													<span className="text-xs font-mono text-blue-400">
+													<span className="text-xs font-mono text-info">
 														/analysis/cable-size
 													</span>
 												</div>
 											</div>
-											<div className="flex items-center justify-between bg-slate-900 border border-slate-800 hover:border-blue-500/50 p-1.5 rounded cursor-pointer group">
+											<div className="flex items-center justify-between bg-card border border-slate-800 hover:border-blue-500/50 p-1.5 rounded cursor-pointer group">
 												<div className="flex items-center gap-2">
 													<span className="bg-blue-500 text-blue-950 font-bold text-[9px] px-1.5 py-0.5 rounded w-10 text-center">
 														POST
 													</span>
-													<span className="text-xs font-mono text-slate-300">
+													<span className="text-xs font-mono text-foreground/90">
 														/analysis/load-flow
 													</span>
 												</div>
 											</div>
-											<div className="flex items-center justify-between bg-slate-900 border border-slate-800 hover:border-blue-500/50 p-1.5 rounded cursor-pointer group">
+											<div className="flex items-center justify-between bg-card border border-slate-800 hover:border-blue-500/50 p-1.5 rounded cursor-pointer group">
 												<div className="flex items-center gap-2">
 													<span className="bg-blue-500 text-blue-950 font-bold text-[9px] px-1.5 py-0.5 rounded w-10 text-center">
 														POST
 													</span>
-													<span className="text-xs font-mono text-slate-300">
+													<span className="text-xs font-mono text-foreground/90">
 														/analysis/arc-flash
 													</span>
 												</div>
@@ -770,40 +770,40 @@ export function PythonSwagger() {
 									</span>
 								</div>
 								<div className="p-3 space-y-3">
-									<p className="text-xs text-slate-300">
+									<p className="text-xs text-foreground/90">
 										Run cable sizing analysis per IEC 60364 or NEC
 									</p>
 
 									<div className="space-y-1">
-										<div className="text-[10px] font-bold text-slate-500 uppercase">
+										<div className="text-[10px] font-bold text-muted-foreground uppercase">
 											Request Body (application/json)
 										</div>
-										<div className="bg-slate-950 border border-slate-800 rounded p-2 text-xs font-mono text-slate-300 whitespace-pre">
-											<span className="text-slate-500">{"{"}</span>
+										<div className="bg-background border border-slate-800 rounded p-2 text-xs font-mono text-foreground/90 whitespace-pre">
+											<span className="text-muted-foreground">{"{"}</span>
 											<span className="text-purple-300">"circuit_id"</span>
-											<span className="text-slate-500">:</span>{" "}
+											<span className="text-muted-foreground">:</span>{" "}
 											<span className="text-yellow-300">"EL-C-047"</span>
-											<span className="text-slate-500">,</span>
+											<span className="text-muted-foreground">,</span>
 											<span className="text-purple-300">"load_kw"</span>
-											<span className="text-slate-500">:</span>{" "}
+											<span className="text-muted-foreground">:</span>{" "}
 											<span className="text-blue-300">157.25</span>
-											<span className="text-slate-500">,</span>
+											<span className="text-muted-foreground">,</span>
 											<span className="text-purple-300">"voltage"</span>
-											<span className="text-slate-500">:</span>{" "}
+											<span className="text-muted-foreground">:</span>{" "}
 											<span className="text-blue-300">480</span>
-											<span className="text-slate-500">,</span>
+											<span className="text-muted-foreground">,</span>
 											<span className="text-purple-300">"length_m"</span>
-											<span className="text-slate-500">:</span>{" "}
+											<span className="text-muted-foreground">:</span>{" "}
 											<span className="text-blue-300">145</span>
-											<span className="text-slate-500">,</span>
+											<span className="text-muted-foreground">,</span>
 											<span className="text-purple-300">"standard"</span>
-											<span className="text-slate-500">:</span>{" "}
+											<span className="text-muted-foreground">:</span>{" "}
 											<span className="text-yellow-300">"IEC60364"</span>
-											<span className="text-slate-500">,</span>
+											<span className="text-muted-foreground">,</span>
 											<span className="text-purple-300">"method"</span>
-											<span className="text-slate-500">:</span>{" "}
+											<span className="text-muted-foreground">:</span>{" "}
 											<span className="text-yellow-300">"B2"</span>
-											<span className="text-slate-500">{"}"}</span>
+											<span className="text-muted-foreground">{"}"}</span>
 										</div>
 									</div>
 
@@ -815,22 +815,22 @@ export function PythonSwagger() {
 									</Button>
 
 									<div className="space-y-1">
-										<div className="text-[10px] font-bold text-slate-500 uppercase">
+										<div className="text-[10px] font-bold text-muted-foreground uppercase">
 											Responses
 										</div>
-										<div className="bg-slate-950 border border-slate-800 rounded p-2 text-[10px] font-mono">
+										<div className="bg-background border border-slate-800 rounded p-2 text-[10px] font-mono">
 											<div className="text-green-400 mb-1 flex items-center gap-1">
 												<CheckCircle2 className="w-3 h-3" /> 200 OK
 											</div>
-											<span className="text-slate-500">{"{"}</span>{" "}
+											<span className="text-muted-foreground">{"{"}</span>{" "}
 											<span className="text-purple-300">"status"</span>
-											<span className="text-slate-500">:</span>{" "}
+											<span className="text-muted-foreground">:</span>{" "}
 											<span className="text-yellow-300">"success"</span>
-											<span className="text-slate-500">,</span>{" "}
+											<span className="text-muted-foreground">,</span>{" "}
 											<span className="text-purple-300">"size_mm2"</span>
-											<span className="text-slate-500">:</span>{" "}
+											<span className="text-muted-foreground">:</span>{" "}
 											<span className="text-blue-300">120</span>{" "}
-											<span className="text-slate-500">{"}"}</span>
+											<span className="text-muted-foreground">{"}"}</span>
 										</div>
 									</div>
 								</div>
@@ -841,12 +841,12 @@ export function PythonSwagger() {
 			</div>
 
 			{/* Bottom Status Bar */}
-			<div className="h-7 bg-slate-900 border-t border-slate-800 flex items-center justify-between px-4 text-[10px] font-mono text-slate-400 shrink-0">
+			<div className="h-7 bg-card border-t border-slate-800 flex items-center justify-between px-4 text-[10px] font-mono text-muted-foreground shrink-0">
 				<div className="flex items-center gap-3">
-					<span className="text-blue-400">Python 3.12.4</span>
-					<Separator orientation="vertical" className="h-3 bg-slate-700" />
+					<span className="text-info">Python 3.12.4</span>
+					<Separator orientation="vertical" className="h-3 bg-secondary" />
 					<span>nexuscad-env</span>
-					<Separator orientation="vertical" className="h-3 bg-slate-700" />
+					<Separator orientation="vertical" className="h-3 bg-secondary" />
 					<span>12 packages loaded</span>
 				</div>
 				<div className="flex items-center gap-3">
@@ -854,20 +854,20 @@ export function PythonSwagger() {
 						<div className="w-1.5 h-1.5 rounded-full bg-green-500"></div> API:
 						Connected
 					</span>
-					<Separator orientation="vertical" className="h-3 bg-slate-700" />
+					<Separator orientation="vertical" className="h-3 bg-secondary" />
 					<span>v4.2.1</span>
-					<Separator orientation="vertical" className="h-3 bg-slate-700" />
+					<Separator orientation="vertical" className="h-3 bg-secondary" />
 					<span>247 endpoints</span>
-					<Separator orientation="vertical" className="h-3 bg-slate-700" />
+					<Separator orientation="vertical" className="h-3 bg-secondary" />
 					<span>Latency: 42ms</span>
-					<Separator orientation="vertical" className="h-3 bg-slate-700 mx-1" />
-					<span className="hover:text-slate-200 cursor-pointer text-slate-300 font-sans">
+					<Separator orientation="vertical" className="h-3 bg-secondary mx-1" />
+					<span className="hover:text-foreground cursor-pointer text-foreground/90 font-sans">
 						Swagger UI
 					</span>
-					<span className="hover:text-slate-200 cursor-pointer text-slate-300 font-sans">
+					<span className="hover:text-foreground cursor-pointer text-foreground/90 font-sans">
 						ReDoc
 					</span>
-					<span className="hover:text-slate-200 cursor-pointer text-slate-300 font-sans">
+					<span className="hover:text-foreground cursor-pointer text-foreground/90 font-sans">
 						Download Spec
 					</span>
 				</div>

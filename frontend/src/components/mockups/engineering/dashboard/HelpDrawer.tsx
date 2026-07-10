@@ -69,7 +69,7 @@ export function HelpDrawer({ helpOpen, onHelpToggle }: HelpDrawerProps) {  // NO
 							<div className="text-xs font-bold text-blue-500">
 								Need Expert Support?
 							</div>
-							<div className="text-[10px] text-blue-400 mt-0.5 leading-relaxed">
+							<div className="text-[10px] text-info mt-0.5 leading-relaxed">
 								Contact our engineering support team for complex fault analysis
 								or system integration questions.
 							</div>

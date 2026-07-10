@@ -56,20 +56,20 @@ export function ConnectionStatus() {
 				<span
 					className={`h-2.5 w-2.5 rounded-full ${colors[status.autocad]}`}
 				/>
-				<span className="text-xs text-slate-400">AutoCAD</span>
+				<span className="text-xs text-muted-foreground">AutoCAD</span>
 				<Badge
 					variant="outline"
-					className="text-xs border-slate-600 text-slate-300"
+					className="text-xs border-border text-foreground/90"
 				>
 					{labels[status.autocad]}
 				</Badge>
 			</div>
 			<div className="flex items-center gap-2">
 				<span className={`h-2.5 w-2.5 rounded-full ${colors[status.revit]}`} />
-				<span className="text-xs text-slate-400">Revit</span>
+				<span className="text-xs text-muted-foreground">Revit</span>
 				<Badge
 					variant="outline"
-					className="text-xs border-slate-600 text-slate-300"
+					className="text-xs border-border text-foreground/90"
 				>
 					{labels[status.revit]}
 				</Badge>

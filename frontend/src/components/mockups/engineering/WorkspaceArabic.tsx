@@ -100,7 +100,7 @@ export function WorkspaceArabic() {
 						</div>
 
 						<div className="flex items-center gap-2 text-xs">
-							<Cloud className="h-4 w-4 text-emerald-400" />
+							<Cloud className="h-4 w-4 text-success" />
 							<span>متزامن</span>
 						</div>
 						<Separator orientation="vertical" className="h-5" />
@@ -135,7 +135,7 @@ export function WorkspaceArabic() {
 							<Separator orientation="vertical" className="h-8 mx-1" />
 							<RibbonBtn icon={<Activity />} label="حساب الحمل" />
 							<RibbonBtn
-								icon={<Zap className="text-amber-400" />}
+								icon={<Zap className="text-warning" />}
 								label="وميض القوس"
 							/>
 							<RibbonBtn icon={<Lock />} label="مرحل حماية" />
@@ -190,7 +190,7 @@ export function WorkspaceArabic() {
 							<LayerRow name="الإضاءة" color="bg-yellow-400" />
 							<LayerRow name="التدفئة والتبريد" color="bg-blue-300" hidden />
 							<LayerRow name="السباكة" color="bg-cyan-400" hidden />
-							<LayerRow name="الإنشائي" color="bg-orange-500" locked />
+							<LayerRow name="الإنشائي" color="bg-primary" locked />
 							<LayerRow name="التعليقات" color="bg-green-400" />
 						</ScrollArea>
 					</div>
@@ -271,7 +271,7 @@ export function WorkspaceArabic() {
 							dir="ltr"
 						>
 							{/* Fake diagram elements */}
-							<div className="absolute top-32 right-40 w-64 h-80 border-2 border-slate-600 rounded-sm"></div>
+							<div className="absolute top-32 right-40 w-64 h-80 border-2 border-border rounded-sm"></div>
 							<div className="absolute top-[180px] right-40 w-[600px] h-0.5 bg-primary"></div>
 							<div className="absolute top-[280px] right-40 w-[450px] h-0.5 bg-primary"></div>
 							<div className="absolute top-[380px] right-40 w-[550px] h-0.5 bg-primary"></div>
@@ -293,7 +293,7 @@ export function WorkspaceArabic() {
 
 							{/* Dimensions */}
 							<div className="absolute top-28 right-40 w-64 border-t border-dashed border-emerald-500/50 flex justify-center items-center h-4">
-								<div className="px-2 bg-[#0f1115] text-[10px] text-emerald-400 font-mono">
+								<div className="px-2 bg-[#0f1115] text-[10px] text-success font-mono">
 									4200mm
 								</div>
 							</div>
@@ -359,7 +359,7 @@ export function WorkspaceArabic() {
 											<span className="text-muted-foreground">الامتثال</span>
 											<Badge
 												variant="outline"
-												className="text-emerald-400 border-emerald-500/30 bg-emerald-500/10"
+												className="text-success border-success/30 bg-emerald-500/10"
 											>
 												<CheckSquare className="w-3 h-3 ml-1" /> NFPA 70
 											</Badge>
@@ -405,7 +405,7 @@ export function WorkspaceArabic() {
 											يتم حالياً تحميل اللوحة LP-3A عند 285A (71% من السعة 400A).
 											<br />
 											<br />
-											<span className="text-emerald-400 font-mono">
+											<span className="text-success font-mono">
 												الحالة: آمن
 											</span>
 											<br />
@@ -485,13 +485,13 @@ export function WorkspaceArabic() {
 							</Badge>
 							<Badge
 								variant="outline"
-								className="h-4 text-[9px] px-1.5 py-0 text-orange-400 border-orange-500/50 bg-orange-500/10"
+								className="h-4 text-[9px] px-1.5 py-0 text-primary border-primary/50 bg-primary/10"
 							>
 								5 تحذيرات
 							</Badge>
 							<Badge
 								variant="outline"
-								className="h-4 text-[9px] px-1.5 py-0 text-blue-400 border-blue-500/50 bg-blue-500/10"
+								className="h-4 text-[9px] px-1.5 py-0 text-info border-blue-500/50 bg-blue-500/10"
 							>
 								12 معلومات
 							</Badge>
@@ -663,21 +663,21 @@ function LogEntry({  // NOSONAR - typescript:S6759
 			</div>
 			<div className="w-[60px] shrink-0" dir="ltr">
 				<span
-					className={`${isError ? "text-red-400" : isWarn ? "text-orange-400" : "text-slate-400"}`}  // NOSONAR — S3358: nested ternary acceptable in this localized context
+					className={`${isError ? "text-danger" : isWarn ? "text-primary" : "text-muted-foreground"}`}  // NOSONAR — S3358: nested ternary acceptable in this localized context
 				>
 					{level}
 				</span>
 			</div>
 			<div
-				className="w-[130px] shrink-0 text-slate-500 truncate pl-4"
+				className="w-[130px] shrink-0 text-muted-foreground truncate pl-4"
 				dir="ltr"
 			>
 				{source}
 			</div>
-			<div className="flex-1 text-slate-300 truncate pl-4">{message}</div>
+			<div className="flex-1 text-foreground/90 truncate pl-4">{message}</div>
 			<div className="shrink-0 flex items-center gap-4 opacity-0 group-hover:opacity-100 transition-opacity">
 				{level !== "INFO" && (
-					<span className="text-blue-400 hover:underline cursor-pointer">
+					<span className="text-info hover:underline cursor-pointer">
 						انتقال
 					</span>
 				)}
@@ -718,7 +718,7 @@ function TreeNode({  // NOSONAR - typescript:S6759
 				<Triangle
 					className={`h-3 w-3 text-muted-foreground transition-transform ${open ? "rotate-180" : "-rotate-90"}`}
 				/>
-				<FolderOpen className="h-3.5 w-3.5 text-blue-400/80" />
+				<FolderOpen className="h-4 w-4 text-info/80" />
 				<span className="text-xs truncate">{title}</span>
 			</div>
 			{open && children && (
@@ -740,9 +740,9 @@ function FileNode({  // NOSONAR - typescript:S6759
 	active?: boolean;
 }) {
 	let color = "text-muted-foreground";
-	if (type === "dwg") color = "text-blue-400";
-	if (type === "rvt") color = "text-orange-400";
-	if (type === "xlsx") color = "text-emerald-400";
+	if (type === "dwg") color = "text-info";
+	if (type === "rvt") color = "text-primary";
+	if (type === "xlsx") color = "text-success";
 
 	return (
 		<div
@@ -754,7 +754,7 @@ function FileNode({  // NOSONAR - typescript:S6759
 			>
 				{title}
 			</span>
-			<FileText className={`h-3.5 w-3.5 shrink-0 ${color}`} />
+			<FileText className={`h-4 w-4 shrink-0 ${color}`} />
 		</div>
 	);
 }

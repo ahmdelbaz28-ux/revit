@@ -139,10 +139,10 @@ export function ComponentLibrary() {
 					<Separator orientation="vertical" className="h-6" />
 					<div className="flex gap-2">
 						<Button variant="outline" size="sm" className="h-8 gap-1">
-							<Plus className="h-3.5 w-3.5" /> Import Custom
+							<Plus className="h-4 w-4" /> Import Custom
 						</Button>
 						<Button variant="outline" size="sm" className="h-8 gap-1">
-							<FolderTree className="h-3.5 w-3.5" /> Manage Libraries
+							<FolderTree className="h-4 w-4" /> Manage Libraries
 						</Button>
 						<Button variant="ghost" size="icon" className="h-8 w-8">
 							<Settings className="h-4 w-4" />
@@ -158,7 +158,7 @@ export function ComponentLibrary() {
 						<div className="space-y-1">
 							{categories.map((cat, i) => (
 								<div key={i} className="mb-2">  // NOSONAR — S6479: array index key acceptable for static list
-									<div className="flex items-center gap-1.5 py-1.5 px-2 rounded-md hover:bg-muted/50 cursor-pointer text-sm font-medium text-slate-200">
+									<div className="flex items-center gap-1.5 py-1.5 px-2 rounded-md hover:bg-muted/50 cursor-pointer text-sm font-medium text-foreground">
 										{cat.open ? (
 											<ChevronDown className="h-3 w-3" />
 										) : (
@@ -230,14 +230,14 @@ export function ComponentLibrary() {
 											className={`absolute inset-0 bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center gap-2 transition-opacity ${selectedComp === comp.id ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
 										>
 											<Button size="sm" className="h-8 shadow-lg">
-												<FileSymlink className="h-3.5 w-3.5 mr-1" /> Insert
+												<FileSymlink className="h-4 w-4 mr-1" /> Insert
 											</Button>
 											<Button
 												size="sm"
 												variant="secondary"
 												className="h-8 shadow-lg"
 											>
-												<Heart className="h-3.5 w-3.5" />
+												<Heart className="h-4 w-4" />
 											</Button>
 										</div>
 									</div>
@@ -259,7 +259,7 @@ export function ComponentLibrary() {
 												{comp.mfg.map((m) => (
 													<span
 														key={m}
-														className="text-[10px] text-slate-400 bg-slate-800 px-1 rounded"
+														className="text-[10px] text-muted-foreground bg-card px-1 rounded"
 													>
 														{m}
 													</span>
@@ -368,19 +368,19 @@ export function ComponentLibrary() {
 										<div className="flex gap-2">
 											<Badge
 												variant="outline"
-												className="border-slate-600 bg-slate-800/50"
+												className="border-border bg-muted/50"
 											>
 												CE Certified
 											</Badge>
 											<Badge
 												variant="outline"
-												className="border-slate-600 bg-slate-800/50"
+												className="border-border bg-muted/50"
 											>
 												UL Listed
 											</Badge>
 											<Badge
 												variant="outline"
-												className="border-slate-600 bg-slate-800/50"
+												className="border-border bg-muted/50"
 											>
 												CSA
 											</Badge>

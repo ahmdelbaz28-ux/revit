@@ -208,10 +208,10 @@ export function ReportGeneratorPage() {
 				{/* Header */}
 				<div className="flex items-center justify-between">
 					<div>
-						<h1 className="text-2xl font-bold text-slate-100">
+						<h1 className="text-2xl font-bold text-foreground">
 							Report Generator
 						</h1>
-						<p className="text-sm text-slate-400 mt-1">
+						<p className="text-sm text-muted-foreground mt-1">
 							Generate deterministic analysis reports
 						</p>
 					</div>
@@ -220,7 +220,7 @@ export function ReportGeneratorPage() {
 							<Button
 								variant="outline"
 								size="sm"
-								className="border-slate-600 text-slate-300"
+								className="border-border text-foreground/90"
 								onClick={() => refetchReports()}
 							>
 								<RefreshCw className="h-4 w-4 mr-1" /> Refresh
@@ -230,23 +230,23 @@ export function ReportGeneratorPage() {
 				</div>
 
 				{/* Project Selector */}
-				<Card className="border-slate-700 bg-slate-800">
+				<Card className="border-border bg-card">
 					<CardHeader className="pb-3">
-						<CardTitle className="text-lg text-slate-100">
+						<CardTitle className="text-lg text-foreground">
 							Select Project
 						</CardTitle>
-						<CardDescription className="text-slate-400">
+						<CardDescription className="text-muted-foreground">
 							Choose a project to generate reports for
 						</CardDescription>
 					</CardHeader>
 					<CardContent>
 						{projectsLoading ? (
-							<div className="flex items-center gap-2 text-slate-400">
+							<div className="flex items-center gap-2 text-muted-foreground">
 								<Activity className="h-4 w-4 animate-pulse" />
 								<span className="text-sm">Loading projects...</span>
 							</div>
 						) : !projects || projects.length === 0 ? (  // NOSONAR — S3358: nested ternary acceptable in this localized context
-							<div className="text-center py-6 text-slate-400">
+							<div className="text-center py-6 text-muted-foreground">
 								<FolderKanban className="h-8 w-8 mx-auto mb-2 opacity-50" />
 								<p className="text-sm">
 									No projects available. Create a project first.
@@ -260,10 +260,10 @@ export function ReportGeneratorPage() {
 									setShowGenerateForm(false);
 								}}
 							>
-								<SelectTrigger className="bg-slate-900 border-slate-600 text-slate-100">
+								<SelectTrigger className="bg-card border-border text-foreground">
 									<SelectValue placeholder="Choose a project..." />
 								</SelectTrigger>
-								<SelectContent className="bg-slate-800 border-slate-700">
+								<SelectContent className="bg-card border-border">
 									{projects.map((project: Project) => (
 										<SelectItem key={project.id} value={project.id}>
 											{project.name} ({project.deviceCount || 0} devices)
@@ -280,12 +280,12 @@ export function ReportGeneratorPage() {
 					<>
 						{/* Generate Report */}
 						<div className="flex items-center justify-between">
-							<h2 className="text-lg font-medium text-slate-200">
+							<h2 className="text-lg font-medium text-foreground">
 								Reports for {selectedProject.name}
 							</h2>
 							<Button
 								size="sm"
-								className="bg-red-600 hover:bg-red-700 text-white border-none"
+								className="bg-danger hover:bg-danger/90 text-white border-none"
 								onClick={() => {
 									setGenerateError(null);
 									setShowGenerateForm(true);
@@ -297,25 +297,25 @@ export function ReportGeneratorPage() {
 
 						{/* Generate Form - matches PNG design */}
 						{showGenerateForm && (
-							<Card className="border-slate-700 bg-slate-800">
+							<Card className="border-border bg-card">
 								<CardHeader className="pb-3">
-									<CardTitle className="text-lg text-slate-100">
+									<CardTitle className="text-lg text-foreground">
 										Generate New Report
 									</CardTitle>
-									<CardDescription className="text-slate-400">
+									<CardDescription className="text-muted-foreground">
 										Configure and generate your analysis report
 									</CardDescription>
 								</CardHeader>
 								<CardContent className="space-y-6">
 									{generateError && (
 										<div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
-											<p className="text-sm text-red-400">{generateError}</p>
+											<p className="text-sm text-danger">{generateError}</p>
 										</div>
 									)}
 
 									{/* Report Type Selection */}
 									<div className="space-y-2">
-										<Label className="text-slate-300 text-xs uppercase tracking-wider">
+										<Label className="text-foreground/90 text-xs uppercase tracking-wider">
 											Report Type
 										</Label>
 										<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -325,7 +325,7 @@ export function ReportGeneratorPage() {
 													className={`p-4 rounded-lg border text-left transition-all ${
 														reportType === type.id
 															? "border-red-500 bg-red-500/10"
-															: "border-slate-700 bg-slate-900/50 hover:border-slate-600"
+															: "border-border bg-muted/50 hover:border-border"
 													}`}
 													onClick={() => setReportType(type.id)}
 												>
@@ -334,7 +334,7 @@ export function ReportGeneratorPage() {
 															className={`p-2 rounded ${
 																reportType === type.id
 																	? "bg-red-500/20"
-																	: "bg-slate-800/50"
+																	: "bg-muted/50"
 															}`}
 														>
 															{getReportIcon(type.id)}
@@ -343,13 +343,13 @@ export function ReportGeneratorPage() {
 															<div
 																className={`font-medium ${
 																	reportType === type.id
-																		? "text-red-400"
-																		: "text-slate-200"
+																		? "text-danger"
+																		: "text-foreground"
 																}`}
 															>
 																{type.label}
 															</div>
-															<div className="text-xs text-slate-400 mt-1 line-clamp-2">
+															<div className="text-xs text-muted-foreground mt-1 line-clamp-2">
 																{type.description}
 															</div>
 														</div>
@@ -361,23 +361,23 @@ export function ReportGeneratorPage() {
 
 									{/* Execution Parameters */}
 									<div className="space-y-4">
-										<h3 className="text-sm font-medium text-slate-200 uppercase tracking-wider">
+										<h3 className="text-sm font-medium text-foreground uppercase tracking-wider">
 											Execution Parameters
 										</h3>
 
 										<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 											<div className="space-y-2">
-												<Label className="text-slate-300 text-xs">
+												<Label className="text-foreground/90 text-xs">
 													Target Scope
 												</Label>
 												<Select
 													value={targetScope}
 													onValueChange={setTargetScope}
 												>
-													<SelectTrigger className="bg-slate-900 border-slate-600 text-slate-100">
+													<SelectTrigger className="bg-card border-border text-foreground">
 														<SelectValue />
 													</SelectTrigger>
-													<SelectContent className="bg-slate-800 border-slate-700">
+													<SelectContent className="bg-card border-border">
 														<SelectItem value="ENTIRE_PROJECT">
 															Entire Project
 														</SelectItem>
@@ -392,17 +392,17 @@ export function ReportGeneratorPage() {
 											</div>
 
 											<div className="space-y-2">
-												<Label className="text-slate-300 text-xs">
+												<Label className="text-foreground/90 text-xs">
 													Output Format
 												</Label>
 												<Select
 													value={outputFormat}
 													onValueChange={setOutputFormat}
 												>
-													<SelectTrigger className="bg-slate-900 border-slate-600 text-slate-100">
+													<SelectTrigger className="bg-card border-border text-foreground">
 														<SelectValue />
 													</SelectTrigger>
-													<SelectContent className="bg-slate-800 border-slate-700">
+													<SelectContent className="bg-card border-border">
 														<SelectItem value="PDF_STRICT_COMPLIANCE">
 															PDF - Strict Compliance
 														</SelectItem>
@@ -423,11 +423,11 @@ export function ReportGeneratorPage() {
 
 									{/* Kernel Coverage Options */}
 									<div className="space-y-4">
-										<h3 className="text-sm font-medium text-slate-200 uppercase tracking-wider">
+										<h3 className="text-sm font-medium text-foreground uppercase tracking-wider">
 											Kernel Coverage
 										</h3>
 
-										<div className="flex items-center justify-between p-4 rounded-lg border border-slate-700 bg-slate-900/30">
+										<div className="flex items-center justify-between p-4 rounded-lg border border-border bg-card/30">
 											<div className="flex items-center gap-3">
 												<input
 													type="checkbox"
@@ -436,16 +436,16 @@ export function ReportGeneratorPage() {
 													onChange={(e) =>
 														setIncludeDisabledDevices(e.target.checked)
 													}
-													className="h-4 w-4 text-red-500 rounded border-slate-600 bg-slate-800 focus:ring-red-500 focus:ring-offset-slate-800"
+													className="h-4 w-4 text-red-500 rounded border-border bg-card focus:ring-red-500 focus:ring-offset-slate-800"
 												/>
 												<div>
 													<Label
 														htmlFor="include-disabled-devices"
-														className="text-slate-200 font-medium"
+														className="text-foreground font-medium"
 													>
 														Include Disabled Devices
 													</Label>
-													<p className="text-xs text-slate-400 mt-1">
+													<p className="text-xs text-muted-foreground mt-1">
 														Include devices marked as disabled in the
 														computation
 													</p>
@@ -453,7 +453,7 @@ export function ReportGeneratorPage() {
 											</div>
 										</div>
 
-										<div className="flex items-center justify-between p-4 rounded-lg border border-slate-700 bg-slate-900/30">
+										<div className="flex items-center justify-between p-4 rounded-lg border border-border bg-card/30">
 											<div className="flex items-center gap-3">
 												<input
 													type="checkbox"
@@ -462,16 +462,16 @@ export function ReportGeneratorPage() {
 													onChange={(e) =>
 														setSafetyMarginPadding(e.target.checked)
 													}
-													className="h-4 w-4 text-red-500 rounded border-slate-600 bg-slate-800 focus:ring-red-500 focus:ring-offset-slate-800"
+													className="h-4 w-4 text-red-500 rounded border-border bg-card focus:ring-red-500 focus:ring-offset-slate-800"
 												/>
 												<div>
 													<Label
 														htmlFor="safety-margin-padding"
-														className="text-slate-200 font-medium"
+														className="text-foreground font-medium"
 													>
 														Safety Margin Padding
 													</Label>
-													<p className="text-xs text-slate-400 mt-1">
+													<p className="text-xs text-muted-foreground mt-1">
 														Apply additional safety margin padding to
 														calculations
 													</p>
@@ -481,14 +481,14 @@ export function ReportGeneratorPage() {
 									</div>
 
 									{/* Kernel Information */}
-									<div className="p-4 rounded-lg border border-slate-700 bg-slate-900/30">
+									<div className="p-4 rounded-lg border border-border bg-card/30">
 										<div className="flex items-center gap-2 mb-2">
-											<Calculator className="h-4 w-4 text-blue-400" />
-											<h4 className="text-sm font-medium text-slate-200 uppercase tracking-wider">
+											<Calculator className="h-4 w-4 text-info" />
+											<h4 className="text-sm font-medium text-foreground uppercase tracking-wider">
 												QOMN-FIRE Deterministic Kernel
 											</h4>
 										</div>
-										<div className="text-xs text-slate-400 space-y-1">
+										<div className="text-xs text-muted-foreground space-y-1">
 											<div>
 												v4.2.1 - IEEE-754 Floating Point Deterministic
 												Verification
@@ -499,7 +499,7 @@ export function ReportGeneratorPage() {
 
 									<div className="flex gap-2 pt-2">
 										<Button
-											className="bg-red-600 hover:bg-red-700 text-white border-none flex-1"
+											className="bg-danger hover:bg-danger/90 text-white border-none flex-1"
 											onClick={handleGenerateReport}
 											disabled={generating}
 										>
@@ -507,7 +507,7 @@ export function ReportGeneratorPage() {
 										</Button>
 										<Button
 											variant="outline"
-											className="border-slate-600 text-slate-300 flex-1"
+											className="border-border text-foreground/90 flex-1"
 											onClick={() => {
 												setShowGenerateForm(false);
 												setReportName("");
@@ -522,9 +522,9 @@ export function ReportGeneratorPage() {
 
 						{/* Error */}
 						{reportsError && (
-							<Card className="border-red-500/30 bg-red-500/5">
+							<Card className="border-danger/30 bg-red-500/5">
 								<CardContent className="p-3">
-									<p className="text-sm text-red-400">
+									<p className="text-sm text-danger">
 										Error loading reports: {reportsError}
 									</p>
 								</CardContent>
@@ -532,12 +532,12 @@ export function ReportGeneratorPage() {
 						)}
 
 						{/* Reports List */}
-						<Card className="border-slate-700 bg-slate-800">
+						<Card className="border-border bg-card">
 							<CardHeader className="pb-3">
-								<CardTitle className="text-lg text-slate-100">
+								<CardTitle className="text-lg text-foreground">
 									Report History
 								</CardTitle>
-								<CardDescription className="text-slate-400">
+								<CardDescription className="text-muted-foreground">
 									{reportsLoading
 										? "Loading..."
 										: `${reports?.length || 0} reports`}
@@ -546,13 +546,13 @@ export function ReportGeneratorPage() {
 							<CardContent>
 								{reportsLoading ? (
 									<div className="flex items-center justify-center py-8">
-										<Activity className="h-5 w-5 text-slate-400 animate-pulse" />
-										<span className="ml-2 text-slate-400">
+										<Activity className="h-5 w-5 text-muted-foreground animate-pulse" />
+										<span className="ml-2 text-muted-foreground">
 											Loading reports...
 										</span>
 									</div>
 								) : !reports || reports.length === 0 ? (  // NOSONAR — S3358: nested ternary acceptable in this localized context
-									<div className="text-center py-8 text-slate-400">
+									<div className="text-center py-8 text-muted-foreground">
 										<FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
 										<p className="text-sm">No reports generated yet</p>
 										<p className="text-xs mt-1">
@@ -565,15 +565,15 @@ export function ReportGeneratorPage() {
 											{reports.map((report: Report) => (
 												<div
 													key={report.id}
-													className="flex items-center justify-between p-4 rounded-lg bg-slate-900/50 border border-slate-700/50"
+													className="flex items-center justify-between p-4 rounded-lg bg-muted/50 border border-border/50"
 												>
 													<div className="flex items-center gap-3">
 														{getReportIcon(report.type)}
 														<div>
-															<div className="text-sm font-medium text-slate-200">
+															<div className="text-sm font-medium text-foreground">
 																{report.name || report.type}
 															</div>
-															<div className="text-xs text-slate-400 mt-0.5">
+															<div className="text-xs text-muted-foreground mt-0.5">
 																{report.type
 																	.replace(/_/g, " ")  // NOSONAR - typescript:S7781
 																	.replace(/\b\w/g, (l) => l.toUpperCase())}
@@ -588,7 +588,7 @@ export function ReportGeneratorPage() {
 																<Button
 																	variant="ghost"
 																	size="sm"
-																	className="h-7 text-xs text-slate-400 hover:text-slate-200"
+																	className="h-7 text-xs text-muted-foreground hover:text-foreground"
 																	onClick={() =>
 																		handleExportReport(report, "json")
 																	}
@@ -599,7 +599,7 @@ export function ReportGeneratorPage() {
 																<Button
 																	variant="ghost"
 																	size="sm"
-																	className="h-7 text-xs text-slate-400 hover:text-slate-200"
+																	className="h-7 text-xs text-muted-foreground hover:text-foreground"
 																	onClick={() =>
 																		handleExportReport(report, "pdf")
 																	}
@@ -622,13 +622,13 @@ export function ReportGeneratorPage() {
 
 				{/* No project selected state */}
 				{selectedProjectId === null && (
-					<Card className="border-slate-700 bg-slate-800">
+					<Card className="border-border bg-card">
 						<CardContent className="py-16 text-center">
-							<FileText className="h-16 w-16 mx-auto mb-4 text-slate-600" />
-							<h3 className="text-lg font-medium text-slate-300">
+							<FileText className="h-16 w-16 mx-auto mb-4 text-muted-foreground/70" />
+							<h3 className="text-lg font-medium text-foreground/90">
 								Select a Project
 							</h3>
-							<p className="text-sm text-slate-400 mt-2 max-w-md mx-auto">
+							<p className="text-sm text-muted-foreground mt-2 max-w-md mx-auto">
 								Choose a project above to generate NFPA 72 coverage, battery
 								calculations, voltage drop analysis, and other engineering
 								reports.

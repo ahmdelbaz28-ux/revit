@@ -54,7 +54,7 @@ export function EventLog({  // NOSONAR - typescript:S6759
 	const buttonClass = `text-[10px] ${buttonColorClass}`;
 
 	return (
-		<div className="bg-card rounded-xl border border-border p-6 flex-1 flex flex-col overflow-hidden">
+		<div className="bg-card rounded-md border border-border p-6 flex-1 flex flex-col overflow-hidden">
 			<div className="flex items-center justify-between mb-4">
 				<div className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
 					SCADA Event Log

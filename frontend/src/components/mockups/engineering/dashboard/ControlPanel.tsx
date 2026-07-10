@@ -11,7 +11,7 @@ export function ControlPanel({  // NOSONAR - typescript:S6759
 	onStressTest,
 }: ControlPanelProps) {
 	return (
-		<div className="bg-card rounded-xl border border-border p-6 flex flex-col">
+		<div className="bg-card rounded-md border border-border p-6 flex flex-col">
 			<div className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-4">
 				Simulation Control
 			</div>
@@ -44,7 +44,7 @@ export function ControlPanel({  // NOSONAR - typescript:S6759
 						</button>
 						<button
 							onClick={onStressTest}
-							className="w-full py-2 rounded-md text-xs font-medium bg-orange-500/10 text-orange-500 border border-orange-500/20 hover:bg-orange-500/20 transition-colors"
+							className="w-full py-2 rounded-md text-xs font-medium bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors"
 						>
 							Run Stress Test (50 Faults)
 						</button>

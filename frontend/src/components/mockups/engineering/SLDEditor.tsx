@@ -62,11 +62,11 @@ export function SLDEditor() {
 
 					<RibbonGroup title="Protection">
 						<RibbonBtn
-							icon={<Box className="text-red-400" />}
+							icon={<Box className="text-danger" />}
 							label="Circuit Breaker"
 						/>
 						<RibbonBtn
-							icon={<Box className="text-orange-400" />}
+							icon={<Box className="text-primary" />}
 							label="Fuse"
 						/>
 						<RibbonBtn icon={<Crosshair />} label="Relay" />
@@ -98,23 +98,23 @@ export function SLDEditor() {
 						<div className="p-2 space-y-1">
 							<TreeFolder
 								title="Utility Source (11kV)"
-								icon={<Power className="h-3.5 w-3.5 text-blue-400" />}
+								icon={<Power className="h-4 w-4 text-info" />}
 								defaultOpen
 							>
 								<TreeFolder
 									title="Main Transformer T1 (11kV/480V)"
-									icon={<Zap className="h-3.5 w-3.5 text-blue-400" />}
+									icon={<Zap className="h-4 w-4 text-info" />}
 									defaultOpen
 								>
 									<TreeFolder
 										title="Main Switchboard MSB-1"
-										icon={<Box className="h-3.5 w-3.5 text-slate-400" />}
+										icon={<Box className="h-4 w-4 text-muted-foreground" />}
 										defaultOpen
 									>
 										<TreeFolder
 											title="Feeder 1 → MDB-A"
 											icon={
-												<GitCommit className="h-3.5 w-3.5 text-slate-400" />
+												<GitCommit className="h-4 w-4 text-muted-foreground" />
 											}
 											defaultOpen
 										>
@@ -125,7 +125,7 @@ export function SLDEditor() {
 										<TreeFolder
 											title="Feeder 2 → MDB-B"
 											icon={
-												<GitCommit className="h-3.5 w-3.5 text-slate-400" />
+												<GitCommit className="h-4 w-4 text-muted-foreground" />
 											}
 											defaultOpen
 										>
@@ -135,7 +135,7 @@ export function SLDEditor() {
 										<TreeFolder
 											title="Emergency Feeder"
 											icon={
-												<GitCommit className="h-3.5 w-3.5 text-orange-400" />
+												<GitCommit className="h-4 w-4 text-primary" />
 											}
 										>
 											<TreeItem title="ATS-1" />
@@ -710,7 +710,7 @@ export function SLDEditor() {
 				<div className="w-[300px] flex flex-col border-l bg-card/30 shrink-0 shadow-xl z-10">
 					<div className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-foreground border-b bg-card/40 flex justify-between items-center">
 						<span>Element Properties</span>
-						<Settings className="h-3.5 w-3.5 text-muted-foreground" />
+						<Settings className="h-4 w-4 text-muted-foreground" />
 					</div>
 
 					<ScrollArea className="flex-1">
@@ -718,7 +718,7 @@ export function SLDEditor() {
 							<div>
 								<div className="flex items-center gap-3 mb-4">
 									<div className="w-10 h-10 bg-blue-500/10 border border-blue-500/30 rounded flex items-center justify-center">
-										<Box className="h-5 w-5 text-blue-400" />
+										<Box className="h-5 w-5 text-info" />
 									</div>
 									<div>
 										<h3 className="font-bold text-base leading-tight">
@@ -731,7 +731,7 @@ export function SLDEditor() {
 								</div>
 
 								<div className="flex gap-2 mb-4">
-									<Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20">
+									<Badge className="bg-emerald-500/10 text-success border-success/30 hover:bg-emerald-500/20">
 										CLOSED
 									</Badge>
 									<Badge variant="outline" className="text-xs">
@@ -767,9 +767,9 @@ export function SLDEditor() {
 								</Button>
 							</div>
 
-							<div className="p-3 border border-orange-500/30 bg-orange-500/10 rounded-md">
-								<div className="flex items-center gap-2 text-orange-400 font-semibold text-xs mb-1">
-									<AlertTriangle className="h-3.5 w-3.5" /> Compliance Warning
+							<div className="p-3 border border-primary/30 bg-primary/10 rounded-md">
+								<div className="flex items-center gap-2 text-primary font-semibold text-xs mb-1">
+									<AlertTriangle className="h-4 w-4" /> Compliance Warning
 								</div>
 								<p className="text-[11px] text-muted-foreground">
 									Downstream feeder to Panel LP-3A exceeds 3% voltage drop limit
@@ -778,7 +778,7 @@ export function SLDEditor() {
 								<Button
 									size="sm"
 									variant="outline"
-									className="h-6 text-[10px] mt-2 border-orange-500/30 text-orange-400 bg-background hover:bg-orange-500/10"
+									className="h-6 text-[10px] mt-2 border-primary/30 text-primary bg-background hover:bg-primary/10"
 								>
 									View Issue
 								</Button>
@@ -812,10 +812,10 @@ export function SLDEditor() {
 							</div>
 							<div className="bg-background border px-2 py-1.5 rounded flex justify-between items-center">
 								<span className="text-muted-foreground">Snap</span>
-								<span className="text-emerald-400 font-semibold">ON</span>
+								<span className="text-success font-semibold">ON</span>
 							</div>
 						</div>
-						<div className="mt-auto h-16 bg-[#0a0a0f] border border-slate-700 rounded relative overflow-hidden flex items-center justify-center">
+						<div className="mt-auto h-16 bg-[#0a0a0f] border border-border rounded relative overflow-hidden flex items-center justify-center">
 							{/* Fake minimap */}
 							<div className="w-12 h-10 border-2 border-blue-500/50 absolute"></div>
 							<div className="w-20 h-0.5 bg-slate-600"></div>
@@ -827,13 +827,13 @@ export function SLDEditor() {
 			{/* Bottom Console */}
 			<div className="h-8 border-t bg-card flex items-center justify-between px-4 text-[10px] font-mono text-muted-foreground shrink-0">
 				<div className="flex items-center gap-4">
-					<span className="text-orange-400 flex items-center gap-1">
+					<span className="text-primary flex items-center gap-1">
 						<AlertTriangle className="h-3 w-3" /> 2 issues in diagram
 					</span>
 					<Separator orientation="vertical" className="h-4" />
 					<span>NEC Check: 1 warning</span>
 					<Separator orientation="vertical" className="h-4" />
-					<span className="text-blue-400 cursor-pointer hover:underline">
+					<span className="text-info cursor-pointer hover:underline">
 						Short circuit: Run needed
 					</span>
 				</div>
@@ -880,7 +880,7 @@ function RibbonBtn({  // NOSONAR - typescript:S6759
 			className={`flex flex-col items-center justify-center w-14 h-10 rounded cursor-pointer transition-colors group ${active ? "bg-primary/20 text-primary border border-primary/30" : "hover:bg-muted"}`}
 		>
 			<div
-				className={`mb-1 [&>svg]:w-4 [&>svg]:h-4 ${active ? "text-primary" : "text-slate-400 group-hover:text-foreground"}`}
+				className={`mb-1 [&>svg]:w-4 [&>svg]:h-4 ${active ? "text-primary" : "text-muted-foreground group-hover:text-foreground"}`}
 			>
 				{icon}
 			</div>
@@ -912,15 +912,15 @@ function TreeFolder({  // NOSONAR - typescript:S6759
 				onClick={() => setOpen(!open)}
 			>
 				<Triangle
-					className={`h-2.5 w-2.5 text-slate-500 transition-transform ${open ? "rotate-180" : "rotate-90"}`}
+					className={`h-2.5 w-2.5 text-muted-foreground transition-transform ${open ? "rotate-180" : "rotate-90"}`}
 				/>
 				{icon}
-				<span className="text-[11px] font-medium text-slate-300 truncate">
+				<span className="text-[11px] font-medium text-foreground/90 truncate">
 					{title}
 				</span>
 			</div>
 			{open && (
-				<div className="ml-3 pl-2 border-l border-slate-700 flex flex-col gap-0.5 mt-0.5">
+				<div className="ml-3 pl-2 border-l border-border flex flex-col gap-0.5 mt-0.5">
 					{children}
 				</div>
 			)}
@@ -939,13 +939,13 @@ function TreeItem({  // NOSONAR - typescript:S6759
 }) {
 	return (
 		<div
-			className={`flex items-center gap-1.5 py-1 px-1 rounded cursor-pointer transition-colors ${active ? "bg-blue-500/20 text-blue-400" : "hover:bg-muted"} ${error ? "text-red-400 bg-red-500/10" : ""}`}
+			className={`flex items-center gap-1.5 py-1 px-1 rounded cursor-pointer transition-colors ${active ? "bg-blue-500/20 text-info" : "hover:bg-muted"} ${error ? "text-danger bg-red-500/10" : ""}`}
 		>
 			<div
 				className={`w-1.5 h-1.5 rounded-full ${error ? "bg-red-500" : "bg-slate-600"}`}
 			></div>
 			<span
-				className={`text-[10px] truncate ${error ? "font-semibold" : "text-slate-400"}`}
+				className={`text-[10px] truncate ${error ? "font-semibold" : "text-muted-foreground"}`}
 			>
 				{title}
 			</span>

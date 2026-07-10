@@ -120,14 +120,14 @@ export function FloatingErrorLog() {
 									{new Date(err.timestamp).toLocaleTimeString()}
 								</div>
 								<div className="w-[60px] shrink-0">
-									<span className="text-red-400">ERROR</span>
+									<span className="text-danger">ERROR</span>
 								</div>
-								<div className="flex-1 text-slate-300 truncate pr-4">
+								<div className="flex-1 text-foreground/90 truncate pr-4">
 									{err.message}
 								</div>
 								<div className="shrink-0 flex items-center gap-4 opacity-0 group-hover:opacity-100 transition-opacity">
 									{err.elementId && (
-										<span className="text-blue-400 hover:underline text-[10px]">
+										<span className="text-info hover:underline text-[10px]">
 											Go To
 										</span>
 									)}

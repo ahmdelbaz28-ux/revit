@@ -26,8 +26,8 @@ export function ComplianceCenter() {
 			{/* Header */}
 			<div className="h-16 flex items-center justify-between px-4 border-b bg-card shrink-0">
 				<div className="flex items-center gap-4">
-					<div className="w-10 h-10 rounded-md bg-emerald-500/20 flex items-center justify-center border border-emerald-500/30">
-						<ShieldCheck className="h-5 w-5 text-emerald-400" />
+					<div className="w-10 h-10 rounded-md bg-emerald-500/20 flex items-center justify-center border border-success/30">
+						<ShieldCheck className="h-5 w-5 text-success" />
 					</div>
 					<div>
 						<h1 className="font-bold tracking-wide text-lg leading-tight">
@@ -35,7 +35,7 @@ export function ComplianceCenter() {
 						</h1>
 						<div className="text-[10px] font-mono text-muted-foreground flex items-center gap-2">
 							<span>
-								Status: <span className="text-amber-400">Action Required</span>
+								Status: <span className="text-warning">Action Required</span>
 							</span>
 							<span>•</span>
 							<span>Last check: 14:47 today</span>
@@ -46,19 +46,19 @@ export function ComplianceCenter() {
 				<div className="flex items-center gap-4">
 					<div className="flex gap-2">
 						<Button variant="outline" size="sm" className="h-8 gap-1">
-							<History className="h-3.5 w-3.5" /> History
+							<History className="h-4 w-4" /> History
 						</Button>
 						<Button variant="outline" size="sm" className="h-8 gap-1">
-							<Settings className="h-3.5 w-3.5" /> Configure Standards
+							<Settings className="h-4 w-4" /> Configure Standards
 						</Button>
 						<Button variant="outline" size="sm" className="h-8 gap-1">
-							<FileText className="h-3.5 w-3.5" /> Generate Report
+							<FileText className="h-4 w-4" /> Generate Report
 						</Button>
 						<Button
 							size="sm"
 							className="h-8 gap-1 shadow-[0_0_15px_rgba(0,168,255,0.4)]"
 						>
-							<Play className="h-3.5 w-3.5" /> Run Full Check
+							<Play className="h-4 w-4" /> Run Full Check
 						</Button>
 					</div>
 				</div>
@@ -72,9 +72,9 @@ export function ComplianceCenter() {
 					<div className="bg-emerald-500 w-[93%]" title="Passed (127)"></div>
 				</div>
 				<div className="flex gap-4 font-mono">
-					<span className="text-red-400">3 Critical</span>
-					<span className="text-orange-400">8 Warnings</span>
-					<span className="text-emerald-400">127 Passed</span>
+					<span className="text-danger">3 Critical</span>
+					<span className="text-primary">8 Warnings</span>
+					<span className="text-success">127 Passed</span>
 				</div>
 			</div>
 
@@ -138,7 +138,7 @@ export function ComplianceCenter() {
 								</TabsTrigger>
 								<TabsTrigger
 									value="critical"
-									className="text-xs px-3 data-[state=active]:bg-red-500/20 data-[state=active]:text-red-400"
+									className="text-xs px-3 data-[state=active]:bg-red-500/20 data-[state=active]:text-danger"
 								>
 									Critical{" "}
 									<Badge
@@ -150,19 +150,19 @@ export function ComplianceCenter() {
 								</TabsTrigger>
 								<TabsTrigger
 									value="warnings"
-									className="text-xs px-3 data-[state=active]:bg-orange-500/20 data-[state=active]:text-orange-400"
+									className="text-xs px-3 data-[state=active]:bg-primary/20 data-[state=active]:text-primary"
 								>
 									Warnings{" "}
 									<Badge
 										variant="secondary"
-										className="ml-1 text-[9px] px-1 py-0 h-4 bg-orange-500 text-white"
+										className="ml-1 text-[9px] px-1 py-0 h-4 bg-primary text-white"
 									>
 										8
 									</Badge>
 								</TabsTrigger>
 								<TabsTrigger
 									value="passed"
-									className="text-xs px-3 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400"
+									className="text-xs px-3 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-success"
 								>
 									Passed{" "}
 									<Badge
@@ -178,7 +178,7 @@ export function ComplianceCenter() {
 							</TabsList>
 
 							<div className="relative w-48">
-								<Search className="absolute left-2 top-1.5 h-3.5 w-3.5 text-muted-foreground" />
+								<Search className="absolute left-2 top-1.5 h-4 w-4 text-muted-foreground" />
 								<Input
 									placeholder="Search issues..."
 									className="h-7 text-xs pl-7 bg-background border-muted"
@@ -255,7 +255,7 @@ export function ComplianceCenter() {
 							</span>
 							<Badge
 								variant="outline"
-								className="bg-red-500/20 text-red-400 border-red-500/30"
+								className="bg-red-500/20 text-danger border-danger/30"
 							>
 								Critical
 							</Badge>
@@ -276,7 +276,7 @@ export function ComplianceCenter() {
 								<div className="text-xs font-semibold uppercase text-muted-foreground mb-2">
 									Code Text
 								</div>
-								<div className="p-3 bg-[#0f1115] border border-slate-700 rounded-md font-mono text-[10px] text-slate-300 leading-relaxed">
+								<div className="p-3 bg-[#0f1115] border border-border rounded-md font-mono text-[10px] text-foreground/90 leading-relaxed">
 									"For smooth ceilings, all points on the ceiling shall have a
 									detector within a distance equal to 0.7 times the selected
 									spacing (0.7S). This equates to a maximum coverage area of 900
@@ -294,7 +294,7 @@ export function ComplianceCenter() {
 										SD-047 (Photoelectric)
 									</div>
 									<div className="text-muted-foreground">Actual Area:</div>
-									<div className="font-mono text-right text-red-400">
+									<div className="font-mono text-right text-danger">
 										97.2 m²
 									</div>
 									<div className="text-muted-foreground">Max Allowed:</div>
@@ -308,7 +308,7 @@ export function ComplianceCenter() {
 								<div className="p-3 border border-primary/40 bg-primary/5 rounded-md relative overflow-hidden">
 									<div className="absolute top-0 left-0 w-1 h-full bg-primary"></div>
 									<div className="flex items-center gap-2 text-primary font-semibold text-xs mb-2">
-										<Zap className="h-3.5 w-3.5 fill-primary/20" /> AI
+										<Zap className="h-4 w-4 fill-primary/20" /> AI
 										Resolution
 									</div>
 									<p className="text-xs text-muted-foreground mb-4">
@@ -331,14 +331,14 @@ export function ComplianceCenter() {
 									size="sm"
 									className="text-xs h-8 justify-start"
 								>
-									<Target className="h-3.5 w-3.5 mr-2" /> View in Drawing
+									<Target className="h-4 w-4 mr-2" /> View in Drawing
 								</Button>
 								<Button
 									variant="outline"
 									size="sm"
 									className="text-xs h-8 justify-start"
 								>
-									<AlertOctagon className="h-3.5 w-3.5 mr-2" /> Suppress with
+									<AlertOctagon className="h-4 w-4 mr-2" /> Suppress with
 									Reason
 								</Button>
 							</div>
@@ -354,7 +354,7 @@ export function ComplianceCenter() {
 					<Separator orientation="vertical" className="h-4" />
 					<span>Profile: Commercial Office v2.1</span>
 				</div>
-				<div className="flex items-center gap-4 text-emerald-400 font-bold">
+				<div className="flex items-center gap-4 text-success font-bold">
 					Compliance Score: 94.7%
 				</div>
 			</div>
@@ -380,7 +380,7 @@ function StandardGroup({ title, items }: { title: string; items: any[] }) {  // 
 								className="scale-[0.6] origin-left"
 							/>
 							<span
-								className={`text-xs ${item.active ? "text-slate-200" : "text-muted-foreground"}`}
+								className={`text-xs ${item.active ? "text-foreground" : "text-muted-foreground"}`}
 							>
 								{item.name}
 							</span>
@@ -406,7 +406,7 @@ function StandardGroup({ title, items }: { title: string; items: any[] }) {  // 
 function IssueCard({ active, severity, std, title, desc, actions }: any) {
 	const isCrit = severity === "Critical";
 	const borderColor = isCrit ? "border-l-red-500" : "border-l-orange-500";
-	const iconColor = isCrit ? "text-red-400" : "text-orange-400";
+	const iconColor = isCrit ? "text-danger" : "text-primary";
 	const Icon = isCrit ? AlertOctagon : AlertTriangle;
 
 	return (
@@ -419,7 +419,7 @@ function IssueCard({ active, severity, std, title, desc, actions }: any) {
 					<div className="flex items-center gap-2 mb-1">
 						<Badge
 							variant="outline"
-							className={`text-[9px] px-1 py-0 h-4 border-muted-foreground/30 ${isCrit ? "text-red-400 bg-red-500/10" : "text-orange-400 bg-orange-500/10"}`}
+							className={`text-[9px] px-1 py-0 h-4 border-muted-foreground/30 ${isCrit ? "text-danger bg-red-500/10" : "text-primary bg-primary/10"}`}
 						>
 							{severity}
 						</Badge>

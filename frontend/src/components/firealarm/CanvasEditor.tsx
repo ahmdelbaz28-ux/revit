@@ -250,13 +250,13 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
         return (
                 <div className="flex flex-col h-full">
                         <div className="mb-4 flex gap-2">
-                                <label className="text-sm font-medium text-slate-300">
+                                <label className="text-sm font-medium text-foreground/90">
                                         {t("fireAlarm.addDetector")}
                                 </label>
                                 <select
                                         value={newDetectorType}
                                         onChange={(e) => setNewDetectorType(e.target.value as DetectorType)}
-                                        className="bg-slate-900 border border-slate-600 rounded px-2 py-1 text-sm text-slate-100"
+                                        className="bg-card border border-border rounded px-2 py-1 text-sm text-foreground"
                                 >
                                         <option value="smoke">{t("fireAlarm.smokeDet")}</option>
                                         <option value="heat">{t("fireAlarm.heatDet")}</option>
@@ -269,7 +269,7 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
 
                         <div  // NOSONAR — S6848: type assertion acceptable
                                 ref={canvasRef}
-                                className="flex-1 bg-slate-900 border border-slate-700 rounded-lg relative overflow-hidden"
+                                className="flex-1 bg-card border border-border rounded-lg relative overflow-hidden"
                                 onClick={handleCanvasClick} onKeyDown={(e: React.KeyboardEvent<HTMLDivElement>) => { if (e.key === "Enter") { e.preventDefault(); (document.activeElement as HTMLElement)?.click(); } }}                                style={{ minHeight: "400px" }}
                         >
                                 {floorPlanImage ? (
@@ -279,12 +279,12 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
                                                 className="absolute inset-0 w-full h-full object-contain"
                                         />
                                 ) : (
-                                        <div className="absolute inset-0 bg-slate-800 flex items-center justify-center pointer-events-none">
+                                        <div className="absolute inset-0 bg-card flex items-center justify-center pointer-events-none">
                                                 {/* V192 FIX: pointer-events-none so clicks pass through to the
                 canvas div's onClick handler (handleCanvasClick). Previously,
                 this div intercepted clicks on empty canvas area, preventing
                 new detectors from being added when no floor plan was loaded. */}
-                                                <p className="text-slate-500 text-sm select-none">
+                                                <p className="text-muted-foreground text-sm select-none">
                                                         {t("fireAlarm.floorPlanPlaceholder")}
                                                 </p>
                                         </div>

@@ -66,7 +66,7 @@ export function NexusWorkspace() {
 					{/* Drag & Drop Overlay */}
 					{draggedItem && (
 						<div className="absolute inset-0 pointer-events-none flex items-center justify-center bg-primary/5 backdrop-blur-sm">
-							<div className="bg-primary/20 border-2 border-primary border-dashed rounded-xl p-10 text-primary font-bold text-xl transform rotate-[-5deg]">
+							<div className="bg-primary/20 border-2 border-primary border-dashed rounded-md p-10 text-primary font-bold text-xl transform rotate-[-5deg]">
 								Drop {draggedItem.label} Here
 							</div>
 						</div>
@@ -129,7 +129,7 @@ export function NexusWorkspace() {
 					</button>
 					<button
 						onClick={() => setActiveTab("risk")}
-						className={`flex-1 py-3 flex justify-center border-b-2 transition-colors ${activeTab === "risk" ? "border-orange-500 text-orange-500 bg-orange-500/5" : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50"}`}
+						className={`flex-1 py-3 flex justify-center border-b-2 transition-colors ${activeTab === "risk" ? "border-primary text-primary bg-primary/5" : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50"}`}
 						title="Risk Assessment"
 					>
 						<ShieldAlert size={18} />

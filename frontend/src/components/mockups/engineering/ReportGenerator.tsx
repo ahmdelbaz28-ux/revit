@@ -32,7 +32,7 @@ export function ReportGenerator() {
 			<div className="h-16 flex items-center justify-between px-4 border-b bg-card shrink-0">
 				<div className="flex items-center gap-4">
 					<div className="w-10 h-10 rounded-md bg-blue-500/20 flex items-center justify-center border border-blue-500/30">
-						<FileText className="h-5 w-5 text-blue-400" />
+						<FileText className="h-5 w-5 text-info" />
 					</div>
 					<div>
 						<h1 className="font-bold tracking-wide text-lg leading-tight">
@@ -41,7 +41,7 @@ export function ReportGenerator() {
 						<div className="text-[10px] font-mono text-muted-foreground flex items-center gap-2 mt-0.5">
 							<span>Project: Tower-B Office Complex</span>
 							<span>•</span>
-							<span className="text-emerald-400">All data synced</span>
+							<span className="text-success">All data synced</span>
 						</div>
 					</div>
 				</div>
@@ -63,16 +63,16 @@ export function ReportGenerator() {
 
 				<div className="flex gap-2">
 					<Button variant="outline" size="sm" className="h-8 gap-1">
-						<DownloadCloud className="h-3.5 w-3.5" /> Import Data
+						<DownloadCloud className="h-4 w-4" /> Import Data
 					</Button>
 					<Button variant="outline" size="sm" className="h-8 gap-1">
-						<Settings className="h-3.5 w-3.5" /> Settings
+						<Settings className="h-4 w-4" /> Settings
 					</Button>
 					<Button
 						size="sm"
 						className="h-8 gap-1 shadow-[0_0_15px_rgba(0,168,255,0.4)]"
 					>
-						<Wand2 className="h-3.5 w-3.5" /> Generate with AI
+						<Wand2 className="h-4 w-4" /> Generate with AI
 					</Button>
 				</div>
 			</div>
@@ -129,7 +129,7 @@ export function ReportGenerator() {
 								<div className="flex justify-between items-start border-b-2 border-slate-300 pb-6 mb-8">
 									<div className="flex items-center gap-4">
 										<div className="w-16 h-16 bg-slate-200 border border-slate-300 flex items-center justify-center">
-											<span className="text-slate-400 text-[10px] font-sans">
+											<span className="text-muted-foreground text-[10px] font-sans">
 												LOGO
 											</span>
 										</div>
@@ -137,12 +137,12 @@ export function ReportGenerator() {
 											<h2 className="text-xl font-bold uppercase tracking-wide text-slate-800">
 												Tower-B Office Complex
 											</h2>
-											<div className="text-sm text-slate-600 mt-1 font-sans">
+											<div className="text-sm text-muted-foreground/70 mt-1 font-sans">
 												Project ID: PRJ-8842-NY
 											</div>
 										</div>
 									</div>
-									<div className="text-right text-xs font-sans text-slate-600 space-y-1">
+									<div className="text-right text-xs font-sans text-muted-foreground/70 space-y-1">
 										<div>
 											<span className="font-semibold text-slate-700">
 												Report No:
@@ -180,7 +180,7 @@ export function ReportGenerator() {
 								<h1 className="text-2xl font-bold text-center mb-8 border-b pb-2 uppercase tracking-wide">
 									Electrical Load Calculation Report
 									<br />
-									<span className="text-lg font-normal text-slate-600">
+									<span className="text-lg font-normal text-muted-foreground/70">
 										IEC 60364 / NEC 2023
 									</span>
 								</h1>
@@ -188,7 +188,7 @@ export function ReportGenerator() {
 								{/* Tables */}
 								<div className="space-y-8 font-sans">
 									<div>
-										<h3 className="font-bold text-sm bg-slate-800 text-white px-3 py-1.5 mb-2">
+										<h3 className="font-bold text-sm bg-card text-white px-3 py-1.5 mb-2">
 											1.0 LIGHTING LOAD
 										</h3>
 										<table className="w-full text-[11px] border-collapse border border-slate-300">
@@ -327,7 +327,7 @@ export function ReportGenerator() {
 									</div>
 
 									<div>
-										<h3 className="font-bold text-sm bg-slate-800 text-white px-3 py-1.5 mb-2">
+										<h3 className="font-bold text-sm bg-card text-white px-3 py-1.5 mb-2">
 											2.0 POWER & HVAC LOAD
 										</h3>
 										<table className="w-full text-[11px] border-collapse border border-slate-300">
@@ -460,7 +460,7 @@ export function ReportGenerator() {
 										</h3>
 										<div className="grid grid-cols-2 gap-x-12 gap-y-3 text-sm">
 											<div className="flex justify-between border-b border-slate-200 pb-1">
-												<span className="font-semibold text-slate-600">
+												<span className="font-semibold text-muted-foreground/70">
 													Total Connected:
 												</span>
 												<span className="font-mono font-bold text-slate-900">
@@ -468,7 +468,7 @@ export function ReportGenerator() {
 												</span>
 											</div>
 											<div className="flex justify-between border-b border-slate-200 pb-1">
-												<span className="font-semibold text-slate-600">
+												<span className="font-semibold text-muted-foreground/70">
 													Total Demand:
 												</span>
 												<span className="font-mono font-bold text-slate-900 text-blue-700">
@@ -476,7 +476,7 @@ export function ReportGenerator() {
 												</span>
 											</div>
 											<div className="flex justify-between border-b border-slate-200 pb-1">
-												<span className="font-semibold text-slate-600">
+												<span className="font-semibold text-muted-foreground/70">
 													Power Factor:
 												</span>
 												<span className="font-mono font-bold text-slate-900">
@@ -484,7 +484,7 @@ export function ReportGenerator() {
 												</span>
 											</div>
 											<div className="flex justify-between border-b border-slate-200 pb-1">
-												<span className="font-semibold text-slate-600">
+												<span className="font-semibold text-muted-foreground/70">
 													Apparent Power:
 												</span>
 												<span className="font-mono font-bold text-slate-900">
@@ -506,40 +506,40 @@ export function ReportGenerator() {
 							</div>
 
 							{/* AI Overlay Overlaying Bottom */}
-							<div className="absolute bottom-6 left-6 right-6 bg-slate-900/95 backdrop-blur-md border border-slate-700 shadow-2xl rounded-lg p-5 flex flex-col z-20">
+							<div className="absolute bottom-6 left-6 right-6 bg-card/95 backdrop-blur-md border border-border shadow-2xl rounded-lg p-5 flex flex-col z-20">
 								<div className="flex justify-between items-center mb-4">
 									<div className="flex items-center gap-3">
-										<Wand2 className="h-5 w-5 text-blue-400" />
-										<span className="font-semibold text-sm text-slate-100">
+										<Wand2 className="h-5 w-5 text-info" />
+										<span className="font-semibold text-sm text-foreground">
 											AI is analyzing project data...
 										</span>
 									</div>
-									<span className="text-xs font-mono text-blue-400">
+									<span className="text-xs font-mono text-info">
 										{progress}%
 									</span>
 								</div>
 
-								<div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden mb-4">
+								<div className="h-1.5 w-full bg-card rounded-full overflow-hidden mb-4">
 									<div
 										className="h-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.8)] transition-all duration-500 ease-out"
 										style={{ width: `${progress}%` }}
 									></div>
 								</div>
 
-								<div className="grid grid-cols-2 gap-3 text-xs font-mono text-slate-300">
-									<div className="flex items-center gap-2 text-emerald-400">
-										<CheckCircle className="h-3.5 w-3.5" /> Lighting loads
+								<div className="grid grid-cols-2 gap-3 text-xs font-mono text-foreground/90">
+									<div className="flex items-center gap-2 text-success">
+										<CheckCircle className="h-4 w-4" /> Lighting loads
 										extracted
 									</div>
-									<div className="flex items-center gap-2 text-emerald-400">
-										<CheckCircle className="h-3.5 w-3.5" /> HVAC loads
+									<div className="flex items-center gap-2 text-success">
+										<CheckCircle className="h-4 w-4" /> HVAC loads
 										calculated
 									</div>
-									<div className="flex items-center gap-2 text-emerald-400">
-										<CheckCircle className="h-3.5 w-3.5" /> Motor loads verified
+									<div className="flex items-center gap-2 text-success">
+										<CheckCircle className="h-4 w-4" /> Motor loads verified
 									</div>
-									<div className="flex items-center gap-2 text-blue-400">
-										<Play className="h-3.5 w-3.5 animate-pulse" /> Demand
+									<div className="flex items-center gap-2 text-info">
+										<Play className="h-4 w-4 animate-pulse" /> Demand
 										factors applied...
 									</div>
 								</div>
@@ -562,7 +562,7 @@ export function ReportGenerator() {
 								</div>
 
 								<div className="space-y-1.5">
-									<label className="text-xs font-medium text-slate-300">  // NOSONAR — S6853: React import kept for JSX transform
+									<label className="text-xs font-medium text-foreground/90">  // NOSONAR — S6853: React import kept for JSX transform
 										Standard / Template
 									</label>
 									<div className="grid grid-cols-3 gap-1">
@@ -579,10 +579,10 @@ export function ReportGenerator() {
 								</div>
 
 								<div className="space-y-1.5">
-									<label className="text-xs font-medium text-slate-300">  // NOSONAR — S6853: React import kept for JSX transform
+									<label className="text-xs font-medium text-foreground/90">  // NOSONAR — S6853: React import kept for JSX transform
 										Company Logo
 									</label>
-									<div className="border border-dashed border-slate-600 rounded-md p-3 flex flex-col items-center justify-center bg-card/50 cursor-pointer hover:bg-card">
+									<div className="border border-dashed border-border rounded-md p-3 flex flex-col items-center justify-center bg-card/50 cursor-pointer hover:bg-card">
 										<Upload className="h-4 w-4 text-muted-foreground mb-1" />
 										<span className="text-[10px] text-muted-foreground">
 											Upload image (PNG, JPG)
@@ -592,7 +592,7 @@ export function ReportGenerator() {
 
 								<div className="grid grid-cols-2 gap-3">
 									<div className="space-y-1.5">
-										<label className="text-xs font-medium text-slate-300">  // NOSONAR — S6853: React import kept for JSX transform
+										<label className="text-xs font-medium text-foreground/90">  // NOSONAR — S6853: React import kept for JSX transform
 											Language
 										</label>
 										<div className="flex items-center justify-between bg-background border border-border rounded px-2 py-1.5 cursor-pointer">
@@ -601,7 +601,7 @@ export function ReportGenerator() {
 										</div>
 									</div>
 									<div className="space-y-1.5">
-										<label className="text-xs font-medium text-slate-300">  // NOSONAR — S6853: React import kept for JSX transform
+										<label className="text-xs font-medium text-foreground/90">  // NOSONAR — S6853: React import kept for JSX transform
 											Page Size
 										</label>
 										<div className="flex items-center justify-between bg-background border border-border rounded px-2 py-1.5 cursor-pointer">
@@ -612,7 +612,7 @@ export function ReportGenerator() {
 								</div>
 
 								<div className="space-y-2 pt-2">
-									<label className="text-xs font-medium text-slate-300">  // NOSONAR — S6853: React import kept for JSX transform
+									<label className="text-xs font-medium text-foreground/90">  // NOSONAR — S6853: React import kept for JSX transform
 										Include Sections
 									</label>
 									<div className="space-y-2">
@@ -647,23 +647,23 @@ export function ReportGenerator() {
 							{/* AI Assist */}
 							<div className="space-y-3">
 								<div className="flex items-center justify-between">
-									<div className="text-xs font-bold text-blue-400 uppercase flex items-center gap-1">
+									<div className="text-xs font-bold text-info uppercase flex items-center gap-1">
 										<Wand2 className="h-3 w-3" /> AI Assist
 									</div>
-									<div className="text-[10px] font-mono text-emerald-400 flex items-center gap-1">
+									<div className="text-[10px] font-mono text-success flex items-center gap-1">
 										<CheckCircle className="h-2.5 w-2.5" /> 94% Confidence
 									</div>
 								</div>
 
 								<Button
 									variant="secondary"
-									className="w-full justify-start text-xs h-8 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 border border-blue-500/30"
+									className="w-full justify-start text-xs h-8 bg-blue-500/10 text-info hover:bg-blue-500/20 border border-blue-500/30"
 								>
 									Generate narrative summary
 								</Button>
 								<Button
 									variant="secondary"
-									className="w-full justify-start text-xs h-8 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 border border-blue-500/30"
+									className="w-full justify-start text-xs h-8 bg-blue-500/10 text-info hover:bg-blue-500/20 border border-blue-500/30"
 								>
 									Auto-populate from project data
 								</Button>
@@ -679,16 +679,16 @@ export function ReportGenerator() {
 
 								<div className="grid grid-cols-2 gap-2">
 									<Button variant="outline" className="h-8 text-xs bg-card">
-										<FileDigit className="h-3.5 w-3.5 mr-1.5" /> PDF
+										<FileDigit className="h-4 w-4 mr-1.5" /> PDF
 									</Button>
 									<Button variant="outline" className="h-8 text-xs bg-card">
-										<FileText className="h-3.5 w-3.5 mr-1.5" /> DOCX
+										<FileText className="h-4 w-4 mr-1.5" /> DOCX
 									</Button>
 									<Button variant="outline" className="h-8 text-xs bg-card">
-										<FileDigit className="h-3.5 w-3.5 mr-1.5" /> Excel
+										<FileDigit className="h-4 w-4 mr-1.5" /> Excel
 									</Button>
 									<Button variant="default" className="h-8 text-xs">
-										<AlertCircle className="h-3.5 w-3.5 mr-1.5" /> For Review
+										<AlertCircle className="h-4 w-4 mr-1.5" /> For Review
 									</Button>
 								</div>
 
@@ -713,7 +713,7 @@ export function ReportGenerator() {
 											Stamp
 										</label>
 										<div className="flex items-center justify-between bg-background border border-border rounded px-2 py-1.5 cursor-pointer">
-											<span className="text-xs text-orange-400 font-semibold uppercase">
+											<span className="text-xs text-primary font-semibold uppercase">
 												Preliminary
 											</span>
 											<ChevronDown className="h-3 w-3 text-muted-foreground" />
@@ -742,11 +742,11 @@ export function ReportGenerator() {
 										<div className="flex items-center gap-2">
 											<Badge
 												variant="outline"
-												className="text-[9px] h-4 px-1 py-0 bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+												className="text-[9px] h-4 px-1 py-0 bg-emerald-500/10 text-success border-emerald-500/20"
 											>
 												Approved
 											</Badge>
-											<Download className="h-3.5 w-3.5 text-muted-foreground" />
+											<Download className="h-4 w-4 text-muted-foreground" />
 										</div>
 									</div>
 									<div className="flex items-center justify-between p-2 rounded bg-card/50 border border-border/50 hover:bg-muted cursor-pointer transition-colors">
@@ -761,11 +761,11 @@ export function ReportGenerator() {
 										<div className="flex items-center gap-2">
 											<Badge
 												variant="outline"
-												className="text-[9px] h-4 px-1 py-0 bg-blue-500/10 text-blue-400 border-blue-500/20"
+												className="text-[9px] h-4 px-1 py-0 bg-blue-500/10 text-info border-blue-500/20"
 											>
 												Review
 											</Badge>
-											<Download className="h-3.5 w-3.5 text-muted-foreground" />
+											<Download className="h-4 w-4 text-muted-foreground" />
 										</div>
 									</div>
 									<div className="flex items-center justify-between p-2 rounded bg-card/50 border border-border/50 hover:bg-muted cursor-pointer transition-colors">
@@ -778,11 +778,11 @@ export function ReportGenerator() {
 										<div className="flex items-center gap-2">
 											<Badge
 												variant="outline"
-												className="text-[9px] h-4 px-1 py-0 bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+												className="text-[9px] h-4 px-1 py-0 bg-emerald-500/10 text-success border-emerald-500/20"
 											>
 												Approved
 											</Badge>
-											<Download className="h-3.5 w-3.5 text-muted-foreground" />
+											<Download className="h-4 w-4 text-muted-foreground" />
 										</div>
 									</div>
 								</div>
@@ -812,12 +812,12 @@ function TreeFolder({  // NOSONAR - typescript:S6759
 				onClick={() => setOpen(!open)}
 			>
 				<Triangle
-					className={`h-3 w-3 text-slate-500 transition-transform ${open ? "rotate-180" : "rotate-90"}`}
+					className={`h-3 w-3 text-muted-foreground transition-transform ${open ? "rotate-180" : "rotate-90"}`}
 				/>
-				<span className="text-xs font-medium text-slate-300">{title}</span>
+				<span className="text-xs font-medium text-foreground/90">{title}</span>
 			</div>
 			{open && (
-				<div className="ml-4 pl-2 border-l border-slate-700/50 flex flex-col gap-0.5 mt-1">
+				<div className="ml-4 pl-2 border-l border-border/50 flex flex-col gap-0.5 mt-1">
 					{children}
 				</div>
 			)}
@@ -834,10 +834,10 @@ function TreeItem({  // NOSONAR - typescript:S6759
 }) {
 	return (
 		<div
-			className={`flex items-center gap-2 py-1.5 px-2 rounded-md cursor-pointer transition-colors ${active ? "bg-blue-500/20 text-blue-400 font-medium border border-blue-500/30" : "text-slate-400 hover:text-slate-200 hover:bg-muted"}`}
+			className={`flex items-center gap-2 py-1.5 px-2 rounded-md cursor-pointer transition-colors ${active ? "bg-blue-500/20 text-info font-medium border border-blue-500/30" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}
 		>
 			<FileText
-				className={`h-3.5 w-3.5 ${active ? "text-blue-400" : "text-slate-500"}`}
+				className={`h-4 w-4 ${active ? "text-info" : "text-muted-foreground"}`}
 			/>
 			<span className="text-[11px] truncate">{title}</span>
 		</div>
