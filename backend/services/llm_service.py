@@ -378,6 +378,138 @@ class LLMService:
             raw=raw,
         )
 
+    async def chat_stream(
+        self,
+        prompt: str,
+        *,
+        system: str | None = None,
+        model: str | None = None,
+        temperature: float = _DEFAULT_TEMPERATURE,
+        max_tokens: int | None = None,
+    ) -> AsyncGenerator[dict[str, Any], None]:
+        """Stream a chat completion token-by-token via SSE.
+
+        Yields dicts with one of these shapes:
+          - {"type": "chunk", "content": "...", "model": "...", "source": "..."}
+          - {"type": "done", "content": "full text", "model": "...",
+             "source": "...", "usage": {...}}
+          - {"type": "error", "message": "..."}
+
+        Falls back to non-streaming if the provider doesn't support streaming.
+        """
+        if not prompt or not prompt.strip():
+            yield {"type": "error", "message": "prompt must be non-empty"}
+            return
+        if not self.available:
+            yield {
+                "type": "error",
+                "message": "LLM service not configured. Set ZENMUX_API_KEY.",
+            }
+            return
+
+        messages: list[dict[str, str]] = []
+        if system:
+            messages.append({"role": "system", "content": system})
+        messages.append({"role": "user", "content": prompt})
+        use_max_tokens = max_tokens or self._max_tokens
+
+        # Try primary provider first, then fallback
+        providers_to_try: list[_ProviderConfig] = []
+        if self._primary.available:
+            providers_to_try.append(self._primary)
+        if self.fallback_available:
+            providers_to_try.append(self._fallback)
+
+        if not providers_to_try:
+            yield {"type": "error", "message": "No LLM provider available"}
+            return
+
+        for provider in providers_to_try:
+            try:
+                async for event in self._stream_provider(
+                    provider, messages, model, temperature, use_max_tokens
+                ):
+                    yield event
+                return  # Success — don't try fallback
+            except Exception:
+                logger.warning(
+                    "Streaming with provider '%s' failed, trying fallback",
+                    provider.name,
+                    exc_info=True,
+                )
+                continue
+
+        yield {"type": "error", "message": "All LLM providers failed"}
+
+    async def _stream_provider(
+        self,
+        provider: _ProviderConfig,
+        messages: list[dict[str, str]],
+        model: str | None,
+        temperature: float,
+        max_tokens: int,
+    ) -> AsyncGenerator[dict[str, Any], None]:
+        """Stream tokens from a single provider."""
+        client = self._get_client(provider)
+        use_model = model or provider.model
+
+        try:
+            stream = await client.chat.completions.create(
+                model=use_model,
+                messages=messages,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                stream=True,
+                stream_options={"include_usage": True},
+            )
+        except Exception:
+            logger.exception(
+                "LLM stream creation failed (provider=%s, base_url=%s)",
+                provider.name,
+                provider.base_url,
+            )
+            raise
+
+        full_content = ""
+        usage_data: dict[str, Any] = {}
+
+        async for chunk in stream:
+            if not chunk.choices:
+                # Final chunk may contain usage stats only
+                if chunk.usage:
+                    usage_data = {
+                        "prompt_tokens": chunk.usage.prompt_tokens,
+                        "completion_tokens": chunk.usage.completion_tokens,
+                        "total_tokens": chunk.usage.total_tokens,
+                    }
+                continue
+
+            delta = chunk.choices[0].delta
+            if delta and delta.content:
+                full_content += delta.content
+                yield {
+                    "type": "chunk",
+                    "content": delta.content,
+                    "model": use_model,
+                    "source": provider.name,
+                }
+
+            # Check for usage in the final chunk
+            if chunk.usage:
+                usage_data = {
+                    "prompt_tokens": chunk.usage.prompt_tokens,
+                    "completion_tokens": chunk.usage.completion_tokens,
+                    "total_tokens": chunk.usage.total_tokens,
+                }
+
+        yield {
+            "type": "done",
+            "content": full_content,
+            "model": use_model,
+            "source": provider.name,
+            "usage": usage_data,
+        }
+
     # ── Health check ──────────────────────────────────────────────────────
 
     async def health(self) -> dict[str, Any]:  # noqa: S7503 — async for future extensibility

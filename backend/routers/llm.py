@@ -21,10 +21,12 @@ reminding the engineer that AI output must be verified against the published cod
 """
 from __future__ import annotations
 
+import json
 import logging
-from typing import Any, Dict
+from typing import Any, AsyncGenerator, Dict
 
 from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from backend.auth import require_permission
@@ -318,6 +320,54 @@ async def llm_models(request: Request) -> Dict[str, Any]:
         except Exception:
                 logger.exception("LLM models list failed")
                 raise HTTPException(502, detail=_ERR_REQUEST_FAILED) from None  # noqa: S8415
+
+
+@router.post(
+        "/chat/stream",
+        dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))],
+        responses={**_RES_502, **_RES_503},
+)
+@limiter.limit("30/minute")
+async def llm_chat_stream(
+        request: Request, req: ChatRequest
+) -> StreamingResponse:
+        """Stream a chat completion token-by-token via Server-Sent Events.
+
+        Returns ``text/event-stream`` with SSE events:
+          - ``data: {"type":"chunk","content":"..."}`` — partial token
+          - ``data: {"type":"done","content":"full text","model":"...","source":"...","usage":{...}}``
+          - ``data: {"type":"error","message":"..."}``
+
+        The frontend should parse SSE ``data:`` lines and update the UI
+        incrementally for a real-time typing experience.
+        """
+        svc = get_llm_service()
+        if not svc.available:
+                raise HTTPException(503, detail=_ERR_NOT_CONFIGURED)  # noqa: S8415
+
+        async def event_generator() -> AsyncGenerator[str, None]:
+                try:
+                        async for event in svc.chat_stream(
+                                req.prompt,
+                                system=req.system,
+                                model=req.model,
+                                temperature=req.temperature,
+                                max_tokens=req.max_tokens,
+                        ):
+                                yield f"data: {json.dumps(event)}\n\n"
+                except Exception:
+                        logger.exception("LLM stream failed")
+                        yield f"data: {json.dumps({'type': 'error', 'message': _ERR_REQUEST_FAILED})}\n\n"
+
+        return StreamingResponse(
+                event_generator(),
+                media_type="text/event-stream",
+                headers={
+                        "Cache-Control": "no-cache",
+                        "Connection": "keep-alive",
+                        "X-Accel-Buffering": "no",  # Disable Nginx buffering for real-time
+                },
+        )
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────

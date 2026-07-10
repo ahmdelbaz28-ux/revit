@@ -230,6 +230,102 @@ export const llmApi = {
                         body: JSON.stringify(data),
                 }),
 
+        /**
+         * POST /llm/chat/stream — Stream a chat completion via SSE.
+         * Calls onChunk for each token, onDone when complete, onError on failure.
+         */
+        chatStream: async (
+                data: {
+                        prompt: string;
+                        system?: string;
+                        model?: string;
+                        temperature?: number;
+                        max_tokens?: number;
+                },
+                signal: AbortSignal,
+                onChunk: (chunk: string) => void,
+                onDone: (done: { content: string; model: string; source: string }) => void,
+                onError: (message: string) => void,
+        ): Promise<void> => {
+                const apiKey = getApiKey();
+                const headers: Record<string, string> = {
+                        "Content-Type": "application/json",
+                };
+                if (apiKey) {
+                        headers["X-API-Key"] = apiKey;
+                }
+
+                try {
+                        const response = await fetch(
+                                `${API_BASE}/llm/chat/stream`,
+                                {
+                                        method: "POST",
+                                        headers,
+                                        body: JSON.stringify(data),
+                                        signal,
+                                        credentials: "same-origin",
+                                },
+                        );
+
+                        if (!response.ok) {
+                                const errorBody = await response.json().catch(() => ({}));
+                                throw new Error(
+                                        errorBody?.detail?.message ||
+                                                errorBody?.detail ||
+                                                `HTTP ${response.status}`,
+                                );
+                        }
+
+                        const reader = response.body?.getReader();
+                        if (!reader) {
+                                throw new Error("No response body for streaming");
+                        }
+
+                        const decoder = new TextDecoder();
+                        let buffer = "";
+
+                        while (true) {
+                                const { done, value } = await reader.read();
+                                if (done) break;
+
+                                buffer += decoder.decode(value, { stream: true });
+
+                                // Parse SSE events (separated by \n\n)
+                                const lines = buffer.split("\n\n");
+                                buffer = lines.pop() || ""; // Keep incomplete chunk in buffer
+
+                                for (const line of lines) {
+                                        if (!line.startsWith("data: ")) continue;
+                                        const jsonStr = line.slice(6).trim();
+                                        if (!jsonStr) continue;
+
+                                        try {
+                                                const event = JSON.parse(jsonStr);
+                                                if (event.type === "chunk") {
+                                                        onChunk(event.content);
+                                                } else if (event.type === "done") {
+                                                        onDone({
+                                                                content: event.content,
+                                                                model: event.model,
+                                                                source: event.source,
+                                                        });
+                                                } else if (event.type === "error") {
+                                                        onError(event.message || "Stream error");
+                                                        return;
+                                                }
+                                        } catch {
+                                                // Skip malformed JSON
+                                        }
+                                }
+                        }
+                } catch (err: unknown) {
+                        if (err instanceof Error && err.name === "AbortError") {
+                                return; // Silent abort
+                        }
+                        throw err;
+                }
+        },
+
         /** POST /llm/explain — Explain a calculation result */
         explain: (data: {
                 calculation_type: string;

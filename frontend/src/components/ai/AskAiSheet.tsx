@@ -255,12 +255,23 @@ function MessageBubble({ message }: { readonly message: ChatMessage }) {
                                 <div className="bg-slate-800 text-slate-100 rounded-2xl rounded-tl-sm px-3.5 py-2">
                                         <p className="text-sm whitespace-pre-wrap break-words">
                                                 {message.content}
+                                                {message.isStreaming && (
+                                                        <span className="inline-block w-1.5 h-4 bg-red-500 ml-0.5 animate-pulse align-text-bottom" />
+                                                )}
                                         </p>
                                 </div>
                                 <div className="flex items-center gap-2 mt-1 px-1">
-                                        <span className="text-[10px] text-slate-500">{message.model}</span>
-                                        {message.source && (
-                                                <span className="text-[10px] text-slate-600">· {message.source}</span>
+                                        {message.isStreaming ? (
+                                                <span className="text-[10px] text-red-400 animate-pulse">
+                                                        typing...
+                                                </span>
+                                        ) : (
+                                                <>
+                                                        <span className="text-[10px] text-slate-500">{message.model}</span>
+                                                        {message.source && (
+                                                                <span className="text-[10px] text-slate-600">· {message.source}</span>
+                                                        )}
+                                                </>
                                         )}
                                 </div>
                         </div>
