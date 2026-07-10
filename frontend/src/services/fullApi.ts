@@ -118,11 +118,7 @@ async function apiCall<T>(
 
 export const qomnApi = {
         /** POST /qomn/smoke-spacing — Calculate NFPA 72 smoke detector spacing */
-        smokeSpacing: (data: {
-                room_area: number;
-                ceiling_height: number;
-                detector_type?: string;
-        }) =>
+        smokeSpacing: (data: { ceiling_height_m: number }) =>
                 apiCall("/qomn/smoke-spacing", {
                         method: "POST",
                         body: JSON.stringify(data),
@@ -130,33 +126,35 @@ export const qomnApi = {
 
         /** POST /qomn/heat-spacing — Calculate heat detector spacing */
         heatSpacing: (data: {
-                room_area: number;
-                ceiling_height: number;
-                detector_type?: string;
+                ceiling_height_m: number;
+                area_per_detector_m2: number;
         }) =>
                 apiCall("/qomn/heat-spacing", {
                         method: "POST",
                         body: JSON.stringify(data),
                 }),
 
-        /** POST /qomn/battery — Calculate battery requirements */
+        /** POST /qomn/battery — Calculate battery requirements (NFPA 72 §10.6.7.2.1) */
         battery: (data: {
-                devices: Array<{ type: string; quantity: number; current: number }>;
-                duration_hours?: number;
+                standby_load_a: number;
+                alarm_load_a: number;
+                standby_hours?: number;
+                alarm_minutes?: number;
                 safety_factor?: number;
+                efficiency?: number;
         }) =>
                 apiCall("/qomn/battery", {
                         method: "POST",
                         body: JSON.stringify(data),
                 }),
 
-        /** POST /qomn/voltage-drop — Calculate voltage drop */
+        /** POST /qomn/voltage-drop — Calculate voltage drop (NEC Ch.9 Table 8) */
         voltageDrop: (data: {
-                current: number;
-                length: number;
-                cable_size: string;
-                voltage: number;
-                material?: string;
+                current_a: number;
+                length_m: number;
+                awg_gauge: string;
+                supply_voltage_v?: number;
+                max_drop_pct?: number;
         }) =>
                 apiCall("/qomn/voltage-drop", {
                         method: "POST",
@@ -165,9 +163,16 @@ export const qomnApi = {
 
         /** POST /qomn/place-detectors — Place detectors in a room */
         placeDetectors: (data: {
-                room_polygon: Array<[number, number]>;
-                detector_type: string;
-                spacing?: number;
+                room_id: string;
+                width_m: number;
+                length_m: number;
+                ceiling_height_m: number;
+                ceiling_type?: string;
+                occupancy_type?: string;
+                detector_type?: string;
+                is_sleeping_area?: boolean;
+                slope_degrees?: number;
+                exit_doors?: Array<{ x_m: number; y_m: number; door_width_m: number }>;
         }) =>
                 apiCall("/qomn/place-detectors", {
                         method: "POST",
@@ -176,9 +181,10 @@ export const qomnApi = {
 
         /** POST /qomn/place-duct — Place duct detector */
         placeDuct: (data: {
-                duct_width: number;
-                duct_height: number;
-                airflow_cfm: number;
+                duct_id: string;
+                width_m: number;
+                height_m: number;
+                velocity_m_s: number;
         }) =>
                 apiCall("/qomn/place-duct", {
                         method: "POST",
@@ -816,22 +822,18 @@ export const digitalTwinApi = {
 
 export const monitorApi = {
         /** GET /monitor/health */
-        getHealth: () => apiCall("/monitor/health", {}, API_BASE.replace("/v1", "")),
+        getHealth: () => apiCall("/monitor/health"),
 
         /** GET /monitor/metrics (Prometheus format) */
-        getMetrics: () =>
-                apiCall<string>("/monitor/metrics", {}, API_BASE.replace("/v1", "")),
+        getMetrics: () => apiCall<string>("/monitor/metrics"),
 
         /** GET /monitor/engine-status */
-        getEngineStatus: () =>
-                apiCall("/monitor/engine-status", {}, API_BASE.replace("/v1", "")),
+        getEngineStatus: () => apiCall("/monitor/engine-status"),
 
         /** GET /monitor/agent-activity */
         getAgentActivity: (params?: { limit?: number }) =>
                 apiCall(
                         `/monitor/agent-activity${params?.limit ? `?limit=${params.limit}` : ""}`, // NOSONAR — acceptable in this context
-                        {},
-                        API_BASE.replace("/v1", ""),
                 ),
 
         /** GET /monitor/security-alerts */
@@ -842,13 +844,11 @@ export const monitorApi = {
                 const qs = query.toString();
                 return apiCall(
                         `/monitor/security-alerts${qs ? `?${qs}` : ""}`, // NOSONAR — acceptable in this context
-                        {},
-                        API_BASE.replace("/v1", ""),
                 );
         },
 
         /** GET /monitor/alerts */
-        getAlerts: () => apiCall("/monitor/alerts", {}, API_BASE.replace("/v1", "")),
+        getAlerts: () => apiCall("/monitor/alerts"),
 };
 
 // ─── Workflow API ───────────────────────────────────────────────────────────
@@ -1293,11 +1293,9 @@ export const systemApi = {
         /** GET /reports/statistics */
         reportsStatistics: () => apiCall("/reports/statistics", {}, "/api"),
 
-        /** POST /cache/clear */
-        clearCache: () => apiCall("/cache/clear", { method: "POST" }),
-
-        /** GET /cache/stats */
-        cacheStats: () => apiCall("/cache/stats"),
+        // V215 FIX: Removed clearCache() and cacheStats() — /cache/* endpoints
+        // don't exist in the backend (were returning 404). If cache management
+        // is needed, add a proper backend router first.
 };
 
 // ─── Unified Export ─────────────────────────────────────────────────────────

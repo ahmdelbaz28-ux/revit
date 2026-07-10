@@ -645,6 +645,13 @@ for _router_name in (
 ):
     _safe_include_router(_router_name)
 
+# V215 FIX: Register multi_db router (was never registered — 11 endpoints returned 404)
+try:
+    from backend.routers import multi_db as _multi_db_module
+    app.include_router(_multi_db_module.router, prefix="/api/v1", tags=["multi-db"])
+except ImportError as e:
+    logger.warning("Router 'multi_db' skipped (optional dependency missing): %s", e)
+
 # V130 MARINE MODULE: Mount the marine fire-safety router.
 # Provides endpoints for IMO SOLAS II-2, IEC 60092-502, ship zone division,
 # detector selection, extinguishing sizing, alarm-logic generation, and

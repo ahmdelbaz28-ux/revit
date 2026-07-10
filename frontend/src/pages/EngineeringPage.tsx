@@ -91,29 +91,28 @@ export function EngineeringPage() {
                 };
         }, [voltageDropInputs]);
 
-        // V140 Phase 5: Call real QOMN API for voltage drop calculation
+        // V215 FIX: Call real QOMN API with CORRECT schema (was silently falling back)
         const _calculateVoltageDropViaApi = useCallback(async () => {
                 setApiLoading(true);
                 setApiError(null);
                 try {
                         const result = await qomnApi.voltageDrop({
-                                current: parseFloat(voltageDropInputs.current),  // NOSONAR - typescript:S7773
-                                length: parseFloat(voltageDropInputs.length),  // NOSONAR - typescript:S7773
-                                cable_size: voltageDropInputs.cableSize,
-                                voltage: parseFloat(voltageDropInputs.voltage),  // NOSONAR - typescript:S7773
-                                material: voltageDropInputs.material,
+                                current_a: parseFloat(voltageDropInputs.current),
+                                length_m: parseFloat(voltageDropInputs.length),
+                                awg_gauge: voltageDropInputs.cableSize || "12",
+                                supply_voltage_v: parseFloat(voltageDropInputs.voltage) || 24.0,
                         });
                         return result;
                 } catch (err) {
-                        setApiError(
-                                err instanceof Error ? err.message : "API calculation failed",
-                        );
-                        // Fall back to local calculation
-                        return calculateVoltageDrop();
+                        const msg = err instanceof Error ? err.message : "API calculation failed";
+                        setApiError(msg);
+                        // NO silent fallback — surface the error so the engineer knows
+                        // the backend audit hash is missing (life-safety requirement)
+                        throw err;
                 } finally {
                         setApiLoading(false);
                 }
-        }, [voltageDropInputs, calculateVoltageDrop]);
+        }, [voltageDropInputs]);
 
         const calculateCableSizing = () => {
                 // Placeholder calculation

@@ -91,6 +91,29 @@ async def create_connection(
         raise HTTPException(status_code=500, detail="Internal server error")  # NOSONAR — S8415: assignment kept for readability / debuggability
 
 
+@router.put("/{connection_id}", response_model=ApiResponse[ConnectionResponse], dependencies=[Depends(require_permission(Permission.CONNECTION_UPDATE))])
+async def update_connection(
+    connection_id: str,
+    data: ConnectionCreate,
+    db: DatabaseService = Depends(get_db_service),  # NOSONAR - python:S8410
+):
+    """Update a connection by ID. V215 FIX: was missing — frontend got 405."""
+    try:
+        updated = db.update_connection(connection_id, data)
+        if updated is None:
+            raise HTTPException(status_code=404, detail="Connection not found")  # noqa: S8415
+        return ApiResponse[ConnectionResponse](
+            success=True,
+            data=ConnectionResponse.model_validate(updated),
+            message="Connection updated successfully",
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("update_connection failed: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")  # noqa: S8415
+
+
 @router.delete("/{connection_id}", response_model=ApiResponse[None], dependencies=[Depends(require_permission(Permission.CONNECTION_DELETE))])
 async def delete_connection(
     connection_id: str,

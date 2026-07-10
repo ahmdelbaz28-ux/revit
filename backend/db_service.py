@@ -1167,6 +1167,49 @@ class DatabaseService:
 
             return True
 
+    def update_connection(
+        self, connection_id: str, data: ConnectionCreate
+    ) -> ConnectionResponse | None:
+        """Update a connection by ID. V215 FIX: was missing — frontend got 405.
+
+        Returns updated ConnectionResponse, or None if not found.
+        """
+        with self._service_lock:
+            with self._db_lock:
+                conn = self._db_conn
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT from_element_id, to_element_id, relationship_type "
+                "FROM relationships WHERE relationship_id=?",
+                (connection_id,),
+            )
+            row = cursor.fetchone()
+            if not row:
+                return None
+
+            cursor.execute(
+                "UPDATE relationships SET from_element_id=?, to_element_id=?, "
+                "relationship_type=?, metadata=? WHERE relationship_id=?",
+                (
+                    data.from_element_id,
+                    data.to_element_id,
+                    data.relationship_type,
+                    json.dumps(data.metadata) if data.metadata else None,
+                    connection_id,
+                ),
+            )
+            conn.commit()
+
+            return ConnectionResponse(
+                connection_id=connection_id,
+                from_element_id=data.from_element_id,
+                to_element_id=data.to_element_id,
+                relationship_type=data.relationship_type,
+                metadata=data.metadata or {},
+                created_at="",
+                updated_at="",
+            )
+
     # ──────────────────────────────────────────────────────────────────────────
     # Conflict detection and resolution
     # ──────────────────────────────────────────────────────────────────────────
