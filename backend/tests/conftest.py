@@ -81,6 +81,27 @@ os.environ.setdefault("DIGITAL_TWIN_DB_PATH", "/tmp/fireai_test_conftest.db")
 os.environ.setdefault("UDM_DB_PATH", "/tmp/udm_test_conftest.db")
 os.environ.setdefault("CORS_ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:5173")
 
+# V212 FIX: Clean up stale api_keys.secret file that causes crash in CI.
+# The file persists across test runs and may become invalid, causing:
+#   RuntimeError: Server secret file db/api_keys.secret exists but is invalid.
+# Also clean up stale DB files that cause RuntimeError on re-runs.
+import pathlib as _pathlib
+for _stale in ["db/api_keys.secret", "db/digital_twin.db", "db/udm_elements.db"]:
+    _p = _pathlib.Path(_stale)
+    if _p.exists():
+        try:
+            _p.unlink()
+        except OSError:
+            pass
+# Also clean /tmp test DBs
+for _tmp_db in ["/tmp/fireai_test_conftest.db", "/tmp/udm_test_conftest.db", "/tmp/fireai_deploy_test.db"]:
+    _p = _pathlib.Path(_tmp_db)
+    if _p.exists():
+        try:
+            _p.unlink()
+        except OSError:
+            pass
+
 
 # ─── Patch TestClient to inject X-API-Key ────────────────────────────────────
 # Done at import time (not in a fixture) because TestClient instances are
