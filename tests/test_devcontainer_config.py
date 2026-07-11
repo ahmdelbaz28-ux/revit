@@ -190,8 +190,8 @@ def test_post_create_script_is_executable(devcontainer_config: dict) -> None:
 def test_dockerfile_uses_python_312_base() -> None:
     """Dockerfile must use Python 3.12 base image (matches pyproject.toml)."""
     content = DOCKERFILE.read_text()
-    # Look for FROM line with python:3.12 or devcontainers/python:3.12
-    assert "python:3.12" in content or "python:3.12" in content, (
+    # Look for FROM line with python:3.12 (covers both python:3.12-slim and devcontainers/python:3.12)
+    assert "python:3.12" in content, (
         "Dockerfile must use Python 3.12 base image (pyproject.toml requires >=3.12)"
     )
 

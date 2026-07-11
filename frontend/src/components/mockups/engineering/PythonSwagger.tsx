@@ -603,8 +603,14 @@ export function PythonSwagger() {
 							{/* Projects Group */}
 							<div className="border border-slate-800 rounded overflow-hidden">
 								<div
+								role="button"
+								tabIndex=0
+				role="button"
+				tabIndex={0}
 									className="bg-card px-3 py-2 flex items-center justify-between cursor-pointer hover:bg-card transition-colors"
 									onClick={() => toggleSwagger("Projects")}
+								onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleSwagger("Projects") } }}
+									onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); () => toggleSwagger("Projects") } }}
 								>
 									<h3 className="font-bold text-sm text-foreground">Projects</h3>
 									<div className="flex items-center gap-2">
@@ -705,8 +711,11 @@ export function PythonSwagger() {
 									className="border border-slate-800 rounded overflow-hidden"
 								>
 									<div
+									role="button"
+									tabIndex=0
 										className="bg-card px-3 py-2 flex items-center justify-between cursor-pointer hover:bg-card transition-colors"
 										onClick={() => toggleSwagger(group.name)}
+									onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleSwagger(group.name) } }}
 									>
 										<h3 className="font-bold text-sm text-foreground">
 											{group.name}

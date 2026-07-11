@@ -170,9 +170,12 @@ export function ComponentLibrary() {
 										<div className="ml-5 pl-2 border-l border-border/50 flex flex-col gap-0.5 mt-1">
 											{cat.children.map((child) => (
 												<div
+												role="button"
+												tabIndex=0
 													key={child}
 													className={`py-1.5 px-2 text-xs rounded-md cursor-pointer transition-colors ${activeCategory === child ? "bg-primary/20 text-primary font-medium" : "text-muted-foreground hover:text-foreground hover:bg-muted/30"}`}
 													onClick={() => setActiveCategory(child)}
+												onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setActiveCategory(child) } }}
 												>
 													{child}
 												</div>
@@ -220,9 +223,12 @@ export function ComponentLibrary() {
 						<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pb-10">
 							{components.map((comp) => (
 								<div
+								role="button"
+								tabIndex=0
 									key={comp.id}
 									className={`group bg-card border rounded-lg overflow-hidden transition-all hover:border-primary/50 hover:shadow-[0_0_15px_rgba(0,168,255,0.1)] cursor-pointer flex flex-col ${selectedComp === comp.id ? "border-primary shadow-[0_0_10px_rgba(0,168,255,0.2)]" : "border-border/60"}`}
 									onClick={() => setSelectedComp(comp.id)}
+								onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSelectedComp(comp.id) } }}
 								>
 									<div className="h-32 bg-[#1a1d24] relative flex items-center justify-center p-4 border-b border-border/50">
 										<AbstractSymbol id={comp.id} />

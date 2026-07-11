@@ -165,6 +165,7 @@ export function ClashDetection() {
 									key={clash.id}
 									className={`p-3 rounded-md border cursor-pointer transition-all hover:bg-muted/50 ${activeClash === clash.id ? "bg-primary/10 border-primary/50" : "bg-card border-border/50"}`}
 									onClick={() => setActiveClash(clash.id)}
+						onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setActiveClash(clash.id) } }}
 								>
 									<div className="flex items-start justify-between mb-2">
 										<div className="flex items-center gap-2">
