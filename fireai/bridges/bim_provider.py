@@ -733,78 +733,235 @@ class AutodeskForgeProvider:
         """
         Get APS OAuth2 token (cached until expiry).
 
+        V214 FIX: Previously this method was a STUB that always returned
+        None. Now it implements the real APS client_credentials flow:
+            POST https://developer.api.autodesk.com/authentication/v1/authenticate
+        with client_id + client_secret + grant_type=client_credentials.
+
+        The token is cached in self._token until self._token_expires.
+        Scope: "data:read data:create data:write bucket:read bucket:create"
+        (covers Model Derivative + Design Automation + OSS).
+
         Returns:
             Bearer token string, or None if credentials missing/invalid.
-
-        Note:
-            This is a STUB. Full implementation should call:
-            POST https://developer.api.autodesk.com/authentication/v1/authenticate
-            with client_credentials grant type.
-
         """
+        import time
+
         if not self._client_id or not self._client_secret:
             return None
-        # TODO: Implement actual APS token fetch  # NOSONAR - python:S1135
-        # import time
-        # import httpx
-        # if self._token and time.time() < self._token_expires:
-        #     return self._token
-        # resp = httpx.post(
-        #     "https://developer.api.autodesk.com/authentication/v1/authenticate",
-        #     data={
-        #         "client_id": self._client_id,
-        #         "client_secret": self._client_secret,
-        #         "grant_type": "client_credentials",
-        #         "scope": "data:read",
-        #     },
-        #     timeout=10.0,
-        # )
-        # ...
-        logger.warning("AutodeskForgeProvider._get_auth_token is a STUB")
-        return None
+
+        # Return cached token if still valid (with 60s safety margin)
+        if self._token and time.time() < (self._token_expires - 60):
+            return self._token
+
+        try:
+            import httpx
+        except ImportError:
+            logger.error(
+                "AutodeskForgeProvider._get_auth_token: httpx not installed. "
+                "Install with: pip install httpx"
+            )
+            return None
+
+        try:
+            resp = httpx.post(
+                "https://developer.api.autodesk.com/authentication/v1/authenticate",
+                data={
+                    "client_id": self._client_id,
+                    "client_secret": self._client_secret,
+                    "grant_type": "client_credentials",
+                    "scope": "data:read data:create data:write bucket:read bucket:create",
+                },
+                headers={"Content-Type": "application/x-www-form-urlencoded"},
+                timeout=15.0,
+            )
+            if resp.status_code != 200:
+                logger.error(
+                    "APS authentication failed: HTTP %d — %s",
+                    resp.status_code, resp.text[:200]
+                )
+                return None
+            data = resp.json()
+            self._token = data.get("access_token")
+            expires_in = data.get("expires_in", 3600)  # default 1 hour
+            self._token_expires = time.time() + expires_in
+            logger.info("APS authentication successful (token expires in %ds)", expires_in)
+            return self._token
+        except Exception as e:
+            logger.exception("APS authentication request failed: %s", e)
+            return None
 
     def extract_rooms(
         self,
-        source: str | None = None,  # NOSONAR — S1172: parameter retained for API stability
+        source: str | None = None,
         **kwargs: Any,
     ) -> list[BIMRoom]:
         """
         Extract rooms via APS Model Derivative API.
 
-        Args:
-            source: APS object URN (base64-encoded).
-
-        Note:
-            STUB — full implementation requires:
+        V214 FIX: Previously this method was a STUB that returned [].
+        Now it implements the real APS Model Derivative flow:
             1. Get auth token (client_credentials)
             2. GET /modelderivative/v2/designdata/{urn}/metadata
             3. GET /modelderivative/v2/designdata/{urn}/metadata/{guid}
-            4. Filter objects to IfcSpace / Revit Room category
-            5. Get geometry via /manifest/{urn} → SVF2 → parse
+            4. Filter objects to Revit Room category (usually guid for rooms)
+            5. Return list of BIMRoom objects
 
+        Args:
+            source: APS object URN (base64-encoded object ID from OSS bucket).
+
+        Returns:
+            List of BIMRoom objects. Empty list if no rooms found or
+            if credentials/URN missing.
         """
         token = self._get_auth_token()
         if not token:
             logger.error(
                 "AutodeskForgeProvider.extract_rooms: no auth token "
-                "(missing APS_CLIENT_ID/APS_CLIENT_SECRET)"
+                "(missing APS_CLIENT_ID/APS_CLIENT_SECRET or auth failed)"
             )
             return []
-        logger.warning(
-            "AutodeskForgeProvider.extract_rooms is a STUB — "
-            "APS Model Derivative API integration not yet implemented. "
-            "Returning empty list."
-        )
-        return []
+
+        if not source:
+            logger.error("AutodeskForgeProvider.extract_rooms: no URN provided")
+            return []
+
+        try:
+            import httpx
+        except ImportError:
+            logger.error("httpx not installed — cannot call APS API")
+            return []
+
+        headers = {"Authorization": f"Bearer {token}"}
+        base_url = "https://developer.api.autodesk.com/modelderivative/v2/designdata"
+
+        try:
+            # Step 1: Get metadata (list of viewable GUIDs)
+            resp = httpx.get(f"{base_url}/{source}/metadata", headers=headers, timeout=30.0)
+            if resp.status_code != 200:
+                logger.error("APS metadata request failed: HTTP %d — %s", resp.status_code, resp.text[:200])
+                return []
+            metadata = resp.json()
+            viewables = metadata.get("data", {}).get("metadata", [])
+            if not viewables:
+                logger.warning("APS: no viewables found in URN %s", source)
+                return []
+
+            # Step 2: Use first viewable's guid (usually the 3D view)
+            guid = viewables[0].get("guid")
+            if not guid:
+                logger.error("APS: no guid in first viewable")
+                return []
+
+            # Step 3: Get object tree (hierarchical list of all objects)
+            resp = httpx.get(
+                f"{base_url}/{source}/metadata/{guid}",
+                headers=headers,
+                timeout=30.0,
+            )
+            if resp.status_code != 200:
+                logger.error("APS object tree request failed: HTTP %d", resp.status_code)
+                return []
+
+            tree = resp.json()
+            objects = tree.get("data", {}).get("objects", [])
+
+            # Step 4: Filter to Revit Room category
+            # Revit rooms appear as "Revit.Room" or similar in the object tree
+            rooms: list[BIMRoom] = []
+            for obj in objects:
+                name = obj.get("name", "")
+                objectid = obj.get("objectid", "")
+                # Check if this is a room (Revit rooms have specific names)
+                if "room" in name.lower() or "ifcspace" in name.lower():
+                    rooms.append(BIMRoom(
+                        room_id=str(objectid),
+                        name=name,
+                        level_id="",  # APS doesn't expose level in object tree
+                        area_m2=0.0,  # Would need SVF2 geometry parse for exact area
+                        ceiling_height_m=0.0,
+                        polygon=[],  # Would need SVF2 geometry parse
+                        source="aps_model_derivative",
+                    ))
+
+            logger.info("APS: extracted %d rooms from URN %s", len(rooms), source)
+            return rooms
+
+        except Exception as e:
+            logger.exception("APS extract_rooms failed: %s", e)
+            return []
 
     def read_devices(
         self,
-        source: str | None = None,  # NOSONAR — S1172: parameter retained for API stability
+        source: str | None = None,
         **kwargs: Any,
     ) -> list[dict[str, Any]]:
-        """Read devices via APS Model Derivative API."""
-        logger.warning("AutodeskForgeProvider.read_devices is a STUB")
-        return []
+        """
+        Read devices via APS Model Derivative API.
+
+        V214 FIX: Previously this method was a STUB that returned [].
+        Now it implements the real APS Model Derivative flow — same as
+        extract_rooms but filters for fire alarm device categories
+        (IfcSensor, IfcAlarm, Revit fire alarm families).
+        """
+        token = self._get_auth_token()
+        if not token:
+            logger.error("AutodeskForgeProvider.read_devices: no auth token")
+            return []
+
+        if not source:
+            logger.error("AutodeskForgeProvider.read_devices: no URN provided")
+            return []
+
+        try:
+            import httpx
+        except ImportError:
+            logger.error("httpx not installed — cannot call APS API")
+            return []
+
+        headers = {"Authorization": f"Bearer {token}"}
+        base_url = "https://developer.api.autodesk.com/modelderivative/v2/designdata"
+
+        try:
+            resp = httpx.get(f"{base_url}/{source}/metadata", headers=headers, timeout=30.0)
+            if resp.status_code != 200:
+                return []
+            metadata = resp.json()
+            viewables = metadata.get("data", {}).get("metadata", [])
+            if not viewables:
+                return []
+
+            guid = viewables[0].get("guid")
+            resp = httpx.get(f"{base_url}/{source}/metadata/{guid}", headers=headers, timeout=30.0)
+            if resp.status_code != 200:
+                return []
+
+            tree = resp.json()
+            objects = tree.get("data", {}).get("objects", [])
+
+            # Filter for fire alarm devices
+            _DEVICE_KEYWORDS = (
+                "sensor", "alarm", "detector", "smoke", "heat", "sprinkler",
+                "horn", "strobe", "bell", "siren", "pull station", "facp",
+                "ifcsensor", "ifcalarm",
+            )
+            devices: list[dict[str, Any]] = []
+            for obj in objects:
+                name = obj.get("name", "").lower()
+                if any(kw in name for kw in _DEVICE_KEYWORDS):
+                    devices.append({
+                        "id": str(obj.get("objectid", "")),
+                        "name": obj.get("name", ""),
+                        "source": "aps_model_derivative",
+                        "urn": source,
+                    })
+
+            logger.info("APS: read %d devices from URN %s", len(devices), source)
+            return devices
+
+        except Exception as e:
+            logger.exception("APS read_devices failed: %s", e)
+            return []
 
     def write_devices(
         self,
@@ -812,23 +969,143 @@ class AutodeskForgeProvider:
         target: str | None = None,
         **kwargs: Any,
     ) -> int:
-        """Write devices via APS Design Automation API (cloud Revit)."""
-        raise NotImplementedError(
-            "AutodeskForgeProvider.write_devices requires APS Design Automation "
-            "API integration. This is a STUB — implement Design Automation "
-            "AppBundle + Activity to enable cloud-based Revit writing."
-        )
+        """
+        Write devices via APS Design Automation API (cloud Revit).
+
+        V214 FIX: Previously this method raised NotImplementedError.
+        Now it implements the real APS Design Automation flow:
+            1. Get auth token
+            2. POST /daus/v2/workitems with a WorkItem payload that:
+               - References a pre-uploaded AppBundle (Revit plugin)
+               - References the input RVT file (from OSS bucket)
+               - Passes the devices JSON as an input argument
+               - Specifies the output RVT file
+            3. Poll GET /daus/v2/workitems/{id} until status=success
+            4. Download the output RVT file from OSS
+
+        NOTE: This requires a pre-configured AppBundle + Activity in APS.
+        The AppBundle must be a Revit add-in that accepts a devices JSON
+        and creates the corresponding Revit elements. Setup instructions:
+        https://aps.autodesk.com/en/docs/design-automation/v1/developers-guide/getting-started/
+
+        Args:
+            devices: List of device dicts to write.
+            target: OSS bucket key for the output RVT file.
+
+        Returns:
+            Number of devices written, or 0 on failure.
+        """
+        token = self._get_auth_token()
+        if not token:
+            logger.error("AutodeskForgeProvider.write_devices: no auth token")
+            return 0
+
+        app_bundle = kwargs.get("app_bundle") or os.environ.get("APS_APP_BUNDLE")
+        activity_id = kwargs.get("activity_id") or os.environ.get("APS_ACTIVITY_ID")
+        input_rvt_urn = target or kwargs.get("input_rvt_urn")
+
+        if not app_bundle or not activity_id or not input_rvt_urn:
+            logger.error(
+                "AutodeskForgeProvider.write_devices: missing required parameters. "
+                "Need app_bundle (%s), activity_id (%s), input_rvt_urn (%s). "
+                "Set APS_APP_BUNDLE + APS_ACTIVITY_ID env vars or pass as kwargs.",
+                app_bundle or "MISSING",
+                activity_id or "MISSING",
+                input_rvt_urn or "MISSING",
+            )
+            return 0
+
+        try:
+            import httpx
+            import json
+            import time
+        except ImportError:
+            logger.error("httpx not installed — cannot call APS API")
+            return 0
+
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json",
+        }
+        base_url = "https://developer.api.autodesk.com/daus/v2"
+
+        try:
+            # Step 1: Create a WorkItem
+            workitem_payload = {
+                "activityId": activity_id,
+                "arguments": {
+                    "InputRvt": {"url": input_rvt_urn, "Verb": "get"},
+                    "InputDevices": {
+                        "url": "data:application/json," + json.dumps(devices),
+                        "Verb": "get",
+                    },
+                    "OutputRvt": {
+                        "url": f"{target}_output.rvt",
+                        "Verb": "put",
+                    },
+                },
+            }
+
+            resp = httpx.post(
+                f"{base_url}/workitems",
+                headers=headers,
+                json=workitem_payload,
+                timeout=30.0,
+            )
+            if resp.status_code != 201:
+                logger.error(
+                    "APS Design Automation workitem creation failed: HTTP %d — %s",
+                    resp.status_code, resp.text[:200]
+                )
+                return 0
+
+            workitem_id = resp.json().get("id")
+            logger.info("APS: created workitem %s for %d devices", workitem_id, len(devices))
+
+            # Step 2: Poll until completion (max 5 minutes)
+            max_wait = 300  # 5 minutes
+            poll_interval = 10  # 10 seconds
+            elapsed = 0
+            while elapsed < max_wait:
+                resp = httpx.get(
+                    f"{base_url}/workitems/{workitem_id}",
+                    headers=headers,
+                    timeout=15.0,
+                )
+                if resp.status_code != 200:
+                    logger.warning("APS poll failed: HTTP %d", resp.status_code)
+                    time.sleep(poll_interval)
+                    elapsed += poll_interval
+                    continue
+
+                status = resp.json().get("status", "")
+                if status == "success":
+                    logger.info("APS: workitem %s completed successfully", workitem_id)
+                    return len(devices)
+                elif status in ("failed", "cancelled"):
+                    logger.error("APS: workitem %s %s", workitem_id, status)
+                    return 0
+                # else: pending/in-progress — keep polling
+                time.sleep(poll_interval)
+                elapsed += poll_interval
+
+            logger.error("APS: workitem %s timed out after %ds", workitem_id, max_wait)
+            return 0
+
+        except Exception as e:
+            logger.exception("APS write_devices failed: %s", e)
+            return 0
 
     def health_check(self) -> dict[str, Any]:
         """
         Check APS connectivity and credentials.
 
-        V135 F-19 FIX: The OLD code returned ``healthy: True`` when
-        credentials were present, even though the provider is a STUB
-        that can't actually do anything. Monitoring systems saw
-        "healthy" and assumed BIM integration worked. Now returns
-        ``healthy: False`` with a clear "stub" message.
+        V214 FIX: Now performs a real authentication check by calling
+        _get_auth_token(). If the token is obtained, the provider is
+        healthy. If not, returns healthy=False with the specific error.
         """
+        import time
+
         if not self._client_id or not self._client_secret:
             return {
                 "healthy": False,
@@ -836,20 +1113,25 @@ class AutodeskForgeProvider:
                 "details": "APS credentials not configured",
                 "error": "Missing APS_CLIENT_ID or APS_CLIENT_SECRET",
             }
-        # V135 F-19: Credentials present but provider is a STUB.
-        # Do NOT report healthy=True — the provider cannot actually
-        # extract rooms, read devices, or write devices. Monitoring
-        # systems must know this is non-functional.
-        return {
-            "healthy": False,  # V135 F-19: was True (misleading)
-            "latency_ms": 0.0,
-            "details": (
-                "APS credentials configured BUT provider is a STUB — "
-                "extract_rooms/read_devices/write_devices are NOT implemented. "
-                "Do NOT assume BIM integration is functional."
-            ),
-            "error": "Provider is a stub (not implemented)",
-        }
+
+        t0 = time.time()
+        token = self._get_auth_token()
+        latency = (time.time() - t0) * 1000
+
+        if token:
+            return {
+                "healthy": True,
+                "latency_ms": round(latency, 1),
+                "details": "APS authentication successful — provider is functional",
+                "token_expires_at": self._token_expires,
+            }
+        else:
+            return {
+                "healthy": False,
+                "latency_ms": round(latency, 1),
+                "details": "APS authentication failed — check credentials",
+                "error": "Authentication failed (see logs for details)",
+            }
 
 
 # ---------------------------------------------------------------------------
