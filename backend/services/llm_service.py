@@ -58,6 +58,7 @@ from __future__ import annotations
 import logging
 import os
 import threading
+from collections.abc import AsyncGenerator
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -544,7 +545,7 @@ def _get_transient_errors() -> tuple[type[Exception], ...]:
 
     transient: list[type[Exception]] = [httpx.HTTPError, httpx.TimeoutException]
     try:
-        from openai import APIConnectionError, APITimeoutError, APIStatusError
+        from openai import APIConnectionError, APITimeoutError
 
         transient.extend([APIConnectionError, APITimeoutError])
         # Retry on 429 and 5xx but NOT on 4xx (auth/quota/bad-request)
@@ -587,6 +588,6 @@ async def close_llm_service() -> None:
 __all__ = [
     "LLMResponse",
     "LLMService",
-    "get_llm_service",
     "close_llm_service",
+    "get_llm_service",
 ]

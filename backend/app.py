@@ -49,8 +49,22 @@ from fastapi.responses import JSONResponse, Response
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
+# V207 (2026-07-09): Akamai Edge integration middleware.
+# Reads True-Client-IP / Akamai-Internal / Akamai-Bot-Score / Akamai-Geo-Country
+# headers injected by Akamai Property Manager. When AKAMAI_ENABLED=false (default),
+# the middleware is a no-op pass-through — zero overhead on HF Space / Vercel
+# without Akamai, full protection when Akamai is deployed in front.
+# Pure ASGI (no body buffering) — see agent.md BUG-34 fix.
+from backend.akamai_middleware import AkamaiIntegrationMiddleware
+
 # V129: Auth dependency for cache management endpoints (was public).
 from backend.auth import require_permission
+
+# V208 (2026-07-09): Cloudflare Edge integration middleware.
+# Reads CF-Connecting-IP / CF-RAY / CF-IPCountry headers injected by Cloudflare
+# proxy. When CF_ENABLED=false (default), the middleware is a no-op pass-through.
+# Complements Akamai middleware — both can be enabled simultaneously for multi-CDN.
+from backend.cloudflare_middleware import CloudflareIntegrationMiddleware
 
 # Import rate limiter from centralized module (avoids circular import)
 from backend.limiter import limiter
@@ -72,20 +86,6 @@ from backend.security_middleware import (
     CorrelationIdMiddleware,
     SecurityHeadersMiddleware,
 )
-
-# V207 (2026-07-09): Akamai Edge integration middleware.
-# Reads True-Client-IP / Akamai-Internal / Akamai-Bot-Score / Akamai-Geo-Country
-# headers injected by Akamai Property Manager. When AKAMAI_ENABLED=false (default),
-# the middleware is a no-op pass-through — zero overhead on HF Space / Vercel
-# without Akamai, full protection when Akamai is deployed in front.
-# Pure ASGI (no body buffering) — see agent.md BUG-34 fix.
-from backend.akamai_middleware import AkamaiIntegrationMiddleware
-
-# V208 (2026-07-09): Cloudflare Edge integration middleware.
-# Reads CF-Connecting-IP / CF-RAY / CF-IPCountry headers injected by Cloudflare
-# proxy. When CF_ENABLED=false (default), the middleware is a no-op pass-through.
-# Complements Akamai middleware — both can be enabled simultaneously for multi-CDN.
-from backend.cloudflare_middleware import CloudflareIntegrationMiddleware
 
 # Configure logging
 logging.basicConfig(

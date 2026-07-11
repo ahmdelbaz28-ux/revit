@@ -143,12 +143,12 @@ class AkamaiConfig:
     """
 
     __slots__ = (
-        "enabled",
-        "require_origin_token",
-        "blocked_countries",
         "allowed_bot_score",
-        "rate_limit_passthrough",
+        "blocked_countries",
+        "enabled",
         "production_mode",
+        "rate_limit_passthrough",
+        "require_origin_token",
     )
 
     def __init__(self) -> None:

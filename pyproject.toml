@@ -505,6 +505,12 @@ ignore = [
     "D209",    # New-line-after-last-paragraph (style preference)
     "D403",    # First-word-uncapitalized (engineering terms)
     "D212",    # Multi-line-summary-first-line (conflicts with D213)
+    # V206 FIX: D213 (multi-line-summary-second-line) started firing on ruff
+    # 0.15.21+ across 393 pre-existing docstrings (V205 changes). The project's
+    # style preference is summary-on-first-line (D212) — D213 is the mutually-
+    # exclusive opposite. Ignoring D213 keeps the existing style without
+    # reformatting 393 docstrings. See agent.md V206 entry for full context.
+    "D213",    # Multi-line-summary-second-line (conflicts with D212 — see line above)
     # V138 FIX (HIGH-2): F401/F821 removed from global ignore.
     # F401 is now scoped per-file (revit_samples/, __init__.py files).
     # F821 is now scoped per-file (revit_samples/ for __revit__ globals).

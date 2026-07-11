@@ -11,7 +11,6 @@ Run:
 
 from __future__ import annotations
 
-import json
 import os
 import sys
 from pathlib import Path
@@ -70,7 +69,7 @@ def _clear_akamai_env(monkeypatch):
     for key in list(os.environ.keys()):  # noqa: S7504 — intentional snapshot
         if key.startswith("AKAMAI_"):
             monkeypatch.delenv(key, raising=False)
-    yield
+    return
 
 
 # ── AkamaiConfig tests ───────────────────────────────────────────────────────

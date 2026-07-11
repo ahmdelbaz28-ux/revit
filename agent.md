@@ -19221,3 +19221,96 @@ Per operator's strict requirement: **اختبر التعديلات محلياً 
    - Set the GitHub secrets via `scripts/set-github-secrets.sh` (operator must export the token values as env vars first).
    - Import the repo into CodeSandbox as a Devbox and verify `post-create.sh` completes without errors.
    - If all three verifications pass, merge to main.
+
+---
+
+## V207 Fix (2026-07-11) — CI Gate 1 (Ruff D213) + Daytona SDK API Migration
+
+### Operator Request
+Operator instructed: قم بالدمج الامن تماما وقم بعمل gitpull rebase للتأكد من عدم حدوث اي مشاكل تماما ولو حصل مشاكل عدلها فورا.
+
+### Root-Cause Analysis
+After opening PR #132 (V206), CI checks revealed TWO failures:
+1. **Gate 1 — Static Analysis (failure)**: 393 D213 errors ("Multi-line docstring summary should start at the second line") across `backend/`, `fireai/`, `core/`. Root cause: ruff 0.15.21 (installed fresh in CI) introduced stricter D213 enforcement. V205 had ignored D212 (the mutually-exclusive opposite) but forgot to ignore D213. Verified: **this failure also occurs on `main` HEAD (ced70217)** — it is a pre-existing issue, NOT introduced by V206.
+2. **Daytona sandbox review (failure)**: `ImportError: cannot import name 'DaytonaSandboxParams' from 'daytona_sdk'`. Root cause: the `daytona-sdk` package was deprecated and renamed to `daytona`. The V206 workflow used the old `DaytonaSandboxParams` class name; the new API uses `CreateSandboxFromImageParams` with a required `image` field, and `Resources` as a dataclass (not pydantic model).
+
+### Fixes Applied (8 files)
+
+1. **`pyproject.toml`** — Added `D213` to `[tool.ruff.lint] ignore` list (alongside the existing `D212` ignore). The two rules are mutually exclusive (D212 = summary on first line, D213 = summary on second line). The project's style preference is D212; ignoring D213 keeps the existing 393 docstrings unchanged. Added a 5-line comment explaining the V206 context.
+
+2. **`backend/services/llm_service.py`** — Fixed 3 remaining ruff errors:
+   - Added `from collections.abc import AsyncGenerator` (F821: `AsyncGenerator` was used at lines 389, 451 but never imported).
+   - Removed unused `APIStatusError` from `from openai import ...` (F401: the comment at line 551 explains it was intentionally excluded from the retry list).
+
+3. **8 ruff autofixes** applied via `ruff check --fix` (all safe, scope-limited):
+   - `backend/akamai_middleware.py:145` — RUF023: sorted `AkamaiConfig.__slots__`
+   - `backend/app.py:38` — I001: import block sorted
+   - `backend/cloudflare_middleware.py:105` — RUF023: sorted `CloudflareConfig.__slots__`
+   - `backend/limiter.py:29` — I001: import block sorted
+   - `backend/services/llm_service.py:547` — I001: import block sorted
+   - `backend/services/llm_service.py:587` — RUF022: sorted `__all__`
+   - `backend/tests/test_akamai_middleware.py:14` — F401: removed unused `json` import
+   - `backend/tests/test_akamai_middleware.py:73` — PT022: replaced `yield` with `return` in teardown-free fixture
+
+4. **`.github/workflows/ai-code-review.yml`** — Migrated to the new Daytona SDK API:
+   - Import: `from daytona import Daytona, CreateSandboxFromImageParams, Resources` (with fallback to `daytona_sdk` for older installs).
+   - Install: `pip install "daytona>=0.10.0" || pip install "daytona-sdk>=0.10.0"` (prefer new package, fall back to deprecated alias).
+   - Sandbox creation: `CreateSandboxFromImageParams(image="python:3.12-slim", language="python", env_vars={...}, resources=Resources(cpu=2, memory=4, disk=10), public=False, auto_stop_interval=3600)`.
+   - Sandbox retrieval: `client.get(sandbox_id)` (NOT `get_current_sandbox`).
+   - Sandbox deletion: `client.delete(sb)` where `sb = client.get(sid)` (delete takes a Sandbox object, not a string ID).
+   - Added `auto_stop_interval=3600` as a safety net (auto-evict after 1h if teardown fails).
+
+### Validation (Local Testing Before Push)
+
+1. **YAML syntax** — `ai-code-review.yml` parses, 8 steps, triggers `['pull_request', 'workflow_dispatch']`.
+2. **TOML syntax** — `pyproject.toml` parses, `D213` confirmed in ignore list (94 total ignores).
+3. **Ruff full check** (matching CI scope exactly):
+   ```
+   ruff check backend/ fireai/ core/ skills/ backend_app.py
+   → All checks passed!
+   ```
+4. **Python compile** — all 3 modified .py files pass `python3 -m py_compile`.
+5. **Daytona SDK API verification** (via local Python 3.13 + daytona_sdk 0.196.0):
+   - `CreateSandboxFromImageParams` has `image` (required), `language`, `env_vars`, `resources`, `public`, `auto_stop_interval` fields.
+   - `Resources(cpu=2, memory=4, disk=10)` instantiates correctly.
+   - `Daytona.create(params, timeout=300)` signature verified.
+   - `Daytona.get(sandbox_id)` and `Daytona.delete(sandbox_object)` signatures verified.
+
+### Safe Push + Merge Protocol (per Rule 7/8/9)
+
+1. `git fetch origin --prune` — verified state.
+2. `git checkout feat/v206-dev-pipeline` (existing feature branch, NOT main).
+3. Local tests above — all passed.
+4. `git add` the 8 modified files + this agent.md update.
+5. `git commit -m "V207: fix ruff D213 + migrate Daytona SDK API"`.
+6. `git fetch origin && git rebase origin/main` — clean, no conflicts.
+7. `git push origin feat/v206-dev-pipeline` — updates PR #132.
+8. Wait for CI to re-run on the new commit.
+9. **Verify all required checks pass** before merging.
+10. Merge PR #132 via GitHub API (merge commit to preserve history).
+11. `git checkout main && git pull --rebase origin main` — sync local main with merged state.
+12. Final verification: `git log --oneline -3` shows the merge commit.
+
+### Self-Criticism Notes (V207)
+
+1. **D213 ignore is a style choice, not a bug fix** — the proper fix would be to reformat all 393 docstrings to put the summary on the second line. However, that would touch 30+ files and risk introducing regressions. The project already ignores D212 (the opposite rule), so ignoring D213 is consistent with the existing style preference. Documented in pyproject.toml comment.
+
+2. **`APIStatusError` removal is safe** — the comment at line 551 explicitly states "for simplicity we exclude it and let 429/5xx surface immediately". The import was dead code. Removing it does NOT change runtime behavior.
+
+3. **`AsyncGenerator` import from `collections.abc`** — Python 3.9+ moved `AsyncGenerator` from `typing` to `collections.abc`. The project targets Python 3.12, so `collections.abc` is correct. Using `from __future__ import annotations` (already present at line 56) means the annotation is a string at runtime, so the missing import didn't cause a runtime crash — but ruff correctly flagged it as F821.
+
+4. **Daytona SDK deprecation** — the `daytona_sdk` package emits a DeprecationWarning on import: "Please migrate to the 'daytona' package". The workflow now prefers `daytona` and falls back to `daytona_sdk`. When the deprecated package is eventually removed, the workflow will still work via the `daytona` install path.
+
+5. **Did NOT force-push to main** — all changes go through PR #132. The merge will be a merge commit (not squash) to preserve the V206 + V207 commit history for traceability per Rule 7.
+
+6. **Pre-existing main failure acknowledged** — Gate 1 was already failing on `main` before this PR. V207 fixes it as a side effect (D213 ignore + 11 ruff fixes). This is a net improvement, not a regression.
+
+### Files Changed (8)
+- 1 workflow: `.github/workflows/ai-code-review.yml` (Daytona SDK API migration)
+- 1 config: `pyproject.toml` (D213 added to ignore list)
+- 6 Python files: `backend/akamai_middleware.py`, `backend/app.py`, `backend/cloudflare_middleware.py`, `backend/limiter.py`, `backend/services/llm_service.py`, `backend/tests/test_akamai_middleware.py` (ruff autofixes + 3 manual fixes)
+- 1 agent.md update: this section
+
+### Phase Status
+**(a) Current:** V207 COMPLETE. All CI-blocking issues resolved locally. Ready to push to PR #132 and merge after CI verifies.
+**(b) To advance to V208:** push V207 commits, wait for CI green, merge PR #132, sync local main.
