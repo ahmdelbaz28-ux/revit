@@ -222,6 +222,133 @@ label {
         animation: status-pulse 2s ease-in-out infinite;
 }
 
+/* ── Ask AI floating glass button ───────────────────────────────────── */
+/* V215: Frosted glass pill with gentle vertical bob + soft cyan glow.   */
+/* Color palette uses existing tokens (--primary cyan #22d3ee,           */
+/* --card #111827) so the button stays tonally consistent with the page.  */
+
+@keyframes ask-ai-float {
+        0%, 100% {
+                transform: translateY(0);
+        }
+        50% {
+                transform: translateY(-6px);
+        }
+}
+
+@keyframes ask-ai-glow-pulse {
+        0%, 100% {
+                box-shadow:
+                        0 0 0 1px rgba(34, 211, 238, 0.18),
+                        0 8px 24px -4px rgba(34, 211, 238, 0.20),
+                        0 4px 12px -2px rgba(0, 0, 0, 0.40),
+                        inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
+        }
+        50% {
+                box-shadow:
+                        0 0 0 1px rgba(34, 211, 238, 0.28),
+                        0 12px 32px -4px rgba(34, 211, 238, 0.32),
+                        0 6px 16px -2px rgba(0, 0, 0, 0.45),
+                        inset 0 1px 0 0 rgba(255, 255, 255, 0.10);
+        }
+}
+
+@keyframes ask-ai-sparkle {
+        0%, 100% {
+                opacity: 1;
+                transform: rotate(0deg) scale(1);
+        }
+        50% {
+                opacity: 0.85;
+                transform: rotate(8deg) scale(1.08);
+        }
+}
+
+.ask-ai-button {
+        /* Frosted glass surface */
+        background: linear-gradient(
+                135deg,
+                rgba(17, 24, 39, 0.72) 0%,
+                rgba(17, 24, 39, 0.55) 50%,
+                rgba(7, 11, 18, 0.65) 100%
+        );
+        backdrop-filter: blur(20px) saturate(160%);
+        -webkit-backdrop-filter: blur(20px) saturate(160%);
+        border: 1px solid rgba(34, 211, 238, 0.28);
+        color: rgb(232, 240, 254);
+
+        /* Floating + glow animations */
+        animation:
+                ask-ai-float 4s var(--ease-entrance) infinite,
+                ask-ai-glow-pulse 3.5s ease-in-out infinite;
+
+        transition:
+                transform 280ms var(--ease-bounce),
+                border-color 220ms var(--ease-micro),
+                background 220ms var(--ease-micro);
+        will-change: transform, box-shadow;
+}
+
+.ask-ai-button:hover {
+        transform: translateY(-8px) scale(1.04);
+        border-color: rgba(34, 211, 238, 0.55);
+        background: linear-gradient(
+                135deg,
+                rgba(17, 24, 39, 0.80) 0%,
+                rgba(34, 211, 238, 0.12) 50%,
+                rgba(7, 11, 18, 0.70) 100%
+        );
+        /* Pause the float on hover so the lift feels intentional */
+        animation-play-state: paused;
+        box-shadow:
+                0 0 0 1px rgba(34, 211, 238, 0.45),
+                0 16px 40px -4px rgba(34, 211, 238, 0.42),
+                0 8px 20px -2px rgba(0, 0, 0, 0.50),
+                inset 0 1px 0 0 rgba(255, 255, 255, 0.14);
+}
+
+.ask-ai-button:active {
+        transform: translateY(-4px) scale(0.98);
+        transition: transform 120ms var(--ease-micro);
+}
+
+.ask-ai-button:focus-visible {
+        outline: 2px solid rgba(34, 211, 238, 0.7);
+        outline-offset: 3px;
+}
+
+.ask-ai-button .ask-ai-sparkle {
+        animation: ask-ai-sparkle 3.5s ease-in-out infinite;
+        transform-origin: center;
+        filter: drop-shadow(0 0 6px rgba(34, 211, 238, 0.65));
+}
+
+/* Soft radial sheen behind the button — gives the "floating in space" feel */
+.ask-ai-button::before {
+        content: "";
+        position: absolute;
+        inset: -2px;
+        border-radius: inherit;
+        background: radial-gradient(
+                ellipse at 50% 0%,
+                rgba(34, 211, 238, 0.18) 0%,
+                transparent 70%
+        );
+        pointer-events: none;
+        z-index: -1;
+}
+
+/* Respect reduced-motion preference — disable float/glow, keep static glass */
+@media (prefers-reduced-motion: reduce) {
+        .ask-ai-button,
+        .ask-ai-button .ask-ai-sparkle {
+                animation: none;
+        }
+        .ask-ai-button:hover {
+                transform: scale(1.04);
+        }
+}
+
 /* ── Magnetic cursor ────────────────────────────────────────────────── */
 .magnetic-cursor {
         position: fixed;

@@ -105,7 +105,8 @@ function App() {
                         } else if (e.ctrlKey && e.key === "k") {
                                 e.preventDefault();
                                 setCommandPaletteOpen(true);
-                        } else if (e.ctrlKey && e.key === "j") {
+                        } else if ((e.ctrlKey || e.metaKey) && e.key === "j") {
+                                // V215 self-critique: support Cmd+J on macOS in addition to Ctrl+J on Windows/Linux
                                 e.preventDefault();
                                 setAiOpen((prev) => !prev);
                         }
@@ -246,7 +247,9 @@ function App() {
                                         </>
                                 )}
                                 <OnboardingTour />
-                                <Toaster position="bottom-right" />
+                                {/* V215: Move toaster to top-right to avoid overlapping
+                                     the new floating Ask AI button (bottom-right). */}
+                                <Toaster position="top-right" />
                                 </div>
                         </SmoothScroll>
                 </AuthProvider>
