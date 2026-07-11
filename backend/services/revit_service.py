@@ -872,22 +872,19 @@ class RevitService:
                 len(elements), ifc_path,
             )
 
-            # If the caller asked for .rvt, write a small companion .txt file
-            # explaining that the actual data is in the .ifc file (honest
-            # redirection — NOT a fake RVT file)
+            # V214 self-critique fix: Do NOT write a fake .rvt file with a
+            # redirect notice — that was confusing (user opens .rvt in Revit
+            # and it fails). Instead, write ONLY the .ifc file and log clearly
+            # that the output is IFC format (not RVT). The caller can check
+            # the log or compare the output path extension to know what was
+            # actually written.
             if filepath.lower().endswith(".rvt") and ifc_path != filepath:
-                with open(filepath, "w", encoding="utf-8") as f:
-                    f.write("# FireAI — RVT Write Redirection Notice\n")
-                    f.write(f"# Generated: {datetime.now(timezone.utc).isoformat()}\n")
-                    f.write(f"# Elements: {len(elements)}\n\n")
-                    f.write(f"# RVT is a closed proprietary format that requires Revit API to write.\n")
-                    f.write(f"# The actual element data has been written to:\n")
-                    f.write(f"#   {ifc_path}\n\n")
-                    f.write(f"# To import into Revit:\n")
-                    f.write(f"#   1. Open Revit\n")
-                    f.write(f"#   2. File → Open → select the .ifc file\n")
-                    f.write(f"#   3. Revit will import the IFC elements natively\n")
-                logger.info("Wrote redirection notice to %s (actual data in .ifc)", filepath)
+                logger.info(
+                    "write_rvt: caller requested .rvt but actual output is .ifc "
+                    "(RVT requires Revit API). Output written to: %s. "
+                    "Revit can import IFC natively via File → Open → IFC.",
+                    ifc_path,
+                )
 
             return True
 

@@ -193,14 +193,13 @@ class TestRevitFileOperations:
     def test_write_rvt_with_elements(self):
         """Test writing elements to an RVT file.
 
-        V214 FIX: Previously this test asserted the old fake behavior —
-        that write_rvt() writes a plain-text file containing '# Revit Model File'
-        and 'Elements Count: 2'. That was a safety-critical deception.
-
-        Now write_rvt() in simulation mode writes a REAL IFC4 file (via
-        ifcopenshell) with IfcBuildingElementProxy entities. The .rvt
-        path gets a small redirection notice .txt file, and the actual
-        data goes to a .ifc file with the same basename.
+        V214 FIX (self-critique revised): write_rvt() in simulation mode
+        writes ONLY a real IFC4 file (via ifcopenshell). It does NOT write
+        a fake .rvt file — that was confusing (user opens .rvt in Revit
+        and it fails). Now:
+          - .rvt file is NOT created (no fake file)
+          - .ifc file IS created with real IFC4 data
+          - Log clearly states the output is IFC format
         """
         service = RevitService()
 
@@ -224,22 +223,19 @@ class TestRevitFileOperations:
 
         with tempfile.NamedTemporaryFile(suffix='.rvt', delete=False) as temp_file:
             temp_path = temp_file.name
+        # Remove the empty file so we can verify it's NOT created by write_rvt
+        if os.path.exists(temp_path):
+            os.unlink(temp_path)
 
         try:
             result = service.write_rvt(temp_path, elements)
             assert result is True
 
-            # V214: The .rvt file now contains a redirection notice (NOT fake RVT data)
-            assert os.path.exists(temp_path)
-            with open(temp_path) as f:
-                content = f.read()
-                # Must NOT contain the old fake "# Revit Model File" header
-                assert "# Revit Model File\n" not in content, (
-                    "write_rvt must NOT write the old fake '# Revit Model File' header"
-                )
-                # Must contain the honest redirection notice
-                assert "Redirection Notice" in content or "IFC" in content
-                assert ".ifc" in content  # points to the actual IFC file
+            # V214 self-critique: .rvt file must NOT be created (no fake file)
+            assert not os.path.exists(temp_path), (
+                "write_rvt must NOT create a .rvt file in simulation mode — "
+                "only the .ifc file should be created"
+            )
 
             # V214: The actual data must be in a .ifc file (same basename)
             ifc_path = temp_path[:-4] + ".ifc"
@@ -263,11 +259,11 @@ class TestRevitFileOperations:
                 "IFC file must contain IfcBuildingElementProxy entities"
             )
 
-            # Clean up the .ifc file too
+            # Clean up the .ifc file
             if os.path.exists(ifc_path):
                 os.unlink(ifc_path)
         finally:
-            # Clean up the temp file
+            # Clean up any leftover temp file
             if os.path.exists(temp_path):
                 os.unlink(temp_path)
 
