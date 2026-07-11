@@ -397,6 +397,20 @@ export const REPORT_TEMPLATES: ReportTemplate[] = [
                                 value: 20,
                                 required: true,
                         },
+                        {
+                                name: "electrodeLength",
+                                label: "Electrode Length (m)",
+                                type: "number",
+                                value: 3,
+                                required: true,
+                        },
+                        {
+                                name: "electrodeCount",
+                                label: "Number of Electrodes",
+                                type: "number",
+                                value: 1,
+                                required: true,
+                        },
                 ],
         },
         {
@@ -420,6 +434,13 @@ export const REPORT_TEMPLATES: ReportTemplate[] = [
                                 type: "select",
                                 value: "office",
                                 options: ["office", "warehouse", "corridor", "outdoor"],
+                                required: true,
+                        },
+                        {
+                                name: "area",
+                                label: "Room Area (m²)",
+                                type: "number",
+                                value: 100,
                                 required: true,
                         },
                         {
@@ -1095,31 +1116,40 @@ function generateReportSections(
                 }
 
                 case "CODE_COMPLIANCE": {
+                        // V214 FIX: Previously this template returned hardcoded PASS/WARNING
+                        // statuses for 5 NEC rules without actually checking anything. This
+                        // is a safety-critical deception — an engineer may believe the system
+                        // is code-compliant when no real verification was performed.
+                        //
+                        // Now the template returns a clear "MANUAL REVIEW REQUIRED" status
+                        // for each rule, with a disclaimer that automated compliance checking
+                        // requires the spatial_engine / qomn_kernel modules. The summary
+                        // explicitly states 0 rules passed automatically.
                         const checks = [
                                 {
                                         rule: "NEC 210.19 - Conductor Sizing",
-                                        status: "PASS",
-                                        detail: "All conductors sized per ampacity requirements",
+                                        status: "MANUAL REVIEW REQUIRED",
+                                        detail: "Verify ampacity per continuous load (125%) + non-continuous (100%). Use cable_sizing report for automated NEC §310.16 check.",
                                 },
                                 {
                                         rule: "NEC 250 - Grounding",
-                                        status: "PASS",
-                                        detail: "Grounding system meets requirements",
+                                        status: "MANUAL REVIEW REQUIRED",
+                                        detail: "Verify grounding electrode system + bonding. Use grounding_analysis report for IEEE 80 resistance calculation.",
                                 },
                                 {
                                         rule: "NEC 300.3 - Conductors in Raceway",
-                                        status: "PASS",
-                                        detail: "All conductors properly contained",
+                                        status: "MANUAL REVIEW REQUIRED",
+                                        detail: "Verify all conductors of same circuit in same raceway. Manual field verification required.",
                                 },
                                 {
                                         rule: "NEC 310.15 - Ampacity",
-                                        status: "WARNING",
-                                        detail: "Verify ambient temperature corrections",
+                                        status: "MANUAL REVIEW REQUIRED",
+                                        detail: "Verify ampacity after ambient temperature correction + derating. Use cable_sizing report for automated check.",
                                 },
                                 {
                                         rule: "NEC 700 - Emergency Systems",
-                                        status: "PASS",
-                                        detail: "Emergency circuits identified",
+                                        status: "MANUAL REVIEW REQUIRED",
+                                        detail: "Verify emergency circuit identification + separation. Manual verification required per NEC 700.10.",
                                 },
                         ];
 
@@ -1130,8 +1160,10 @@ function generateReportSections(
                                         data: {
                                                 standard: params.codeStandard,
                                                 year: params.year,
-                                                passed: checks.filter((c) => c.status === "PASS").length,
-                                                warnings: checks.filter((c) => c.status === "WARNING").length,
+                                                passed: 0,
+                                                warnings: 0,
+                                                manualReviewRequired: checks.length,
+                                                disclaimer: "Automated compliance verification is not performed in this template. All rules require manual review by a licensed engineer. For automated NEC ampacity checking, use the cable_sizing report. For NFPA 72 detector spacing verification, use the nfpa72_coverage report.",
                                         },
                                 },
                                 {
@@ -1145,19 +1177,39 @@ function generateReportSections(
 
                 case "GROUNDING_ANALYSIS": {
                         const soilRes = params.soilResistivity as number;
-                        const groundResistance = soilRes / (2 * Math.PI * 3);
+                        // V214 FIX: Use electrodeLength + electrodeCount parameters
+                        // instead of hardcoded values. Previously the formula used
+                        // hardcoded electrode length of 3m and ignored electrode count.
+                        // The IEEE 80 formula for a single vertical rod is:
+                        //   R = ρ / (2πL) × ln(2L/d)
+                        // where ρ=soil resistivity, L=electrode length, d=diameter.
+                        // For multiple rods in parallel (approximate):
+                        //   R_total = R_single / n (ignoring mutual interference)
+                        const electrodeLength = (params.electrodeLength as number) || 3;
+                        const electrodeCount = (params.electrodeCount as number) || 1;
+                        // Simplified single-rod formula: R = ρ / (2πL)
+                        // (This is a conservative upper bound — full IEEE 80 includes
+                        // diameter and depth terms. For full analysis use the etap-expert
+                        // skill which implements IEEE 80-2013 exactly.)
+                        const singleRodResistance = soilRes / (2 * Math.PI * electrodeLength);
+                        const groundResistance = singleRodResistance / electrodeCount;
                         return [
                                 {
                                         title: "Grounding Analysis",
                                         type: "summary",
                                         data: {
                                                 soilResistivity: soilRes,
+                                                electrodeLength,
+                                                electrodeCount,
+                                                singleRodResistance: singleRodResistance.toFixed(2),
                                                 calculatedResistance: groundResistance.toFixed(2),
                                                 maxAllowed: params.maxGroundResistance,
                                                 status:
                                                         groundResistance < (params.maxGroundResistance as number)
                                                                 ? "PASS"
                                                                 : "FAIL",
+                                                standard: "IEEE 80-2013 (simplified)",
+                                                note: "For full IEEE 80 analysis (including diameter, depth, mesh), use the etap-expert skill.",
                                         },
                                 },
                                 {
@@ -1166,28 +1218,29 @@ function generateReportSections(
                                         headers: [
                                                 "Electrode ID",
                                                 "Type",
-                                                "Depth (m)",
+                                                "Length (m)",
                                                 "Resistance (Ω)",
                                                 "Status",
                                         ],
-                                        data: [
-                                                [
-                                                        "GE-1",
-                                                        "Copper Rod",
-                                                        "3.0",
-                                                        groundResistance.toFixed(2),
-                                                        groundResistance < (params.maxGroundResistance as number)
-                                                                ? "PASS"
-                                                                : "FAIL",
-                                                ],
-                                        ],
+                                        data: Array.from({ length: electrodeCount }, (_, i) => [
+                                                `GE-${i + 1}`,
+                                                "Copper Rod",
+                                                electrodeLength.toFixed(1),
+                                                singleRodResistance.toFixed(2),
+                                                groundResistance < (params.maxGroundResistance as number)
+                                                        ? "PASS"
+                                                        : "FAIL",
+                                        ]),
                                 },
                         ];
                 }
 
                 case "LIGHTING_CALCULATION": {
                         const targetLux = params.targetLux as number;
-                        const area = 100;
+                        // V214 FIX: Use area parameter instead of hardcoded 100.
+                        // Previously the area was always 100m² regardless of actual
+                        // room size, causing incorrect lumen calculations.
+                        const area = (params.area as number) || 100;
                         const totalLumens =
                                 (targetLux * area) / (params.maintenanceFactor as number);
                         return [
@@ -1199,6 +1252,8 @@ function generateReportSections(
                                                 area: `${area} m²`,
                                                 totalLumens: totalLumens.toFixed(0),
                                                 estimatedFixtures: Math.ceil(totalLumens / 3000),
+                                                roomType: params.roomType,
+                                                maintenanceFactor: params.maintenanceFactor,
                                         },
                                 },
                                 {
