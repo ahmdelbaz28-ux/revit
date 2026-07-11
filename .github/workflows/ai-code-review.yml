@@ -178,22 +178,47 @@ jobs:
 
           # 1. Push the PR code into the sandbox via tarball
           #    upload_file(src: str | bytes, dst: str) — accepts a path or bytes, NOT a file object
+          #    V208: include .git/ so setuptools-scm can infer the version (pyproject.toml uses
+          #    setuptools_scm[toml] for dynamic versioning). Without .git, `pip install -e .` fails
+          #    with "LookupError: setuptools-scm was unable to detect version".
           print("▶ Packaging PR source into tarball…", flush=True)
           subprocess.run(
-              ["tar", "--exclude=.git", "--exclude=node_modules",
+              ["tar", "--exclude=node_modules",
                "--exclude=__pycache__", "--exclude=.venv",
-               "--exclude=db/*.db", "-czf", "/tmp/pr-src.tar.gz", "."],
+               "--exclude=db/*.db",
+               # NOTE: .git IS included (setuptools-scm needs it)
+               "-czf", "/tmp/pr-src.tar.gz", "."],
               check=True,
           )
           sb.fs.upload_file("/tmp/pr-src.tar.gz", "/tmp/pr-src.tar.gz")
           print("▶ Extracting + installing deps in sandbox…", flush=True)
+          # NOTE: python:3.12-slim has pip but it may be old. Upgrade first, then install.
+          # Do NOT pipe through `tail` here — it hides install failures (V208 lesson).
+          # Capture full output and tail it AFTER, so we can see errors.
+          # V208: set SETUPTOOLS_SCM_PRETEND_VERSION as a fallback in case .git is incomplete.
           rc, so, se = run(
               "mkdir -p /workspace && cd /workspace && "
               "tar -xzf /tmp/pr-src.tar.gz && "
-              "pip install --quiet --upgrade pip setuptools wheel && "
-              "pip install --quiet -e . ruff mypy bandit pytest pytest-cov pytest-asyncio pytest-timeout 2>&1 | tail -20",
-              timeout=600,
+              "python -m ensurepip --upgrade 2>&1 || true && "
+              "python -m pip install --upgrade pip setuptools wheel 2>&1 && "
+              "SETUPTOOLS_SCM_PRETEND_VERSION=0.0.0 "
+              "python -m pip install -e . ruff mypy bandit pytest pytest-cov pytest-asyncio pytest-timeout 2>&1",
+              timeout=900,
           )
+          install_log = (so + se)[-3000:]
+          print(f"  install rc={rc}", flush=True)
+          print(f"  install log tail:\n{install_log[-1500:]}", flush=True)
+          if rc != 0:
+              # If install failed, record it and skip the matrix
+              results = {
+                  "install": {"rc": rc, "out": install_log, "err": ""},
+                  "ruff":    {"rc": 127, "out": "", "err": "skipped — install failed"},
+                  "mypy":    {"rc": 127, "out": "", "err": "skipped — install failed"},
+                  "pytest":  {"rc": 127, "out": "", "err": "skipped — install failed"},
+                  "tsc":     {"rc": 127, "out": "", "err": "skipped — install failed"},
+              }
+              pathlib.Path("/tmp/review-results.json").write_text(json.dumps(results, indent=2))
+              sys.exit(0)
 
           # 2. Ruff lint
           rc, so, se = run("cd /workspace && ruff check backend/ fireai/ core/ parsers/ --output-format=github", timeout=180)
@@ -248,6 +273,15 @@ jobs:
               lines.push(`| \`${name}\` | ${icon(r.rc)} (rc=${r.rc}) | \`${shorten((r.out + r.err).replace(/\n/g,' '), 120)}\` |`);
             }
             lines.push('');
+            if (results.install) {
+              lines.push('<details><summary>Install log (tail)</summary>');
+              lines.push('');
+              lines.push('```');
+              lines.push(shorten(results.install.out || results.install.err || '(no output)', 2000));
+              lines.push('```');
+              lines.push('</details>');
+              lines.push('');
+            }
             lines.push('<details><summary>Ruff output (tail)</summary>');
             lines.push('');
             lines.push('```');
