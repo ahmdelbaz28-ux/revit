@@ -763,10 +763,14 @@ class RevitService:
                         # (Element creation methods like Wall.Create, Floor.Create
                         # are called here based on element category)
                         created_count = 0
+                        skipped_count = 0
                         for elem in elements:
                             try:
                                 # Delegate to create_wall/create_floor/etc.
-                                # based on category
+                                # based on category. V214 self-critique: only
+                                # walls are fully implemented in API mode;
+                                # floors/columns/doors are logged as skipped
+                                # (not silently ignored).
                                 cat = elem.get("category", "").lower()
                                 if cat == "walls":
                                     self.create_wall(
@@ -775,8 +779,28 @@ class RevitService:
                                         level=elem.get("level", "Level 1"),
                                     )
                                     created_count += 1
+                                elif cat in ("floors", "doors", "columns", "beams"):
+                                    logger.warning(
+                                        "write_rvt API mode: %s creation not yet implemented "
+                                        "for element %s — skipped. Use IFC export path for "
+                                        "full element creation.",
+                                        cat, elem.get("id", "?"),
+                                    )
+                                    skipped_count += 1
+                                else:
+                                    logger.warning(
+                                        "write_rvt API mode: unknown category '%s' for "
+                                        "element %s — skipped.",
+                                        cat, elem.get("id", "?"),
+                                    )
+                                    skipped_count += 1
                             except Exception:
+                                skipped_count += 1
                                 continue
+                        logger.info(
+                            "write_rvt API mode: created %d elements, skipped %d",
+                            created_count, skipped_count,
+                        )
                         tx.Commit()
                         self._revit_doc.SaveAs(filepath)
                         logger.info(

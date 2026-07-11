@@ -660,6 +660,11 @@ from backend.routers import marine as marine_router_module
 
 app.include_router(marine_router_module.router, prefix="/api/v1", tags=["Marine"])
 
+# V214: Mining fire protection router (NFPA 120/122 + MSHA 30 CFR Part 75)
+from backend.routers import mining as mining_router_module
+
+app.include_router(mining_router_module.router, prefix="/api/v1", tags=["Mining"])
+
 # V130 FIX: Mount the monitor router so Prometheus can scrape /api/v1/monitor/metrics.
 # Previously monitor.router was defined but NEVER registered via include_router,
 # so every Prometheus scrape returned 404 and all dashboards/alerts had no data.

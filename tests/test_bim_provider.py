@@ -286,10 +286,17 @@ class TestAutodeskForgeProvider:
         assert rooms == []
 
     def test_write_devices_raises_not_implemented(self):
-        """write_devices raises NotImplementedError (stub)."""
+        """V214: write_devices no longer raises NotImplementedError — it returns 0
+        on failure (missing credentials/params) or the device count on success.
+        The old stub raised NotImplementedError; the real implementation returns 0.
+        """
         p = AutodeskForgeProvider()
-        with pytest.raises(NotImplementedError, match="APS Design Automation"):
-            p.write_devices([{"device_id": "TEST"}])
+        # Without credentials, write_devices returns 0 (not raises)
+        result = p.write_devices([{"device_id": "TEST"}])
+        assert result == 0, (
+            "V214: write_devices should return 0 on failure (not raise NotImplementedError). "
+            f"Got result={result}"
+        )
 
     def test_health_check_reports_missing_credentials(self, monkeypatch):
         """health_check returns healthy=False when credentials missing."""
@@ -301,14 +308,18 @@ class TestAutodeskForgeProvider:
         assert "APS_CLIENT_ID" in result["error"]
 
     def test_health_check_with_credentials(self, monkeypatch):
-        """V135 F-19: health_check returns healthy=False (stub, not implemented)."""
+        """V214: health_check now performs real APS authentication.
+        With credentials set but _get_auth_token() failing (no real APS
+        server), returns healthy=False with 'Authentication failed' details.
+        """
         monkeypatch.setenv("APS_CLIENT_ID", "test_client_id")
         monkeypatch.setenv("APS_CLIENT_SECRET", "test_secret")
         p = AutodeskForgeProvider()
         result = p.health_check()
-        # V135 F-19: Stub returns healthy=False (was True — misleading)
+        # V214: Now calls real _get_auth_token() which will fail (no real
+        # APS server) → healthy=False with authentication failure message
         assert result["healthy"] is False
-        assert "stub" in result["details"].lower()
+        assert "authentication" in result["details"].lower() or "failed" in result["details"].lower()
 
 
 # ---------------------------------------------------------------------------

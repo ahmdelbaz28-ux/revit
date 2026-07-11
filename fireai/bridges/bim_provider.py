@@ -1072,7 +1072,9 @@ class AutodeskForgeProvider:
                     headers=headers,
                     timeout=15.0,
                 )
-                if resp.status_code != 200:
+                # V214 self-critique: APS may return 200 (done) or 202 (accepted,
+                # still processing). Both are valid — don't treat 202 as error.
+                if resp.status_code not in (200, 202):
                     logger.warning("APS poll failed: HTTP %d", resp.status_code)
                     time.sleep(poll_interval)
                     elapsed += poll_interval

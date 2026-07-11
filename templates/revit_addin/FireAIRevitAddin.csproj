@@ -45,6 +45,7 @@
     <Compile Include="ThreadSafeQueueHandler.cs" />
     <Compile Include="NamedPipeServer.cs" />
     <Compile Include="FireAIApplication.cs" />
+    <Compile Include="FireAIStatusCommand.cs" />
   </ItemGroup>
 
   <!-- Build output: copy .dll + .addin to Revit Addins folder on build.
