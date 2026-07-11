@@ -212,7 +212,7 @@ jobs:
               "python -m ensurepip --upgrade 2>&1 || true && "
               "python -m pip install --upgrade pip setuptools wheel 2>&1 && "
               "SETUPTOOLS_SCM_PRETEND_VERSION=0.0.0 "
-              "python -m pip install -e . ruff mypy bandit pytest pytest-cov pytest-asyncio pytest-timeout shapely 2>&1",
+              "python -m pip install -e . ruff mypy bandit pytest pytest-cov pytest-asyncio pytest-timeout shapely reportlab 2>&1",
               timeout=900,
           )
           install_log = (so + se)[-3000:]
