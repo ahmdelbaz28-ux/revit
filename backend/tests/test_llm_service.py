@@ -134,9 +134,13 @@ class TestLLMServiceChat:
         from backend.services.llm_service import LLMService
 
         svc = LLMService()
-        loop = asyncio.get_event_loop()
-        with pytest.raises(RuntimeError, match="ZENMUX_API_KEY"):
-            loop.run_until_complete(svc.chat("hello"))
+        # V210 FIX: asyncio.get_event_loop() is removed in Python 3.12+ when
+        # there is no running loop. Use asyncio.run() which creates + closes
+        # a new event loop automatically.
+        async def _raise():
+            with pytest.raises(RuntimeError, match="ZENMUX_API_KEY"):
+                await svc.chat("hello")
+        asyncio.run(_raise())
 
     def test_chat_raises_on_empty_prompt(self, configured_env):
         from backend.services.llm_service import LLMService
@@ -148,7 +152,7 @@ class TestLLMServiceChat:
             with pytest.raises(ValueError, match="non-empty"):
                 await svc.chat("")
 
-        asyncio.get_event_loop().run_until_complete(run())
+        asyncio.run(run())
 
     def test_chat_returns_response(self, configured_env):
         """Mock the OpenAI client and verify chat() returns LLMResponse."""
@@ -183,7 +187,7 @@ class TestLLMServiceChat:
             async def run():
                 return await svc.chat("What is NFPA 72 spacing?", system="You are an engineer.")
 
-            result = asyncio.get_event_loop().run_until_complete(run())
+            result = asyncio.run(run())
 
         assert result.content == "NFPA 72 spacing is 9.1m."
         assert result.model == "z-ai/glm-4.7"
@@ -221,7 +225,7 @@ class TestLLMServiceChat:
             async def run():
                 return await svc.chat("hi", model="z-ai/glm-4.7-flash-free")
 
-            asyncio.get_event_loop().run_until_complete(run())
+            asyncio.run(run())
 
         call_kwargs = mock_create.call_args.kwargs
         assert call_kwargs["model"] == "z-ai/glm-4.7-flash-free"
@@ -240,7 +244,7 @@ class TestLLMServiceHealth:
         async def run():
             return await svc.health()
 
-        result = asyncio.get_event_loop().run_until_complete(run())
+        result = asyncio.run(run())
         assert result["available"] is False
         assert "primary" in result
         assert "fallback" in result
@@ -255,7 +259,7 @@ class TestLLMServiceHealth:
         async def run():
             return await svc.health()
 
-        result = asyncio.get_event_loop().run_until_complete(run())
+        result = asyncio.run(run())
         assert result["available"] is True
         assert result["primary"]["name"] == "zenmux"
         assert result["primary"]["available"] is True
@@ -356,7 +360,7 @@ class TestFallbackProvider:
             async def run():
                 return await svc.chat("test prompt")
 
-            result = asyncio.get_event_loop().run_until_complete(run())
+            result = asyncio.run(run())
 
         assert result.content == "Fallback response"
         assert result.source == "aliyun-maas"
