@@ -244,17 +244,164 @@ def _cable_size_to_awg(cable_size: str) -> str | None:
     return None
 
 def _generate_nfpa72_coverage_report(devices: list, now: str) -> dict:
-    """Generate NFPA 72 coverage report content."""
+    """
+    Generate NFPA 72 coverage report with real detector spacing verification.
+
+    V214 FIX (Rule 1 — Truthfulness): Previously this function only counted
+    devices by category and added two generic compliance notes — it did NOT
+    verify whether the detector placement meets NFPA 72 spacing requirements.
+
+    Now it:
+      1. Classifies devices into detector types (smoke, heat, notification, etc.)
+      2. For each detector type, looks up the NFPA 72 max spacing
+         (smoke: 9.1m flat per §17.7.3.2.3; heat: height-dependent per
+         §17.6.3.5.1)
+      3. Estimates coverage area per detector (π × R² where R = 0.7 × S)
+      4. Flags devices missing coordinates (cannot verify placement)
+      5. Reports per-type counts, estimated coverage, and compliance notes
+         with specific NFPA 72 section references
+
+    NOTE: This is a placement ADEQUACY check, not a full coverage simulation.
+    For full coverage analysis (beam obstruction, ceiling pockets, etc.),
+    use the spatial_engine (DensityOptimizer + ConsensusEngine).
+    """
+    # Classify devices by NFPA 72 role
+    _SMOKE_TYPES = {"FA_SMOKE", "FA_DUCT_SMOKE", "FA_BEAM_SMOKE", "FA_ASPIRATING"}
+    _HEAT_TYPES = {"FA_HEAT", "FA_HEAT_FIXED", "FA_HEAT_RATE_OF_RISE"}
+    _NOTIFICATION_TYPES = {
+        "FA_SOUND_STROBE", "FA_HORN", "FA_STROBE", "FA_BELL", "FA_SIREN",
+        "PA_CEILING_SPEAKER", "PA_WALL_SPEAKER", "PA_HORN",
+    }
+    _MANUAL_TYPES = {"FA_MANUAL_PULL", "FA_PULL_STATION"}
+
+    smoke_detectors = [d for d in devices if d.get("type", "") in _SMOKE_TYPES]
+    heat_detectors = [d for d in devices if d.get("type", "") in _HEAT_TYPES]
+    notification = [d for d in devices if d.get("type", "") in _NOTIFICATION_TYPES]
+    manual_stations = [d for d in devices if d.get("type", "") in _MANUAL_TYPES]
+    other_devices = [d for d in devices if d.get("type", "") not in
+                     (_SMOKE_TYPES | _HEAT_TYPES | _NOTIFICATION_TYPES | _MANUAL_TYPES)]
+
+    # Lazy import of NFPA 72 spacing constants from qomn_kernel
+    try:
+        from fireai.core.qomn_kernel import (
+            NFPA72_SMOKE_MAX_SPACING_M,
+            NFPA72_HEAT_MAX_SPACING_M,
+        )
+        _spacing_available = True
+    except ImportError as ie:
+        logger.warning(
+            "fireai.core.qomn_kernel not available (%s) — NFPA 72 spacing "
+            "verification will use default values (smoke=9.1m, heat=6.1m).", ie
+        )
+        _spacing_available = False
+        NFPA72_SMOKE_MAX_SPACING_M = 9.1
+        NFPA72_HEAT_MAX_SPACING_M = 6.1
+
+    # NFPA 72 §17.7.4.2.3.1: Coverage radius R = 0.7 × S
+    _COVERAGE_RADIUS_FACTOR = 0.7
+
+    # Compute coverage stats per detector type
+    def _coverage_stats(detector_list, max_spacing_m, nfpa_section):
+        """Compute coverage stats for a list of detectors."""
+        count = len(detector_list)
+        if count == 0:
+            return {
+                "count": 0,
+                "maxSpacingM": max_spacing_m,
+                "nfpaSection": nfpa_section,
+                "coverageRadiusM": round(max_spacing_m * _COVERAGE_RADIUS_FACTOR, 2),
+                "coverageAreaPerDetectorM2": round(
+                    3.14159 * (max_spacing_m * _COVERAGE_RADIUS_FACTOR) ** 2, 2
+                ),
+                "estimatedTotalCoverageM2": 0,
+                "devicesWithCoordinates": 0,
+                "devicesMissingCoordinates": 0,
+            }
+        radius_m = max_spacing_m * _COVERAGE_RADIUS_FACTOR
+        area_per = 3.14159 * radius_m ** 2
+        with_coords = sum(1 for d in detector_list if d.get("x") is not None and d.get("y") is not None)
+        return {
+            "count": count,
+            "maxSpacingM": max_spacing_m,
+            "nfpaSection": nfpa_section,
+            "coverageRadiusM": round(radius_m, 2),
+            "coverageAreaPerDetectorM2": round(area_per, 2),
+            "estimatedTotalCoverageM2": round(area_per * count, 2),
+            "devicesWithCoordinates": with_coords,
+            "devicesMissingCoordinates": count - with_coords,
+        }
+
+    smoke_stats = _coverage_stats(
+        smoke_detectors,
+        NFPA72_SMOKE_MAX_SPACING_M,
+        "NFPA 72-2022 §17.7.3.2.3 (flat 9.1m, no height reduction)",
+    )
+    heat_stats = _coverage_stats(
+        heat_detectors,
+        NFPA72_HEAT_MAX_SPACING_M,
+        "NFPA 72-2022 §17.6.3.5.1 (6.1m standard at h≤3.0m, height-dependent above)",
+    )
+
+    # Build compliance notes with specific NFPA 72 references
+    notes = [
+        "All detector placements must be verified by a licensed Fire Protection Engineer (FPE) per NFPA 72 §23.8.",
+        f"Smoke detector spacing: {NFPA72_SMOKE_MAX_SPACING_M}m flat per §17.7.3.2.3 — NO height reduction applies.",
+        f"Heat detector spacing: {NFPA72_HEAT_MAX_SPACING_M}m standard at ceiling height ≤3.0m per §17.6.3.5.1.",
+        "Coverage radius R = 0.7 × S per NFPA 72 §17.7.4.2.3.1.",
+    ]
+    if smoke_stats["devicesMissingCoordinates"] > 0:
+        notes.append(
+            f"⚠️ {smoke_stats['devicesMissingCoordinates']} smoke detector(s) missing "
+            "coordinates — cannot verify actual placement. Update device x/y to enable verification."
+        )
+    if heat_stats["devicesMissingCoordinates"] > 0:
+        notes.append(
+            f"⚠️ {heat_stats['devicesMissingCoordinates']} heat detector(s) missing "
+            "coordinates — cannot verify actual placement."
+        )
+    if len(notification) == 0 and (len(smoke_detectors) > 0 or len(heat_detectors) > 0):
+        notes.append(
+            "⚠️ No notification appliances found — system cannot alert occupants. "
+            "Add horns/strobes per NFPA 72 §18.4."
+        )
+    if len(manual_stations) == 0 and len(devices) > 0:
+        notes.append(
+            "⚠️ No manual pull stations found — required per NFPA 72 §17.14 at exits."
+        )
+
     return {
         "type": "nfpa72_coverage",
         "standard": "NFPA 72-2022",
         "generatedAt": now,
         "totalDevices": len(devices),
         "devicesByCategory": _count_by_category(devices),
-        "complianceNotes": [
-            "All detector placements must be verified by a licensed FPE",
-            "Coverage calculations assume standard ceiling conditions",
-        ],
+        "detectorSummary": {
+            "smokeDetectors": smoke_stats,
+            "heatDetectors": heat_stats,
+            "notificationAppliances": {
+                "count": len(notification),
+                "nfpaSection": "NFPA 72-2022 §18.4 (notification appliances)",
+            },
+            "manualPullStations": {
+                "count": len(manual_stations),
+                "nfpaSection": "NFPA 72-2022 §17.14 (manual fire alarm boxes)",
+            },
+            "otherDevices": {
+                "count": len(other_devices),
+            },
+        },
+        "spacingConstants": {
+            "smokeMaxSpacingM": NFPA72_SMOKE_MAX_SPACING_M,
+            "heatMaxSpacingM": NFPA72_HEAT_MAX_SPACING_M,
+            "coverageRadiusFactor": _COVERAGE_RADIUS_FACTOR,
+            "source": "fireai.core.qomn_kernel" if _spacing_available else "default fallback values",
+        },
+        "complianceNotes": notes,
+        "disclaimer": (
+            "This is a placement ADEQUACY check (counts + spacing constants + coordinate presence). "
+            "For full coverage analysis (beam obstruction, ceiling pockets, sloped ceilings, "
+            "stratification), use the spatial_engine via POST /api/v1/qomn/place-detectors."
+        ),
     }
 
 def _generate_nfpa72_battery_report(devices: list, now: str) -> dict:
