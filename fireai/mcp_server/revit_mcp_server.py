@@ -101,6 +101,15 @@ class RevitMCPServer:
         self._running = False
         self._stdin_thread: Optional[threading.Thread] = None
         self._client_capabilities: dict[str, Any] = {}
+        # V214 FIX: Initialize named pipe client to forward commands to C# add-in.
+        # Previously the queue was filled but NEVER consumed — commands died in the queue.
+        # Now after enqueue, we forward the command to the C# add-in via named pipe.
+        try:
+            from fireai.mcp_server.named_pipe_client import RevitNamedPipeClient
+            self._pipe_client = RevitNamedPipeClient()
+        except ImportError:
+            self._pipe_client = None
+            logger.warning("named_pipe_client not available — commands will only be queued locally")
 
     @property
     def update_queue(self) -> ThreadSafeModelUpdateQueue:
@@ -161,6 +170,14 @@ class RevitMCPServer:
         Instead, it creates a ModelUpdateAction and enqueues it
         in the ThreadSafeModelUpdateQueue for execution on the
         Revit UI thread.
+
+        V214 FIX: After enqueueing locally, the command is ALSO forwarded
+        to the C# Revit add-in via named pipe. Previously, commands were
+        enqueued but NEVER consumed — they died in the queue. Now:
+          1. Enqueue in ThreadSafeModelUpdateQueue (local audit trail)
+          2. Forward to C# add-in via RevitNamedPipeClient (execution)
+          3. If pipe unavailable (Linux/cloud), command stays queued
+             with a warning — the IFC pipeline is the fallback.
         """
         action = ModelUpdateAction(
             action_type=ModelUpdateType.SET_PARAMETER,
@@ -180,14 +197,67 @@ class RevitMCPServer:
                 error=f"Failed to enqueue model update: {e}",
             )
 
+        # V214 FIX: Forward to C# add-in via named pipe
+        pipe_status = "not_forwarded"
+        pipe_message = ""
+        if self._pipe_client is not None:
+            # Determine the value type for the pipe command
+            param_value = params.get("parameter_value")
+            if isinstance(param_value, str):
+                pipe_command = {
+                    "action": "set_string_parameter",
+                    "element_id": str(params.get("element_id", "")),
+                    "parameter_name": str(params.get("parameter_name", "")),
+                    "value": str(param_value),
+                    "nfpa_reference": "MCP Update via SanitizedHandler",
+                }
+            else:
+                pipe_command = {
+                    "action": "set_parameter",
+                    "element_id": str(params.get("element_id", "")),
+                    "parameter_name": str(params.get("parameter_name", "")),
+                    "value": float(param_value) if param_value is not None else 0.0,
+                    "nfpa_reference": "MCP Update via SanitizedHandler",
+                }
+
+            try:
+                pipe_response = self._pipe_client.send_command(pipe_command)
+                if pipe_response.get("status") == "queued":
+                    pipe_status = "forwarded_to_addin"
+                    pipe_message = (
+                        f"Command forwarded to C# add-in (pending: "
+                        f"{pipe_response.get('pending_count', '?')})"
+                    )
+                elif pipe_response.get("status") == "error":
+                    pipe_status = "pipe_error"
+                    pipe_message = pipe_response.get("message", "Unknown pipe error")
+                    logger.warning(
+                        "Named pipe forwarding failed: %s. "
+                        "Command remains in local queue.",
+                        pipe_message,
+                    )
+            except Exception as pipe_err:
+                pipe_status = "pipe_exception"
+                pipe_message = str(pipe_err)
+                logger.warning(
+                    "Named pipe exception: %s. Command remains in local queue.",
+                    pipe_err,
+                )
+        else:
+            pipe_status = "no_pipe_client"
+            pipe_message = "Named pipe client not initialized"
+
         return MCPResponse(
             request_id=request.request_id,
             success=True,
             result={
                 "action_id": action_id,
                 "status": "queued",
+                "pipe_status": pipe_status,
+                "pipe_message": pipe_message,
                 "message": (
                     "Model update queued for safe execution on Revit UI thread. "
+                    f"Pipe status: {pipe_status}. "
                     "The update will be processed by the IExternalEventHandler. "
                     "Use action_id to check status."
                 ),
