@@ -22,3 +22,32 @@ locust>=2.20.0
 
 # HTTP test client (required by backend/tests/conftest.py)
 httpx>=0.24.0,<1.0.0
+
+# ═══════════════════════════════════════════════════════════════════════════
+# V214: DWG file conversion — system binaries (NOT pip packages)
+# ═══════════════════════════════════════════════════════════════════════════
+# The dwg_converter.py module (qomn_fire/parsers/dwg_converter.py) tries
+# these binaries in order to convert DWG→DXF without requiring AutoCAD:
+#
+#   1. dwg2dxf       — LibreDWG (open source, Linux/Mac/Windows)
+#   2. ODAFileConverter — ODA SDK (freeware, Windows/Linux)
+#   3. oda_file_converter — ODA SDK alternate name
+#
+# These are SYSTEM BINARIES, not pip packages. They cannot be installed
+# via pip. Install them via:
+#
+#   Linux (Debian/Ubuntu):
+#     sudo apt-get install -y libredwg-tools
+#   macOS (Homebrew):
+#     brew install libredwg
+#   Windows:
+#     See scripts/install_dwg_converter_windows.ps1
+#   Docker:
+#     The Dockerfile (V214) installs libredwg-tools automatically.
+#
+# If none are available, dwg_converter.py falls back to a mock that writes
+# a structurally-valid but entity-empty DXF file (with an explicit
+# "dwg2dxf not installed" warning in the output).
+#
+# To verify installation:  dwg2dxf --version
+# ═══════════════════════════════════════════════════════════════════════════

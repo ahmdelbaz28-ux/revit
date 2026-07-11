@@ -47,6 +47,17 @@ LABEL maintainer="FireAI Engineering Team"
 LABEL description="Safety-Critical Fire Protection Digital Twin — NFPA 72-2022"
 LABEL version="1.0.0"
 
+# V214: Install LibreDWG (dwg2dxf binary) for real DWG→DXF conversion.
+# Without this, dwg_converter.py falls back to a mock that writes an
+# entity-empty DXF file (with an explicit warning). Installing libredwg-tools
+# enables real DWG parsing in Docker/Linux deployments without AutoCAD.
+# apt-get clean + rm -rf /var/lib/apt/lists/* keeps the image small.
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends libredwg-tools && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* && \
+    dwg2dxf --version 2>&1 | head -1 || echo "dwg2dxf installed (version check non-fatal)"
+
 RUN groupadd -r fireai && \
     useradd -r -g fireai -d /app -s /sbin/nologin -c "FireAI Service" fireai
 
