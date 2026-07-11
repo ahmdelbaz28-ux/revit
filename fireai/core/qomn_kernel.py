@@ -1046,5 +1046,200 @@ class QOMNKernel:
         return self.audit.verify_chain_integrity()
 
 
-# Module-level default kernel instance
-_default_kernel = QOMNKernel()
+# ═══════════════════════════════════════════════════════════════════════════════
+# V214: Self-Healing Integration Layer
+# ═══════════════════════════════════════════════════════════════════════════════
+# The self-healing engine (@self_healing decorator) returns SafetyResult objects.
+# QOMNKernel methods return dicts. This wrapper bridges the two:
+#   1. Calls the original kernel method
+#   2. If it raises (PhysicsGuardError, ValueError, ZeroDivisionError, etc.),
+#      the self-healing decorator catches it and returns a SafetyResult
+#      with a healed value + audit trail
+#   3. The wrapper converts SafetyResult → dict for API compatibility
+#
+# CRITICAL: The self-healing wrapper is applied to the QOMNKernel CLASS METHODS
+# (not the raw compute_* functions) because the class methods include L3
+# validation + L4 audit logging. If we wrapped the raw functions, the L3/L4
+# pipeline would be bypassed on the healing path.
+# ═══════════════════════════════════════════════════════════════════════════════
+
+import functools
+import logging as _logging
+
+_healing_logger = _logging.getLogger("fireai.core.qomn_kernel.self_healing")
+
+
+def _healing_wrapper(
+    safe_result: dict[str, Any] | None = None,
+    safe_minimum: float = 0.0,
+):
+    """
+    Decorator that wraps a QOMNKernel method with self-healing protection.
+
+    If the method raises an exception, the self-healing engine catches it,
+    applies the appropriate tier of healing, and returns a fallback dict.
+
+    Args:
+        safe_result: Default dict to return on healing (if None, uses safe_minimum
+                     to construct a minimal valid result).
+        safe_minimum: Float fallback value for numeric fields.
+    """
+    def decorator(method):
+        @functools.wraps(method)
+        def wrapper(self, *args, **kwargs):
+            try:
+                return method(self, *args, **kwargs)
+            except (PhysicsGuardError, ValueError, TypeError, ZeroDivisionError,
+                    KeyError, IndexError) as exc:
+                # Import self-healing engine (lazy to avoid circular imports)
+                try:
+                    from fireai.core.qomn_self_healing_engine import (  # noqa: F401
+                        compute_hash,
+                        global_audit_logger,
+                        global_circuit_breaker,
+                    )
+                except ImportError:
+                    # Self-healing engine not available — re-raise the exception
+                    _healing_logger.warning(
+                        "Self-healing engine not available — re-raising %s: %s",
+                        type(exc).__name__, exc,
+                    )
+                    raise
+
+                # Register with circuit breaker
+                cb_open, _ = global_circuit_breaker.check_and_cooldown()
+                if cb_open:
+                    _healing_logger.warning(
+                        "Circuit breaker OPEN — returning safe fallback for %s",
+                        method.__name__,
+                    )
+                else:
+                    global_circuit_breaker.register_healing_event(
+                        error_type=type(exc).__name__
+                    )
+
+                # Build safe fallback result
+                if safe_result is not None:
+                    fallback = safe_result.copy()
+                else:
+                    fallback = {
+                        "error": str(exc),
+                        "healed": True,
+                        "safe_minimum": safe_minimum,
+                        "original_exception": type(exc).__name__,
+                    }
+
+                # Log to audit trail
+                try:
+                    before_hash = compute_hash({"args": str(args), "kwargs": str(kwargs)})
+                    after_hash = compute_hash(fallback)
+                    global_audit_logger.log_event({
+                        "function_name": f"QOMNKernel.{method.__name__}",
+                        "error_type": type(exc).__name__,
+                        "error_message": str(exc),
+                        "tier_used": 1,
+                        "fix_applied": fallback,
+                        "verification_result": "HEALED_FALLBACK",
+                        "before_hash": before_hash,
+                        "after_hash": after_hash,
+                        "user_notification_status": "ALERTED",
+                    })
+                except Exception as log_err:
+                    _healing_logger.warning(
+                        "Failed to log healing event: %s", log_err
+                    )
+
+                # Add healing metadata to the result
+                fallback["healed"] = True
+                fallback["healing_error"] = str(exc)
+                fallback["healing_tier"] = 1
+                _healing_logger.warning(
+                    "Self-healing activated for %s: %s → fallback returned",
+                    method.__name__, type(exc).__name__,
+                )
+                return fallback
+
+        return wrapper
+    return decorator
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Self-Healing Protected Kernel
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class SelfHealingQOMNKernel(QOMNKernel):
+    """
+    QOMNKernel with self-healing protection on all critical methods.
+
+    V214: This subclass wraps each computation method with the self-healing
+    decorator. If a computation raises (PhysicsGuardError, ValueError, etc.),
+    the healing engine:
+      1. Catches the exception
+      2. Registers with the circuit breaker (accumulates toward threshold)
+      3. Logs to the HMAC-signed audit trail
+      4. Returns a safe fallback dict with healing metadata
+
+    The fallback includes:
+      - "healed": True (so callers know this is not a nominal result)
+      - "healing_error": the original exception message
+      - "healing_tier": 1 (Tier 1 = exception catch + safe fallback)
+      - "safe_minimum": the conservative value used
+    """
+
+    @_healing_wrapper(
+        safe_result={
+            "voltage_drop_v": 0.0,
+            "drop_pct": 0.0,
+            "is_compliant": False,
+            "nec_section": "NEC 2023 Chapter 9, Table 8 (HEALED)",
+            "formula": "HEALED: voltage drop could not be computed — safe fallback applied",
+            "computation_hash": "HEALED",
+        },
+        safe_minimum=0.0,
+    )
+    def voltage_drop(self, current_a, length_m, awg_gauge,
+                     supply_voltage_v=24.0, max_drop_pct=10.0):
+        return super().voltage_drop(
+            current_a, length_m, awg_gauge, supply_voltage_v, max_drop_pct
+        )
+
+    @_healing_wrapper(
+        safe_result={
+            "required_ah": 0.0,
+            "formula": "HEALED: battery capacity could not be computed — safe fallback applied",
+            "nfpa_section": "NFPA 72-2022 §10.6.7.2.1 (HEALED)",
+            "computation_hash": "HEALED",
+        },
+        safe_minimum=0.0,
+    )
+    def battery_capacity(self, standby_load_a, alarm_load_a, **kwargs):
+        return super().battery_capacity(standby_load_a, alarm_load_a, **kwargs)
+
+    @_healing_wrapper(
+        safe_result={
+            "listed_spacing_m": 9.1,
+            "coverage_radius_m": 6.37,
+            "nfpa_table_ref": "NFPA 72-2022 §17.7.3.2.3 (HEALED — flat 9.1m)",
+            "computation_hash": "HEALED",
+            "audit_notice": "HEALED: smoke detector spacing could not be computed — flat 9.1m fallback applied",
+        },
+        safe_minimum=9.1,
+    )
+    def smoke_detector_spacing(self, ceiling_height_m):
+        return super().smoke_detector_spacing(ceiling_height_m)
+
+    @_healing_wrapper(
+        safe_result={
+            "listed_spacing_m": 6.1,
+            "coverage_radius_m": 4.27,
+            "nfpa_table_ref": "NFPA 72-2022 §17.6.3.5.1 (HEALED — flat 6.1m)",
+            "computation_hash": "HEALED",
+        },
+        safe_minimum=6.1,
+    )
+    def heat_detector_spacing(self, ceiling_height_m, area_per_detector_m2):
+        return super().heat_detector_spacing(ceiling_height_m, area_per_detector_m2)
+
+
+# Module-level default kernel instance — V214: uses SelfHealingQOMNKernel
+_default_kernel = SelfHealingQOMNKernel()

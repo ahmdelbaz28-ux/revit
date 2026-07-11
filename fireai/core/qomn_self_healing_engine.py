@@ -1073,7 +1073,7 @@ class LLMCircuitBreaker:
 # Global Instances -- initialized from Config
 _config = Config()
 global_audit_logger = AsyncAuditLogger(
-    filepath="qomn_fire_healing_audit.jsonl",
+    filepath=os.environ.get("QOMN_AUDIT_LOG_PATH", "qomn_fire_healing_audit.jsonl"),
     secret_key=_config.SECRET_KEY,
     max_bytes=_config.AUDIT_MAX_BYTES,
     backup_count=_config.AUDIT_BACKUP_COUNT,

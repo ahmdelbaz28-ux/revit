@@ -665,6 +665,11 @@ from backend.routers import mining as mining_router_module
 
 app.include_router(mining_router_module.router, prefix="/api/v1", tags=["Mining"])
 
+# V214: Self-Healing engine monitoring (circuit breaker + audit trail)
+from backend.routers import self_healing as self_healing_router_module
+
+app.include_router(self_healing_router_module.router, prefix="/api/v1", tags=["Self-Healing"])
+
 # V130 FIX: Mount the monitor router so Prometheus can scrape /api/v1/monitor/metrics.
 # Previously monitor.router was defined but NEVER registered via include_router,
 # so every Prometheus scrape returned 404 and all dashboards/alerts had no data.
