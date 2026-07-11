@@ -808,8 +808,11 @@ function TreeFolder({
 	return (
 		<div className="mb-1">
 			<div
+				role="button"
+				tabIndex={0}
 				className="flex items-center gap-1.5 py-1.5 px-2 hover:bg-muted cursor-pointer rounded-md transition-colors"
 				onClick={() => setOpen(!open)}
+				onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setOpen(!open) } }}
 			>
 				<Triangle
 					className={`h-3 w-3 text-muted-foreground transition-transform ${open ? "rotate-180" : "rotate-90"}`}

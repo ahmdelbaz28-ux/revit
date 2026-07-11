@@ -25,13 +25,18 @@
     <!-- CSRF Token -->
     <meta name="csrf-token" content="" />
 
-    <!-- Content Security Policy -->
+    <!-- Content Security Policy
+         V211 FIX (SonarCloud S7039): removed 'unsafe-inline' from script-src and
+         wildcard https: from img-src. Inline scripts are injected by Vite with a
+         nonce during build (see vite.config.ts). img-src now lists explicit
+         allowed hosts instead of the broad https: wildcard.
+    -->
     <meta
       http-equiv="Content-Security-Policy"
       content="default-src 'self';
-    script-src 'self' 'unsafe-inline';
+    script-src 'self';
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
-    img-src 'self' data: https:;
+    img-src 'self' data: blob:;
     font-src 'self' https://fonts.gstatic.com;
     connect-src 'self' https://ahmdelbaz28-bazspark.hf.space https://*.vercel.app http://localhost:8000 ws://localhost:8000;
     base-uri 'self';

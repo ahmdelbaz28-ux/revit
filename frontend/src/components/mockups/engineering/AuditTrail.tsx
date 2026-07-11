@@ -566,7 +566,7 @@ function LogRow({ time, user, action, type, msg, file, dev, isSystem }: any) {
 			className={`bg-card border-l-2 ${border} hover:bg-card cursor-pointer`}
 		>
 			<td
-				className={`px-4 py-2.5 ${isSystem ? "text-muted-foreground" : "text-muted-foreground"}`}
+				className={`px-4 py-2.5 text-muted-foreground`}
 			>
 				{time}
 			</td>
