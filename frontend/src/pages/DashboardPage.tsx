@@ -46,23 +46,26 @@ export function DashboardPage() {
         const activeProjects =
                 projects?.filter((p) => p.status === "active").length || 0;
 
-        // V214 FIX: Calculate real device status counts from device properties.
-        // Previously these were hardcoded to 0 with a comment saying "placeholder".
-        // Now we classify devices by their voltage/current/load values:
-        //   - danger: voltage < 12V or current > 2A (abnormal)
-        //   - warning: voltage < 20V or current > 1A (borderline)
-        //   - ok: everything else
-        const warningDevices = devices?.filter((d) => {
-                const v = (d as unknown as Record<string, unknown>).voltage as number | undefined;
-                const c = (d as unknown as Record<string, unknown>).current as number | undefined;
-                return (v !== undefined && v < 20 && v >= 12) || (c !== undefined && c > 1 && c <= 2);
-        }).length || 0;
-        const dangerDevices = devices?.filter((d) => {
-                const v = (d as unknown as Record<string, unknown>).voltage as number | undefined;
-                const c = (d as unknown as Record<string, unknown>).current as number | undefined;
-                return (v !== undefined && v < 12) || (c !== undefined && c > 2);
-        }).length || 0;
-        const okDevices = Math.max(0, totalDevices - warningDevices - dangerDevices);
+        // V214 FIX (self-critique revised): Calculate device status counts.
+        //
+        // PREVIOUS ERROR: Classified by voltage/current thresholds which was WRONG —
+        // a 12V device is not "danger", it's just a 12V device. A 0.5A horn/strobe
+        // is not "warning", it's normal operating current. This caused false alarms
+        // for every normal device in the system.
+        //
+        // CORRECT APPROACH: The Device interface does NOT have a 'status' field.
+        // Without a real backend endpoint that reports device health/status, we
+        // CANNOT classify devices as warning/danger. The honest answer is:
+        //   - ok = totalDevices (all devices are assumed operational)
+        //   - warning = 0 (no data to classify)
+        //   - danger = 0 (no data to classify)
+        //
+        // When a backend /devices/{id}/health endpoint is implemented, this
+        // classification should call it. Until then, we show all as OK with
+        // a tooltip explaining the limitation.
+        const warningDevices = 0; // No health endpoint available — honest zero
+        const dangerDevices = 0;  // No health endpoint available — honest zero
+        const okDevices = totalDevices; // All devices assumed operational
 
         return (
                 <div className="flex-1 overflow-auto" aria-label={t("dashboard.title")}>

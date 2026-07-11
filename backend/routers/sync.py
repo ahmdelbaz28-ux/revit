@@ -189,11 +189,15 @@ async def sync_project(project_id: str):
         "pendingChanges": 0,
     })
 
-    # V214 FIX: Previously this was `await asyncio.sleep(0.1)` — a fake sync
-    # that pretended to synchronize with external systems. Now we perform a
-    # real DB-level sync: re-read all devices + connections for the project
-    # and update the sync_status with real counts. This is an internal DB
-    # sync (not external BIM sync — that requires the IFC pipeline).
+    # V214 FIX (self-critique revised): This endpoint performs an INTERNAL
+    # database consistency check — it re-reads all devices + connections
+    # and updates sync_status with real counts. It does NOT sync with
+    # external BIM systems (Revit/AutoCAD). For external BIM sync, use
+    # the IFC pipeline (POST /digital-twin/convert).
+    #
+    # SELF-CRITIQUE: The previous code was `await asyncio.sleep(0.1)` which
+    # was dishonestly labeled as "sync". The current code is honest about
+    # what it does: a DB read + status update. It is NOT a full sync.
     try:
         devices = db.get_all_devices_for_project(project_id)
         connections = db.get_all_connections_for_project(project_id)

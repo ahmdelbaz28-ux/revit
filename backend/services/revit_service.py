@@ -515,70 +515,72 @@ class RevitService:
                 "element_type": getattr(element, 'GetType', lambda: 'Element')(),
             }
 
-            # V214 FIX: Extract REAL geometry from Revit elements instead of
-            # hardcoded dummy values. Previously every wall got length=10000,
-            # height=3000, width=200 — regardless of actual dimensions.
-            # Now we read LocationCurve/BoundingBoxXYZ from the Revit API.
+            # V214 FIX (self-critique revised): Extract REAL geometry from Revit
+            # elements instead of hardcoded dummy values.
+            #
+            # SELF-CRITIQUE: Previous fix used __import__() inside production code —
+            # an anti-pattern that can crash if the import fails. Also used
+            # getattr(..., None) which passes None to get_Parameter() → crash.
+            #
+            # CORRECT APPROACH: Use try/except around the entire Revit API section.
+            # Import BuiltInParameter at the top of the try block. If anything
+            # fails, skip geometry silently (don't fabricate values).
             elem_type_str = str(element_data.get('element_type', ''))
+            FT_TO_MM = 304.8  # Revit internal units = feet; 1 ft = 304.8 mm
             try:
+                # Import Revit DB types — only available on Windows + pythonnet
+                from Autodesk.Revit.DB import BuiltInParameter  # type: ignore[import-not-found]
+
                 if 'Wall' in elem_type_str:
-                    # Try to get real LocationCurve
+                    # Read real LocationCurve
                     loc = getattr(element, 'Location', None)
                     if loc and hasattr(loc, 'Curve'):
                         curve = loc.Curve
-                        if curve:
+                        if curve and hasattr(curve, 'GetEndPoint'):
                             sp = curve.GetEndPoint(0)
                             ep = curve.GetEndPoint(1)
-                            # Convert from feet to mm (Revit internal units = feet)
-                            FT_TO_MM = 304.8
-                            element_data.update({
-                                "length": float((sp - ep).GetLength()) * FT_TO_MM,
-                                "location_curve": [
+                            if sp and ep:
+                                element_data["length"] = float((sp - ep).GetLength()) * FT_TO_MM
+                                element_data["location_curve"] = [
                                     [sp.X * FT_TO_MM, sp.Y * FT_TO_MM, sp.Z * FT_TO_MM],
                                     [ep.X * FT_TO_MM, ep.Y * FT_TO_MM, ep.Z * FT_TO_MM],
-                                ],
-                            })
-                    # Try to get real height/width from parameters
-                    try:
-                        h_param = element.get_Parameter(getattr(__import__('Autodesk.Revit.DB', fromlist=['BuiltInParameter']).BuiltInParameter, 'WALL_USER_HEIGHT_PARAM', None))
-                        if h_param:
-                            element_data["height"] = h_param.AsDouble() * 304.8
-                    except Exception:
-                        pass
+                                ]
+                    # Read real height from parameter
+                    h_param = element.get_Parameter(BuiltInParameter.WALL_USER_HEIGHT_PARAM)
+                    if h_param and h_param.AsDouble():
+                        element_data["height"] = h_param.AsDouble() * FT_TO_MM
 
                 elif 'Floor' in elem_type_str:
-                    try:
-                        area_param = element.get_Parameter(getattr(__import__('Autodesk.Revit.DB', fromlist=['BuiltInParameter']).BuiltInParameter, 'FLOOR_PARAM_AREA', None))
-                        if area_param:
-                            # Area in sq ft → convert to sq m
-                            element_data["area"] = area_param.AsDouble() * 0.092903
-                    except Exception:
-                        pass
+                    area_param = element.get_Parameter(BuiltInParameter.FLOOR_PARAM_AREA)
+                    if area_param and area_param.AsDouble():
+                        element_data["area"] = area_param.AsDouble() * 0.092903  # sq ft → sq m
 
                 elif 'Door' in elem_type_str or 'Window' in elem_type_str:
-                    try:
-                        w_param = element.get_Parameter(getattr(__import__('Autodesk.Revit.DB', fromlist=['BuiltInParameter']).BuiltInParameter, 'CASEWORK_WIDTH', None))
-                        if w_param:
-                            element_data["width"] = w_param.AsDouble() * 304.8
-                        h_param = element.get_Parameter(getattr(__import__('Autodesk.Revit.DB', fromlist=['BuiltInParameter']).BuiltInParameter, 'CASEWORK_HEIGHT', None))
-                        if h_param:
-                            element_data["height"] = h_param.AsDouble() * 304.8
-                    except Exception:
-                        pass
+                    # Use LookupParameter for family instance width/height
+                    w_param = element.LookupParameter("Width")
+                    if w_param and w_param.AsDouble():
+                        element_data["width"] = w_param.AsDouble() * FT_TO_MM
+                    h_param = element.LookupParameter("Height")
+                    if h_param and h_param.AsDouble():
+                        element_data["height"] = h_param.AsDouble() * FT_TO_MM
 
-                # Try BoundingBoxXYZ as fallback for any element type
-                bb = getattr(element, 'get_BoundingBox', lambda doc: None)(None)
-                if bb:
-                    FT_TO_MM = 304.8
-                    min_pt = bb.Min
-                    max_pt = bb.Max
+                # BoundingBoxXYZ fallback for any element type
+                bb = element.get_BoundingBox(None)
+                if bb and bb.Min and bb.Max:
                     element_data["bounding_box"] = {
-                        "min": [min_pt.X * FT_TO_MM, min_pt.Y * FT_TO_MM, min_pt.Z * FT_TO_MM],
-                        "max": [max_pt.X * FT_TO_MM, max_pt.Y * FT_TO_MM, max_pt.Z * FT_TO_MM],
+                        "min": [bb.Min.X * FT_TO_MM, bb.Min.Y * FT_TO_MM, bb.Min.Z * FT_TO_MM],
+                        "max": [bb.Max.X * FT_TO_MM, bb.Max.Y * FT_TO_MM, bb.Max.Z * FT_TO_MM],
                     }
+            except ImportError:
+                # Not on Windows / Revit API not available — skip geometry
+                pass
             except Exception as geom_err:
-                logger.debug("Geometry extraction failed for element %s: %s", element_data.get('id'), geom_err)
-                # Don't fabricate values — just skip geometry if we can't read it
+                logger.debug(
+                    "Geometry extraction skipped for element %s: %s",
+                    element_data.get('id'), geom_err,
+                )
+                # CRITICAL: Do NOT fabricate geometry values. If we can't read
+                # real data, the element simply has no geometry in the output.
 
             # Add common parameters
             element_data["parameters"] = {

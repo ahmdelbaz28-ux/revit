@@ -93,11 +93,18 @@ export function ReportsPage() {
                 setAhjGenerating(true);
                 setAhjDownloadUrl(null);
                 try {
+                        // V214 self-critique: import getApiKey for auth
+                        const { getApiKey } = await import("@/services/apiKey");
+                        const ahjHeaders: Record<string, string> = { "Content-Type": "application/json" };
+                        const apiKey = getApiKey();
+                        if (apiKey) {
+                                ahjHeaders["X-API-Key"] = apiKey;
+                        }
                         const response = await fetch(
                                 `/api/v1/projects/${firstProjectId}/reports/ahj-submittal`,
                                 {
                                         method: "POST",
-                                        headers: { "Content-Type": "application/json" },
+                                        headers: ahjHeaders,
                                         body: JSON.stringify({
                                                 designer: "FireAI Engineer",
                                                 jurisdiction: "AHJ",
