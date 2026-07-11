@@ -5,13 +5,14 @@
  */
 
 import {
-	Activity,
-	FileText,
-	Loader2,
-	Power,
-	PowerOff,
-	Wifi,
-	WifiOff,
+        Activity,
+        AlertTriangle,
+        FileText,
+        Loader2,
+        Power,
+        PowerOff,
+        Wifi,
+        WifiOff,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -19,11 +20,11 @@ import { FileUploader } from "@/components/shared/FileUploader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
+        Card,
+        CardContent,
+        CardDescription,
+        CardHeader,
+        CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -31,217 +32,259 @@ import { Switch } from "@/components/ui/switch";
 import { autocadService } from "@/services/autocadService";
 
 export function AutoCADPage() {
-	const [connected, setConnected] = useState(false);
-	const [connecting, setConnecting] = useState(false);
-	const [status, setStatus] = useState<Record<string, unknown> | null>(null);
-	const [visible, setVisible] = useState(true);
-	const [forceNew, setForceNew] = useState(false);
-	const [filepath, setFilepath] = useState("");
+        const [connected, setConnected] = useState(false);
+        const [connecting, setConnecting] = useState(false);
+        const [simulationMode, setSimulationMode] = useState(false);
+        const [status, setStatus] = useState<Record<string, unknown> | null>(null);
+        const [visible, setVisible] = useState(true);
+        const [forceNew, setForceNew] = useState(false);
+        const [filepath, setFilepath] = useState("");
 
-	const checkStatus = async () => {
-		try {
-			const s = await autocadService.getStatus();
-			setStatus(s as Record<string, unknown>);
-			setConnected(true);
-		} catch {
-			setConnected(false);
-			setStatus(null);
-		}
-	};
+        const checkStatus = async () => {
+                try {
+                        const s = await autocadService.getStatus();
+                        setStatus(s as Record<string, unknown>);
+                        setConnected(true);
+                        // V214: Check simulation_mode from status response
+                        const sim = (s as Record<string, unknown>)?.simulation_mode;
+                        setSimulationMode(Boolean(sim));
+                } catch {
+                        setConnected(false);
+                        setStatus(null);
+                        setSimulationMode(false);
+                }
+        };
 
-	useEffect(() => {
-		checkStatus();
-	}, [checkStatus]);
+        useEffect(() => {
+                checkStatus();
+        }, [checkStatus]);
 
-	const handleConnect = async () => {
-		setConnecting(true);
-		try {
-			await autocadService.connect(visible, forceNew);
-			toast.success("Connected to AutoCAD");
-			setConnected(true);
-			checkStatus();
-		} catch (err) {
-			toast.error(
-				`Connection failed: ${err instanceof Error ? err.message : "Unknown error"}`,
-			);
-		} finally {
-			setConnecting(false);
-		}
-	};
+        const handleConnect = async () => {
+                setConnecting(true);
+                try {
+                        const result = await autocadService.connect(visible, forceNew);
+                        // V214: Check simulation_mode from connect response
+                        const sim = (result as Record<string, unknown>)?.simulation_mode;
+                        if (sim) {
+                                setSimulationMode(true);
+                                toast.warning(
+                                        "SIMULATION MODE: No real AutoCAD instance is available. " +
+                                        "Drawing operations will return mock objects and no real " +
+                                        "DWG changes will occur. Install pywin32 + AutoCAD on Windows " +
+                                        "for real COM integration."
+                                );
+                        } else {
+                                setSimulationMode(false);
+                                toast.success("Connected to AutoCAD");
+                        }
+                        setConnected(true);
+                        checkStatus();
+                } catch (err) {
+                        toast.error(
+                                `Connection failed: ${err instanceof Error ? err.message : "Unknown error"}`,
+                        );
+                } finally {
+                        setConnecting(false);
+                }
+        };
 
-	const handleDisconnect = async () => {
-		try {
-			await autocadService.disconnect();
-			toast.success("Disconnected from AutoCAD");
-			setConnected(false);
-			setStatus(null);
-		} catch (err) {
-			toast.error(
-				`Disconnect failed: ${err instanceof Error ? err.message : "Unknown error"}`,
-			);
-		}
-	};
+        const handleDisconnect = async () => {
+                try {
+                        await autocadService.disconnect();
+                        toast.success("Disconnected from AutoCAD");
+                        setConnected(false);
+                        setSimulationMode(false);
+                        setStatus(null);
+                } catch (err) {
+                        toast.error(
+                                `Disconnect failed: ${err instanceof Error ? err.message : "Unknown error"}`,
+                        );
+                }
+        };
 
-	const handleReadDwg = async () => {
-		if (!filepath.trim()) {
-			toast.error("Enter a DWG file path");
-			return;
-		}
-		try {
-			await autocadService.readDwg(filepath);
-			toast.success(`Read ${filepath} successfully`);
-		} catch (err) {
-			toast.error(
-				`Read failed: ${err instanceof Error ? err.message : "Unknown error"}`,
-			);
-		}
-	};
+        const handleReadDwg = async () => {
+                if (!filepath.trim()) {
+                        toast.error("Enter a DWG file path");
+                        return;
+                }
+                try {
+                        await autocadService.readDwg(filepath);
+                        toast.success(`Read ${filepath} successfully`);
+                } catch (err) {
+                        toast.error(
+                                `Read failed: ${err instanceof Error ? err.message : "Unknown error"}`,
+                        );
+                }
+        };
 
-	const handleUpload = async (file: File) => {
-		await autocadService.uploadDwg(file);
-		toast.success(`Uploaded ${file.name}`);
-	};
+        const handleUpload = async (file: File) => {
+                await autocadService.uploadDwg(file);
+                toast.success(`Uploaded ${file.name}`);
+        };
 
-	return (
-		<div className="flex-1 overflow-auto p-6 max-w-6xl mx-auto space-y-6">
-			<div className="flex items-center justify-between">
-				<div>
-					<h1 className="text-2xl font-bold text-foreground">
-						AutoCAD Dashboard
-					</h1>
-					<p className="text-sm text-muted-foreground mt-1">
-						Connect, read, and manage DWG files
-					</p>
-				</div>
-				<Badge
-					variant={connected ? "default" : "outline"}
-					className={
-						connected ? "bg-emerald-600" : "border-border text-muted-foreground"
-					}
-				>
-					{connected ? (
-						<>
-							<Wifi className="h-3 w-3 mr-1" /> Connected
-						</>
-					) : (
-						<>
-							<WifiOff className="h-3 w-3 mr-1" /> Disconnected
-						</>
-					)}
-				</Badge>
-			</div>
+        return (
+                <div className="flex-1 overflow-auto p-6 max-w-6xl mx-auto space-y-6">
+                        <div className="flex items-center justify-between">
+                                <div>
+                                        <h1 className="text-2xl font-bold text-foreground">
+                                                AutoCAD Dashboard
+                                        </h1>
+                                        <p className="text-sm text-muted-foreground mt-1">
+                                                Connect, read, and manage DWG files
+                                        </p>
+                                </div>
+                                <Badge
+                                        variant={connected ? "default" : "outline"}
+                                        className={
+                                                connected ? "bg-emerald-600" : "border-border text-muted-foreground"
+                                        }
+                                >
+                                        {connected ? (
+                                                <>
+                                                        <Wifi className="h-3 w-3 mr-1" /> Connected
+                                                </>
+                                        ) : (
+                                                <>
+                                                        <WifiOff className="h-3 w-3 mr-1" /> Disconnected
+                                                </>
+                                        )}
+                                </Badge>
+                        </div>
 
-			<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-				<Card className="border-border bg-card">
-					<CardHeader>
-						<CardTitle className="flex items-center gap-2 text-foreground">
-							<Power className="h-5 w-5 text-primary" />
-							Connection
-						</CardTitle>
-						<CardDescription className="text-muted-foreground">
-							Connect to AutoCAD instance
-						</CardDescription>
-					</CardHeader>
-					<CardContent className="space-y-4">
-						<div className="flex items-center gap-3">
-							<Switch
-								checked={visible}
-								onCheckedChange={setVisible}
-								id="visible"
-							/>
-							<Label htmlFor="visible" className="text-foreground/90">
-								Visible window
-							</Label>
-						</div>
-						<div className="flex items-center gap-3">
-							<Switch
-								checked={forceNew}
-								onCheckedChange={setForceNew}
-								id="force-new"
-							/>
-							<Label htmlFor="force-new" className="text-foreground/90">
-								Force new instance
-							</Label>
-						</div>
-						<div className="flex gap-2">
-							<Button
-								onClick={handleConnect}
-								disabled={connecting || connected}
-								className="bg-emerald-600 hover:bg-emerald-700 text-white"
-							>
-								{connecting ? (
-									<Loader2 className="h-4 w-4 mr-2 animate-spin" />
-								) : (
-									<Power className="h-4 w-4 mr-2" />
-								)}
-								Connect
-							</Button>
-							<Button
-								onClick={handleDisconnect}
-								disabled={!connected}
-								variant="destructive"
-							>
-								<PowerOff className="h-4 w-4 mr-2" />
-								Disconnect
-							</Button>
-						</div>
-					</CardContent>
-				</Card>
+                        {/* V214: Simulation mode warning banner */}
+                        {connected && simulationMode && (
+                                <div
+                                        className="flex items-start gap-3 p-4 rounded-lg border border-amber-500/50 bg-amber-500/10"
+                                        role="alert"
+                                        aria-live="polite"
+                                >
+                                        <AlertTriangle className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
+                                        <div className="space-y-1">
+                                                <p className="text-sm font-semibold text-amber-600 dark:text-amber-400">
+                                                        SIMULATION MODE — No real AutoCAD instance is connected
+                                                </p>
+                                                <p className="text-xs text-amber-700 dark:text-amber-300">
+                                                        All drawing operations (draw_line, draw_circle, read_dwg,
+                                                        write_dwg, save, delete_entity, modify_entity) will either
+                                                        return mock objects or fail with an honest error. No real
+                                                        DWG files will be created or modified. For real AutoCAD
+                                                        integration, install pywin32 + AutoCAD on Windows.
+                                                </p>
+                                        </div>
+                                </div>
+                        )}
 
-				<Card className="border-border bg-card">
-					<CardHeader>
-						<CardTitle className="flex items-center gap-2 text-foreground">
-							<Activity className="h-5 w-5 text-primary" />
-							Status
-						</CardTitle>
-						<CardDescription className="text-muted-foreground">
-							Current AutoCAD status
-						</CardDescription>
-					</CardHeader>
-					<CardContent>
-						{status ? (
-							<pre className="text-xs text-muted-foreground bg-card p-3 rounded overflow-auto max-h-48">
-								{JSON.stringify(status, null, 2)}
-							</pre>
-						) : (
-							<p className="text-muted-foreground text-sm">Not connected</p>
-						)}
-					</CardContent>
-				</Card>
-			</div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <Card className="border-border bg-card">
+                                        <CardHeader>
+                                                <CardTitle className="flex items-center gap-2 text-foreground">
+                                                        <Power className="h-5 w-5 text-primary" />
+                                                        Connection
+                                                </CardTitle>
+                                                <CardDescription className="text-muted-foreground">
+                                                        Connect to AutoCAD instance
+                                                </CardDescription>
+                                        </CardHeader>
+                                        <CardContent className="space-y-4">
+                                                <div className="flex items-center gap-3">
+                                                        <Switch
+                                                                checked={visible}
+                                                                onCheckedChange={setVisible}
+                                                                id="visible"
+                                                        />
+                                                        <Label htmlFor="visible" className="text-foreground/90">
+                                                                Visible window
+                                                        </Label>
+                                                </div>
+                                                <div className="flex items-center gap-3">
+                                                        <Switch
+                                                                checked={forceNew}
+                                                                onCheckedChange={setForceNew}
+                                                                id="force-new"
+                                                        />
+                                                        <Label htmlFor="force-new" className="text-foreground/90">
+                                                                Force new instance
+                                                        </Label>
+                                                </div>
+                                                <div className="flex gap-2">
+                                                        <Button
+                                                                onClick={handleConnect}
+                                                                disabled={connecting || connected}
+                                                                className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                                                        >
+                                                                {connecting ? (
+                                                                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                                                ) : (
+                                                                        <Power className="h-4 w-4 mr-2" />
+                                                                )}
+                                                                Connect
+                                                        </Button>
+                                                        <Button
+                                                                onClick={handleDisconnect}
+                                                                disabled={!connected}
+                                                                variant="destructive"
+                                                        >
+                                                                <PowerOff className="h-4 w-4 mr-2" />
+                                                                Disconnect
+                                                        </Button>
+                                                </div>
+                                        </CardContent>
+                                </Card>
 
-			<Card className="border-border bg-card">
-				<CardHeader>
-					<CardTitle className="flex items-center gap-2 text-foreground">
-						<FileText className="h-5 w-5 text-primary" />
-						Read DWG File
-					</CardTitle>
-				</CardHeader>
-				<CardContent className="space-y-3">
-					<div className="flex gap-2">
-						<Input
-							placeholder="/path/to/file.dwg"
-							value={filepath}
-							onChange={(e) => setFilepath(e.target.value)}
-							className="bg-card border-border text-foreground"
-						/>
-						<Button
-							onClick={handleReadDwg}
-							disabled={!connected}
-							className="bg-primary hover:bg-orange-700 text-white"
-						>
-							Read
-						</Button>
-					</div>
-					<div className="pt-2">
-						<FileUploader
-							accept=".dwg,.dxf"
-							label="Or upload a DWG/DXF file"
-							onUpload={handleUpload}
-						/>
-					</div>
-				</CardContent>
-			</Card>
-		</div>
-	);
+                                <Card className="border-border bg-card">
+                                        <CardHeader>
+                                                <CardTitle className="flex items-center gap-2 text-foreground">
+                                                        <Activity className="h-5 w-5 text-primary" />
+                                                        Status
+                                                </CardTitle>
+                                                <CardDescription className="text-muted-foreground">
+                                                        Current AutoCAD status
+                                                </CardDescription>
+                                        </CardHeader>
+                                        <CardContent>
+                                                {status ? (
+                                                        <pre className="text-xs text-muted-foreground bg-card p-3 rounded overflow-auto max-h-48">
+                                                                {JSON.stringify(status, null, 2)}
+                                                        </pre>
+                                                ) : (
+                                                        <p className="text-muted-foreground text-sm">Not connected</p>
+                                                )}
+                                        </CardContent>
+                                </Card>
+                        </div>
+
+                        <Card className="border-border bg-card">
+                                <CardHeader>
+                                        <CardTitle className="flex items-center gap-2 text-foreground">
+                                                <FileText className="h-5 w-5 text-primary" />
+                                                Read DWG File
+                                        </CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-3">
+                                        <div className="flex gap-2">
+                                                <Input
+                                                        placeholder="/path/to/file.dwg"
+                                                        value={filepath}
+                                                        onChange={(e) => setFilepath(e.target.value)}
+                                                        className="bg-card border-border text-foreground"
+                                                />
+                                                <Button
+                                                        onClick={handleReadDwg}
+                                                        disabled={!connected}
+                                                        className="bg-primary hover:bg-orange-700 text-white"
+                                                >
+                                                        Read
+                                                </Button>
+                                        </div>
+                                        <div className="pt-2">
+                                                <FileUploader
+                                                        accept=".dwg,.dxf"
+                                                        label="Or upload a DWG/DXF file"
+                                                        onUpload={handleUpload}
+                                                />
+                                        </div>
+                                </CardContent>
+                        </Card>
+                </div>
+        );
 }
