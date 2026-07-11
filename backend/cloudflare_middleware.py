@@ -103,10 +103,10 @@ class CloudflareConfig:
     """Lazy-loaded configuration snapshot for Cloudflare integration."""
 
     __slots__ = (
-        "enabled",
-        "require_origin_token",
         "blocked_countries",
+        "enabled",
         "production_mode",
+        "require_origin_token",
     )
 
     def __init__(self) -> None:

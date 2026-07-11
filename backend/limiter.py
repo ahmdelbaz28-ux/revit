@@ -28,8 +28,8 @@ Akamai integration (added 2026-07-09):
 
 from __future__ import annotations
 
-from starlette.requests import Request
 from slowapi import Limiter
+from starlette.requests import Request
 
 
 def get_remote_address(request: Request) -> str:
