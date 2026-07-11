@@ -5,6 +5,7 @@
 
 import {
         Activity,
+        AlertTriangle,
         FileText,
         Loader2,
         Power,
@@ -32,6 +33,7 @@ import { revitService } from "@/services/revitService";
 export function RevitPage() {
         const [connected, setConnected] = useState(false);
         const [connecting, setConnecting] = useState(false);
+        const [simulationMode, setSimulationMode] = useState(false);
         const [status, setStatus] = useState<Record<string, unknown> | null>(null);
         const [visible, setVisible] = useState(true);
         const [filepath, setFilepath] = useState("");
@@ -41,9 +43,13 @@ export function RevitPage() {
                         const s = await revitService.getStatus();
                         setStatus(s as Record<string, unknown>);
                         setConnected(true);
+                        // V214: Check simulation_mode from status response
+                        const sim = (s as Record<string, unknown>)?.simulation_mode;
+                        setSimulationMode(Boolean(sim));
                 } catch {
                         setConnected(false);
                         setStatus(null);
+                        setSimulationMode(false);
                 }
         };
 
@@ -54,8 +60,21 @@ export function RevitPage() {
         const handleConnect = async () => {
                 setConnecting(true);
                 try {
-                        await revitService.connect("auto");
-                        toast.success("Connected to Revit");
+                        const result = await revitService.connect("auto");
+                        // V214: Check simulation_mode from connect response
+                        const sim = (result as Record<string, unknown>)?.simulation_mode;
+                        if (sim) {
+                                setSimulationMode(true);
+                                toast.warning(
+                                        "SIMULATION MODE: No real Revit instance is connected. " +
+                                        "create_wall/floor/door will return None. read_rvt will " +
+                                        "return empty results. Use method='api' on Windows with " +
+                                        "Revit running for real operations, or export to IFC."
+                                );
+                        } else {
+                                setSimulationMode(false);
+                                toast.success("Connected to Revit");
+                        }
                         setConnected(true);
                         checkStatus();
                 } catch (err) {
@@ -72,6 +91,7 @@ export function RevitPage() {
                         await revitService.disconnect();
                         toast.success("Disconnected");
                         setConnected(false);
+                        setSimulationMode(false);
                         setStatus(null);
                 } catch (err) {
                         toast.error(
@@ -126,6 +146,30 @@ export function RevitPage() {
                                         )}
                                 </Badge>
                         </div>
+
+                        {/* V214: Simulation mode warning banner */}
+                        {connected && simulationMode && (
+                                <div
+                                        className="flex items-start gap-3 p-4 rounded-lg border border-amber-500/50 bg-amber-500/10"
+                                        role="alert"
+                                        aria-live="polite"
+                                >
+                                        <AlertTriangle className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
+                                        <div className="space-y-1">
+                                                <p className="text-sm font-semibold text-amber-600 dark:text-amber-400">
+                                                        SIMULATION MODE — No real Revit instance is connected
+                                                </p>
+                                                <p className="text-xs text-amber-700 dark:text-amber-300">
+                                                        create_wall/create_floor/create_door will return None.
+                                                        read_rvt will return empty results (RVT is a closed
+                                                        format requiring Revit API). write_rvt will write a
+                                                        real IFC4 file instead (Revit can import via File →
+                                                        Open → IFC). For real Revit integration, use
+                                                        method='api' on Windows with Revit running.
+                                                </p>
+                                        </div>
+                                </div>
+                        )}
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <Card className="border-border bg-card">
