@@ -1,0 +1,87 @@
+{
+  "name": "BAZSPARK FireAI Dev",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".."
+  },
+  "features": {
+    "ghcr.io/devcontainers/features/common-utils:2": {
+      "installZsh": true,
+      "configureZshAsDefaultShell": false,
+      "username": "devuser",
+      "uid": "1000",
+      "gid": "1000"
+    },
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "20",
+      "nodeGypDependencies": true
+    },
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "3.12",
+      "installTools": true,
+      "optimize": true
+    },
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+  "postStartCommand": "bash .devcontainer/post-start.sh",
+  "forwardPorts": [3000, 5173, 7860, 8000, 6379, 5432],
+  "portsAttributes": {
+    "3000": { "label": "Vite Dev (preview)", "onAutoForward": "openBrowser" },
+    "5173": { "label": "Vite Dev", "onAutoForward": "openBrowser" },
+    "7860": { "label": "HF Spaces (local parity)", "onAutoForward": "notify" },
+    "8000": { "label": "FastAPI Backend", "onAutoForward": "openBrowser" },
+    "6379": { "label": "Redis", "onAutoForward": "ignore" },
+    "5432": { "label": "PostgreSQL", "onAutoForward": "ignore" }
+  },
+  "otherPortsAttributes": {
+    "onAutoForward": "ignore"
+  },
+  "remoteEnv": {
+    "FIREAI_ENV": "development",
+    "DATABASE_URL": "sqlite:///./db/digital_twin.db",
+    "CORS_ALLOWED_ORIGINS": "http://localhost:3000,http://localhost:5173,https://preview.app.local"
+  },
+  "remoteUser": "devuser",
+  "codesandbox": {
+    "template": "node",
+    "memory": 8,
+    "cpu": 4,
+    "regenerateHours": 40
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "ms-python.black-formatter",
+        "charliermarsh.ruff",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "bradlc.vscode-tailwindcss",
+        "ms-azuretools.vscode-docker",
+        "redhat.vscode-yaml",
+        "GitHub.copilot",
+        "GitHub.copilot-chat",
+        "Playwright.playwright",
+        "ms-playwright.playwright"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/usr/local/bin/python",
+        "python.linting.enabled": true,
+        "python.formatting.provider": "black",
+        "[python]": { "editor.defaultFormatter": "ms-python.black-formatter" },
+        "[typescript]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+        "[typescriptreact]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+        "editor.formatOnSave": true,
+        "files.exclude": {
+          "**/__pycache__": true,
+          "**/.pytest_cache": true,
+          "**/node_modules": true,
+          "**/.venv": true
+        }
+      }
+    }
+  }
+}
