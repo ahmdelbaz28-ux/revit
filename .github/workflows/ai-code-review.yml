@@ -163,16 +163,21 @@ jobs:
           sb = client.get(sandbox_id)
 
           def run(cmd, timeout=300):
-              """Execute shell in sandbox, return (exit_code, stdout, stderr)."""
+              """Execute shell in sandbox, return (exit_code, stdout, stderr).
+              Note: ExecuteResponse has `exit_code` + `result` (combined stdout/stderr),
+              NOT separate `stdout`/`stderr` fields.
+              """
               try:
                   resp = sb.process.exec(cmd, timeout=timeout)
-                  return resp.exit_code, resp.stdout or "", resp.stderr or ""
+                  # `result` contains combined stdout + stderr from the sandbox shell
+                  return resp.exit_code, resp.result or "", ""
               except Exception as e:
                   return 99, "", f"daytona-exec-error: {e}"
 
           results = {}
 
           # 1. Push the PR code into the sandbox via tarball
+          #    upload_file(src: str | bytes, dst: str) — accepts a path or bytes, NOT a file object
           print("▶ Packaging PR source into tarball…", flush=True)
           subprocess.run(
               ["tar", "--exclude=.git", "--exclude=node_modules",
@@ -180,7 +185,7 @@ jobs:
                "--exclude=db/*.db", "-czf", "/tmp/pr-src.tar.gz", "."],
               check=True,
           )
-          sb.fs.upload_file("/tmp/pr-src.tar.gz", open("/tmp/pr-src.tar.gz", "rb"))
+          sb.fs.upload_file("/tmp/pr-src.tar.gz", "/tmp/pr-src.tar.gz")
           print("▶ Extracting + installing deps in sandbox…", flush=True)
           rc, so, se = run(
               "mkdir -p /workspace && cd /workspace && "
