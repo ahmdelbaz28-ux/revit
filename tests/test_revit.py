@@ -191,7 +191,17 @@ class TestRevitFileOperations:
         assert result["count"] == 0
 
     def test_write_rvt_with_elements(self):
-        """Test writing elements to an RVT file."""
+        """Test writing elements to an RVT file.
+
+        V214 FIX: Previously this test asserted the old fake behavior —
+        that write_rvt() writes a plain-text file containing '# Revit Model File'
+        and 'Elements Count: 2'. That was a safety-critical deception.
+
+        Now write_rvt() in simulation mode writes a REAL IFC4 file (via
+        ifcopenshell) with IfcBuildingElementProxy entities. The .rvt
+        path gets a small redirection notice .txt file, and the actual
+        data goes to a .ifc file with the same basename.
+        """
         service = RevitService()
 
         # Create mock elements to write
@@ -219,13 +229,43 @@ class TestRevitFileOperations:
             result = service.write_rvt(temp_path, elements)
             assert result is True
 
-            # Verify the file was created and contains expected content
+            # V214: The .rvt file now contains a redirection notice (NOT fake RVT data)
             assert os.path.exists(temp_path)
             with open(temp_path) as f:
                 content = f.read()
-                assert "# Revit Model File" in content
-                assert "Elements Count: 2" in content
-                assert "Exterior Wall" in content
+                # Must NOT contain the old fake "# Revit Model File" header
+                assert "# Revit Model File\n" not in content, (
+                    "write_rvt must NOT write the old fake '# Revit Model File' header"
+                )
+                # Must contain the honest redirection notice
+                assert "Redirection Notice" in content or "IFC" in content
+                assert ".ifc" in content  # points to the actual IFC file
+
+            # V214: The actual data must be in a .ifc file (same basename)
+            ifc_path = temp_path[:-4] + ".ifc"
+            assert os.path.exists(ifc_path), (
+                f"write_rvt must create a real IFC file at {ifc_path}"
+            )
+
+            # Verify the IFC file is a real IFC4 file (starts with ISO-10303-21 header)
+            with open(ifc_path, "rb") as f:
+                ifc_header = f.read(100).decode("utf-8", errors="ignore")
+            assert "ISO-10303-21" in ifc_header, (
+                f"IFC file must start with ISO-10303-21 header, got: {ifc_header[:50]}"
+            )
+
+            # Verify the IFC file contains the element names
+            with open(ifc_path, "r", encoding="utf-8", errors="ignore") as f:
+                ifc_content = f.read()
+            assert "Exterior Wall" in ifc_content, "IFC file must contain 'Exterior Wall'"
+            assert "Foundation Slab" in ifc_content, "IFC file must contain 'Foundation Slab'"
+            assert "IFCBUILDINGELEMENTPROXY" in ifc_content.upper() or "IfcBuildingElementProxy" in ifc_content, (
+                "IFC file must contain IfcBuildingElementProxy entities"
+            )
+
+            # Clean up the .ifc file too
+            if os.path.exists(ifc_path):
+                os.unlink(ifc_path)
         finally:
             # Clean up the temp file
             if os.path.exists(temp_path):
