@@ -8,14 +8,19 @@
 # (Daytona 1h session limit is ample for a review pass).
 #
 # Required repo secrets:
-#   DAYTONA_API_TOKEN   — Daytona cloud API token (dtn_…)
-#   DAYTONA_SERVER_URL  — optional; defaults to https://app.daytona.io
-#   GITHUB_TOKEN        — automatic, used for PR comment
+#   DAYTONA_API_TOKEN  — Daytona cloud API token (dtn_…) — mapped to DAYTONA_API_KEY env var
+#   GITHUB_TOKEN       — automatic, used for PR comment
+#
+# The workflow maps `secrets.DAYTONA_API_TOKEN` → env var `DAYTONA_API_KEY`
+# (the name the Daytona SDK reads). `DAYTONA_API_URL` is hardcoded to the
+# Daytona cloud endpoint; override via a repo secret if self-hosting.
 #
 # API reference: daytona-sdk >= 0.10.0 (note: package renamed to `daytona`
 # in newer versions; this workflow supports both via try/except import).
+#   - DaytonaConfig(api_key=..., api_url=...) → Daytona(config)
 #   - CreateSandboxFromImageParams(image=..., language=..., env_vars=...,
-#       resources=Resources(cpu=2, memory=4, disk=10), public=False)
+#       resources=Resources(cpu=2, memory=4, disk=10), public=False,
+#       auto_stop_interval=3600)
 #   - client.create(params, timeout=300) -> Sandbox
 #   - client.get(sandbox_id) -> Sandbox
 #   - client.delete(sandbox_object, timeout=60)
@@ -87,8 +92,10 @@ jobs:
       - name: Provision Daytona sandbox
         id: sandbox
         env:
-          DAYTONA_API_TOKEN: ${{ secrets.DAYTONA_API_TOKEN }}
-          DAYTONA_SERVER_URL: ${{ secrets.DAYTONA_SERVER_URL || 'https://app.daytona.io' }}
+          # The Daytona SDK reads these env vars directly (DaytonaConfig auto-loads them)
+          DAYTONA_API_KEY: ${{ secrets.DAYTONA_API_TOKEN }}
+          DAYTONA_API_URL: https://app.daytona.io/api
+          DAYTONA_TARGET: us
         run: |
           set -euo pipefail
           python <<'PY'
@@ -96,14 +103,17 @@ jobs:
 
           # Support both `daytona` (new) and `daytona_sdk` (deprecated) packages
           try:
-              from daytona import Daytona, CreateSandboxFromImageParams, Resources
+              from daytona import Daytona, CreateSandboxFromImageParams, Resources, DaytonaConfig
           except ImportError:
-              from daytona_sdk import Daytona, CreateSandboxFromImageParams, Resources
+              from daytona_sdk import Daytona, CreateSandboxFromImageParams, Resources, DaytonaConfig
 
-          api_token  = os.environ["DAYTONA_API_TOKEN"]
-          server_url = os.environ.get("DAYTONA_SERVER_URL", "https://app.daytona.io")
-
-          client = Daytona(api_key=api_token, server_url=server_url)
+          # SDK reads DAYTONA_API_KEY / DAYTONA_API_URL / DAYTONA_TARGET from env.
+          # Pass config explicitly too for belt-and-suspenders robustness.
+          config = DaytonaConfig(
+              api_key=os.environ["DAYTONA_API_KEY"],
+              api_url=os.environ["DAYTONA_API_URL"],
+          )
+          client = Daytona(config)
 
           params = CreateSandboxFromImageParams(
               image="python:3.12-slim",
@@ -131,23 +141,25 @@ jobs:
       - name: Run validation matrix in sandbox
         id: matrix
         env:
-          DAYTONA_API_TOKEN: ${{ secrets.DAYTONA_API_TOKEN }}
-          DAYTONA_SERVER_URL: ${{ secrets.DAYTONA_SERVER_URL || 'https://app.daytona.io' }}
+          DAYTONA_API_KEY: ${{ secrets.DAYTONA_API_TOKEN }}
+          DAYTONA_API_URL: https://app.daytona.io/api
+          DAYTONA_TARGET: us
         run: |
           set -euo pipefail
           python <<'PY'
           import os, sys, json, pathlib, subprocess
 
           try:
-              from daytona import Daytona
+              from daytona import Daytona, DaytonaConfig
           except ImportError:
-              from daytona_sdk import Daytona
+              from daytona_sdk import Daytona, DaytonaConfig
 
-          api_token  = os.environ["DAYTONA_API_TOKEN"]
-          server_url = os.environ.get("DAYTONA_SERVER_URL", "https://app.daytona.io")
+          config = DaytonaConfig(
+              api_key=os.environ["DAYTONA_API_KEY"],
+              api_url=os.environ["DAYTONA_API_URL"],
+          )
+          client = Daytona(config)
           sandbox_id = pathlib.Path("/tmp/sandbox_id.txt").read_text().strip()
-
-          client = Daytona(api_key=api_token, server_url=server_url)
           sb = client.get(sandbox_id)
 
           def run(cmd, timeout=300):
@@ -265,8 +277,9 @@ jobs:
       - name: Teardown sandbox
         if: always()
         env:
-          DAYTONA_API_TOKEN: ${{ secrets.DAYTONA_API_TOKEN }}
-          DAYTONA_SERVER_URL: ${{ secrets.DAYTONA_SERVER_URL || 'https://app.daytona.io' }}
+          DAYTONA_API_KEY: ${{ secrets.DAYTONA_API_TOKEN }}
+          DAYTONA_API_URL: https://app.daytona.io/api
+          DAYTONA_TARGET: us
         run: |
           if [[ ! -f /tmp/sandbox_id.txt ]]; then
             echo "(no sandbox to tear down)"
@@ -276,15 +289,17 @@ jobs:
           import os, pathlib, sys
 
           try:
-              from daytona import Daytona
+              from daytona import Daytona, DaytonaConfig
           except ImportError:
-              from daytona_sdk import Daytona
+              from daytona_sdk import Daytona, DaytonaConfig
 
-          api_token  = os.environ["DAYTONA_API_TOKEN"]
-          server_url = os.environ.get("DAYTONA_SERVER_URL", "https://app.daytona.io")
-          sid        = pathlib.Path("/tmp/sandbox_id.txt").read_text().strip()
+          config = DaytonaConfig(
+              api_key=os.environ["DAYTONA_API_KEY"],
+              api_url=os.environ["DAYTONA_API_URL"],
+          )
+          sid = pathlib.Path("/tmp/sandbox_id.txt").read_text().strip()
           try:
-              client = Daytona(api_key=api_token, server_url=server_url)
+              client = Daytona(config)
               # delete() takes a Sandbox object — fetch it first
               sb = client.get(sid)
               client.delete(sb)
