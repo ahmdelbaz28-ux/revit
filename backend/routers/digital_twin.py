@@ -25,7 +25,7 @@ import os
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
@@ -61,12 +61,17 @@ def _safe_resolve_upload_path(filename: str) -> str:
 
     Prevents path traversal by ensuring the resolved path stays
     within the designated uploads directory.
+
+    V214 FIX: The old code compared `resolved` (relative) against
+    `abs_upload` (absolute) — this ALWAYS failed because a relative
+    path never starts with an absolute path. Now both are resolved
+    to absolute paths before comparison.
     """
     upload_dir = os.getenv("FIREAI_UPLOAD_DIR", "uploads")
-    # Resolve to absolute path and ensure no path traversal
-    resolved = os.path.normpath(os.path.join(upload_dir, filename))
-    # Verify the resolved path is still within upload_dir
+    # Resolve BOTH to absolute paths
     abs_upload = os.path.abspath(upload_dir)
+    resolved = os.path.abspath(os.path.join(upload_dir, filename))
+    # Verify the resolved path is still within upload_dir
     if not resolved.startswith(abs_upload):
         raise HTTPException(status_code=400, detail="Invalid file path")  # NOSONAR — S8415: assignment kept for readability / debuggability
     return resolved
@@ -106,6 +111,7 @@ class ConvertResponse(BaseModel):
     duration_seconds: Optional[float] = None
     errors: List[str] = []
     warnings: List[str] = []
+    download_url: Optional[str] = None
 
 
 class OperationResponse(BaseModel):
@@ -244,11 +250,117 @@ async def convert_files(  # NOSONAR — S3776: cognitive complexity is inherent 
             duration_seconds=getattr(result, "duration_seconds", None),
             errors=result.errors,
             warnings=result.warnings,
+            download_url=f"/api/v1/digital-twin/download/{os.path.basename(result.target_file)}" if result.success else None,
         )
     except HTTPException:
         raise
     except Exception as e:
         raise _safe_error(500, "Error during conversion", e)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# V214: FILE UPLOAD + CONVERT ENDPOINT (cloud workflow)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+@router.post(
+    "/upload-and-convert",
+    dependencies=[Depends(require_permission(Permission.EXPORT_EXECUTE))],
+)
+async def upload_and_convert(
+    file: UploadFile = File(...),
+    target_format: str = "ifc",
+    service: DigitalTwinService = Depends(get_digital_twin_service),
+):
+    """
+    Upload a file and convert it to the target format.
+
+    V214: This is the CLOUD WORKFLOW endpoint. The engineer:
+      1. Exports IFC from Revit (File → Export → IFC) or DXF from AutoCAD
+      2. Uploads the file here via multipart/form-data
+      3. The server converts it (IFC fallback pipeline)
+      4. Returns a download_url for the converted file
+
+    Supported inputs:
+      - .ifc → converts to .dxf (IFC → DXF via ifcopenshell + ezdxf)
+      - .dxf → converts to .ifc (DXF → IFC via ezdxf + ifcopenshell)
+      - .dwg → converts to .ifc (DWG → DXF via LibreDWG → IFC)
+
+    The output file is saved in the uploads directory and can be
+    downloaded via the download_url in the response.
+
+    Args:
+        file: The uploaded file (IFC, DXF, or DWG)
+        target_format: Target format — "ifc" (default) or "dxf"
+    """
+    import tempfile
+    import shutil as file_shutil
+
+    start_time = datetime.now()
+
+    try:
+        # Validate file extension
+        original_name = file.filename or "upload"
+        ext = os.path.splitext(original_name)[1].lower()
+
+        if ext not in (".ifc", ".dxf", ".dwg"):
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    f"Unsupported file type: '{ext}'. "
+                    "Supported: .ifc, .dxf, .dwg"
+                ),
+            )
+
+        # Save uploaded file to uploads directory
+        upload_dir = os.getenv("FIREAI_UPLOAD_DIR", "uploads")
+        os.makedirs(upload_dir, exist_ok=True)
+
+        # Sanitize filename
+        safe_name = os.path.basename(original_name)
+        source_path = os.path.join(upload_dir, safe_name)
+
+        # Write file
+        with open(source_path, "wb") as f:
+            content = await file.read()
+            f.write(content)
+
+        logger.info("File uploaded: %s (%d bytes)", source_path, len(content))
+
+        # Determine conversion direction
+        if ext in (".dxf", ".dwg"):
+            # DXF/DWG → IFC
+            target_name = os.path.splitext(safe_name)[0] + ".ifc"
+            target_path = os.path.join(upload_dir, target_name)
+            result = service.convert_autocad_to_revit(source_path, target_path)
+        elif ext == ".ifc":
+            # IFC → DXF
+            target_name = os.path.splitext(safe_name)[0] + ".dxf"
+            target_path = os.path.join(upload_dir, target_name)
+            result = service.convert_revit_to_autocad(source_path, target_path)
+        else:
+            raise HTTPException(status_code=400, detail=f"Unsupported: {ext}")
+
+        duration = (datetime.now() - start_time).total_seconds()
+
+        return ConvertResponse(
+            success=result.success,
+            source_file=safe_name,
+            target_file=os.path.basename(result.target_file),
+            elements_converted=result.elements_converted,
+            duration_seconds=duration,
+            errors=result.errors,
+            warnings=result.warnings,
+            download_url=(
+                f"/api/v1/digital-twin/download/{os.path.basename(result.target_file)}"
+                if result.success else None
+            ),
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise _safe_error(500, "Upload and convert failed", e)
 
 
 @router.get("/history", response_model=HistoryResponse)  # NOSONAR - python:S8409
