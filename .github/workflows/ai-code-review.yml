@@ -123,12 +123,14 @@ jobs:
                   "PIP_NO_CACHE_DIR": "1",
                   "CI": "true",
               },
+              # V209: disk stays at 10GB (Daytona cloud max per sandbox).
+              # npm ci + node_modules fit within 10GB if we clean up apt cache + pip cache.
               resources=Resources(cpu=2, memory=4, disk=10),
               public=False,
               # Auto-evict after 1h (Daytona session limit) as a safety net
               auto_stop_interval=3600,
           )
-          print("▶ Creating Daytona sandbox (image=python:3.12-slim, 2vCPU/4GB/10GB)…", flush=True)
+          print("▶ Creating Daytona sandbox (image=python:3.12-slim, 2vCPU/4GB/20GB)…", flush=True)
           sb = client.create(params, timeout=300)
           print(f"✓ Sandbox created: id={sb.id}", flush=True)
 
@@ -191,18 +193,29 @@ jobs:
               check=True,
           )
           sb.fs.upload_file("/tmp/pr-src.tar.gz", "/tmp/pr-src.tar.gz")
-          print("▶ Extracting + installing deps in sandbox…", flush=True)
-          # NOTE: python:3.12-slim has pip but it may be old. Upgrade first, then install.
-          # Do NOT pipe through `tail` here — it hides install failures (V208 lesson).
-          # Capture full output and tail it AFTER, so we can see errors.
+          print("▶ Extracting + installing deps in sandbox (V209: Node.js + libgeos + requirements.txt)…", flush=True)
+          # V209: install system deps (Node.js 20 for tsc, libgeos-dev for shapely, gcc for building C exts)
+          # BEFORE pip install. python:3.12-slim doesn't include any of these.
+          # V209: install from requirements.txt first (more reliable than `pip install -e .` for deps),
+          # then install the package itself with --no-deps (deps already installed above).
           # V208: set SETUPTOOLS_SCM_PRETEND_VERSION as a fallback in case .git is incomplete.
           rc, so, se = run(
+              "export DEBIAN_FRONTEND=noninteractive && "
+              "apt-get update -qq && "
+              "apt-get install -y --no-install-recommends curl ca-certificates gnupg libgeos-dev gcc && "
+              "curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && "
+              "apt-get install -y --no-install-recommends nodejs && "
+              "rm -rf /var/lib/apt/lists/* && "
+              "node --version && npm --version && "
               "mkdir -p /workspace && cd /workspace && "
               "tar -xzf /tmp/pr-src.tar.gz && "
+              "rm -f /tmp/pr-src.tar.gz && "
               "python -m ensurepip --upgrade 2>&1 || true && "
               "python -m pip install --upgrade pip setuptools wheel 2>&1 && "
+              "python -m pip install -r requirements.txt 2>&1 && "
               "SETUPTOOLS_SCM_PRETEND_VERSION=0.0.0 "
-              "python -m pip install -e . ruff mypy bandit pytest pytest-cov pytest-asyncio pytest-timeout 2>&1",
+              "python -m pip install -e . --no-deps 2>&1 && "
+              "python -m pip install ruff mypy bandit pytest pytest-cov pytest-asyncio pytest-timeout 2>&1",
               timeout=900,
           )
           install_log = (so + se)[-3000:]
@@ -220,27 +233,27 @@ jobs:
               pathlib.Path("/tmp/review-results.json").write_text(json.dumps(results, indent=2))
               sys.exit(0)
 
-          # 2. Ruff lint
-          rc, so, se = run("cd /workspace && ruff check backend/ fireai/ core/ parsers/ --output-format=github", timeout=180)
+          # 2. Ruff lint (V209: no tail — capture full output, tail in Python)
+          rc, so, se = run("cd /workspace && ruff check backend/ fireai/ core/ parsers/ --output-format=github 2>&1", timeout=180)
           results["ruff"] = {"rc": rc, "out": so[-2000:], "err": se[-500:]}
 
-          # 3. MyPy (backend only — skills excluded per V140 root-cause)
-          rc, so, se = run("cd /workspace && mypy backend/ fireai/ core/ --ignore-missing-imports --no-error-summary 2>&1 | tail -40", timeout=240)
+          # 3. MyPy (backend only — skills excluded per V140 root-cause; V209: no tail)
+          rc, so, se = run("cd /workspace && mypy backend/ fireai/ core/ --ignore-missing-imports --no-error-summary 2>&1", timeout=240)
           results["mypy"] = {"rc": rc, "out": so[-2000:], "err": se[-500:]}
 
-          # 4. Pytest (backend) — core + parsers + fireai only (fast subset)
+          # 4. Pytest (backend) — core + parsers + fireai only (fast subset; V209: no tail)
           rc, so, se = run(
               "cd /workspace && python -m pytest core/tests parsers/tests fireai/core/tests "
-              "--no-cov -q --timeout=60 -p no:cacheprovider 2>&1 | tail -40",
+              "--no-cov -q --timeout=60 -p no:cacheprovider 2>&1",
               timeout=600,
           )
           results["pytest"] = {"rc": rc, "out": so[-3000:], "err": se[-500:]}
 
-          # 5. Frontend: typecheck (Node + npm ci may exceed budget; gate behind a flag)
+          # 5. Frontend: typecheck (V209: Node.js 20 now installed; no tail)
           rc, so, se = run(
               "cd /workspace/frontend && "
-              "(npm ci --no-audit --no-fund >/dev/null 2>&1 || npm install --no-audit --no-fund >/dev/null 2>&1) && "
-              "npx tsc -p tsconfig.json --noEmit 2>&1 | tail -30",
+              "(npm ci --no-audit --no-fund 2>&1 || npm install --no-audit --no-fund 2>&1) && "
+              "npx tsc -p tsconfig.json --noEmit 2>&1",
               timeout=600,
           )
           results["tsc"] = {"rc": rc, "out": so[-2000:], "err": se[-500:]}

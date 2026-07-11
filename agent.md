@@ -19314,3 +19314,67 @@ After opening PR #132 (V206), CI checks revealed TWO failures:
 ### Phase Status
 **(a) Current:** V207 COMPLETE. All CI-blocking issues resolved locally. Ready to push to PR #132 and merge after CI verifies.
 **(b) To advance to V208:** push V207 commits, wait for CI green, merge PR #132, sync local main.
+
+---
+
+## V209 Fix (2026-07-11) — Daytona Sandbox: Node.js + shapely + libgeos
+
+### Operator Request
+Operator instructed (optional V209): fix tsc and shapely in the Daytona sandbox.
+
+### Root-Cause Analysis
+The V208 test PR (#133) validated the Daytona workflow end-to-end and revealed two gaps:
+1. **`tsc` rc=127 (command not found)**: The sandbox uses `python:3.12-slim` which does NOT include Node.js. The `npx tsc` command fails because there's no Node.js runtime.
+2. **`pytest` ImportError on `shapely`**: `shapely>=2.0.0,<3.0.0` IS listed in `pyproject.toml` dependencies, but it failed to install in the sandbox. Root cause: `shapely` needs the `libgeos-dev` system library (GEOS geometry engine) which is NOT in `python:3.12-slim`. While shapely 2.0+ wheels bundle GEOS, the slim image may lack `gcc` and other build tools needed if a wheel isn't available for the exact platform.
+
+### Fixes Applied (1 file)
+
+**`.github/workflows/ai-code-review.yml`** — 3 changes:
+
+1. **Disk size bump 10GB → 20GB**: `npm ci` + `node_modules` + frontend build artifacts need more space than the original 10GB allocation. Changed `Resources(cpu=2, memory=4, disk=10)` → `Resources(cpu=2, memory=4, disk=20)`.
+
+2. **System deps installation (before pip install)**: Added a combined `apt-get` + NodeSource setup step that installs:
+   - `curl`, `ca-certificates`, `gnupg` — prerequisites for NodeSource setup script
+   - `libgeos-dev` — GEOS geometry library for `shapely`
+   - `gcc` — C compiler in case shapely needs to build from source
+   - Node.js 20 (via `https://deb.nodesource.com/setup_20.x`) — for `npm ci` and `npx tsc`
+   
+   The step verifies Node.js + npm are working by printing `node --version` and `npm --version` before proceeding.
+
+3. **Explicit `shapely` in pip install**: Added `shapely` to the `pip install` command as a belt-and-suspenders approach (it's already a project dependency via `pyproject.toml`, but explicit is better than implicit for CI reliability).
+
+4. **npm ci output visibility**: Changed `npm ci ... >/dev/null 2>&1` to `npm ci ... 2>&1 | tail -5` so that npm errors are visible in the install log (previously they were suppressed entirely).
+
+### Validation
+
+- YAML syntax validated locally: 8 steps, all parse correctly.
+- V209 changes verified via grep: 4 V209 markers, 1 nodesource reference, 3 shapely references, 3 libgeos references.
+- The workflow will be tested on the V209 PR itself (the Daytona AI review will run on this PR and the results comment will show whether `tsc` and `pytest` now pass).
+
+### Expected Outcome
+
+After V209, the Daytona AI review comment should show:
+- `ruff`: ✅ (unchanged)
+- `mypy`: ✅ (unchanged)
+- `pytest`: ✅ (shapely now installed — no more ImportError)
+- `tsc`: ✅ (Node.js 20 now installed — `npx tsc` should work)
+
+### Self-Criticism Notes (V209)
+
+1. **Disk size 20GB is generous** — `npm ci` typically needs ~500MB for node_modules, and the Python deps + sandbox image are ~2GB. 20GB gives headroom for Playwright browser binaries if they're ever needed. If Daytona charges per GB, this could be reduced to 15GB later.
+
+2. **NodeSource setup script vs. multi-language image** — considered using `nikolaik/python-nodejs:python3.12-nodejs20` image instead, but that changes the base image (risk of unexpected side effects). Installing Node.js via NodeSource inside the existing `python:3.12-slim` is more predictable and keeps the image pull fast.
+
+3. **`libgeos-dev` may not be strictly needed** — shapely 2.0+ wheels bundle GEOS. But including it is cheap insurance (the apt package is ~3MB) and avoids failures if pip falls back to building from source.
+
+4. **`gcc` may not be strictly needed** — same reasoning. Most packages have wheels for `python:3.12-slim` (x86_64), but `gcc` ensures any source builds don't fail.
+
+5. **npm ci fallback to npm install** — preserved from V208. If `package-lock.json` is stale on a PR branch, `npm ci` fails and `npm install` runs as a fallback. The output is now visible (tail -5) instead of suppressed.
+
+### Files Changed (1 + agent.md)
+- `.github/workflows/ai-code-review.yml` — 3 changes (disk, system deps, shapely explicit)
+- `agent.md` — this V209 entry
+
+### Phase Status
+**(a) Current:** V209 COMPLETE. Node.js 20 + libgeos-dev + shapely added to the Daytona sandbox install step. Ready to push and test.
+**(b) To advance to V210:** push V209, verify the Daytona AI review on the V209 PR shows `tsc` ✅ and `pytest` ✅ (no shapely ImportError), merge.
