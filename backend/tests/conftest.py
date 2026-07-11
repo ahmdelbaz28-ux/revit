@@ -63,6 +63,24 @@ TEST_API_KEY = "test-api-key-for-testing-only"
 # This ensures the very first test in the very first module sees a real key.
 os.environ["FIREAI_API_KEY"] = TEST_API_KEY
 
+# V212 FIX: FIREAI_SESSION_SECRET is required by backend/app.py::lifespan().
+# Without it, every TestClient test fails at startup with:
+#   RuntimeError: FIREAI_SESSION_SECRET environment variable is not set.
+# The CI sets this via `secrets.token_urlsafe(64)` — we do the same here
+# at import time so all backend tests can start the FastAPI app.
+# The value is deterministic per-process (generated once at import) and
+# safe to commit (it's a test-only secret with no production access).
+if not os.environ.get("FIREAI_SESSION_SECRET"):
+    import secrets as _secrets
+    os.environ["FIREAI_SESSION_SECRET"] = _secrets.token_urlsafe(64)
+
+# V212 FIX: backend/app.py::lifespan also requires DATABASE_URL and
+# CORS_ALLOWED_ORIGINS to start. Set safe test defaults if not already set.
+os.environ.setdefault("DATABASE_URL", "sqlite:////tmp/fireai_test_conftest.db")
+os.environ.setdefault("DIGITAL_TWIN_DB_PATH", "/tmp/fireai_test_conftest.db")
+os.environ.setdefault("UDM_DB_PATH", "/tmp/udm_test_conftest.db")
+os.environ.setdefault("CORS_ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:5173")
+
 
 # ─── Patch TestClient to inject X-API-Key ────────────────────────────────────
 # Done at import time (not in a fixture) because TestClient instances are

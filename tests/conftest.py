@@ -51,6 +51,25 @@ import os as _os
 _os.environ.setdefault("FIREAI_MCP_NO_STDIN", "1")
 _os.environ.setdefault("FIREAI_HMAC_SECRET_KEY", "test_hmac_secret_key_123456")
 
+# V212 FIX: FIREAI_SESSION_SECRET is required by backend/app.py::lifespan().
+# Without it, TestClient-based tests in tests/ fail at startup with:
+#   RuntimeError: FIREAI_SESSION_SECRET environment variable is not set.
+# Generate a stable test secret at import time (safe — test-only, no prod access).
+if not _os.environ.get("FIREAI_SESSION_SECRET"):
+    import secrets as _secrets
+    _os.environ["FIREAI_SESSION_SECRET"] = _secrets.token_urlsafe(64)
+
+# V212 FIX: backend/app.py::lifespan also requires DATABASE_URL + CORS.
+_os.environ.setdefault("DATABASE_URL", "sqlite:////tmp/fireai_test_root.db")
+_os.environ.setdefault("DIGITAL_TWIN_DB_PATH", "/tmp/fireai_test_root.db")
+_os.environ.setdefault("UDM_DB_PATH", "/tmp/udm_test_root.db")
+_os.environ.setdefault("CORS_ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:5173")
+
+# V212 FIX: SECRET_KEY is used by webhook test fixtures as HMAC secret.
+# Must be ≥32 chars per NIST SP 800-107 (enforced by webhook_service.py:440).
+# Without this, 12 webhook tests fail with ValueError.
+_os.environ.setdefault("SECRET_KEY", "ci-test-hmac-secret-key-32-chars-minimum!!")
+
 # Clean up namespace pollution from fireai/ subdirectory
 # (V27 fix: Python import machinery re-adds fireai/ to sys.path)
 _fireai_dir = str(_PROJECT_ROOT / "fireai")

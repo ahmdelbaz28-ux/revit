@@ -1185,15 +1185,13 @@ class ConstraintEngine:
             cost += ELECTRICAL_PROXIMITY_PENALTY_M
 
         return cost
-
+        # V212: Removed unreachable dead code after return (S1763).
+        # The block below was retained "for documentation" but served no
+        # runtime purpose — the return above exits the function before
+        # reaching it. The comment is preserved for historical context:
+        #
         # Horizontal direction change (bend) is detected by the router,
         # not here. This method only computes single-step cost.
-
-        # Electrical proximity penalty
-        if is_near_electrical:  # NOSONAR: S1763 dead code retained for documentation  # NOSONAR — S7632: test function documented via class name / module path
-            cost += ELECTRICAL_PROXIMITY_PENALTY_M
-
-        return cost
 
     @staticmethod
     def compute_bend_cost(
