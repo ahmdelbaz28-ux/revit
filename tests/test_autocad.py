@@ -397,6 +397,233 @@ class TestAutoCADConnectionManagement:
         assert text_result is None
         assert save_result is False
 
+        # V213: delete/modify must also fail-closed when not connected
+        assert service.delete_entity("1A2F") is False
+        assert service.modify_entity("1A2F", {"Color": 1}) is False
+
+
+class TestV213DeleteModifyEntity:
+    """V213 regression tests for honest delete_entity / modify_entity.
+
+    Previously these methods were no-ops that always returned True. Now they
+    must:
+      - return False when not connected
+      - return False when in simulation mode (no acad_doc)
+      - return True only when AutoCAD COM actually deleted/modified the entity
+    """
+
+    def test_delete_when_not_connected_returns_false(self):
+        service = AutoCADService()
+        assert service.delete_entity("1A2F") is False
+
+    def test_modify_when_not_connected_returns_false(self):
+        service = AutoCADService()
+        assert service.modify_entity("1A2F", {"Color": 1}) is False
+
+    def test_delete_in_simulation_mode_returns_false(self):
+        """Simulation mode (connected=True, acad_doc=None) must NOT silently
+        pretend to delete — it must return False so the UI surfaces the truth.
+        """
+        service = AutoCADService()
+        service.connected = True
+        service.acad_doc = None  # simulation mode
+        assert service.delete_entity("1A2F") is False
+
+    def test_modify_in_simulation_mode_returns_false(self):
+        service = AutoCADService()
+        service.connected = True
+        service.acad_doc = None  # simulation mode
+        assert service.modify_entity("1A2F", {"Color": 1}) is False
+
+    def test_modify_with_empty_properties_returns_false(self):
+        from unittest.mock import MagicMock
+        service = AutoCADService()
+        service.connected = True
+        service.acad_doc = MagicMock()
+        assert service.modify_entity("1A2F", {}) is False
+
+    def test_delete_with_real_com_calls_handletoobject_and_delete(self):
+        """When a real AutoCAD doc is connected, delete_entity must resolve
+        the handle via Document.HandleToObject and call Delete() on the
+        returned entity.
+        """
+        from unittest.mock import MagicMock
+        service = AutoCADService()
+        service.connected = True
+        mock_entity = MagicMock()
+        mock_doc = MagicMock()
+        mock_doc.HandleToObject.return_value = mock_entity
+        service.acad_doc = mock_doc
+
+        result = service.delete_entity("1A2F")
+
+        assert result is True
+        mock_doc.HandleToObject.assert_called_once_with("1A2F")
+        mock_entity.Delete.assert_called_once()
+
+    def test_delete_when_handle_not_found_returns_false(self):
+        from unittest.mock import MagicMock
+        service = AutoCADService()
+        service.connected = True
+        mock_doc = MagicMock()
+        mock_doc.HandleToObject.return_value = None
+        service.acad_doc = mock_doc
+
+        assert service.delete_entity("DEAD") is False
+
+    def test_delete_swallows_com_exception_and_returns_false(self):
+        from unittest.mock import MagicMock
+        service = AutoCADService()
+        service.connected = True
+        mock_doc = MagicMock()
+        mock_doc.HandleToObject.side_effect = RuntimeError("COM error: invalid handle")
+        service.acad_doc = mock_doc
+
+        assert service.delete_entity("BAD") is False
+
+    def test_modify_applies_only_existing_attributes(self):
+        """modify_entity should set attributes that exist on the entity and
+        skip (with warning) attributes that don't, returning True if at
+        least one attribute was applied.
+        """
+        from unittest.mock import MagicMock
+        service = AutoCADService()
+        service.connected = True
+        mock_entity = MagicMock()
+        # entity has 'Layer' and 'Color' but NOT 'NonExistent'
+        del mock_entity.NonExistent  # make hasattr() return False
+        mock_doc = MagicMock()
+        mock_doc.HandleToObject.return_value = mock_entity
+        service.acad_doc = mock_doc
+
+        result = service.modify_entity("1A2F", {
+            "Layer": "WALLS",
+            "Color": 1,
+            "NonExistent": "should be skipped",
+        })
+
+        assert result is True
+        assert mock_entity.Layer == "WALLS"
+        assert mock_entity.Color == 1
+
+    def test_modify_returns_false_when_no_attribute_applied(self):
+        from unittest.mock import MagicMock
+        service = AutoCADService()
+        service.connected = True
+        mock_entity = MagicMock()
+        del mock_entity.NonExistent1
+        del mock_entity.NonExistent2
+        mock_doc = MagicMock()
+        mock_doc.HandleToObject.return_value = mock_entity
+        service.acad_doc = mock_doc
+
+        result = service.modify_entity("1A2F", {
+            "NonExistent1": "x",
+            "NonExistent2": "y",
+        })
+        assert result is False
+
+    def test_modify_skips_internal_metadata_keys(self):
+        """Keys like 'entity_type' and 'source_entity_handle' are our own
+        metadata, not real AutoCAD attributes — they must be silently skipped.
+        """
+        from unittest.mock import MagicMock
+        service = AutoCADService()
+        service.connected = True
+        mock_entity = MagicMock()
+        mock_doc = MagicMock()
+        mock_doc.HandleToObject.return_value = mock_entity
+        service.acad_doc = mock_doc
+
+        # Only metadata keys → nothing applied → return False
+        result = service.modify_entity("1A2F", {
+            "entity_type": "LINE",
+            "source_entity_handle": "1A2F",
+        })
+        assert result is False
+
+
+class TestV213SimulationModeFlag:
+    """V213 regression tests for the explicit ``simulation_mode`` flag on
+    AutoCADService. Previously, ``connect()`` silently returned True on
+    non-Windows / no-pywin32 environments, leaving clients with no way to
+    distinguish a real COM handle from the dev fallback. Now the flag is
+    set honestly in every code path.
+    """
+
+    def test_fresh_service_is_not_in_simulation_mode(self):
+        service = AutoCADService()
+        assert service.simulation_mode is False
+
+    def test_simulation_mode_engaged_on_non_windows_dev_env(self, monkeypatch):
+        """On non-Windows (or when HAS_AUTOCAD_API is False) and
+        FIREAI_ENV=development, connect() must set simulation_mode=True
+        so clients can surface the truth.
+        """
+        monkeypatch.setenv("FIREAI_ENV", "development")
+        # Force HAS_AUTOCAD_API = False to simulate non-Windows
+        import backend.services.autocad_service as mod
+        monkeypatch.setattr(mod, "HAS_AUTOCAD_API", False)
+
+        service = AutoCADService()
+        result = service.connect()
+        assert result is True
+        assert service.connected is True
+        assert service.simulation_mode is True  # V213: honest flag
+
+    def test_simulation_mode_false_when_real_com_handle_acquired(self, monkeypatch):
+        """When a real AutoCAD COM handle is acquired (via mocks), the
+        simulation_mode flag must be False.
+        """
+        monkeypatch.setenv("FIREAI_ENV", "development")
+        import backend.services.autocad_service as mod
+        # Force HAS_AUTOCAD_API = True to take the real COM path
+        monkeypatch.setattr(mod, "HAS_AUTOCAD_API", True)
+
+        from unittest.mock import MagicMock, patch
+        mock_app = MagicMock()
+        mock_doc = MagicMock()
+        mock_app.ActiveDocument = mock_doc
+        mock_app.Documents.Add.return_value = mock_doc
+
+        with patch.object(mod, "pythoncom", create=True), \
+             patch.object(mod.win32com.client, "GetActiveObject", return_value=mock_app, create=True):
+            service = AutoCADService()
+            result = service.connect()
+
+        assert result is True
+        assert service.connected is True
+        assert service.simulation_mode is False  # V213: real connection
+
+    def test_disconnect_resets_simulation_mode(self, monkeypatch):
+        """disconnect() must clear simulation_mode back to False."""
+        monkeypatch.setenv("FIREAI_ENV", "development")
+        import backend.services.autocad_service as mod
+        monkeypatch.setattr(mod, "HAS_AUTOCAD_API", False)
+
+        service = AutoCADService()
+        service.connect()
+        assert service.simulation_mode is True
+
+        service.disconnect()
+        assert service.simulation_mode is False
+        assert service.connected is False
+
+    def test_simulation_mode_false_in_production_when_no_api(self, monkeypatch):
+        """In production (FIREAI_ENV != development) without AutoCAD API,
+        connect() must return False AND set simulation_mode=False (we are
+        not simulating — we are honestly failing).
+        """
+        monkeypatch.setenv("FIREAI_ENV", "production")
+        import backend.services.autocad_service as mod
+        monkeypatch.setattr(mod, "HAS_AUTOCAD_API", False)
+
+        service = AutoCADService()
+        result = service.connect()
+        assert result is False
+        assert service.connected is False
+        assert service.simulation_mode is False  # honest failure, not sim
+
 
 if __name__ == "__main__":
     pytest.main([__file__])

@@ -195,11 +195,18 @@ class ConnectRequest(BaseModel):
     )
 
 class ConnectResponse(BaseModel):
-    """Response model for Revit connection."""
+    """Response model for Revit connection.
+
+    V213: ``simulation_mode`` is now exposed so clients can distinguish a
+    real Revit API connection (via Marshal.GetActiveObject) from the
+    development fallback that returns ``connected=True`` without binding
+    to a real Revit instance.
+    """
 
     success: bool
     message: str
     connected: bool
+    simulation_mode: bool = False
     connection_method: Optional[str] = None
 
 
@@ -461,10 +468,21 @@ async def connect_to_revit(request: ConnectRequest = None) -> ConnectResponse:
         method = request.method if request else "auto"
         success = svc.connect(method=method)
 
+        if svc.simulation_mode:
+            message = (
+                f"Connected via {svc.connection_method} (SIMULATION MODE) — "
+                "no real Revit instance is bound. create_wall/floor/door "
+                "will return None. Use method='api' on Windows with Revit "
+                "running for real operations."
+            )
+        else:
+            message = f"Connected via {svc.connection_method}" if success else "Connection failed"
+
         return ConnectResponse(
             success=success,
-            message=f"Connected via {svc.connection_method}" if success else "Connection failed",
+            message=message,
             connected=svc.connected,
+            simulation_mode=svc.simulation_mode,
             connection_method=svc.connection_method
         )
     except HTTPException:
@@ -483,7 +501,8 @@ async def disconnect_from_revit() -> ConnectResponse:
         return ConnectResponse(
             success=success,
             message="Disconnected from Revit" if success else "Disconnect failed",
-            connected=svc.connected
+            connected=svc.connected,
+            simulation_mode=svc.simulation_mode,
         )
     except HTTPException:
         raise

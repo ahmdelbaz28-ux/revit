@@ -516,6 +516,108 @@ class TestDwgConverter(unittest.TestCase):
         res = DwgConverter.convert_dwg_to_dxf("/nonexistent/file.dwg", "/tmp/out.dxf")  # NOSONAR — S5443: safe in test (uses tempfile + cleanup)
         self.assertTrue(res.is_failure)
 
+    # ── V213: Multiple converter binary support ──────────────────────────
+
+    def test_v213_fallback_when_no_converter_binary(self):
+        """V213: When no converter binary is on PATH, the mock fallback
+        must be used and the output DXF must explicitly note it's a mock.
+        """
+        from qomn_fire.parsers.dwg_converter import DwgConverter
+
+        dwg_path = os.path.join(self.tmpdir, "v213_test.dwg")
+        dxf_path = os.path.join(self.tmpdir, "v213_output.dxf")
+        with open(dwg_path, "wb") as f:
+            f.write(b"AC1015_FAKE")
+
+        res = DwgConverter.convert_dwg_to_dxf(dwg_path, dxf_path)
+        self.assertTrue(res.is_success)
+        self.assertTrue(os.path.exists(dxf_path))
+        # The mock DXF must contain the honest "not installed" note
+        with open(dxf_path, "r", encoding="utf-8") as f:
+            content = f.read()
+        self.assertIn("dwg2dxf not installed", content)
+
+    def test_v213_real_dwg2dxf_path_when_available(self):
+        """V213: When dwg2dxf IS on PATH (mocked), the real subprocess
+        path must be taken — not the mock fallback.
+        """
+        from unittest.mock import patch, MagicMock
+        from qomn_fire.parsers.dwg_converter import DwgConverter
+
+        dwg_path = os.path.join(self.tmpdir, "real_test.dwg")
+        dxf_path = os.path.join(self.tmpdir, "real_output.dxf")
+        with open(dwg_path, "wb") as f:
+            f.write(b"AC1015_REAL")
+
+        # Mock shutil.which to return a fake path for dwg2dxf
+        # Mock subprocess.run to write a fake DXF file (simulating real conversion)
+        def fake_run(cmd, check, capture_output, timeout):
+            # cmd = ["dwg2dxf", "-o", output_dxf_path, dwg_path]
+            if len(cmd) >= 4 and cmd[0] == "dwg2dxf":
+                with open(cmd[2], "w", encoding="utf-8") as f:
+                    f.write("0\nSECTION\n2\nHEADER\n9\n$ACADVER\n1\nAC1015\n0\nENDSEC\n0\nEOF\n")
+            return MagicMock(returncode=0, stdout=b"", stderr=b"")
+
+        with patch("qomn_fire.parsers.dwg_converter.shutil.which", side_effect=lambda x: "/usr/bin/" + x if x == "dwg2dxf" else None), \
+             patch("qomn_fire.parsers.dwg_converter.subprocess.run", side_effect=fake_run):
+            res = DwgConverter.convert_dwg_to_dxf(dwg_path, dxf_path)
+
+        self.assertTrue(res.is_success, f"Real dwg2dxf path failed: {res.error() if res.is_failure else ''}")
+        self.assertTrue(os.path.exists(dxf_path))
+        # The output must NOT contain the mock warning
+        with open(dxf_path, "r", encoding="utf-8") as f:
+            content = f.read()
+        self.assertNotIn("dwg2dxf not installed", content)
+        self.assertIn("$ACADVER", content)  # Real DXF content
+
+    def test_v213_oda_file_converter_alternative(self):
+        """V213: When dwg2dxf is NOT available but ODAFileConverter IS,
+        the ODA path must be used.
+        """
+        from unittest.mock import patch, MagicMock
+        from qomn_fire.parsers.dwg_converter import DwgConverter
+
+        dwg_path = os.path.join(self.tmpdir, "oda_test.dwg")
+        dxf_path = os.path.join(self.tmpdir, "oda_output.dxf")
+        with open(dwg_path, "wb") as f:
+            f.write(b"AC1015_ODA")
+
+        def fake_which(name):
+            if name == "ODAFileConverter":
+                return "/usr/local/bin/ODAFileConverter"
+            return None  # dwg2dxf not available
+
+        def fake_run(cmd, check, capture_output, timeout):
+            # cmd = ["ODAFileConverter", input_dir, output_dir, "ACAD2010", "DXF_0"]
+            if len(cmd) >= 5 and cmd[0] == "ODAFileConverter":
+                # Simulate ODA writing output.dxf in the output dir
+                output_dir = cmd[2]
+                input_basename = os.path.splitext(os.path.basename(cmd[1] + "/" + os.path.basename(dwg_path)))[0]
+                # Actually ODA keeps the basename: oda_test.dxf
+                oda_out = os.path.join(output_dir, "oda_test.dxf")
+                with open(oda_out, "w", encoding="utf-8") as f:
+                    f.write("0\nSECTION\n2\nHEADER\n9\n$ACADVER\n1\nAC1024\n0\nENDSEC\n0\nEOF\n")
+            return MagicMock(returncode=0, stdout=b"", stderr=b"")
+
+        with patch("qomn_fire.parsers.dwg_converter.shutil.which", side_effect=fake_which), \
+             patch("qomn_fire.parsers.dwg_converter.subprocess.run", side_effect=fake_run):
+            res = DwgConverter.convert_dwg_to_dxf(dwg_path, dxf_path)
+
+        self.assertTrue(res.is_success, f"ODA path failed: {res.error() if res.is_failure else ''}")
+        self.assertTrue(os.path.exists(dxf_path))
+        with open(dxf_path, "r", encoding="utf-8") as f:
+            content = f.read()
+        self.assertIn("AC1024", content)  # ODA wrote AC1024 (2010)
+        self.assertNotIn("dwg2dxf not installed", content)
+
+    def test_v213_converter_binaries_list_includes_libredwg_and_oda(self):
+        """V213: The _CONVERTER_BINARIES tuple must include both dwg2dxf
+        (LibreDWG) and ODAFileConverter (ODA SDK) as candidates.
+        """
+        from qomn_fire.parsers.dwg_converter import DwgConverter
+        self.assertIn("dwg2dxf", DwgConverter._CONVERTER_BINARIES)
+        self.assertIn("ODAFileConverter", DwgConverter._CONVERTER_BINARIES)
+
 
 class TestRvtConverter(unittest.TestCase):
     """Tests for RVT to IFC conversion."""

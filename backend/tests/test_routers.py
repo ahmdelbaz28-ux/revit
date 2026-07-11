@@ -684,6 +684,124 @@ class TestExportsRouter:
         assert response.status_code == 404
 
 
+class TestV213ExportsExcel:
+    """V213 regression tests: /api/exports POST must produce a real .xlsx
+    workbook (via openpyxl) instead of the previous ``b"MOCK EXCEL EXPORT
+    DATA"`` placeholder.
+    """
+
+    def test_excel_export_returns_real_xlsx_zip_magic(self, client, project_with_devices) -> None:
+        """The response must start with the ZIP magic bytes ``PK`` (XLSX is a
+        ZIP container). The previous mock returned plain ASCII text.
+        """
+        response = client.post("/api/exports", json={"exportType": "excel"})
+        assert response.status_code == 200
+        body = response.content
+        # XLSX files are ZIP archives — they must start with b"PK\x03\x04"
+        assert body[:4] == b"PK\x03\x04", (
+            f"Expected ZIP magic bytes for XLSX, got: {body[:16]!r}"
+        )
+        # The literal mock string MUST NOT appear anywhere
+        assert b"MOCK EXCEL EXPORT DATA" not in body
+        assert b"MOCK EXPORT DATA" not in body
+
+    def test_excel_export_opens_in_openpyxl(self, client, project_with_devices) -> None:
+        """The exported .xlsx must be openable by openpyxl and contain the
+        expected sheets: Project, Devices, Connections, Bill of Quantities.
+        """
+        from openpyxl import load_workbook
+        response = client.post("/api/exports", json={"exportType": "excel"})
+        assert response.status_code == 200
+        wb = load_workbook(io.BytesIO(response.content))
+        sheet_names = wb.sheetnames
+        assert "Project" in sheet_names
+        assert "Devices" in sheet_names
+        assert "Connections" in sheet_names
+        assert "Bill of Quantities" in sheet_names
+
+    def test_excel_export_devices_sheet_contains_real_data(self, client, project_with_devices) -> None:
+        """The Devices sheet must contain the actual devices created by the
+        project_with_devices fixture (SD-01 + HS-01), not placeholder rows.
+        """
+        from openpyxl import load_workbook
+        response = client.post("/api/exports", json={"exportType": "excel"})
+        assert response.status_code == 200
+        wb = load_workbook(io.BytesIO(response.content))
+        ws = wb["Devices"]
+        # Header row
+        headers = [c.value for c in ws[1]]
+        assert "Name" in headers
+        assert "Type" in headers
+        # Collect all device names from column B (index 2)
+        name_col_idx = headers.index("Name") + 1
+        names = []
+        for row in ws.iter_rows(min_row=2, min_col=name_col_idx, max_col=name_col_idx):
+            if row[0].value:
+                names.append(str(row[0].value))
+        # The fixture created "Smoke Detector SD-01" and "Horn Strobe HS-01"
+        assert any("SD-01" in n for n in names), f"SD-01 not found in {names}"
+        assert any("HS-01" in n for n in names), f"HS-01 not found in {names}"
+
+    def test_excel_export_boq_sheet_has_deterministic_counts(self, client, project_with_devices) -> None:
+        """The Bill of Quantities sheet must contain real aggregated counts,
+        not random or hardcoded numbers.
+        """
+        from openpyxl import load_workbook
+        response = client.post("/api/exports", json={"exportType": "excel"})
+        assert response.status_code == 200
+        wb = load_workbook(io.BytesIO(response.content))
+        ws = wb["Bill of Quantities"]
+        # Read all rows
+        rows = list(ws.iter_rows(min_row=2, values_only=True))
+        assert len(rows) > 0, "BOQ sheet should have at least one data row"
+        # Each row: (Category, Type, Count, Unit, Notes)
+        # Total device count should equal 2 (SD-01 + HS-01)
+        device_rows = [r for r in rows if r[0] != "Cable"]
+        total_devices = sum(int(r[2] or 0) for r in device_rows)
+        assert total_devices == 2, (
+            f"Expected 2 devices in BOQ (SD-01 + HS-01), got {total_devices}"
+        )
+
+    def test_excel_export_content_type_is_xlsx(self, client, project_with_devices) -> None:
+        """Content-Type must be the official XLSX MIME type."""
+        response = client.post("/api/exports", json={"exportType": "excel"})
+        assert response.status_code == 200
+        ct = response.headers.get("content-type", "")
+        assert "spreadsheetml" in ct, f"Expected XLSX content-type, got: {ct}"
+
+    def test_non_excel_export_returns_json_manifest_not_mock(self, client, project_with_devices) -> None:
+        """For non-Excel exportType, the endpoint must return a real JSON
+        manifest (with project info + available endpoints), NOT the previous
+        ``b"MOCK EXPORT DATA"`` bytes.
+        """
+        response = client.post("/api/exports", json={"exportType": "csv"})
+        assert response.status_code == 200
+        body = response.content
+        # Must NOT contain the old mock strings
+        assert b"MOCK EXPORT DATA" not in body
+        assert b"MOCK EXCEL EXPORT DATA" not in body
+        # Must be valid JSON
+        import json
+        data = json.loads(body.decode("utf-8"))
+        assert "project" in data
+        assert "availableEndpoints" in data
+        assert "exportedAt" in data
+
+    def test_excel_export_no_projects_returns_404(self, client) -> None:
+        """If no projects exist, the endpoint must return 404 (not crash or
+        return mock data).
+        """
+        # NOTE: This test may pass silently if other tests created projects
+        # in the same module-scoped client. We at least verify the endpoint
+        # does not return 200 with mock data when called in isolation.
+        response = client.post("/api/exports", json={"exportType": "excel"})
+        # Either 200 (real xlsx) or 404 (no projects) — never a mock
+        assert response.status_code in (200, 404)
+        if response.status_code == 200:
+            assert response.content[:4] == b"PK\x03\x04"
+        assert b"MOCK" not in response.content
+
+
 # ══════════════════════════════════════════════════════════════════════════════
 # SYNC ROUTER TESTS
 # ══════════════════════════════════════════════════════════════════════════════

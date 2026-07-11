@@ -143,11 +143,17 @@ class ConnectRequest(BaseModel):
 
 
 class ConnectResponse(BaseModel):
-    """Response model for AutoCAD connection."""
+    """Response model for AutoCAD connection.
+
+    V213: ``simulation_mode`` is now exposed so clients can distinguish a
+    real AutoCAD COM connection from the development fallback that silently
+    returns ``connected=True`` on non-Windows / no-pywin32 environments.
+    """
 
     success: bool
     message: str
     connected: bool
+    simulation_mode: bool = False
     handle: Optional[str] = None
 
 
@@ -259,7 +265,14 @@ class OperationResponse(BaseModel):
 
 @router.post("/connect", response_model=ConnectResponse)  # NOSONAR - python:S8409
 async def connect_to_autocad(request: ConnectRequest) -> ConnectResponse:
-    """Connect to AutoCAD application."""
+    """Connect to AutoCAD application.
+
+    V213: When ``simulation_mode`` is True in the response, the connection is
+    a development fallback — no real AutoCAD COM handle exists and all
+    drawing operations will return ``MockAutoCADObject`` instances. Clients
+    MUST surface this to the user so they understand no real DWG changes
+    will occur.
+    """
     try:
         service = get_autocad_service()
 
@@ -269,10 +282,21 @@ async def connect_to_autocad(request: ConnectRequest) -> ConnectResponse:
                 detail="Failed to connect to AutoCAD. Is AutoCAD installed and running?",
             )
 
+        if service.simulation_mode:
+            message = (
+                "Connected in SIMULATION mode — no real AutoCAD instance is "
+                "available. Drawing operations will return mock objects and "
+                "no real DWG changes will occur. Install pywin32 + AutoCAD "
+                "on Windows for real COM integration."
+            )
+        else:
+            message = "Successfully connected to AutoCAD"
+
         return ConnectResponse(
             success=True,
-            message="Successfully connected to AutoCAD",
-            connected=service.connected
+            message=message,
+            connected=service.connected,
+            simulation_mode=service.simulation_mode,
         )
     except HTTPException:
         raise
@@ -290,7 +314,8 @@ async def disconnect_from_autocad() -> ConnectResponse:
         return ConnectResponse(
             success=success,
             message="Successfully disconnected from AutoCAD" if success else "Failed to disconnect from AutoCAD",
-            connected=service.connected
+            connected=service.connected,
+            simulation_mode=service.simulation_mode,
         )
     except Exception as e:
         raise _safe_error(500, "Failed to disconnect from AutoCAD", e)
