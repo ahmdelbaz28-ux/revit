@@ -554,11 +554,11 @@ export function MainWorkspace() {
                         >
                                 {/* Header row (always visible) */}
                                 <div
-				role="button"
-				tabIndex={0}
+                                role="button"
+                                tabIndex={0}
                                         className="h-7 flex items-center justify-between px-2 border-b cursor-pointer select-none shrink-0 bg-red-950/10"
                                         onClick={() =>                                          !isErrorLogPinned && setIsErrorLogExpanded(!isErrorLogExpanded)                                 }
-                                        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); () =>                                          !isErrorLogPinned && setIsErrorLogExpanded(!isErrorLogExpanded) } }}
+                                        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); if (!isErrorLogPinned) { setIsErrorLogExpanded(!isErrorLogExpanded) } } }}
                                 >
                                         <div className="flex items-center gap-3">
                                                 <div className="w-2 h-2 rounded-full bg-slate-500 animate-pulse"></div>
