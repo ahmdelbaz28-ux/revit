@@ -515,53 +515,70 @@ class RevitService:
                 "element_type": getattr(element, 'GetType', lambda: 'Element')(),
             }
 
-            # Simulate extracting properties based on element type
-            # This is where the actual Revit API calls would happen
-            if 'Wall' in element_data.get('element_type', ''):
-                element_data.update({
-                    "length": 10000.0,  # in millimeters
-                    "height": 3000.0,
-                    "width": 200.0,
-                    "location_curve": [[0, 0, 0], [10000, 0, 0]]
-                })
-            elif 'Floor' in element_data.get('element_type', ''):
-                element_data.update({
-                    "area": 50.0,  # in square meters
-                    "boundary": [[0, 0, 0], [10000, 0, 0], [10000, 10000, 0], [0, 10000, 0]]
-                })
-            elif 'Door' in element_data.get('element_type', ''):
-                element_data.update({
-                    "width": 900.0,
-                    "height": 2100.0,
-                    "location_point": [5000, 0, 0]
-                })
-            elif 'Window' in element_data.get('element_type', ''):
-                element_data.update({
-                    "width": 1200.0,
-                    "height": 1500.0,
-                    "location_point": [2000, 1500, 0]
-                })
-            elif 'Roof' in element_data.get('element_type', ''):
-                element_data.update({
-                    "area": 30.0,
-                    "slope": 0.25,
-                    "boundary": [[0, 0, 3000], [10000, 0, 3000], [10000, 10000, 3000], [0, 10000, 3000]]
-                })
-            elif 'Column' in element_data.get('element_type', ''):
-                element_data.update({
-                    "height": 3000.0,
-                    "location_point": [2500, 2500, 0],
-                    "shape": "rectangular",
-                    "width": 400.0,
-                    "depth": 400.0
-                })
-            elif 'Beam' in element_data.get('element_type', ''):
-                element_data.update({
-                    "length": 6000.0,
-                    "location_curve": [[0, 2500, 3000], [6000, 2500, 3000]],
-                    "width": 300.0,
-                    "height": 600.0
-                })
+            # V214 FIX: Extract REAL geometry from Revit elements instead of
+            # hardcoded dummy values. Previously every wall got length=10000,
+            # height=3000, width=200 — regardless of actual dimensions.
+            # Now we read LocationCurve/BoundingBoxXYZ from the Revit API.
+            elem_type_str = str(element_data.get('element_type', ''))
+            try:
+                if 'Wall' in elem_type_str:
+                    # Try to get real LocationCurve
+                    loc = getattr(element, 'Location', None)
+                    if loc and hasattr(loc, 'Curve'):
+                        curve = loc.Curve
+                        if curve:
+                            sp = curve.GetEndPoint(0)
+                            ep = curve.GetEndPoint(1)
+                            # Convert from feet to mm (Revit internal units = feet)
+                            FT_TO_MM = 304.8
+                            element_data.update({
+                                "length": float((sp - ep).GetLength()) * FT_TO_MM,
+                                "location_curve": [
+                                    [sp.X * FT_TO_MM, sp.Y * FT_TO_MM, sp.Z * FT_TO_MM],
+                                    [ep.X * FT_TO_MM, ep.Y * FT_TO_MM, ep.Z * FT_TO_MM],
+                                ],
+                            })
+                    # Try to get real height/width from parameters
+                    try:
+                        h_param = element.get_Parameter(getattr(__import__('Autodesk.Revit.DB', fromlist=['BuiltInParameter']).BuiltInParameter, 'WALL_USER_HEIGHT_PARAM', None))
+                        if h_param:
+                            element_data["height"] = h_param.AsDouble() * 304.8
+                    except Exception:
+                        pass
+
+                elif 'Floor' in elem_type_str:
+                    try:
+                        area_param = element.get_Parameter(getattr(__import__('Autodesk.Revit.DB', fromlist=['BuiltInParameter']).BuiltInParameter, 'FLOOR_PARAM_AREA', None))
+                        if area_param:
+                            # Area in sq ft → convert to sq m
+                            element_data["area"] = area_param.AsDouble() * 0.092903
+                    except Exception:
+                        pass
+
+                elif 'Door' in elem_type_str or 'Window' in elem_type_str:
+                    try:
+                        w_param = element.get_Parameter(getattr(__import__('Autodesk.Revit.DB', fromlist=['BuiltInParameter']).BuiltInParameter, 'CASEWORK_WIDTH', None))
+                        if w_param:
+                            element_data["width"] = w_param.AsDouble() * 304.8
+                        h_param = element.get_Parameter(getattr(__import__('Autodesk.Revit.DB', fromlist=['BuiltInParameter']).BuiltInParameter, 'CASEWORK_HEIGHT', None))
+                        if h_param:
+                            element_data["height"] = h_param.AsDouble() * 304.8
+                    except Exception:
+                        pass
+
+                # Try BoundingBoxXYZ as fallback for any element type
+                bb = getattr(element, 'get_BoundingBox', lambda doc: None)(None)
+                if bb:
+                    FT_TO_MM = 304.8
+                    min_pt = bb.Min
+                    max_pt = bb.Max
+                    element_data["bounding_box"] = {
+                        "min": [min_pt.X * FT_TO_MM, min_pt.Y * FT_TO_MM, min_pt.Z * FT_TO_MM],
+                        "max": [max_pt.X * FT_TO_MM, max_pt.Y * FT_TO_MM, max_pt.Z * FT_TO_MM],
+                    }
+            except Exception as geom_err:
+                logger.debug("Geometry extraction failed for element %s: %s", element_data.get('id'), geom_err)
+                # Don't fabricate values — just skip geometry if we can't read it
 
             # Add common parameters
             element_data["parameters"] = {

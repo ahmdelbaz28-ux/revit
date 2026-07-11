@@ -36,6 +36,7 @@ import { FACPPage } from "./pages/FACPPage";
 import { FireAlarmPage } from "./pages/FireAlarmPage";
 import { LoginPage } from "./pages/LoginPage";
 import { MarinePage } from "./pages/MarinePage";
+import { MiningPage } from "./pages/MiningPage";
 import { MemoryPage } from "./pages/MemoryPage";
 import { MonitorPage } from "./pages/MonitorPage";
 import { GraphRAGPage } from "./pages/GraphRAGPage";
@@ -135,6 +136,7 @@ function App() {
                 { path: "/projects", element: <ProjectsPage /> },
                 { path: "/engineering", element: <EngineeringPage /> },
                 { path: "/marine", element: <MarinePage /> },
+                { path: "/mining", element: <MiningPage /> },
                 { path: "/facp", element: <FACPPage /> },
                 { path: "/environment", element: <EnvironmentPage /> },
                 { path: "/monitor", element: <MonitorPage /> },

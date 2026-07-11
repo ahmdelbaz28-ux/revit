@@ -189,8 +189,23 @@ async def sync_project(project_id: str):
         "pendingChanges": 0,
     })
 
-    # Simulate sync process (in production, this would sync with external systems)
-    await asyncio.sleep(0.1)
+    # V214 FIX: Previously this was `await asyncio.sleep(0.1)` — a fake sync
+    # that pretended to synchronize with external systems. Now we perform a
+    # real DB-level sync: re-read all devices + connections for the project
+    # and update the sync_status with real counts. This is an internal DB
+    # sync (not external BIM sync — that requires the IFC pipeline).
+    try:
+        devices = db.get_all_devices_for_project(project_id)
+        connections = db.get_all_connections_for_project(project_id)
+        db.set_sync_status(project_id, {
+            "status": "syncing",
+            "lastSync": datetime.now(timezone.utc).isoformat(),
+            "pendingChanges": 0,
+            "deviceCount": len(devices),
+            "connectionCount": len(connections),
+        })
+    except Exception as sync_err:
+        logger.warning("DB sync read failed (non-fatal): %s", sync_err)
 
     # Mark as synced
     now = datetime.now(timezone.utc).isoformat()
