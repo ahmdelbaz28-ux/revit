@@ -325,22 +325,149 @@ def _generate_nfpa72_battery_report(devices: list, now: str) -> dict:
         ),
     }
 
-def _generate_cable_sizing_report(connections: list, now: str) -> dict:
-    """Generate cable sizing report content."""
+def _generate_cable_sizing_report(connections: list, devices: list, now: str) -> dict:
+    """
+    Generate cable sizing report content with real NEC ampacity verification.
+
+    V214 FIX (Rule 1 — Truthfulness): Previously this function only listed
+    connections with their cableSize/length/type as-is — it did NOT verify
+    whether the cable size is adequate for the load. Now it:
+
+      1. Maps each connection's cableSize to an AWG gauge (via
+         _cable_size_to_awg, added in V213)
+      2. Looks up the NEC ampacity for that gauge (NEC §310.16, 60°C column)
+      3. Computes the load current on the receiving device (P=VI)
+      4. Applies the NEC 125% derating factor for continuous loads (§210.19)
+      5. Reports is_adequate = (ampacity >= derated_current)
+      6. Counts non-compliant connections
+
+    Connections whose cable size cannot be mapped to AWG are listed with
+    ``"verification": "skipped"`` so the user can see them.
+
+    Args:
+        connections: List of connection dicts from DB (with cableSize, length, type).
+        devices: List of device dicts from DB (to resolve load currents).
+        now: ISO timestamp for the report.
+
+    Returns:
+        Dict with report content including per-connection ampacity verification.
+    """
+    # Build device lookup to resolve load currents
+    device_map = {d["id"]: d for d in devices}
+
+    # Lazy import of NEC ampacity table from qomn_kernel
+    try:
+        from fireai.core.qomn_kernel import NEC_AMPACITY_60C
+        _nec_available = True
+    except ImportError as ie:
+        import logging
+        logging.getLogger(__name__).warning(
+            "fireai.core.qomn_kernel not available (%s) — cable sizing "
+            "will be listed without NEC ampacity verification.", ie
+        )
+        _nec_available = False
+        NEC_AMPACITY_60C = {}
+
+    # NEC §210.19(A): Continuous loads (3+ hours) require 125% ampacity.
+    # Fire alarm circuits are considered continuous per NFPA 72 §27.4.
+    NEC_CONTINUOUS_LOAD_DERATING = 1.25
+
+    verified_connections = []
+    adequate_count = 0
+    inadequate_count = 0
+    skipped_count = 0
+
+    for c in connections:
+        conn_entry = {
+            "id": c["id"],
+            "cableSize": c["cableSize"],
+            "length": c["length"],
+            "type": c["type"],
+        }
+
+        # Resolve the receiving device (load end of the connection)
+        to_dev = device_map.get(c.get("toId"))
+        if not to_dev:
+            conn_entry["verification"] = "skipped"
+            conn_entry["verification_note"] = (
+                f"Receiving device '{c.get('toId')}' not found — cannot compute load."
+            )
+            skipped_count += 1
+            verified_connections.append(conn_entry)
+            continue
+
+        if _nec_available:
+            awg = _cable_size_to_awg(c["cableSize"])
+            if awg is None:
+                conn_entry["verification"] = "skipped"
+                conn_entry["verification_note"] = (
+                    f"Cable size '{c['cableSize']}' could not be mapped to an "
+                    "AWG gauge — ampacity not verified."
+                )
+                skipped_count += 1
+                verified_connections.append(conn_entry)
+                continue
+
+            # Look up NEC ampacity (60°C column, §310.16)
+            ampacity_a = NEC_AMPACITY_60C.get(awg)
+            if ampacity_a is None:
+                conn_entry["verification"] = "skipped"
+                conn_entry["verification_note"] = (
+                    f"AWG '{awg}' not in NEC ampacity table — cannot verify."
+                )
+                skipped_count += 1
+                verified_connections.append(conn_entry)
+                continue
+
+            # Compute load current: use device's current field, or derive
+            # from P=VI if only load (watts) is available
+            current_a = float(to_dev.get("current", 0) or 0)
+            if current_a <= 0:
+                v = float(to_dev.get("voltage", 24.0) or 24.0)
+                load_w = float(to_dev.get("load", 0) or 0)
+                current_a = load_w / v if v > 0 else 0.0
+
+            # Apply NEC 125% derating for continuous loads
+            derated_current_a = current_a * NEC_CONTINUOUS_LOAD_DERATING
+            is_adequate = ampacity_a >= derated_current_a
+
+            # Compute utilization percentage
+            utilization_pct = (derated_current_a / ampacity_a * 100.0) if ampacity_a > 0 else 0.0
+
+            conn_entry["awg_gauge"] = awg
+            conn_entry["nec_ampacity_a"] = ampacity_a
+            conn_entry["load_current_a"] = round(current_a, 4)
+            conn_entry["derated_current_a"] = round(derated_current_a, 4)
+            conn_entry["derating_factor"] = NEC_CONTINUOUS_LOAD_DERATING
+            conn_entry["utilization_pct"] = round(utilization_pct, 2)
+            conn_entry["is_adequate"] = is_adequate
+            conn_entry["nec_section"] = "NEC 2023 §310.16 (60°C) + §210.19(A) 125% continuous"
+            conn_entry["verification"] = "computed"
+
+            if is_adequate:
+                adequate_count += 1
+            else:
+                inadequate_count += 1
+        else:
+            conn_entry["verification"] = "unavailable"
+            skipped_count += 1
+
+        verified_connections.append(conn_entry)
+
     return {
         "type": "cable_sizing",
-        "standard": "IEC 60364 / NFPA 70",
+        "standard": "NEC 2023 §310.16 (ampacity) + §210.19(A) (continuous load derating)",
         "generatedAt": now,
-        "totalConnections": len(connections),
-        "connections": [
-            {
-                "id": c["id"],
-                "cableSize": c["cableSize"],
-                "length": c["length"],
-                "type": c["type"],
-            }
-            for c in connections
-        ],
+        "totalConnections": len(verified_connections),
+        "adequateConnections": adequate_count,
+        "inadequateConnections": inadequate_count,
+        "skippedConnections": skipped_count,
+        "deratingFactor": NEC_CONTINUOUS_LOAD_DERATING,
+        "deratingRationale": (
+            "Fire alarm circuits are considered continuous loads per "
+            "NFPA 72 §27.4 — NEC §210.19(A) requires 125% ampacity."
+        ),
+        "connections": verified_connections,
     }
 
 def _generate_generic_report(devices: list, connections: list, report_type: str, now: str) -> dict:
@@ -375,7 +502,7 @@ def _generate_report_content(report_type: str, project_id: str) -> dict:
     elif report_type == "nfpa72_battery":
         return _generate_nfpa72_battery_report(devices, now)
     elif report_type == "cable_sizing":
-        return _generate_cable_sizing_report(connections, now)
+        return _generate_cable_sizing_report(connections, devices, now)
     else:
         # Generic report with project summary
         return _generate_generic_report(devices, connections, report_type, now)
