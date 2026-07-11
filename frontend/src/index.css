@@ -223,33 +223,37 @@ label {
 }
 
 /* ── Ask AI floating glass button ───────────────────────────────────── */
-/* V215: Frosted glass pill with gentle vertical bob + soft cyan glow.   */
-/* Color palette uses existing tokens (--primary cyan #22d3ee,           */
-/* --card #111827) so the button stays tonally consistent with the page.  */
+/* V215 v2: Stronger floating + glow + glass effects to match the mockup */
+/* The v1 was too subtle — barely visible in the real app. This version  */
+/* triples the float amplitude, doubles the glow opacity, and adds a      */
+/* visible cyan ring + aura so the button reads as a clear floating       */
+/* interactive element even on dark dashboard backgrounds.                */
 
 @keyframes ask-ai-float {
         0%, 100% {
-                transform: translateY(0);
+                transform: translateY(0) rotate(0deg);
         }
         50% {
-                transform: translateY(-6px);
+                transform: translateY(-14px) rotate(-0.5deg);
         }
 }
 
 @keyframes ask-ai-glow-pulse {
         0%, 100% {
                 box-shadow:
-                        0 0 0 1px rgba(34, 211, 238, 0.18),
-                        0 8px 24px -4px rgba(34, 211, 238, 0.20),
-                        0 4px 12px -2px rgba(0, 0, 0, 0.40),
-                        inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
+                        0 0 0 1.5px rgba(34, 211, 238, 0.45),
+                        0 0 24px 4px rgba(34, 211, 238, 0.35),
+                        0 12px 36px -4px rgba(34, 211, 238, 0.45),
+                        0 6px 16px -2px rgba(0, 0, 0, 0.55),
+                        inset 0 1px 0 0 rgba(255, 255, 255, 0.14);
         }
         50% {
                 box-shadow:
-                        0 0 0 1px rgba(34, 211, 238, 0.28),
-                        0 12px 32px -4px rgba(34, 211, 238, 0.32),
-                        0 6px 16px -2px rgba(0, 0, 0, 0.45),
-                        inset 0 1px 0 0 rgba(255, 255, 255, 0.10);
+                        0 0 0 2px rgba(34, 211, 238, 0.65),
+                        0 0 40px 8px rgba(34, 211, 238, 0.55),
+                        0 18px 48px -4px rgba(34, 211, 238, 0.60),
+                        0 8px 20px -2px rgba(0, 0, 0, 0.60),
+                        inset 0 1px 0 0 rgba(255, 255, 255, 0.20);
         }
 }
 
@@ -257,95 +261,130 @@ label {
         0%, 100% {
                 opacity: 1;
                 transform: rotate(0deg) scale(1);
+                filter: drop-shadow(0 0 4px rgba(34, 211, 238, 0.8));
         }
         50% {
-                opacity: 0.85;
-                transform: rotate(8deg) scale(1.08);
+                opacity: 0.9;
+                transform: rotate(12deg) scale(1.15);
+                filter: drop-shadow(0 0 10px rgba(34, 211, 238, 1));
+        }
+}
+
+/* Outer aura — pulsing radial halo behind the button */
+@keyframes ask-ai-aura {
+        0%, 100% {
+                opacity: 0.35;
+                transform: scale(1);
+        }
+        50% {
+                opacity: 0.65;
+                transform: scale(1.15);
         }
 }
 
 .ask-ai-button {
-        /* Frosted glass surface */
+        /* Frosted glass surface — stronger cyan tint */
         background: linear-gradient(
                 135deg,
-                rgba(17, 24, 39, 0.72) 0%,
-                rgba(17, 24, 39, 0.55) 50%,
-                rgba(7, 11, 18, 0.65) 100%
+                rgba(17, 24, 39, 0.82) 0%,
+                rgba(34, 211, 238, 0.08) 50%,
+                rgba(7, 11, 18, 0.75) 100%
         );
-        backdrop-filter: blur(20px) saturate(160%);
-        -webkit-backdrop-filter: blur(20px) saturate(160%);
-        border: 1px solid rgba(34, 211, 238, 0.28);
+        backdrop-filter: blur(24px) saturate(180%);
+        -webkit-backdrop-filter: blur(24px) saturate(180%);
+        border: 1.5px solid rgba(34, 211, 238, 0.45);
         color: rgb(232, 240, 254);
+        position: fixed;
 
         /* Floating + glow animations */
         animation:
-                ask-ai-float 4s var(--ease-entrance) infinite,
-                ask-ai-glow-pulse 3.5s ease-in-out infinite;
+                ask-ai-float 3.5s var(--ease-entrance) infinite,
+                ask-ai-glow-pulse 3s ease-in-out infinite;
 
         transition:
-                transform 280ms var(--ease-bounce),
-                border-color 220ms var(--ease-micro),
-                background 220ms var(--ease-micro);
+                transform 320ms var(--ease-bounce),
+                border-color 240ms var(--ease-micro),
+                background 240ms var(--ease-micro);
         will-change: transform, box-shadow;
+        isolation: isolate;
+}
+
+/* Outer pulsing aura — creates the "magnetic" halo */
+.ask-ai-button::after {
+        content: "";
+        position: absolute;
+        inset: -12px;
+        border-radius: inherit;
+        background: radial-gradient(
+                ellipse at center,
+                rgba(34, 211, 238, 0.30) 0%,
+                rgba(34, 211, 238, 0.10) 40%,
+                transparent 70%
+        );
+        pointer-events: none;
+        z-index: -2;
+        animation: ask-ai-aura 3s ease-in-out infinite;
 }
 
 .ask-ai-button:hover {
-        transform: translateY(-8px) scale(1.04);
-        border-color: rgba(34, 211, 238, 0.55);
+        transform: translateY(-16px) scale(1.06);
+        border-color: rgba(34, 211, 238, 0.85);
         background: linear-gradient(
                 135deg,
-                rgba(17, 24, 39, 0.80) 0%,
-                rgba(34, 211, 238, 0.12) 50%,
-                rgba(7, 11, 18, 0.70) 100%
+                rgba(17, 24, 39, 0.90) 0%,
+                rgba(34, 211, 238, 0.22) 50%,
+                rgba(7, 11, 18, 0.80) 100%
         );
         /* Pause the float on hover so the lift feels intentional */
         animation-play-state: paused;
         box-shadow:
-                0 0 0 1px rgba(34, 211, 238, 0.45),
-                0 16px 40px -4px rgba(34, 211, 238, 0.42),
-                0 8px 20px -2px rgba(0, 0, 0, 0.50),
-                inset 0 1px 0 0 rgba(255, 255, 255, 0.14);
+                0 0 0 2.5px rgba(34, 211, 238, 0.75),
+                0 0 56px 12px rgba(34, 211, 238, 0.55),
+                0 24px 60px -4px rgba(34, 211, 238, 0.65),
+                0 12px 28px -2px rgba(0, 0, 0, 0.60),
+                inset 0 1px 0 0 rgba(255, 255, 255, 0.22);
 }
 
 .ask-ai-button:active {
-        transform: translateY(-4px) scale(0.98);
+        transform: translateY(-8px) scale(0.97);
         transition: transform 120ms var(--ease-micro);
 }
 
 .ask-ai-button:focus-visible {
-        outline: 2px solid rgba(34, 211, 238, 0.7);
-        outline-offset: 3px;
+        outline: 2.5px solid rgba(34, 211, 238, 0.85);
+        outline-offset: 4px;
 }
 
 .ask-ai-button .ask-ai-sparkle {
-        animation: ask-ai-sparkle 3.5s ease-in-out infinite;
+        animation: ask-ai-sparkle 2.5s ease-in-out infinite;
         transform-origin: center;
-        filter: drop-shadow(0 0 6px rgba(34, 211, 238, 0.65));
+        color: rgb(34, 211, 238);
 }
 
-/* Soft radial sheen behind the button — gives the "floating in space" feel */
+/* Soft radial sheen ON the button surface — top highlight */
 .ask-ai-button::before {
         content: "";
         position: absolute;
-        inset: -2px;
+        inset: 0;
         border-radius: inherit;
-        background: radial-gradient(
-                ellipse at 50% 0%,
-                rgba(34, 211, 238, 0.18) 0%,
-                transparent 70%
+        background: linear-gradient(
+                180deg,
+                rgba(255, 255, 255, 0.12) 0%,
+                transparent 50%
         );
         pointer-events: none;
-        z-index: -1;
+        z-index: 1;
 }
 
 /* Respect reduced-motion preference — disable float/glow, keep static glass */
 @media (prefers-reduced-motion: reduce) {
         .ask-ai-button,
-        .ask-ai-button .ask-ai-sparkle {
+        .ask-ai-button .ask-ai-sparkle,
+        .ask-ai-button::after {
                 animation: none;
         }
         .ask-ai-button:hover {
-                transform: scale(1.04);
+                transform: scale(1.06);
         }
 }
 
