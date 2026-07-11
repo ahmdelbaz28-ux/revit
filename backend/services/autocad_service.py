@@ -86,6 +86,11 @@ class AutoCADService:
         self.acad_doc = None
         self.acad_util = None
         self.connected = False
+        # V213: Explicit simulation flag. True when connect() fell back to
+        # the dev-mode simulation (no real AutoCAD COM handle). Clients and
+        # tests can read this to know that no real drawing operations will
+        # occur — only MockAutoCADObject instances are returned.
+        self.simulation_mode = False
         self.active_entities = {}
 
     def connect(self, visible: bool = True, force_new: bool = False) -> bool:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
@@ -106,9 +111,15 @@ class AutoCADService:
             if not HAS_AUTOCAD_API:
                 logger.error("AutoCAD COM API not available. Install pywin32.")
                 if os.getenv("FIREAI_ENV", "development") == "development":
-                    logger.info("Using SIMULATION mode for AutoCAD in development (no pywin32)")
+                    logger.warning(
+                        "SIMULATION mode engaged: AutoCAD COM API not available. "
+                        "No real drawing operations will occur — all draw_* "
+                        "calls will return MockAutoCADObject."
+                    )
                     self.connected = True
+                    self.simulation_mode = True  # V213: explicit flag
                     return True
+                self.simulation_mode = False
                 return False
 
             # Initialize COM
@@ -131,9 +142,14 @@ class AutoCADService:
                     except Exception as e:
                         logger.exception("Could not launch AutoCAD: %s", e)
                         if os.getenv("FIREAI_ENV", "development") == "development":
-                            logger.info("Falling back to SIMULATION mode for AutoCAD in development")
+                            logger.warning(
+                                "SIMULATION mode engaged: could not launch AutoCAD. "
+                                "No real drawing operations will occur."
+                            )
                             self.connected = True
+                            self.simulation_mode = True  # V213
                             return True
+                        self.simulation_mode = False
                         return False
             else:
                 # force_new: always launch a new instance
@@ -144,9 +160,14 @@ class AutoCADService:
                 except Exception as e:
                     logger.exception("Could not launch AutoCAD: %s", e)
                     if os.getenv("FIREAI_ENV", "development") == "development":
-                        logger.info("Falling back to SIMULATION mode for AutoCAD in development")
+                        logger.warning(
+                            "SIMULATION mode engaged: could not launch AutoCAD (force_new). "
+                            "No real drawing operations will occur."
+                        )
                         self.connected = True
+                        self.simulation_mode = True  # V213
                         return True
+                    self.simulation_mode = False
                     return False
 
             # Get active document
@@ -157,16 +178,22 @@ class AutoCADService:
 
             self.acad_util = self.acad_doc.Utility
             self.connected = True
-            logger.info("Successfully connected to AutoCAD")
+            self.simulation_mode = False  # V213: real connection confirmed
+            logger.info("Successfully connected to AutoCAD (real COM handle)")
             return True
 
         except Exception as e:
             logger.exception("Error connecting to AutoCAD: %s", e)
             if os.getenv("FIREAI_ENV", "development") == "development":
-                logger.info("Falling back to SIMULATION mode for AutoCAD in development (outer)")
+                logger.warning(
+                    "SIMULATION mode engaged: connect() raised an exception. "
+                    "No real drawing operations will occur."
+                )
                 self.connected = True
+                self.simulation_mode = True  # V213
                 return True
             self.connected = False
+            self.simulation_mode = False
             return False
 
     def disconnect(self) -> bool:
@@ -186,6 +213,7 @@ class AutoCADService:
             self.acad_doc = None
             self.acad_util = None
             self.connected = False
+            self.simulation_mode = False  # V213: reset on disconnect
 
             # Uninitialize COM
             if HAS_AUTOCAD_API:
@@ -842,24 +870,121 @@ class AutoCADService:
             return False
 
     def delete_entity(self, handle: str) -> bool:
-        """Delete an entity by handle."""
+        """
+        Delete an entity by handle in the active AutoCAD document.
+
+        V213 FIX (Rule 1 — Truthfulness): Previously this method was a no-op
+        that always returned True without touching AutoCAD. This is a
+        safety-critical defect — the UI reported "deleted" while the entity
+        remained in the DWG. Now performs a real deletion via the AutoCAD
+        COM API ``HandleToObject`` when a real document is connected, and
+        fails-closed (returns False) in simulation mode so the caller can
+        surface an honest error.
+
+        Args:
+            handle: AutoCAD entity handle string (hex, e.g. "1A2F")
+
+        Returns:
+            True only if the entity was found and deleted.
+            False if: not connected, simulation mode, entity not found,
+            or AutoCAD COM raised an exception.
+
+        """
         try:
             if not self.connected:
-                logger.error("AutoCAD service not connected.")
+                logger.error("AutoCAD service not connected. Cannot delete entity %s.", handle)
                 return False
-            logger.info("Entity %s marked for deletion", handle)  # NOSONAR
+            if not self.acad_doc:
+                # V213: Simulation mode cannot delete — there is no real entity.
+                logger.warning(
+                    "delete_entity %s skipped: simulation mode (no acad_doc). "
+                    "Returning False honestly — no entity was deleted.",
+                    handle,
+                )
+                return False
+
+            # Real AutoCAD COM path: resolve handle → entity → Delete()
+            # AutoCAD COM exposes Document.HandleToObject(handleString)
+            # which returns the Entity with that handle, or raises if not found.
+            entity = self.acad_doc.HandleToObject(handle)
+            if entity is None:
+                logger.warning("Entity with handle %s not found in document.", handle)
+                return False
+            entity.Delete()
+            logger.info("Deleted entity %s from AutoCAD document.", handle)
             return True
         except Exception as e:
             logger.exception("Error deleting entity %s: %s", handle, e)
             return False
 
     def modify_entity(self, handle: str, properties: Dict[str, Any]) -> bool:
-        """Modify an entity properties by handle."""
+        """
+        Modify an entity's properties by handle in the active AutoCAD document.
+
+        V213 FIX (Rule 1 — Truthfulness): Previously this method was a no-op
+        that always returned True without touching AutoCAD. Now performs a
+        real modification via the AutoCAD COM API when a real document is
+        connected, and fails-closed (returns False) in simulation mode.
+
+        Args:
+            handle: AutoCAD entity handle string (hex, e.g. "1A2F")
+            properties: Dict of attribute name → value to set on the entity.
+                Common attributes: Layer, Color, Linetype, Lineweight,
+                Visible. Type-specific: StartPoint/EndPoint (LINE),
+                Center/Radius (CIRCLE), TextString (TEXT), etc.
+
+        Returns:
+            True only if the entity was found and at least one property set.
+            False if: not connected, simulation mode, entity not found,
+            or AutoCAD COM raised an exception.
+
+        """
         try:
             if not self.connected:
-                logger.error("AutoCAD service not connected.")
+                logger.error("AutoCAD service not connected. Cannot modify entity %s.", handle)
                 return False
-            logger.info("Entity %s updated: %s", handle, properties)  # NOSONAR
+            if not self.acad_doc:
+                # V213: Simulation mode cannot modify — there is no real entity.
+                logger.warning(
+                    "modify_entity %s skipped: simulation mode (no acad_doc). "
+                    "Returning False honestly — no entity was modified.",
+                    handle,
+                )
+                return False
+            if not properties:
+                logger.warning("modify_entity %s: no properties provided.", handle)
+                return False
+
+            # Real AutoCAD COM path
+            entity = self.acad_doc.HandleToObject(handle)
+            if entity is None:
+                logger.warning("Entity with handle %s not found in document.", handle)
+                return False
+
+            applied = 0
+            for key, value in properties.items():
+                # Skip our own metadata keys that are not real AutoCAD attributes
+                if key in ("entity_type", "source_entity_handle"):
+                    continue
+                try:
+                    if hasattr(entity, key):
+                        setattr(entity, key, value)
+                        applied += 1
+                    else:
+                        logger.warning(
+                            "Entity %s has no attribute '%s' — skipped.",
+                            handle, key,
+                        )
+                except Exception as attr_err:
+                    # A single bad attribute must not abort the whole operation
+                    logger.warning(
+                        "Could not set %s=%s on entity %s: %s",
+                        key, value, handle, attr_err,
+                    )
+            if applied == 0:
+                logger.warning("modify_entity %s: no applicable properties were set.", handle)
+                return False
+            logger.info("Modified entity %s: %d property/properties applied.", handle, applied)
             return True
         except Exception as e:
             logger.exception("Error modifying entity %s: %s", handle, e)

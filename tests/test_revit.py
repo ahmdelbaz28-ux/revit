@@ -398,5 +398,140 @@ class TestRevitErrorHandling:
         assert "error" in element_data
 
 
+class TestV213SimulationModeFlag:
+    """V213 regression tests: RevitService must expose ``simulation_mode``
+    honestly so clients can distinguish a real Revit API connection from
+    the development fallback.
+
+    Previously, ``_connect_via_api()`` set ``_connected = True`` without
+    actually acquiring a Revit application handle. Now:
+      - On non-Windows / no pythonnet / Revit not running → simulation_mode=True
+      - On Windows + Revit running + Marshal.GetActiveObject succeeds →
+        simulation_mode=False AND _revit_doc is bound to the real document
+    """
+
+    def test_fresh_service_is_not_in_simulation_mode(self):
+        service = RevitService()
+        assert service.simulation_mode is False
+        assert service.connected is False
+
+    @patch('backend.services.revit_service.HAS_REVIT_API', False)
+    def test_simulation_mode_true_when_no_revit_api(self):
+        """When HAS_REVIT_API is False (non-Windows / no pythonnet),
+        connect(method='api') must fall back to simulation and set the
+        simulation_mode flag honestly.
+        """
+        service = RevitService()
+        result = service.connect(method='api')
+        assert result is True
+        assert service.connected is True
+        assert service.simulation_mode is True  # V213: honest
+        assert service.connection_method == 'simulation'  # fell back
+
+    @patch('backend.services.revit_service.HAS_REVIT_API', False)
+    def test_simulation_mode_true_on_auto_connect_without_api(self):
+        """connect(method='auto') without HAS_REVIT_API must set
+        simulation_mode=True.
+        """
+        service = RevitService()
+        result = service.connect(method='auto')
+        assert result is True
+        assert service.simulation_mode is True
+
+    def test_macro_mode_sets_simulation_mode(self):
+        """connect(method='macro') is SIMULATION ONLY — must set
+        simulation_mode=True honestly.
+        """
+        service = RevitService()
+        result = service.connect(method='macro')
+        assert result is True
+        assert service.simulation_mode is True  # V213: honest
+        assert service.connection_method == 'macro'
+
+    def test_simulation_mode_sets_flag(self):
+        """connect(method='simulation') must set simulation_mode=True."""
+        service = RevitService()
+        result = service.connect(method='simulation')
+        assert result is True
+        assert service.simulation_mode is True
+        assert service.connection_method == 'simulation'
+
+    def test_disconnect_resets_simulation_mode(self):
+        """disconnect() must clear simulation_mode back to False."""
+        service = RevitService()
+        service.connect(method='simulation')
+        assert service.simulation_mode is True
+
+        service.disconnect()
+        assert service.simulation_mode is False
+        assert service.connected is False
+
+    @patch('backend.services.revit_service.HAS_REVIT_API', True)
+    def test_api_mode_falls_back_to_sim_when_marshal_unavailable(self):
+        """When HAS_REVIT_API is True but Marshal cannot be imported
+        (e.g. pythonnet installed but RevitAPIUI assembly missing),
+        connect(method='api') must fall back to simulation HONESTLY.
+        """
+        service = RevitService()
+        result = service.connect(method='api')
+        # On Linux, the `from System.Runtime.InteropServices import Marshal`
+        # will raise ImportError → fallback to simulation
+        assert result is True
+        assert service.simulation_mode is True
+
+    @patch('backend.services.revit_service.HAS_REVIT_API', True)
+    def test_api_mode_binds_real_revit_when_marshal_succeeds(self):
+        """When Marshal.GetActiveObject succeeds and UIApplication wraps the
+        COM handle, _revit_doc must be bound to the real Document object
+        and simulation_mode must be False.
+        """
+        from unittest.mock import MagicMock, patch as _patch
+        import sys
+
+        # Build fake modules for clr, System.Runtime.InteropServices and Autodesk.Revit.UI
+        fake_marshal = MagicMock()
+        fake_revit_app_com = MagicMock()
+        fake_marshal.GetActiveObject.return_value = fake_revit_app_com
+
+        fake_uiapp_cls = MagicMock()
+        fake_uiapp_instance = MagicMock()
+        fake_doc = MagicMock()
+        fake_doc.Title = "TestProject.rvt"
+        fake_uiapp_instance.Application = MagicMock()
+        fake_uiapp_instance.ActiveUIDocument = MagicMock()
+        fake_uiapp_instance.ActiveUIDocument.Document = fake_doc
+        fake_uiapp_cls.return_value = fake_uiapp_instance
+
+        # Inject fake modules (clr is imported first in _connect_via_api)
+        sys.modules['clr'] = MagicMock()
+        sys.modules['System.Runtime.InteropServices'] = MagicMock(Marshal=fake_marshal)
+        fake_autodesk_ui = MagicMock(UIApplication=fake_uiapp_cls)
+        sys.modules['Autodesk'] = MagicMock()
+        sys.modules['Autodesk.Revit'] = MagicMock()
+        sys.modules['Autodesk.Revit.UI'] = fake_autodesk_ui
+
+        try:
+            service = RevitService()
+            result = service.connect(method='api')
+            assert result is True
+            assert service.connected is True
+            assert service.simulation_mode is False  # V213: REAL connection
+            assert service._revit_doc is fake_doc  # bound to real document
+            assert service.connection_method == 'api'
+            # Marshal.GetActiveObject was called at least once
+            assert fake_marshal.GetActiveObject.called
+        finally:
+            # Clean up sys.modules to avoid polluting other tests
+            for mod_name in [
+                'clr',
+                'System.Runtime.InteropServices',
+                'Autodesk',
+                'Autodesk.Revit',
+                'Autodesk.Revit.UI',
+            ]:
+                if mod_name in sys.modules:
+                    del sys.modules[mod_name]
+
+
 if __name__ == "__main__":
     pytest.main([__file__])

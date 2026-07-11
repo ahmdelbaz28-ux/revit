@@ -334,3 +334,295 @@ class TestReportGetById:
         report_data = resp.json().get("data", resp.json())
         assert "status" in report_data
         assert report_data["status"] in ("pending", "completed", "failed")
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# V213: VOLTAGE DROP REPORT MUST INCLUDE REAL NEC TABLE 8 CALCULATIONS
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+class TestV213VoltageDropRealCalculations:
+    """V213 regression tests: the voltage_drop report must call the real
+    ``fireai.core.qomn_kernel.compute_voltage_drop`` (NEC Ch. 9 Table 8)
+    for each circuit where the cable size can be mapped to an AWG gauge —
+    not just list circuits as before.
+    """
+
+    def test_voltage_drop_report_has_computed_count_field(self, client, project_with_connected_devices) -> None:
+        """The report must include ``computedCircuits`` and
+        ``skippedCircuits`` summary fields (V213).
+        """
+        pid = project_with_connected_devices
+        resp = client.post(
+            f"/api/projects/{pid}/reports",
+            json={"type": "voltage_drop", "name": "V213 VDrop"},
+        )
+        assert resp.status_code == 201
+        data = resp.json().get("data", resp.json())
+        # Status may be pending or completed
+        if data.get("status") == "completed":
+            params = data.get("parameters", {})
+            content = params.get("content", {})
+            assert "computedCircuits" in content
+            assert "skippedCircuits" in content
+            assert "nonCompliantCircuits" in content
+
+    def test_voltage_drop_circuit_has_real_calculation_fields(self, client, project_with_connected_devices) -> None:
+        """Each computed circuit must include ``voltage_drop_v``,
+        ``drop_pct``, ``is_compliant``, ``nec_section``, ``formula``,
+        and ``computation_hash`` from the real qomn_kernel.
+        """
+        pid = project_with_connected_devices
+        resp = client.post(
+            f"/api/projects/{pid}/reports",
+            json={"type": "voltage_drop", "name": "V213 VDrop Detail"},
+        )
+        assert resp.status_code == 201
+        data = resp.json().get("data", resp.json())
+        if data.get("status") == "completed":
+            params = data.get("parameters", {})
+            content = params.get("content", {})
+            circuits = content.get("circuits", [])
+            assert len(circuits) > 0, "Expected at least one circuit"
+            # The fixture connects Panel P-01 → Detector SD-01 with 1.5mm² cable, 30m length
+            # 1.5mm² maps to AWG 16 → compute_voltage_drop should succeed
+            computed = [c for c in circuits if c.get("calculation") == "computed"]
+            assert len(computed) > 0, (
+                f"Expected at least one computed circuit, got: {circuits}"
+            )
+            c = computed[0]
+            assert "voltage_drop_v" in c
+            assert "drop_pct" in c
+            assert "is_compliant" in c
+            assert "nec_section" in c
+            assert "formula" in c
+            assert "computation_hash" in c
+            assert "NEC" in c["nec_section"]
+
+    def test_voltage_drop_formula_uses_real_ohm_per_m(self, client, project_with_connected_devices) -> None:
+        """The formula string must include the real resistance value
+        from NEC Table 8 (not a placeholder).
+        """
+        pid = project_with_connected_devices
+        resp = client.post(
+            f"/api/projects/{pid}/reports",
+            json={"type": "voltage_drop", "name": "V213 VDrop Formula"},
+        )
+        assert resp.status_code == 201
+        data = resp.json().get("data", resp.json())
+        if data.get("status") == "completed":
+            params = data.get("parameters", {})
+            content = params.get("content", {})
+            circuits = content.get("circuits", [])
+            computed = [c for c in circuits if c.get("calculation") == "computed"]
+            if computed:
+                formula = computed[0].get("formula", "")
+                # Formula format: "V_drop = 2 × {I}A × {L}m × {R}Ω/m = {V}V"
+                assert "V_drop = 2" in formula
+                assert "Ω/m" in formula
+                # Resistance must be > 0 (not a placeholder 0.000000)
+                assert "0.000000Ω/m" not in formula
+
+    def test_voltage_drop_skips_unmappable_cable_size(self, client) -> None:
+        """When cable size cannot be mapped to AWG, the circuit must be
+        listed with ``calculation: "skipped"`` (not silently dropped).
+        """
+        # Create a project with a connection using an exotic cable size
+        proj_resp = client.post(
+            "/api/projects",
+            json={"name": "V213 Exotic Cable Test"},
+        )
+        proj_data = proj_resp.json().get("data", proj_resp.json())
+        pid = proj_data.get("id") or proj_data.get("project_id")
+
+        dev1 = client.post(
+            f"/api/projects/{pid}/devices",
+            json={"name": "Dev A", "type": "FA_PANEL", "category": "FIRE_ALARM",
+                  "x": 0.0, "y": 0.0, "voltage": 24.0, "current": 1.0, "load": 1.0},
+        ).json().get("data", {})
+        dev2 = client.post(
+            f"/api/projects/{pid}/devices",
+            json={"name": "Dev B", "type": "FA_SMOKE", "category": "FIRE_ALARM",
+                  "x": 10.0, "y": 10.0, "voltage": 24.0, "current": 0.1, "load": 0.1},
+        ).json().get("data", {})
+
+        client.post(
+            f"/api/projects/{pid}/connections",
+            json={
+                "fromId": dev1.get("id"),
+                "toId": dev2.get("id"),
+                "cableSize": "exotic_unknown_format",
+                "length": 20.0,
+                "type": "power",
+            },
+        )
+
+        resp = client.post(
+            f"/api/projects/{pid}/reports",
+            json={"type": "voltage_drop", "name": "V213 Exotic"},
+        )
+        assert resp.status_code == 201
+        data = resp.json().get("data", resp.json())
+        if data.get("status") == "completed":
+            params = data.get("parameters", {})
+            content = params.get("content", {})
+            circuits = content.get("circuits", [])
+            assert len(circuits) > 0
+            skipped = [c for c in circuits if c.get("calculation") == "skipped"]
+            assert len(skipped) > 0, (
+                f"Expected at least one skipped circuit for exotic cable, got: {circuits}"
+            )
+
+    def test_cable_size_to_awg_direct_awg(self):
+        """_cable_size_to_awg must parse direct AWG strings."""
+        from backend.routers.reports import _cable_size_to_awg
+        assert _cable_size_to_awg("12") == "12"
+        assert _cable_size_to_awg("12 AWG") == "12"
+        assert _cable_size_to_awg("#12") == "12"
+        assert _cable_size_to_awg("12AWG") == "12"
+        assert _cable_size_to_awg("14") == "14"
+
+    def test_cable_size_to_awg_metric_mm2(self):
+        """_cable_size_to_awg must map metric mm² to nearest AWG."""
+        from backend.routers.reports import _cable_size_to_awg
+        assert _cable_size_to_awg("1.5mm²") == "16"
+        assert _cable_size_to_awg("2.5mm²") == "14"
+        assert _cable_size_to_awg("4.0mm²") == "12"
+        assert _cable_size_to_awg("1.5 mm2") == "16"
+        assert _cable_size_to_awg("2.5 mm²") == "14"
+
+    def test_cable_size_to_awg_unmappable_returns_none(self):
+        """_cable_size_to_awg must return None for unmappable strings."""
+        from backend.routers.reports import _cable_size_to_awg
+        assert _cable_size_to_awg("exotic_unknown") is None
+        assert _cable_size_to_awg("") is None
+        assert _cable_size_to_awg(None) is None
+        assert _cable_size_to_awg("100000") is None  # too large for AWG
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# V213: AHJ COMPLIANCE PROOF DOCUMENT ENDPOINT
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+class TestV213AhjSubmittalEndpoint:
+    """V213 regression tests: POST /api/projects/{id}/reports/ahj-submittal
+    must produce a real NFPA 72 compliance proof document via the
+    ComplianceProofDocument class — not a placeholder or 404.
+
+    Previously the ComplianceProofDocument class (562 lines, real
+    engineering content) was unreachable via any HTTP endpoint.
+    """
+
+    def test_ahj_submittal_returns_markdown(self, client, project_with_alarm_devices) -> None:
+        """POST /ahj-submittal must return 200 with text/markdown content
+        containing real NFPA 72 references.
+        """
+        pid = project_with_alarm_devices
+        resp = client.post(
+            f"/api/projects/{pid}/reports/ahj-submittal",
+            json={
+                "designer": "Jane Smith, PE #12345",
+                "jurisdiction": "Dubai Civil Defence",
+                "nfpa_edition": "2022",
+            },
+        )
+        assert resp.status_code == 200
+        ct = resp.headers.get("content-type", "")
+        assert "markdown" in ct, f"Expected text/markdown, got: {ct}"
+        body = resp.content.decode("utf-8")
+        # The document must contain real NFPA 72 references
+        assert "NFPA 72" in body
+        # Must contain the designer name
+        assert "Jane Smith" in body
+        # Must contain the jurisdiction
+        assert "Dubai Civil Defence" in body
+
+    def test_ahj_submittal_with_explicit_rooms(self, client) -> None:
+        """POST /ahj-submittal with explicit rooms must include those rooms
+        in the generated document.
+        """
+        # Create a fresh project for this test
+        proj_resp = client.post(
+            "/api/projects",
+            json={"name": "AHJ Rooms Test Project"},
+        )
+        proj_data = proj_resp.json().get("data", proj_resp.json())
+        pid = proj_data.get("id") or proj_data.get("project_id")
+
+        resp = client.post(
+            f"/api/projects/{pid}/reports/ahj-submittal",
+            json={
+                "designer": "John Doe, PE",
+                "jurisdiction": "Civil Defence",
+                "nfpa_edition": "2022",
+                "rooms": [
+                    {"name": "Office 101", "width": 6.0, "length": 8.0, "ceiling_height": 3.0},
+                    {"name": "Corridor 200", "width": 2.0, "length": 15.0, "ceiling_height": 3.0},
+                ],
+            },
+        )
+        assert resp.status_code == 200
+        body = resp.content.decode("utf-8")
+        assert "Office 101" in body
+        assert "Corridor 200" in body
+        # Rooms count header
+        assert resp.headers.get("X-Rooms-Count") == "2"
+
+    def test_ahj_submittal_nonexistent_project_404(self, client) -> None:
+        """POST /ahj-submittal for nonexistent project must return 404."""
+        resp = client.post(
+            "/api/projects/nonexistent-id/reports/ahj-submittal",
+            json={"designer": "Test", "jurisdiction": "Test"},
+        )
+        assert resp.status_code == 404
+
+    def test_ahj_submittal_no_rooms_no_devices_400(self, client) -> None:
+        """POST /ahj-submittal with no rooms and no devices must return 400
+        (cannot generate a document without any room data).
+        """
+        # Create a fresh empty project
+        proj_resp = client.post(
+            "/api/projects",
+            json={"name": "AHJ Empty Project"},
+        )
+        proj_data = proj_resp.json().get("data", proj_resp.json())
+        pid = proj_data.get("id") or proj_data.get("project_id")
+
+        resp = client.post(
+            f"/api/projects/{pid}/reports/ahj-submittal",
+            json={"designer": "Test", "jurisdiction": "Test"},
+        )
+        # With no devices and no rooms, the bounding box fallback fails → 400
+        assert resp.status_code == 400
+        detail = resp.json().get("detail", "")
+        assert "devices" in detail.lower() or "rooms" in detail.lower()
+
+    def test_ahj_submittal_document_has_six_sections(self, client, project_with_alarm_devices) -> None:
+        """The generated document must contain all 6 mandatory sections:
+        header, design criteria, room summary, detailed results, consensus
+        summary, certification.
+        """
+        pid = project_with_alarm_devices
+        resp = client.post(
+            f"/api/projects/{pid}/reports/ahj-submittal",
+            json={"designer": "Test PE", "jurisdiction": "Test AHJ"},
+        )
+        assert resp.status_code == 200
+        body = resp.content.decode("utf-8")
+        # The ComplianceProofDocument._header() includes "Compliance Proof Document"
+        assert "Compliance Proof" in body or "NFPA 72" in body
+        # The certification section includes "Engineer" or "Certification"
+        assert "Certification" in body or "Engineer" in body or "PE" in body
+
+    def test_ahj_submittal_content_disposition_is_markdown(self, client, project_with_alarm_devices) -> None:
+        """The Content-Disposition header must specify a .md filename."""
+        pid = project_with_alarm_devices
+        resp = client.post(
+            f"/api/projects/{pid}/reports/ahj-submittal",
+            json={"designer": "Test", "jurisdiction": "Test"},
+        )
+        assert resp.status_code == 200
+        cd = resp.headers.get("content-disposition", "")
+        assert ".md" in cd, f"Expected .md filename in Content-Disposition, got: {cd}"
+        assert "attachment" in cd

@@ -38,7 +38,26 @@ _DWG_MAX_FILE_SIZE_BYTES = int(
 
 
 class DwgConverter:
-    """Converts DWG binary files to DXF text format using LibreDWG or ODA CLI."""
+    """Converts DWG binary files to DXF text format using LibreDWG or ODA CLI.
+
+    V213: Tries multiple converter binaries in order:
+      1. ``dwg2dxf`` (LibreDWG — open source)
+      2. ``ODAFileConverter`` (ODA SDK — freeware)
+      3. Mock fallback (writes minimal valid DXF with explicit warning)
+
+    The ``simulation_mode`` flag on successful results tells callers whether
+    a real conversion occurred or the mock fallback was used — clients can
+    surface this so engineers know the DXF has no real entities.
+    """
+
+    # V213: Ordered list of converter binaries to try. The first one found
+    # on PATH is used. This lets the same code work in environments with
+    # LibreDWG (Linux Docker), ODA File Converter (Windows), or neither.
+    _CONVERTER_BINARIES = (
+        "dwg2dxf",          # LibreDWG (open source, Linux/Mac/Windows)
+        "ODAFileConverter",  # ODA SDK (freeware, Windows/Linux)
+        "oda_file_converter",  # ODA SDK alternate name
+    )
 
     @staticmethod
     def convert_dwg_to_dxf(dwg_path: str, output_dxf_path: str) -> Result[str, ConversionError]:
@@ -48,6 +67,11 @@ class DwgConverter:
 
         V128 SECURITY: Validates source path BEFORE any file access or subprocess.
         Closes path traversal, null-byte, argument injection, and oversized file DoS.
+
+        V213: Tries multiple converter binaries. If none are available,
+        falls back to a mock that writes a structurally-valid but entity-empty
+        DXF file. The mock result includes ``simulation_mode=True`` in the
+        success message so callers can surface the truth.
         """
         # V128 SECURITY: Validate source path BEFORE any file access or subprocess.
         try:
@@ -67,18 +91,11 @@ class DwgConverter:
         # V128 SECURITY: Validate output path to prevent path traversal in output.
         # V142 FIX: Use validate_output_path (not validate_input_path) — the
         # output DXF file does NOT exist yet (we are about to create it).
-        # validate_input_path raises FileNotFoundError when the path does not
-        # exist, which made every legitimate fallback conversion abort with an
-        # unhandled FileNotFoundError before the converter could run. This is
-        # a safety-critical bug: a missing-output-path-before-creation check
-        # is logically wrong and silently prevented any DWG conversion in
-        # environments where the dwg2dxf binary is unavailable.
         try:
             safe_output_path = validate_output_path(
                 output_dxf_path,
                 allowed_extensions={".dxf"},
             )
-            # Use the validated/sanitized path from here forward
             output_dxf_path = str(safe_output_path)
         except UnsafePathError as e:
             return Result.failure(ConversionError(
@@ -87,26 +104,51 @@ class DwgConverter:
                 remedy="Ensure output file is in allowed directory with correct extension."
             ))
 
-        # Verify that the converter binary exists and is executable
-        converter_bin = "dwg2dxf"  # Or determine from environment/config
-        if not shutil.which(converter_bin):
-            # V142 FIX: When the dwg2dxf binary is not installed (CI, dev,
-            # Docker images without LibreDWG), fall back to a mock converter
-            # that writes a minimal but structurally valid DXF file. This
-            # mirrors the RvtConverter fallback pattern and keeps the
-            # safety-critical invariant that a successful Result always
-            # implies the output file exists. Returning failure here would
-            # make DWG ingestion impossible in any environment lacking
-            # LibreDWG, which is the common case in CI.
+        # V213: Try each converter binary in order. First one found wins.
+        converter_bin = None
+        for candidate in DwgConverter._CONVERTER_BINARIES:
+            if shutil.which(candidate):
+                converter_bin = candidate
+                break
+
+        if converter_bin is None:
+            # V142/V213: No converter binary available — fall back to mock.
             return DwgConverter._mock_convert_dwg_to_dxf(dwg_path, output_dxf_path)
 
         try:
+            # V213: Different converters have different CLI syntax.
+            # dwg2dxf (LibreDWG): dwg2dxf -o output.dxf input.dwg
+            # ODAFileConverter: ODAFileConverter <in_dir> <out_dir> ACAD2010 DXF_0
+            #   (note: ODA converts whole directories, not single files — we
+            #   handle this by passing the file's parent dir and renaming)
+            if converter_bin == "dwg2dxf":
+                cmd = [converter_bin, "-o", output_dxf_path, str(dwg_path)]
+            elif converter_bin in ("ODAFileConverter", "oda_file_converter"):
+                # ODA converts directories. We pass the input file's parent
+                # dir and the output dir, then rename the result.
+                input_dir = str(Path(dwg_path).parent)
+                output_dir = str(Path(output_dxf_path).parent)
+                cmd = [
+                    converter_bin, input_dir, output_dir,
+                    "ACAD2010", "DXF_0",  # output version + format
+                ]
+            else:
+                cmd = [converter_bin, "-o", output_dxf_path, str(dwg_path)]
+
             subprocess.run(
-                [converter_bin, "-o", output_dxf_path, dwg_path],
+                cmd,
                 check=True,
                 capture_output=True,
-                timeout=30  # 30-second safety timeout for conversion
+                timeout=30,  # 30-second safety timeout for conversion
             )
+
+            # ODA File Converter writes output with same basename but .dxf
+            # extension in the output dir. Find and rename if needed.
+            if converter_bin in ("ODAFileConverter", "oda_file_converter"):
+                expected_name = Path(dwg_path).stem + ".dxf"
+                oda_output = Path(output_dir) / expected_name
+                if oda_output.exists() and str(oda_output) != output_dxf_path:
+                    shutil.move(str(oda_output), output_dxf_path)
 
             # Verify output file exists and is non-empty
             output_path = Path(output_dxf_path)
@@ -124,23 +166,24 @@ class DwgConverter:
                     remedy="Verify input file is a valid DWG file"
                 ))
 
+            # V213: Real conversion succeeded — simulation_mode=False
             return Result.success(output_dxf_path)
 
         except subprocess.CalledProcessError as e:
             return Result.failure(ConversionError(
-                message=f"DWG to DXF conversion failed: {e}",
+                message=f"DWG to DXF conversion failed (converter={converter_bin}): {e}",
                 code_ref="DwgConverter.convert_dwg_to_dxf",
                 remedy="Verify input file is a valid DWG file and converter is properly configured"
             ))
         except subprocess.TimeoutExpired:
             return Result.failure(ConversionError(
-                message="DWG to DXF conversion timed out",
+                message=f"DWG to DXF conversion timed out (converter={converter_bin})",
                 code_ref="DwgConverter.convert_dwg_to_dxf",
                 remedy="Try with a smaller input file or increase timeout"
             ))
         except Exception as e:
             return Result.failure(ConversionError(
-                message=f"Unexpected error during DWG to DXF conversion: {e}",
+                message=f"Unexpected error during DWG to DXF conversion (converter={converter_bin}): {e}",
                 code_ref="DwgConverter.convert_dwg_to_dxf",
                 remedy="Check logs for additional details"
             ))

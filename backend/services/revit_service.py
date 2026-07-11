@@ -188,10 +188,21 @@ class RevitService:
         self._revit_doc = None
         self._uiapp = None
         self._uidoc = None
+        # V213: Explicit simulation flag. True when connect() fell back to
+        # the simulation path (no real Revit instance acquired). Clients and
+        # tests can read this to know that create_wall/floor/door will
+        # return None (no real document is open).
+        self._simulation_mode = False
 
         # RevitAPIDocGen data
         self._api_data_cache: List[Dict[str, Any]] = []
         self._api_data_loaded = False
+
+    @property
+    def simulation_mode(self) -> bool:
+        """V213: True when the service is in simulation mode (no real Revit
+        document is bound)."""
+        return self._simulation_mode
 
     @property
     def connected(self) -> bool:
@@ -256,31 +267,162 @@ class RevitService:
             return False
 
     def _connect_via_api(self) -> bool:
-        """Connect via Revit API (requires Revit + pythonnet)."""
+        """
+        Connect via Revit API (requires Revit + pythonnet on Windows).
+
+        V213 FIX (Rule 1 — Truthfulness): Previously this method set
+        ``_connected = True`` without actually acquiring a Revit application
+        handle — every subsequent ``create_wall()`` / ``create_floor()``
+        would hit the ``if not self._revit_doc: return None`` guard and
+        silently fail, despite the connect endpoint reporting success.
+
+        Now this method attempts to bind to a running Revit instance via
+        ``Marshal.GetActiveObject("Revit.Application")`` (Windows COM
+        automation). If Revit is not running, or pythonnet is not
+        installed, or we are on a non-Windows platform, the method falls
+        back to simulation mode HONESTLY — setting ``_simulation_mode =
+        True`` so clients can surface the truth.
+
+        Returns:
+            True if connected (real or simulation). False only on
+            explicit user-requested failure (currently never).
+
+        """
         if not HAS_REVIT_API:
-            logger.warning("Revit API not available, using simulation")
+            logger.warning(
+                "Revit API not available (no pythonnet or not Windows). "
+                "Falling back to SIMULATION mode honestly."
+            )
             return self._connect_simulation()
 
+        # Try to acquire a real Revit application handle via COM automation.
+        # This requires Revit to be running on the same machine.
         try:
-            logger.info("Connected to Revit via API")
+            import clr  # noqa: F401
+            from System.Runtime.InteropServices import Marshal  # type: ignore[import-not-found]
+        except ImportError as ie:
+            logger.warning(
+                "Could not import Marshal from System.Runtime.InteropServices "
+                "(%s). Falling back to SIMULATION mode.", ie
+            )
+            return self._connect_simulation()
+        except Exception as ge:
+            logger.warning(
+                "CLR/Marshal access failed (%s). Falling back to SIMULATION mode.", ge
+            )
+            return self._connect_simulation()
+
+        # Attempt to bind to a running Revit instance.
+        # "Revit.Application" is the COM ProgID for the Revit application.
+        # Different Revit versions may use versioned ProgIDs (e.g.
+        # "Revit.Application.2024") — we try the generic one first, then
+        # a few versioned ones.
+        prog_ids = [
+            "Revit.Application",
+            "Revit.Application.2025",
+            "Revit.Application.2024",
+            "Revit.Application.2023",
+            "Revit.Application.2022",
+            "Revit.Application.2021",
+            "Revit.Application.2020",
+        ]
+        revit_app_com = None
+        for prog_id in prog_ids:
+            try:
+                revit_app_com = Marshal.GetActiveObject(prog_id)
+                logger.info("Bound to running Revit via ProgID: %s", prog_id)
+                break
+            except Exception as e:
+                # Try next ProgID
+                logger.debug("ProgID %s not available: %s", prog_id, e)
+                continue
+
+        if revit_app_com is None:
+            logger.warning(
+                "No running Revit instance found (tried %d ProgIDs). "
+                "Falling back to SIMULATION mode. Start Revit and open a "
+                "document to enable real API operations.",
+                len(prog_ids),
+            )
+            return self._connect_simulation()
+
+        # Wrap the COM object in a Revit UIApplication and pull the active
+        # document. This is the critical step that was missing — without
+        # setting _revit_doc, every create_wall/floor/door call hits the
+        # ``if not self._revit_doc: return None`` guard.
+        try:
+            from Autodesk.Revit.UI import UIApplication  # type: ignore[import-not-found]
+            self._uiapp = UIApplication(revit_app_com)
+            self._revit_app = self._uiapp.Application
+            try:
+                self._uidoc = self._uiapp.ActiveUIDocument
+            except Exception as uidoc_err:
+                logger.warning("Could not get ActiveUIDocument: %s", uidoc_err)
+                self._uidoc = None
+            if self._uidoc is not None:
+                self._revit_doc = self._uidoc.Document
+                logger.info(
+                    "Revit API connection established. Active document: %s",
+                    getattr(self._revit_doc, "Title", "<untitled>"),
+                )
+            else:
+                # No active document — still connected to the app, but
+                # create_* operations will need an open document. Set
+                # _revit_doc to None (the honest value).
+                self._revit_doc = None
+                logger.warning(
+                    "Revit API connected but no active document is open. "
+                    "create_wall/floor/door will return None until a "
+                    "document is opened."
+                )
             self._connected = True
+            self._simulation_mode = False  # V213: real connection
             self._connection_method = ConnectionMethod.API
             return True
+        except ImportError as ie:
+            logger.warning(
+                "Could not import Autodesk.Revit.UI.UIApplication (%s). "
+                "RevitAPIUI assembly may not be loaded. Falling back to "
+                "SIMULATION mode.", ie
+            )
+            return self._connect_simulation()
         except Exception as e:
-            logger.exception("API connection failed: %s", e)
+            logger.exception(
+                "Failed to wrap Revit COM object in UIApplication: %s. "
+                "Falling back to SIMULATION mode.", e
+            )
             return self._connect_simulation()
 
     def _connect_via_macro(self) -> bool:
-        """Connect via Revit Macro (free, runs inside Revit)."""
-        logger.info("Connected via Macro mode")
+        """Connect via Revit Macro (free, runs inside Revit).
+
+        V213: This is still SIMULATION ONLY — there is no macro script
+        execution code. The simulation_mode flag is set honestly so clients
+        know no real Revit operations will occur.
+        """
+        logger.warning(
+            "MACRO mode is SIMULATION ONLY — no Revit macro script is "
+            "actually executed. Use method='api' on Windows with Revit "
+            "running for real operations."
+        )
         self._connected = True
+        self._simulation_mode = True  # V213: honest
         self._connection_method = ConnectionMethod.MACRO
         return True
 
     def _connect_simulation(self) -> bool:
-        """Connect in simulation mode (no Revit needed)."""
-        logger.info("Connected in SIMULATION mode")
+        """Connect in simulation mode (no Revit needed).
+
+        V213: Sets _simulation_mode = True honestly so clients can surface
+        the truth that no real Revit operations will occur.
+        """
+        logger.warning(
+            "Revit SIMULATION mode engaged — no real Revit instance is "
+            "bound. create_wall/floor/door will return None. Use "
+            "method='api' on Windows with Revit running for real operations."
+        )
         self._connected = True
+        self._simulation_mode = True  # V213: honest
         self._connection_method = ConnectionMethod.SIMULATION
         return True
 
@@ -292,6 +434,7 @@ class RevitService:
             self._uiapp = None
             self._uidoc = None
             self._connected = False
+            self._simulation_mode = False  # V213: reset
             self._connection_method = None
             logger.info("Disconnected from Revit")
             return True
