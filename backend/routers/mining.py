@@ -13,7 +13,6 @@ V214: Exposes the fireai.mining module via HTTP endpoints:
 from __future__ import annotations
 
 import logging
-from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
@@ -92,7 +91,7 @@ async def list_standards():
 async def methane_check(request: MethaneCheckRequest):
     """Classify methane concentration per MSHA 30 CFR §75.323."""
     try:
-        from fireai.mining.core.methane_calculator import MethaneCalculator, MSHA_THRESHOLDS
+        from fireai.mining.core.methane_calculator import MSHA_THRESHOLDS, MethaneCalculator
 
         hazard = MethaneCalculator.classify_hazard(request.concentration_pct)
         is_explosive = MethaneCalculator.is_in_explosive_range(request.concentration_pct)
@@ -154,11 +153,11 @@ async def co_check(request: CoCheckRequest):
     """Classify CO concentration per MSHA 30 CFR §75.351."""
     try:
         from fireai.mining.core.conveyor_fire import (
-            ConveyorFireAnalyzer,
             CO_ALERT_PPM,
             CO_EVACUATE_PPM,
-            CO_WITHDRAW_PPM,
             CO_IMMINENT_PPM,
+            CO_WITHDRAW_PPM,
+            ConveyorFireAnalyzer,
         )
 
         hazard = ConveyorFireAnalyzer.classify_co_hazard(request.co_ppm)

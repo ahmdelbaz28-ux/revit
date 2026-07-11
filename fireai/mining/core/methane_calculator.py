@@ -23,7 +23,6 @@ SAFETY THRESHOLDS (MSHA 30 CFR §75.323):
 
 from __future__ import annotations
 
-import math
 from dataclasses import dataclass
 
 # Methane physical constants

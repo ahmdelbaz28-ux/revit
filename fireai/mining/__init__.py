@@ -17,16 +17,16 @@ Subpackages:
   output/     — MSHA reports + evacuation plans
 """
 
-from fireai.mining.core.methane_calculator import MethaneCalculator
-from fireai.mining.core.ventilation_calculator import VentilationCalculator
 from fireai.mining.core.conveyor_fire import ConveyorFireAnalyzer
+from fireai.mining.core.methane_calculator import MethaneCalculator
 from fireai.mining.core.msha_compliance import MSHAComplianceChecker
+from fireai.mining.core.ventilation_calculator import VentilationCalculator
 
 __all__ = [
-    "MethaneCalculator",
-    "VentilationCalculator",
     "ConveyorFireAnalyzer",
     "MSHAComplianceChecker",
+    "MethaneCalculator",
+    "VentilationCalculator",
 ]
 
 __version__ = "1.0.0"

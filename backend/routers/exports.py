@@ -386,7 +386,7 @@ async def export_data_global(input_data: ExportDataInput):
     if export_type == "excel":
         try:
             from openpyxl import Workbook
-            from openpyxl.styles import Font, PatternFill, Alignment
+            from openpyxl.styles import Alignment, Font, PatternFill
             from openpyxl.utils import get_column_letter
         except ImportError:
             raise HTTPException(  # NOSONAR — S8415: assignment kept for readability

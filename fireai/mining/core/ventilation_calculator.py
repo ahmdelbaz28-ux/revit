@@ -24,7 +24,6 @@ MINIMUM AIRFLOW REQUIREMENTS (MSHA):
 
 from __future__ import annotations
 
-import math
 from dataclasses import dataclass
 
 # Standard air density (MSHA reference)

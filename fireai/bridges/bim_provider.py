@@ -1016,9 +1016,10 @@ class AutodeskForgeProvider:
             return 0
 
         try:
-            import httpx
             import json
             import time
+
+            import httpx
         except ImportError:
             logger.error("httpx not installed — cannot call APS API")
             return 0

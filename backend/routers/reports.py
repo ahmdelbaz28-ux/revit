@@ -284,8 +284,8 @@ def _generate_nfpa72_coverage_report(devices: list, now: str) -> dict:
     # Lazy import of NFPA 72 spacing constants from qomn_kernel
     try:
         from fireai.core.qomn_kernel import (
-            NFPA72_SMOKE_MAX_SPACING_M,
             NFPA72_HEAT_MAX_SPACING_M,
+            NFPA72_SMOKE_MAX_SPACING_M,
         )
         _spacing_available = True
     except ImportError as ie:
@@ -991,7 +991,8 @@ async def export_report(  # NOSONAR — S3776: cognitive complexity is inherent 
 # ══════════════════════════════════════════════════════════════════════════════
 
 
-from pydantic import BaseModel, Field as PydField
+from pydantic import BaseModel
+from pydantic import Field as PydField
 
 
 class AhjRoomInput(BaseModel):
@@ -1120,7 +1121,7 @@ async def generate_ahj_submittal(project_id: str, request: AhjSubmittalRequest):
             consensus = None
             try:
                 from fireai.core.spatial_engine.consensus_engine import ConsensusEngine
-                consensus_engine = ConsensusEngine()
+                _consensus_engine = ConsensusEngine()  # noqa: F841 — reserved for future use
                 # consensus_engine.analyze may need specific args — wrap in try
                 # and skip if signature differs.
                 consensus = None  # placeholder; consensus requires multi-engine setup

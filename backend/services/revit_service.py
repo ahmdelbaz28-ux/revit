@@ -622,7 +622,9 @@ class RevitService:
             # V214: If we have a real Revit document, read actual elements
             if self._connection_method == ConnectionMethod.API and self._revit_doc is not None:
                 try:
-                    from Autodesk.Revit.DB import FilteredElementCollector  # type: ignore[import-not-found]
+                    from Autodesk.Revit.DB import (
+                        FilteredElementCollector,  # type: ignore[import-not-found]
+                    )
                     elements = []
                     collector = FilteredElementCollector(self._revit_doc).WhereElementIsNotElementType()
                     for elem in collector:
@@ -751,11 +753,7 @@ class RevitService:
             # V214: If we have a real Revit document, create elements via API
             if self._connection_method == ConnectionMethod.API and self._revit_doc is not None:
                 try:
-                    from Autodesk.Revit.DB import (  # type: ignore[import-not-found]
-                        Transaction,
-                        FilteredElementCollector,
-                        Level,
-                    )
+                    from Autodesk.Revit.DB import Transaction  # type: ignore[import-not-found]
                     tx = Transaction(self._revit_doc, "FireAI: Write Elements")
                     tx.Start()
                     try:

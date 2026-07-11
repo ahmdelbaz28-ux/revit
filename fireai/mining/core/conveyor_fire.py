@@ -25,7 +25,6 @@ CO THRESHOLDS (MSHA 30 CFR §75.351):
 
 from __future__ import annotations
 
-import math
 from dataclasses import dataclass
 
 # CO thresholds (MSHA 30 CFR §75.351)
@@ -138,10 +137,7 @@ class ConveyorFireAnalyzer:
         total_groups = len(nozzle_locations)
 
         # Water flow calculation
-        # Belt area = length × width
-        belt_area_m2 = spec.belt_length_m * spec.belt_width_m
-        # Water flow = 10 L/min per m² of belt area (per group)
-        # Actually, each group covers ~300m of belt
+        # Each group covers ~300m of belt (or full length if shorter)
         coverage_per_group_m = min(SUPPRESSION_MAX_SPACING_M, spec.belt_length_m)
         coverage_area_per_group_m2 = coverage_per_group_m * spec.belt_width_m
         water_flow_per_group_lpm = coverage_area_per_group_m2 * MIN_WATER_FLOW_LPM_PER_M2

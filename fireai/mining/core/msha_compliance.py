@@ -13,17 +13,12 @@ provides a unified compliance report.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any
 
-from fireai.mining.core.methane_calculator import MethaneCalculator, MSHA_THRESHOLDS
-from fireai.mining.core.ventilation_calculator import VentilationCalculator
 from fireai.mining.core.conveyor_fire import (
     ConveyorFireAnalyzer,
-    CO_ALERT_PPM,
-    CO_EVACUATE_PPM,
-    CO_WITHDRAW_PPM,
-    CO_IMMINENT_PPM,
 )
+from fireai.mining.core.methane_calculator import MethaneCalculator
+from fireai.mining.core.ventilation_calculator import VentilationCalculator
 
 
 @dataclass
