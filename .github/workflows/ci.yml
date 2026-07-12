@@ -374,14 +374,12 @@ jobs:
         working-directory: frontend
 
       - name: Run Playwright visual tests
-        # V228: Visual regression tests are non-blocking. They capture screenshots
-        # for manual review but should not block the pipeline. The frontend build
-        # and type-check (Gate 4) already validate code correctness.
-        run: npx playwright test --reporter=list || echo "::warning::Playwright visual tests failed (non-blocking)"
+        # V229: Fixed syntax error in smoke.spec.ts (unclosed test.describe block).
+        # Tests now run properly without continue-on-error workaround.
+        run: npx playwright test --reporter=list
         working-directory: frontend
         env:
           CI: "true"
-        continue-on-error: true
 
       - name: Upload screenshots
         if: always()

@@ -232,7 +232,7 @@ test("root path redirects to dashboard", async ({ page }) => {
 // ═══════════════════════════════════════════════════════════════════
 // Test 5: Responsive viewport (mobile)
 // ═══════════════════════════════════════════════════════════════════
-});
+test("dashboard renders on mobile viewport", async ({ page }) => {
         await page.setViewportSize({ width: 375, height: 667 }); // iPhone SE
         await page.goto("/dashboard");
         await page.waitForLoadState("networkidle");
@@ -247,7 +247,7 @@ test("root path redirects to dashboard", async ({ page }) => {
 // ═══════════════════════════════════════════════════════════════════
 // Test 6: Dark mode (if supported)
 // ═══════════════════════════════════════════════════════════════════
-test.describe("Visual Smoke Tests Extra", () => {
+test("dashboard renders in dark mode", async ({ page }) => {
         await page.emulateMedia({ colorScheme: "dark" });
         await page.goto("/dashboard");
         await page.waitForLoadState("networkidle");
@@ -257,4 +257,5 @@ test.describe("Visual Smoke Tests Extra", () => {
 
         // V196: Add assertion (SonarCloud S2699 — test case without assertion)
         await expect(page).toHaveTitle(/BAZSPARK|Digital Twin/i);
+});
 });
