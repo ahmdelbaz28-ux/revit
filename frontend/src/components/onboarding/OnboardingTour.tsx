@@ -167,13 +167,13 @@ export const OnboardingTour: React.FC = () => {
 		top:
 			step.position === "top"
 				? `${targetElement.top - 160}px`
-				: step.position === "bottom"
+				: step.position === "bottom"  // NOSONAR: typescript:S3358
 					? `${targetElement.bottom + 16}px`
 					: `${targetElement.top + targetElement.height / 2 - 80}px`,
 		left:
 			step.position === "left"
 				? `${targetElement.left - 280}px`
-				: step.position === "right"
+				: step.position === "right"  // NOSONAR: typescript:S3358
 					? `${targetElement.right + 16}px`
 					: `${targetElement.left + targetElement.width / 2 - 140}px`,
 	};

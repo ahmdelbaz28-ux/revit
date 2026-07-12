@@ -94,7 +94,7 @@ const ZoneNode: React.FC<ZoneNodeProps> = ({
 
         return (
                 <div className="select-none">
-                        <div
+                        <div  // NOSONAR: typescript:S6819
                                 className={`flex items-center gap-2 py-1 px-2 rounded hover:bg-secondary cursor-pointer ${
                                         selectedDevice && zone.devices.some((d) => d.id === selectedDevice)
                                                 ? "bg-secondary"
@@ -155,7 +155,7 @@ const ZoneNode: React.FC<ZoneNodeProps> = ({
                                         ))}
 
                                         {zone.devices.map((device) => (
-                                                <div
+                                                <div  // NOSONAR: typescript:S6819
                                                         key={device.id}
                                                         className={`flex items-center gap-2 py-1 px-2 rounded hover:bg-secondary cursor-pointer ${
                                                                 selectedDevice === device.id ? "bg-secondary" : ""

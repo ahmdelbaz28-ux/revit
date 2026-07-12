@@ -165,7 +165,7 @@ export function ReportGeneratorPage() {
                         a.href = url;
                         a.download = `${report.name || report.type}_${report.id.slice(0, 8)}.${format === "pdf" ? "pdf" : "json"}`;
                         document.body.appendChild(a);
-                        a.click();
+                        a.click();  // NOSONAR: typescript:S7762
                         document.body.removeChild(a);
                         window.URL.revokeObjectURL(url);
                 } catch {

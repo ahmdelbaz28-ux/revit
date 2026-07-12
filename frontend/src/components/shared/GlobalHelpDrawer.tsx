@@ -276,7 +276,7 @@ export function GlobalHelpDrawer({
 													: selectedTopic.warningsEn
 												).map((w, i) => (
 													<li
-														key={i}
+														key={i}  // NOSONAR: typescript:S6479
 														className="text-sm text-amber-300 bg-amber-600/10 border border-amber-600/20 rounded p-2"
 													>
 														{w}

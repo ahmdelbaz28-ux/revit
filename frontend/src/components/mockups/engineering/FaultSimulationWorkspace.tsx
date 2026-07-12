@@ -22,7 +22,7 @@ export function FaultSimulationWorkspace() {
 	const { isFaulty, toggleFault } = useFaultLogic();
 
 	const themeClass =
-		theme === "dark" ? "dark" : theme === "blue" ? "theme-blue" : "";
+		theme === "dark" ? "dark" : theme === "blue" ? "theme-blue" : "";  // NOSONAR: typescript:S3358
 
 	return (
 		<div

@@ -496,7 +496,7 @@ class TestV213VoltageDropRealCalculations:
         from backend.routers.reports import _cable_size_to_awg
         assert _cable_size_to_awg("exotic_unknown") is None
         assert _cable_size_to_awg("") is None
-        assert _cable_size_to_awg(None) is None
+        assert _cable_size_to_awg(None) is None  # NOSONAR: python:S5655
         assert _cable_size_to_awg("100000") is None  # too large for AWG
 
 

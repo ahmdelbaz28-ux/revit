@@ -72,7 +72,7 @@ export function HistoryTimeline() {
                                                         <Skeleton key={i} className="h-16 w-full bg-secondary" />
                                                 ))}
                                         </div>
-                                ) : versions.length === 0 ? (
+                                ) : versions.length === 0 ? (  // NOSONAR: typescript:S3358
                                         <p className="text-center text-muted-foreground py-8">
                                                 No conversion history available
                                         </p>

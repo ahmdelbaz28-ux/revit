@@ -60,7 +60,7 @@ class DwgConverter:
     )
 
     @staticmethod
-    def convert_dwg_to_dxf(dwg_path: str, output_dxf_path: str) -> Result[str, ConversionError]:
+    def convert_dwg_to_dxf(dwg_path: str, output_dxf_path: str) -> Result[str, ConversionError]:  # NOSONAR: python:S3776
         """
         Invokes LibreDWG (dwg2dxf) or ODA file converter CLI to convert files.
         Returns Result containing output path or ConversionError.

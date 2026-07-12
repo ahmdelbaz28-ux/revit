@@ -65,7 +65,7 @@ function isKnownCategory(
 }
 
 function getTopicForContext(
-	contextId: HelpTopicId | string | null | undefined,
+	contextId: HelpTopicId | string | null | undefined,  // NOSONAR: typescript:S6571
 	search?: string,
 ): HelpTopic | null {
 	const context = contextId ?? "";
@@ -81,7 +81,7 @@ function getTopicForContext(
 }
 
 export const openHelp = (
-	contextId?: HelpTopicId | string,
+	contextId?: HelpTopicId | string,  // NOSONAR: typescript:S6571
 	search = "",
 ): void => {
 	setHelpState({

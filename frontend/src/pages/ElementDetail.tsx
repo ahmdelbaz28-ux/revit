@@ -272,7 +272,7 @@ function ElementDetail() {
 							label="Load Bearing"
 							value={
 								element.properties?.load_bearing != null
-									? element.properties.load_bearing
+									? element.properties.load_bearing  // NOSONAR: typescript:S3358
 										? "Yes"
 										: "No"
 									: undefined

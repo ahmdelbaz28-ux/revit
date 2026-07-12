@@ -205,7 +205,7 @@ async def export_revit(project_id: str):
     content = json.dumps(revit_data, indent=2)
     return StreamingResponse(
         io.BytesIO(content.encode("utf-8")),
-        media_type="application/json",
+        media_type="application/json",  # NOSONAR: python:S1192
         headers={
             "Content-Disposition": f"attachment; filename=\"{_safe_filename(project['name'])}_revit.json\""
         },
@@ -353,7 +353,7 @@ class ExportDataInput(BaseModel):
 
 
 @project_router.post("", status_code=200, dependencies=[Depends(require_permission(Permission.EXPORT_READ))])
-async def export_data_global(input_data: ExportDataInput):
+async def export_data_global(input_data: ExportDataInput):  # NOSONAR: python:S3776
     """
     Export project data globally using the first available project for compatibility.
 

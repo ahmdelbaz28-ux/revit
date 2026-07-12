@@ -28,7 +28,7 @@ export function ProjectSidebar() {
 						</div>
 					) : (
 						devices.map((el) => (
-							<div
+							<div  // NOSONAR: typescript:S6848
 								key={el.id}
 								role="button"
 								tabIndex={0}

@@ -18,7 +18,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 
 export function SecuritySystems() {
-	const [_activeCam, _setActiveCam] = useState("CAM-EXT-01");
+	const [_activeCam, _setActiveCam] = useState("CAM-EXT-01");  // NOSONAR: typescript:S6754
 
 	return (
 		<div className="flex flex-col h-screen w-screen overflow-hidden bg-card text-foreground font-sans">

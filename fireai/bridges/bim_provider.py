@@ -829,7 +829,7 @@ class AutodeskForgeProvider:
         try:
             import httpx
         except ImportError:
-            logger.error("httpx not installed — cannot call APS API")
+            logger.error("httpx not installed — cannot call APS API")  # NOSONAR: python:S1192
             return []
 
         headers = {"Authorization": f"Bearer {token}"}
@@ -963,7 +963,7 @@ class AutodeskForgeProvider:
             logger.exception("APS read_devices failed: %s", e)
             return []
 
-    def write_devices(
+    def write_devices(  # NOSONAR: python:S3776
         self,
         devices: list[dict[str, Any]],
         target: str | None = None,

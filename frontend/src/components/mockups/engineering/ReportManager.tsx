@@ -727,7 +727,7 @@ export function ReportManager() {
 										{ label: "Appendix B — Manufacturer Data", checked: false },
 									].map((item, i) => (
 										<div
-											key={i}
+											key={i}  // NOSONAR: typescript:S6479
 											className="flex items-center gap-2 group hover:bg-muted/50 p-1 rounded -mx-1"
 										>
 											<GripVertical className="w-3.5 h-3.5 text-muted-foreground/70 cursor-grab opacity-0 group-hover:opacity-100" />

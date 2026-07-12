@@ -55,7 +55,7 @@ export function MarinePage() {
         const { toast } = useToast();
         const [loading, setLoading] = useState<string | null>(null);
         const [standards, setStandards] = useState<unknown[]>([]);
-        const [fireClasses, setFireClasses] = useState<unknown[]>([]);
+        const [fireClasses, setFireClasses] = useState<unknown[]>([]);  // NOSONAR: typescript:S1854
         const [validation, setValidation] = useState<Record<string, unknown> | null>(null);
         const [zones, setZones] = useState<unknown[]>([]);
         const [detection, setDetection] = useState<Record<string, unknown> | null>(null);

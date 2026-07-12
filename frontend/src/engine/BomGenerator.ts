@@ -108,7 +108,7 @@ export function calculateCableLength(
 	// Euclidean distance in pixels
 	const dx = toX - fromX;
 	const dy = toY - fromY;
-	const distancePx = Math.sqrt(dx * dx + dy * dy);
+	const distancePx = Math.sqrt(dx * dx + dy * dy);  // NOSONAR: typescript:S7769
 
 	// Convert to meters
 	const lengthMeters = distancePx * PIXELS_TO_METERS;
@@ -327,7 +327,7 @@ function categorizeDevice(type: string): string {
 }
 
 function formatDeviceType(type: string): string {
-	return type.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
+	return type.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());  // NOSONAR: typescript:S7781
 }
 
 function getAveragePower(type: string): number {

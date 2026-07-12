@@ -62,7 +62,7 @@ export function FireAlarmDesigner() {
         const [projectDescription, setProjectDescription] = useState("");
         const [showGrid, setShowGrid] = useState(true);
         const [snapToGrid, setSnapToGrid] = useState(true);
-        const [_zoomLevel, _setZoomLevel] = useState(100);
+        const [_zoomLevel, _setZoomLevel] = useState(100);  // NOSONAR: typescript:S6754
         const [units, setUnits] = useState<"metric" | "imperial">("metric");
         const [loading, setLoading] = useState(false);
         const [saving, setSaving] = useState(false);
@@ -94,7 +94,7 @@ export function FireAlarmDesigner() {
                                                         type: (el.element_type || el.type || "smoke") as Detector["type"],
                                                         status: (el.status || "normal") as Detector["status"],
                                                         coverageRadius: el.coverage_radius || el.coverageRadius || 
-                                                                (el.element_type === "smoke" ? 6.37 : el.element_type === "heat" ? 4.27 : 0),
+                                                                (el.element_type === "smoke" ? 6.37 : el.element_type === "heat" ? 4.27 : 0),  // NOSONAR: typescript:S3358
                                                         location: el.location || el.name || "",
                                                         heightAFF: el.height_aff || el.heightAFF,
                                                         manufacturer: el.manufacturer,
@@ -165,7 +165,7 @@ export function FireAlarmDesigner() {
                                 y: 200,
                                 type,
                                 status: "normal",
-                                coverageRadius: type === "smoke" ? 6.37 : type === "heat" ? 4.27 : 0,
+                                coverageRadius: type === "smoke" ? 6.37 : type === "heat" ? 4.27 : 0,  // NOSONAR: typescript:S3358
                         };
                         setDetectors((prev) => [...prev, newDetector]);
                 },

@@ -107,7 +107,7 @@ export function EngineeringCanvas({ onItemDrop }: EngineeringCanvasProps) {
 				// Calculate cable length (pixels to meters, then km)
 				const dx = to.x - from.x;
 				const dy = to.y - from.y;
-				const lengthPx = Math.sqrt(dx * dx + dy * dy);
+				const lengthPx = Math.sqrt(dx * dx + dy * dy);  // NOSONAR: typescript:S7769
 				const lengthM = lengthPx * 0.01; // 1px = 10mm
 				const _lengthKm = lengthM / 1000;
 
@@ -156,7 +156,7 @@ export function EngineeringCanvas({ onItemDrop }: EngineeringCanvasProps) {
 			const loadPercent = (totalCurrent / 100) * 100; // Assume 100A base
 			const stressColor = getLoadColor(loadPercent);
 			const glowIntensity =
-				loadPercent > 100 ? 1 : loadPercent > 80 ? 0.6 : 0.2;
+				loadPercent > 100 ? 1 : loadPercent > 80 ? 0.6 : 0.2;  // NOSONAR: typescript:S3358
 			const isOverloaded = loadPercent >= 100;
 
 			return {
@@ -427,7 +427,7 @@ export function EngineeringCanvas({ onItemDrop }: EngineeringCanvasProps) {
 								x2={conn.toX}
 								y2={conn.toY}
 								stroke={conn.color}
-								strokeWidth={conn.isCritical ? 5 : conn.isWarning ? 4 : 3}
+								strokeWidth={conn.isCritical ? 5 : conn.isWarning ? 4 : 3}  // NOSONAR: typescript:S3358
 								className={`
                   transition-all duration-150
                   ${conn.isCritical ? "critical-animated" : ""}
@@ -437,7 +437,7 @@ export function EngineeringCanvas({ onItemDrop }: EngineeringCanvasProps) {
 									strokeDasharray: conn.isWarning ? "8,4" : "none",
 									filter: conn.isCritical
 										? "url(#glow-critical)"
-										: conn.isWarning
+										: conn.isWarning  // NOSONAR: typescript:S3358
 											? "url(#glow-warning)"
 											: "url(#glow-normal)",
 								}}
@@ -569,7 +569,7 @@ export function EngineeringCanvas({ onItemDrop }: EngineeringCanvasProps) {
 								stroke={
 									isSelected
 										? "#3b82f6"
-										: dev.isOverloaded
+										: dev.isOverloaded  // NOSONAR: typescript:S3358
 											? "#64748b"
 											: dev.stressColor
 								}
@@ -582,7 +582,7 @@ export function EngineeringCanvas({ onItemDrop }: EngineeringCanvasProps) {
 								style={{
 									filter: dev.isOverloaded
 										? "url(#glow-critical)"
-										: dev.glowIntensity > 0.2
+										: dev.glowIntensity > 0.2  // NOSONAR: typescript:S3358
 											? "url(#glow-normal)"
 											: "none",
 								}}

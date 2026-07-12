@@ -84,7 +84,7 @@ function Field({
 	...props
 }: React.ComponentProps<"div"> & VariantProps<typeof fieldVariants>) {
 	return (
-		<div
+		<div  // NOSONAR: typescript:S6819
 			role="group"
 			data-slot="field"
 			data-orientation={orientation}

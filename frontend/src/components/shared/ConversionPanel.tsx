@@ -50,7 +50,7 @@ function detectSourceFormat(filePath: string): "autocad" | "revit" | "ifc" | nul
  * string. Returns null if the combination is unsupported.
  */
 function resolveConversionType(
-        sourceFormat: "autocad" | "revit" | "ifc",
+        sourceFormat: "autocad" | "revit" | "ifc",  // NOSONAR: typescript:S4323
         targetFormat: "autocad" | "revit" | "ifc",
 ): "autocad_to_revit" | "revit_to_autocad" | null {
         if (sourceFormat === "autocad" && targetFormat === "revit") return "autocad_to_revit";

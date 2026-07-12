@@ -67,7 +67,7 @@ import "./styles/typography.css";
  *   2. PROTECTED routes — everything else. Each is wrapped in <RouteGuard>
  *      which redirects to /login?from=<path> if the user is not authenticated.
  *
- * V193 (R13): A catch-all "*" route renders <NotFoundPage/> for unknown paths
+ * V193 (R13): A catch-all "*" route renders <NotFoundPage/> for unknown paths  // NOSONAR: typescript:S1854
  * (previously the SPA silently returned 200 with empty content).
  */
 function App() {

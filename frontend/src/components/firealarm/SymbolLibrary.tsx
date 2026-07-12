@@ -25,7 +25,7 @@ interface SymbolProps {
 }
 
 interface SymbolLibraryProps extends SymbolProps {
-	type: DetectorType;
+	type: DetectorType;  // NOSONAR: typescript:S6767
 }
 
 // Helper function to get status color

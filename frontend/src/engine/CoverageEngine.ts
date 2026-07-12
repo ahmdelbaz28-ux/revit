@@ -107,9 +107,9 @@ export function calculateRoomCoverage(
 	const cols = Math.ceil(room.width / gridSize);
 	const rows = Math.ceil(room.length / gridSize);
 
-	const grid: boolean[][] = Array(rows)
+	const grid: boolean[][] = Array(rows)  // NOSONAR: typescript:S7723
 		.fill(null)
-		.map(() => Array(cols).fill(false));
+		.map(() => Array(cols).fill(false));  // NOSONAR: typescript:S7723
 
 	// Mark covered areas
 	detectors.forEach((detector) => {

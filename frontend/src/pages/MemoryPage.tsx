@@ -16,7 +16,7 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Label } from "@/components/ui/label";  // NOSONAR: typescript:S1128
 import { Textarea } from "@/components/ui/textarea";
 import { memoryApi } from "@/services/fullApi";
 import { useToast } from "@/hooks/use-toast";

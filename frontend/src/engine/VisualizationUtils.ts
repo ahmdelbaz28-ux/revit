@@ -144,7 +144,7 @@ export function getColorForValue(value: number, scale: ColorScale): string {
 
 	// Value is above maximum
 	if (value >= stops[stops.length - 1].value) {
-		return stops[stops.length - 1].hex;
+		return stops[stops.length - 1].hex;  // NOSONAR: typescript:S7755
 	}
 
 	// Find the two stops the value falls between

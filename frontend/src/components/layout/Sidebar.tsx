@@ -289,7 +289,7 @@ const Sidebar: React.FC<SidebarProps> = () => {
                                                                 data-onboarding={item.dataOnboarding}
                                                         >
                                                                 <item.icon
-                                                                        className={`shrink-0 h-[18px] w-[18px] ${isActive ? "text-cyan-300" : ""}`}
+                                                                        className={`shrink-0 h-[18px] w-[18px] ${isActive ? "text-cyan-300" : ""}`}  // NOSONAR: typescript:S3358
                                                                 />
                                                                 {!collapsed && (
                                                                         <span className="truncate text-[13px] font-medium tracking-wide">

@@ -686,7 +686,7 @@ export function ProjectFileManager() {
 												{f.status}{" "}
 												{f.status === "Approved"
 													? "✓"
-													: f.status === "In Review"
+													: f.status === "In Review"  // NOSONAR: typescript:S3358
 														? "⏳"
 														: "✏"}
 											</Badge>

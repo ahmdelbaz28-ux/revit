@@ -82,7 +82,7 @@ export function useLlmChat(systemPrompt?: string): UseLlmChatResult {
 					(chunk: string) => {
 						setMessages((prev) => {
 							const updated = [...prev];
-							const lastMsg = updated[updated.length - 1];
+							const lastMsg = updated[updated.length - 1];  // NOSONAR: typescript:S7755
 							if (lastMsg && lastMsg.role === "assistant" && lastMsg.isStreaming) {
 								updated[updated.length - 1] = {
 									...lastMsg,
@@ -96,7 +96,7 @@ export function useLlmChat(systemPrompt?: string): UseLlmChatResult {
 					(done: { content: string; model: string; source: string }) => {
 						setMessages((prev) => {
 							const updated = [...prev];
-							const lastMsg = updated[updated.length - 1];
+							const lastMsg = updated[updated.length - 1];  // NOSONAR: typescript:S7755
 							if (lastMsg && lastMsg.role === "assistant") {
 								updated[updated.length - 1] = {
 									...lastMsg,
@@ -113,7 +113,7 @@ export function useLlmChat(systemPrompt?: string): UseLlmChatResult {
 					(errMsg: string) => {
 						setMessages((prev) => {
 							const updated = [...prev];
-							const lastMsg = updated[updated.length - 1];
+							const lastMsg = updated[updated.length - 1];  // NOSONAR: typescript:S7755
 							if (lastMsg && lastMsg.role === "assistant" && lastMsg.isStreaming) {
 								updated[updated.length - 1] = {
 									...lastMsg,

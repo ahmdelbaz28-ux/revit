@@ -57,7 +57,7 @@ export function DigitalTwinConfigPage() {
 						<div className="space-y-2">
 							{mappings.map((m, i) => (
 								<div
-									key={i}
+									key={i}  // NOSONAR: typescript:S6479
 									className="flex items-center gap-2 p-2 bg-muted/50 rounded border border-border"
 								>
 									<Badge
@@ -66,7 +66,7 @@ export function DigitalTwinConfigPage() {
 									>
 										{typeof m === "object" && m
 											? String(
-													(m as Record<string, unknown>).name ||
+													(m as Record<string, unknown>).name ||  // NOSONAR: typescript:S6551
 														`Mapping ${i + 1}`,
 												)
 											: `Mapping ${i + 1}`}

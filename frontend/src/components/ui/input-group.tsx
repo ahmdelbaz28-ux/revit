@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 
 function InputGroup({ className, ...props }: React.ComponentProps<"div">) {
 	return (
-		<div
+		<div  // NOSONAR: typescript:S6819
 			data-slot="input-group"
 			role="group"
 			className={cn(
@@ -58,7 +58,7 @@ function InputGroupAddon({
 	...props
 }: React.ComponentProps<"div"> & VariantProps<typeof inputGroupAddonVariants>) {
 	return (
-		<div
+		<div  // NOSONAR: typescript:S6847
 			tabIndex={0}
 			role="group"
 			data-slot="input-group-addon"

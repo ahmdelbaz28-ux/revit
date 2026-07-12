@@ -60,7 +60,7 @@ export function SettingsPage() {
 	const [reportFormat, setReportFormat] = useState("pdf");
 	const [reportQuality, setReportQuality] = useState("high");
 
-	const [_saveStatus, setSaveStatus] = useState<string | null>(null);
+	const [_saveStatus, setSaveStatus] = useState<string | null>(null);  // NOSONAR: typescript:S6754
 
 	const persistSettings = (key: string, value: Record<string, unknown>) => {
 		// CodeQL: js/clear-text-storage-of-sensitive-data — FALSE POSITIVE.

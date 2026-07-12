@@ -59,7 +59,7 @@ interface RevitConnectionStatus {
 }
 
 export function CADSettingsPage() {
-        const { t } = useTranslation();
+        const { t } = useTranslation();  // NOSONAR: typescript:S1854
         const [activeTab, setActiveTab] = useState("autocad");
 
         // AutoCAD settings

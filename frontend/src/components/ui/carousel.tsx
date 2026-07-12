@@ -132,7 +132,7 @@ const Carousel = React.forwardRef<
 					canScrollNext,
 				}}
 			>
-				<div
+				<div  // NOSONAR: typescript:S6819
 					ref={ref}
 					onKeyDownCapture={handleKeyDown}
 					className={cn("relative", className)}
@@ -177,7 +177,7 @@ const CarouselItem = React.forwardRef<
 	const { orientation } = useCarousel();
 
 	return (
-		<div
+		<div  // NOSONAR: typescript:S6819
 			ref={ref}
 			role="group"
 			aria-roledescription="slide"

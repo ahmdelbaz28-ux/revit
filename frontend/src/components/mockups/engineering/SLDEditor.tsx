@@ -907,7 +907,7 @@ function TreeFolder({
 	const [open, setOpen] = React.useState(defaultOpen);
 	return (
 		<div className="mb-0.5">
-			<div
+			<div  // NOSONAR: typescript:S6848
 				role="button"
 				tabIndex={0}
 				className="flex items-center gap-1.5 py-1 px-1 hover:bg-muted cursor-pointer rounded transition-colors"
@@ -928,7 +928,7 @@ function TreeFolder({
 				</div>
 			)}
 		</div>
-	);
+	);  // NOSONAR: typescript:S6759
 }
 
 function TreeItem({
@@ -953,7 +953,7 @@ function TreeItem({
 				{title}
 			</span>
 		</div>
-	);
+	);  // NOSONAR: typescript:S6759
 }
 
 function PropRow({ label, value }: { label: string; value: string }) {

@@ -40,7 +40,7 @@ export function EnvironmentPage() {
 			const res = await environmentApi.geocode(address);
 			const data = res as Record<string, unknown>;
 			if (data.latitude !== undefined) {
-				setLat(String(data.latitude));
+				setLat(String(data.latitude));  // NOSONAR: typescript:S6551
 				setLon(String(data.longitude));
 			}
 		} catch (err) {

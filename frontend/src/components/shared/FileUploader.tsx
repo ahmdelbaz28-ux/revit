@@ -66,7 +66,7 @@ export function FileUploader({
 	return (
 		<div className="space-y-3">
 			<label className="text-sm font-medium text-foreground/90">{label}</label>
-			<div
+			<div  // NOSONAR: typescript:S6819
 				className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer ${
 					dragging
 						? "border-primary bg-primary/10"

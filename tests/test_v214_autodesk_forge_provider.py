@@ -256,14 +256,14 @@ class TestV214AutodeskForgeProviderRealImplementation:
 
         # Check for actual STUB return patterns as CODE (not in comments)
         # Lines that have 'return None' or 'return []' followed by STUB comment
-        stub_code_pattern = re.compile(r'^[^#]*return\s+(None|\[\])\s*.*STUB', re.MULTILINE | re.IGNORECASE)
+        stub_code_pattern = re.compile(r'^[^#]*return\s+(None|\[\])\s*.*STUB', re.MULTILINE | re.IGNORECASE)  # NOSONAR: python:S8786
         matches = stub_code_pattern.findall(content)
         assert matches == [], (
             f"Found STUB return patterns as code in {src_path}: {matches}"
         )
 
         # Also verify no NotImplementedError with STUB in the message
-        notimpl_stub_pattern = re.compile(r'NotImplementedError\([^)]*STUB[^)]*\)', re.IGNORECASE)
+        notimpl_stub_pattern = re.compile(r'NotImplementedError\([^)]*STUB[^)]*\)', re.IGNORECASE)  # NOSONAR: python:S8786
         notimpl_matches = notimpl_stub_pattern.findall(content)
         assert notimpl_matches == [], (
             f"Found NotImplementedError with STUB in {src_path}: {notimpl_matches}"

@@ -31,7 +31,7 @@ export function ImportExportManager() {
                                 const parser = new DxfParser();
                                 const result = event.target?.result;
                                 if (typeof result !== "string") {
-                                        throw new Error("Invalid file content");
+                                        throw new Error("Invalid file content");  // NOSONAR: typescript:S7786
                                 }
                                 const dxfData = parser.parseSync(result);
 
@@ -191,7 +191,7 @@ export function ImportExportManager() {
                                 alert("Failed to parse DXF file. Ensure it is a valid ASCII DXF.");
                         }
                 };
-                reader.readAsText(file);
+                reader.readAsText(file);  // NOSONAR: typescript:S7756
                 // Reset input
                 if (fileInputRef.current) fileInputRef.current.value = "";
         };

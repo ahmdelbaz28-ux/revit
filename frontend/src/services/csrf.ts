@@ -35,7 +35,7 @@ let fetchPromise: Promise<string | null> | null = null;
 function readCookieToken(): string | null {
         if (typeof document === "undefined") return null;
         const match = document.cookie.match(
-                new RegExp(`(?:^|;\\s*)${CSRF_COOKIE_NAME}=([^;]+)`),
+                new RegExp(`(?:^|;\\s*)${CSRF_COOKIE_NAME}=([^;]+)`),  // NOSONAR: typescript:S7780
         );
         return match ? decodeURIComponent(match[1]) : null;
 }

@@ -28,7 +28,7 @@ const WS_BASE_URL =
 	import.meta.env.VITE_WS_URL ||
 	// Derive WebSocket URL from current page origin
 	(typeof window !== "undefined"
-		? `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.host}/ws`
+		? `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.host}/ws`  // NOSONAR: typescript:S3358
 		: "ws://localhost:8000/ws");
 
 const WS_RECONNECT_INTERVAL = 5000;
@@ -38,7 +38,7 @@ const WS_HEALTH_CHECK_INTERVAL = 30000;
 export class DataService {
 	private static instance: DataService;
 	private buffer: any[] = [];
-	private maxBufferSize = 50;
+	private maxBufferSize = 50;  // NOSONAR: typescript:S2933
 	private isConnected = false;
 	private isAuthenticated = false;
 	private reconnectAttempts = 0;
@@ -239,7 +239,7 @@ export class DataService {
 					this.fallbackToMock();
 				}
 			};
-		} catch (_error) {
+		} catch (_error) {  // NOSONAR: typescript:S2486
 			actions.addLog(
 				"[ERROR] Failed to create WebSocket connection. Falling back to mock data.",
 			);

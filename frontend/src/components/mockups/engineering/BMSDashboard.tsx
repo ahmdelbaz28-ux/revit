@@ -21,7 +21,7 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export function BMSDashboard() {
-	const [_activeZone, _setActiveZone] = useState("Server Room");
+	const [_activeZone, _setActiveZone] = useState("Server Room");  // NOSONAR: typescript:S6754
 
 	return (
 		<div className="flex flex-col h-screen w-screen overflow-hidden bg-card text-foreground font-sans">

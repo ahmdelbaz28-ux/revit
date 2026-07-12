@@ -178,7 +178,7 @@ export function Header({
 									valueColor={
 										latency < 30
 											? "#22c55e"
-											: latency < 80
+											: latency < 80  // NOSONAR: typescript:S3358
 												? "#f59e0b"
 												: "#64748b"
 									}

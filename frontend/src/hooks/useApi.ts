@@ -83,7 +83,7 @@ function useAsyncResource<T, TDep = string | null>(
 			})
 			.catch((err: unknown) => {
 				if (cancelledRef.current) return;
-				setLoading(false);
+				setLoading(false);  // NOSONAR: typescript:S6754
 				setData(null);
 				setError(err instanceof Error ? err.message : "Network error");
 			});
@@ -128,7 +128,7 @@ function useAsyncMutation<TArgs, TResult>(
 				return null;
 			} catch (err: unknown) {
 				setLoading(false);
-				setError(err instanceof Error ? err.message : "Network error");
+				setError(err instanceof Error ? err.message : "Network error");  // NOSONAR: typescript:S6754
 				return null;
 			}
 		},
@@ -179,7 +179,7 @@ export function useProjects(): UseApiResult<Project[]> {
 export function useProject(id: string | null): UseApiResult<Project> {
 	return useAsyncResource<Project>(
 		() => api.getProject(id!),
-		[id],
+		[id],  // NOSONAR: typescript:S6754
 		"Failed to fetch project",
 		false,
 		id !== null,

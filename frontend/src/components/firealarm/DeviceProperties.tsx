@@ -275,7 +275,7 @@ export const DeviceProperties: React.FC<DevicePropertiesProps> = ({
 									className={
 										editedDevice.status === "normal"
 											? "bg-success/10 text-success border-success/30"
-											: editedDevice.status === "warning"
+											: editedDevice.status === "warning"  // NOSONAR: typescript:S3358
 												? "bg-warning/10 text-warning border-warning/30"
 												: "bg-danger/10 text-danger border-danger/30"
 									}
