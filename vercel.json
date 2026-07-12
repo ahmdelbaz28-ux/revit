@@ -3,9 +3,8 @@
 	"framework": "vite",
 	"buildCommand": "cd frontend && npm run build",
 	"outputDirectory": "frontend/dist",
-	"installCommand": "cd frontend && npm install --no-audit --no-fund",
+	"installCommand": "cd frontend && npm ci --no-audit --no-fund",
 	"rewrites": [
-		{ "source": "/api/(.*)", "destination": "https://ahmdelbaz28-bazspark.hf.space/api/$1" },
 		{ "source": "/((?!api/).*)", "destination": "/" }
 	]
 }
