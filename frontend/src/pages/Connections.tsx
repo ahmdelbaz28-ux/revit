@@ -47,7 +47,7 @@ function Connections() {
 							? t("connectionsPage.totalConnections", {
 									count: connectionsData.total,
 								})
-							: t("common.loading")}  // NOSONAR — CPD: intentional pattern
+							: t("common.loading")}
 					</p>
 				</div>
 				<button
@@ -83,7 +83,7 @@ function Connections() {
 				{elementFilter && (
 					<button
 						onClick={() => setElementFilter("")}
-						className="text-sm text-muted-foreground hover:text-white"  // NOSONAR — CPD: intentional pattern
+						className="text-sm text-muted-foreground hover:text-white"
 					>
 						✕ {t("common.clear")}
 					</button>
@@ -108,7 +108,7 @@ function Connections() {
 
 			{/* Table */}
 			{connectionsData && !isLoading && (
-				<div className="bg-card border border-border rounded-md overflow-hidden">  // NOSONAR — CPD: intentional pattern
+				<div className="bg-card border border-border rounded-md overflow-hidden">
 					<div className="overflow-x-auto">
 						<table
 							className="w-full text-sm"
@@ -155,7 +155,7 @@ function Connections() {
 											<EmptyState
 												icon={
 													<svg
-														width="48"  // NOSONAR — CPD: intentional pattern
+														width="48"
 														height="48"
 														viewBox="0 0 24 24"
 														fill="none"

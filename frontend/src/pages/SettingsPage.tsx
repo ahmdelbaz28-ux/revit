@@ -194,7 +194,7 @@ export function SettingsPage() {
 								</>
 							)}
 						</div>
-					</CardContent>  // NOSONAR — CPD: intentional pattern
+					</CardContent>
 				</Card>
 
 				{/* Report Generator Quick Access */}
@@ -292,7 +292,7 @@ export function SettingsPage() {
 										<select
 											value={language}
 											onChange={(e) => setLanguage(e.target.value)}
-											className="w-full bg-card border border-border rounded px-3 py-2 text-foreground"  // NOSONAR — CPD: intentional pattern
+											className="w-full bg-card border border-border rounded px-3 py-2 text-foreground"
 										>
 											<option value="en">English</option>
 											<option value="es">Español</option>
@@ -330,7 +330,7 @@ export function SettingsPage() {
 
 					{/* Security Settings */}
 					<TabsContent value="security">
-						<Card className="border-border bg-card">  // NOSONAR — CPD: intentional pattern
+						<Card className="border-border bg-card">
 							<CardHeader className="pb-3">
 								<CardTitle className="text-lg text-foreground">
 									{t("settings.security")}
@@ -443,7 +443,7 @@ export function SettingsPage() {
 
 					{/* Report Settings */}
 					<TabsContent value="reports">
-						<Card className="border-border bg-card">  // NOSONAR — CPD: intentional pattern
+						<Card className="border-border bg-card">
 							<CardHeader className="pb-3">
 								<CardTitle className="text-lg text-foreground">
 									{t("settings.reports")}

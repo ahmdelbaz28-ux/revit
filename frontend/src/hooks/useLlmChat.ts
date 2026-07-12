@@ -74,7 +74,7 @@ export function useLlmChat(systemPrompt?: string): UseLlmChatResult {
 					{
 						prompt: content.trim(),
 						system: systemPrompt,
-						temperature: 0.1,  // NOSONAR — CPD: intentional pattern
+						temperature: 0.1,
 						max_tokens: 1500,
 					},
 					controller.signal,
@@ -103,7 +103,7 @@ export function useLlmChat(systemPrompt?: string): UseLlmChatResult {
 									content: done.content || lastMsg.content,
 									model: done.model,
 									source: done.source,
-									isStreaming: false,  // NOSONAR — CPD: intentional pattern
+									isStreaming: false,
 								};
 							}
 							return updated;
@@ -131,7 +131,7 @@ export function useLlmChat(systemPrompt?: string): UseLlmChatResult {
 						});
 					},
 				);
-			} catch (err: unknown) {  // NOSONAR — CPD: intentional pattern
+			} catch (err: unknown) {
 				if (controller.signal.aborted) return;
 				const msg =
 					err instanceof Error ? err.message : "Failed to get AI response";

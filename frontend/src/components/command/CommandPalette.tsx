@@ -16,14 +16,14 @@ export interface CommandItem {
 }
 
 const COMMANDS: CommandItem[] = [
-        {  // NOSONAR — CPD: intentional pattern
+        {
                 id: "cmd-dashboard",
                 label: "Open Dashboard",
                 shortcut: "G D",
                 category: "navigation",
                 path: "/dashboard",
         },
-        {  // NOSONAR — CPD: intentional pattern
+        {
                 id: "cmd-projects",
                 label: "Open Projects",
                 shortcut: "G P",

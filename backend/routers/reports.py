@@ -46,7 +46,7 @@ def _verify_project(project_id: str) -> None:
     db = get_db()
     project = db.get_project(project_id)
     if not project:
-        raise HTTPException(status_code=404, detail="Project not found")  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
+        raise HTTPException(status_code=404, detail="Project not found")  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR
 
 
 def _generate_voltage_drop_report(devices: list, connections: list, now: str) -> dict:  # NOSONAR: python:S3776
@@ -706,7 +706,7 @@ async def generate_report(project_id: str, input_data: GenerateReportInput):
     _verify_project(project_id)
     db = get_db()
 
-    report_type = input_data.type or input_data.reportType or "summary"  # NOSONAR: CPD intentional pattern
+    report_type = input_data.type or input_data.reportType or "summary"  # NOSONAR
     parameters = input_data.parameters or input_data.filters or {}
 
     report_data = {
@@ -763,10 +763,10 @@ async def generate_global_report(input_data: GenerateReportInput):
     db = get_db()
     projects = db.list_projects(page=1, limit=1)
     if not projects or not projects.get("data"):
-        raise HTTPException(status_code=404, detail="No projects found to generate report")  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
+        raise HTTPException(status_code=404, detail="No projects found to generate report")  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR
 
     project_id = projects["data"][0]["id"]
-    report_type = input_data.type or input_data.reportType or "summary"  # NOSONAR: CPD intentional pattern
+    report_type = input_data.type or input_data.reportType or "summary"  # NOSONAR
     parameters = input_data.parameters or input_data.filters or {}
 
     report_data = {
@@ -814,7 +814,7 @@ async def get_report(project_id: str, report_id: str):
     db = get_db()
     report = db.get_report(project_id, report_id)
     if not report:
-        raise HTTPException(status_code=404, detail="Report not found")  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
+        raise HTTPException(status_code=404, detail="Report not found")  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR
     return {"data": report, "success": True}
 
 
@@ -829,7 +829,7 @@ async def export_report(  # NOSONAR — S3776: cognitive complexity is inherent 
     db = get_db()
     report = db.get_report(project_id, report_id)
     if not report:
-        raise HTTPException(status_code=404, detail="Report not found")  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
+        raise HTTPException(status_code=404, detail="Report not found")  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR
 
     if report["status"] != "completed":
         raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability

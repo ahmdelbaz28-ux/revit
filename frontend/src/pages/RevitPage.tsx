@@ -62,9 +62,9 @@ export function RevitPage() {
                 try {
                         const result = await revitService.connect("auto");
                         // V214: Check simulation_mode from connect response
-                        const sim = (result as Record<string, unknown>)?.simulation_mode;  // NOSONAR — CPD: intentional pattern
+                        const sim = (result as Record<string, unknown>)?.simulation_mode;
                         if (sim) {
-                                setSimulationMode(true);  // NOSONAR — CPD: intentional pattern
+                                setSimulationMode(true);
                                 toast.warning(
                                         "SIMULATION MODE: No real Revit instance is connected. " +
                                         "create_wall/floor/door will return None. read_rvt will " +
@@ -127,11 +127,11 @@ export function RevitPage() {
                                         <h1 className="text-2xl font-bold text-foreground">Revit Dashboard</h1>
                                         <p className="text-sm text-muted-foreground mt-1">
                                                 Connect, read, and manage RVT files
-                                        </p>  // NOSONAR — CPD: intentional pattern
+                                        </p>
                                 </div>
                                 <Badge
                                         variant={connected ? "default" : "outline"}
-                                        className={  // NOSONAR — CPD: intentional pattern
+                                        className={
                                                 connected ? "bg-emerald-600" : "border-border text-muted-foreground"
                                         }
                                 >

@@ -62,9 +62,9 @@ export function AutoCADPage() {
         const handleConnect = async () => {
                 setConnecting(true);
                 try {
-                        const result = await autocadService.connect(visible, forceNew);  // NOSONAR — CPD: intentional pattern
+                        const result = await autocadService.connect(visible, forceNew);
                         // V214: Check simulation_mode from connect response
-                        const sim = (result as Record<string, unknown>)?.simulation_mode;  // NOSONAR — CPD: intentional pattern
+                        const sim = (result as Record<string, unknown>)?.simulation_mode;
                         if (sim) {
                                 setSimulationMode(true);
                                 toast.warning(
@@ -127,11 +127,11 @@ export function AutoCADPage() {
                         <div className="flex items-center justify-between">
                                 <div>
                                         <h1 className="text-2xl font-bold text-foreground">
-                                                AutoCAD Dashboard  // NOSONAR — CPD: intentional pattern
+                                                AutoCAD Dashboard
                                         </h1>
                                         <p className="text-sm text-muted-foreground mt-1">
                                                 Connect, read, and manage DWG files
-                                        </p>  // NOSONAR — CPD: intentional pattern
+                                        </p>
                                 </div>
                                 <Badge
                                         variant={connected ? "default" : "outline"}

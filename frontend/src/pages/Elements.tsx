@@ -47,7 +47,7 @@ function Elements() {
 
         // Fetch elements
         const { data, isLoading, error } = useQuery({
-                queryKey: ["elements", page, typeFilter],  // NOSONAR — CPD: intentional pattern
+                queryKey: ["elements", page, typeFilter],
                 queryFn: () =>
                         api.getElements({
                                 page,
@@ -83,7 +83,7 @@ function Elements() {
                                         <p className="text-muted-foreground text-sm mt-1">
                                                 {data
                                                         ? t("elements.totalElements", { count: data?.total ?? 0 })
-                                                        : t("common.loading")}  // NOSONAR — CPD: intentional pattern
+                                                        : t("common.loading")}
                                         </p>
                                 </div>
                                 <button
@@ -108,7 +108,7 @@ function Elements() {
                         </div>
 
                         {/* Filters */}
-                        <div className="flex flex-wrap items-center gap-3">  // NOSONAR — CPD: intentional pattern
+                        <div className="flex flex-wrap items-center gap-3">
                                 <select
                                         value={typeFilter}
                                         onChange={(e) => {
@@ -155,7 +155,7 @@ function Elements() {
                         {/* Table */}
                         {data && !isLoading && (
                                 <>
-                                        <div className="bg-card border border-border rounded-md overflow-hidden">  // NOSONAR — CPD: intentional pattern
+                                        <div className="bg-card border border-border rounded-md overflow-hidden">
                                                 <div className="overflow-x-auto">
                                                         <table
                                                                 className="w-full text-sm"

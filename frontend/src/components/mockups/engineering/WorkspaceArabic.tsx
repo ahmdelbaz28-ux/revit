@@ -57,7 +57,6 @@ export function WorkspaceArabic() {
                                                                 { level: "INFO", time: "14:37:21", source: "Analysis", message: "Load flow converged — Newton-Raphson, 7 iterations, tolerance 0.0001 pu" },
                                                                 { level: "INFO", time: "14:36:05", source: "Compliance", message: "NFPA 72 check complete — 127 items passed, 2 warnings" },
                                                                 { level: "INFO", time: "14:35:00", source: "System", message: "Auto-save complete — 5 files, 47MB" },
-  // NOSONAR — CPD: intentional pattern
         ];
 
 
@@ -197,7 +196,7 @@ export function WorkspaceArabic() {
 
                                         <div className="h-1/3 flex flex-col border-t bg-card/20">
                                                 <div className="px-3 py-2 text-xs font-semibold tracking-wider text-muted-foreground border-b flex justify-between items-center bg-card/40">
-                                                        <span>مدير الطبقات</span>  // NOSONAR — CPD: intentional pattern
+                                                        <span>مدير الطبقات</span>
                                                         <Settings className="h-3 w-3" />
                                                 </div>
                                                 <ScrollArea className="flex-1 p-2">
@@ -513,7 +512,7 @@ export function WorkspaceArabic() {
                                                                 12 معلومات
                                                         </Badge>
                                                 </div>
-                                        </div>  // NOSONAR — CPD: intentional pattern
+                                        </div>
                                         <div className="flex items-center gap-2">
                                                 <Button
                                                         variant="ghost"
@@ -597,7 +596,7 @@ function LogEntry({
         level: "ERROR" | "WARN" | "INFO";
         time: string;
         source: string;
-        message: string;  // NOSONAR — CPD: intentional pattern
+        message: string;
 }) {
         const isError = level === "ERROR";
         const isWarn = level === "WARN";

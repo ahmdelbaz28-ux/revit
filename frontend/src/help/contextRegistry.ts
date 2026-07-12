@@ -154,7 +154,7 @@ export function searchHelpTopics(
 export function getFallbackHelpTopic(query: string): HelpTopic | undefined {
 	const normalized = normalize(query);
 
-	if (  // NOSONAR — CPD: intentional pattern
+	if (
 		normalized.includes("auth") ||
 		normalized.includes("login") ||
 		normalized.includes("token") ||
@@ -166,7 +166,7 @@ export function getFallbackHelpTopic(query: string): HelpTopic | undefined {
 		return HELP_TOPICS["troubleshooting.auth"];
 	}
 
-	if (  // NOSONAR — CPD: intentional pattern
+	if (
 		normalized.includes("api") ||
 		normalized.includes("request") ||
 		normalized.includes("timeout") ||

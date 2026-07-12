@@ -57,7 +57,7 @@ export function MainWorkspace() {
                                                                 { level: "ERROR", time: "14:46:51", source: "Load Calculator", message: "MDB-B overloaded: demand 978A exceeds 800A bus rating (122.3%)" },
                                                                 { level: "ERROR", time: "14:45:22", source: "Arc Flash", message: "Panel LP-3A: Arc flash label missing. Incident energy 52.4 cal/cm² — PPE Cat 4 required" },
                                                                 { level: "WARN", time: "14:44:10", source: "BIM Sync", message: "IFC export: 3 elements skipped — unsupported geometry type (IFCBSPLINECURVE)" },
-                                                                { level: "WARN", time: "14:43:38", source: "Clash Detection", message: "5 new soft clashes detected in MEP zone — Level 2, Grid C–E / 3–6" },  // NOSONAR — CPD: intentional pattern
+                                                                { level: "WARN", time: "14:43:38", source: "Clash Detection", message: "5 new soft clashes detected in MEP zone — Level 2, Grid C–E / 3–6" },
                                                                 { level: "WARN", time: "14:42:15", source: "Cable Sizing", message: "Cable run EL-C-047: voltage drop 4.8% approaching 5% limit" },
                                                                 { level: "WARN", time: "14:41:02", source: "File System", message: "Auto-save delayed 12s — large file lock on BIM-Model.rvt" },
                                                                 { level: "WARN", time: "14:40:30", source: "Collaboration", message: "User Marcus Williams connection timeout — changes may not be synced" },
@@ -197,7 +197,7 @@ export function MainWorkspace() {
                                                                                 <FileNode title="LV Cables" type="xlsx" />
                                                                         </TreeNode>
                                                                 </TreeNode>
-                                                                <TreeNode title="Analysis & Reports" defaultOpen>  // NOSONAR — CPD: intentional pattern
+                                                                <TreeNode title="Analysis & Reports" defaultOpen>
                                                                         <FileNode
                                                                                 title="Report Manager"
                                                                                 type="xlsx"
@@ -787,7 +787,7 @@ function FileNode({
         );  // NOSONAR: typescript:S6759
 }
 
-function LayerRow({  // NOSONAR — CPD: intentional pattern
+function LayerRow({
         name,
         color,
         active = false,

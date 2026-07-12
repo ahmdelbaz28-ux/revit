@@ -283,7 +283,7 @@ class CIBenchmarkSuite:
 
     def save_baseline(self, path: str | None = None) -> str:
         """Save current results as baseline for future comparison."""
-        path = path or self.BASELINE_FILE  # NOSONAR: CPD intentional pattern
+        path = path or self.BASELINE_FILE  # NOSONAR
         # Validate path to prevent path traversal (pythonsecurity:S8707)
         try:
             from pathlib import Path
@@ -325,7 +325,7 @@ class CIBenchmarkSuite:
         Returns (all_passed, list_of_failures).
         Fails if any benchmark is >REGRESSION_THRESHOLD% slower.
         """
-        path = path or self.BASELINE_FILE  # NOSONAR: CPD intentional pattern
+        path = path or self.BASELINE_FILE  # NOSONAR
         # Validate path to prevent path traversal (pythonsecurity:S8707)
         try:
             from pathlib import Path
