@@ -429,6 +429,16 @@ postman_collection*.json
 *.sonarbak
 *.bak
 
+# ── V230 FIX: Reject accidental Python repr filenames ──────────────────────
+# A BytesIO object accidentally passed to ezdxf.saveas() would create a file
+# named "<_io.BytesIO object at 0x7f...>". The < > characters break Vercel's
+# git checkout ("Resource provisioning failed" — every deployment fails).
+# These explicit patterns block any accidental repr-named file from being
+# tracked by git, while leaving all normal files alone.
+<_io*
+*BytesIO object at 0x*
+*object at 0x[0-9a-f]*
+
 
 # ── Cloudflare ───────────────────────────────────────────────────────────────
 .wrangler/
