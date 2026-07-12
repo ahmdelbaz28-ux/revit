@@ -2,30 +2,60 @@
 
 <img src="docs/assets/banner/hero-banner.svg" alt="BazSpark — Safety-Critical Fire Alarm Engineering Platform" width="100%"/>
 
-# 🔥 BazSpark
+[![Vercel Production](https://img.shields.io/badge/Vercel-Production%20%E2%9C%93%20Ready-brightgreen?style=flat-square&logo=vercel)](https://ba-zspark.vercel.app)
+[![HuggingFace Space](https://img.shields.io/badge/HF%20Space-Backend%20Running-success?style=flat-square&logo=huggingface)](https://ahmdelbaz28-bazspark.hf.space)
+[![CI/CD Pipeline](https://github.com/ahmdelbaz28-ux/BAZspark/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ahmdelbaz28-ux/BAZspark/actions/workflows/ci.yml)
+[![Vercel Deploy](https://github.com/ahmdelbaz28-ux/BAZspark/actions/workflows/trigger-vercel.yml/badge.svg?branch=main)](https://github.com/ahmdelbaz28-ux/BAZspark/actions/workflows/trigger-vercel.yml)
+[![Sync to HF](https://github.com/ahmdelbaz28-ux/BAZspark/actions/workflows/sync-to-hf.yml/badge.svg?branch=main)](https://github.com/ahmdelbaz28-ux/BAZspark/actions/workflows/sync-to-hf.yml)
 
-### Safety-Critical Fire Alarm Engineering Platform
+[![Python](https://img.shields.io/badge/Python-3.12-3776AB?style=flat-square&logo=python&logoColor=white)](https://python.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.138-009688?style=flat-square&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![React](https://img.shields.io/badge/React-18-61DAFB?style=flat-square&logo=react&logoColor=black)](https://react.dev)
+[![Vite](https://img.shields.io/badge/Vite-8-646CFF?style=flat-square&logo=vite&logoColor=white)](https://vitejs.dev)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://typescriptlang.org)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-4-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
 
-[![CI/CD](https://github.com/ahmdelbaz28-ux/revit/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ahmdelbaz28-ux/revit/actions/workflows/ci.yml)
-[![Python](https://img.shields.io/badge/python-3.12-blue)](https://python.org)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.138-green)](https://fastapi.tiangolo.com)
-[![React](https://img.shields.io/badge/React-18-cyan)](https://react.dev)
-[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![Version](https://img.shields.io/badge/version-1.55.0-orange)](VERSION)
+[![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
+[![Version](https://img.shields.io/badge/Version-1.55.0-orange?style=flat-square)](VERSION)
+[![Tests](https://img.shields.io/badge/Tests-8%2C557%2B-blue?style=flat-square)](#-الاختبارات)
+[![CodeQL](https://github.com/ahmdelbaz28-ux/BAZspark/actions/workflows/codeql.yml/badge.svg)](https://github.com/ahmdelbaz28-ux/BAZspark/actions/workflows/codeql.yml)
+
+**🚀 Live Demo: [ba-zspark.vercel.app](https://ba-zspark.vercel.app)** · **📦 Container: `ghcr.io/ahmdelbaz28-ux/bazspark`**
 
 **منصة هندسية متكاملة لتصميم أنظمة الإنذار من الحريق وفق NFPA 72-2022**
 **مع محرك Digital Twin للتحويل ثنائي الاتجاه بين AutoCAD و Revit**
 
 </div>
 
-## 📸 لقطات من البرنامج
+## 📸 لقطات حقيقية من البرنامج
 
 <div align="center">
 
-| Dashboard | Fire Alarm System | Reports |
-|:---------:|:-----------------:|:-------:|
-| ![Dashboard](docs/assets/screenshot_dashboard.png) | ![Fire Alarm](docs/assets/screenshot_firealarm.png) | ![Reports](docs/assets/screenshot_reports.png) |
-| لوحة التحكم الرئيسية | نظام إنذار الحريق | التقارير الهندسية |
+> جميع اللقطات أدناه مأخوذة من النسخة المنشورة فعلياً على Vercel + HuggingFace Space
+
+### صفحة تسجيل الدخول (Live من Vercel)
+
+| Login Page |
+|:----------:|
+| ![Login](docs/assets/screenshots/login.png) |
+| واجهة تسجيل الدخول الآمنة — مصادقة عبر API Key مع HttpOnly Cookie |
+
+### واجهات النظام (من التطبيق الفعلي)
+
+| Dashboard | Fire Alarm Designer | Engineering Workspace |
+|:--------:|:-------------------:|:---------------------:|
+| ![Dashboard](docs/assets/screenshots/dashboard.png) | ![Fire Alarm](docs/assets/screenshots/fire-alarm-designer.png) | ![Engineering](docs/assets/screenshots/engineering-workspace.png) |
+| لوحة التحكم الرئيسية | مصمم نظام إنذار الحريق | مساحة العمل الهندسية |
+
+| Reports | Digital Twin | Project Management |
+|:------:|:------------:|:------------------:|
+| ![Reports](docs/assets/screenshots/reports.png) | ![Digital Twin](docs/assets/screenshots/digital-twin.png) | ![Projects](docs/assets/screenshots/project-management.png) |
+| التقارير الهندسية | التوأم الرقمي | إدارة المشاريع |
+
+| Settings | Connections | Compliance Center |
+|:-------:|:------------:|:-----------------:|
+| ![Settings](docs/assets/screenshots/settings.png) | ![Connections](docs/assets/screenshots/connections.png) | ![Compliance](docs/assets/screenshots/compliance-center.png) |
+| الإعدادات | الاتصالات | مركز الامتثال |
 
 </div>
 
@@ -161,8 +191,8 @@
 
 ### 1. استنساخ المستودع
 ```bash
-git clone https://github.com/ahmdelbaz28-ux/revit.git
-cd revit
+git clone https://github.com/ahmdelbaz28-ux/BAZspark.git
+cd BAZspark
 ```
 
 ### 2. تشغيل الخادم (Backend)
@@ -407,8 +437,8 @@ pytest tests/test_nfpa72_engine.py tests/test_voltage_drop.py tests/test_qomn_ke
 
 ```bash
 # 1. على الـ VPS:
-git clone https://github.com/ahmdelbaz28-ux/revit.git
-cd revit
+git clone https://github.com/ahmdelbaz28-ux/BAZspark.git
+cd BAZspark
 
 # 2. إعداد المتغيرات
 export FIREAI_API_KEY="$(python3 -c 'import secrets; print(secrets.token_urlsafe(32))')"
@@ -487,8 +517,11 @@ sudo certbot --nginx -d bazspark.yourdomain.com
 |---|---|
 | **المؤلف** | م. أحمد الباز |
 | **البريد** | engineering@bazspark.com |
-| **المستودع** | [github.com/ahmdelbaz28-ux/revit](https://github.com/ahmdelbaz28-ux/revit) |
-| **Issues** | [أبلغ عن مشكلة](https://github.com/ahmdelbaz28-ux/revit/issues) |
+| **المستودع** | [github.com/ahmdelbaz28-ux/BAZspark](https://github.com/ahmdelbaz28-ux/BAZspark) |
+| **الإنتاج (Frontend)** | [ba-zspark.vercel.app](https://ba-zspark.vercel.app) |
+| **الإنتاج (Backend)** | [ahmdelbaz28-bazspark.hf.space](https://ahmdelbaz28-bazspark.hf.space) |
+| **الحاوية** | `ghcr.io/ahmdelbaz28-ux/bazspark:latest` |
+| **Issues** | [أبلغ عن مشكلة](https://github.com/ahmdelbaz28-ux/BAZspark/issues) |
 
 ---
 
@@ -505,4 +538,4 @@ sudo certbot --nginx -d bazspark.yourdomain.com
 Built with ❤️ for life safety
 
 </div>
-# NOSONAR-trigger
+
