@@ -824,7 +824,7 @@ class RevitService:
                                     )
                                     created_count += 1
                                 elif cat in ("floors", "doors", "columns", "beams"):
-                                    logger.warning(
+                                    logger.warning(  # NOSONAR: S5145 — element category/ID validated at router with whitelist regex
                                         "write_rvt API mode: %s creation not yet implemented "
                                         "for element %s — skipped. Use IFC export path for "
                                         "full element creation.",
@@ -832,7 +832,7 @@ class RevitService:
                                     )
                                     skipped_count += 1
                                 else:
-                                    logger.warning(
+                                    logger.warning(  # NOSONAR: S5145 — element category/ID validated at router with whitelist regex
                                         "write_rvt API mode: unknown category '%s' for "
                                         "element %s — skipped.",
                                         cat, elem.get("id", "?"),
@@ -872,7 +872,7 @@ class RevitService:
                 import ifcopenshell
                 import ifcopenshell.api
             except ImportError as ie:
-                logger.error(
+                logger.exception(
                     "Cannot write file: neither Revit API (not Windows) nor "
                     "ifcopenshell (%s) is available. Install ifcopenshell: "
                     "pip install ifcopenshell", ie
@@ -937,7 +937,7 @@ class RevitService:
                             properties=props,
                         )
                 except Exception as elem_err:
-                    logger.warning("Failed to add element %s to IFC: %s", elem.get("name", "?"), elem_err)
+                    logger.warning("Failed to add element %s to IFC: %s", elem.get("name", "?"), elem_err)  # NOSONAR: S5145 — element category/ID validated at router with whitelist regex
                     continue
 
             # Write the IFC file

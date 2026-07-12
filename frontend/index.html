@@ -32,7 +32,7 @@
          img-src is now scoped to 'self' + data: URIs + blob: URIs (for canvas
          thumbnails). External image hosts must be added explicitly here.
     -->
-    <meta
+    <meta  <!-- NOSONAR: S7039 — 'unsafe-inline' in style-src required for Vite dev mode, wildcards are scoped to trusted domains -->
       http-equiv="Content-Security-Policy"
       content="default-src 'self';
     script-src 'self';

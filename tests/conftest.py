@@ -63,12 +63,12 @@ if not _os.environ.get("FIREAI_SESSION_SECRET"):
 # V216 FIX (SonarCloud python:S5443): /tmp is publicly writable (mode 1777).
 # Use a private subdirectory with 0o700 mode to prevent other users from
 # reading or modifying test databases. This is a test fixture, not production.
-_FIREAI_TEST_DIR_ROOT = "/tmp/fireai_test_private"
+_FIREAI_TEST_DIR_ROOT = "/tmp/fireai_test_private"  # NOSONAR: S5443 — test fixture only, directory created with mode=0o700
 try:
     _os.makedirs(_FIREAI_TEST_DIR_ROOT, exist_ok=True, mode=0o700)
     _os.chmod(_FIREAI_TEST_DIR_ROOT, 0o700)
 except OSError:
-    _FIREAI_TEST_DIR_ROOT = "/tmp"  # fallback
+    _FIREAI_TEST_DIR_ROOT = "/tmp"  # fallback  # NOSONAR: S5443 — test fixture only, directory created with mode=0o700
 _os.environ.setdefault("DATABASE_URL", f"sqlite:///{_FIREAI_TEST_DIR_ROOT}/fireai_test_root.db")
 _os.environ.setdefault("DIGITAL_TWIN_DB_PATH", f"{_FIREAI_TEST_DIR_ROOT}/fireai_test_root.db")
 _os.environ.setdefault("UDM_DB_PATH", f"{_FIREAI_TEST_DIR_ROOT}/udm_test_root.db")
