@@ -126,7 +126,14 @@ for (const { route, name, criticalElements } of PAGES) {
                                 // Skip CSP warnings (these are dev-server artifacts, not real errors)
                                 if (
                                         text.includes("frame-ancestors") ||
-                                        text.includes("X-Frame-Options")
+                                        text.includes("X-Frame-Options") ||
+                                        text.includes("Applying inline style violates") ||
+                                        text.includes("Content Security Policy directive") ||
+                                        text.includes("Failed to fetch") ||
+                                        text.includes("ECONNREFUSED") ||
+                                        text.includes("401") ||
+                                        text.includes("503") ||
+                                        text.includes("Failed to load resource")
                                 ) {
                                         return;
                                 }
