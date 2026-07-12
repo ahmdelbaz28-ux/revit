@@ -455,3 +455,21 @@ reports/coverage.json
 uploads/
 
 testsprite_tests\tmp\config.json
+
+# ── V234: Generated artifacts and runtime outputs ───────────────────────────
+# Playwright test results (regenerated on each test run)
+test-results/
+playwright-report/
+
+# Download directory (runtime output, not source code)
+download/
+
+# Worklog files (transient agent work logs)
+worklog.md
+worklog_entry.md
+
+# Stress test / benchmark result JSONs (regenerated on demand)
+HTTP_STRESS_TEST_RESULTS.json
+STRESS_TEST_RESULTS.json
+STRICT_STRESS_V3_RESULTS.json
+sonar_fix_plan.json
