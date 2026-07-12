@@ -466,3 +466,198 @@ button {
         body { cursor: auto; }
         .magnetic-cursor { display: none; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   Engineering CAD Background — Login Page
+   Animated floor plan that "draws itself" + scanning line + particles
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── "Draw itself" stroke animation ──────────────────────────────────── */
+/* Each path/line starts invisible (dashoffset = full length) and animates
+   to dashoffset=0, making it look like it's being drawn by a CAD plotter.
+   The 7 staggered classes (cad-draw-1 through cad-draw-7) create a
+   sequential drawing effect: walls first, then doors, then dimensions,
+   then devices, then wiring. */
+
+.cad-stroke {
+        stroke-dasharray: 4000;
+        stroke-dashoffset: 4000;
+        animation: cad-draw 2.5s var(--ease-entrance) forwards;
+        will-change: stroke-dashoffset;
+}
+
+.cad-draw-1 { animation-delay: 0.2s; }
+.cad-draw-2 { animation-delay: 0.8s; }
+.cad-draw-3 { animation-delay: 1.4s; }
+.cad-draw-4 { animation-delay: 1.8s; }
+.cad-draw-5 { animation-delay: 2.4s; animation-duration: 1.5s; }
+.cad-draw-6 { animation-delay: 2.8s; animation-duration: 1.5s; }
+.cad-draw-7 { animation-delay: 3.2s; animation-duration: 1.8s; }
+
+@keyframes cad-draw {
+        from {
+                stroke-dashoffset: 4000;
+                opacity: 0;
+        }
+        10% {
+                opacity: 1;
+        }
+        to {
+                stroke-dashoffset: 0;
+                opacity: 1;
+        }
+}
+
+/* ── Fade-in for text labels & decorative elements ───────────────────── */
+.cad-fade-1,
+.cad-fade-2,
+.cad-fade-3 {
+        opacity: 0;
+        animation: cad-fade-in 0.8s var(--ease-entrance) forwards;
+}
+
+.cad-fade-1 { animation-delay: 2.2s; }
+.cad-fade-2 { animation-delay: 2.6s; }
+.cad-fade-3 { animation-delay: 3.4s; }
+
+@keyframes cad-fade-in {
+        from {
+                opacity: 0;
+                transform: translateY(4px);
+        }
+        to {
+                opacity: 1;
+                transform: translateY(0);
+        }
+}
+
+/* ── Pulsing glow for detectors (NFPA 72 placement indicators) ────────── */
+/* Three staggered classes so detectors pulse out-of-sync — looks alive */
+.cad-pulse-1,
+.cad-pulse-2,
+.cad-pulse-3 {
+        transform-origin: center;
+        transform-box: fill-box;
+        animation: cad-pulse 3s ease-in-out infinite;
+        will-change: transform, opacity;
+}
+
+.cad-pulse-1 { animation-delay: 0s; }
+.cad-pulse-2 { animation-delay: 0.8s; }
+.cad-pulse-3 { animation-delay: 1.6s; }
+
+@keyframes cad-pulse {
+        0%, 100% {
+                transform: scale(0.85);
+                opacity: 0.4;
+        }
+        50% {
+                transform: scale(1.15);
+                opacity: 0.95;
+        }
+}
+
+/* ── Scanning line (CAD plotter sweep) ───────────────────────────────── */
+.cad-scan-line {
+        animation: cad-scan 8s linear infinite;
+        will-change: transform;
+}
+
+@keyframes cad-scan {
+        0% {
+                transform: translateY(-100%);
+        }
+        100% {
+                transform: translateY(100%);
+        }
+}
+
+/* ── Floating particles (engineering data points) ────────────────────── */
+.cad-particle {
+        animation: cad-particle-float 8s ease-in-out infinite;
+        will-change: transform, opacity;
+}
+
+@keyframes cad-particle-float {
+        0%, 100% {
+                transform: translate(0, 0);
+                opacity: 0.2;
+        }
+        25% {
+                transform: translate(20px, -30px);
+                opacity: 0.8;
+        }
+        50% {
+                transform: translate(-15px, -50px);
+                opacity: 0.4;
+        }
+        75% {
+                transform: translate(25px, -20px);
+                opacity: 0.7;
+        }
+}
+
+/* ── Crosshair cursor (follows mouse) ────────────────────────────────── */
+.cad-crosshair {
+        transition: opacity 200ms var(--ease-micro);
+        animation: cad-crosshair-appear 0.3s var(--ease-entrance);
+}
+
+@keyframes cad-crosshair-appear {
+        from {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.5);
+        }
+        to {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+        }
+}
+
+/* ── Login card entrance animation ───────────────────────────────────── */
+.cad-login-enter {
+        animation: cad-login-rise 0.8s var(--ease-entrance) 0.4s both;
+}
+
+@keyframes cad-login-rise {
+        from {
+                opacity: 0;
+                transform: translateY(24px) scale(0.98);
+        }
+        to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+        }
+}
+
+/* ── Reduced motion: show static drawing, no animations ──────────────── */
+@media (prefers-reduced-motion: reduce) {
+        .cad-stroke {
+                stroke-dashoffset: 0;
+                animation: none;
+                opacity: 1;
+        }
+        .cad-fade-1,
+        .cad-fade-2,
+        .cad-fade-3 {
+                opacity: 1;
+                animation: none;
+                transform: none;
+        }
+        .cad-pulse-1,
+        .cad-pulse-2,
+        .cad-pulse-3 {
+                animation: none;
+                opacity: 0.7;
+        }
+        .cad-scan-line,
+        .cad-particle,
+        .cad-crosshair {
+                display: none;
+        }
+        .cad-login-enter {
+                animation: none;
+                opacity: 1;
+                transform: none;
+        }
+}

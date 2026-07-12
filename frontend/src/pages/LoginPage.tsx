@@ -2,6 +2,7 @@
  * LoginPage.tsx — BAZSPARK Login (Awwwards Identity).
  *
  * Deep navy + cyan + glassmorphism. Premium educator feel.
+ * Engineering CAD animated background — fire alarm floor plan that draws itself.
  */
 
 import {
@@ -15,6 +16,7 @@ import {
 } from "lucide-react";
 import { type FormEvent, useState } from "react";
 import { Navigate, useSearchParams } from "react-router-dom";
+import { EngineeringBackground } from "@/components/auth/EngineeringBackground";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -79,24 +81,10 @@ export function LoginPage() {
 
         return (
                 <div className="min-h-screen w-full flex items-center justify-center bg-background p-4 relative overflow-hidden">
-                        {/* WebGL-style gradient background (CSS fallback) */}
-                        <div
-                                className="absolute inset-0 pointer-events-none"
-                                style={{
-                                        background:
-                                                "radial-gradient(ellipse at 30% 20%, rgba(6,182,212,0.08) 0%, transparent 50%), radial-gradient(ellipse at 70% 80%, rgba(6,182,212,0.05) 0%, transparent 50%)",
-                                }}
-                        />
-                        {/* Noise texture overlay */}
-                        <div
-                                className="absolute inset-0 pointer-events-none opacity-30"
-                                style={{
-                                        backgroundImage:
-                                                "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E\")",
-                                }}
-                        />
+                        {/* Engineering CAD animated background */}
+                        <EngineeringBackground />
 
-                        <div className="w-full max-w-[440px] relative z-10">
+                        <div className="w-full max-w-[440px] relative z-10 cad-login-enter">
                                 {/* Brand header */}
                                 <div className="flex flex-col items-center mb-10">
                                         <div className="h-14 w-14 rounded-xl flex items-center justify-center mb-5 bg-cyan-400/10 border border-cyan-400/20 backdrop-blur-[20px] shadow-md shadow-cyan-500/10">
