@@ -48,8 +48,6 @@ IS_WINDOWS = platform.system() == "Windows"
 # is also reachable as a sub-attribute.
 import types as _types
 
-
-
 pythoncom = _types.ModuleType("pythoncom")  # placeholder, replaced on Windows
 win32com = _types.ModuleType("win32com")    # placeholder, replaced on Windows
 win32com.client = _types.ModuleType("win32com.client")  # type: ignore[attr-defined]

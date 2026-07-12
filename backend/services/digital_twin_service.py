@@ -40,8 +40,6 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-
-
 logger = logging.getLogger(__name__)
 
 
@@ -607,7 +605,7 @@ class DigitalTwinEngine:
 
         # ── TRY COM PATH FIRST (Windows only) ──────────────────────────
         try:
-            from backend.services.autocad_service import AutoCADService, IS_WINDOWS
+            from backend.services.autocad_service import IS_WINDOWS, AutoCADService
             from backend.services.revit_service import RevitService
 
             if IS_WINDOWS:
@@ -876,7 +874,7 @@ class DigitalTwinEngine:
 
         # ── TRY COM PATH FIRST (Windows only) ──────────────────────────
         try:
-            from backend.services.autocad_service import AutoCADService, IS_WINDOWS
+            from backend.services.autocad_service import IS_WINDOWS, AutoCADService
             from backend.services.revit_service import RevitService
 
             if IS_WINDOWS and rvt_filepath.lower().endswith(".rvt"):
@@ -964,8 +962,8 @@ class DigitalTwinEngine:
         )
 
         try:
-            import ifcopenshell
             import ezdxf
+            import ifcopenshell
         except ImportError as e:
             return ConversionResult(
                 success=False,

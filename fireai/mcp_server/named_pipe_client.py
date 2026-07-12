@@ -1,4 +1,4 @@
-"""
+r"""
 named_pipe_client.py — Python side of the named pipe bridge to the C# Revit add-in.
 
 V214 FIX: Previously the Python MCP server (revit_mcp_server.py) enqueued
@@ -50,7 +50,6 @@ from __future__ import annotations
 import json
 import logging
 import platform
-import sys
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -60,7 +59,7 @@ _TIMEOUT_SECONDS = 10.0
 
 
 class RevitNamedPipeClient:
-    """
+    r"""
     Client for the C# Revit add-in named pipe server.
 
     On Windows, connects to \\\\.\\pipe\\FireAIRevitPipe.
@@ -91,9 +90,9 @@ class RevitNamedPipeClient:
 
         try:
             # Try to connect with a very short timeout to check availability
-            import win32file
-            import win32pipe
             import pywintypes
+            import win32file
+            import win32pipe  # noqa: F401 — Windows-only
 
             try:
                 handle = win32file.CreateFile(
@@ -143,9 +142,9 @@ class RevitNamedPipeClient:
             }
 
         try:
-            import win32file
-            import win32pipe
             import pywintypes
+            import win32file
+            import win32pipe  # noqa: F401 — Windows-only
         except ImportError:
             return {
                 "status": "error",

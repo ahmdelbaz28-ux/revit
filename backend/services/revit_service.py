@@ -75,7 +75,7 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
-
+from backend.utils.log_sanitizer import safe_str as _safe_str
 
 logger = logging.getLogger(__name__)
 
