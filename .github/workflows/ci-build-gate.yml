@@ -22,6 +22,8 @@ on:
     paths:
       - 'frontend/**'
       - 'backend/**'
+      - '.github/workflows/ci-build-gate.yml'
+  workflow_dispatch:
 
 jobs:
   frontend-build:
