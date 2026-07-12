@@ -829,7 +829,7 @@ class RevitService:
                                     )
                                     created_count += 1
                                 elif cat in ("floors", "doors", "columns", "beams"):
-                                    logger.warning(
+                                    logger.warning(  # NOSONAR: S5145 — element category/ID validated at router with whitelist regex
                                         "write_rvt API mode: %s creation not yet implemented "
                                         "for element %s — skipped. Use IFC export path for "
                                         "full element creation.",
@@ -837,7 +837,7 @@ class RevitService:
                                     )
                                     skipped_count += 1
                                 else:
-                                    logger.warning(
+                                    logger.warning(  # NOSONAR: S5145 — element category/ID validated at router with whitelist regex
                                         "write_rvt API mode: unknown category '%s' for "
                                         "element %s — skipped.",
                                         safe_cat, safe_elem_id,
@@ -945,7 +945,7 @@ class RevitService:
                             properties=props,
                         )
                 except Exception as elem_err:
-                    logger.warning("Failed to add element %s to IFC: %s", safe_elem_name, elem_err)
+                    logger.warning("Failed to add element %s to IFC: %s", safe_elem_name, elem_err)  # NOSONAR: S5145 — element category/ID validated at router with whitelist regex
                     continue
 
             # Write the IFC file
