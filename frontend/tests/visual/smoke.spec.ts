@@ -137,6 +137,9 @@ test.beforeEach(async ({ page }) => {
         });
 });
 
+// Wrap module-level tests in a suite so beforeEach is valid for Playwright.
+test.describe("Visual Smoke Tests", () => {
+
 // ═══════════════════════════════════════════════════════════════════
 // Test 1: Each core page loads without console errors
 // ═══════════════════════════════════════════════════════════════════
@@ -229,7 +232,7 @@ test("root path redirects to dashboard", async ({ page }) => {
 // ═══════════════════════════════════════════════════════════════════
 // Test 5: Responsive viewport (mobile)
 // ═══════════════════════════════════════════════════════════════════
-test("dashboard renders on mobile viewport", async ({ page }) => {
+});
         await page.setViewportSize({ width: 375, height: 667 }); // iPhone SE
         await page.goto("/dashboard");
         await page.waitForLoadState("networkidle");
@@ -244,7 +247,7 @@ test("dashboard renders on mobile viewport", async ({ page }) => {
 // ═══════════════════════════════════════════════════════════════════
 // Test 6: Dark mode (if supported)
 // ═══════════════════════════════════════════════════════════════════
-test("dashboard renders in dark color scheme", async ({ page }) => {
+test.describe("Visual Smoke Tests Extra", () => {
         await page.emulateMedia({ colorScheme: "dark" });
         await page.goto("/dashboard");
         await page.waitForLoadState("networkidle");

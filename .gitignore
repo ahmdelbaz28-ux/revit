@@ -442,3 +442,5 @@ revit_data/RevitAPI*.json
 
 # Coverage reports (regenerated on each test run)
 reports/coverage.json
+
+testsprite_tests\tmp\config.json
