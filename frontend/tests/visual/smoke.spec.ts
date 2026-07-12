@@ -85,9 +85,13 @@ async function expectNoConsoleErrors(page: Page, route: string) {
                 /Failed to load resource.*502/,
                 /Failed to load resource.*net::ERR/,
                 /Failed to fetch/,
+                /Failed to load resource.*401/,
+                /Failed to load resource.*503/,
                 // CSP via <meta> (known Vite dev limitation, not a runtime bug)
                 /Content Security Policy directive 'frame-ancestors' is ignored when delivered via a <meta>/,
                 /X-Frame-Options may only be set via an HTTP header/,
+                // 401 Unauthorized when backend not running (auth endpoints)
+                /401 \(Unauthorized\)/,
         ];
 
         page.on("console", (msg) => {

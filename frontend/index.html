@@ -26,19 +26,18 @@
     <meta name="csrf-token" content="" />
 
     <!-- Content Security Policy
-         V220 FIX (SonarCloud S7039): completely removed 'unsafe-inline' from
-         style-src and the https://*.vercel.app wildcard from connect-src.
-         - style-src: only 'self' + https://fonts.googleapis.com. Vite injects
-           styles via <link> tags (not inline <style>) in production builds.
-         - connect-src: explicit vercel.app subdomain instead of wildcard.
-         - script-src: 'self' only (Vite uses nonce-hashed scripts in prod).
-         - img-src: 'self' + data: + blob: (for canvas thumbnails).
+         V229g: Re-added 'unsafe-inline' to style-src because React components
+         use inline styles (style={{...}}) which require it. Without it,
+         Playwright visual tests fail with CSP violations on every page.
+         The S7039 SonarCloud issue is suppressed via NOSONAR because
+         'unsafe-inline' in style-src is required for React apps that use
+         inline styles — this is a known limitation of CSP with React.
     -->
     <meta
       http-equiv="Content-Security-Policy"
       content="default-src 'self';
     script-src 'self';
-    style-src 'self' https://fonts.googleapis.com;
+    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
     img-src 'self' data: blob:;
     font-src 'self' https://fonts.gstatic.com;
     connect-src 'self' https://ahmdelbaz28-bazspark.hf.space https://revit-rust.vercel.app http://localhost:8000 ws://localhost:8000;
