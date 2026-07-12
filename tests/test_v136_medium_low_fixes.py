@@ -43,14 +43,19 @@ class TestForgeHealthCheck:
     """V135 F-19: Stub provider must report healthy=False."""
 
     def test_health_check_with_credentials_returns_false(self, monkeypatch):
-        """Even with credentials, stub should return healthy=False."""
+        """Even with credentials, health check should return healthy=False
+        when authentication fails (invalid credentials or API unavailable)."""
         monkeypatch.setenv("APS_CLIENT_ID", "test_client")
         monkeypatch.setenv("APS_CLIENT_SECRET", "test_secret")
         from fireai.bridges.bim_provider import AutodeskForgeProvider
         p = AutodeskForgeProvider()
         result = p.health_check()
         assert result["healthy"] is False
-        assert "stub" in result["details"].lower()
+        # V229: The provider now attempts real APS authentication.
+        # With invalid credentials, it returns healthy=False with an
+        # authentication error message (not 'stub' anymore).
+        assert result["details"] is not None
+        assert len(result["details"]) > 0
 
 
 # ---------------------------------------------------------------------------
