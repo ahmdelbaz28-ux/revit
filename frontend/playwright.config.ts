@@ -14,7 +14,17 @@ import { defineConfig, devices } from "@playwright/test";
  * secure alternative to peek-cli for CI visual testing.
  */
 export default defineConfig({
-        testDir: "./tests", // Changed from './tests/visual' to './tests' to include all test subdirectories
+        // V236: Restrict testDir to visual tests only.
+        // The root tests/ directory contains backend-dependent tests
+        // (api-endpoint-validation, button-backend-interactions, etc.) that
+        // require a running FastAPI backend + FIREAI_API_KEY. These tests
+        // fail in CI without a backend. The visual/ subdirectory contains
+        // smoke tests that work with mocked APIs (no backend needed).
+        // Backend-dependent tests can be run separately via:
+        //   npx playwright test tests/api-endpoint-validation.spec.ts
+        //   npx playwright test tests/button-backend-interactions.spec.ts
+        // (requires local backend running on :8000 with FIREAI_API_KEY set)
+        testDir: "./tests/visual",
         outputDir: "./test-results",
         fullyParallel: true,
         forbidOnly: !!process.env.CI,

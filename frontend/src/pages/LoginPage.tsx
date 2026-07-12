@@ -99,6 +99,9 @@ export function LoginPage() {
                                         <p className="text-[13px] text-muted-foreground mt-2 uppercase tracking-wider">
                                                 FireAI Digital Twin Platform
                                         </p>
+                                        <p className="text-[11px] text-muted-foreground/70 mt-1 text-center">
+                                                Safety-Critical Fire Alarm Engineering Platform
+                                        </p>
                                 </div>
 
                                 {/* Login card — glassmorphism */}
