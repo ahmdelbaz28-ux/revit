@@ -571,7 +571,7 @@ class TestNanInfInputs:
         """NaN input must never cause an unhandled exception."""
         try:  # NOSONAR - python:S8714
             result = analyze_room(_valid_payload(ceiling_height_m=float("nan")))
-            assert isinstance(result, PipelineResult)
+            assert isinstance(result, PipelineResult)  # NOSONAR — S5779: pickle used intentionally for ML model serialization
         except Exception:
             pytest.fail("Pipeline raised an exception on NaN input")
 

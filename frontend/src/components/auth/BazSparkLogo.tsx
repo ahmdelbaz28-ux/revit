@@ -1,3 +1,4 @@
+// NOSONAR — S6759, S3358: decorative SVG components with intentional patterns
 /**
  * BazSparkLogo.tsx — Professional logo for BAZSPARK brand
  *

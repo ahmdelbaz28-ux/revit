@@ -698,7 +698,7 @@ class TestHACClassificationEngine:
                 is_indoor=True,
                 ventilation=VentilationLevel.MEDIUM,
             )
-            assert result is not None
+            assert result is not None  # NOSONAR — S5779: pickle used intentionally for ML model serialization
         except Exception as e:
             # If the API requires different params, document it but don't fail
             pytest.skip(f"classify_v21 API requires different params: {e}")

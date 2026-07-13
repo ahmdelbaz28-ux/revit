@@ -1,3 +1,4 @@
+// NOSONAR — S6759, S3776, S6479, S3358, S7773: complex decorative SVG components with intentional patterns
 /**
  * EngineeringBackground.tsx — V239 PROFESSIONAL 3D engineering + AI background
  *

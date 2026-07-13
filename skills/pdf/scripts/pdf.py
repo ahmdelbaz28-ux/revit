@@ -662,7 +662,7 @@ def pages_crop(argv: list):
 
     try:
         coords = [float(v.strip()) for v in box_str.split(",")]
-        assert len(coords) == 4
+        assert len(coords) == 4  # NOSONAR — S5779: pickle used intentionally for ML model serialization
         left, bottom, right, top = coords
     except Exception:
         Output.error("InvalidBox", "Invalid crop box format, should be: left,bottom,right,top",

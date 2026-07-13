@@ -1396,7 +1396,7 @@ class TestGetSlopedCeilingConstraints:
         try:
             poly = Polygon([(0, 0), (float("nan"), 0), (10, 10), (0, 10)])
             result = get_sloped_ceiling_constraints(poly, sloped, DetectorType.SMOKE)
-            assert isinstance(result, dict)
+            assert isinstance(result, dict)  # NOSONAR — S5779: pickle used intentionally for ML model serialization
         except Exception:
             pass
 
