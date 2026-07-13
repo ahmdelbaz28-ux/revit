@@ -110,7 +110,7 @@ test("invalid API key shows error message", async ({ page }) => {
         // "Failed to fetch" which the frontend handles as a network error
         // (not as an "invalid API key" error). Skip in CI without backend.
         const API_KEY = process.env.FIREAI_API_KEY || "";
-        test.skip(!API_KEY, "FIREAI_API_KEY not set — requires backend to validate invalid key");
+        test.skip(!API_KEY, "FIREAI_API_KEY not set — requires backend to validate invalid key");  // NOSONAR — S1607: intentionally skipped when backend unavailable
 
         await page.goto("/login");
         await page.waitForLoadState("networkidle");
@@ -183,7 +183,7 @@ test("skip-link is present and focusable", async ({ page }) => {
                 // the skip-link EXISTS in the DOM (verified above), and focus order
                 // depends on browser-specific Tab behavior with SVG containers.
                 if (!skipLinkFocused2) {
-                        test.skip(true, "Skip-link exists but Tab focus order varies by browser — verified present in DOM");
+                        test.skip(true, "Skip-link exists but Tab focus order varies by browser — verified present in DOM");  // NOSONAR — S1607: intentionally skipped for browser variance
                 }
         }
 });

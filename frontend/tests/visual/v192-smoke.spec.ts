@@ -201,7 +201,7 @@ test("FireAlarm: clicking detector selects it, does NOT add new one", async ({
         // Without a backend + FIREAI_API_KEY, the page redirects to /login.
         // Skip cleanly in CI environments without backend.
         const API_KEY = process.env.FIREAI_API_KEY || "";
-        test.skip(!API_KEY, "FIREAI_API_KEY not set — requires authenticated backend");
+        test.skip(!API_KEY, "FIREAI_API_KEY not set — requires authenticated backend");  // NOSONAR — S1607: intentionally skipped when backend unavailable
 
         // V191 regression test: clicking a detector should select it, not add a new one
         await page.goto("/fire-alarm", {
@@ -212,7 +212,7 @@ test("FireAlarm: clicking detector selects it, does NOT add new one", async ({
 
         // If we got redirected to /login, skip — auth guard is working
         const url = page.url();
-        test.skip(/\/login/.test(url), "Redirected to /login — auth guard active");
+        test.skip(/\/login/.test(url), "Redirected to /login — auth guard active");  // NOSONAR — S1607: intentionally skipped when auth guard redirects
 
         // Count initial detectors
         const initialCount = await page.locator("svg g[transform]").count();
@@ -248,7 +248,7 @@ test("Connections: create connection modal opens with form fields", async ({
 }) => {
         // V236: Same as above — requires authenticated backend
         const API_KEY = process.env.FIREAI_API_KEY || "";
-        test.skip(!API_KEY, "FIREAI_API_KEY not set — requires authenticated backend");
+        test.skip(!API_KEY, "FIREAI_API_KEY not set — requires authenticated backend");  // NOSONAR — S1607: intentionally skipped when backend unavailable
 
         await page.goto("/connections", {
                 waitUntil: "domcontentloaded",
@@ -257,7 +257,7 @@ test("Connections: create connection modal opens with form fields", async ({
         await page.waitForLoadState("networkidle");  // S2925: sync on condition, not fixed wait
 
         const url = page.url();
-        test.skip(/\/login/.test(url), "Redirected to /login — auth guard active");
+        test.skip(/\/login/.test(url), "Redirected to /login — auth guard active");  // NOSONAR — S1607: intentionally skipped when auth guard redirects
 
         // Click "Create Connection" button
         await page.getByRole("button", { name: /create connection/i }).click();
