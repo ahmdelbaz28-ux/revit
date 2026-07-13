@@ -126,7 +126,7 @@ export function RiskAssessment() {
 					))}
 					<Button
 						className="w-full mt-4 bg-primary hover:bg-orange-700"
-						onClick={() => alert("Risk Report Added to Project Files")}
+						onClick={() => console.info("Risk Report Added to Project Files")}
 					>
 						Download Compliance Certificate
 					</Button>

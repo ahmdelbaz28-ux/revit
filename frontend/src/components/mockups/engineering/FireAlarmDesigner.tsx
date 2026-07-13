@@ -87,21 +87,25 @@ export function FireAlarmDesigner() {
                                         });
                                         
                                         if (elements?.items && elements.items.length > 0) {
-                                                const mappedDetectors: Detector[] = elements.items.map((el: any) => ({
-                                                        id: el.element_id || el.id,
-                                                        x: el.x || el.position_x || 100,
-                                                        y: el.y || el.position_y || 100,
-                                                        type: (el.element_type || el.type || "smoke") as Detector["type"],
-                                                        status: (el.status || "normal") as Detector["status"],
-                                                        coverageRadius: el.coverage_radius || el.coverageRadius || 
-                                                                (el.element_type === "smoke" ? 6.37 : el.element_type === "heat" ? 4.27 : 0),  // NOSONAR: typescript:S3358
-                                                        location: el.location || el.name || "",
-                                                        heightAFF: el.height_aff || el.heightAFF,
-                                                        manufacturer: el.manufacturer,
-                                                        model: el.model,
-                                                        sensitivity: el.sensitivity,
-                                                        lastTestDate: el.last_test_date || el.lastTestDate,
-                                                }));
+                                                const mappedDetectors: Detector[] = elements.items.map((el) => {
+                                                        const props = (el.properties ?? {}) as Record<string, unknown>;
+                                                        const elementType = (props.element_type as string) || "smoke";
+                                                        return {
+                                                                id: el.element_id,
+                                                                x: (props.x as number) || (props.position_x as number) || 100,
+                                                                y: (props.y as number) || (props.position_y as number) || 100,
+                                                                type: elementType as Detector["type"],
+                                                                status: ((props.status as string) || "normal") as Detector["status"],
+                                                                coverageRadius: (props.coverage_radius as number) || (props.coverageRadius as number) ||
+                                                                        (elementType === "smoke" ? 6.37 : elementType === "heat" ? 4.27 : 0),  // NOSONAR: typescript:S3358
+                                                                location: (props.location as string) || (props.name as string) || "",
+                                                                heightAFF: (props.height_aff as number) || (props.heightAFF as number),
+                                                                manufacturer: (props.manufacturer as string) || undefined,
+                                                                model: (props.model as string) || undefined,
+                                                                sensitivity: ((props.sensitivity as string) || undefined) as Detector["sensitivity"],
+                                                                lastTestDate: (props.last_test_date as string) || (props.lastTestDate as string) || undefined,
+                                                        };
+                                                });
                                                 setDetectors(mappedDetectors);
                                                 return;
                                         }
@@ -125,34 +129,20 @@ export function FireAlarmDesigner() {
                                 // Corrupt localStorage
                         }
 
-                        // Final fallback: sample detectors
-                        setDetectors([
-                                {
-                                        id: "det-1",
-                                        x: 150,
-                                        y: 200,
-                                        type: "smoke",
-                                        status: "normal",
-                                        coverageRadius: 6.37,
-                                },
-                                {
-                                        id: "det-2",
-                                        x: 300,
-                                        y: 150,
-                                        type: "heat",
-                                        status: "warning",
-                                        coverageRadius: 4.27,
-                                },
-                                {
-                                        id: "det-3",
-                                        x: 450,
-                                        y: 250,
-                                        type: "pull",
-                                        status: "normal",
-                                        coverageRadius: 0,
-                                },
-                        ]);
+                        // V247 SAFETY FIX: Do NOT inject fake sample detectors.
+                        // The previous code injected 3 fake detectors (smoke/heat/pull)
+                        // with a fake "warning" status when the API failed. This is a
+                        // safety-critical fire alarm designer — fake devices with fake
+                        // statuses could mislead engineers into thinking real devices
+                        // are in alarm state.
+                        // Show empty state instead — the user can add real detectors
+                        // via the toolbar.
+                        setDetectors([]);
                         setLoading(false);
+                        toast({
+                                title: t("fireAlarm.noProjectLoaded") || "No project loaded",
+                                description: t("fireAlarm.noProjectLoadedDesc") || "Start adding detectors using the toolbar above.",
+                        });
                 };
                 loadDetectors();
         }, [t]);
@@ -206,17 +196,16 @@ export function FireAlarmDesigner() {
                         // Save detectors to API
                         for (const detector of detectors) {
                                 try {
+                                        // V247: ElementPropertiesCreate only allows specific fields.
+                                        // Store detector coordinates/status in the geometry object
+                                        // and use the standard properties for type/name.
                                         await api.createElement({
                                                 properties: {
                                                         element_type: detector.type,
                                                         name: detector.location || `${detector.type}-${detector.id}`,
-                                                        x: detector.x,
-                                                        y: detector.y,
-                                                        status: detector.status,
-                                                        coverage_radius: detector.coverageRadius,
                                                 },
                                                 project_id: currentProjectId || "",
-                                        } as any);
+                                        });
                                 } catch {
                                         // Individual detector save failure — continue
                                 }

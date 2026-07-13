@@ -343,24 +343,24 @@ export function CADSettingsPage() {
                                                                                         variant="outline"
                                                                                         className="border-border text-foreground/90 hover:bg-card"
                                                                                         onClick={() => {
-													// V194 (TD-3) FIX: Use hidden file input to let the user select the
-													// AutoCAD executable. Browsers cannot return full paths for
-													// security reasons, so we use the file's name and prompt the
-													// user to confirm the directory. This is the standard web pattern.
-													const input = document.createElement("input");
-													input.type = "file";
-													input.accept = ".exe,application/x-msdownload";
-													input.onchange = (e: Event) => {
-														const file = (e.target as HTMLInputElement).files?.[0];
-														if (file) {
-															setAcadPath(file.name);
-															toast.info(
-																`Selected: ${file.name}. Please verify the full installation path is correct above.`,
-															);
-														}
-													};
-													input.click();
-												}}
+                                                                                                        // V194 (TD-3) FIX: Use hidden file input to let the user select the
+                                                                                                        // AutoCAD executable. Browsers cannot return full paths for
+                                                                                                        // security reasons, so we use the file's name and prompt the
+                                                                                                        // user to confirm the directory. This is the standard web pattern.
+                                                                                                        const input = document.createElement("input");
+                                                                                                        input.type = "file";
+                                                                                                        input.accept = ".exe,application/x-msdownload";
+                                                                                                        input.onchange = (e: Event) => {
+                                                                                                                const file = (e.target as HTMLInputElement).files?.[0];
+                                                                                                                if (file) {
+                                                                                                                        setAcadPath(file.name);
+                                                                                                                        toast.info(
+                                                                                                                                `Selected: ${file.name}. Please verify the full installation path is correct above.`,
+                                                                                                                        );
+                                                                                                                }
+                                                                                                        };
+                                                                                                        input.click();
+                                                                                                }}
                                                                                 >
                                                                                         <FolderOpen className="h-4 w-4" />
                                                                                 </Button>
@@ -416,7 +416,18 @@ export function CADSettingsPage() {
                                                                                         variant="outline"
                                                                                         className="border-border text-foreground/90 hover:bg-card"
                                                                                         onClick={() => {
-                                                                                                toast.info("File browser not implemented yet");
+                                                                                                // V247 FIX: Use hidden file input (was "not implemented")
+                                                                                                const input = document.createElement("input");
+                                                                                                input.type = "file";
+                                                                                                input.accept = ".dwt";
+                                                                                                input.onchange = (e: Event) => {
+                                                                                                        const file = (e.target as HTMLInputElement).files?.[0];
+                                                                                                        if (file) {
+                                                                                                                setAcadTemplate(file.name);
+                                                                                                                toast.info(`Selected: ${file.name}`);
+                                                                                                        }
+                                                                                                };
+                                                                                                input.click();
                                                                                         }}
                                                                                 >
                                                                                         <FolderOpen className="h-4 w-4" />
@@ -528,7 +539,18 @@ export function CADSettingsPage() {
                                                                                         variant="outline"
                                                                                         className="border-border text-foreground/90 hover:bg-card"
                                                                                         onClick={() => {
-                                                                                                toast.info("File browser not implemented yet");
+                                                                                                // V247 FIX: Use hidden file input (was "not implemented")
+                                                                                                const input = document.createElement("input");
+                                                                                                input.type = "file";
+                                                                                                input.accept = ".exe,application/x-msdownload";
+                                                                                                input.onchange = (e: Event) => {
+                                                                                                        const file = (e.target as HTMLInputElement).files?.[0];
+                                                                                                        if (file) {
+                                                                                                                setRevitPath(file.name);
+                                                                                                                toast.info(`Selected: ${file.name}. Please verify the full installation path.`);
+                                                                                                        }
+                                                                                                };
+                                                                                                input.click();
                                                                                         }}
                                                                                 >
                                                                                         <FolderOpen className="h-4 w-4" />
@@ -588,7 +610,18 @@ export function CADSettingsPage() {
                                                                                         variant="outline"
                                                                                         className="border-border text-foreground/90 hover:bg-card"
                                                                                         onClick={() => {
-                                                                                                toast.info("File browser not implemented yet");
+                                                                                                // V247 FIX: Use hidden file input (was "not implemented")
+                                                                                                const input = document.createElement("input");
+                                                                                                input.type = "file";
+                                                                                                input.accept = ".rte";
+                                                                                                input.onchange = (e: Event) => {
+                                                                                                        const file = (e.target as HTMLInputElement).files?.[0];
+                                                                                                        if (file) {
+                                                                                                                setRevitTemplate(file.name);
+                                                                                                                toast.info(`Selected: ${file.name}`);
+                                                                                                        }
+                                                                                                };
+                                                                                                input.click();
                                                                                         }}
                                                                                 >
                                                                                         <FolderOpen className="h-4 w-4" />

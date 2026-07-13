@@ -7,6 +7,7 @@
  */
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import { ExplainButton } from "@/components/ai/ExplainButton";
 import {
         CanvasEditor,
@@ -326,7 +327,10 @@ export function FireAlarmPage() {
         };
 
         const handleZoomToZone = (zoneId: string) => {
-                alert(`Zooming to zone: ${zoneId}`);
+                // V247 FIX: Replaced alert() with toast notification.
+                // The zoom functionality would require a canvas ref + scrollIntoView;
+                // for now, show a non-blocking toast instead of a blocking alert().
+                toast.info(`Zone selected: ${zoneId}`);
         };
 
         const handleSaveDevice = (updatedDevice: Partial<{ id: string } & Record<string, unknown>>) => {

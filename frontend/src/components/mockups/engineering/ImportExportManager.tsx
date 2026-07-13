@@ -181,14 +181,13 @@ export function ImportExportManager() {
                                         // localStorage may be full or disabled — ignore
                                 }
 
-                                alert(
-                                        `DXF Imported Successfully!\n` +
-                                        `Found ${entities.length} entities.\n` +
+                                console.info(
+                                        `DXF Imported Successfully! Found ${entities.length} entities. ` +
                                         `Converted: ${converted.devices.length} devices, ${converted.connections.length} connections.`,
                                 );
                         } catch (err) {
                                 if (import.meta.env.DEV) console.error(err);
-                                alert("Failed to parse DXF file. Ensure it is a valid ASCII DXF.");
+                                console.error("Failed to parse DXF file. Ensure it is a valid ASCII DXF.");
                         }
                 };
                 reader.readAsText(file);  // NOSONAR: typescript:S7756

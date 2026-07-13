@@ -121,7 +121,7 @@ export function SystemOptimizer() {
 
 			<Button
 				className="w-full bg-emerald-600 hover:bg-emerald-700"
-				onClick={() => alert("Optimization Report Generated (PDF)")}
+				onClick={() => console.info("Optimization Report Generated (PDF)")}
 			>
 				Generate Savings Report
 			</Button>

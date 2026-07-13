@@ -72,7 +72,7 @@ export function ReportsPage() {
         const handleGenerate = async () => {
                 // V214 self-critique fix: use real project ID, not hardcoded "default-project-id"
                 if (!firstProjectId) {
-                        alert("No project found. Create a project first.");
+                        toast.error("No project found. Create a project first.");
                         return;
                 }
                 const result = await generateReport({
@@ -412,7 +412,8 @@ export function ReportsPage() {
                                                                                         link.remove();
                                                                                         URL.revokeObjectURL(url);
                                                                                 } catch (err) {
-                                                                                        console.error("Download failed:", err);
+                                                                                        // V247 FIX: Show user-facing toast (was silent console.error)
+                                                                                        toast.error("Download failed. Please try again.");
                                                                                 }
                                                                         }}
                                                                         aria-label={t("common.download")}

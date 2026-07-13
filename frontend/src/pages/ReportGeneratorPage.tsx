@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
         Card,
@@ -168,9 +169,10 @@ export function ReportGeneratorPage() {
                         a.click();  // NOSONAR: typescript:S7762
                         document.body.removeChild(a);
                         window.URL.revokeObjectURL(url);
-                } catch {
-                        // Export may fail if backend doesn't support it
-                        console.error("Export failed");
+                } catch (err) {
+                        // V247 FIX: Show user-facing toast (was silent console.error)
+                        const msg = err instanceof Error ? err.message : "Export failed. The backend may not support this format.";
+                        toast.error(msg);
                 } finally {
                         setExporting(null);
                 }
