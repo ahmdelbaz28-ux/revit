@@ -69,7 +69,7 @@ interface VersionInfo {
 }
 
 export function DigitalTwinPage() {
-        const { t } = useTranslation();  // NOSONAR: typescript:S1854
+        useTranslation(); // V249: Keep hook for language context, remove unused 't'
         const [activeTab, setActiveTab] = useState("convert");
 
         // Conversion state

@@ -86,7 +86,7 @@ const REPORT_TYPES = [
 // ============================================================================
 
 export function ReportGeneratorPage() {
-        const { t } = useTranslation();
+        useTranslation(); // V249: Keep hook for language context, remove unused 't'
         const {
                 data: projects,
                 loading: projectsLoading,
