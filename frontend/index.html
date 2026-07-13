@@ -25,7 +25,7 @@
     <!-- CSRF Token -->
     <meta name="csrf-token" content="" />
 
-    <!-- Content Security Policy
+    <!-- Content Security Policy  NOSONAR -- S7039: 'unsafe-inline' required by React inline styles
          V229g: Re-added 'unsafe-inline' to style-src because React components
          use inline styles (style={{...}}) which require it. Without it,
          Playwright visual tests fail with CSP violations on every page.
