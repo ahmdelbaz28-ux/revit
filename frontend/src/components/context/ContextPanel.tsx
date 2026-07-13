@@ -1,11 +1,11 @@
 
 import {
-	AlertTriangle,
-	CheckCircle2,
-	HelpCircle as CircleHelp,
-	X,
+        AlertTriangle,
+        CheckCircle2,
+        HelpCircle as CircleHelp,
+        X,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";  // NOSONAR: typescript:S1128
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { HelpTopicId } from "@/help/types";
@@ -13,298 +13,287 @@ import { useSmartHelp } from "@/hooks/useSmartHelp";
 
 export type ContextPanelKind = "device" | "project";
 export type ContextPanelStatus =
-	| "normal"
-	| "active"
-	| "warning"
-	| "fault"
-	| "offline"
-	| "maintenance";
+        | "normal"
+        | "active"
+        | "warning"
+        | "fault"
+        | "offline"
+        | "maintenance";
 export type ContextPanelSeverity = "info" | "warning" | "critical";
 
 export interface ContextPanelProperty {
-	label: string;
-	value: string | number | boolean | null | undefined;
-	helper?: string;
+        label: string;
+        value: string | number | boolean | null | undefined;
+        helper?: string;
 }
 
 export interface ContextPanelWarning {
-	id: string;
-	severity: ContextPanelSeverity;
-	title: string;
-	message: string;
+        id: string;
+        severity: ContextPanelSeverity;
+        title: string;
+        message: string;
 }
 
 export interface ContextPanelSelection {
-	type: ContextPanelKind;
-	id: string;
-	name: string;
-	status: ContextPanelStatus;
-	properties: ContextPanelProperty[];
-	warnings?: ContextPanelWarning[];
-	helpTopicId?: HelpTopicId | string;  // NOSONAR: typescript:S6571
+        type: ContextPanelKind;
+        id: string;
+        name: string;
+        status: ContextPanelStatus;
+        properties: ContextPanelProperty[];
+        warnings?: ContextPanelWarning[];
+        helpTopicId?: HelpTopicId | string;  // NOSONAR: typescript:S6571
 }
 
 export interface ContextPanelProps {
-	open: boolean;
-	selected: ContextPanelSelection | null;
-	contextId?: HelpTopicId | string;  // NOSONAR: typescript:S6571
-	className?: string;
-	onClose: () => void;
-	onCollapse?: (open: boolean) => void;
+        open: boolean;
+        selected: ContextPanelSelection | null;
+        contextId?: HelpTopicId | string;  // NOSONAR: typescript:S6571
+        className?: string;
+        onClose: () => void;
+        onCollapse?: (open: boolean) => void;
 }
 
 function getDocumentDirection(): "ltr" | "rtl" {
-	if (typeof document === "undefined") return "ltr";
-	return document.documentElement.dir === "rtl" ? "rtl" : "ltr";
-}
-
-function getHelpContextId(
-	selection: ContextPanelSelection | null,
-	contextId?: HelpTopicId | string,  // NOSONAR: typescript:S6571
-): HelpTopicId | string {
-	if (selection?.helpTopicId) return selection.helpTopicId;
-	if (contextId) return contextId;
-
-	if (selection?.type === "project") return "projects.manage";
-	return "fire-alarm.detector-placement";
+        if (typeof document === "undefined") return "ltr";
+        return document.documentElement.dir === "rtl" ? "rtl" : "ltr";
 }
 
 function formatValue(value: ContextPanelProperty["value"]): string {
-	if (typeof value === "boolean") return value ? "Enabled" : "Disabled";
-	if (value === null || value === undefined) return "Not set";
-	return String(value);
+        if (typeof value === "boolean") return value ? "Enabled" : "Disabled";
+        if (value === null || value === undefined) return "Not set";
+        return String(value);
 }
 
 function getStatusClasses(status: ContextPanelStatus) {
-	switch (status) {
-		case "normal":
-			return "border-success/30 bg-emerald-500/10 text-emerald-300";
-		case "active":
-			return "border-sky-500/30 bg-sky-500/10 text-sky-300";
-		case "warning":
-			return "border-warning/30 bg-amber-500/10 text-amber-300";
-		case "fault":
-		case "offline":
-			return "border-danger/30 bg-slate-500/10 text-slate-400";
-		case "maintenance":
-			return "border-border/30 bg-slate-500/10 text-foreground/90";
-	}
+        switch (status) {
+                case "normal":
+                        return "border-success/30 bg-emerald-500/10 text-emerald-300";
+                case "active":
+                        return "border-sky-500/30 bg-sky-500/10 text-sky-300";
+                case "warning":
+                        return "border-warning/30 bg-amber-500/10 text-amber-300";
+                case "fault":
+                case "offline":
+                        return "border-danger/30 bg-slate-500/10 text-slate-400";
+                case "maintenance":
+                        return "border-border/30 bg-slate-500/10 text-foreground/90";
+        }
 }
 
 function getWarningClasses(severity: ContextPanelSeverity) {
-	switch (severity) {
-		case "info":
-			return "border-sky-500/20 bg-sky-500/10 text-sky-200";
-		case "warning":
-			return "border-amber-500/25 bg-amber-500/10 text-amber-200";
-		case "critical":
-			return "border-danger/30 bg-slate-500/10 text-red-200";
-	}
+        switch (severity) {
+                case "info":
+                        return "border-sky-500/20 bg-sky-500/10 text-sky-200";
+                case "warning":
+                        return "border-amber-500/25 bg-amber-500/10 text-amber-200";
+                case "critical":
+                        return "border-danger/30 bg-slate-500/10 text-red-200";
+        }
 }
 
 export function ContextPanel({
-	open,
-	selected,
-	contextId,
-	className = "",
-	onClose,
-	onCollapse,
+        open,
+        selected,
+        contextId,
+        className = "",
+        onClose,
+        onCollapse,
 }: ContextPanelProps) {
-	const { openHelp } = useSmartHelp();
-	const [documentDirection, setDocumentDirection] = useState<"ltr" | "rtl">(
-		getDocumentDirection,
-	);
-	const isRtl = documentDirection === "rtl";
-	const visible = open && Boolean(selected);
+        const { openHelp } = useSmartHelp();
+        const [documentDirection, setDocumentDirection] = useState<"ltr" | "rtl">(
+                getDocumentDirection,
+        );
+        const isRtl = documentDirection === "rtl";
+        const visible = open && Boolean(selected);
 
-	useEffect(() => {
-		if (!visible) return undefined;
+        useEffect(() => {
+                if (!visible) return undefined;
 
-		const updateDirection = () => setDocumentDirection(getDocumentDirection());
-		const observer = new MutationObserver(updateDirection);
+                const updateDirection = () => setDocumentDirection(getDocumentDirection());
+                const observer = new MutationObserver(updateDirection);
 
-		updateDirection();
-		observer.observe(document.documentElement, {
-			attributes: true,
-			attributeFilter: ["dir"],
-		});
+                updateDirection();
+                observer.observe(document.documentElement, {
+                        attributes: true,
+                        attributeFilter: ["dir"],
+                });
 
-		return () => observer.disconnect();
-	}, [visible]);
+                return () => observer.disconnect();
+        }, [visible]);
 
-	const handleClose = () => {
-		onCollapse?.(false);
-		onClose();
-	};
+        const handleClose = () => {
+                onCollapse?.(false);
+                onClose();
+        };
 
-	const panelSideClasses = isRtl
-		? "left-0 border-r border-slate-800"
-		: "right-0 border-l border-slate-800";
-	// SonarQube S3358: extract nested ternary into independent statements.
-	const panelTransformClasses = (() => {
-		if (visible) return "translate-x-0";
-		return isRtl ? "-translate-x-full" : "translate-x-full";
-	})();
+        const panelSideClasses = isRtl
+                ? "left-0 border-r border-slate-800"
+                : "right-0 border-l border-slate-800";
+        // SonarQube S3358: extract nested ternary into independent statements.
+        const panelTransformClasses = (() => {
+                if (visible) return "translate-x-0";
+                return isRtl ? "-translate-x-full" : "translate-x-full";
+        })();
 
-	return (
-		<div
-			className={`fixed inset-0 z-[110] ${visible ? "pointer-events-auto" : "pointer-events-none"}`}
-			dir={isRtl ? "rtl" : "ltr"}
-			aria-hidden={!visible}
-		>
-			<div  // NOSONAR: typescript:S6819
-				className={`absolute inset-0 bg-black/35 transition-opacity duration-300 ${visible ? "opacity-100" : "opacity-0"}`}
-				role="button"
-				tabIndex={0}
-				aria-label="Close context panel"
-				onClick={handleClose}
-				onKeyDown={(e) => {
-						if (e.key === "Enter" || e.key === " ") {
-							e.preventDefault();
-							handleClose();
-						}
-					}}
-				/>
+        return (
+                <div
+                        className={`fixed inset-0 z-[110] ${visible ? "pointer-events-auto" : "pointer-events-none"}`}
+                        dir={isRtl ? "rtl" : "ltr"}
+                        aria-hidden={!visible}
+                >
+                        <div  // NOSONAR: typescript:S6819
+                                className={`absolute inset-0 bg-black/35 transition-opacity duration-300 ${visible ? "opacity-100" : "opacity-0"}`}
+                                role="button"
+                                tabIndex={0}
+                                aria-label="Close context panel"
+                                onClick={handleClose}
+                                onKeyDown={(e) => {
+                                                if (e.key === "Enter" || e.key === " ") {
+                                                        e.preventDefault();
+                                                        handleClose();
+                                                }
+                                        }}
+                                />
 
-			<aside
-				className={`fixed top-0 bottom-0 z-10 flex w-[min(26rem,94vw)] flex-col bg-background/95 text-foreground shadow-2xl shadow-black/40 backdrop-blur-xl transition-transform duration-300 ${panelSideClasses} ${panelTransformClasses} ${className}`}
-			>
-				<header className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-800 p-4">
-					<div className="min-w-0">
-						<div className="flex items-center gap-2">
-							<p className="text-xs font-medium uppercase tracking-[0.22em] text-muted-foreground">
-								{selected?.type ?? "Context"}
-							</p>
-							{selected && (
-								<span
-									className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${getStatusClasses(selected.status)}`}
-								>
-									{selected.status}
-								</span>
-							)}
-						</div>
-						<h2 className="truncate text-base font-semibold text-foreground">
-							{selected?.name ?? "No element selected"}
-						</h2>
-					</div>
-					<Button
-						type="button"
-						variant="ghost"
-						size="icon"
-						className="h-9 w-9 shrink-0 text-muted-foreground hover:bg-card hover:text-foreground"
-						onClick={handleClose}
-						aria-label="Close context panel"
-					>
-						<X className="h-4 w-4" />
-					</Button>
-				</header>
+                        <aside
+                                className={`fixed top-0 bottom-0 z-10 flex w-[min(26rem,94vw)] flex-col bg-background/95 text-foreground shadow-2xl shadow-black/40 backdrop-blur-xl transition-transform duration-300 ${panelSideClasses} ${panelTransformClasses} ${className}`}
+                        >
+                                <header className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-800 p-4">
+                                        <div className="min-w-0">
+                                                <div className="flex items-center gap-2">
+                                                        <p className="text-xs font-medium uppercase tracking-[0.22em] text-muted-foreground">
+                                                                {selected?.type ?? "Context"}
+                                                        </p>
+                                                        {selected && (
+                                                                <span
+                                                                        className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${getStatusClasses(selected.status)}`}
+                                                                >
+                                                                        {selected.status}
+                                                                </span>
+                                                        )}
+                                                </div>
+                                                <h2 className="truncate text-base font-semibold text-foreground">
+                                                        {selected?.name ?? "No element selected"}
+                                                </h2>
+                                        </div>
+                                        <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-9 w-9 shrink-0 text-muted-foreground hover:bg-card hover:text-foreground"
+                                                onClick={handleClose}
+                                                aria-label="Close context panel"
+                                        >
+                                                <X className="h-4 w-4" />
+                                        </Button>
+                                </header>
 
-				<ScrollArea className="min-h-0 flex-1">
-					<div className="space-y-4 p-4">
-						{!selected ? (
-							<div className="rounded-md border border-dashed border-slate-800 bg-muted/50 p-5 text-center text-muted-foreground">
-								<CircleHelp className="mx-auto mb-3 h-8 w-8 text-muted-foreground/70" />
-								<p className="text-sm">
-									Select a device or project element to inspect its engineering
-									context.
-								</p>
-							</div>
-						) : (
-							<>
-								<section className="rounded-md border border-slate-800 bg-card p-4">
-									<div className="mb-4 flex items-start justify-between gap-3">
-										<div>
-											<p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
-												Selected element
-											</p>
-											<p className="mt-1 font-semibold text-foreground">
-												{selected.name}
-											</p>
-											<p className="text-xs text-muted-foreground">{selected.id}</p>
-										</div>
-										<CheckCircle2
-											className={`mt-1 h-5 w-5 ${selected.status === "normal" ? "text-success" : "text-danger"}`}
-										/>
-									</div>
+                                <ScrollArea className="min-h-0 flex-1">
+                                        <div className="space-y-4 p-4">
+                                                {!selected ? (
+                                                        <div className="rounded-md border border-dashed border-slate-800 bg-muted/50 p-5 text-center text-muted-foreground">
+                                                                <CircleHelp className="mx-auto mb-3 h-8 w-8 text-muted-foreground/70" />
+                                                                <p className="text-sm">
+                                                                        Select a device or project element to inspect its engineering
+                                                                        context.
+                                                                </p>
+                                                        </div>
+                                                ) : (
+                                                        <>
+                                                                <section className="rounded-md border border-slate-800 bg-card p-4">
+                                                                        <div className="mb-4 flex items-start justify-between gap-3">
+                                                                                <div>
+                                                                                        <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                                                                                                Selected element
+                                                                                        </p>
+                                                                                        <p className="mt-1 font-semibold text-foreground">
+                                                                                                {selected.name}
+                                                                                        </p>
+                                                                                        <p className="text-xs text-muted-foreground">{selected.id}</p>
+                                                                                </div>
+                                                                                <CheckCircle2
+                                                                                        className={`mt-1 h-5 w-5 ${selected.status === "normal" ? "text-success" : "text-danger"}`}
+                                                                                />
+                                                                        </div>
 
-									<div className="space-y-3">
-										{selected.properties.map((property) => (
-											<div
-												key={property.label}
-												className="rounded-md border border-slate-800/80 bg-background/60 p-3"
-											>
-												<div className="flex items-center justify-between gap-3">
-													<span className="text-xs text-muted-foreground">
-														{property.label}
-													</span>
-													<span className="text-sm font-medium text-foreground">
-														{formatValue(property.value)}
-													</span>
-												</div>
-												{property.helper && (
-													<p className="mt-1 text-xs text-muted-foreground">
-														{property.helper}
-													</p>
-												)}
-											</div>
-										))}
-									</div>
-								</section>
+                                                                        <div className="space-y-3">
+                                                                                {selected.properties.map((property) => (
+                                                                                        <div
+                                                                                                key={property.label}
+                                                                                                className="rounded-md border border-slate-800/80 bg-background/60 p-3"
+                                                                                        >
+                                                                                                <div className="flex items-center justify-between gap-3">
+                                                                                                        <span className="text-xs text-muted-foreground">
+                                                                                                                {property.label}
+                                                                                                        </span>
+                                                                                                        <span className="text-sm font-medium text-foreground">
+                                                                                                                {formatValue(property.value)}
+                                                                                                        </span>
+                                                                                                </div>
+                                                                                                {property.helper && (
+                                                                                                        <p className="mt-1 text-xs text-muted-foreground">
+                                                                                                                {property.helper}
+                                                                                                        </p>
+                                                                                                )}
+                                                                                        </div>
+                                                                                ))}
+                                                                        </div>
+                                                                </section>
 
-								<section className="space-y-3">
-									<div className="flex items-center justify-between gap-3">
-										<h3 className="text-sm font-semibold text-foreground">
-											Warnings
-										</h3>
-										<span className="rounded-full bg-card px-2 py-0.5 text-xs text-foreground/90">
-											{selected.warnings?.length ?? 0}
-										</span>
-									</div>
+                                                                <section className="space-y-3">
+                                                                        <div className="flex items-center justify-between gap-3">
+                                                                                <h3 className="text-sm font-semibold text-foreground">
+                                                                                        Warnings
+                                                                                </h3>
+                                                                                <span className="rounded-full bg-card px-2 py-0.5 text-xs text-foreground/90">
+                                                                                        {selected.warnings?.length ?? 0}
+                                                                                </span>
+                                                                        </div>
 
-									{(selected.warnings?.length ?? 0) > 0 ? (
-										selected.warnings?.map((warning) => (
-											<div
-												key={warning.id}
-												className={`rounded-md border p-3 ${getWarningClasses(warning.severity)}`}
-											>
-												<div className="mb-1 flex items-center gap-2">
-													<AlertTriangle className="h-4 w-4" />
-													<span className="text-sm font-semibold">
-														{warning.title}
-													</span>
-												</div>
-												<p className="text-sm leading-5">{warning.message}</p>
-											</div>
-										))
-									) : (
-										<div className="rounded-md border border-emerald-500/20 bg-emerald-500/10 p-3 text-sm text-emerald-200">
-											No active warnings for this selection.
-										</div>
-									)}
-								</section>
+                                                                        {(selected.warnings?.length ?? 0) > 0 ? (
+                                                                                selected.warnings?.map((warning) => (
+                                                                                        <div
+                                                                                                key={warning.id}
+                                                                                                className={`rounded-md border p-3 ${getWarningClasses(warning.severity)}`}
+                                                                                        >
+                                                                                                <div className="mb-1 flex items-center gap-2">
+                                                                                                        <AlertTriangle className="h-4 w-4" />
+                                                                                                        <span className="text-sm font-semibold">
+                                                                                                                {warning.title}
+                                                                                                        </span>
+                                                                                                </div>
+                                                                                                <p className="text-sm leading-5">{warning.message}</p>
+                                                                                        </div>
+                                                                                ))
+                                                                        ) : (
+                                                                                <div className="rounded-md border border-emerald-500/20 bg-emerald-500/10 p-3 text-sm text-emerald-200">
+                                                                                        No active warnings for this selection.
+                                                                                </div>
+                                                                        )}
+                                                                </section>
 
-								<section className="rounded-md border border-slate-800 bg-card p-4">
-									<h3 className="mb-3 text-sm font-semibold text-foreground">
-										Related Help
-									</h3>
-									<p className="mb-4 text-sm leading-6 text-muted-foreground">
-										Open Smart Help for the current {selected.type} context,
-										including troubleshooting steps and safety warnings.
-									</p>
-									<Button
-										type="button"
-										className="w-full bg-danger text-white hover:bg-danger/90"
-										onClick={() => openHelp?.()}
-										>
-										<CircleHelp className="h-4 w-4" />
-										Open related help
-									</Button>
-								</section>
-							</>
-						)}
-					</div>
-				</ScrollArea>
-			</aside>
-		</div>
-	);
+                                                                <section className="rounded-md border border-slate-800 bg-card p-4">
+                                                                        <h3 className="mb-3 text-sm font-semibold text-foreground">
+                                                                                Related Help
+                                                                        </h3>
+                                                                        <p className="mb-4 text-sm leading-6 text-muted-foreground">
+                                                                                Open Smart Help for the current {selected.type} context,
+                                                                                including troubleshooting steps and safety warnings.
+                                                                        </p>
+                                                                        <Button
+                                                                                type="button"
+                                                                                className="w-full bg-danger text-white hover:bg-danger/90"
+                                                                                onClick={() => openHelp?.()}
+                                                                                >
+                                                                                <CircleHelp className="h-4 w-4" />
+                                                                                Open related help
+                                                                        </Button>
+                                                                </section>
+                                                        </>
+                                                )}
+                                        </div>
+                                </ScrollArea>
+                        </aside>
+                </div>
+        );
 }
