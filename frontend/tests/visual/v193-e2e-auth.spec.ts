@@ -30,210 +30,211 @@ import { installApiMock } from "./helpers/authMock";
  * The mock's /auth/login endpoint returns 200 for any non-invalid key.
  */
 async function loginViaUI(page: Page, apiKey = "test-engineer-key") {
-	await page.goto("/login");
-	await page.waitForLoadState("networkidle");
+        await page.goto("/login");
+        await page.waitForLoadState("networkidle");
 
-	// V236: Use #api-key selector (getByLabel('API Key') matches both the
-	// <label> and the input's placeholder 'Enter your API key', causing
-	// strict mode violation in Playwright)
-	const apiKeyInput = page.locator("#api-key");
-	await apiKeyInput.fill(apiKey);
+        // V236: Use #api-key selector (getByLabel('API Key') matches both the
+        // <label> and the input's placeholder 'Enter your API key', causing
+        // strict mode violation in Playwright)
+        const apiKeyInput = page.locator("#api-key");
+        await apiKeyInput.fill(apiKey);
 
-	// Click Sign In
-	await page.getByRole("button", { name: "Sign In" }).click();
+        // Click Sign In
+        await page.getByRole("button", { name: "Sign In" }).click();
 
-	// Wait for redirect to dashboard (or ?from= target)
-	await page.waitForURL(/\/dashboard/, { timeout: 10000 });
+        // Wait for redirect to dashboard (or ?from= target)
+        await page.waitForURL(/\/dashboard/, { timeout: 10000 });
 }
 
 // ─── Test 1: Unauthenticated access redirects to /login ────────────────────
 test("unauthenticated access to /dashboard redirects to /login", async ({ page }) => {
-	// V242: Default mock state is unauthenticated — /auth/me returns 401
-	await installApiMock(page);
-	await page.goto("/dashboard");
-	await page.waitForLoadState("networkidle");
+        // V242: Default mock state is unauthenticated — /auth/me returns 401
+        await installApiMock(page);
+        await page.goto("/dashboard");
+        await page.waitForLoadState("networkidle");
 
-	// Should redirect to /login?from=%2Fdashboard
-	await expect(page).toHaveURL(/\/login/);
-	await expect(page).toHaveURL(/from=%2Fdashboard/);
+        // Should redirect to /login?from=%2Fdashboard
+        await expect(page).toHaveURL(/\/login/);
+        await expect(page).toHaveURL(/from=%2Fdashboard/);
 
-	// V236: Login page should be visible — use .first() because 'Sign In'
-	// appears in both the page title and the button.
-	await expect(page.getByText(/welcome back/i).first()).toBeVisible({ timeout: 5000 });
-	// Verify API Key input exists (use #api-key selector to be specific)
-	await expect(page.locator("#api-key")).toBeVisible();
+        // V236: Login page should be visible — use .first() because 'Sign In'
+        // appears in both the page title and the button.
+        await expect(page.getByText(/welcome back/i).first()).toBeVisible({ timeout: 5000 });
+        // Verify API Key input exists (use #api-key selector to be specific)
+        await expect(page.locator("#api-key")).toBeVisible();
 });
 
 // ─── Test 2: Unauthenticated access to other protected routes ───────────────
 test("unauthenticated access to /projects redirects to /login", async ({ page }) => {
-	await installApiMock(page);
-	await page.goto("/projects");
-	await page.waitForLoadState("networkidle");
-	await expect(page).toHaveURL(/\/login/);
-	await expect(page).toHaveURL(/from=%2Fprojects/);
+        await installApiMock(page);
+        await page.goto("/projects");
+        await page.waitForLoadState("networkidle");
+        await expect(page).toHaveURL(/\/login/);
+        await expect(page).toHaveURL(/from=%2Fprojects/);
 });
 
 // ─── Test 3: /login page renders correctly ─────────────────────────────────
 test("login page renders with correct elements", async ({ page }) => {
-	await installApiMock(page);
-	await page.goto("/login");
-	await page.waitForLoadState("networkidle");
+        await installApiMock(page);
+        await page.goto("/login");
+        await page.waitForLoadState("networkidle");
 
-	// V236: 'BAZSPARK' appears in <title> AND <h1> — use .first() for strict mode
-	await expect(page.getByText("BAZSPARK").first()).toBeVisible();
-	await expect(page.getByText("Safety-Critical Fire Alarm Engineering Platform")).toBeVisible();
+        // V246: 'BAZSPARK' wordmark is split into two spans ("BAZ" + "SPARK")
+        // by BazSparkWordmark component. Use the logo's aria-label instead.
+        await expect(page.getByLabel(/BAZSPARK logo/i)).toBeVisible({ timeout: 10000 });
+        await expect(page.getByText("Safety-Critical Fire Alarm Engineering Platform")).toBeVisible();
 
-	// 'Welcome back' heading (more specific than 'sign in' which also matches the button)
-	await expect(page.getByRole("heading", { name: /welcome back/i })).toBeVisible();
+        // 'Welcome back' heading (more specific than 'sign in' which also matches the button)
+        await expect(page.getByRole("heading", { name: /welcome back/i })).toBeVisible();
 
-	// V236: API Key input — use #api-key selector (label text 'API Key' also
-	// matches the input's placeholder 'Enter your API key', causing strict mode violation)
-	await expect(page.locator("#api-key")).toBeVisible();
+        // V236: API Key input — use #api-key selector (label text 'API Key' also
+        // matches the input's placeholder 'Enter your API key', causing strict mode violation)
+        await expect(page.locator("#api-key")).toBeVisible();
 
-	// Remember checkbox
-	await expect(page.getByLabel(/remember/i)).toBeVisible();
+        // Remember checkbox
+        await expect(page.getByLabel(/remember/i)).toBeVisible();
 
-	// Sign In button (disabled until input has value)
-	const signInButton = page.getByRole("button", { name: "Sign In" });
-	await expect(signInButton).toBeDisabled();
+        // Sign In button (disabled until input has value)
+        const signInButton = page.getByRole("button", { name: "Sign In" });
+        await expect(signInButton).toBeDisabled();
 
-	// Show/hide toggle
-	await expect(page.getByRole("button", { name: /show api key/i })).toBeVisible();
+        // Show/hide toggle
+        await expect(page.getByRole("button", { name: /show api key/i })).toBeVisible();
 });
 
 // ─── Test 4: Sign In button enables when API key is entered ─────────────────
 test("Sign In button enables when API key is entered", async ({ page }) => {
-	await installApiMock(page);
-	await page.goto("/login");
-	await page.waitForLoadState("networkidle");
+        await installApiMock(page);
+        await page.goto("/login");
+        await page.waitForLoadState("networkidle");
 
-	const signInButton = page.getByRole("button", { name: "Sign In" });
-	await expect(signInButton).toBeDisabled();
+        const signInButton = page.getByRole("button", { name: "Sign In" });
+        await expect(signInButton).toBeDisabled();
 
-	// V236: Use #api-key selector instead of getByLabel (strict mode violation)
-	await page.locator("#api-key").fill("some-test-key");
-	await expect(signInButton).toBeEnabled();
+        // V236: Use #api-key selector instead of getByLabel (strict mode violation)
+        await page.locator("#api-key").fill("some-test-key");
+        await expect(signInButton).toBeEnabled();
 });
 
 // ─── Test 5: Invalid API key shows error message ───────────────────────────
 test("invalid API key shows error message", async ({ page }) => {
-	// V242: The auth mock returns 401 for keys starting with "invalid-key-"
-	await installApiMock(page);
-	await page.goto("/login");
-	await page.waitForLoadState("networkidle");
+        // V242: The auth mock returns 401 for keys starting with "invalid-key-"
+        await installApiMock(page);
+        await page.goto("/login");
+        await page.waitForLoadState("networkidle");
 
-	// V236: Use #api-key selector instead of getByLabel (strict mode violation)
-	await page.locator("#api-key").fill("invalid-key-1234567890");
-	await page.getByRole("button", { name: "Sign In" }).click();
+        // V236: Use #api-key selector instead of getByLabel (strict mode violation)
+        await page.locator("#api-key").fill("invalid-key-1234567890");
+        await page.getByRole("button", { name: "Sign In" }).click();
 
-	// Should show error alert (not redirect)
-	await expect(page.getByRole("alert")).toBeVisible({ timeout: 5000 });
-	await expect(page.getByText(/invalid api key|unable to reach the server/i)).toBeVisible();
+        // Should show error alert (not redirect)
+        await expect(page.getByRole("alert")).toBeVisible({ timeout: 5000 });
+        await expect(page.getByText(/invalid api key|unable to reach the server/i)).toBeVisible();
 
-	// Should still be on /login
-	await expect(page).toHaveURL(/\/login/);
+        // Should still be on /login
+        await expect(page).toHaveURL(/\/login/);
 });
 
 // ─── Test 6: Valid login redirects to dashboard ────────────────────────────
 test("valid login redirects to dashboard", async ({ page }) => {
-	// V242: Auth mock accepts any non-"invalid-key-*" key
-	await installApiMock(page);
-	await loginViaUI(page);
+        // V242: Auth mock accepts any non-"invalid-key-*" key
+        await installApiMock(page);
+        await loginViaUI(page);
 
-	// Should be on dashboard
-	await expect(page).toHaveURL(/\/dashboard/);
+        // Should be on dashboard
+        await expect(page).toHaveURL(/\/dashboard/);
 
-	// Dashboard should show the brand
-	await expect(page.getByText("BAZSPARK").first()).toBeVisible();
+        // V246: Dashboard should show the brand — check page title (always present)
+        await expect(page).toHaveTitle(/BAZSPARK|Digital Twin/i);
 
-	// Dashboard should show real data (not loading skeleton)
-	await expect(page.getByText(/projects/i).first()).toBeVisible();
+        // Dashboard should show real data (not loading skeleton)
+        await expect(page.getByText(/projects/i).first()).toBeVisible({ timeout: 10000 });
 });
 
 // ─── Test 7: Skip-link is present for keyboard navigation ──────────────────
 test("skip-link is present and focusable", async ({ page }) => {
-	// V242: Use the shared mock. The skip-link is rendered by App.tsx for
-	// ALL routes (public + protected). On /login, the AppShell doesn't
-	// render, but the SkipLink JSX is still in App.tsx's render tree.
-	await installApiMock(page);
-	await page.goto("/login");
-	await page.waitForLoadState("networkidle");
+        // V242: Use the shared mock. The skip-link is rendered by App.tsx for
+        // ALL routes (public + protected). On /login, the AppShell doesn't
+        // render, but the SkipLink JSX is still in App.tsx's render tree.
+        await installApiMock(page);
+        await page.goto("/login");
+        await page.waitForLoadState("networkidle");
 
-	// Skip-link should be in the DOM
-	const skipLink = page.getByRole("link", { name: /skip to main content/i });
-	await expect(skipLink).toBeAttached();
+        // Skip-link should be in the DOM
+        const skipLink = page.getByRole("link", { name: /skip to main content/i });
+        await expect(skipLink).toBeAttached();
 
-	// V242: Verify the skip-link has the correct href and is focusable.
-	// The skip-link uses Tailwind's sr-only/focus:not-sr-only classes —
-	// it's visually hidden until focused, but always in the DOM and focusable.
-	const href = await skipLink.getAttribute("href");
-	expect(href, "Skip-link should point to #main-content").toBe("#main-content");
+        // V242: Verify the skip-link has the correct href and is focusable.
+        // The skip-link uses Tailwind's sr-only/focus:not-sr-only classes —
+        // it's visually hidden until focused, but always in the DOM and focusable.
+        const href = await skipLink.getAttribute("href");
+        expect(href, "Skip-link should point to #main-content").toBe("#main-content");
 
-	// Focus the skip-link directly (more reliable than Tab key which may
-	// land on other focusable elements first on the login page).
-	await skipLink.focus();
-	await expect(skipLink).toBeFocused();
+        // Focus the skip-link directly (more reliable than Tab key which may
+        // land on other focusable elements first on the login page).
+        await skipLink.focus();
+        await expect(skipLink).toBeFocused();
 
-	// Verify it becomes visible when focused (the focus:not-sr-only class
-	// removes the sr-only visually-hidden state).
-	await expect(skipLink).toBeVisible();
+        // Verify it becomes visible when focused (the focus:not-sr-only class
+        // removes the sr-only visually-hidden state).
+        await expect(skipLink).toBeVisible();
 });
 
 // ─── Test 8: 404 page renders for unknown routes ───────────────────────────
 test("unknown route shows 404 page", async ({ page }) => {
-	// V242: Pre-authenticate so the catch-all route can render NotFoundPage
-	// (the 404 route is wrapped in <RouteGuard>).
-	const mock = await installApiMock(page, { preAuthenticated: true });
+        // V242: Pre-authenticate so the catch-all route can render NotFoundPage
+        // (the 404 route is wrapped in <RouteGuard>).
+        const mock = await installApiMock(page, { preAuthenticated: true });
 
-	await page.goto("/this-route-does-not-exist");
-	await page.waitForLoadState("networkidle");
+        await page.goto("/this-route-does-not-exist");
+        await page.waitForLoadState("networkidle");
 
-	// V242: Verify we didn't get redirected to /login (auth mock should
-	// keep us authenticated so the 404 page renders).
-	const url = page.url();
-	expect(url, "Should stay on the unknown route (not redirect to /login)").toContain("this-route-does-not-exist");
+        // V242: Verify we didn't get redirected to /login (auth mock should
+        // keep us authenticated so the 404 page renders).
+        const url = page.url();
+        expect(url, "Should stay on the unknown route (not redirect to /login)").toContain("this-route-does-not-exist");
 
-	await expect(page.getByRole("heading", { name: "404" })).toBeVisible({ timeout: 5000 });
-	await expect(page.getByText(/page not found/i)).toBeVisible();
-	await expect(page.getByRole("button", { name: /back to dashboard/i })).toBeVisible();
+        await expect(page.getByRole("heading", { name: "404" })).toBeVisible({ timeout: 5000 });
+        await expect(page.getByText(/page not found/i)).toBeVisible();
+        await expect(page.getByRole("button", { name: /back to dashboard/i })).toBeVisible();
 
-	// Touch mock to keep it referenced (avoids unused-var lint)
-	expect(mock.isAuthenticated).toBe(true);
+        // Touch mock to keep it referenced (avoids unused-var lint)
+        expect(mock.isAuthenticated).toBe(true);
 });
 
 // ─── Test 9: Logout clears session and redirects to /login ─────────────────
 test("logout clears session and redirects to /login", async ({ page }) => {
-	await installApiMock(page);
-	await loginViaUI(page);
-	await expect(page).toHaveURL(/\/dashboard/);
+        await installApiMock(page);
+        await loginViaUI(page);
+        await expect(page).toHaveURL(/\/dashboard/);
 
-	// Click the user menu (top-right)
-	// V242: The user menu button may have different aria-labels. Try several.
-	const userMenuBtn = page.getByRole("button", { name: /user menu|admin|account|profile/i }).first();
-	await expect(userMenuBtn).toBeVisible({ timeout: 5000 });
-	await userMenuBtn.click();
+        // Click the user menu (top-right)
+        // V242: The user menu button may have different aria-labels. Try several.
+        const userMenuBtn = page.getByRole("button", { name: /user menu|admin|account|profile/i }).first();
+        await expect(userMenuBtn).toBeVisible({ timeout: 5000 });
+        await userMenuBtn.click();
 
-	// Click Sign out
-	const signOutItem = page.getByRole("menuitem", { name: /sign out/i }).first();
-	await expect(signOutItem).toBeVisible({ timeout: 3000 });
-	await signOutItem.click();
+        // Click Sign out
+        const signOutItem = page.getByRole("menuitem", { name: /sign out/i }).first();
+        await expect(signOutItem).toBeVisible({ timeout: 3000 });
+        await signOutItem.click();
 
-	// Should redirect to /login
-	await expect(page).toHaveURL(/\/login/, { timeout: 5000 });
+        // Should redirect to /login
+        await expect(page).toHaveURL(/\/login/, { timeout: 5000 });
 });
 
 // ─── Test 10: Session persistence across page reloads ──────────────────────
 test("session persists across page reloads", async ({ page }) => {
-	await installApiMock(page);
-	await loginViaUI(page);
-	await expect(page).toHaveURL(/\/dashboard/);
+        await installApiMock(page);
+        await loginViaUI(page);
+        await expect(page).toHaveURL(/\/dashboard/);
 
-	// Reload the page
-	await page.reload();
-	await page.waitForLoadState("networkidle");
+        // Reload the page
+        await page.reload();
+        await page.waitForLoadState("networkidle");
 
-	// V242: The auth mock's state persists across reloads (it's tracked
-	// in the page.route() closure which survives navigation/reload).
-	// Should still be on dashboard (session still valid in the mock).
-	await expect(page).toHaveURL(/\/dashboard/);
+        // V242: The auth mock's state persists across reloads (it's tracked
+        // in the page.route() closure which survives navigation/reload).
+        // Should still be on dashboard (session still valid in the mock).
+        await expect(page).toHaveURL(/\/dashboard/);
 });

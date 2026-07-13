@@ -14,10 +14,11 @@ from __future__ import annotations
 import logging
 import math
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
 from backend.auth import require_permission
 from backend.db_service import DatabaseService, get_db_service
+from backend.limiter import limiter
 from backend.rbac import Permission
 from backend.schemas import (
     ApiResponse,
@@ -67,7 +68,9 @@ async def list_conflicts(
 
 
 @router.post("/detect", response_model=ApiResponse[list], dependencies=[Depends(require_permission(Permission.CONFLICT_READ))])
+@limiter.limit("30/minute")
 async def detect_conflicts(
+    request: Request,
     db: DatabaseService = Depends(get_db_service),  # NOSONAR - python:S8410
 ):
     """Run conflict detection on all elements."""
@@ -84,7 +87,9 @@ async def detect_conflicts(
 
 
 @router.post("/{conflict_id}/resolve", response_model=ApiResponse[ConflictResponse], dependencies=[Depends(require_permission(Permission.CONFLICT_RESOLVE))])
+@limiter.limit("30/minute")
 async def resolve_conflict(
+    request: Request,
     conflict_id: str,
     resolve_data: ConflictResolveRequest,
     db: DatabaseService = Depends(get_db_service),  # NOSONAR - python:S8410

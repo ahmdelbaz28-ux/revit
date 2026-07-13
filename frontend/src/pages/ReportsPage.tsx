@@ -3,9 +3,10 @@
  * ReportsPage.tsx - Report generation with deterministic analysis
  */
 
-import { Calendar, Clock, Download, FileText, Loader2 } from "lucide-react";
+import { Calendar, Clock, Download, FileText, Loader2, AlertTriangle } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import { ExplainButton } from "@/components/ai/ExplainButton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -60,6 +61,14 @@ export function ReportsPage() {
                 execution_timeout: 30,
         });
 
+        // V246 FIX: AHJ submittal fields are now editable (was hardcoded to
+        // "FireAI Engineer" / "AHJ" / "2022"). These are legal compliance
+        // artifacts — the designer must be the authenticated user, and the
+        // NFPA edition should be selectable.
+        const [ahjDesigner, setAhjDesigner] = useState("");
+        const [ahjJurisdiction, setAhjJurisdiction] = useState("");
+        const [ahjNfpaEdition, setAhjNfpaEdition] = useState("2022");
+
         const handleGenerate = async () => {
                 // V214 self-critique fix: use real project ID, not hardcoded "default-project-id"
                 if (!firstProjectId) {
@@ -88,7 +97,12 @@ export function ReportsPage() {
         const handleGenerateAhj = async () => {
                 // V214 self-critique fix: use real project ID
                 if (!firstProjectId) {
-                        alert("No project found. Create a project first.");
+                        toast.error("No project found. Create a project first.");
+                        return;
+                }
+                // V246 FIX: Validate designer field — AHJ submittals are legal documents
+                if (!ahjDesigner.trim()) {
+                        toast.error("Designer name is required for AHJ submittal.");
                         return;
                 }
                 setAhjGenerating(true);
@@ -106,9 +120,10 @@ export function ReportsPage() {
                                         method: "POST",
                                         headers: ahjHeaders,
                                         body: JSON.stringify({
-                                                designer: "FireAI Engineer",
-                                                jurisdiction: "AHJ",
-                                                nfpa_edition: "2022",
+                                                // V246 FIX: Use user-provided values (was hardcoded)
+                                                designer: ahjDesigner.trim(),
+                                                jurisdiction: ahjJurisdiction.trim() || "AHJ",
+                                                nfpa_edition: ahjNfpaEdition,
                                         }),
                                 },
                         );
@@ -118,14 +133,23 @@ export function ReportsPage() {
                         const blob = await response.blob();
                         const url = URL.createObjectURL(blob);
                         setAhjDownloadUrl(url);
+                        toast.success("AHJ submittal document generated successfully.");
                 } catch (err) {
-                        console.error("AHJ submittal error:", err);
+                        // V246 FIX: Show user-facing error toast (was silent console.error)
+                        const msg = err instanceof Error ? err.message : "Failed to generate AHJ submittal";
+                        toast.error(msg);
                 } finally {
                         setAhjGenerating(false);
                 }
         };
 
-        // Sample data for demonstration
+        // V246 SAFETY FIX: The following data is SAMPLE DATA for demonstration only.
+        // It does NOT represent real project calculations. A prominent warning banner
+        // is displayed above the calculation cards to prevent engineers from using
+        // these values for real system design.
+        // TODO(v2.0): Fetch real device/room/detector data from the project API
+        // and display real calculations. Until then, the SAMPLE DATA banner MUST
+        // remain visible.
         const sampleDevices = [
                 {
                         id: "dev-1",
@@ -251,6 +275,12 @@ export function ReportsPage() {
                         sensitivity: "standard",
                 },
         ];
+
+        // V246 SAFETY: Flag to show a prominent SAMPLE DATA warning banner above
+        // the calculation cards. This is TRUE because the data above is hardcoded
+        // sample data, NOT real project data. Real project data integration is
+        // scheduled for v2.0.
+        const isSampleData = true;
 
         const batteryCalculation = calculateBatteryRequirements({
                 devices: sampleDevices,
@@ -557,10 +587,54 @@ export function ReportsPage() {
 
                                                 {/* V214 FIX: AHJ Submittal button — generates real NFPA 72
                                                      compliance proof document via POST /reports/ahj-submittal */}
+                                                {/* V246 FIX: AHJ fields are now editable (was hardcoded) */}
+                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-2 w-full">
+                                                        <div>
+                                                                <Label htmlFor="ahj-designer" className="text-xs text-muted-foreground">
+                                                                        Designer Name (required)
+                                                                </Label>
+                                                                <input
+                                                                        id="ahj-designer"
+                                                                        type="text"
+                                                                        value={ahjDesigner}
+                                                                        onChange={(e) => setAhjDesigner(e.target.value)}
+                                                                        placeholder="Eng. John Doe, PE"
+                                                                        className="w-full mt-1 px-3 py-2 text-sm bg-card border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                                                                />
+                                                        </div>
+                                                        <div>
+                                                                <Label htmlFor="ahj-jurisdiction" className="text-xs text-muted-foreground">
+                                                                        Jurisdiction
+                                                                </Label>
+                                                                <input
+                                                                        id="ahj-jurisdiction"
+                                                                        type="text"
+                                                                        value={ahjJurisdiction}
+                                                                        onChange={(e) => setAhjJurisdiction(e.target.value)}
+                                                                        placeholder="City of Cairo Fire Marshal"
+                                                                        className="w-full mt-1 px-3 py-2 text-sm bg-card border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                                                                />
+                                                        </div>
+                                                        <div>
+                                                                <Label htmlFor="ahj-nfpa-edition" className="text-xs text-muted-foreground">
+                                                                        NFPA Edition
+                                                                </Label>
+                                                                <select
+                                                                        id="ahj-nfpa-edition"
+                                                                        value={ahjNfpaEdition}
+                                                                        onChange={(e) => setAhjNfpaEdition(e.target.value)}
+                                                                        className="w-full mt-1 px-3 py-2 text-sm bg-card border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                                                                >
+                                                                        <option value="2022">NFPA 72 (2022)</option>
+                                                                        <option value="2019">NFPA 72 (2019)</option>
+                                                                        <option value="2016">NFPA 72 (2016)</option>
+                                                                </select>
+                                                        </div>
+                                                </div>
                                                 <Button
-                                                        className="bg-primary hover:bg-primary/90 text-white border-none ml-2"
+                                                        className="bg-primary hover:bg-primary/90 text-white border-none ml-2 mt-2"
                                                         onClick={handleGenerateAhj}
-                                                        disabled={ahjGenerating}
+                                                        disabled={ahjGenerating || !ahjDesigner.trim()}
                                                 >
                                                         {ahjGenerating ? (
                                                                 <>
@@ -585,6 +659,29 @@ export function ReportsPage() {
                                                 )}
                                         </CardContent>
                                 </Card>
+
+                                {/* V246 SAFETY: Sample Data Warning Banner */}
+                                {isSampleData && (
+                                        <div
+                                                className="flex items-start gap-3 p-4 rounded-lg border-2 border-amber-500/50 bg-amber-500/10"
+                                                role="alert"
+                                                aria-label="Sample data warning"
+                                        >
+                                                <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+                                                <div>
+                                                        <div className="font-semibold text-amber-600 dark:text-amber-400">
+                                                                SAMPLE DATA — Not Real Calculations
+                                                        </div>
+                                                        <div className="text-sm text-amber-700 dark:text-amber-300 mt-1">
+                                                                The battery and coverage calculations below use hardcoded sample
+                                                                data for demonstration only. They do NOT reflect your actual
+                                                                project. Do NOT use these values for real system design or AHJ
+                                                                submittals. Connect a real project and use the AHJ Submittal
+                                                                button above to generate a compliance document with real data.
+                                                        </div>
+                                                </div>
+                                        </div>
+                                )}
 
                                 {/* Battery Calculation Report Preview */}
                                 <Card className="border-border bg-card">

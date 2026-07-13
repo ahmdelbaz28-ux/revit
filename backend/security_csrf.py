@@ -156,7 +156,9 @@ def validate_csrf_token(token: str) -> bool:
         padded = token + "=" * (4 - len(token) % 4) if len(token) % 4 else token
         decoded = base64.urlsafe_b64decode(padded)
         return len(decoded) >= 24  # At least 24 bytes decoded (192 bits)
-    except Exception:
+    except Exception as e:
+        # V246 FIX: Log the exception for debugging (was silent pass)
+        logger.debug("CSRF token entropy check failed: %s", e, exc_info=True)
         return False
 
 

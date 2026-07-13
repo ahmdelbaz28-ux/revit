@@ -110,7 +110,7 @@ class AutoCADService:
         try:
             if not HAS_AUTOCAD_API:
                 logger.error("AutoCAD COM API not available. Install pywin32.")
-                if os.getenv("FIREAI_ENV", "development") == "development":
+                if os.getenv("FIREAI_ENV", "production") == "development":
                     logger.warning(
                         "SIMULATION mode engaged: AutoCAD COM API not available. "
                         "No real drawing operations will occur — all draw_* "
@@ -141,7 +141,7 @@ class AutoCADService:
                         logger.info("Launched new AutoCAD instance (visible=%s)", visible)
                     except Exception as e:
                         logger.exception("Could not launch AutoCAD: %s", e)
-                        if os.getenv("FIREAI_ENV", "development") == "development":
+                        if os.getenv("FIREAI_ENV", "production") == "development":
                             logger.warning(
                                 "SIMULATION mode engaged: could not launch AutoCAD. "
                                 "No real drawing operations will occur."
@@ -159,7 +159,7 @@ class AutoCADService:
                     logger.info("Launched new AutoCAD instance (force_new=True, visible=%s)", visible)
                 except Exception as e:
                     logger.exception("Could not launch AutoCAD: %s", e)
-                    if os.getenv("FIREAI_ENV", "development") == "development":
+                    if os.getenv("FIREAI_ENV", "production") == "development":
                         logger.warning(
                             "SIMULATION mode engaged: could not launch AutoCAD (force_new). "
                             "No real drawing operations will occur."
@@ -184,7 +184,7 @@ class AutoCADService:
 
         except Exception as e:
             logger.exception("Error connecting to AutoCAD: %s", e)
-            if os.getenv("FIREAI_ENV", "development") == "development":
+            if os.getenv("FIREAI_ENV", "production") == "development":
                 logger.warning(
                     "SIMULATION mode engaged: connect() raised an exception. "
                     "No real drawing operations will occur."

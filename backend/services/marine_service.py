@@ -16,6 +16,7 @@ Workflow:
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 from marine.core.types import (
@@ -62,6 +63,8 @@ from marine.solas.chapter_ii_2 import (
     validate_fire_divisions,
     validate_main_vertical_zones,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class MarineService:
@@ -114,8 +117,18 @@ class MarineService:
             try:
                 design = size_system(zone, ship)
                 extinguishing.append(design)
-            except Exception:
-                pass  # No fixed system required for this zone
+            except Exception as e:
+                # V246 FIX: Log the exception instead of silently swallowing.
+                # The comment "No fixed system required" was a guess — the
+                # actual exception could be a data validation error, a missing
+                # parameter, or a real sizing failure. Log it so engineers can
+                # diagnose issues in safety-critical fire suppression design.
+                logger.debug(
+                    "Extinguishing system sizing skipped for zone %s: %s",
+                    getattr(zone, "zone_id", "unknown"),
+                    e,
+                    exc_info=True,
+                )
 
         # 5. Alarm logic
         logic_nodes = []

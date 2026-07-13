@@ -83,7 +83,7 @@ class Config:
     ).lower() in ("true", "1", "yes", "on")
 
     # Additional settings
-    ENVIRONMENT: str = os.environ.get("FIREAI_ENV", "development")
+    ENVIRONMENT: str = os.environ.get("FIREAI_ENV", "production")
     DEBUG: bool = ENVIRONMENT.lower() == "development"
 
     @classmethod

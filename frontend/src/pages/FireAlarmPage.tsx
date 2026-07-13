@@ -299,16 +299,20 @@ export function FireAlarmPage() {
                                                                 },
                                                         ] as unknown as typeof mockZones);
                                                 } else {
-                                                        setZones(mockZones);
+                                                        // V246 SAFETY FIX: Show empty state instead of mock data
+                                                        setZones([]);
                                                 }
                                         } else {
-                                                setZones(mockZones);
+                                                // V246 SAFETY FIX: Show empty state instead of mock data
+                                                setZones([]);
                                         }
                                 } else {
-                                        setZones(mockZones);
+                                        // V246 SAFETY FIX: Show empty state instead of mock data
+                                        setZones([]);
                                 }
                         } catch {
-                                setZones(mockZones);
+                                // V246 SAFETY FIX: Show empty state instead of mock data
+                                setZones([]);
                         } finally {
                                 setZonesLoading(false);
                         }
@@ -325,10 +329,11 @@ export function FireAlarmPage() {
                 alert(`Zooming to zone: ${zoneId}`);
         };
 
-        const handleSaveDevice = (updatedDevice: any) => {
+        const handleSaveDevice = (updatedDevice: Partial<{ id: string } & Record<string, unknown>>) => {
                 // V187: use setDetectorsWithHistory to capture actual previous state
+                if (!updatedDevice.id) return;
                 setDetectorsWithHistory((prev) =>
-                        prev.map((det) => (det.id === updatedDevice.id ? updatedDevice : det)),
+                        prev.map((det) => (det.id === updatedDevice.id ? { ...det, ...updatedDevice } : det)),
                 );
                 setShowProperties(false);
         };
@@ -344,7 +349,7 @@ export function FireAlarmPage() {
                                         <Skeleton className="h-full w-full bg-card" />
                                 ) : (
                                         <ZoneNavigator
-                                                zones={zones.length > 0 ? zones : mockZones}
+                                                zones={zones}
                                                 selectedDevice={selectedDevice}
                                                 onDeviceSelect={handleDeviceSelect}
                                                 onZoomToZone={handleZoomToZone}

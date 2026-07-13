@@ -131,8 +131,10 @@ async def get_health_statistics():
             udm_total_connections_udm = udm_stats.total_connections
             udm_total_conflicts = udm_stats.total_conflicts
             udm_unresolved_conflicts = udm_stats.unresolved_conflicts
-        except Exception:
-            pass  # UDM not available — counts remain 0
+        except Exception as e:
+            # V246 FIX: Log instead of silent pass — UDM unavailability
+            # could indicate a database connection issue worth investigating.
+            logger.debug("UDM stats unavailable: %s", e, exc_info=True)
 
         from backend.response import success
         return success({

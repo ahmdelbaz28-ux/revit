@@ -26,11 +26,12 @@ import logging
 import os
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Depends, HTTPException, Request, WebSocket, WebSocketDisconnect
 
 from backend.api_keys import validate_api_key
 from backend.auth import require_permission
 from backend.database import get_db
+from backend.limiter import limiter
 from backend.rbac import Permission
 
 logger = logging.getLogger(__name__)
@@ -177,7 +178,8 @@ def _verify_project(project_id: str) -> None:
 
 
 @router.post("", dependencies=[Depends(require_permission(Permission.PROJECT_UPDATE))])
-async def sync_project(project_id: str):
+@limiter.limit("30/minute")
+async def sync_project(request: Request, project_id: str):
     """Trigger project synchronization."""
     _verify_project(project_id)
     db = get_db()
@@ -267,7 +269,7 @@ def _validate_ws_origin(websocket: WebSocket) -> bool:
     origin = websocket.headers.get("origin", "")
     host = websocket.headers.get("host", "")
 
-    is_dev_mode = os.getenv("FIREAI_ENV", "development").lower() not in ("production", "prod")
+    is_dev_mode = os.getenv("FIREAI_ENV", "production").lower() not in ("production", "prod")
 
     # Missing Origin header
     if not origin:

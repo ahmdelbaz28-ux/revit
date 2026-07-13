@@ -402,7 +402,7 @@ async def lifespan(app: FastAPI):
 # In production, the entire API surface (including internal RBAC permission
 # names) MUST NOT be exposed to anonymous attackers. Set docs_url=None to
 # fully disable. Development keeps the docs available for DX.
-_is_prod = os.getenv("FIREAI_ENV", "development").lower() in ("production", "prod")
+_is_prod = os.getenv("FIREAI_ENV", "production").lower() in ("production", "prod")
 _docs_url = None if _is_prod else "/docs"
 _redoc_url = None if _is_prod else "/redoc"
 _openapi_url = None if _is_prod else "/openapi.json"
@@ -460,7 +460,7 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 # SECURITY: This is a safety-critical fire protection engineering API.
 # Allowing arbitrary origins to read API responses would permit any website
 # to exfiltrate engineering data (building layouts, fire alarm designs).
-_env_mode = os.getenv("FIREAI_ENV", "development").lower()
+_env_mode = os.getenv("FIREAI_ENV", "production").lower()
 if _env_mode in ("production", "prod"):
     _cors_raw = os.getenv("CORS_ALLOWED_ORIGINS", "")
     if not _cors_raw:

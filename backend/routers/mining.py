@@ -14,10 +14,11 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from backend.auth import require_permission
+from backend.limiter import limiter
 from backend.rbac import Permission
 
 logger = logging.getLogger(__name__)
@@ -88,22 +89,23 @@ async def list_standards():
 
 
 @router.post("/methane-check", dependencies=[Depends(require_permission(Permission.ELEMENT_READ))])
-async def methane_check(request: MethaneCheckRequest):
+@limiter.limit("30/minute")
+async def methane_check(request: Request, body: MethaneCheckRequest):
     """Classify methane concentration per MSHA 30 CFR §75.323."""
     try:
         from fireai.mining.core.methane_calculator import MSHA_THRESHOLDS, MethaneCalculator
 
-        hazard = MethaneCalculator.classify_hazard(request.concentration_pct)
-        is_explosive = MethaneCalculator.is_in_explosive_range(request.concentration_pct)
-        distance_to_lel = MethaneCalculator.distance_to_lel(request.concentration_pct)
+        hazard = MethaneCalculator.classify_hazard(body.concentration_pct)
+        is_explosive = MethaneCalculator.is_in_explosive_range(body.concentration_pct)
+        distance_to_lel = MethaneCalculator.distance_to_lel(body.concentration_pct)
 
         return {
             "success": True,
-            "concentration_pct": request.concentration_pct,
+            "concentration_pct": body.concentration_pct,
             "hazard_level": hazard,
             "is_in_explosive_range": is_explosive,
             "distance_to_lel_pct": round(distance_to_lel, 3),
-            "location": request.location,
+            "location": body.location,
             "standard": "MSHA 30 CFR §75.323",
             "thresholds": MSHA_THRESHOLDS,
         }
@@ -115,27 +117,28 @@ async def methane_check(request: MethaneCheckRequest):
   # NOSONAR: python:S8415
 
 @router.post("/ventilation-check", dependencies=[Depends(require_permission(Permission.ELEMENT_READ))])
-async def ventilation_check(request: VentilationCheckRequest):
+@limiter.limit("30/minute")
+async def ventilation_check(request: Request, body: VentilationCheckRequest):
     """Check MSHA ventilation compliance per 30 CFR §75.326-327."""
     try:
         from fireai.mining.core.ventilation_calculator import VentilationCalculator
 
         is_compliant, violations = VentilationCalculator.check_msha_compliance(
-            request.airflow_m3_s,
-            request.location_type,
-            request.cross_sectional_area_m2,
+            body.airflow_m3_s,
+            body.location_type,
+            body.cross_sectional_area_m2,
         )
 
         velocity = None
-        if request.cross_sectional_area_m2 and request.cross_sectional_area_m2 > 0:
+        if body.cross_sectional_area_m2 and body.cross_sectional_area_m2 > 0:
             velocity = VentilationCalculator.air_velocity(
-                request.airflow_m3_s, request.cross_sectional_area_m2
+                body.airflow_m3_s, body.cross_sectional_area_m2
             )
 
         return {
             "success": True,
-            "airflow_m3_s": request.airflow_m3_s,
-            "location_type": request.location_type,
+            "airflow_m3_s": body.airflow_m3_s,
+            "location_type": body.location_type,
             "is_compliant": is_compliant,
             "violations": violations,
             "velocity_m_s": round(velocity, 3) if velocity else None,
@@ -149,7 +152,8 @@ async def ventilation_check(request: VentilationCheckRequest):
   # NOSONAR: python:S8415
 
 @router.post("/co-check", dependencies=[Depends(require_permission(Permission.ELEMENT_READ))])
-async def co_check(request: CoCheckRequest):
+@limiter.limit("30/minute")
+async def co_check(request: Request, body: CoCheckRequest):
     """Classify CO concentration per MSHA 30 CFR §75.351."""
     try:
         from fireai.mining.core.conveyor_fire import (
@@ -160,11 +164,11 @@ async def co_check(request: CoCheckRequest):
             ConveyorFireAnalyzer,
         )
 
-        hazard = ConveyorFireAnalyzer.classify_co_hazard(request.co_ppm)
+        hazard = ConveyorFireAnalyzer.classify_co_hazard(body.co_ppm)
 
         return {
             "success": True,
-            "co_ppm": request.co_ppm,
+            "co_ppm": body.co_ppm,
             "hazard_level": hazard,
             "thresholds": {
                 "alert_ppm": CO_ALERT_PPM,
@@ -182,19 +186,20 @@ async def co_check(request: CoCheckRequest):
   # NOSONAR: python:S8415
 
 @router.post("/conveyor-suppression", dependencies=[Depends(require_permission(Permission.ELEMENT_READ))])
-async def conveyor_suppression(request: ConveyorSuppressionRequest):
+@limiter.limit("30/minute")
+async def conveyor_suppression(request: Request, body: ConveyorSuppressionRequest):
     """Design conveyor belt fire suppression per NFPA 120 §8.4."""
     try:
         from fireai.mining.core.conveyor_fire import ConveyorFireAnalyzer, ConveyorSpec
 
         spec = ConveyorSpec(
-            belt_length_m=request.belt_length_m,
-            belt_width_m=request.belt_width_m,
-            belt_speed_m_s=request.belt_speed_m_s,
-            has_fire_resistant_belt=request.has_fire_resistant_belt,
-            number_of_drives=request.number_of_drives,
-            number_of_tail_pieces=request.number_of_tail_pieces,
-            has_take_up=request.has_take_up,
+            belt_length_m=body.belt_length_m,
+            belt_width_m=body.belt_width_m,
+            belt_speed_m_s=body.belt_speed_m_s,
+            has_fire_resistant_belt=body.has_fire_resistant_belt,
+            number_of_drives=body.number_of_drives,
+            number_of_tail_pieces=body.number_of_tail_pieces,
+            has_take_up=body.has_take_up,
         )
         design = ConveyorFireAnalyzer.design_suppression_system(spec)
 
@@ -219,22 +224,23 @@ async def conveyor_suppression(request: ConveyorSuppressionRequest):
   # NOSONAR: python:S8415
 
 @router.post("/compliance-report", dependencies=[Depends(require_permission(Permission.REPORT_GENERATE))])
-async def compliance_report(request: ComplianceReportRequest):
+@limiter.limit("10/minute")
+async def compliance_report(request: Request, body: ComplianceReportRequest):
     """Generate full MSHA + NFPA 120 compliance report."""
     try:
         from fireai.mining.core.msha_compliance import MSHAComplianceChecker
         from fireai.mining.output.msha_report import generate_msha_report
 
         report = MSHAComplianceChecker.full_compliance_report(
-            mine_name=request.mine_name,
-            section_name=request.section_name,
-            methane_pct=request.methane_pct,
-            co_ppm=request.co_ppm,
-            airflow_m3_s=request.airflow_m3_s,
-            ventilation_location=request.ventilation_location,
-            conveyor_length_m=request.conveyor_length_m,
-            conveyor_width_m=request.conveyor_width_m,
-            has_fire_resistant_belt=request.has_fire_resistant_belt,
+            mine_name=body.mine_name,
+            section_name=body.section_name,
+            methane_pct=body.methane_pct,
+            co_ppm=body.co_ppm,
+            airflow_m3_s=body.airflow_m3_s,
+            ventilation_location=body.ventilation_location,
+            conveyor_length_m=body.conveyor_length_m,
+            conveyor_width_m=body.conveyor_width_m,
+            has_fire_resistant_belt=body.has_fire_resistant_belt,
         )
 
         markdown = generate_msha_report(report, "markdown")

@@ -264,7 +264,8 @@ class OperationResponse(BaseModel):
 # ── Endpoints ───────────────────────────────────────────────────────────────
 
 @router.post("/connect", response_model=ConnectResponse)  # NOSONAR - python:S8409
-async def connect_to_autocad(request: ConnectRequest) -> ConnectResponse:
+@limiter.limit("30/minute")
+async def connect_to_autocad(request: Request, body: ConnectRequest) -> ConnectResponse:
     """Connect to AutoCAD application.
 
     V213: When ``simulation_mode`` is True in the response, the connection is
@@ -276,7 +277,7 @@ async def connect_to_autocad(request: ConnectRequest) -> ConnectResponse:
     try:
         service = get_autocad_service()
 
-        if not service.connect(visible=request.visible, force_new=request.force_new):
+        if not service.connect(visible=body.visible, force_new=body.force_new):
             raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
                 status_code=503,  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
                 detail="Failed to connect to AutoCAD. Is AutoCAD installed and running?",
@@ -305,7 +306,8 @@ async def connect_to_autocad(request: ConnectRequest) -> ConnectResponse:
 
 
 @router.post("/disconnect", response_model=ConnectResponse)  # NOSONAR - python:S8409
-async def disconnect_from_autocad() -> ConnectResponse:
+@limiter.limit("30/minute")
+async def disconnect_from_autocad(request: Request) -> ConnectResponse:
     """Disconnect from AutoCAD application."""
     try:
         service = get_autocad_service()
@@ -328,7 +330,7 @@ async def list_autocad_documents() -> DocumentsResponse:
         service = get_autocad_service()
         # If not connected, return a simulated list in development mode
         if not service.connected:
-            if os.getenv("FIREAI_ENV", "development") == "development":
+            if os.getenv("FIREAI_ENV", "production") == "development":
                 return DocumentsResponse(
                     success=True,
                     documents=[
@@ -349,14 +351,15 @@ async def list_autocad_documents() -> DocumentsResponse:
 
 
 @router.post("/read_dwg", response_model=ReadFileResponse, dependencies=[Depends(require_permission(Permission.ELEMENT_READ))])  # NOSONAR - python:S8409
-async def read_dwg_file(request: ReadDwgRequest) -> ReadFileResponse:
+@limiter.limit("30/minute")
+async def read_dwg_file(request: Request, body: ReadDwgRequest) -> ReadFileResponse:
     """Read entities from a DWG file."""
     try:
         service = get_autocad_service()
 
         # V133 PHASE 1.2: Validate file path against path traversal attacks.
         # Previously used only os.path.exists() which accepted ../../etc/passwd.
-        safe_path = _validate_autocad_file_path(request.filepath)
+        safe_path = _validate_autocad_file_path(body.filepath)
 
         result = service.read_dwg(safe_path)
 
@@ -381,7 +384,8 @@ async def read_dwg_file(request: ReadDwgRequest) -> ReadFileResponse:
 
 
 @router.post("/write_dwg", response_model=OperationResponse, dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])  # NOSONAR - python:S8409
-async def write_dwg_file(request: WriteDwgRequest) -> OperationResponse:
+@limiter.limit("30/minute")
+async def write_dwg_file(request: Request, body: WriteDwgRequest) -> OperationResponse:
     """Write entities to a DWG file."""
     try:
         service = get_autocad_service()
@@ -393,9 +397,9 @@ async def write_dwg_file(request: WriteDwgRequest) -> OperationResponse:
             )
 
         # V133 PHASE 1.2: Validate file path against path traversal attacks.
-        safe_path = _validate_autocad_file_path(request.filepath)
+        safe_path = _validate_autocad_file_path(body.filepath)
 
-        success = service.write_dwg(safe_path, request.entities)
+        success = service.write_dwg(safe_path, body.entities)
 
         if not success:
             raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
@@ -414,7 +418,8 @@ async def write_dwg_file(request: WriteDwgRequest) -> OperationResponse:
 
 
 @router.post("/draw_line", response_model=OperationResponse)  # NOSONAR - python:S8409
-async def draw_line(request: DrawLineRequest) -> OperationResponse:
+@limiter.limit("30/minute")
+async def draw_line(request: Request, body: DrawLineRequest) -> OperationResponse:
     """Draw a line in AutoCAD."""
     try:
         service = get_autocad_service()
@@ -426,10 +431,10 @@ async def draw_line(request: DrawLineRequest) -> OperationResponse:
             )
 
         line_handle = service.draw_line(
-            start_point=request.start_point,
-            end_point=request.end_point,
-            layer=request.layer,
-            color=request.color
+            start_point=body.start_point,
+            end_point=body.end_point,
+            layer=body.layer,
+            color=body.color
         )
 
         if not line_handle:
@@ -447,7 +452,8 @@ async def draw_line(request: DrawLineRequest) -> OperationResponse:
 
 
 @router.post("/draw_polyline", response_model=OperationResponse)  # NOSONAR - python:S8409
-async def draw_polyline(request: DrawPolylineRequest) -> OperationResponse:
+@limiter.limit("30/minute")
+async def draw_polyline(request: Request, body: DrawPolylineRequest) -> OperationResponse:
     """Draw a polyline in AutoCAD."""
     try:
         service = get_autocad_service()
@@ -459,10 +465,10 @@ async def draw_polyline(request: DrawPolylineRequest) -> OperationResponse:
             )
 
         polyline_handle = service.draw_polyline(
-            vertices=request.vertices,
-            layer=request.layer,
-            color=request.color,
-            closed=request.closed
+            vertices=body.vertices,
+            layer=body.layer,
+            color=body.color,
+            closed=body.closed
         )
 
         if not polyline_handle:
@@ -480,7 +486,8 @@ async def draw_polyline(request: DrawPolylineRequest) -> OperationResponse:
 
 
 @router.post("/draw_circle", response_model=OperationResponse)  # NOSONAR - python:S8409
-async def draw_circle(request: DrawCircleRequest) -> OperationResponse:
+@limiter.limit("30/minute")
+async def draw_circle(request: Request, body: DrawCircleRequest) -> OperationResponse:
     """Draw a circle in AutoCAD."""
     try:
         service = get_autocad_service()
@@ -492,10 +499,10 @@ async def draw_circle(request: DrawCircleRequest) -> OperationResponse:
             )
 
         circle_handle = service.draw_circle(
-            center=request.center,
-            radius=request.radius,
-            layer=request.layer,
-            color=request.color
+            center=body.center,
+            radius=body.radius,
+            layer=body.layer,
+            color=body.color
         )
 
         if not circle_handle:
@@ -513,7 +520,8 @@ async def draw_circle(request: DrawCircleRequest) -> OperationResponse:
 
 
 @router.post("/draw_text", response_model=OperationResponse)  # NOSONAR - python:S8409
-async def draw_text(request: DrawTextRequest) -> OperationResponse:
+@limiter.limit("30/minute")
+async def draw_text(request: Request, body: DrawTextRequest) -> OperationResponse:
     """Draw text in AutoCAD."""
     try:
         service = get_autocad_service()
@@ -525,11 +533,11 @@ async def draw_text(request: DrawTextRequest) -> OperationResponse:
             )
 
         text_handle = service.draw_text(
-            text=request.text,
-            insertion_point=request.insertion_point,
-            height=request.height,
-            layer=request.layer,
-            color=request.color
+            text=body.text,
+            insertion_point=body.insertion_point,
+            height=body.height,
+            layer=body.layer,
+            color=body.color
         )
 
         if not text_handle:
@@ -566,7 +574,8 @@ async def get_autocad_status() -> StatusResponse:
 
 
 @router.post("/save", response_model=OperationResponse)  # NOSONAR - python:S8409
-async def save_document(request: SaveRequest) -> OperationResponse:
+@limiter.limit("30/minute")
+async def save_document(request: Request, body: SaveRequest) -> OperationResponse:
     """Save the current AutoCAD document."""
     try:
         service = get_autocad_service()
@@ -578,7 +587,7 @@ async def save_document(request: SaveRequest) -> OperationResponse:
             )
 
         # V133 PHASE 1.2: Validate save path against path traversal.
-        safe_path = _validate_autocad_file_path(request.filepath)
+        safe_path = _validate_autocad_file_path(body.filepath)
 
         success = service.save(safe_path)
 
@@ -659,7 +668,8 @@ async def upload_and_read_dwg(request: Request, file: UploadFile = File(...)) ->
 
 
 @router.delete("/entity/{handle}", response_model=DeleteEntityResponse)  # NOSONAR - python:S8409
-async def delete_entity(handle: str) -> DeleteEntityResponse:
+@limiter.limit("30/minute")
+async def delete_entity(request: Request, handle: str) -> DeleteEntityResponse:
     """Delete an AutoCAD entity by handle."""
     # V217 FIX (SonarCloud S5145): validate handle at source — AutoCAD handles
     # are hex strings (e.g. "1A2F"). Reject anything else to break the taint
@@ -691,7 +701,8 @@ async def delete_entity(handle: str) -> DeleteEntityResponse:
 
 
 @router.put("/entity/{handle}", response_model=OperationResponse)  # NOSONAR - python:S8409
-async def update_entity(handle: str, request: ModifyEntityRequest) -> OperationResponse:
+@limiter.limit("30/minute")
+async def update_entity(request: Request, handle: str, body: ModifyEntityRequest) -> OperationResponse:
     """Update an AutoCAD entity's properties."""
     # V217 FIX (SonarCloud S5145): validate handle at source
     if not re.match(r'^[0-9A-Fa-f]{1,16}$', handle):
@@ -705,15 +716,15 @@ async def update_entity(handle: str, request: ModifyEntityRequest) -> OperationR
                 detail="AutoCAD not connected. Call /connect first."
             )
 
-        if handle != request.handle:
+        if handle != body.handle:
             raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
                 status_code=400,
                 detail="Handle in URL and request body must match"
             )
 
         success = service.modify_entity(
-            handle=request.handle,
-            properties=request.properties
+            handle=body.handle,
+            properties=body.properties
         )
 
         if not success:
