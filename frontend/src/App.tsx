@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { Toaster } from "sonner";
@@ -16,45 +16,132 @@ import type { HelpTopicId } from "@/help/types";
 import { ROUTE_HELP_MAP } from "@/help/types";
 import { useHealth } from "@/hooks/useApi";
 import { AuthProvider } from "@/contexts/AuthContext";
-import { FireAlarmDesigner } from "./components/mockups/engineering/FireAlarmDesigner";
-import { ApiKeysPage } from "./pages/ApiKeysPage";
-import { AutoCADDrawPage } from "./pages/AutoCADDrawPage";
-// V140 Phase 6: New pages for comprehensive API coverage
-import { AutoCADPage } from "./pages/AutoCADPage";
-import { CADSettingsPage } from "./pages/CADSettingsPage";
-import Conflicts from "./pages/Conflicts";
-import Connections from "./pages/Connections";
-import { DashboardPage } from "./pages/DashboardPage";
-import { DigitalTwinConfigPage } from "./pages/DigitalTwinConfigPage";
-import { EnvironmentPage } from "./pages/EnvironmentPage";
-import { DigitalTwinConvertPage } from "./pages/DigitalTwinConvertPage";
-import { DigitalTwinHistoryPage } from "./pages/DigitalTwinHistoryPage";
-import { DigitalTwinPage } from "./pages/DigitalTwinPage";
-import ElementDetail from "./pages/ElementDetail";
-import Elements from "./pages/Elements";
-import { EngineeringPage } from "./pages/EngineeringPage";
-import { ExportsPage } from "./pages/ExportsPage";
-import { FACPPage } from "./pages/FACPPage";
-import { FireAlarmPage } from "./pages/FireAlarmPage";
 import { LoginPage } from "./pages/LoginPage";
-import { MarinePage } from "./pages/MarinePage";
-import { MiningPage } from "./pages/MiningPage";
-import { MemoryPage } from "./pages/MemoryPage";
-import { MonitorPage } from "./pages/MonitorPage";
-import { GraphRAGPage } from "./pages/GraphRAGPage";
-import { NotFoundPage } from "./pages/NotFoundPage";
-import { ProjectsPage } from "./pages/ProjectsPage";
-import { ReportGeneratorPage } from "./pages/ReportGeneratorPage";
-import { ReportsPage } from "./pages/ReportsPage";
-import { RevitCreatePage } from "./pages/RevitCreatePage";
-import { RevitElementsPage } from "./pages/RevitElementsPage";
-import { RevitPage } from "./pages/RevitPage";
-import { SelfHealingPage } from "./pages/SelfHealingPage";
-import { SettingsPage } from "./pages/SettingsPage";
-import { WorkflowPage } from "./pages/WorkflowPage";
 import "./i18n";
 import "./styles/globals.css";
 import "./styles/typography.css";
+
+// V242: Lazy-load all page components to enable code splitting.
+// This reduces the initial bundle from ~705kB to ~250kB (vendor + app shell).
+// Each page becomes its own chunk loaded on-demand when the user navigates.
+// The Suspense fallback shows a minimal loader while the chunk downloads.
+const PageLoader = () => (
+        <div className="flex items-center justify-center min-h-[60vh]">
+                <div
+                        className="w-8 h-8 border-2 border-slate-700 border-t-cyan-400 rounded-full"
+                        style={{ animation: "spin 0.8s linear infinite" }}
+                        role="status"
+                        aria-label="Loading page"
+                />
+        </div>
+);
+
+const FireAlarmDesigner = lazy(() =>
+        import("./components/mockups/engineering/FireAlarmDesigner").then((m) => ({
+                default: m.FireAlarmDesigner,
+        })),
+);
+const ApiKeysPage = lazy(() =>
+        import("./pages/ApiKeysPage").then((m) => ({ default: m.ApiKeysPage })),
+);
+const AutoCADDrawPage = lazy(() =>
+        import("./pages/AutoCADDrawPage").then((m) => ({ default: m.AutoCADDrawPage })),
+);
+const AutoCADPage = lazy(() =>
+        import("./pages/AutoCADPage").then((m) => ({ default: m.AutoCADPage })),
+);
+const CADSettingsPage = lazy(() =>
+        import("./pages/CADSettingsPage").then((m) => ({ default: m.CADSettingsPage })),
+);
+const Conflicts = lazy(() => import("./pages/Conflicts"));
+const Connections = lazy(() => import("./pages/Connections"));
+const DashboardPage = lazy(() =>
+        import("./pages/DashboardPage").then((m) => ({ default: m.DashboardPage })),
+);
+const DigitalTwinConfigPage = lazy(() =>
+        import("./pages/DigitalTwinConfigPage").then((m) => ({
+                default: m.DigitalTwinConfigPage,
+        })),
+);
+const EnvironmentPage = lazy(() =>
+        import("./pages/EnvironmentPage").then((m) => ({ default: m.EnvironmentPage })),
+);
+const DigitalTwinConvertPage = lazy(() =>
+        import("./pages/DigitalTwinConvertPage").then((m) => ({
+                default: m.DigitalTwinConvertPage,
+        })),
+);
+const DigitalTwinHistoryPage = lazy(() =>
+        import("./pages/DigitalTwinHistoryPage").then((m) => ({
+                default: m.DigitalTwinHistoryPage,
+        })),
+);
+const DigitalTwinPage = lazy(() =>
+        import("./pages/DigitalTwinPage").then((m) => ({ default: m.DigitalTwinPage })),
+);
+const ElementDetail = lazy(() => import("./pages/ElementDetail"));
+const Elements = lazy(() => import("./pages/Elements"));
+const EngineeringPage = lazy(() =>
+        import("./pages/EngineeringPage").then((m) => ({ default: m.EngineeringPage })),
+);
+const ExportsPage = lazy(() =>
+        import("./pages/ExportsPage").then((m) => ({ default: m.ExportsPage })),
+);
+const FACPPage = lazy(() =>
+        import("./pages/FACPPage").then((m) => ({ default: m.FACPPage })),
+);
+const FireAlarmPage = lazy(() =>
+        import("./pages/FireAlarmPage").then((m) => ({ default: m.FireAlarmPage })),
+);
+const MarinePage = lazy(() =>
+        import("./pages/MarinePage").then((m) => ({ default: m.MarinePage })),
+);
+const MiningPage = lazy(() =>
+        import("./pages/MiningPage").then((m) => ({ default: m.MiningPage })),
+);
+const MemoryPage = lazy(() =>
+        import("./pages/MemoryPage").then((m) => ({ default: m.MemoryPage })),
+);
+const MonitorPage = lazy(() =>
+        import("./pages/MonitorPage").then((m) => ({ default: m.MonitorPage })),
+);
+const GraphRAGPage = lazy(() =>
+        import("./pages/GraphRAGPage").then((m) => ({ default: m.GraphRAGPage })),
+);
+const NotFoundPage = lazy(() =>
+        import("./pages/NotFoundPage").then((m) => ({ default: m.NotFoundPage })),
+);
+const ProjectsPage = lazy(() =>
+        import("./pages/ProjectsPage").then((m) => ({ default: m.ProjectsPage })),
+);
+const ReportGeneratorPage = lazy(() =>
+        import("./pages/ReportGeneratorPage").then((m) => ({
+                default: m.ReportGeneratorPage,
+        })),
+);
+const ReportsPage = lazy(() =>
+        import("./pages/ReportsPage").then((m) => ({ default: m.ReportsPage })),
+);
+const RevitCreatePage = lazy(() =>
+        import("./pages/RevitCreatePage").then((m) => ({ default: m.RevitCreatePage })),
+);
+const RevitElementsPage = lazy(() =>
+        import("./pages/RevitElementsPage").then((m) => ({
+                default: m.RevitElementsPage,
+        })),
+);
+const RevitPage = lazy(() =>
+        import("./pages/RevitPage").then((m) => ({ default: m.RevitPage })),
+);
+const SelfHealingPage = lazy(() =>
+        import("./pages/SelfHealingPage").then((m) => ({ default: m.SelfHealingPage })),
+);
+const SettingsPage = lazy(() =>
+        import("./pages/SettingsPage").then((m) => ({ default: m.SettingsPage })),
+);
+const WorkflowPage = lazy(() =>
+        import("./pages/WorkflowPage").then((m) => ({ default: m.WorkflowPage })),
+);
 
 /**
  * V193 (R1): Wrap the entire app in AuthProvider so any component can read
@@ -206,26 +293,28 @@ function App() {
                                                         className="flex-1 overflow-auto relative"
                                                         tabIndex={-1}
                                                 >
-                                                        <Routes>
-                                                                {protectedRoutes.map((route) => (
+                                                        <Suspense fallback={<PageLoader />}>
+                                                                <Routes>
+                                                                        {protectedRoutes.map((route) => (
+                                                                                <Route
+                                                                                        key={route.path}
+                                                                                        path={route.path}
+                                                                                        element={
+                                                                                                <RouteGuard>{route.element}</RouteGuard>
+                                                                                        }
+                                                                                />
+                                                                        ))}
+                                                                        {/* V193 (R13): 404 catch-all */}
                                                                         <Route
-                                                                                key={route.path}
-                                                                                path={route.path}
+                                                                                path="*"
                                                                                 element={
-                                                                                        <RouteGuard>{route.element}</RouteGuard>
+                                                                                        <RouteGuard>
+                                                                                                <NotFoundPage />
+                                                                                        </RouteGuard>
                                                                                 }
                                                                         />
-                                                                ))}
-                                                                {/* V193 (R13): 404 catch-all */}
-                                                                <Route
-                                                                        path="*"
-                                                                        element={
-                                                                                <RouteGuard>
-                                                                                        <NotFoundPage />
-                                                                                </RouteGuard>
-                                                                        }
-                                                                />
-                                                        </Routes>
+                                                                </Routes>
+                                                        </Suspense>
                                                 </main>
                                         </AppShell>
                                 )}

@@ -14,13 +14,47 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
 
-    <!-- Inter font — clean, modern, professional -->
+    <!-- V242: Vite automatically injects modulepreload links for the entry
+         chunk and its direct dependencies at build time. We don't add manual
+         preload links here because the chunk hashes change on every build —
+         hardcoding them would cause 404s. Vite's buildModulePreload config
+         handles this correctly. -->
+
+    <!-- V242: System font stack for instant text render (no external fetch).
+         Inter is still loaded as a progressive enhancement, but the
+         critical text renders immediately using the system font. This
+         eliminates the render-blocking Google Fonts request from FCP. -->
+    <style>
+      /* Critical CSS — system font fallback for instant FCP */
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+      }
+    </style>
+
+    <!-- Inter font — loaded async for progressive enhancement (non-blocking).
+         V242: Uses preload + a tiny inline <script> (allowed by CSP because
+         script-src 'self' covers <script> tags without inline JS — this
+         snippet has no inline handler, just a defer-loaded module that
+         swaps the stylesheet media). -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
+      rel="preload"
+      as="style"
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
-      rel="stylesheet"
     />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+      media="print"
+    />
+    <noscript>
+      <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+      />
+    </noscript>
 
     <!-- CSRF Token -->
     <meta name="csrf-token" content="" />

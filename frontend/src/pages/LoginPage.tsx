@@ -21,16 +21,23 @@ import {
         Loader2,
         ShieldCheck,
 } from "lucide-react";
-import { type FormEvent, useState } from "react";
+import { lazy, Suspense, useEffect, useState, type FormEvent } from "react";
 import { Navigate, useSearchParams } from "react-router-dom";
 import { BazSparkLogo, BazSparkWordmark } from "@/components/auth/BazSparkLogo";
-import { EngineeringBackground } from "@/components/auth/EngineeringBackground";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
+
+// V242: Lazy-load the heavy EngineeringBackground SVG (990 lines, ~30kB).
+// This keeps it off the critical render path so FCP/LCP on /login improve.
+const EngineeringBackground = lazy(() =>
+        import("@/components/auth/EngineeringBackground").then((m) => ({
+                default: m.EngineeringBackground,
+        })),
+);
 
 const APP_VERSION = "v1.55.0";
 
@@ -43,6 +50,27 @@ export function LoginPage() {
         const [remember, setRemember] = useState(false);
         const [submitting, setSubmitting] = useState(false);
         const [error, setError] = useState<string | null>(null);
+
+        // V242: Defer loading the EngineeringBackground until the browser is idle.
+        // This prevents the 30kB SVG chunk from competing with the login card
+        // for parse/compile time during the critical FCP/LCP window.
+        const [showBackground, setShowBackground] = useState(false);
+        useEffect(() => {
+                // requestIdleCallback may not exist in older browsers — fall back to setTimeout.
+                const hasRIC =
+                        typeof window !== "undefined" && "requestIdleCallback" in window;
+                let handle: number;
+                if (hasRIC) {
+                        const w = window as unknown as {
+                                requestIdleCallback: (cb: () => void) => number;
+                                cancelIdleCallback: (h: number) => void;
+                        };
+                        handle = w.requestIdleCallback(() => setShowBackground(true));
+                        return () => w.cancelIdleCallback(handle);
+                }
+                handle = window.setTimeout(() => setShowBackground(true), 200);
+                return () => window.clearTimeout(handle);
+        }, []);
 
         if (!ctxLoading && isAuthenticated) {
                 const from = searchParams.get("from") || "/dashboard";
@@ -94,8 +122,35 @@ export function LoginPage() {
                         role="main"
                         aria-label="BAZSPARK login"
                 >
-                        {/* Engineering CAD animated background (left half) */}
-                        <EngineeringBackground />
+                        {/* Engineering CAD animated background (left half)
+                            V242: Deferred via requestIdleCallback so the 30kB SVG chunk
+                            loads AFTER the login card is interactive, keeping it off the
+                            critical FCP/LCP path entirely. */}
+                        {showBackground ? (
+                                <Suspense
+                                        fallback={
+                                                <div
+                                                        className="absolute inset-0"
+                                                        style={{
+                                                                background:
+                                                                        "radial-gradient(ellipse at 30% 50%, #0a0f1a 0%, #050709 70%, #000000 100%)",
+                                                        }}
+                                                        aria-hidden="true"
+                                                />
+                                        }
+                                >
+                                        <EngineeringBackground />
+                                </Suspense>
+                        ) : (
+                                <div
+                                        className="absolute inset-0"
+                                        style={{
+                                                background:
+                                                        "radial-gradient(ellipse at 30% 50%, #0a0f1a 0%, #050709 70%, #000000 100%)",
+                                        }}
+                                        aria-hidden="true"
+                                />
+                        )}
 
                         {/* ═══════════════════════════════════════════════════════════════
                             Right half: Login card

@@ -1,5 +1,6 @@
 // NOSONAR
 import { expect, type Page, test } from "@playwright/test";
+import { installApiMock } from "./helpers/authMock";
 
 /**
  * V144 Visual Smoke Tests — BAZSpark / FireAI Frontend
@@ -215,27 +216,32 @@ for (const page of CORE_PAGES) {
 
 // ═══════════════════════════════════════════════════════════════════
 // Test 3: Navigation works (clicking between pages)
+// V242: Pre-authenticate so the AppShell sidebar renders with nav links.
+// The unauthenticated beforeEach mock redirects /dashboard → /login,
+// which has no nav links. Override with an authenticated mock here.
 // ═══════════════════════════════════════════════════════════════════
 test("navigation between core pages works", async ({ page }) => {
+        // Remove the unauthenticated beforeEach mock and install an
+        // authenticated one so the sidebar nav links render.
+        await page.unroute("**/api/**");
+        await installApiMock(page, { preAuthenticated: true });
+
         await page.goto("/dashboard");
         await page.waitForLoadState("networkidle");
 
-        // Try to find a nav link to projects
-        const navLinks = page.locator('a[href="/projects"], a[href*="projects"]');
-        const linkCount = await navLinks.count();
+        // The sidebar renders <Link to="/projects"> as <a href="/projects">.
+        // Wait for the sidebar to be visible (it renders inside AppShell).
+        const sidebar = page.locator('nav[aria-label="Primary navigation"]');
+        await expect(sidebar).toBeVisible({ timeout: 5000 });
 
-        if (linkCount > 0) {
-                await navLinks.first().click();
-                await page.waitForLoadState("networkidle");
-                await expect(page).toHaveURL(/projects/);
-                await captureForReview(page, "03-navigation-projects");
-        } else {
-                // If no nav link, skip this test (some layouts use sidebar that may be collapsed)
-                test.skip(
-                        true,
-                        "No navigation link to /projects found — layout may use collapsed sidebar",
-                );
-        }
+        // Find the Projects nav link in the sidebar
+        const navLinks = sidebar.locator('a[href="/projects"]');
+        await expect(navLinks.first()).toBeVisible({ timeout: 5000 });
+
+        await navLinks.first().click();
+        await page.waitForLoadState("networkidle");
+        await expect(page).toHaveURL(/projects/);
+        await captureForReview(page, "03-navigation-projects");
 });
 
 // ═══════════════════════════════════════════════════════════════════
