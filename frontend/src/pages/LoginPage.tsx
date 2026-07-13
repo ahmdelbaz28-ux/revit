@@ -97,9 +97,9 @@ export function LoginPage() {
                            ═════════════════════════════════════════════════════════════════ */}
                         <div
                                 className="absolute top-0 right-0 h-full flex items-center justify-center px-8"
-                                style={{ width: "50%" }}
+                                style={{ width: "50%", zIndex: 20, pointerEvents: "auto" }}
                         >
-                                <div className="w-full max-w-[400px] cad-login-enter" style={{ position: "relative", zIndex: 10 }}>
+                                <div className="w-full max-w-[400px] cad-login-enter" style={{ position: "relative", zIndex: 30 }}>
                                         {/* ── Brand header ────────────────────────────────────── */}
                                         <div className="flex flex-col items-center mb-8">
                                                 <BazSparkLogo size={64} animated />

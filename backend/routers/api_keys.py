@@ -17,6 +17,7 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
+from backend.admin_protection import audit_operation, require_master_admin
 from backend.api_keys import (
     delete_api_key,
     generate_api_key,
@@ -47,9 +48,11 @@ class UpdateKeyRoleRequest(BaseModel):
 @router.get("")
 async def list_keys(
     _role: Role = Depends(require_permission(Permission.USER_MANAGE)),  # NOSONAR - python:S8410
+    ip: str = Depends(require_master_admin),
 ):
     """List all API keys (admin only). Key values are never returned."""
     keys = list_api_keys()
+    await audit_operation(ip, "list_keys", True, detail=f"Returned {len(keys)} keys")
     return {"success": True, "data": keys}
 
 
@@ -57,18 +60,29 @@ async def list_keys(
 async def create_key(
     request: GenerateKeyRequest,
     _role: Role = Depends(require_permission(Permission.USER_MANAGE)),  # NOSONAR - python:S8410
+    ip: str = Depends(require_master_admin),
 ):
     """
     Generate a new API key with the specified role (admin only).
 
     SECURITY: The plaintext key is returned ONLY on creation.
     It cannot be retrieved later — store it securely.
+
+    V240: Requires X-Master-Admin-Token header (separate from API key).
     """
     plaintext_key = generate_api_key(request.role, request.description)
     logger.info(  # NOSONAR
-        "New API key generated: role=%s, desc=%s",
+        "New API key generated: role=%s, desc=%s, ip=%s",
         request.role.value,
         request.description,
+        ip,
+    )
+    await audit_operation(
+        ip,
+        "create_key",
+        True,
+        target=plaintext_key[:16] + "...",
+        detail=f"role={request.role.value}, desc={request.description}",
     )
     return {
         "success": True,
@@ -85,11 +99,14 @@ async def create_key(
 async def delete_key(
     key_hash: str,
     _role: Role = Depends(require_permission(Permission.USER_MANAGE)),  # NOSONAR - python:S8410
+    ip: str = Depends(require_master_admin),
 ):
     """Delete an API key by its hash (admin only)."""
     deleted = delete_api_key(key_hash)
     if not deleted:
+        await audit_operation(ip, "delete_key", False, target=key_hash[:32], detail="Key not found")
         raise HTTPException(status_code=404, detail="API key not found")  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
+    await audit_operation(ip, "delete_key", True, target=key_hash[:32])
     return {"success": True, "message": "API key deleted"}
 
 
@@ -98,17 +115,27 @@ async def update_key_role_endpoint(
     key_hash: str,
     request: UpdateKeyRoleRequest,
     _role: Role = Depends(require_permission(Permission.USER_MANAGE)),  # NOSONAR - python:S8410
+    ip: str = Depends(require_master_admin),
 ):
     """Update an API key's role (admin only)."""
     updated = update_api_key_role(key_hash, request.role)
     if not updated:
+        await audit_operation(ip, "update_key_role", False, target=key_hash[:32], detail="Key not found")
         raise HTTPException(status_code=404, detail="API key not found")  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
+    await audit_operation(
+        ip,
+        "update_key_role",
+        True,
+        target=key_hash[:32],
+        detail=f"new_role={request.role.value}",
+    )
     return {"success": True, "message": f"API key role updated to {request.role.value}"}
 
 
 @router.get("/roles")
 async def list_roles(
     _role: Role = Depends(require_permission(Permission.USER_MANAGE)),  # NOSONAR - python:S8410
+    _ip: str = Depends(require_master_admin),
 ):
     """List available roles and their permissions (admin only)."""
     roles_info = {}
