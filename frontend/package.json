@@ -87,7 +87,7 @@
 		"recharts": "^2.15.4",
 		"sonner": "^2.0.7",
 		"tailwind-merge": "^2.2.0",
-		"three": "^0.160.0",
+		"three": "^0.185.1",
 		"vaul": "^1.1.2",
 		"zod": "^3.22.0"
 	},
@@ -103,7 +103,7 @@
 		"@types/react": "^18.2.0",
 		"@types/react-dom": "^18.2.0",
 		"@types/terser": "^3.8.1",
-		"@types/three": "^0.160.0",
+		"@types/three": "^0.185.1",
 		"@vitejs/plugin-react": "^6.0.3",
 		"@vitest/coverage-v8": "^4.1.8",
 		"chokidar": "^4.0.3",
