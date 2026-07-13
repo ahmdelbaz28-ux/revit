@@ -480,7 +480,7 @@ jobs:
 
       - name: Extract metadata
         id: meta
-        uses: docker/metadata-action@v5  # NOSONAR — S7637: GitHub Actions acceptable
+        uses: docker/metadata-action@v6  # NOSONAR — S7637: GitHub Actions acceptable
         with:
           images: ghcr.io/${{ github.repository }}
           tags: |
