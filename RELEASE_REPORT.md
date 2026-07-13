@@ -2,7 +2,7 @@
 
 **Release Date:** 2026-07-13 (Africa/Cairo)
 **Branch:** `main`
-**Commit Hash:** _(filled after commit)_
+**Commit Hash:** `9496a144`
 **Release Type:** Quality Gate Pass + Accessibility/SEO Improvements
 **Mode:** Fully Autonomous — Safe Push (no conflicts with concurrent agents)
 
