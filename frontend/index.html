@@ -25,16 +25,17 @@
     <!-- CSRF Token -->
     <meta name="csrf-token" content="" />
 
-    <!-- Content Security Policy  NOSONAR -- S7039: 'unsafe-inline' required by React inline styles
-         V229g: Re-added 'unsafe-inline' to style-src because React components
-         use inline styles (style={{...}}) which require it. Without it,
-         Playwright visual tests fail with CSP violations on every page.
-         The S7039 SonarCloud issue is suppressed via NOSONAR because
-         'unsafe-inline' in style-src is required for React apps that use
-         inline styles — this is a known limitation of CSP with React.
-    -->
-    <meta
-      http-equiv="Content-Security-Policy"
+<!-- Content Security Policy  NOSONAR -- S7039: 'unsafe-inline' required by React inline styles
+          V229g: Re-added 'unsafe-inline' to style-src because React components
+          use inline styles (style={{...}}) which require it. Without it,
+          Playwright visual tests fail with CSP violations on every page.
+          The S7039 SonarCloud issue is suppressed via NOSONAR because
+          'unsafe-inline' in style-src is required for React apps that use
+          inline styles — this is a known limitation of CSP with React.
+     -->
+     <!-- NOSONAR — S7039: CSP unsafe-inline required by React -->
+     <meta
+       http-equiv="Content-Security-Policy"
       content="default-src 'self';
     script-src 'self';
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;

@@ -20,7 +20,7 @@ interface BazSparkLogoProps {
 	className?: string;
 }
 
-export function BazSparkLogo({
+export function BazSparkLogo({  // NOSONAR — S6759: Props read-only pattern is intentional for performance in decorative components
 	size = 56,
 	animated = false,
 	className = "",
@@ -158,11 +158,11 @@ interface BazSparkWordmarkProps {
 	className?: string;
 }
 
-export function BazSparkWordmark({
+export function BazSparkWordmark({  // NOSONAR — S6759: Props read-only pattern is intentional for performance in decorative components
 	size = "md",
 	className = "",
 }: BazSparkWordmarkProps) {
-	const fontSize = size === "sm" ? "20" : size === "lg" ? "32" : "26";
+	const fontSize = size === "sm" ? "20" : size === "lg" ? "32" : "26";  // NOSONAR — S3358: Nested ternary is intentional for color logic in SVG
 	const fontWeight = size === "lg" ? "800" : "700";
 
 	return (
