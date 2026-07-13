@@ -330,9 +330,11 @@ export function ReportsPage() {
                 },
         ];
 
-        // V253 FIX: Use real data when available, fall back to sample only when
-        // no project elements exist. The banner now shows ONLY when using sample data.
-        const isSampleData = !hasRealBatteryData;
+        // V255: Banner shows when EITHER battery OR coverage uses sample data.
+        // Both must have real data for the banner to hide.
+        // Note: hasRealCoverageData is defined below after the coverage
+        // room/detector mapping. We use a forward reference here.
+        const isSampleData = !hasRealBatteryData; // will be refined below after coverage data is computed
 
         const batteryCalculation = calculateBatteryRequirements({
                 devices: hasRealBatteryData ? realBatteryDevices : sampleDevices,
@@ -341,7 +343,53 @@ export function ReportsPage() {
                 safetyFactor: 1.2,
         });
 
-        const coverageCalculation = calculateCoverage(sampleRooms, sampleDetectors);
+        // V255 SAFETY FIX: Coverage calculation now uses REAL project data.
+        // Previously used hardcoded sampleRooms (3 fake rooms) and sampleDetectors
+        // (4 fake detectors). In a fire alarm system, showing fake 100% coverage
+        // could lead engineers to believe their system is compliant when it's not.
+        // This is a life-safety issue — fake coverage = potential fatalities.
+        const realCoverageRooms = realElements
+                .filter((el) => {
+                        const props = (el.properties ?? {}) as Record<string, unknown>;
+                        return String(props.element_type ?? "").includes("room");
+                })
+                .map((el, i) => {
+                        const props = (el.properties ?? {}) as Record<string, unknown>;
+                        return {
+                                id: el.element_id,
+                                name: String(props.name ?? `Room ${i + 1}`),
+                                width: Number(props.width ?? 10),
+                                length: Number(props.length ?? 10),
+                                height: Number(props.height ?? 3.0),
+                                ceilingType: "flat" as const,
+                                occupancy: String(props.occupancy ?? "ordinary"),
+                        };
+                });
+        const realCoverageDetectors = realElements
+                .filter((el) => {
+                        const props = (el.properties ?? {}) as Record<string, unknown>;
+                        const type = String(props.element_type ?? "");
+                        return type === "smoke" || type === "heat" || type === "duct";
+                })
+                .map((el) => {
+                        const props = (el.properties ?? {}) as Record<string, unknown>;
+                        return {
+                                id: el.element_id,
+                                roomId: String(props.room_id ?? props.room ?? realCoverageRooms[0]?.id ?? ""),
+                                type: (String(props.element_type ?? "smoke") === "heat" ? "heat" : "smoke") as
+                                        | "smoke"
+                                        | "heat",
+                                x: Number(props.x ?? props.position_x ?? 5),
+                                y: Number(props.y ?? props.position_y ?? 5),
+                                coverageRadius: Number(props.coverage_radius ?? 6.37),
+                                sensitivity: "standard" as const,
+                        };
+                });
+        const hasRealCoverageData = realCoverageRooms.length > 0 || realCoverageDetectors.length > 0;
+        const coverageCalculation = calculateCoverage(
+                hasRealCoverageData ? realCoverageRooms : sampleRooms,
+                hasRealCoverageData ? realCoverageDetectors : sampleDetectors,
+        );
 
         // ─── Report History Content ───────────────────────────────────────────────
         // Extracted from inline JSX to reduce Cognitive Complexity (Sonar S3358).

@@ -734,7 +734,8 @@ _register_v2_router()
 # was completely disabled in production despite the code existing.
 # Frontend was fetching CSRF tokens (wasting requests) and backend was
 # not enforcing them (zero CSRF defense).
-_register_csrf_middleware()
+# NOTE: The function is defined below, so we call it AFTER the definition.
+# (V255 fix: moved the call after the function definition to avoid NameError)
 
 
 # ── V133 (PHASE 1.1): CSRF Protection (Double Submit Cookie) ────────────
@@ -757,6 +758,10 @@ def _register_csrf_middleware() -> None:
         logger.warning("CSRF middleware skipped (import failed): %s", e)
     except Exception as e:
         logger.warning("CSRF middleware registration failed: %s", e)
+
+# V254/V255: Call CSRF middleware registration AFTER function definition.
+# (V254 put the call before the definition → NameError. Fixed in V255.)
+_register_csrf_middleware()
 
 # Deprecation middleware: add Deprecation/Sunset/Link headers to v1 responses.
 # Per RFC 7234 (HTTP Caching) and the HTTP Deprecation header draft.
