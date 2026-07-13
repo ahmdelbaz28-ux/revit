@@ -242,8 +242,11 @@ async def login(request: Request, body: LoginRequest):  # NOSONAR — S3776: cog
 
     api_key = body.api_key.strip() if body.api_key else ""
     if not api_key:
-        if body.username and body.password:
-            # Fallback to the default key for Postman integration tests
+        if body.username and body.password and os.getenv("FIREAI_ENV") == "development":
+            # V243 SECURITY: Username/password fallback is ONLY allowed in
+            # development mode (for Postman integration tests). In production,
+            # this would be a backdoor — any non-empty username+password would
+            # bypass the API-key requirement if API_KEY env var is set.
             api_key = os.getenv("API_KEY")  # NOSONAR — reads from env, not hard-coded (S6418 false positive)
         else:
             raise HTTPException(status_code=400, detail="API key is required")  # NOSONAR — S8415: assignment kept for readability / debuggability

@@ -273,7 +273,10 @@ class CSRFMiddleware:
 
                     # Allow if origin host matches server host
                     # In dev mode, also allow localhost variants
-                    is_dev = _os.environ.get("FIREAI_ENV", "development").lower() == "development"
+                    # V243 SECURITY: Default to "production" (fail-safe) — matches
+                    # security_middleware.py. Previously defaulted to "development"
+                    # which is fail-open (allows localhost bypass in production).
+                    is_dev = _os.environ.get("FIREAI_ENV", "production").lower() == "development"
                     trusted_hosts = {host_name, "localhost", "127.0.0.1"} if is_dev else {host_name}
 
                     if origin_host not in trusted_hosts:

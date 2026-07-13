@@ -25,11 +25,12 @@ import os
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 from backend.auth import require_permission
+from backend.limiter import limiter
 from backend.rbac import Permission
 from backend.services.digital_twin_service import (
     ConversionConfig,
@@ -186,7 +187,9 @@ def _safe_error(status_code: int, log_msg: str, exc: Exception) -> HTTPException
 # ── Endpoints ───────────────────────────────────────────────────────────────
 
 @router.post("/convert", response_model=ConvertResponse)  # NOSONAR - python:S8409
+@limiter.limit("10/minute")  # V243: Rate limit expensive conversion
 async def convert_files(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+    http_request: Request,  # V243: Required by slowapi rate limiter
     request: ConvertRequest,
     service: DigitalTwinService = Depends(get_digital_twin_service),  # NOSONAR - python:S8410
 ) -> ConvertResponse:
@@ -277,11 +280,19 @@ async def convert_files(  # NOSONAR — S3776: cognitive complexity is inherent 
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
+# V243 SECURITY: Maximum upload size — 50 MB (matches revit.py and autocad.py).
+# Without this check, `await file.read()` reads the entire file into memory,
+# enabling OOM denial-of-service via arbitrarily large uploads.
+_MAX_UPLOAD_SIZE = 50 * 1024 * 1024  # 50 MB
+
+
 @router.post(
     "/upload-and-convert",
     dependencies=[Depends(require_permission(Permission.EXPORT_EXECUTE))],
 )
+@limiter.limit("10/minute")  # V243: Rate limit expensive upload+convert
 async def upload_and_convert(
+    request: Request,  # V243: Required by slowapi rate limiter
     file: UploadFile = File(...),
     target_format: str = "ifc",
     service: DigitalTwinService = Depends(get_digital_twin_service),
@@ -358,13 +369,30 @@ async def upload_and_convert(
         # Write file
         # V216 FIX (SonarCloud python:S7493): synchronous open() in an async
         # endpoint is acceptable here because:
-        #   1. The file write is small (max upload size is enforced by FastAPI)
+        #   1. The file write is small (max upload size is enforced below)
         #   2. Using aiofiles would add a new dependency for a 2-line operation
         #   3. asyncio.to_thread() would add latency without clear benefit
         # The S5145 (log injection) issue is fixed by wrapping source_path in
         # _safe_str() before logging.
+        #
+        # V243 SECURITY: Read in chunks and enforce _MAX_UPLOAD_SIZE to prevent
+        # OOM denial-of-service. The previous `await file.read()` read the
+        # entire file into memory with no size check.
+        content = await file.read(_MAX_UPLOAD_SIZE + 1)
+        if len(content) > _MAX_UPLOAD_SIZE:
+            # Remove the partial file if it was already written
+            try:
+                os.remove(source_path)
+            except OSError:
+                pass
+            raise HTTPException(
+                status_code=413,
+                detail=(
+                    f"File too large. Maximum upload size is "
+                    f"{_MAX_UPLOAD_SIZE // (1024 * 1024)} MB."
+                ),
+            )
         with open(source_path, "wb") as f:  # NOSONAR — python:S7493
-            content = await file.read()
             f.write(content)
 
         logger.info("File uploaded: %s (%d bytes)", _safe_str(source_path), len(content))
