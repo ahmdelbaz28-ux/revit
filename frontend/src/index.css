@@ -703,3 +703,116 @@ button {
                 transform: translateX(-4px);
         }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   V238: Professional background animations
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Pulse grid cells (data flow visualization) ─────────────────────── */
+.cad-cell-pulse {
+        animation: cad-cell-fade 6s ease-in-out infinite;
+        will-change: opacity;
+}
+
+@keyframes cad-cell-fade {
+        0%, 100% {
+                opacity: 0;
+        }
+        15% {
+                opacity: 0.8;
+        }
+        30% {
+                opacity: 0;
+        }
+}
+
+/* ── Vertical scan line (CAD plotter sweep) ─────────────────────────── */
+.cad-scan-vertical {
+        animation: cad-scan-h 10s linear infinite;
+        will-change: transform;
+}
+
+@keyframes cad-scan-h {
+        0% {
+                transform: translateX(-100%);
+        }
+        100% {
+                transform: translateX(100%);
+        }
+}
+
+/* ── Data stream particles (flowing downward) ───────────────────────── */
+.cad-data-particle {
+        animation: cad-data-fall 10s linear infinite;
+        will-change: transform, opacity;
+}
+
+@keyframes cad-data-fall {
+        0% {
+                transform: translateY(0);
+                opacity: 0;
+        }
+        5% {
+                opacity: 0.6;
+        }
+        95% {
+                opacity: 0.6;
+        }
+        100% {
+                transform: translateY(105vh);
+                opacity: 0;
+        }
+}
+
+/* ── Blink animation (status indicators) ────────────────────────────── */
+@keyframes cad-blink {
+        0%, 50% {
+                opacity: 1;
+        }
+        51%, 100% {
+                opacity: 0.3;
+        }
+}
+
+/* ── Cursor blink (command bar) ─────────────────────────────────────── */
+.cad-cursor-blink {
+        animation: cad-blink 1.2s step-end infinite;
+        color: #3b82f6;
+        font-weight: 600;
+}
+
+/* ── Logo subtle pulse (when animated=true) ─────────────────────────── */
+.baz-logo-animated {
+        animation: baz-logo-pulse 4s ease-in-out infinite;
+        transform-origin: center;
+        will-change: transform, filter;
+}
+
+@keyframes baz-logo-pulse {
+        0%, 100% {
+                transform: scale(1);
+                filter: drop-shadow(0 0 8px rgba(59,130,246,0.3));
+        }
+        50% {
+                transform: scale(1.04);
+                filter: drop-shadow(0 0 16px rgba(59,130,246,0.5));
+        }
+}
+
+/* ── Reduced motion overrides for V238 animations ───────────────────── */
+@media (prefers-reduced-motion: reduce) {
+        .cad-cell-pulse,
+        .cad-scan-vertical,
+        .cad-data-particle,
+        .baz-logo-animated,
+        .cad-cursor-blink {
+                animation: none;
+                opacity: 0.5;
+        }
+        .cad-data-particle {
+                display: none;
+        }
+        .cad-scan-vertical {
+                display: none;
+        }
+}

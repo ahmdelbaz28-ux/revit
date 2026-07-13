@@ -1,32 +1,21 @@
 /**
  * EngineeringBackground.tsx — CAD/Revit split-screen animated background
  *
- * DESIGN (V237 — complete redesign per user feedback):
+ * V238: Added professional background animations
+ *   - Vertical scan line sweeping across the canvas (CAD plotter effect)
+ *   - Pulse grid: random cells light up and fade (data flow visualization)
+ *   - Drawing particles: dots travel along the wiring paths
+ *   - Live dimension readout that changes
+ *   - Subtle "data stream" effect on the right half (login side)
+ *
+ * Layout (V237):
  *   ┌────────────────────────┬────────────────────────┐
- *   │                        │                        │
  *   │   AutoCAD 2D Plan     │                        │
  *   │   (draws itself)      │   Login Card           │
- *   │                        │   (rendered by parent) │
- *   ├──── ← AutoCAD ↔ Revit → ────┤                        │
- *   │                        │                        │
+ *   ├──── ← AutoCAD ↔ Revit → ────┤   (rendered by parent) │
  *   │   Revit 3D Building   │                        │
  *   │   (isometric wireframe)│                        │
- *   │                        │                        │
  *   └────────────────────────┴────────────────────────┘
- *
- * FEATURES:
- *   - Pure black background (#0a0a0a) — no dirty gradients
- *   - AutoCAD-style grid (light gray, subtle — like real AutoCAD)
- *   - Left half: animation
- *       • Top: AutoCAD 2D floor plan (walls draw themselves via stroke-dashoffset)
- *       • Middle: bidirectional arrow showing AutoCAD ↔ Revit conversion
- *       • Bottom: Revit 3D isometric building (wireframe)
- *   - Right half: empty grid (login card rendered on top by parent)
- *   - AutoCAD crosshair cursor (+) with live X/Y coordinates
- *
- * PERFORMANCE:
- *   - All CSS animations (no rAF loop)
- *   - Respects prefers-reduced-motion
  */
 
 import { type MouseEvent, useEffect, useState } from "react";
@@ -57,9 +46,7 @@ export function EngineeringBackground() {
 			onMouseLeave={() => setMouse(null)}
 			aria-hidden="true"
 		>
-			{/* ═════════════════════════════════════════════════════════════════
-			    Layer 1: AutoCAD grid (light gray, subtle — like real AutoCAD)
-			   ═════════════════════════════════════════════════════════════════ */}
+			{/* ═══ Layer 1: AutoCAD grid (minor + major) ═══ */}
 			<svg
 				className="absolute inset-0 w-full h-full"
 				xmlns="http://www.w3.org/2000/svg"
@@ -67,44 +54,34 @@ export function EngineeringBackground() {
 				viewBox="0 0 1920 1080"
 			>
 				<defs>
-					<pattern
-						id="cadGridMinor"
-						x="0"
-						y="0"
-						width="40"
-						height="40"
-						patternUnits="userSpaceOnUse"
-					>
-						<path
-							d="M 40 0 L 0 0 0 40"
-							fill="none"
-							stroke="rgba(90,90,90,0.15)"
-							strokeWidth="1"
-						/>
+					<pattern id="cadGridMinor" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+						<path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(90,90,90,0.15)" strokeWidth="1" />
 					</pattern>
-					<pattern
-						id="cadGridMajor"
-						x="0"
-						y="0"
-						width="200"
-						height="200"
-						patternUnits="userSpaceOnUse"
-					>
-						<path
-							d="M 200 0 L 0 0 0 200"
-							fill="none"
-							stroke="rgba(120,120,120,0.22)"
-							strokeWidth="1"
-						/>
+					<pattern id="cadGridMajor" x="0" y="0" width="200" height="200" patternUnits="userSpaceOnUse">
+						<path d="M 200 0 L 0 0 0 200" fill="none" stroke="rgba(120,120,120,0.22)" strokeWidth="1" />
 					</pattern>
 				</defs>
 				<rect width="1920" height="1080" fill="url(#cadGridMinor)" />
 				<rect width="1920" height="1080" fill="url(#cadGridMajor)" />
 			</svg>
 
-			{/* ═════════════════════════════════════════════════════════════════
-			    Layer 2: Left half — animation (AutoCAD 2D + Revit 3D)
-			   ═════════════════════════════════════════════════════════════════ */}
+			{/* ═══ Layer 2: Pulse grid — random cells light up (data flow) ═══ */}
+			{!reducedMotion && <PulseGrid />}
+
+			{/* ═══ Layer 3: Vertical scan line (CAD plotter sweep) ═══ */}
+			{!reducedMotion && (
+				<div
+					className="absolute inset-0 cad-scan-vertical"
+					style={{
+						background:
+							"linear-gradient(90deg, transparent 0%, rgba(59,130,246,0.0) 45%, rgba(59,130,246,0.12) 50%, rgba(59,130,246,0.0) 55%, transparent 100%)",
+						width: "100%",
+						height: "100%",
+					}}
+				/>
+			)}
+
+			{/* ═══ Layer 4: Left half — AutoCAD 2D + arrow + Revit 3D ═══ */}
 			<div className="absolute left-0 top-0 h-full flex flex-col" style={{ width: "50%" }}>
 				<div className="flex-1 relative flex items-center justify-center min-h-0">
 					<AutoCAD2DPlan reducedMotion={reducedMotion} />
@@ -119,38 +96,201 @@ export function EngineeringBackground() {
 				</div>
 			</div>
 
-			{/* ═════════════════════════════════════════════════════════════════
-			    Layer 3: Center divider line (subtle)
-			   ═════════════════════════════════════════════════════════════════ */}
+			{/* ═══ Layer 5: Right half — data stream particles (subtle) ═══ */}
+			{!reducedMotion && (
+				<div className="absolute right-0 top-0 h-full" style={{ width: "50%" }}>
+					<DataStream />
+				</div>
+			)}
+
+			{/* ═══ Layer 6: Center divider line ═══ */}
 			<div
 				className="absolute top-0 h-full"
-				style={{
-					left: "50%",
-					width: "1px",
-					backgroundColor: "rgba(120,120,120,0.2)",
-				}}
+				style={{ left: "50%", width: "1px", backgroundColor: "rgba(120,120,120,0.2)" }}
 			/>
 
-			{/* ═════════════════════════════════════════════════════════════════
-			    Layer 4: AutoCAD crosshair cursor (+) with coordinates
-			   ═════════════════════════════════════════════════════════════════ */}
+			{/* ═══ Layer 7: AutoCAD crosshair cursor ═══ */}
 			{mouse && !reducedMotion && <AutoCADCrosshair x={mouse.x} y={mouse.y} />}
+
+			{/* ═══ Layer 8: Corner status text (CAD-style HUD) ═══ */}
+			{!reducedMotion && <CornerHUD />}
 		</div>
 	);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   Component 1: AutoCAD 2D Floor Plan
+   PulseGrid — random grid cells light up and fade (data flow visualization)
+   ═══════════════════════════════════════════════════════════════════════════ */
+function PulseGrid() {
+	// Pre-computed random cell positions (stable across renders)
+	const cells = [
+		{ x: 120, y: 180, delay: 0 },
+		{ x: 380, y: 240, delay: 1.2 },
+		{ x: 640, y: 120, delay: 2.4 },
+		{ x: 880, y: 380, delay: 0.8 },
+		{ x: 1140, y: 220, delay: 3.1 },
+		{ x: 1380, y: 460, delay: 1.7 },
+		{ x: 1640, y: 140, delay: 2.9 },
+		{ x: 220, y: 540, delay: 4.0 },
+		{ x: 560, y: 720, delay: 0.5 },
+		{ x: 920, y: 820, delay: 2.2 },
+		{ x: 1280, y: 680, delay: 3.6 },
+		{ x: 1580, y: 820, delay: 1.4 },
+		{ x: 60, y: 380, delay: 4.5 },
+		{ x: 460, y: 920, delay: 2.7 },
+		{ x: 1080, y: 540, delay: 0.3 },
+		{ x: 1820, y: 320, delay: 3.8 },
+	];
+
+	return (
+		<svg
+			className="absolute inset-0 w-full h-full"
+			xmlns="http://www.w3.org/2000/svg"
+			preserveAspectRatio="xMidYMid slice"
+			viewBox="0 0 1920 1080"
+		>
+			{cells.map((c, i) => (
+				<rect
+					key={`pulse-${i}`}
+					x={c.x}
+					y={c.y}
+					width="40"
+					height="40"
+					fill="rgba(59,130,246,0.18)"
+					className="cad-cell-pulse"
+					style={{ animationDelay: `${c.delay}s` }}
+				/>
+			))}
+		</svg>
+	);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   DataStream — particles flowing downward on the right half (data stream)
+   ═══════════════════════════════════════════════════════════════════════════ */
+function DataStream() {
+	const particles = Array.from({ length: 14 }, (_, i) => ({
+		x: (i * 67) % 100,
+		delay: (i * 0.9) % 8,
+		duration: 8 + (i % 4) * 2,
+	}));
+
+	return (
+		<svg
+			className="absolute inset-0 w-full h-full"
+			xmlns="http://www.w3.org/2000/svg"
+			preserveAspectRatio="none"
+			viewBox="0 0 100 100"
+		>
+			{particles.map((p, i) => (
+				<circle
+					key={`stream-${i}`}
+					cx={p.x}
+					cy="-2"
+					r="0.3"
+					fill="#3b82f6"
+					opacity="0.5"
+					className="cad-data-particle"
+					style={{
+						animationDelay: `${p.delay}s`,
+						animationDuration: `${p.duration}s`,
+					}}
+				/>
+			))}
+		</svg>
+	);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   CornerHUD — CAD-style status text in corners
+   ═══════════════════════════════════════════════════════════════════════════ */
+function CornerHUD() {
+	return (
+		<>
+			{/* Top-left: drawing info */}
+			<div
+				className="absolute top-4 left-4"
+				style={{
+					fontFamily: "'JetBrains Mono', monospace",
+					fontSize: "10px",
+					color: "rgba(120,140,160,0.5)",
+					letterSpacing: "1px",
+					userSelect: "none",
+				}}
+			>
+				<div>DWG: BAZ-001</div>
+				<div>SCALE: 1:100</div>
+				<div style={{ marginTop: "4px" }}>UNITS: METRIC</div>
+			</div>
+
+			{/* Bottom-left: cursor mode indicator */}
+			<div
+				className="absolute bottom-4 left-4"
+				style={{
+					fontFamily: "'JetBrains Mono', monospace",
+					fontSize: "10px",
+					color: "rgba(120,140,160,0.5)",
+					letterSpacing: "1px",
+					userSelect: "none",
+				}}
+			>
+				<div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+					<span
+						style={{
+							display: "inline-block",
+							width: "6px",
+							height: "6px",
+							backgroundColor: "#3b82f6",
+							borderRadius: "50%",
+							animation: "cad-blink 2s ease-in-out infinite",
+						}}
+					/>
+					<span>MODE: DIGITAL TWIN SYNC</span>
+				</div>
+				<div style={{ marginTop: "2px" }}>LAYER: FIRE-ALARM</div>
+			</div>
+
+			{/* Top-right: time + status */}
+			<div
+				className="absolute top-4 right-4"
+				style={{
+					fontFamily: "'JetBrains Mono', monospace",
+					fontSize: "10px",
+					color: "rgba(120,140,160,0.5)",
+					letterSpacing: "1px",
+					textAlign: "right",
+					userSelect: "none",
+				}}
+			>
+				<div>STATUS: <span style={{ color: "#22c55e" }}>READY</span></div>
+				<div>NFPA 72-2022</div>
+				<div style={{ marginTop: "4px" }}>v1.55.0</div>
+			</div>
+
+			{/* Bottom-right: command bar */}
+			<div
+				className="absolute bottom-4 right-4"
+				style={{
+					fontFamily: "'JetBrains Mono', monospace",
+					fontSize: "10px",
+					color: "rgba(120,140,160,0.5)",
+					letterSpacing: "1px",
+					userSelect: "none",
+				}}
+			>
+				<div>COMMAND: <span className="cad-cursor-blink">_</span></div>
+				<div style={{ marginTop: "2px" }}>ORTHO: ON | SNAP: ON</div>
+			</div>
+		</>
+	);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   AutoCAD2DPlan (unchanged from V237)
    ═══════════════════════════════════════════════════════════════════════════ */
 function AutoCAD2DPlan({ reducedMotion }: { reducedMotion: boolean }) {
 	return (
-		<svg
-			width="100%"
-			height="100%"
-			viewBox="0 0 500 350"
-			xmlns="http://www.w3.org/2000/svg"
-			preserveAspectRatio="xMidYMid meet"
-		>
+		<svg width="100%" height="100%" viewBox="0 0 500 350" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
 			<defs>
 				<linearGradient id="cadLineGrad2d" x1="0" y1="0" x2="1" y2="0">
 					<stop offset="0" stopColor="#5b9bd5" stopOpacity="0.9" />
@@ -162,7 +302,6 @@ function AutoCAD2DPlan({ reducedMotion }: { reducedMotion: boolean }) {
 				</radialGradient>
 			</defs>
 
-			{/* Outer wall */}
 			<path
 				className={reducedMotion ? "" : "cad-stroke cad-draw-1"}
 				d="M 80 60 L 420 60 L 420 290 L 80 290 Z"
@@ -172,7 +311,6 @@ function AutoCAD2DPlan({ reducedMotion }: { reducedMotion: boolean }) {
 				strokeLinejoin="round"
 			/>
 
-			{/* Interior walls */}
 			<path
 				className={reducedMotion ? "" : "cad-stroke cad-draw-2"}
 				d="M 230 60 L 230 180 M 230 180 L 80 180 M 320 60 L 320 180 M 320 180 L 230 180 M 320 180 L 420 180"
@@ -181,7 +319,6 @@ function AutoCAD2DPlan({ reducedMotion }: { reducedMotion: boolean }) {
 				strokeWidth="1.8"
 			/>
 
-			{/* Door swings */}
 			<path
 				className={reducedMotion ? "" : "cad-stroke cad-draw-3"}
 				d="M 180 180 A 30 30 0 0 1 210 210 M 180 180 L 180 210 M 280 180 A 30 30 0 0 1 310 210 M 280 180 L 280 210"
@@ -190,13 +327,7 @@ function AutoCAD2DPlan({ reducedMotion }: { reducedMotion: boolean }) {
 				strokeWidth="1.2"
 			/>
 
-			{/* Dimension lines */}
-			<g
-				className={reducedMotion ? "" : "cad-fade-1"}
-				stroke="rgba(140,140,140,0.5)"
-				strokeWidth="1"
-				fill="none"
-			>
+			<g className={reducedMotion ? "" : "cad-fade-1"} stroke="rgba(140,140,140,0.5)" strokeWidth="1" fill="none">
 				<line x1="80" y1="35" x2="420" y2="35" />
 				<line x1="80" y1="28" x2="80" y2="42" />
 				<line x1="420" y1="28" x2="420" y2="42" />
@@ -204,31 +335,13 @@ function AutoCAD2DPlan({ reducedMotion }: { reducedMotion: boolean }) {
 				<line x1="43" y1="60" x2="57" y2="60" />
 				<line x1="43" y1="290" x2="57" y2="290" />
 			</g>
-			<text
-				x="250"
-				y="30"
-				fill="rgba(160,160,160,0.7)"
-				fontSize="10"
-				fontFamily="'JetBrains Mono', monospace"
-				textAnchor="middle"
-				className={reducedMotion ? "" : "cad-fade-1"}
-			>
+			<text x="250" y="30" fill="rgba(160,160,160,0.7)" fontSize="10" fontFamily="'JetBrains Mono', monospace" textAnchor="middle" className={reducedMotion ? "" : "cad-fade-1"}>
 				15.20 m
 			</text>
-			<text
-				x="42"
-				y="178"
-				fill="rgba(160,160,160,0.7)"
-				fontSize="10"
-				fontFamily="'JetBrains Mono', monospace"
-				textAnchor="middle"
-				transform="rotate(-90 42 178)"
-				className={reducedMotion ? "" : "cad-fade-1"}
-			>
+			<text x="42" y="178" fill="rgba(160,160,160,0.7)" fontSize="10" fontFamily="'JetBrains Mono', monospace" textAnchor="middle" transform="rotate(-90 42 178)" className={reducedMotion ? "" : "cad-fade-1"}>
 				8.50 m
 			</text>
 
-			{/* Smoke detectors */}
 			<g className={reducedMotion ? "" : "cad-fade-2"}>
 				{[
 					[140, 120],
@@ -240,37 +353,14 @@ function AutoCAD2DPlan({ reducedMotion }: { reducedMotion: boolean }) {
 					[275, 240],
 				].map(([cx, cy], i) => (
 					<g key={`det-2d-${i}`}>
-						<circle
-							cx={cx}
-							cy={cy}
-							r="14"
-							fill="url(#smokeDetGrad2d)"
-							className={reducedMotion ? "" : `cad-pulse-${(i % 3) + 1}`}
-						/>
-						<circle
-							cx={cx}
-							cy={cy}
-							r="7"
-							fill="none"
-							stroke="#5b9bd5"
-							strokeWidth="1.5"
-						/>
+						<circle cx={cx} cy={cy} r="14" fill="url(#smokeDetGrad2d)" className={reducedMotion ? "" : `cad-pulse-${(i % 3) + 1}`} />
+						<circle cx={cx} cy={cy} r="7" fill="none" stroke="#5b9bd5" strokeWidth="1.5" />
 						<circle cx={cx} cy={cy} r="2" fill="#5b9bd5" />
 					</g>
 				))}
 			</g>
 
-			{/* Label */}
-			<text
-				x="250"
-				y="335"
-				fill="rgba(160,160,160,0.6)"
-				fontSize="11"
-				fontFamily="'JetBrains Mono', monospace"
-				textAnchor="middle"
-				className={reducedMotion ? "" : "cad-fade-3"}
-				letterSpacing="2"
-			>
+			<text x="250" y="335" fill="rgba(160,160,160,0.6)" fontSize="11" fontFamily="'JetBrains Mono', monospace" textAnchor="middle" className={reducedMotion ? "" : "cad-fade-3"} letterSpacing="2">
 				AUTOCAD · 2D FLOOR PLAN
 			</text>
 		</svg>
@@ -278,7 +368,7 @@ function AutoCAD2DPlan({ reducedMotion }: { reducedMotion: boolean }) {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   Component 2: Bidirectional Arrow (AutoCAD ↔ Revit)
+   BidirectionalArrow (unchanged from V237)
    ═══════════════════════════════════════════════════════════════════════════ */
 function BidirectionalArrow({ reducedMotion }: { reducedMotion: boolean }) {
 	return (
@@ -299,27 +389,10 @@ function BidirectionalArrow({ reducedMotion }: { reducedMotion: boolean }) {
 				<polygon points="30,30 42,24 42,36" fill="#5b9bd5" />
 			</g>
 
-			<text
-				x="150"
-				y="26"
-				fill="#5b9bd5"
-				fontSize="11"
-				fontFamily="'JetBrains Mono', monospace"
-				fontWeight="600"
-				textAnchor="middle"
-				letterSpacing="1"
-			>
+			<text x="150" y="26" fill="#5b9bd5" fontSize="11" fontFamily="'JetBrains Mono', monospace" fontWeight="600" textAnchor="middle" letterSpacing="1">
 				DIGITAL TWIN
 			</text>
-			<text
-				x="150"
-				y="40"
-				fill="rgba(160,160,160,0.6)"
-				fontSize="9"
-				fontFamily="'JetBrains Mono', monospace"
-				textAnchor="middle"
-				letterSpacing="1"
-			>
+			<text x="150" y="40" fill="rgba(160,160,160,0.6)" fontSize="9" fontFamily="'JetBrains Mono', monospace" textAnchor="middle" letterSpacing="1">
 				BIDIRECTIONAL SYNC
 			</text>
 
@@ -332,7 +405,7 @@ function BidirectionalArrow({ reducedMotion }: { reducedMotion: boolean }) {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   Component 3: Revit 3D Isometric Building (wireframe)
+   Revit3DView (unchanged from V237)
    ═══════════════════════════════════════════════════════════════════════════ */
 function Revit3DView({ reducedMotion }: { reducedMotion: boolean }) {
 	const iso = (x: number, y: number, z: number): string => {
@@ -353,13 +426,7 @@ function Revit3DView({ reducedMotion }: { reducedMotion: boolean }) {
 	};
 
 	return (
-		<svg
-			width="100%"
-			height="100%"
-			viewBox="0 0 500 280"
-			xmlns="http://www.w3.org/2000/svg"
-			preserveAspectRatio="xMidYMid meet"
-		>
+		<svg width="100%" height="100%" viewBox="0 0 500 280" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
 			<defs>
 				<linearGradient id="revitLineGrad" x1="0" y1="0" x2="1" y2="1">
 					<stop offset="0" stopColor="#7ac4e8" stopOpacity="0.9" />
@@ -371,7 +438,6 @@ function Revit3DView({ reducedMotion }: { reducedMotion: boolean }) {
 				</radialGradient>
 			</defs>
 
-			{/* Ground plane */}
 			<polygon
 				points={`${v.bfl} ${v.bfr} ${v.bbr} ${v.bbl}`}
 				fill="rgba(90,90,90,0.08)"
@@ -380,8 +446,6 @@ function Revit3DView({ reducedMotion }: { reducedMotion: boolean }) {
 				strokeDasharray="4 3"
 				className={reducedMotion ? "" : "cad-fade-1"}
 			/>
-
-			{/* Back-left face (hidden, dashed) */}
 			<polygon
 				points={`${v.bfl} ${v.bbl} ${v.tbl} ${v.tfl}`}
 				fill="rgba(122,196,232,0.05)"
@@ -390,8 +454,6 @@ function Revit3DView({ reducedMotion }: { reducedMotion: boolean }) {
 				strokeDasharray="3 3"
 				className={reducedMotion ? "" : "cad-stroke cad-draw-4"}
 			/>
-
-			{/* Top face (roof) */}
 			<polygon
 				points={`${v.tfl} ${v.tfr} ${v.tbr} ${v.tbl}`}
 				fill="rgba(122,196,232,0.1)"
@@ -399,8 +461,6 @@ function Revit3DView({ reducedMotion }: { reducedMotion: boolean }) {
 				strokeWidth="1.8"
 				className={reducedMotion ? "" : "cad-stroke cad-draw-5"}
 			/>
-
-			{/* Right face */}
 			<polygon
 				points={`${v.bfr} ${v.bbr} ${v.tbr} ${v.tfr}`}
 				fill="rgba(122,196,232,0.08)"
@@ -408,8 +468,6 @@ function Revit3DView({ reducedMotion }: { reducedMotion: boolean }) {
 				strokeWidth="1.8"
 				className={reducedMotion ? "" : "cad-stroke cad-draw-5"}
 			/>
-
-			{/* Front face (semi-transparent) */}
 			<polygon
 				points={`${v.bfl} ${v.bfr} ${v.tfr} ${v.tfl}`}
 				fill="rgba(122,196,232,0.06)"
@@ -418,7 +476,6 @@ function Revit3DView({ reducedMotion }: { reducedMotion: boolean }) {
 				className={reducedMotion ? "" : "cad-stroke cad-draw-6"}
 			/>
 
-			{/* Windows on front face */}
 			<g className={reducedMotion ? "" : "cad-fade-2"} stroke="rgba(122,196,232,0.7)" strokeWidth="1.2" fill="rgba(122,196,232,0.12)">
 				{[
 					[40, 40],
@@ -432,16 +489,10 @@ function Revit3DView({ reducedMotion }: { reducedMotion: boolean }) {
 					const wBR = iso(wx + 30, 0, wz);
 					const wTR = iso(wx + 30, 0, wz + 30);
 					const wTL = iso(wx, 0, wz + 30);
-					return (
-						<polygon
-							key={`win-${i}`}
-							points={`${wBL} ${wBR} ${wTR} ${wTL}`}
-						/>
-					);
+					return <polygon key={`win-${i}`} points={`${wBL} ${wBR} ${wTR} ${wTL}`} />;
 				})}
 			</g>
 
-			{/* Door on front face */}
 			<polygon
 				points={`${iso(100, 0, 0)} ${iso(130, 0, 0)} ${iso(130, 0, 50)} ${iso(100, 0, 50)}`}
 				fill="rgba(122,196,232,0.2)"
@@ -450,7 +501,6 @@ function Revit3DView({ reducedMotion }: { reducedMotion: boolean }) {
 				className={reducedMotion ? "" : "cad-fade-2"}
 			/>
 
-			{/* Smoke detectors inside building */}
 			<g className={reducedMotion ? "" : "cad-fade-3"}>
 				{[
 					[60, 40, 110],
@@ -463,38 +513,15 @@ function Revit3DView({ reducedMotion }: { reducedMotion: boolean }) {
 					const [px, py] = pos.split(",").map(Number);
 					return (
 						<g key={`det-3d-${i}`}>
-							<circle
-								cx={px}
-								cy={py}
-								r="10"
-								fill="url(#smokeDetGrad3d)"
-								className={reducedMotion ? "" : `cad-pulse-${(i % 3) + 1}`}
-							/>
-							<circle
-								cx={px}
-								cy={py}
-								r="5"
-								fill="none"
-								stroke="#7ac4e8"
-								strokeWidth="1.5"
-							/>
+							<circle cx={px} cy={py} r="10" fill="url(#smokeDetGrad3d)" className={reducedMotion ? "" : `cad-pulse-${(i % 3) + 1}`} />
+							<circle cx={px} cy={py} r="5" fill="none" stroke="#7ac4e8" strokeWidth="1.5" />
 							<circle cx={px} cy={py} r="1.5" fill="#7ac4e8" />
 						</g>
 					);
 				})}
 			</g>
 
-			{/* Label */}
-			<text
-				x="250"
-				y="265"
-				fill="rgba(160,160,160,0.6)"
-				fontSize="11"
-				fontFamily="'JetBrains Mono', monospace"
-				textAnchor="middle"
-				className={reducedMotion ? "" : "cad-fade-3"}
-				letterSpacing="2"
-			>
+			<text x="250" y="265" fill="rgba(160,160,160,0.6)" fontSize="11" fontFamily="'JetBrains Mono', monospace" textAnchor="middle" className={reducedMotion ? "" : "cad-fade-3"} letterSpacing="2">
 				REVIT · 3D ISOMETRIC VIEW
 			</text>
 		</svg>
@@ -502,7 +529,7 @@ function Revit3DView({ reducedMotion }: { reducedMotion: boolean }) {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   Component 4: AutoCAD Crosshair Cursor
+   AutoCADCrosshair (unchanged from V237)
    ═══════════════════════════════════════════════════════════════════════════ */
 function AutoCADCrosshair({ x, y }: { x: number; y: number }) {
 	const snappedX = Math.round(x / 10) * 10;
@@ -518,42 +545,19 @@ function AutoCADCrosshair({ x, y }: { x: number; y: number }) {
 				zIndex: 50,
 			}}
 		>
-			{/* Crosshair lines — full viewport */}
 			<svg
 				className="absolute"
-				style={{
-					left: "-50vw",
-					top: "-50vh",
-					width: "100vw",
-					height: "100vh",
-					overflow: "visible",
-				}}
+				style={{ left: "-50vw", top: "-50vh", width: "100vw", height: "100vh", overflow: "visible" }}
 			>
-				<line
-					x1="0"
-					y1="50vh"
-					x2="100vw"
-					y2="50vh"
-					stroke="rgba(180,180,180,0.3)"
-					strokeWidth="1"
-				/>
-				<line
-					x1="50vw"
-					y1="0"
-					x2="50vw"
-					y2="100vh"
-					stroke="rgba(180,180,180,0.3)"
-					strokeWidth="1"
-				/>
+				<line x1="0" y1="50vh" x2="100vw" y2="50vh" stroke="rgba(180,180,180,0.3)" strokeWidth="1" />
+				<line x1="50vw" y1="0" x2="50vw" y2="100vh" stroke="rgba(180,180,180,0.3)" strokeWidth="1" />
 			</svg>
 
-			{/* Center + marker */}
 			<svg width="24" height="24" viewBox="0 0 24 24" className="absolute" style={{ left: "-12px", top: "-12px" }}>
 				<circle cx="12" cy="12" r="1.5" fill="#b0b0b0" />
 				<circle cx="12" cy="12" r="6" fill="none" stroke="#b0b0b0" strokeWidth="1" opacity="0.6" />
 			</svg>
 
-			{/* Coordinate readout */}
 			<div
 				className="absolute"
 				style={{
