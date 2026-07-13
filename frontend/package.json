@@ -60,7 +60,7 @@
 		"@radix-ui/react-toggle-group": "^1.1.11",
 		"@radix-ui/react-tooltip": "^1.2.8",
 		"@react-three/drei": "^9.90.0",
-		"@react-three/fiber": "^8.15.0",
+		"@react-three/fiber": "^9.6.1",
 		"@sentry/react": "8.55.2",
 		"@tailwindcss/postcss": "4.3.0",
 		"@tanstack/react-query": "5.100.14",
