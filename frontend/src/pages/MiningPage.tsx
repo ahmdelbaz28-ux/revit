@@ -423,6 +423,8 @@ export function MiningPage() {
                                                                                         a.href = url;
                                                                                         a.download = `${mineName}_MSHA_report.md`;
                                                                                         a.click();
+                                                                                        // V250 FIX: Revoke Blob URL to prevent memory leak
+                                                                                        setTimeout(() => URL.revokeObjectURL(url), 100);
                                                                                 }}
                                                                         >
                                                                                 <Download className="h-3 w-3 mr-1" /> Download Report

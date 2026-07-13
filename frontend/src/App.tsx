@@ -7,6 +7,7 @@ import { AskAiButton } from "@/components/ai/AskAiButton";
 import { AskAiSheet } from "@/components/ai/AskAiSheet";
 import CommandPalette from "@/components/command/CommandPalette";
 import { RouteGuard } from "@/components/auth/RouteGuard";
+import { PageErrorBoundary } from "@/components/core/PageErrorBoundary";
 import AppShell from "@/components/layout/AppShell";
 import OnboardingTour from "@/components/onboarding/OnboardingTour";
 import { GlobalHelpDrawer } from "@/components/shared/GlobalHelpDrawer";
@@ -294,26 +295,31 @@ function App() {
                                                         tabIndex={-1}
                                                 >
                                                         <Suspense fallback={<PageLoader />}>
-                                                                <Routes>
-                                                                        {protectedRoutes.map((route) => (
+                                                                {/* V250 FIX: Wrap each route in PageErrorBoundary so a single
+                                                                    page error doesn't crash the entire app. The boundary shows
+                                                                    a page-level error view with a Retry button. */}
+                                                                <PageErrorBoundary pageName="current page">
+                                                                        <Routes>
+                                                                                {protectedRoutes.map((route) => (
+                                                                                        <Route
+                                                                                                key={route.path}
+                                                                                                path={route.path}
+                                                                                                element={
+                                                                                                        <RouteGuard>{route.element}</RouteGuard>
+                                                                                                }
+                                                                                        />
+                                                                                ))}
+                                                                                {/* V193 (R13): 404 catch-all */}
                                                                                 <Route
-                                                                                        key={route.path}
-                                                                                        path={route.path}
+                                                                                        path="*"
                                                                                         element={
-                                                                                                <RouteGuard>{route.element}</RouteGuard>
+                                                                                                <RouteGuard>
+                                                                                                        <NotFoundPage />
+                                                                                                </RouteGuard>
                                                                                         }
                                                                                 />
-                                                                        ))}
-                                                                        {/* V193 (R13): 404 catch-all */}
-                                                                        <Route
-                                                                                path="*"
-                                                                                element={
-                                                                                        <RouteGuard>
-                                                                                                <NotFoundPage />
-                                                                                        </RouteGuard>
-                                                                                }
-                                                                        />
-                                                                </Routes>
+                                                                        </Routes>
+                                                                </PageErrorBoundary>
                                                         </Suspense>
                                                 </main>
                                         </AppShell>

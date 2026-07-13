@@ -49,6 +49,24 @@ if (!rootEl) {
         );
 }
 
+// V250 FIX: ChunkLoadError handler — when a stale deployment causes a
+// chunk to fail loading (404 on /assets/index-OLD_HASH.js), automatically
+// reload the page ONCE to pick up the new chunks. Without this, users see
+// a full-screen error view and must manually reload.
+let chunkErrorReloadAttempted = false;
+window.addEventListener("error", (event) => {
+        // Check for chunk load errors (Vite lazy-loaded chunks)
+        const isChunkError =
+                event.error?.name === "ChunkLoadError" ||
+                (event.error?.message?.includes("Failed to fetch dynamically imported module") ?? false) ||
+                (event.error?.message?.includes("Loading chunk") ?? false);
+        if (isChunkError && !chunkErrorReloadAttempted) {
+                chunkErrorReloadAttempted = true;
+                console.warn("[BAZSPARK] Chunk load failed — reloading to pick up new deployment...");
+                window.location.reload();
+        }
+});
+
 createRoot(rootEl).render(
         <BrowserRouter basename={import.meta.env.BASE_URL || "/"}>
                 <QueryClientProvider client={queryClient}>

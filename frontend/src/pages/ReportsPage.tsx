@@ -4,7 +4,7 @@
  */
 
 import { Calendar, Clock, Download, FileText, Loader2, AlertTriangle } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { ExplainButton } from "@/components/ai/ExplainButton";
@@ -93,6 +93,13 @@ export function ReportsPage() {
         // consensus summary, engineer certification.
         const [ahjGenerating, setAhjGenerating] = useState(false);
         const [ahjDownloadUrl, setAhjDownloadUrl] = useState<string | null>(null);
+
+        // V250 FIX: Revoke Blob URL on unmount or regeneration to prevent memory leak
+        useEffect(() => {
+                return () => {
+                        if (ahjDownloadUrl) URL.revokeObjectURL(ahjDownloadUrl);
+                };
+        }, [ahjDownloadUrl]);
 
         const handleGenerateAhj = async () => {
                 // V214 self-critique fix: use real project ID

@@ -4,43 +4,44 @@
  */
 
 import {
-	Clock,
-	Eye,
-	Folder,
-	FolderPlus,
-	Link as LinkIcon,
-	Loader2,
-	RefreshCw,
-	Trash2,
-	User,
+        Clock,
+        Eye,
+        Folder,
+        FolderPlus,
+        Link as LinkIcon,
+        Loader2,
+        RefreshCw,
+        Trash2,
+        User,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
+        Card,
+        CardContent,
+        CardDescription,
+        CardHeader,
+        CardTitle,
 } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
+        Select,
+        SelectContent,
+        SelectItem,
+        SelectTrigger,
+        SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-	useCreateProject,
-	useDeleteProject,
-	useProjects,
-	useSyncProject,
+        useCreateProject,
+        useDeleteProject,
+        useProjects,
+        useSyncProject,
 } from "@/hooks/useApi";
 import type { Project } from "@/services/digitalTwinApi";
 import { DEVICE_CATEGORIES, getDevicesByCategory } from "@/types/deviceLibrary";
@@ -49,28 +50,28 @@ import { DEVICE_CATEGORIES, getDevicesByCategory } from "@/types/deviceLibrary";
 // Connection types for the dropdown
 // ============================================================================
 const _CONNECTION_TYPES = [
-	"power",
-	"signal",
-	"data",
-	"fire_alarm_loop",
-	"nac_circuit",
-	"poe",
-	"cable",
+        "power",
+        "signal",
+        "data",
+        "fire_alarm_loop",
+        "nac_circuit",
+        "poe",
+        "cable",
 ] as const;
 
 const _CABLE_SIZES = [
-	"1.5mm²",
-	"2.5mm²",
-	"4mm²",
-	"6mm²",
-	"10mm²",
-	"16mm²",
-	"25mm²",
-	"35mm²",
-	"50mm²",
-	"70mm²",
-	"95mm²",
-	"120mm²",
+        "1.5mm²",
+        "2.5mm²",
+        "4mm²",
+        "6mm²",
+        "10mm²",
+        "16mm²",
+        "25mm²",
+        "35mm²",
+        "50mm²",
+        "70mm²",
+        "95mm²",
+        "120mm²",
 ] as const;
 
 // ============================================================================
@@ -78,432 +79,446 @@ const _CABLE_SIZES = [
 // ============================================================================
 
 export function ProjectsPage() {
-	const { t } = useTranslation();
-	const {
-		data: projects,
-		loading: projectsLoading,
-		error: projectsError,
-		refetch,
-	} = useProjects();
-	const { mutate: deleteProject, loading: deleting } = useDeleteProject();
-	const { mutate: syncProject, loading: syncing } = useSyncProject();
-	const { mutate: createProject } = useCreateProject();
-	const [newProject, setNewProject] = useState({ name: "", description: "" });
-	const [creating, setCreating] = useState(false);
-	const [showCreateForm, setShowCreateForm] = useState(false);
-	const [deleteTarget, setDeleteTarget] = useState<Project | null>(null);
-	const [syncTarget, setSyncTarget] = useState<Project | null>(null);
-	const [statusFilter, setStatusFilter] = useState("all");
+        const { t } = useTranslation();
+        const {
+                data: projects,
+                loading: projectsLoading,
+                error: projectsError,
+                refetch,
+        } = useProjects();
+        const { mutate: deleteProject, loading: deleting } = useDeleteProject();
+        const { mutate: syncProject, loading: syncing } = useSyncProject();
+        const { mutate: createProject } = useCreateProject();
+        const [newProject, setNewProject] = useState({ name: "", description: "" });
+        const [creating, setCreating] = useState(false);
+        const [showCreateForm, setShowCreateForm] = useState(false);
+        const [deleteTarget, setDeleteTarget] = useState<Project | null>(null);
+        const [syncTarget, setSyncTarget] = useState<Project | null>(null);
+        const [statusFilter, setStatusFilter] = useState("all");
 
-	const filteredProjects = useMemo(() => {
-		if (!projects) return [];
-		return projects.filter(
-			(project) => statusFilter === "all" || project.status === statusFilter,
-		);
-	}, [projects, statusFilter]);
+        const filteredProjects = useMemo(() => {
+                if (!projects) return [];
+                return projects.filter(
+                        (project) => statusFilter === "all" || project.status === statusFilter,
+                );
+        }, [projects, statusFilter]);
 
-	const handleCreate = async () => {
-		if (!newProject.name.trim()) return;
+        const handleCreate = async () => {
+                if (!newProject.name.trim()) return;
 
-		setCreating(true);
-		const result = await createProject(newProject);
-		if (result) {
-			setNewProject({ name: "", description: "" });
-			setShowCreateForm(false);
-			refetch();
-		}
-		setCreating(false);
-	};
+                setCreating(true);
+                const result = await createProject(newProject);
+                if (result) {
+                        setNewProject({ name: "", description: "" });
+                        setShowCreateForm(false);
+                        refetch();
+                        toast.success("Project created successfully.");
+                } else {
+                        // V250 FIX: Show error toast on failure (was silent)
+                        toast.error("Failed to create project. Please try again.");
+                }
+                setCreating(false);
+        };
 
-	const handleDelete = async () => {
-		if (!deleteTarget) return;
+        const handleDelete = async () => {
+                if (!deleteTarget) return;
 
-		const result = await deleteProject(deleteTarget.id);
-		if (result) {
-			setDeleteTarget(null);
-			refetch();
-		}
-	};
+                const result = await deleteProject(deleteTarget.id);
+                if (result) {
+                        setDeleteTarget(null);
+                        refetch();
+                        toast.success("Project deleted.");
+                } else {
+                        // V250 FIX: Show error toast on failure (was silent)
+                        toast.error("Failed to delete project. Please try again.");
+                        setDeleteTarget(null);
+                }
+        };
 
-	const handleSync = async () => {
-		if (!syncTarget) return;
+        const handleSync = async () => {
+                if (!syncTarget) return;
 
-		const result = await syncProject(syncTarget.id);
-		if (result) {
-			setSyncTarget(null);
-			refetch();
-		}
-	};
+                const result = await syncProject(syncTarget.id);
+                if (result) {
+                        setSyncTarget(null);
+                        refetch();
+                        toast.success("Project synced successfully.");
+                } else {
+                        // V250 FIX: Show error toast on failure (was silent)
+                        toast.error("Failed to sync project. Please try again.");
+                        setSyncTarget(null);
+                }
+        };
 
-	return (
-		<div className="flex-1 overflow-auto" aria-label={t("projects.title")}>
-			<div className="p-6 max-w-4xl mx-auto space-y-6">
-				{/* Header */}
-				<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-					<div>
-						<h1 className="text-2xl font-bold text-foreground">
-							{t("projects.title")}
-						</h1>
-						<p className="text-sm text-muted-foreground mt-1">
-							{t("projects.subtitle")}
-						</p>
-					</div>
-					<Button
-						className="bg-danger hover:bg-danger/90 text-white border-none"
-						onClick={() => setShowCreateForm(true)}
-					>
-						<FolderPlus className="h-4 w-4 mr-1" />
-						{t("projects.newProject")}
-					</Button>
-				</div>
+        return (
+                <div className="flex-1 overflow-auto" aria-label={t("projects.title")}>
+                        <div className="p-6 max-w-4xl mx-auto space-y-6">
+                                {/* Header */}
+                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                                        <div>
+                                                <h1 className="text-2xl font-bold text-foreground">
+                                                        {t("projects.title")}
+                                                </h1>
+                                                <p className="text-sm text-muted-foreground mt-1">
+                                                        {t("projects.subtitle")}
+                                                </p>
+                                        </div>
+                                        <Button
+                                                className="bg-danger hover:bg-danger/90 text-white border-none"
+                                                onClick={() => setShowCreateForm(true)}
+                                        >
+                                                <FolderPlus className="h-4 w-4 mr-1" />
+                                                {t("projects.newProject")}
+                                        </Button>
+                                </div>
 
-				{/* Create Project Form */}
-				{showCreateForm && (
-					<Card className="border-border bg-card">
-						<CardHeader>
-							<CardTitle className="text-lg text-foreground">
-								{t("projects.createProject")}
-							</CardTitle>
-						</CardHeader>
-						<CardContent className="space-y-4">
-							<div className="space-y-2">
-								<Label className="text-foreground/90">
-									{t("projects.projectName")}
-								</Label>
-								<Input
-									value={newProject.name}
-									onChange={(e) =>
-										setNewProject((p) => ({ ...p, name: e.target.value }))
-									}
-									placeholder={t("projects.projectName")}
-									className="bg-card border-border text-foreground"
-								/>
-							</div>
-							<div className="space-y-2">
-								<Label className="text-foreground/90">
-									{t("projects.description")}
-								</Label>
-								<Input
-									value={newProject.description}
-									onChange={(e) =>
-										setNewProject((p) => ({
-											...p,
-											description: e.target.value,
-										}))
-									}
-									placeholder={t("projects.description")}
-									className="bg-card border-border text-foreground"
-								/>
-							</div>
-							<div className="flex justify-end gap-3 pt-2">
-								<Button
-									variant="outline"
-									className="border-border text-foreground/90"
-									onClick={() => {
-										setShowCreateForm(false);
-										setNewProject({ name: "", description: "" });
-									}}
-								>
-									{t("common.cancel")}
-								</Button>
-								<Button
-									className="bg-danger hover:bg-danger/90 text-white border-none"
-									onClick={handleCreate}
-									disabled={creating || !newProject.name.trim()}
-								>
-									{creating ? (
-										<>
-											<Loader2 className="h-4 w-4 mr-1 animate-spin" />
-											{t("common.creating")}
-										</>
-									) : (
-										t("projects.createProject")
-									)}
-								</Button>
-							</div>
-						</CardContent>
-					</Card>
-				)}
+                                {/* Create Project Form */}
+                                {showCreateForm && (
+                                        <Card className="border-border bg-card">
+                                                <CardHeader>
+                                                        <CardTitle className="text-lg text-foreground">
+                                                                {t("projects.createProject")}
+                                                        </CardTitle>
+                                                </CardHeader>
+                                                <CardContent className="space-y-4">
+                                                        <div className="space-y-2">
+                                                                <Label className="text-foreground/90">
+                                                                        {t("projects.projectName")}
+                                                                </Label>
+                                                                <Input
+                                                                        value={newProject.name}
+                                                                        onChange={(e) =>
+                                                                                setNewProject((p) => ({ ...p, name: e.target.value }))
+                                                                        }
+                                                                        placeholder={t("projects.projectName")}
+                                                                        className="bg-card border-border text-foreground"
+                                                                />
+                                                        </div>
+                                                        <div className="space-y-2">
+                                                                <Label className="text-foreground/90">
+                                                                        {t("projects.description")}
+                                                                </Label>
+                                                                <Input
+                                                                        value={newProject.description}
+                                                                        onChange={(e) =>
+                                                                                setNewProject((p) => ({
+                                                                                        ...p,
+                                                                                        description: e.target.value,
+                                                                                }))
+                                                                        }
+                                                                        placeholder={t("projects.description")}
+                                                                        className="bg-card border-border text-foreground"
+                                                                />
+                                                        </div>
+                                                        <div className="flex justify-end gap-3 pt-2">
+                                                                <Button
+                                                                        variant="outline"
+                                                                        className="border-border text-foreground/90"
+                                                                        onClick={() => {
+                                                                                setShowCreateForm(false);
+                                                                                setNewProject({ name: "", description: "" });
+                                                                        }}
+                                                                >
+                                                                        {t("common.cancel")}
+                                                                </Button>
+                                                                <Button
+                                                                        className="bg-danger hover:bg-danger/90 text-white border-none"
+                                                                        onClick={handleCreate}
+                                                                        disabled={creating || !newProject.name.trim()}
+                                                                >
+                                                                        {creating ? (
+                                                                                <>
+                                                                                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                                                                                        {t("common.creating")}
+                                                                                </>
+                                                                        ) : (
+                                                                                t("projects.createProject")
+                                                                        )}
+                                                                </Button>
+                                                        </div>
+                                                </CardContent>
+                                        </Card>
+                                )}
 
-				{/* Filters */}
-				<div className="flex flex-wrap items-center gap-3">
-					<Select value={statusFilter} onValueChange={setStatusFilter}>
-						<SelectTrigger className="w-[180px] bg-card border-border text-white">
-							<SelectValue placeholder={t("projects.allStatuses")} />
-						</SelectTrigger>
-						<SelectContent className="bg-card border-border text-white">
-							<SelectItem value="all">{t("projects.allStatuses")}</SelectItem>
-							<SelectItem value="active">{t("projects.active")}</SelectItem>
-							<SelectItem value="inactive">{t("projects.inactive")}</SelectItem>
-							<SelectItem value="draft">{t("projects.draft")}</SelectItem>
-							<SelectItem value="archived">{t("projects.archived")}</SelectItem>
-						</SelectContent>
-					</Select>
-					<Button
-						variant="outline"
-						className="border-border text-foreground/90 hover:bg-card"
-						onClick={() => refetch()}
-					>
-						<RefreshCw className="h-4 w-4 mr-1" />
-						{t("projects.refresh")}
-					</Button>
-				</div>
+                                {/* Filters */}
+                                <div className="flex flex-wrap items-center gap-3">
+                                        <Select value={statusFilter} onValueChange={setStatusFilter}>
+                                                <SelectTrigger className="w-[180px] bg-card border-border text-white">
+                                                        <SelectValue placeholder={t("projects.allStatuses")} />
+                                                </SelectTrigger>
+                                                <SelectContent className="bg-card border-border text-white">
+                                                        <SelectItem value="all">{t("projects.allStatuses")}</SelectItem>
+                                                        <SelectItem value="active">{t("projects.active")}</SelectItem>
+                                                        <SelectItem value="inactive">{t("projects.inactive")}</SelectItem>
+                                                        <SelectItem value="draft">{t("projects.draft")}</SelectItem>
+                                                        <SelectItem value="archived">{t("projects.archived")}</SelectItem>
+                                                </SelectContent>
+                                        </Select>
+                                        <Button
+                                                variant="outline"
+                                                className="border-border text-foreground/90 hover:bg-card"
+                                                onClick={() => refetch()}
+                                        >
+                                                <RefreshCw className="h-4 w-4 mr-1" />
+                                                {t("projects.refresh")}
+                                        </Button>
+                                </div>
 
-				{/* Error */}
-				{projectsError && (
-					<Card className="border-danger/30 bg-slate-500/5">
-						<CardContent className="p-4">
-							<p className="text-danger">
-								{t("projects.errorLoading")}: {projectsError}
-							</p>
-						</CardContent>
-					</Card>
-				)}
+                                {/* Error */}
+                                {projectsError && (
+                                        <Card className="border-danger/30 bg-slate-500/5">
+                                                <CardContent className="p-4">
+                                                        <p className="text-danger">
+                                                                {t("projects.errorLoading")}: {projectsError}
+                                                        </p>
+                                                </CardContent>
+                                        </Card>
+                                )}
 
-				{/* Loading State with Skeletons */}
-				{projectsLoading && (
-					<div className="space-y-4">
-						{["skeleton-0", "skeleton-1", "skeleton-2"].map((id) => (
-							<Card key={id} className="border-border bg-card">
-								<CardHeader className="pb-3">
-									<div className="flex items-center justify-between">
-										<div>
-											<Skeleton className="h-5 w-48 bg-secondary" />
-											<Skeleton className="h-4 w-32 bg-secondary mt-2" />
-										</div>
-										<Skeleton className="h-9 w-24 rounded" />
-									</div>
-								</CardHeader>
-								<CardContent>
-									<div className="flex items-center justify-between">
-										<div className="flex items-center gap-4 text-sm text-muted-foreground">
-											<Skeleton className="h-4 w-24" />
-											<Skeleton className="h-4 w-20" />
-											<Skeleton className="h-4 w-16" />
-										</div>
-										<div className="flex gap-2">
-											<Skeleton className="h-8 w-8 rounded" />
-											<Skeleton className="h-8 w-8 rounded" />
-											<Skeleton className="h-8 w-8 rounded" />
-										</div>
-									</div>
-								</CardContent>
-							</Card>
-						))}
-					</div>
-				)}
+                                {/* Loading State with Skeletons */}
+                                {projectsLoading && (
+                                        <div className="space-y-4">
+                                                {["skeleton-0", "skeleton-1", "skeleton-2"].map((id) => (
+                                                        <Card key={id} className="border-border bg-card">
+                                                                <CardHeader className="pb-3">
+                                                                        <div className="flex items-center justify-between">
+                                                                                <div>
+                                                                                        <Skeleton className="h-5 w-48 bg-secondary" />
+                                                                                        <Skeleton className="h-4 w-32 bg-secondary mt-2" />
+                                                                                </div>
+                                                                                <Skeleton className="h-9 w-24 rounded" />
+                                                                        </div>
+                                                                </CardHeader>
+                                                                <CardContent>
+                                                                        <div className="flex items-center justify-between">
+                                                                                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                                                                                        <Skeleton className="h-4 w-24" />
+                                                                                        <Skeleton className="h-4 w-20" />
+                                                                                        <Skeleton className="h-4 w-16" />
+                                                                                </div>
+                                                                                <div className="flex gap-2">
+                                                                                        <Skeleton className="h-8 w-8 rounded" />
+                                                                                        <Skeleton className="h-8 w-8 rounded" />
+                                                                                        <Skeleton className="h-8 w-8 rounded" />
+                                                                                </div>
+                                                                        </div>
+                                                                </CardContent>
+                                                        </Card>
+                                                ))}
+                                        </div>
+                                )}
 
-				{/* Empty State */}
-				{!projectsLoading &&
-					(!filteredProjects || filteredProjects.length === 0) && (
-						<div className="py-12">
-							<EmptyState
-								icon={<Folder className="h-12 w-12" />}
-								title={t("projects.noProjects")}
-								description={t("projects.createFirst")}
-								action={{
-									label: t("projects.newProject"),
-									onClick: () => setShowCreateForm(true),
-								}}
-							/>
-						</div>
-					)}
+                                {/* Empty State */}
+                                {!projectsLoading &&
+                                        (!filteredProjects || filteredProjects.length === 0) && (
+                                                <div className="py-12">
+                                                        <EmptyState
+                                                                icon={<Folder className="h-12 w-12" />}
+                                                                title={t("projects.noProjects")}
+                                                                description={t("projects.createFirst")}
+                                                                action={{
+                                                                        label: t("projects.newProject"),
+                                                                        onClick: () => setShowCreateForm(true),
+                                                                }}
+                                                        />
+                                                </div>
+                                        )}
 
-				{/* Projects List */}
-				{!projectsLoading &&
-					filteredProjects &&
-					filteredProjects.length > 0 && (
-						<div className="space-y-4">
-							{filteredProjects.map((project: Project) => (
-								<Card
-									key={project.id}
-									className="border-border bg-card"
-								>
-									<CardHeader className="pb-3">
-										<div className="flex items-start justify-between">
-											<div>
-												<CardTitle className="text-lg text-foreground">
-													{project.name}
-												</CardTitle>
-												<CardDescription className="text-muted-foreground mt-1">
-													{project.description || t("common.noData")}
-												</CardDescription>
-											</div>
-											<Badge
-												variant={
-													project.status === "active"
-														? "default"
-														: project.status === "draft"  // NOSONAR: typescript:S3358
-															? "secondary"
-															: project.status === "archived"  // NOSONAR: typescript:S3358
-																? "outline"
-																: "destructive"
-												}
-												className={
-													project.status === "active"
-														? "bg-success/10 text-success border-success/30"
-														: project.status === "draft"  // NOSONAR: typescript:S3358
-															? "bg-warning/10 text-warning border-warning/30"
-															: "bg-slate-600/20 text-muted-foreground border-border/30"
-												}
-											>
-												{project.status === "active"
-													? t("projects.active")
-													: project.status === "draft"  // NOSONAR: typescript:S3358
-														? t("projects.draft")
-														: project.status === "archived"  // NOSONAR: typescript:S3358
-															? t("projects.archived")
-															: t("projects.inactive")}
-											</Badge>
-										</div>
-									</CardHeader>
-									<CardContent>
-										<div className="flex items-center justify-between">
-											<div className="flex items-center gap-4 text-sm text-muted-foreground">
-												<div className="flex items-center gap-1">
-													<User className="h-4 w-4" />
-													{project.author}
-												</div>
-												<div className="flex items-center gap-1">
-													<Clock className="h-4 w-4" />
-													{new Date(project.createdAt).toLocaleDateString()}
-												</div>
-												<div className="flex items-center gap-1">
-													<div className="w-4 h-4">
-														<svg
-															viewBox="0 0 24 24"
-															fill="none"
-															stroke="currentColor"
-															strokeWidth="2"
-															className="w-4 h-4"
-														>
-															<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-														</svg>
-													</div>
-													{project.deviceCount} {t("projects.devices")}
-												</div>
-												<div className="flex items-center gap-1">
-													<LinkIcon className="h-4 w-4" />
-													{project.connectionCount} {t("projects.connections")}
-												</div>
-											</div>
-											<div className="flex gap-2">
-												<Button
-													variant="outline"
-													size="sm"
-													className="border-border text-foreground/90"
-													onClick={() => setSyncTarget(project)}
-												>
-													{syncing && syncTarget?.id === project.id ? (
-														<Loader2 className="h-4 w-4 animate-spin" />
-													) : (
-														<RefreshCw className="h-4 w-4" />
-													)}
-												</Button>
-												<Button
-													variant="outline"
-													size="sm"
-													className="border-border text-foreground/90"
-													onClick={() => {
-														window.location.hash = `/projects/${project.id}`;
-													}}
-												>
-													<Eye className="h-4 w-4" />
-												</Button>
-												<Button
-													variant="outline"
-													size="sm"
-													className="border-border text-foreground/90"
-													onClick={() => setDeleteTarget(project)}
-												>
-													<Trash2 className="h-4 w-4" />
-												</Button>
-											</div>
-										</div>
-									</CardContent>
-								</Card>
-							))}
-						</div>
-					)}
+                                {/* Projects List */}
+                                {!projectsLoading &&
+                                        filteredProjects &&
+                                        filteredProjects.length > 0 && (
+                                                <div className="space-y-4">
+                                                        {filteredProjects.map((project: Project) => (
+                                                                <Card
+                                                                        key={project.id}
+                                                                        className="border-border bg-card"
+                                                                >
+                                                                        <CardHeader className="pb-3">
+                                                                                <div className="flex items-start justify-between">
+                                                                                        <div>
+                                                                                                <CardTitle className="text-lg text-foreground">
+                                                                                                        {project.name}
+                                                                                                </CardTitle>
+                                                                                                <CardDescription className="text-muted-foreground mt-1">
+                                                                                                        {project.description || t("common.noData")}
+                                                                                                </CardDescription>
+                                                                                        </div>
+                                                                                        <Badge
+                                                                                                variant={
+                                                                                                        project.status === "active"
+                                                                                                                ? "default"
+                                                                                                                : project.status === "draft"  // NOSONAR: typescript:S3358
+                                                                                                                        ? "secondary"
+                                                                                                                        : project.status === "archived"  // NOSONAR: typescript:S3358
+                                                                                                                                ? "outline"
+                                                                                                                                : "destructive"
+                                                                                                }
+                                                                                                className={
+                                                                                                        project.status === "active"
+                                                                                                                ? "bg-success/10 text-success border-success/30"
+                                                                                                                : project.status === "draft"  // NOSONAR: typescript:S3358
+                                                                                                                        ? "bg-warning/10 text-warning border-warning/30"
+                                                                                                                        : "bg-slate-600/20 text-muted-foreground border-border/30"
+                                                                                                }
+                                                                                        >
+                                                                                                {project.status === "active"
+                                                                                                        ? t("projects.active")
+                                                                                                        : project.status === "draft"  // NOSONAR: typescript:S3358
+                                                                                                                ? t("projects.draft")
+                                                                                                                : project.status === "archived"  // NOSONAR: typescript:S3358
+                                                                                                                        ? t("projects.archived")
+                                                                                                                        : t("projects.inactive")}
+                                                                                        </Badge>
+                                                                                </div>
+                                                                        </CardHeader>
+                                                                        <CardContent>
+                                                                                <div className="flex items-center justify-between">
+                                                                                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                                                                                                <div className="flex items-center gap-1">
+                                                                                                        <User className="h-4 w-4" />
+                                                                                                        {project.author}
+                                                                                                </div>
+                                                                                                <div className="flex items-center gap-1">
+                                                                                                        <Clock className="h-4 w-4" />
+                                                                                                        {new Date(project.createdAt).toLocaleDateString()}
+                                                                                                </div>
+                                                                                                <div className="flex items-center gap-1">
+                                                                                                        <div className="w-4 h-4">
+                                                                                                                <svg
+                                                                                                                        viewBox="0 0 24 24"
+                                                                                                                        fill="none"
+                                                                                                                        stroke="currentColor"
+                                                                                                                        strokeWidth="2"
+                                                                                                                        className="w-4 h-4"
+                                                                                                                >
+                                                                                                                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                                                                                                                </svg>
+                                                                                                        </div>
+                                                                                                        {project.deviceCount} {t("projects.devices")}
+                                                                                                </div>
+                                                                                                <div className="flex items-center gap-1">
+                                                                                                        <LinkIcon className="h-4 w-4" />
+                                                                                                        {project.connectionCount} {t("projects.connections")}
+                                                                                                </div>
+                                                                                        </div>
+                                                                                        <div className="flex gap-2">
+                                                                                                <Button
+                                                                                                        variant="outline"
+                                                                                                        size="sm"
+                                                                                                        className="border-border text-foreground/90"
+                                                                                                        onClick={() => setSyncTarget(project)}
+                                                                                                >
+                                                                                                        {syncing && syncTarget?.id === project.id ? (
+                                                                                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                                                                                        ) : (
+                                                                                                                <RefreshCw className="h-4 w-4" />
+                                                                                                        )}
+                                                                                                </Button>
+                                                                                                <Button
+                                                                                                        variant="outline"
+                                                                                                        size="sm"
+                                                                                                        className="border-border text-foreground/90"
+                                                                                                        onClick={() => {
+                                                                                                                window.location.hash = `/projects/${project.id}`;
+                                                                                                        }}
+                                                                                                >
+                                                                                                        <Eye className="h-4 w-4" />
+                                                                                                </Button>
+                                                                                                <Button
+                                                                                                        variant="outline"
+                                                                                                        size="sm"
+                                                                                                        className="border-border text-foreground/90"
+                                                                                                        onClick={() => setDeleteTarget(project)}
+                                                                                                >
+                                                                                                        <Trash2 className="h-4 w-4" />
+                                                                                                </Button>
+                                                                                        </div>
+                                                                                </div>
+                                                                        </CardContent>
+                                                                </Card>
+                                                        ))}
+                                                </div>
+                                        )}
 
-				{/* Sync Confirmation Modal */}
-				{syncTarget && (
-					<div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-						<div className="bg-card border border-border rounded-md max-w-md w-full p-6">
-							<h3 className="text-lg font-semibold text-foreground">
-								{t("projects.sync")}
-							</h3>
-							<p className="text-muted-foreground mt-2">
-								{t("projects.syncConfirm", { name: syncTarget.name })}
-							</p>
-							<div className="flex justify-end gap-3 mt-6">
-								<Button
-									variant="outline"
-									className="border-border text-foreground/90"
-									onClick={() => setSyncTarget(null)}
-								>
-									{t("common.cancel")}
-								</Button>
-								<Button
-									className="bg-danger hover:bg-danger/90 text-white border-none"
-									onClick={handleSync}
-									disabled={syncing}
-								>
-									{syncing ? (
-										<>
-											<Loader2 className="h-4 w-4 mr-1 animate-spin" />
-											{t("projects.syncing")}
-										</>
-									) : (
-										t("projects.sync")
-									)}
-								</Button>
-							</div>
-						</div>
-					</div>
-				)}
+                                {/* Sync Confirmation Modal */}
+                                {syncTarget && (
+                                        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+                                                <div className="bg-card border border-border rounded-md max-w-md w-full p-6">
+                                                        <h3 className="text-lg font-semibold text-foreground">
+                                                                {t("projects.sync")}
+                                                        </h3>
+                                                        <p className="text-muted-foreground mt-2">
+                                                                {t("projects.syncConfirm", { name: syncTarget.name })}
+                                                        </p>
+                                                        <div className="flex justify-end gap-3 mt-6">
+                                                                <Button
+                                                                        variant="outline"
+                                                                        className="border-border text-foreground/90"
+                                                                        onClick={() => setSyncTarget(null)}
+                                                                >
+                                                                        {t("common.cancel")}
+                                                                </Button>
+                                                                <Button
+                                                                        className="bg-danger hover:bg-danger/90 text-white border-none"
+                                                                        onClick={handleSync}
+                                                                        disabled={syncing}
+                                                                >
+                                                                        {syncing ? (
+                                                                                <>
+                                                                                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                                                                                        {t("projects.syncing")}
+                                                                                </>
+                                                                        ) : (
+                                                                                t("projects.sync")
+                                                                        )}
+                                                                </Button>
+                                                        </div>
+                                                </div>
+                                        </div>
+                                )}
 
-				{/* Delete Confirmation Modal */}
-				{deleteTarget && (
-					<div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-						<div className="bg-card border border-border rounded-md max-w-md w-full p-6">
-							<h3 className="text-lg font-semibold text-foreground">
-								{t("projects.deleteProject")}
-							</h3>
-							<p className="text-muted-foreground mt-2">
-								{t("projects.deleteConfirmMessage", {
-									name: deleteTarget.name,
-								})}
-							</p>
-							<div className="flex justify-end gap-3 mt-6">
-								<Button
-									variant="outline"
-									className="border-border text-foreground/90"
-									onClick={() => setDeleteTarget(null)}
-								>
-									{t("common.cancel")}
-								</Button>
-								<Button
-									className="bg-danger hover:bg-danger/90 text-white border-none"
-									onClick={handleDelete}
-									disabled={deleting}
-								>
-									{deleting ? (
-										<>
-											<Loader2 className="h-4 w-4 mr-1 animate-spin" />
-											{t("common.deleting")}
-										</>
-									) : (
-										t("projects.deleteProject")
-									)}
-								</Button>
-							</div>
-						</div>
-					</div>
-				)}
-			</div>
-		</div>
-	);
+                                {/* Delete Confirmation Modal */}
+                                {deleteTarget && (
+                                        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+                                                <div className="bg-card border border-border rounded-md max-w-md w-full p-6">
+                                                        <h3 className="text-lg font-semibold text-foreground">
+                                                                {t("projects.deleteProject")}
+                                                        </h3>
+                                                        <p className="text-muted-foreground mt-2">
+                                                                {t("projects.deleteConfirmMessage", {
+                                                                        name: deleteTarget.name,
+                                                                })}
+                                                        </p>
+                                                        <div className="flex justify-end gap-3 mt-6">
+                                                                <Button
+                                                                        variant="outline"
+                                                                        className="border-border text-foreground/90"
+                                                                        onClick={() => setDeleteTarget(null)}
+                                                                >
+                                                                        {t("common.cancel")}
+                                                                </Button>
+                                                                <Button
+                                                                        className="bg-danger hover:bg-danger/90 text-white border-none"
+                                                                        onClick={handleDelete}
+                                                                        disabled={deleting}
+                                                                >
+                                                                        {deleting ? (
+                                                                                <>
+                                                                                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                                                                                        {t("common.deleting")}
+                                                                                </>
+                                                                        ) : (
+                                                                                t("projects.deleteProject")
+                                                                        )}
+                                                                </Button>
+                                                        </div>
+                                                </div>
+                                        </div>
+                                )}
+                        </div>
+                </div>
+        );
 }
 
 // ============================================================================
@@ -511,49 +526,49 @@ export function ProjectsPage() {
 // ============================================================================
 
 interface DeviceFormState {
-	category: string;
-	type: string;
-	name: string;
-	x: number;
-	y: number;
-	z: number;
-	voltage: number;
-	current: number;
-	load: number;
-	loadUnit: "A" | "mA" | "W"; // BUG-30 FIX: Track load unit
+        category: string;
+        type: string;
+        name: string;
+        x: number;
+        y: number;
+        z: number;
+        voltage: number;
+        current: number;
+        load: number;
+        loadUnit: "A" | "mA" | "W"; // BUG-30 FIX: Track load unit
 }
 
 function _getDefaultDeviceForm(): DeviceFormState {
-	const firstCat = DEVICE_CATEGORIES[0];
-	const firstDevice = getDevicesByCategory(firstCat.id)[0];
-	return {
-		category: firstCat.id,
-		type: firstDevice?.id || "",
-		name: firstDevice?.name || "",
-		x: 0,
-		y: 0,
-		z: 0,
-		voltage: firstDevice?.defaultVoltage || 24,
-		current: firstDevice?.defaultCurrent || 0,
-		load: firstDevice?.defaultLoad || 0,
-		loadUnit: "A", // BUG-30 FIX: Default to Amperes
-	};
+        const firstCat = DEVICE_CATEGORIES[0];
+        const firstDevice = getDevicesByCategory(firstCat.id)[0];
+        return {
+                category: firstCat.id,
+                type: firstDevice?.id || "",
+                name: firstDevice?.name || "",
+                x: 0,
+                y: 0,
+                z: 0,
+                voltage: firstDevice?.defaultVoltage || 24,
+                current: firstDevice?.defaultCurrent || 0,
+                load: firstDevice?.defaultLoad || 0,
+                loadUnit: "A", // BUG-30 FIX: Default to Amperes
+        };
 }
 
 interface ConnectionFormState {
-	fromDeviceId: string;
-	toDeviceId: string;
-	type: string;
-	cableSize: string;
-	length: number;
+        fromDeviceId: string;
+        toDeviceId: string;
+        type: string;
+        cableSize: string;
+        length: number;
 }
 
 function _getDefaultConnectionForm(): ConnectionFormState {
-	return {
-		fromDeviceId: "",
-		toDeviceId: "",
-		type: "",
-		cableSize: "",
-		length: 0,
-	};
+        return {
+                fromDeviceId: "",
+                toDeviceId: "",
+                type: "",
+                cableSize: "",
+                length: 0,
+        };
 }
