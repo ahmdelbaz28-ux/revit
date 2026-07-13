@@ -660,4 +660,46 @@ button {
                 opacity: 1;
                 transform: none;
         }
+        .cad-arrow-left,
+        .cad-arrow-right {
+                animation: none;
+                opacity: 1;
+        }
+}
+
+/* ── V237: Bidirectional arrow pulse animation ───────────────────────── */
+.cad-arrow-left,
+.cad-arrow-right {
+        animation: cad-arrow-pulse 2.5s ease-in-out infinite;
+        will-change: opacity, transform;
+}
+
+.cad-arrow-right {
+        animation-delay: 1.25s;
+}
+
+@keyframes cad-arrow-pulse {
+        0%, 100% {
+                opacity: 0.4;
+                transform: translateX(0);
+        }
+        50% {
+                opacity: 1;
+                transform: translateX(4px);
+        }
+}
+
+.cad-arrow-left {
+        animation-name: cad-arrow-pulse-l;
+}
+
+@keyframes cad-arrow-pulse-l {
+        0%, 100% {
+                opacity: 0.4;
+                transform: translateX(0);
+        }
+        50% {
+                opacity: 1;
+                transform: translateX(-4px);
+        }
 }
