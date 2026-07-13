@@ -276,7 +276,7 @@ def _extract_changes(result: Any) -> dict[str, Any]:
             d = result.to_dict()
             return {k: d[k] for k in list(d.keys())[:10]}
         except Exception:
-            pass
+                        logger.debug("Suppressed Exception in audit_integrity_helper.py", exc_info=True)
     return {"result_type": type(result).__name__}
 
 

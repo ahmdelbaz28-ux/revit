@@ -27,11 +27,12 @@ import logging
 import uuid
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
 
 from backend.auth import require_permission
 from backend.database import get_db
+from backend.limiter import limiter
 from backend.models import GenerateReportInput
 from backend.rbac import Permission
 from backend.response import safe_filename as _safe_filename
@@ -701,7 +702,8 @@ async def list_reports(
 
 
 @router.post("", status_code=201, dependencies=[Depends(require_permission(Permission.REPORT_GENERATE))])
-async def generate_report(project_id: str, input_data: GenerateReportInput):
+@limiter.limit("30/minute")
+async def generate_report(request: Request, project_id: str, input_data: GenerateReportInput):
     """Generate a new engineering report."""
     _verify_project(project_id)
     db = get_db()
@@ -758,7 +760,8 @@ async def generate_report(project_id: str, input_data: GenerateReportInput):
 
 
 @project_router.post("/generate", status_code=200, dependencies=[Depends(require_permission(Permission.REPORT_GENERATE))])
-async def generate_global_report(input_data: GenerateReportInput):
+@limiter.limit("30/minute")
+async def generate_global_report(request: Request, input_data: GenerateReportInput):
     """Generate a report globally using the first available project for compatibility."""
     db = get_db()
     projects = db.list_projects(page=1, limit=1)
@@ -1019,7 +1022,8 @@ class AhjSubmittalRequest(BaseModel):
 
 
 @router.post("/ahj-submittal", dependencies=[Depends(require_permission(Permission.REPORT_GENERATE))])  # NOSONAR: python:S3776
-async def generate_ahj_submittal(project_id: str, request: AhjSubmittalRequest):
+@limiter.limit("10/minute")
+async def generate_ahj_submittal(request: Request, project_id: str, body: AhjSubmittalRequest):
     """
     Generate an AHJ-ready NFPA 72 compliance proof document.
 
@@ -1072,19 +1076,19 @@ async def generate_ahj_submittal(project_id: str, request: AhjSubmittalRequest):
     # Build the document
     doc = ComplianceProofDocument(
         project_name=project.get("name", project_id),
-        designer=request.designer or "TBD",
-        nfpa_edition=request.nfpa_edition,
-        jurisdiction=request.jurisdiction or "TBD",
+        designer=body.designer or "TBD",
+        nfpa_edition=body.nfpa_edition,
+        jurisdiction=body.jurisdiction or "TBD",
     )
 
     optimizer = DensityOptimizer()
 
     # Determine rooms: either from the request body, or derive a single
     # room from the device bounding box.
-    if request.rooms:
+    if body.rooms:
         rooms = [
             (Room(name=r.name, width=r.width, length=r.length, ceiling_height=r.ceiling_height), r.detector_type)
-            for r in request.rooms
+            for r in body.rooms
         ]
     elif devices:
         # Derive bounding box from device coordinates

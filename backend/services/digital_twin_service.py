@@ -1035,8 +1035,7 @@ class DigitalTwinEngine:
                     except Exception:
                         continue
             except Exception:
-                pass
-
+                                logger.debug("Suppressed Exception in digital_twin_service.py", exc_info=True)
             doc.saveas(dxf_path)
             logger.info("IFC→DXF conversion complete: %s (%d elements)", dxf_path, elements_converted)
         except Exception as dxf_err:

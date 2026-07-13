@@ -20,11 +20,12 @@ import json
 import logging
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
 
 from backend.auth import require_permission
 from backend.database import get_db
+from backend.limiter import limiter
 from backend.rbac import Permission
 from backend.response import safe_filename as _safe_filename
 
@@ -353,7 +354,8 @@ class ExportDataInput(BaseModel):
 
 
 @project_router.post("", status_code=200, dependencies=[Depends(require_permission(Permission.EXPORT_READ))])
-async def export_data_global(input_data: ExportDataInput):  # NOSONAR: python:S3776
+@limiter.limit("10/minute")
+async def export_data_global(request: Request, input_data: ExportDataInput):  # NOSONAR: python:S3776
     """
     Export project data globally using the first available project for compatibility.
 

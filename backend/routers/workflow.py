@@ -23,9 +23,10 @@ import hmac
 import logging
 import os
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Query
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request
 
 from backend.auth import require_permission
+from backend.limiter import limiter
 from backend.rbac import Permission
 from backend.services.workflow_service import (
     get_workflow_service,
@@ -164,7 +165,9 @@ async def get_workflow_engine_status():
 
 
 @router.post("/start", dependencies=[Depends(require_permission(Permission.WORKFLOW_MANAGE))])
+@limiter.limit("10/minute")
 async def start_workflow(
+    request: Request,
     file_path: str = Query(  # NOSONAR - python:S8410
         ..., min_length=1, max_length=1000,
         description="Path to DWG/PDF/DXF file to analyze",
@@ -259,7 +262,9 @@ async def get_workflow_status(
 
 
 @router.post("/{workflow_id}/approve", dependencies=[Depends(require_permission(Permission.WORKFLOW_MANAGE))])
+@limiter.limit("30/minute")
 async def approve_workflow(
+    request: Request,
     workflow_id: str,
     reviewer_comments: str | None = Query(  # NOSONAR - python:S8410
         None, max_length=2000,
@@ -304,7 +309,9 @@ async def approve_workflow(
 
 
 @router.post("/{workflow_id}/reject", dependencies=[Depends(require_permission(Permission.WORKFLOW_MANAGE))])
+@limiter.limit("30/minute")
 async def reject_workflow(
+    request: Request,
     workflow_id: str,
     reviewer_comments: str | None = Query(  # NOSONAR - python:S8410
         None, max_length=2000,

@@ -14,11 +14,12 @@ from __future__ import annotations
 import logging
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
 from backend.auth import require_permission
 from backend.contract import validate_device, validate_paginated
 from backend.database import get_db
+from backend.limiter import limiter
 from backend.models import (
     CreateDeviceInput,
     UpdateDeviceInput,
@@ -100,7 +101,8 @@ async def list_devices(
 
 
 @router.post("", status_code=201, dependencies=[Depends(require_permission(Permission.DEVICE_CREATE))])
-async def create_device(project_id: str, input_data: CreateDeviceInput):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+@limiter.limit("30/minute")
+async def create_device(request: Request, project_id: str, input_data: CreateDeviceInput):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     """
     Create a new device in a project.
 
@@ -173,8 +175,9 @@ async def get_device(project_id: str, device_id: str):
 
 
 @router.put("/{device_id}", dependencies=[Depends(require_permission(Permission.DEVICE_UPDATE))])
+@limiter.limit("30/minute")
 async def update_device(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
-    project_id: str, device_id: str, input_data: UpdateDeviceInput
+    request: Request, project_id: str, device_id: str, input_data: UpdateDeviceInput
 ):
     """
     Update an existing device.
@@ -236,7 +239,8 @@ async def update_device(  # NOSONAR — S3776: cognitive complexity is inherent 
 
 
 @router.delete("/{device_id}", dependencies=[Depends(require_permission(Permission.DEVICE_DELETE))])
-async def delete_device(project_id: str, device_id: str):
+@limiter.limit("30/minute")
+async def delete_device(request: Request, project_id: str, device_id: str):
     """
     Delete a device from a project.
 

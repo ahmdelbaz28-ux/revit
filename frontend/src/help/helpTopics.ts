@@ -3,6 +3,16 @@
  *
  * V140 Phase 7: Full user guide with contextual help for every page.
  * Every topic has Arabic + English content.
+ *
+ * V244 REFACTORING NOTE: This file is 1438 lines — the largest in the
+ * frontend. It is a pure data file (no logic), so the size is acceptable.
+ * If this file grows beyond 2000 lines, consider splitting by category:
+ *   - helpTopics/dashboard.ts
+ *   - helpTopics/projects.ts
+ *   - helpTopics/engineering.ts
+ *   - helpTopics/fire-alarm.ts
+ *   - helpTopics/index.ts (aggregates and exports)
+ * For now, the single-file approach is preferred for searchability.
  */
 import type { HelpTopic, HelpTopicId } from "./types";
 

@@ -28,9 +28,10 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
 from backend.auth import require_permission
+from backend.limiter import limiter
 from backend.rbac import Permission
 from backend.services.memory_service import (
     MemoryAddRequest,
@@ -94,7 +95,8 @@ async def get_status():
 
 
 @router.post("/add", summary="Add a memory", dependencies=[Depends(require_permission(Permission.USER_MANAGE))])
-async def add_memory(request: MemoryAddRequest):
+@limiter.limit("30/minute")
+async def add_memory(request: Request, body: MemoryAddRequest):
     """
     Add a memory to the FireAI memory store.
 
@@ -104,20 +106,21 @@ async def add_memory(request: MemoryAddRequest):
     SAFETY: Memory addition never blocks or influences calculations.
 
     Args:
-        request: MemoryAddRequest with messages and scoping
+        body: MemoryAddRequest with messages and scoping
 
     Returns:
         Dict with operation result
 
     """
     service = get_memory_service()
-    result = service.add_memory(request)
+    result = service.add_memory(body)
     result["disclaimer"] = MEMORY_DISCLAIMER
     return result
 
 
 @router.post("/search", summary="Search memories", dependencies=[Depends(require_permission(Permission.QOMN_READ))])
-async def search_memories(request: MemorySearchRequest):
+@limiter.limit("30/minute")
+async def search_memories(request: Request, body: MemorySearchRequest):
     """
     Search memories using hybrid search (semantic + BM25 + entity boosting).
 
@@ -125,14 +128,14 @@ async def search_memories(request: MemorySearchRequest):
     NFPA 72 calculations or engineering judgment.
 
     Args:
-        request: MemorySearchRequest with query and filters
+        body: MemorySearchRequest with query and filters
 
     Returns:
         MemorySearchResponse with results and safety disclaimer
 
     """
     service = get_memory_service()
-    response = service.search_memories(request)
+    response = service.search_memories(body)
     return response.model_dump()
 
 
@@ -167,7 +170,8 @@ async def get_all_memories(
 
 
 @router.delete("/{memory_id}", summary="Delete a memory", dependencies=[Depends(require_permission(Permission.USER_MANAGE))])
-async def delete_memory(memory_id: str):
+@limiter.limit("30/minute")
+async def delete_memory(request: Request, memory_id: str):
     """
     Delete a specific memory by ID.
 

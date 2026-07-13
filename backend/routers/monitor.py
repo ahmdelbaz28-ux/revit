@@ -332,8 +332,7 @@ class MonitorState:
                                 f"Overall compliance at {result['compliance_percentage']}%"
                             )
                     except Exception:
-                        pass
-
+                                                logger.debug("Suppressed Exception in monitor.py", exc_info=True)
                 elif rule["rule_id"] == "high-failure-rate":
                     total = sum(e.get("checks_passed", 0) + e.get("checks_failed", 0)
                                 for e in engines.values())

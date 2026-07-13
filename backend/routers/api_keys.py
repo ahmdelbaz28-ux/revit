@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from backend.admin_protection import audit_operation, require_master_admin
@@ -25,6 +25,7 @@ from backend.api_keys import (
     update_api_key_role,
 )
 from backend.auth import require_permission
+from backend.limiter import limiter
 from backend.rbac import ROLE_PERMISSIONS, Permission, Role
 
 logger = logging.getLogger(__name__)
@@ -57,8 +58,10 @@ async def list_keys(
 
 
 @router.post("", status_code=201)
+@limiter.limit("30/minute")
 async def create_key(
-    request: GenerateKeyRequest,
+    request: Request,
+    body: GenerateKeyRequest,
     _role: Role = Depends(require_permission(Permission.USER_MANAGE)),  # NOSONAR — S8410: FastAPI Depends pattern is idiomatic
     ip: str = Depends(require_master_admin),  # NOSONAR — S8410: FastAPI Depends pattern is idiomatic
 ):
@@ -70,11 +73,11 @@ async def create_key(
 
     V240: Requires X-Master-Admin-Token header (separate from API key).
     """
-    plaintext_key = generate_api_key(request.role, request.description)
+    plaintext_key = generate_api_key(body.role, body.description)
     logger.info(  # NOSONAR
         "New API key generated: role=%s, desc=%s, ip=%s",
-        request.role.value,
-        request.description,
+        body.role.value,
+        body.description,
         ip,
     )
     await audit_operation(
@@ -82,21 +85,23 @@ async def create_key(
         "create_key",
         True,
         target=plaintext_key[:16] + "...",
-        detail=f"role={request.role.value}, desc={request.description}",
+        detail=f"role={body.role.value}, desc={body.description}",
     )
     return {
         "success": True,
         "data": {
             "key": plaintext_key,
-            "role": request.role.value,
-            "description": request.description,
+            "role": body.role.value,
+            "description": body.description,
             "warning": "Store this key securely. It cannot be retrieved later.",
         },
     }
 
 
 @router.delete("/{key_hash}")
+@limiter.limit("30/minute")
 async def delete_key(
+    request: Request,
     key_hash: str,
     _role: Role = Depends(require_permission(Permission.USER_MANAGE)),  # NOSONAR — S8410: FastAPI Depends pattern is idiomatic
     ip: str = Depends(require_master_admin),  # NOSONAR — S8410: FastAPI Depends pattern is idiomatic
@@ -111,14 +116,16 @@ async def delete_key(
 
 
 @router.put("/{key_hash}")
+@limiter.limit("30/minute")
 async def update_key_role_endpoint(
+    request: Request,
     key_hash: str,
-    request: UpdateKeyRoleRequest,
+    body: UpdateKeyRoleRequest,
     _role: Role = Depends(require_permission(Permission.USER_MANAGE)),  # NOSONAR — S8410: FastAPI Depends pattern is idiomatic
     ip: str = Depends(require_master_admin),  # NOSONAR — S8410: FastAPI Depends pattern is idiomatic
 ):
     """Update an API key's role (admin only)."""
-    updated = update_api_key_role(key_hash, request.role)
+    updated = update_api_key_role(key_hash, body.role)
     if not updated:
         await audit_operation(ip, "update_key_role", False, target=key_hash[:32], detail="Key not found")
         raise HTTPException(status_code=404, detail="API key not found")  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
@@ -127,9 +134,9 @@ async def update_key_role_endpoint(
         "update_key_role",
         True,
         target=key_hash[:32],
-        detail=f"new_role={request.role.value}",
+        detail=f"new_role={body.role.value}",
     )
-    return {"success": True, "message": f"API key role updated to {request.role.value}"}
+    return {"success": True, "message": f"API key role updated to {body.role.value}"}
 
 
 @router.get("/roles")

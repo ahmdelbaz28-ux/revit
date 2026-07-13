@@ -178,7 +178,7 @@ class Database:
             try:
                 self._pg_pool.closeall()
             except Exception:
-                pass
+                                logger.debug("Suppressed Exception in database.py", exc_info=True)
             self._database_url = neon_url
             self._pg_pool = pg_pool.ThreadedConnectionPool(
                 minconn=2,

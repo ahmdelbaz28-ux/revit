@@ -19,10 +19,11 @@ from __future__ import annotations
 import logging
 import math
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
 from backend.auth import require_permission
 from backend.db_service import DatabaseService, get_db_service
+from backend.limiter import limiter
 from backend.rbac import Permission
 from backend.schemas import (
     ApiResponse,
@@ -74,7 +75,9 @@ async def list_connections(
 
 
 @router.post("", response_model=ApiResponse[ConnectionResponse], status_code=201, dependencies=[Depends(require_permission(Permission.CONNECTION_CREATE))])
+@limiter.limit("30/minute")
 async def create_connection(
+    request: Request,
     connection_data: ConnectionCreate,
     db: DatabaseService = Depends(get_db_service),  # NOSONAR - python:S8410
 ):
@@ -92,7 +95,9 @@ async def create_connection(
 
 
 @router.put("/{connection_id}", response_model=ApiResponse[ConnectionResponse], dependencies=[Depends(require_permission(Permission.CONNECTION_UPDATE))])
+@limiter.limit("30/minute")
 async def update_connection(
+    request: Request,
     connection_id: str,
     data: ConnectionCreate,
     db: DatabaseService = Depends(get_db_service),  # NOSONAR - python:S8410
@@ -115,7 +120,9 @@ async def update_connection(
 
 
 @router.delete("/{connection_id}", response_model=ApiResponse[None], dependencies=[Depends(require_permission(Permission.CONNECTION_DELETE))])
+@limiter.limit("30/minute")
 async def delete_connection(
+    request: Request,
     connection_id: str,
     db: DatabaseService = Depends(get_db_service),  # NOSONAR - python:S8410
 ):

@@ -19,9 +19,10 @@ from __future__ import annotations
 import logging
 from typing import Dict, List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
 from backend.auth import require_permission
+from backend.limiter import limiter
 from backend.multi_db_service import get_multi_db_service
 from backend.rbac import Permission
 from backend.schemas import ApiResponse
@@ -67,7 +68,8 @@ async def get_from_redis(key: str):
 
 
 @router.post("/redis/set", dependencies=[Depends(require_permission(Permission.SYSTEM_CONFIG))])
-async def set_in_redis(key: str, value: str, ttl: Optional[int] = Query(None, description="Time to live in seconds")):  # NOSONAR - python:S8410
+@limiter.limit("30/minute")
+async def set_in_redis(request: Request, key: str, value: str, ttl: Optional[int] = Query(None, description="Time to live in seconds")):  # NOSONAR - python:S8410
     """Set a value in Redis cache."""
     try:
         db_service = get_multi_db_service()
@@ -86,7 +88,8 @@ async def set_in_redis(key: str, value: str, ttl: Optional[int] = Query(None, de
 
 
 @router.post("/bim/cache-element", dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])
-async def cache_bim_element(element_id: str, element_data: Dict):
+@limiter.limit("30/minute")
+async def cache_bim_element(request: Request, element_id: str, element_data: Dict):
     """Cache BIM element data in Redis for faster access."""
     try:
         db_service = get_multi_db_service()
@@ -124,7 +127,8 @@ async def get_cached_bim_element(element_id: str):
 
 
 @router.post("/bim/store-embeddings", dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])
-async def store_element_embeddings(element_id: str, embeddings: List[float]):
+@limiter.limit("30/minute")
+async def store_element_embeddings(request: Request, element_id: str, embeddings: List[float]):
     """Store element embeddings in Qdrant for similarity search."""
     try:
         db_service = get_multi_db_service()
@@ -143,7 +147,8 @@ async def store_element_embeddings(element_id: str, embeddings: List[float]):
 
 
 @router.post("/bim/find-similar", dependencies=[Depends(require_permission(Permission.ELEMENT_READ))])
-async def find_similar_elements(query_embedding: List[float], limit: int = Query(5, ge=1, le=20)):  # NOSONAR - python:S8410
+@limiter.limit("30/minute")
+async def find_similar_elements(request: Request, query_embedding: List[float], limit: int = Query(5, ge=1, le=20)):  # NOSONAR - python:S8410
     """Find similar BIM elements using vector search."""
     try:
         db_service = get_multi_db_service()
@@ -159,7 +164,9 @@ async def find_similar_elements(query_embedding: List[float], limit: int = Query
 
 
 @router.post("/bim/create-relationships", dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])
+@limiter.limit("30/minute")
 async def create_element_relationships(
+    request: Request,
     element_id: str,
     related_elements: List[str],
     relationship_type: str = Query("CONNECTED_TO", description="Type of relationship")  # NOSONAR - python:S8410

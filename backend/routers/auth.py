@@ -73,17 +73,14 @@ _SESSION_ID_BYTES = 32  # 256 bits of entropy
 #   - Constant-time comparison: all comparisons use hmac.compare_digest
 _SECRET_MANAGER = get_secret_manager()
 
-# In-memory session store: {session_id_hash: {api_key_hash, role, expires_at}}
-# NOTE: This is LOST on restart. For production with rotation support:
-#   1. Use Redis with TTL=_COOKIE_MAX_AGE_SECONDS (sessions survive restarts)
-#   2. The rotation feature (FIREAI_SESSION_SECRET_NEW) only provides value
-#      when sessions persist across restarts — otherwise all users must
-#      re-login after restart anyway.
-#   3. See backend/session_secret.py for rotation instructions.
-_SESSION_STORE: dict[str, dict[str, Any]] = {}
+# V244: Session storage is now handled by backend/session_store.py — a hybrid
+# Redis + in-memory store that persists sessions across restarts when REDIS_URL
+# is set, and gracefully falls back to in-memory in dev mode.
+# The old _SESSION_STORE and _FAILED_ATTEMPTS dicts are replaced by the singleton.
+from backend.session_store import session_store as _session_store
 
-# Rate limiting: track failed login attempts per IP to prevent brute force
-_FAILED_ATTEMPTS: dict[str, list[float]] = {}
+# V244: Keep _MAX_FAILED_ATTEMPTS and _FAILED_ATTEMPT_WINDOW as module-level
+# constants (they're referenced by other modules and tests).
 _MAX_FAILED_ATTEMPTS = 5
 _FAILED_ATTEMPT_WINDOW = 300  # 5 minutes
 
@@ -172,13 +169,14 @@ def _verify_session_token(token: str) -> str | None:
 
     # Check that session exists in store (not expired/revoked)
     session_id_hash = _hash_secret(session_id)
-    session = _SESSION_STORE.get(session_id_hash)
+    session = _session_store.get(session_id_hash)
     if session is None:
         return None
 
-    # Check expiry
-    if time.time() > session["expires_at"]:
-        del _SESSION_STORE[session_id_hash]
+    # V244: Expiry is checked inside session_store.get(), but we keep this
+    # as a safety net for the in-memory fallback path.
+    if time.time() > session.get("expires_at", 0):
+        _session_store.delete(session_id_hash)
         return None
 
     return session_id
@@ -190,24 +188,14 @@ def _check_rate_limit(client_ip: str) -> bool:
 
     Returns True if request is allowed, False if rate limited.
     """
-    now = time.time()
-    # Clean old entries
-    if client_ip in _FAILED_ATTEMPTS:
-        _FAILED_ATTEMPTS[client_ip] = [
-            t for t in _FAILED_ATTEMPTS[client_ip]
-            if now - t < _FAILED_ATTEMPT_WINDOW
-        ]
-    else:
-        _FAILED_ATTEMPTS[client_ip] = []
-
-    return len(_FAILED_ATTEMPTS[client_ip]) < _MAX_FAILED_ATTEMPTS
+    # V244: Delegate to session_store which handles both Redis and in-memory
+    attempts = _session_store.get_failed_attempts(client_ip)
+    return len(attempts) < _MAX_FAILED_ATTEMPTS
 
 
 def _record_failed_attempt(client_ip: str) -> None:
     """Record a failed login attempt for rate limiting."""
-    if client_ip not in _FAILED_ATTEMPTS:
-        _FAILED_ATTEMPTS[client_ip] = []
-    _FAILED_ATTEMPTS[client_ip].append(time.time())
+    _session_store.add_failed_attempt(client_ip)
 
 
 # ENDPOINTS
@@ -263,10 +251,11 @@ async def login(request: Request, body: LoginRequest):  # NOSONAR — S3776: cog
 
     if role is None:
         _record_failed_attempt(client_ip)
+        _current_attempts = len(_session_store.get_failed_attempts(client_ip))
         logger.warning(
             "Failed login attempt from %s (attempt %d/%d)",
             client_ip,
-            len(_FAILED_ATTEMPTS.get(client_ip, [])),
+            _current_attempts,
             _MAX_FAILED_ATTEMPTS,
         )
         raise HTTPException(status_code=401, detail="Invalid API key")  # NOSONAR — S8415: assignment kept for readability / debuggability
@@ -276,16 +265,22 @@ async def login(request: Request, body: LoginRequest):  # NOSONAR — S3776: cog
     session_id = secrets.token_urlsafe(_SESSION_ID_BYTES)
     session_id_hash = _hash_secret(session_id)
 
-    # Store session metadata (NOT the API key — only its hash for audit)
+    # V244: Store session via the hybrid Redis/in-memory session_store.
+    # If REDIS_URL is set, the session persists across restarts and is
+    # shared across workers. Otherwise, falls back to in-memory.
     api_key_hash = _hash_secret(api_key)
     expires_at_epoch = time.time() + _COOKIE_MAX_AGE_SECONDS
-    _SESSION_STORE[session_id_hash] = {
-        "api_key_hash": api_key_hash,  # For audit/revocation, never sent to client
-        "role": role.value,
-        "expires_at": expires_at_epoch,
-        "created_at": time.time(),
-        "client_ip": client_ip,
-    }
+    _session_store.set(
+        session_id_hash,
+        {
+            "api_key_hash": api_key_hash,  # For audit/revocation, never sent to client
+            "role": role.value,
+            "expires_at": expires_at_epoch,
+            "created_at": time.time(),
+            "client_ip": client_ip,
+        },
+        ttl=_COOKIE_MAX_AGE_SECONDS,
+    )
 
     # Create signed token
     token = _create_session_token(session_id)
@@ -322,7 +317,7 @@ async def login(request: Request, body: LoginRequest):  # NOSONAR — S3776: cog
     response.headers["Cache-Control"] = "no-store"
 
     # Clear failed attempts on successful login
-    _FAILED_ATTEMPTS.pop(client_ip, None)
+    _session_store.clear_failed_attempts(client_ip)
 
     logger.info("Successful login, role=%s, ip=%s", role.value, client_ip)
     return response
@@ -349,7 +344,7 @@ async def logout(request: Request):  # NOSONAR — S3776: cognitive complexity i
                     session_id = _verify_session_token(v.strip())
                     if session_id:
                         session_id_hash = _hash_secret(session_id)
-                        _SESSION_STORE.pop(session_id_hash, None)
+                        _session_store.delete(session_id_hash)
                     break
 
     response = JSONResponse(content=success({"logged_out": True}))
@@ -375,25 +370,24 @@ async def get_current_user(request: Request):
 
 def validate_session_cookie(cookie_value: str) -> str | None:
     """
-    Validate a session cookie value and return the API key hash if valid.
+    Validate a session cookie value and return the role if valid.
 
     This is called by ApiKeyMiddleware to authenticate requests via cookie.
-    Returns the api_key_hash if the session is valid, None otherwise.
+    Returns the role string if the session is valid, None otherwise.
 
-    The middleware then looks up the role from the session store and
-    sets it on the request scope.
+    V244: Delegates to the hybrid session_store (Redis or in-memory).
     """
     session_id = _verify_session_token(cookie_value)
     if session_id is None:
         return None
 
     session_id_hash = _hash_secret(session_id)
-    session = _SESSION_STORE.get(session_id_hash)
+    session = _session_store.get(session_id_hash)
     if session is None:
         return None
 
-    if time.time() > session["expires_at"]:
-        del _SESSION_STORE[session_id_hash]
+    if time.time() > session.get("expires_at", 0):
+        _session_store.delete(session_id_hash)
         return None
 
     return session.get("role")

@@ -11,9 +11,10 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 
 from backend.auth import require_permission
+from backend.limiter import limiter
 from backend.rbac import Permission
 
 logger = logging.getLogger(__name__)
@@ -85,7 +86,8 @@ async def self_healing_audit(limit: int = 20):
 
 
 @router.post("/reset", dependencies=[Depends(require_permission(Permission.SYSTEM_CONFIG))])
-async def self_healing_reset():
+@limiter.limit("30/minute")
+async def self_healing_reset(request: Request):
     """
     Reset the circuit breaker (admin only).
 

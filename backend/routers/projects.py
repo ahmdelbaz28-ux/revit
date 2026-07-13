@@ -12,11 +12,12 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
 from backend.auth import require_permission
 from backend.contract import validate_paginated, validate_project
 from backend.database import get_db
+from backend.limiter import limiter
 from backend.models import (
     CreateProjectInput,
     UpdateProjectInput,
@@ -69,7 +70,8 @@ async def list_projects(
 
 
 @router.post("", status_code=201, dependencies=[Depends(require_permission(Permission.PROJECT_CREATE))])
-async def create_project(input_data: CreateProjectInput):
+@limiter.limit("30/minute")
+async def create_project(request: Request, input_data: CreateProjectInput):
     """Create a new project."""
     db = get_db()
     project_data = {
@@ -102,7 +104,8 @@ async def get_project(project_id: str):
 
 
 @router.put("/{project_id}", dependencies=[Depends(require_permission(Permission.PROJECT_UPDATE))])
-async def update_project(project_id: str, input_data: UpdateProjectInput):
+@limiter.limit("30/minute")
+async def update_project(request: Request, project_id: str, input_data: UpdateProjectInput):
     """Update an existing project."""
     db = get_db()
     updates = input_data.model_dump(exclude_none=True)
@@ -123,7 +126,8 @@ async def update_project(project_id: str, input_data: UpdateProjectInput):
 
 
 @router.delete("/{project_id}", dependencies=[Depends(require_permission(Permission.PROJECT_DELETE))])
-async def delete_project(project_id: str):
+@limiter.limit("30/minute")
+async def delete_project(request: Request, project_id: str):
     """Delete a project and all its children."""
     db = get_db()
     deleted = db.delete_project(project_id)

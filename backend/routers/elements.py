@@ -12,10 +12,11 @@ import logging
 import math
 import re
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
 from backend.auth import require_permission
 from backend.db_service import DatabaseService, get_db_service
+from backend.limiter import limiter
 from backend.rbac import Permission
 from backend.schemas import (
     ApiResponse,
@@ -77,7 +78,9 @@ async def list_elements(
 
 
 @router.post("", response_model=ApiResponse[ElementResponse], status_code=201, dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])
+@limiter.limit("30/minute")
 async def create_element(
+    request: Request,
     element_data: ElementCreate,
     db: DatabaseService = Depends(get_db_service),  # NOSONAR - python:S8410
 ):
@@ -117,7 +120,9 @@ async def get_element(
 
 
 @router.put("/{element_id}", response_model=ApiResponse[ElementResponse], dependencies=[Depends(require_permission(Permission.ELEMENT_UPDATE))])
+@limiter.limit("30/minute")
 async def update_element(
+    request: Request,
     element_id: str,
     element_data: ElementUpdate,
     db: DatabaseService = Depends(get_db_service),  # NOSONAR - python:S8410
@@ -136,7 +141,9 @@ async def update_element(
 
 
 @router.delete("/{element_id}", response_model=ApiResponse[None], dependencies=[Depends(require_permission(Permission.ELEMENT_DELETE))])
+@limiter.limit("30/minute")
 async def delete_element(
+    request: Request,
     element_id: str,
     db: DatabaseService = Depends(get_db_service),  # NOSONAR - python:S8410
 ):

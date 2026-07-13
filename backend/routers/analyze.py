@@ -20,10 +20,11 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from backend.auth import require_permission
+from backend.limiter import limiter
 from backend.rbac import Permission
 from fireai.core.pipeline import analyze_room
 from fireai.core.qomn_kernel import (
@@ -123,7 +124,8 @@ class RoomAnalyzeRequest(BaseModel):
     "/analyze/battery",
     dependencies=[Depends(require_permission(Permission.QOMN_EXECUTE))],
 )
-async def analyze_battery(req: BatteryRequest) -> dict[str, Any]:
+@limiter.limit("30/minute")
+async def analyze_battery(request: Request, req: BatteryRequest) -> dict[str, Any]:
     """
     Compute NFPA 72 battery capacity.
 
@@ -157,7 +159,8 @@ async def analyze_battery(req: BatteryRequest) -> dict[str, Any]:
     "/analyze/voltage",
     dependencies=[Depends(require_permission(Permission.QOMN_EXECUTE))],
 )
-async def analyze_voltage(req: VoltageRequest) -> dict[str, Any]:
+@limiter.limit("30/minute")
+async def analyze_voltage(request: Request, req: VoltageRequest) -> dict[str, Any]:
     """
     Compute NEC voltage drop.
 
@@ -189,7 +192,8 @@ async def analyze_voltage(req: VoltageRequest) -> dict[str, Any]:
     "/projects/{project_id}/analyze/room",
     dependencies=[Depends(require_permission(Permission.QOMN_EXECUTE))],
 )
-async def analyze_project_room(project_id: str, req: RoomAnalyzeRequest) -> dict[str, Any]:
+@limiter.limit("10/minute")
+async def analyze_project_room(request: Request, project_id: str, req: RoomAnalyzeRequest) -> dict[str, Any]:
     """
     Run the full FireAI pipeline for a room in a project.
 

@@ -491,8 +491,7 @@ class RevitService:
                         if hasattr(val, 'Name') and val.Name is not None:
                             return val.Name
                     except Exception:
-                        pass
-                # Object with ToString() (e.g. ElementId) — coerce to string
+                                                logger.debug("Suppressed Exception in revit_service.py", exc_info=True)
                 try:
                     if hasattr(val, 'ToString'):
                         return val.ToString()  # type: ignore[union-attr]
@@ -504,7 +503,7 @@ class RevitService:
                         if hasattr(val, 'Name') and val.Name is not None:
                             return val.Name
                     except Exception:
-                        pass
+                                                logger.debug("Suppressed Exception in revit_service.py", exc_info=True)
                 return val
 
             # V140 FIX: pass `prefer` per-attribute to match Revit API semantics.
@@ -2574,8 +2573,7 @@ class RevitService:
                 if level.Name == name:
                     return level
         except Exception:
-            pass
-
+                        logger.debug("Suppressed Exception in revit_service.py", exc_info=True)
         return None
 
     def _get_wall_type_id(self, wall_type_name: str):
@@ -2593,8 +2591,7 @@ class RevitService:
                 if wt.Name == wall_type_name:
                     return wt.Id
         except Exception:
-            pass
-
+                        logger.debug("Suppressed Exception in revit_service.py", exc_info=True)
         return None
 
     def _get_floor_type_id(self, floor_type_name: str):
@@ -2612,8 +2609,7 @@ class RevitService:
                 if ft.Name == floor_type_name:
                     return ft.Id
         except Exception:
-            pass
-
+                        logger.debug("Suppressed Exception in revit_service.py", exc_info=True)
         return None
 
     def _get_family_symbol(self, _category: str, symbol_name: str):  # NOSONAR — S1172: parameter retained for API stability

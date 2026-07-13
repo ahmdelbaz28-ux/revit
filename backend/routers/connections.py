@@ -12,11 +12,12 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
 from backend.auth import require_permission
 from backend.contract import validate_connection, validate_paginated
 from backend.database import get_db
+from backend.limiter import limiter
 from backend.models import CreateConnectionInput
 from backend.rbac import Permission
 from backend.response import success
@@ -70,7 +71,8 @@ async def list_connections(
 
 
 @router.post("", status_code=201, dependencies=[Depends(require_permission(Permission.CONNECTION_CREATE))])
-async def create_connection(project_id: str, input_data: CreateConnectionInput):
+@limiter.limit("30/minute")
+async def create_connection(request: Request, project_id: str, input_data: CreateConnectionInput):
     """Create a new connection in a project."""
     _verify_project(project_id)
     db = get_db()
@@ -108,7 +110,9 @@ async def create_connection(project_id: str, input_data: CreateConnectionInput):
 
 
 @router.put("/{connection_id}", dependencies=[Depends(require_permission(Permission.CONNECTION_UPDATE))])
+@limiter.limit("30/minute")
 async def update_connection(
+    request: Request,
     project_id: str,
     connection_id: str,
     cableSize: str | None = None,  # NOSONAR - python:S117
@@ -150,7 +154,8 @@ async def update_connection(
 
 
 @router.delete("/{connection_id}", dependencies=[Depends(require_permission(Permission.CONNECTION_DELETE))])
-async def delete_connection(project_id: str, connection_id: str):
+@limiter.limit("30/minute")
+async def delete_connection(request: Request, project_id: str, connection_id: str):
     """Delete a connection from a project."""
     _verify_project(project_id)
     db = get_db()

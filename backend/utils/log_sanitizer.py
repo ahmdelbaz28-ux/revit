@@ -7,6 +7,9 @@ backend/services/autocad_service.py, and backend/services/revit_service.py.
 Extracted to this shared module to eliminate duplication.
 """
 from __future__ import annotations
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def safe_str(value: object, max_len: int = 200) -> str:

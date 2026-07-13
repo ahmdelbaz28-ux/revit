@@ -214,32 +214,27 @@ class StateIsolationContext:
                     if resp.status_code in (200, 404):
                         counts["connections"] += 1
                 except Exception:
-                    pass
-
+                                        logger.debug("Suppressed Exception in __init__.py", exc_info=True)
             for did in self._created_device_ids:  # NOSONAR - python:S1481
                 try:
                     # Need project_id context — skip if not available
                     pass
                 except Exception:
-                    pass
-
+                                        logger.debug("Suppressed Exception in __init__.py", exc_info=True)
             for eid in self._created_element_ids:
                 try:
                     resp = self.client.delete(f"/api/elements/{eid}")
                     if resp.status_code in (200, 404):
                         counts["elements"] += 1
                 except Exception:
-                    pass
-
+                                        logger.debug("Suppressed Exception in __init__.py", exc_info=True)
             for pid in self._created_project_ids:
                 try:
                     resp = self.client.delete(f"/api/v1/projects/{pid}")
                     if resp.status_code in (200, 404):
                         counts["projects"] += 1
                 except Exception:
-                    pass
-
-            # Clear internal lists
+                                        logger.debug("Suppressed Exception in __init__.py", exc_info=True)
             self._created_project_ids.clear()
             self._created_device_ids.clear()
             self._created_element_ids.clear()
@@ -268,8 +263,7 @@ class StateIsolationContext:
                 if hasattr(_storage, "locks"):
                     _storage.locks.clear()
         except Exception:
-            pass
-
+                        logger.debug("Suppressed Exception in __init__.py", exc_info=True)
     def reset_cache(self) -> None:
         """
         Clear the in-memory application cache.
@@ -281,10 +275,7 @@ class StateIsolationContext:
             from backend.app import _cache
             _cache.clear()
         except Exception:
-            pass
-
-
-# ═══════════════════════════════════════════════════════════════════════════
+                        logger.debug("Suppressed Exception in __init__.py", exc_info=True)
 # Fault Injector (Layer 7 — Resilience Probes)
 # ═══════════════════════════════════════════════════════════════════════════
 
