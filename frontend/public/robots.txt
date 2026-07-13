@@ -1,0 +1,59 @@
+# BAZSPARK Digital Twin — robots.txt
+# Safety-Critical Fire Alarm Engineering Platform
+#
+# Allow all crawlers to access public content.
+# Block access to API endpoints (POST/PUT/DELETE already protected by auth,
+# but we also block them here at the robots level for defense-in-depth).
+#
+# Sitemap: not yet available — will be added when public marketing pages ship.
+
+User-agent: *
+
+# Allow public pages
+Allow: /
+Allow: /dashboard
+Allow: /login
+
+# Block API endpoints — never index internal API surface
+Disallow: /api/
+Disallow: /api/v1/
+Disallow: /api/v1/auth/
+Disallow: /api/v1/admin/
+Disallow: /api/v1/users/
+Disallow: /api/v1/projects/
+Disallow: /api/v1/elements/
+Disallow: /api/v1/fire-alarm/
+Disallow: /api/v1/digital-twin/
+Disallow: /api/v1/reports/
+Disallow: /api/v1/exports/
+Disallow: /api/v1/settings/
+
+# Block authenticated app routes from indexing
+Disallow: /engineering
+Disallow: /fire-alarm
+Disallow: /digital-twin
+Disallow: /elements
+Disallow: /connections
+Disallow: /conflicts
+Disallow: /autocad
+Disallow: /revit
+Disallow: /projects
+Disallow: /reports
+Disallow: /settings
+Disallow: /api-keys
+Disallow: /exports
+Disallow: /self-healing
+Disallow: /facp
+Disallow: /environment
+Disallow: /monitor
+Disallow: /memory
+Disallow: /graphrag
+Disallow: /workflow
+Disallow: /marine
+Disallow: /mining
+
+# Block static asset internals (keep JS/CSS crawlable for rendering)
+Disallow: /src/
+
+# Crawl delay to be polite to the public marketing pages
+Crawl-delay: 1
