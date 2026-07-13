@@ -6,13 +6,7 @@
  */
 
 import {
-        AlertTriangle,  // NOSONAR: typescript:S1128
-        ArrowRight,  // NOSONAR: typescript:S1128
-        CheckCircle2,  // NOSONAR: typescript:S1128
-        CheckSquare,  // NOSONAR: typescript:S1128
         Cpu,
-        Eye,  // NOSONAR: typescript:S1128
-        FileText,  // NOSONAR: typescript:S1128
         Mic,
         Plus,
         Send,
@@ -23,7 +17,6 @@ import {
         Zap,
         Loader2,
         Bot,
-        User,  // NOSONAR: typescript:S1128
         AlertCircle,
 } from "lucide-react";
 import { useState, useRef, useEffect, useCallback } from "react";
