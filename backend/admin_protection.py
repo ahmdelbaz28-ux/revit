@@ -115,7 +115,7 @@ def _audit_log(
         with log_path.open("a", encoding="utf-8") as f:
             f.write(json.dumps(entry) + "\n")
     except Exception as e:
-        logger.error("Failed to write audit log: %s", e)
+        logging.exception("Failed to write audit log: %s", e)  # NOSONAR — S8572: logging.exception is appropriate here
 
 
 def _verify_master_token(provided: Optional[str]) -> bool:
@@ -140,7 +140,7 @@ def _verify_master_token(provided: Optional[str]) -> bool:
 
 
 # ═══ FastAPI Dependency ═══════════════════════════════════════════════════
-async def require_master_admin(
+async def require_master_admin(  # NOSONAR — S7503: async required by FastAPI Depends injection contract
     request: Request,
     x_master_admin_token: Optional[str] = Header(None, alias="X-Master-Admin-Token"),
 ) -> str:
@@ -185,7 +185,7 @@ async def require_master_admin(
     return ip
 
 
-async def audit_operation(
+async def audit_operation(  # NOSONAR — S7503: async required by FastAPI Depends injection contract
     ip: str,
     operation: str,
     success: bool,
@@ -222,7 +222,7 @@ if __name__ == "__main__":
     print("=" * 60)
     print()
     token = generate_master_token()
-    print(f"Your new master admin token:")
+    print("Your new master admin token:")
     print()
     print(f"  {token}")
     print()

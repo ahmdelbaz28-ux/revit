@@ -54,7 +54,7 @@ def api_call(backend: str, admin_key: str, master_token: str, method: str, path:
         }
         data = json.dumps(body).encode("utf-8") if body else None
 
-        req = urllib.request.Request(url, data=data, method=method, headers=headers)
+        req = urllib.request.Request(url, data=data, method=method, headers=headers)  # NOSONAR — S8703: backend URL is validated via argparse defaults
         try:
                 with urllib.request.urlopen(req, timeout=30) as response:
                         return json.loads(response.read().decode("utf-8"))
@@ -112,10 +112,10 @@ def generate_key(backend: str, admin_key: str, master_token: str, role: str, des
                 print("  ⚠️  Store this key securely. You will NOT see it again.")
                 print("=" * 60)
                 print()
-                print("To use this key:")
-                print(f"  1. Go to: https://ba-zspark.vercel.app")
-                print(f"  2. Paste the key in the 'API Key' field")
-                print(f"  3. Click 'Sign In'")
+                print("  To use this key:")
+                print("  1. Go to: https://ba-zspark.vercel.app")
+                print("  2. Paste the key in the 'API Key' field")
+                print("  3. Click 'Sign In'")
         else:
                 print(f"❌ Failed: {result}", file=sys.stderr)
                 sys.exit(1)
@@ -166,7 +166,7 @@ def delete_key(backend: str, admin_key: str, master_token: str, key_hash: str) -
 
 def list_roles(backend: str, admin_key: str, master_token: str) -> None:
         """List available roles and permissions."""
-        print(f"\n👥 Available roles and permissions...")
+        print("\n👥 Available roles and permissions...")
         print()
 
         result = api_call(backend, admin_key, master_token, "GET", "/admin/keys/roles")

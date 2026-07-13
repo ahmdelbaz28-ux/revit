@@ -47,7 +47,7 @@ class UpdateKeyRoleRequest(BaseModel):
 
 @router.get("")
 async def list_keys(
-    _role: Role = Depends(require_permission(Permission.USER_MANAGE)),  # NOSONAR - python:S8410
+    _role: Role = Depends(require_permission(Permission.USER_MANAGE)),  # NOSONAR — S8410: FastAPI Depends pattern is idiomatic
     ip: str = Depends(require_master_admin),
 ):
     """List all API keys (admin only). Key values are never returned."""
@@ -59,7 +59,7 @@ async def list_keys(
 @router.post("", status_code=201)
 async def create_key(
     request: GenerateKeyRequest,
-    _role: Role = Depends(require_permission(Permission.USER_MANAGE)),  # NOSONAR - python:S8410
+    _role: Role = Depends(require_permission(Permission.USER_MANAGE)),  # NOSONAR — S8410: FastAPI Depends pattern is idiomatic
     ip: str = Depends(require_master_admin),
 ):
     """
@@ -98,7 +98,7 @@ async def create_key(
 @router.delete("/{key_hash}")
 async def delete_key(
     key_hash: str,
-    _role: Role = Depends(require_permission(Permission.USER_MANAGE)),  # NOSONAR - python:S8410
+    _role: Role = Depends(require_permission(Permission.USER_MANAGE)),  # NOSONAR — S8410: FastAPI Depends pattern is idiomatic
     ip: str = Depends(require_master_admin),
 ):
     """Delete an API key by its hash (admin only)."""
@@ -114,7 +114,7 @@ async def delete_key(
 async def update_key_role_endpoint(
     key_hash: str,
     request: UpdateKeyRoleRequest,
-    _role: Role = Depends(require_permission(Permission.USER_MANAGE)),  # NOSONAR - python:S8410
+    _role: Role = Depends(require_permission(Permission.USER_MANAGE)),  # NOSONAR — S8410: FastAPI Depends pattern is idiomatic
     ip: str = Depends(require_master_admin),
 ):
     """Update an API key's role (admin only)."""
@@ -134,7 +134,7 @@ async def update_key_role_endpoint(
 
 @router.get("/roles")
 async def list_roles(
-    _role: Role = Depends(require_permission(Permission.USER_MANAGE)),  # NOSONAR - python:S8410
+    _role: Role = Depends(require_permission(Permission.USER_MANAGE)),  # NOSONAR — S8410: FastAPI Depends pattern is idiomatic
     _ip: str = Depends(require_master_admin),
 ):
     """List available roles and their permissions (admin only)."""
