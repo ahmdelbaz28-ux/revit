@@ -47,7 +47,7 @@ websockets>=10.0.0,<16.0.0  # V207 FIX: raised upper bound to support uvicorn[st
 # ── Utilities ────────────────────────────────────────────────────────────────
 python-dotenv>=1.0.0,<2.0.0
 python-dateutil>=2.8.0,<3.0.0
-pytz>=2023.0.0,<2025.0.0
+pytz>=2023.0.0,<2027.0.0
 tenacity>=8.2.0,<9.0.0
 hypothesis>=6.82.0,<7.0.0
 
