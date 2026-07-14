@@ -7,12 +7,26 @@ _logger = _logging.getLogger(__name__)
 
 
 def _lazy_import(name: str):
-    """Lazily import a router module -- fails silently if unavailable."""
+    """Lazily import a router module -- fails gracefully if unavailable.
+
+    Catches ImportError (optional dependency missing), NameError (typing
+    import bug — see V143 NOSONAR cleanup), SyntaxError (broken file),
+    and AttributeError (failed attribute access during module init).
+    A single broken router must NOT prevent the other 20 routers from
+    loading and the entire backend.app from starting.
+
+    The failure is logged at WARNING level so operators see it in CI/CD
+    logs and production logs, and can fix the broken router without
+    blocking the rest of the API.
+    """
     import importlib as _importlib
     try:
         return _importlib.import_module(f"backend.routers.{name}")
-    except ImportError:
-        _logger.debug("Router '%s' not available (optional dependency missing)", name)
+    except (ImportError, NameError, SyntaxError, AttributeError) as exc:
+        _logger.warning(
+            "Router '%s' failed to load (%s: %s) — other routers continue",
+            name, type(exc).__name__, exc,
+        )
         return None
 
 

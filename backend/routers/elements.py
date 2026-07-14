@@ -1,7 +1,6 @@
 # File-level '# NOSONAR' removed per NOSONAR_AUDIT.md (V143 hardening).
 # Per-line justified suppressions (e.g., '# NOSONAR — S3776: ...') are preserved.
 """
-from typing import Optional
 FireAI Digital Twin - Elements Router.
 ======================================
 CRUD endpoints for building elements.
@@ -10,6 +9,7 @@ CRUD endpoints for building elements.
 import logging
 import math
 import re
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 

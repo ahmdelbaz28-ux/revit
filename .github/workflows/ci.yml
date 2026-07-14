@@ -141,6 +141,44 @@ jobs:
           pip install prometheus_client
           pip install langgraph langgraph-checkpoint-sqlite
 
+      - name: Smoke test — import backend.app (Gate 2 pre-check)
+        # V260 FIX (Rule 17 — Root-Cause): Same smoke test as ci-build-gate.yml.
+        # Runs BEFORE pytest to fail fast (in <1 sec) if any router module
+        # has an import-time error (NameError, SyntaxError, etc.) instead of
+        # waiting for pytest to fail with hundreds of collection errors.
+        # The test asserts that backend.app imports AND registers 100+ API
+        # routes (a broken _lazy_import would silently skip routers).
+        env:
+          PYTEST_ADDOPTS: "--color=no"
+          FIREAI_SESSION_SECRET: ${{ secrets.FIREAI_SESSION_SECRET_CI }}
+          FIREAI_API_KEY: ci-test-admin-key
+          CORS_ALLOWED_ORIGINS: "http://localhost:3000,http://localhost:5173"
+          DATABASE_URL: "sqlite:////tmp/fireai_ci_smoke.db"
+          DIGITAL_TWIN_DB_PATH: "/tmp/fireai_ci_smoke.db"
+          UDM_DB_PATH: "/tmp/udm_ci_smoke.db"
+          SECRET_KEY: "ci-test-hmac-secret-key-32-chars-minimum!!"
+        run: |
+          if [ -z "$FIREAI_SESSION_SECRET" ]; then
+            export FIREAI_SESSION_SECRET=$(python -c 'import secrets; print(secrets.token_urlsafe(64))')
+          fi
+          python -c "
+          import sys, traceback
+          try:
+              import backend.app
+              app = backend.app.app
+              routes = [r for r in app.routes if hasattr(r, 'path') and r.path.startswith('/api')]
+              print(f'✓ backend.app imported successfully')
+              print(f'  API routes: {len(routes)}')
+              if len(routes) < 100:
+                  print(f'✗ FAIL: only {len(routes)} API routes (expected 200+)')
+                  sys.exit(1)
+              print(f'✓ PASS: smoke test')
+          except Exception:
+              print(f'✗ FAIL: backend.app failed to import')
+              traceback.print_exc()
+              sys.exit(1)
+          "
+
       - name: Run test suite with coverage
         # V159 FIX (Rule 17 — Root-Cause Analysis): pytest-cov 4.1.0 + coverage 7.x
         # have a known atexit hang after all tests pass. The process stays alive

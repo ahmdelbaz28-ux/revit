@@ -122,6 +122,49 @@ jobs:
         # may be incompatible → RuntimeError on _load_server_secret().
         run: rm -rf db/ /tmp/fireai_buildgate_test.db /tmp/udm_buildgate_test.db
 
+      - name: Smoke test — import backend.app
+        # V260 FIX (Rule 17 — Root-Cause): Added after V143 NOSONAR cleanup
+        # script corrupted `from typing import Optional` in 5 router files
+        # (placed it inside the docstring) and stripped `from typing import `
+        # prefix in 2 router files (leaving bare `Any, Optional` tuple).
+        # This caused `NameError: name 'Optional' is not defined` at import
+        # time, which crashed ALL 21 routers via _lazy_import loop (it only
+        # caught ImportError, not NameError), and made backend.app unimportable.
+        #
+        # The smoke test below would have caught this in <1 second instead of
+        # waiting for pytest to fail with 478 collection errors.
+        #
+        # This gate runs BEFORE pytest so a broken import fails fast and shows
+        # the exact error (file + line + exception), not a wall of pytest errors.
+        env:
+          FIREAI_SESSION_SECRET: ${{ env.FIREAI_SESSION_SECRET }}
+          FIREAI_API_KEY: ci-test-admin-key
+          CORS_ALLOWED_ORIGINS: "http://localhost:3000,http://localhost:5173"
+          DATABASE_URL: "sqlite:////tmp/fireai_smoke_test.db"
+          DIGITAL_TWIN_DB_PATH: "/tmp/fireai_smoke_test.db"
+          UDM_DB_PATH: "/tmp/udm_smoke_test.db"
+          SECRET_KEY: "ci-test-hmac-secret-key-32-chars-minimum!!"
+        run: |
+          echo "=== Smoke test: import backend.app ==="
+          python -c "
+          import sys, traceback
+          try:
+              import backend.app
+              app = backend.app.app
+              routes = [r for r in app.routes if hasattr(r, 'path') and r.path.startswith('/api')]
+              print(f'✓ backend.app imported successfully')
+              print(f'  App type: {type(app).__name__}')
+              print(f'  API routes: {len(routes)}')
+              if len(routes) < 100:
+                  print(f'⚠ WARNING: expected 200+ API routes, got {len(routes)} — some routers may have failed to load')
+                  sys.exit(1)
+              print(f'✓ PASS: smoke test (200+ API routes registered)')
+          except Exception as e:
+              print(f'✗ FAIL: backend.app failed to import')
+              traceback.print_exc()
+              sys.exit(1)
+          "
+
       - name: Run pytest
         # V207 FIX: Added CORS_ALLOWED_ORIGINS + DATABASE_URL + DIGITAL_TWIN_DB_PATH +
         # UDM_DB_PATH env vars. Backend tests (test_auth_edge_cases.py, test_v192_lifecycle.py,

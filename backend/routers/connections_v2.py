@@ -1,7 +1,6 @@
 # File-level '# NOSONAR' removed per NOSONAR_AUDIT.md (V143 hardening).
 # Per-line justified suppressions (e.g., '# NOSONAR — S3776: ...') are preserved.
 """
-from typing import Optional
 FireAI Digital Twin - Connections V2 Router.
 ============================================
 Relationship-based connections for the UniversalDataModel.
@@ -17,6 +16,7 @@ FIX #28: Does not expose connection_id in error messages.
 
 import logging
 import math
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 

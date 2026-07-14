@@ -1,7 +1,6 @@
 # File-level '# NOSONAR' removed per NOSONAR_AUDIT.md (V143 hardening).
 # Per-line justified suppressions (e.g., '# NOSONAR — S3776: ...') are preserved.
-"""
-backend/routers/monitor.py — Real-time Monitoring Dashboard API.
+"""backend/routers/monitor.py — Real-time Monitoring Dashboard API.
 
 Endpoints:
   GET /api/v1/monitor/health          → Aggregated health status
@@ -15,14 +14,15 @@ All endpoints are rate-limited and include real data from the database,
 event bus, and security logging system.
 """
 
-from typing import Optional
+from __future__ import annotations
+
 import asyncio
 import logging
 import threading
 import time
 from collections import defaultdict, deque
 from datetime import datetime, timezone
-Any, Optional
+from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import PlainTextResponse

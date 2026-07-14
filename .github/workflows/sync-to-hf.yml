@@ -27,10 +27,16 @@ name: Sync to HuggingFace Space
 # ═══════════════════════════════════════════════════════════════════════════
 
 on:
-  push:
-    branches:
-      - main
-  workflow_dispatch: # Manual trigger from Actions tab
+  # V260 FIX (Rule 17 — Root-Cause): Changed from `push` to `workflow_run` so
+  # this workflow only runs AFTER `CI Build Gate` succeeds on main. Previously,
+  # a broken commit on main would sync to HF Space immediately (because
+  # sync-to-hf.yml had no CI dependency), causing RUNTIME_ERROR on HF Space
+  # even though CI was failing. Now sync waits for CI to pass first.
+  workflow_run:
+    workflows: ["CI Build Gate"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch: # Manual trigger from Actions tab (still allowed)
 
 concurrency:
   group: sync-to-hf
@@ -46,12 +52,68 @@ env:
 jobs:
   sync-to-hf:
     name: Mirror runtime subset to HuggingFace Space
+    # V260 FIX: Only run if the upstream CI Build Gate succeeded.
+    # If it failed or was cancelled, do NOT sync — the code is broken and
+    # pushing it to HF would put the Space into RUNTIME_ERROR.
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout GitHub source
         uses: actions/checkout@v4
         with:
           fetch-depth: 1 # Shallow clone — we don't need history, just files
+
+      - name: Set up Python 3.12 (for smoke test)
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install backend dependencies (for smoke test)
+        # V260 FIX: Install minimal deps needed to import backend.app.
+        # This is the same set ci-build-gate.yml installs. If any dep is
+        # missing, the smoke test will fail BEFORE we push to HF, preventing
+        # a broken Space rebuild.
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt || echo "::warning::Some requirements.txt packages failed (non-blocking)"
+          pip install -e .
+          pip install slowapi tenacity langfuse langgraph langgraph-checkpoint-sqlite
+
+      - name: Smoke test — import backend.app BEFORE syncing to HF
+        # V260 FIX (Rule 17 — Root-Cause): Last line of defense before pushing
+        # to HF Space. If backend.app can't import (NameError, SyntaxError,
+        # missing dep, etc.), DO NOT push to HF — the Space would go into
+        # RUNTIME_ERROR and break production.
+        env:
+          FIREAI_SESSION_SECRET: dummy-session-secret-for-smoke-test-only-not-used-in-prod-1234567890
+          FIREAI_API_KEY: smoke-test-key
+          CORS_ALLOWED_ORIGINS: "http://localhost:3000"
+          DATABASE_URL: "sqlite:////tmp/fireai_hf_smoke.db"
+          DIGITAL_TWIN_DB_PATH: "/tmp/fireai_hf_smoke.db"
+          UDM_DB_PATH: "/tmp/udm_hf_smoke.db"
+          SECRET_KEY: "ci-test-hmac-secret-key-32-chars-minimum!!"
+        run: |
+          echo "═══════════════════════════════════════════════════════════"
+          echo "  PRE-SYNC SMOKE TEST — preventing broken deploys to HF Space"
+          echo "═══════════════════════════════════════════════════════════"
+          python -c "
+          import sys, traceback
+          try:
+              import backend.app
+              app = backend.app.app
+              routes = [r for r in app.routes if hasattr(r, 'path') and r.path.startswith('/api')]
+              print(f'✓ backend.app imported successfully ({len(routes)} API routes)')
+              if len(routes) < 100:
+                  print(f'✗ FAIL: only {len(routes)} API routes (expected 200+)')
+                  print(f'  Some routers failed to load — check the warnings above')
+                  sys.exit(1)
+              print(f'✓ PASS: smoke test — safe to sync to HF Space')
+          except Exception:
+              print(f'✗ FAIL: backend.app failed to import — ABORTING HF SYNC')
+              print(f'  The HF Space would go into RUNTIME_ERROR if we pushed this code.')
+              traceback.print_exc()
+              sys.exit(1)
+          "
 
       - name: Configure git
         run: |
