@@ -1,7 +1,6 @@
 # File-level '# NOSONAR' removed per NOSONAR_AUDIT.md (V143 hardening).
 # Per-line justified suppressions (e.g., '# NOSONAR — S3776: ...') are preserved.
 """
-from typing import Optional
 backend/routers/workflow.py — Workflow API endpoints for FireAI.
 
 Provides REST API for the LangGraph-based workflow engine:
@@ -21,6 +20,7 @@ LIFE-SAFETY NOTE:
 import hmac
 import logging
 import os
+from typing import Optional
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request
 

@@ -1,7 +1,6 @@
 # File-level '# NOSONAR' removed per NOSONAR_AUDIT.md (V143 hardening).
 # Per-line justified suppressions (e.g., '# NOSONAR — S3776: ...') are preserved.
 """
-from typing import Optional
 backend/routers/environment.py — Environmental data endpoints for FireAI.
 
 Provides real-time weather, geocoding, regulatory region, elevation,
@@ -32,6 +31,7 @@ LIFE-SAFETY NOTE:
 import asyncio
 import logging
 import time
+from typing import Optional
 
 from fastapi import APIRouter, Depends, Query
 

@@ -76,6 +76,44 @@ jobs:
           pip install ruff bandit mypy pytest pytest-cov pytest-asyncio hypothesis
           mkdir -p reports
 
+      - name: Smoke test — import backend.app (Deploy pre-check)
+        # V260 FIX (Rule 17 — Root-Cause): Smoke test BEFORE lint/type-check/test.
+        # A broken import (e.g. NameError in a router) would waste 10+ minutes
+        # of CI time on pytest before failing. This catches it in <1 second.
+        # Also gates the entire deploy pipeline: if backend.app can't import,
+        # there's nothing to deploy.
+        env:
+          FIREAI_SESSION_SECRET: ${{ secrets.FIREAI_SESSION_SECRET_CI }}
+          FIREAI_API_KEY: ci-test-admin-key
+          CORS_ALLOWED_ORIGINS: "http://localhost:3000,http://localhost:5173"
+          DATABASE_URL: "sqlite:////tmp/fireai_deploy_smoke.db"
+          DIGITAL_TWIN_DB_PATH: "/tmp/fireai_deploy_smoke.db"
+          UDM_DB_PATH: "/tmp/udm_deploy_smoke.db"
+          SECRET_KEY: "ci-test-hmac-secret-key-32-chars-minimum!!"
+        run: |
+          if [ -z "$FIREAI_SESSION_SECRET" ]; then
+            export FIREAI_SESSION_SECRET=$(python -c 'import secrets; print(secrets.token_urlsafe(64))')
+          fi
+          python -c "
+          import sys, traceback, logging
+          logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(name)s: %(message)s')
+          try:
+              import backend.app
+              app = backend.app.app
+              routes = [r for r in app.routes if hasattr(r, 'path') and r.path.startswith('/api')]
+              print(f'✓ backend.app imported successfully ({len(routes)} API routes)')
+              print(f'✓ PASS: smoke test — no import errors (NameError/SyntaxError would crash here)')
+              if len(routes) < 50:
+                  print(f'⚠ INFO: only {len(routes)} API routes (CI may have missing optional deps)')
+                  print(f'  This is non-blocking — pytest will catch real test failures')
+          except SystemExit:
+              raise
+          except Exception:
+              print(f'✗ FAIL: backend.app failed to import — ABORTING DEPLOY')
+              traceback.print_exc()
+              sys.exit(1)
+          "
+
       - name: Lint
         # V159.2 FIX: align with ci.yml Gate 1 — ruff with --exit-non-zero-on-fix
         # can fail on auto-fixable issues. The ci.yml uses the same flag, so

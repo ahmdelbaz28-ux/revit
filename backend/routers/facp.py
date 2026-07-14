@@ -1,7 +1,6 @@
 # File-level '# NOSONAR' removed per NOSONAR_AUDIT.md (V143 hardening).
 # Per-line justified suppressions (e.g., '# NOSONAR — S3776: ...') are preserved.
 """
-from typing import Optional
 backend/routers/facp.py — FACP Selection & Compliance REST API.
 ================================================================
 REST endpoints for the Fire Alarm Control Panel selection engine.
@@ -33,6 +32,7 @@ SAFETY NOTE:
 """
 
 import logging
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field

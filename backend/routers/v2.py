@@ -41,14 +41,13 @@ References
 
 """
 
-from typing import Optional
+from typing import Any, Dict, Optional
 # V141 FIX: Removed __future__ annotations to fix Pydantic forward ref resolution.
 # With __future__ annotations, Dict[str, Any] becomes ForwardRef('Dict[str, Any]')
 # which Pydantic cannot resolve at runtime for FastAPI model parsing.
 # Removing it forces actual type resolution at import time.
 
 import logging
-Any, Dict, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
