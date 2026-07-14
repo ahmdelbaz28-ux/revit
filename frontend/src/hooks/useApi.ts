@@ -70,23 +70,14 @@ function useAsyncResource<T, TDep = string | null>(
         const [error, setError] = useState<string | null>(null);
         const [_refreshKey, setRefreshKey] = useState(0);
 
-        // V255 SAFETY FIX: Use a unique request ID per effect run instead of a
-        // shared cancelledRef. The old cancelledRef pattern had a race condition:
-        // when deps changed rapidly, the cleanup from the OLD effect would set
-        // cancelledRef = true AFTER the NEW effect already set it to false.
-        // This caused the NEW fetch's setData() to be silently dropped, showing
-        // stale data from the wrong project.
-        //
-        // In a fire alarm system, this means an engineer could see devices from
-        // Project A while looking at Project B — leading to incorrect detector
-        // placement and potential loss of life.
+        // V256: requestIdRef prevents stale data from overwriting current data.
+        // Each effect run increments the ID; the closure captures it.
+        // When the response arrives, we check if it's still current.
         const requestIdRef = useRef(0);
 
         const refetch = useCallback(() => setRefreshKey((k) => k + 1), []);
 
         useEffect(() => {
-                // V255: Each effect run gets a unique ID. The closure captures this ID.
-                // When the response arrives, we check if it's still the current request.
                 const currentRequestId = ++requestIdRef.current;
 
                 if (!enabled) {
@@ -100,8 +91,6 @@ function useAsyncResource<T, TDep = string | null>(
 
                 fetcher()
                         .then((res) => {
-                                // V255: Only update state if this is still the current request.
-                                // If deps changed, a new request was started with a higher ID.
                                 if (requestIdRef.current !== currentRequestId) return;
                                 setLoading(false);
                                 if (res.success && res.data) {
@@ -120,9 +109,6 @@ function useAsyncResource<T, TDep = string | null>(
                         });
 
                 return () => {
-                        // V255: Invalidate this request by bumping the ID.
-                        // The in-flight fetch's .then()/.catch() will see a mismatch
-                        // and skip the state update.
                         requestIdRef.current++;
                 };
                 // eslint-disable-next-line react-hooks/exhaustive-deps
