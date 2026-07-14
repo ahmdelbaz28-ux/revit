@@ -201,6 +201,22 @@ _VALIDATED_KEY_CACHE: dict[str, tuple[APIKeyInfo, float]] = {}
 _VALIDATED_KEY_CACHE_LOCK = threading.Lock()
 _VALIDATED_KEY_CACHE_TTL = float(os.getenv("FIREAI_KEY_CACHE_TTL", "300"))
 
+# V257: Redis prefix for distributed API key cache.
+# When Redis is available, validated keys are cached there so all workers
+# share the same cache. Revocation via delete_api_key clears both the local
+# dict and the Redis key, so revoked keys are immediately invalid across
+# all workers (no more 5-minute window per worker).
+_REDIS_KEY_CACHE_PREFIX = "bazspark:apikey:"
+
+
+def _get_redis_for_key_cache():
+    """Get Redis client for API key cache. Returns None if unavailable."""
+    try:
+        from backend.session_store import _get_redis
+        return _get_redis()
+    except Exception:
+        return None
+
 
 def _load_server_secret() -> bytes:
     """
@@ -474,8 +490,28 @@ def validate_api_key(key: str) -> APIKeyInfo | None:
             info_cached, expires_at = cached
             if now < expires_at:
                 return info_cached
-            # Expired — evict and continue to full validation
             del _VALIDATED_KEY_CACHE[lookup]
+
+    # V257: Check Redis cache (shared across all workers).
+    # If found, also populate the local cache for faster subsequent hits.
+    redis = _get_redis_for_key_cache()
+    if redis is not None:
+        try:
+            import json as _json
+            raw = redis.get(f"{_REDIS_KEY_CACHE_PREFIX}{lookup}")
+            if raw:
+                data = _json.loads(raw)
+                api_key_info_cached = APIKeyInfo(
+                    key_hash=data["key_hash"],
+                    role=Role(data["role"]),
+                    description=data.get("description", ""),
+                )
+                # Populate local cache from Redis hit
+                with _VALIDATED_KEY_CACHE_LOCK:
+                    _VALIDATED_KEY_CACHE[lookup] = (api_key_info_cached, now + _VALIDATED_KEY_CACHE_TTL)
+                return api_key_info_cached
+        except Exception:
+            pass  # Redis failure is non-fatal
 
     with _keys_lock:
         keys = _load_keys()
@@ -513,10 +549,7 @@ def validate_api_key(key: str) -> APIKeyInfo | None:
     # matching the invalid-key path, which eliminates the timing oracle
     # WITHOUT needing a dummy bcrypt (which would cause CPU DoS).
     with _VALIDATED_KEY_CACHE_LOCK:
-        # Cap cache size to prevent unbounded growth (defense-in-depth).
-        # 4096 entries × ~200 bytes each ≈ 800KB max — trivial.
         if len(_VALIDATED_KEY_CACHE) >= 4096:
-            # Evict ~10% of entries (oldest by expiry time)
             sorted_items = sorted(
                 _VALIDATED_KEY_CACHE.items(),
                 key=lambda kv: kv[1][1],
@@ -524,6 +557,25 @@ def validate_api_key(key: str) -> APIKeyInfo | None:
             for k, _ in sorted_items[:410]:
                 del _VALIDATED_KEY_CACHE[k]
         _VALIDATED_KEY_CACHE[lookup] = (api_key_info, now + _VALIDATED_KEY_CACHE_TTL)
+
+    # V257: Also cache in Redis so all workers share the cache.
+    # This eliminates the per-worker revocation window (was up to
+    # N_workers × TTL seconds before a revoked key was fully invalid).
+    redis = _get_redis_for_key_cache()
+    if redis is not None:
+        try:
+            import json as _json
+            redis.setex(
+                f"{_REDIS_KEY_CACHE_PREFIX}{lookup}",
+                int(_VALIDATED_KEY_CACHE_TTL),
+                _json.dumps({
+                    "key_hash": api_key_info.key_hash,
+                    "role": api_key_info.role.value,
+                    "description": api_key_info.description,
+                }),
+            )
+        except Exception:
+            pass  # Redis failure is non-fatal — local cache still works
 
     return api_key_info
 
@@ -616,6 +668,14 @@ def delete_api_key(key_hash: str) -> bool:
     if deleted:
         with _VALIDATED_KEY_CACHE_LOCK:
             _VALIDATED_KEY_CACHE.pop(key_hash, None)
+        # V257: Also clear Redis cache so revoked keys are immediately
+        # invalid across ALL workers (not just this one).
+        redis = _get_redis_for_key_cache()
+        if redis is not None:
+            try:
+                redis.delete(f"{_REDIS_KEY_CACHE_PREFIX}{key_hash}")
+            except Exception:
+                pass
     return deleted
 
 
@@ -647,6 +707,14 @@ def update_api_key_role(key_hash: str, role: Role) -> bool:
     if updated:
         with _VALIDATED_KEY_CACHE_LOCK:
             _VALIDATED_KEY_CACHE.pop(key_hash, None)
+        # V257: Also clear Redis cache so role changes take effect
+        # immediately across ALL workers.
+        redis = _get_redis_for_key_cache()
+        if redis is not None:
+            try:
+                redis.delete(f"{_REDIS_KEY_CACHE_PREFIX}{key_hash}")
+            except Exception:
+                pass
     return updated
 
 

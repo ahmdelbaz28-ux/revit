@@ -89,6 +89,14 @@ os.environ.setdefault("DIGITAL_TWIN_DB_PATH", f"{_FIREAI_TEST_DIR}/fireai_test_c
 os.environ.setdefault("UDM_DB_PATH", f"{_FIREAI_TEST_DIR}/udm_test_conftest.db")
 os.environ.setdefault("CORS_ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:5173")
 
+# V257 FIX: Disable CSRF middleware in tests. CSRF middleware (registered in
+# V254/V255) blocks all POST/PUT/DELETE without a CSRF token. Test clients
+# don't send CSRF tokens because they're not browsers. This caused 129 test
+# failures. The FIREAI_CSRF_DISABLED env var is the officially-supported way
+# to disable CSRF (see backend/app.py::_register_csrf_middleware).
+os.environ.setdefault("FIREAI_CSRF_DISABLED", "1")
+os.environ.setdefault("FIREAI_ENV", "development")
+
 # V212 FIX: Clean up stale api_keys.secret file that causes crash in CI.
 # The file persists across test runs and may become invalid, causing:
 #   RuntimeError: Server secret file db/api_keys.secret exists but is invalid.

@@ -101,7 +101,12 @@ class MultiDatabaseService:
     def _setup_redis(self):
         """Initialize Redis connection."""
         try:
-            if config.REDIS_URL and config.REDIS_URL != "redis://localhost:6379":
+            # V257: Skip if neither REDIS_URL nor REDIS_HOST is configured.
+            # Previously defaulted to localhost, causing 3s timeout in production.
+            if not config.REDIS_URL and not config.REDIS_HOST:
+                logger.info("Redis not configured (REDIS_URL/REDIS_HOST not set) — skipping")
+                return
+            if config.REDIS_URL:
                 self._redis_client = redis.from_url(
                     config.REDIS_URL,
                     decode_responses=True,
@@ -129,16 +134,19 @@ class MultiDatabaseService:
             logger.warning("Qdrant client not installed. Install with: pip install qdrant-client")
             return
 
+        # V257: Skip if Qdrant is not configured
+        if not config.QDRANT_URL and not config.QDRANT_HOST:
+            logger.info("Qdrant not configured (QDRANT_URL/QDRANT_HOST not set) — skipping")
+            return
+
         try:
             if config.QDRANT_URL:
-                # Cloud instance
                 self._qdrant_client = QdrantClient(
                     url=config.QDRANT_URL,
                     api_key=config.QDRANT_API_KEY,
                     prefer_grpc=True
                 )
             else:
-                # Local instance
                 self._qdrant_client = QdrantClient(
                     host=config.QDRANT_HOST,
                     port=config.QDRANT_PORT,
@@ -156,6 +164,11 @@ class MultiDatabaseService:
         """Initialize Neo4j driver."""
         if not HAS_NEO4J:
             logger.warning("Neo4j driver not installed. Install with: pip install neo4j")
+            return
+
+        # V257: Skip if Neo4j is not configured
+        if not config.NEO4J_URI:
+            logger.info("Neo4j not configured (NEO4J_URI not set) — skipping")
             return
 
         try:
