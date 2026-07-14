@@ -13,7 +13,6 @@ Verifies that _generate_nfpa72_coverage_report() now:
 
 from __future__ import annotations
 
-import pytest
 
 from backend.routers.reports import _generate_nfpa72_coverage_report
 

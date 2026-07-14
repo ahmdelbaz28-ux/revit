@@ -35,7 +35,6 @@ from __future__ import annotations
 import json
 import os
 import threading
-from pathlib import Path
 
 import numpy as np
 import pytest
@@ -51,7 +50,6 @@ from fireai.core.fireai_kernel_v30 import (  # noqa: E402
     BuildingResult,
     ConcurrentSolver,
     CoverageResult,
-    KernelCore,
     LedgerEntry,
     NFPA72,
     RoomRecord,
@@ -499,7 +497,6 @@ class TestSafetyLedger:
 
 def _build_solver_problem(side: float = 10.0, radius: float = 6.37) -> SolverProblem:
     """Build a simple square-room solver problem."""
-    poly = np.array([(0, 0), (side, 0), (side, side), (0, side)], dtype=np.float64)  # NOSONAR
     # Candidate positions on a grid
     step = radius * 0.8
     xs = np.arange(radius, side - radius + 0.001, step)

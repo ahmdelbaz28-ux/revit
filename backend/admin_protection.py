@@ -38,7 +38,6 @@ SECURITY:
 
 from __future__ import annotations
 
-import hashlib
 import hmac
 import json
 import logging
@@ -49,7 +48,6 @@ from pathlib import Path
 from typing import Optional
 
 from fastapi import Header, HTTPException, Request, status
-from fastapi.responses import JSONResponse
 
 logger = logging.getLogger(__name__)
 

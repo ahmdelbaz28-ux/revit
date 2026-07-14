@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import pytest
 
-from backend.routers.reports import _generate_cable_sizing_report, _cable_size_to_awg
+from backend.routers.reports import _generate_cable_sizing_report
 
 
 class TestV214CableSizingRealAmpacity:

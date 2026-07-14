@@ -376,7 +376,7 @@ class TestValidateHVACExclusionZones:
     def test_inf_diffuser_position(self):
         det = [(0.5, 0.0)]
         diff = [(float("inf"), 0.0)]
-        violations = validate_hvac_exclusion_zones(det, diff)  # NOSONAR - python:S1481
+        validate_hvac_exclusion_zones(det, diff)  # coverage validation (result intentionally unused)
 
     def test_negative_positions(self):
         det = [(-0.5, 0.0)]

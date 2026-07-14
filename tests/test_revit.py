@@ -527,7 +527,7 @@ class TestV213SimulationModeFlag:
         COM handle, _revit_doc must be bound to the real Document object
         and simulation_mode must be False.
         """
-        from unittest.mock import MagicMock, patch as _patch
+        from unittest.mock import MagicMock
         import sys
 
         # Build fake modules for clr, System.Runtime.InteropServices and Autodesk.Revit.UI

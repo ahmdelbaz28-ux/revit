@@ -16,7 +16,6 @@ in OPS_RUNBOOK.md Task 3.
 
 from __future__ import annotations
 
-import json
 import math
 import sys
 from pathlib import Path

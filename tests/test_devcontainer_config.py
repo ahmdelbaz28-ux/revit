@@ -177,7 +177,6 @@ def test_post_create_script_is_executable(devcontainer_config: dict) -> None:
     cmd = devcontainer_config["postCreateCommand"]
     script_path = REPO_ROOT / cmd.replace("bash", "").strip()
     # On Windows this check is N/A, but on Linux/Mac it must pass
-    import os
     import sys
     if sys.platform != "win32":
         mode = script_path.stat().st_mode
