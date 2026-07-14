@@ -16,6 +16,7 @@ on:
       - 'qomn_fire/core/constants.py'
       - 'qomn_conduit/**'
       - 'facp_system/**'
+  workflow_dispatch:
 
 jobs:
   check-regulatory-attestation:
@@ -24,11 +25,11 @@ jobs:
     permissions:
       contents: read
     steps:
-      - name: Checkout PR
+      - name: Checkout Code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Inspect commit messages in PR
         id: check
@@ -37,6 +38,10 @@ jobs:
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           set -e
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "OK: Not a pull request - skipping attestation check"
+            exit 0
+          fi
           echo "Checking commits ${BASE_SHA}..${HEAD_SHA} for attestation..."
           MESSAGES=$(git log "${BASE_SHA}..${HEAD_SHA}" --format='%B' 2>/dev/null || echo "")
 
