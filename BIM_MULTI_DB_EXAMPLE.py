@@ -8,8 +8,8 @@ Complete example showing how to use the multi-database system for
 BIM/CAD applications with PostgreSQL, Qdrant, Neo4j, and Redis.
 """
 
-import secrets
 import random
+import secrets
 from typing import Dict, List
 
 from backend.multi_db_service import get_multi_db_service

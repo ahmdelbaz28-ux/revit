@@ -16,8 +16,9 @@ These tests verify the 6 CRITICAL fixes from the V134 adversarial audit:
 
 from __future__ import annotations
 
-import pytest
 import os
+
+import pytest
 
 # ---------------------------------------------------------------------------
 # F-1/F-2: SSRF Prevention Tests

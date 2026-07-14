@@ -25,10 +25,10 @@ class TestV214MiningModuleExists:
 
     def test_core_classes_importable(self):
         from fireai.mining import (
-            MethaneCalculator,
-            VentilationCalculator,
             ConveyorFireAnalyzer,
+            MethaneCalculator,
             MSHAComplianceChecker,
+            VentilationCalculator,
         )
         assert MethaneCalculator is not None
         assert VentilationCalculator is not None
@@ -279,9 +279,10 @@ class TestV214MSHAReport:
         assert "Section A" in md
 
     def test_generate_json_report(self):
+        import json
+
         from fireai.mining.core.msha_compliance import MSHAComplianceChecker
         from fireai.mining.output.msha_report import generate_msha_report
-        import json
 
         report = MSHAComplianceChecker.full_compliance_report(
             mine_name="Test Mine",

@@ -541,7 +541,8 @@ class TestDwgConverter(unittest.TestCase):
         """V213: When dwg2dxf IS on PATH (mocked), the real subprocess
         path must be taken — not the mock fallback.
         """
-        from unittest.mock import patch, MagicMock
+        from unittest.mock import MagicMock, patch
+
         from qomn_fire.parsers.dwg_converter import DwgConverter
 
         dwg_path = os.path.join(self.tmpdir, "real_test.dwg")
@@ -575,7 +576,8 @@ class TestDwgConverter(unittest.TestCase):
         """V213: When dwg2dxf is NOT available but ODAFileConverter IS,
         the ODA path must be used.
         """
-        from unittest.mock import patch, MagicMock
+        from unittest.mock import MagicMock, patch
+
         from qomn_fire.parsers.dwg_converter import DwgConverter
 
         dwg_path = os.path.join(self.tmpdir, "oda_test.dwg")

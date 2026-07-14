@@ -45,13 +45,13 @@ import pytest
 os.environ.setdefault("FIREAI_HMAC_SECRET_KEY", "kernel_test_hmac_secret_v30")
 
 from fireai.core.fireai_kernel_v30 import (  # noqa: E402
+    NFPA72,
     AdapterBridge,
     AtomicRoomStore,
     BuildingResult,
     ConcurrentSolver,
     CoverageResult,
     LedgerEntry,
-    NFPA72,
     RoomRecord,
     SafetyLedger,
     SolverProblem,
@@ -60,7 +60,6 @@ from fireai.core.fireai_kernel_v30 import (  # noqa: E402
     VectorEngine,
     WireRouterV2,
 )
-
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # 1. NFPA72 CONSTANTS — guards against silent regression of safety-critical values

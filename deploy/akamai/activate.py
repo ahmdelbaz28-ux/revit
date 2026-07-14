@@ -37,8 +37,8 @@ import time
 from pathlib import Path
 
 try:
-    from akamai.edgegrid import EdgeGridAuth
     import requests
+    from akamai.edgegrid import EdgeGridAuth
 except ImportError:
     print("Missing dependencies. Install with:")
     print("  pip install edgegrid-python requests")

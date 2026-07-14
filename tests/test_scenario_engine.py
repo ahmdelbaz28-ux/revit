@@ -55,9 +55,9 @@ from fireai.core.scenario_engine import (
     _SMOKE_THRESHOLD_ION_PCT_M,
     _SMOKE_THRESHOLD_PHOTO_PCT_M,
     _SMOKE_YIELD,
+    FIRE_LOAD_BY_OCCUPANCY,
     BlindSpot,
     DetectionEvent,
-    FIRE_LOAD_BY_OCCUPANCY,
     FirePhysics,
     FireScenario,
     GrowthRate,
@@ -71,7 +71,6 @@ from fireai.core.scenario_engine import (
     get_fire_load,
     run_scenarios_for_room,
 )
-
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # 1. CONSTANTS — guards against silent regression of safety-critical values

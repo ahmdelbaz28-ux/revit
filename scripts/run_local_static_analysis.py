@@ -132,7 +132,7 @@ def main() -> int:  # NOSONAR
         if f_bugs:
             print(f"    ⚠️  {len(f_bugs)} real bugs (F-series) found!")
         else:
-            print(f"    ✅ No real bugs (0 F-series issues)")  # NOSONAR
+            print("    ✅ No real bugs (0 F-series issues)")  # NOSONAR
 
     # ── Phase 2: Production-wide scan (code smells summary) ──
     print("\n[2/3] Scanning PRODUCTION directories (code smells summary)...")

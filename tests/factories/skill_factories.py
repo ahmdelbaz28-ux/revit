@@ -9,9 +9,9 @@ These factories provide easy ways to create valid test data for testing.
 
 from __future__ import annotations
 
+import random
 import secrets
 import string
-import random
 from datetime import datetime
 from typing import Any
 

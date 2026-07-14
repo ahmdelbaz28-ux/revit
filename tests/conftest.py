@@ -64,6 +64,7 @@ if not _os.environ.get("FIREAI_SESSION_SECRET"):
 # a PRIVATE temp directory with mode 0o700. Hardcoded /tmp paths are flagged
 # by SonarCloud regardless of mode because /tmp itself is mode 1777.
 import tempfile as _tempfile_root_mod
+
 _FIREAI_TEST_DIR_ROOT = _tempfile_root_mod.mkdtemp(prefix="fireai_root_test_")
 _os.environ.setdefault("DATABASE_URL", f"sqlite:///{_FIREAI_TEST_DIR_ROOT}/fireai_test_root.db")
 _os.environ.setdefault("DIGITAL_TWIN_DB_PATH", f"{_FIREAI_TEST_DIR_ROOT}/fireai_test_root.db")

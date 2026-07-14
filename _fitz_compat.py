@@ -27,12 +27,13 @@ Document: Any = None
 open: Any = None
 
 try:
-    import pymupdf as _pymupdf  # NOSONAR — S2208: intentional module alias (not wildcard); used as `_pymupdf.Document` etc.  # type: ignore[import-untyped]
     # S2208 fix: replaced `from pymupdf import *` (wildcard) with explicit
     # module re-export via sys.modules so consumers using `import fitz` /
     # `import _fitz_compat as fitz` still get the full pymupdf namespace
     # without polluting this module's __all__ / static-analysis surface.
     import sys as _sys
+
+    import pymupdf as _pymupdf  # NOSONAR — S2208: intentional module alias (not wildcard); used as `_pymupdf.Document` etc.  # type: ignore[import-untyped]
     # Re-export all symbols from pymupdf for backward compatibility
     Document = _pymupdf.Document
     open = _pymupdf.open

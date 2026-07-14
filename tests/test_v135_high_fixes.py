@@ -10,9 +10,9 @@ Per agent.md Rule 19: each cycle must be MORE THOROUGH than the previous.
 from __future__ import annotations
 
 import math
+import os
 
 import pytest
-import os
 
 # ---------------------------------------------------------------------------
 # F-7: SAFETY_MAXIMIZED cap uses _remove_redundant (not truncation)

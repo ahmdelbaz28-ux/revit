@@ -12,8 +12,9 @@ Per agent.md Rule 1: no fabrication.
 
 from __future__ import annotations
 
-import pytest
 import os
+
+import pytest
 
 from fireai.infrastructure.webhook_service import (
     WEBHOOK_EVENT_TYPES,

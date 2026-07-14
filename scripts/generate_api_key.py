@@ -37,8 +37,8 @@ ROLES:
 import argparse
 import json
 import sys
-import urllib.request
 import urllib.error
+import urllib.request
 
 DEFAULT_BACKEND = "https://ahmdelbaz28-bazspark.hf.space"
 VALID_ROLES = ["admin", "engineer", "viewer"]
