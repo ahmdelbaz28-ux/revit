@@ -193,6 +193,7 @@ Thumbs.db
 *.sqlite3-wal
 fireai_learning.sqlite3
 db/api_keys.json
+backend/db/
 
 # Logs
 *.log

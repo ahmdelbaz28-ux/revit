@@ -179,8 +179,9 @@ class TestSessionRevocation:
         """After logout, the same cookie should NOT work."""
         # Clear any existing cookies/session state
         client.cookies.clear()
-        from backend.routers import auth as auth_module
-        auth_module._SESSION_STORE.clear()
+        from backend.session_store import _mem_sessions, _mem_lock
+        with _mem_lock:
+            _mem_sessions.clear()
 
         # Login
         login_resp = client.post(

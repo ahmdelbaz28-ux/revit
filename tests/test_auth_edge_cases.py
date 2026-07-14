@@ -30,12 +30,14 @@ def _setup_env() -> Generator[None, None, None]:
     """Set test environment."""
     os.environ["FIREAI_ENV"] = "development"
     os.environ["FIREAI_API_KEY"] = "test_key_edge_cases"
-    from backend.routers import auth as auth_module
-    auth_module._SESSION_STORE.clear()
-    auth_module._FAILED_ATTEMPTS.clear()
+    from backend.session_store import _mem_sessions, _mem_failed, _mem_lock
+    with _mem_lock:
+        _mem_sessions.clear()
+        _mem_failed.clear()
     yield
-    auth_module._SESSION_STORE.clear()
-    auth_module._FAILED_ATTEMPTS.clear()
+    with _mem_lock:
+        _mem_sessions.clear()
+        _mem_failed.clear()
 
 
 @pytest.fixture(scope="module")
@@ -52,7 +54,7 @@ class TestSessionExpiry:
     def test_expired_session_returns_401(self, client: TestClient) -> None:
         """An expired session should return 401."""
         client.cookies.clear()
-        from backend.routers import auth as auth_module
+        from backend.session_store import _mem_sessions, _mem_lock
 
         # Login
         resp = client.post(
@@ -62,11 +64,13 @@ class TestSessionExpiry:
         assert resp.status_code == 200
 
         # Get the session ID hash from store
-        store_keys = list(auth_module._SESSION_STORE.keys())
+        with _mem_lock:
+            store_keys = list(_mem_sessions.keys())
         assert len(store_keys) == 1
 
         # Manually expire the session
-        auth_module._SESSION_STORE[store_keys[0]]["expires_at"] = time.time() - 1
+        with _mem_lock:
+            _mem_sessions[store_keys[0]]["expires_at"] = time.time() - 1
 
         # Now /me should return 401
         resp = client.get("/api/v1/auth/me")
@@ -75,7 +79,7 @@ class TestSessionExpiry:
     def test_expired_session_removed_from_store(self, client: TestClient) -> None:
         """Expired sessions should be cleaned up from the store."""
         client.cookies.clear()
-        from backend.routers import auth as auth_module
+        from backend.session_store import _mem_sessions, _mem_lock
 
         # Login
         client.post(
@@ -83,18 +87,21 @@ class TestSessionExpiry:
             json={"api_key": "test_key_edge_cases"},  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
         )
 
-        store_keys = list(auth_module._SESSION_STORE.keys())
+        with _mem_lock:
+            store_keys = list(_mem_sessions.keys())
         assert len(store_keys) == 1
 
         # Expire the session
-        auth_module._SESSION_STORE[store_keys[0]]["expires_at"] = time.time() - 1
+        with _mem_lock:
+            _mem_sessions[store_keys[0]]["expires_at"] = time.time() - 1
 
         # Trigger cleanup by calling /me
         client.get("/api/v1/auth/me")
 
         # Session should be removed from store
-        assert store_keys[0] not in auth_module._SESSION_STORE, \
-            "Expired session should be cleaned up from store"
+        with _mem_lock:
+            is_not_in_store = store_keys[0] not in _mem_sessions
+        assert is_not_in_store, "Expired session should be cleaned up from store"
 
 
 class TestConcurrentSessions:
@@ -140,21 +147,24 @@ class TestConcurrentSessions:
         )
 
         # Both should be in session store
-        from backend.routers import auth as auth_module
-        assert len(auth_module._SESSION_STORE) >= 2, \
+        from backend.session_store import _mem_sessions, _mem_lock
+        with _mem_lock:
+            store_len = len(_mem_sessions)
+        assert store_len >= 2, \
             "Both sessions should exist in store"
 
     def test_logout_one_session_does_not_affect_other(self, client: TestClient) -> None:
         """Logging out one session should not invalidate the other."""
         client.cookies.clear()
-        from backend.routers import auth as auth_module
+        from backend.session_store import _mem_sessions, _mem_lock
 
         # First login
         client.post(
             "/api/v1/auth/login",
             json={"api_key": "test_key_edge_cases"},  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
         )
-        first_session_count = len(auth_module._SESSION_STORE)
+        with _mem_lock:
+            first_session_count = len(_mem_sessions)
 
         # Second login (new session)
         client.cookies.clear()
@@ -162,13 +172,17 @@ class TestConcurrentSessions:
             "/api/v1/auth/login",
             json={"api_key": "test_key_edge_cases"},  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
         )
-        assert len(auth_module._SESSION_STORE) == first_session_count + 1
+        with _mem_lock:
+            second_session_count = len(_mem_sessions)
+        assert second_session_count == first_session_count + 1
 
         # Logout current session
         client.post("/api/v1/auth/logout")
 
         # Only one session should be removed
-        assert len(auth_module._SESSION_STORE) == first_session_count, \
+        with _mem_lock:
+            final_session_count = len(_mem_sessions)
+        assert final_session_count == first_session_count, \
             "Logout should only remove the current session, not others"
 
 
@@ -240,8 +254,6 @@ class TestRateLimitWindow:
 
     def test_rate_limit_window_resets(self, client: TestClient) -> None:
         """Rate limit should reset after the window expires."""
-        from backend.routers import auth as auth_module
-
         # Make 5 failed attempts
         for _ in range(5):
             client.post("/api/v1/auth/login", json={"api_key": "wrong"})
@@ -251,7 +263,9 @@ class TestRateLimitWindow:
         assert resp.status_code == 429
 
         # Simulate time passing (clear the failed attempts)
-        auth_module._FAILED_ATTEMPTS.clear()
+        from backend.session_store import _mem_failed, _mem_lock
+        with _mem_lock:
+            _mem_failed.clear()
 
         # Should be able to attempt again
         resp = client.post("/api/v1/auth/login", json={"api_key": "wrong"})
@@ -259,16 +273,18 @@ class TestRateLimitWindow:
 
     def test_successful_login_clears_failed_attempts(self, client: TestClient) -> None:
         """Successful login should clear failed attempts for that IP."""
-        from backend.routers import auth as auth_module
-
         # 3 failed attempts
         for _ in range(3):
             client.post("/api/v1/auth/login", json={"api_key": "wrong"})
 
         # Verify attempts recorded
         client_ip = "testclient"
-        assert client_ip in auth_module._FAILED_ATTEMPTS
-        assert len(auth_module._FAILED_ATTEMPTS[client_ip]) == 3
+        from backend.session_store import _mem_failed, _mem_lock
+        with _mem_lock:
+            is_in_failed = client_ip in _mem_failed
+            failed_len = len(_mem_failed[client_ip]) if is_in_failed else 0
+        assert is_in_failed
+        assert failed_len == 3
 
         # Successful login
         client.post(
@@ -277,8 +293,9 @@ class TestRateLimitWindow:
         )
 
         # Failed attempts should be cleared
-        assert client_ip not in auth_module._FAILED_ATTEMPTS or \
-               len(auth_module._FAILED_ATTEMPTS.get(client_ip, [])) == 0
+        with _mem_lock:
+            has_no_failed = client_ip not in _mem_failed or len(_mem_failed.get(client_ip, [])) == 0
+        assert has_no_failed
 
 
 class TestCookieSecurityHeaders:
