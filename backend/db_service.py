@@ -401,10 +401,13 @@ class DatabaseService:
                 return False
 
             # Soft-delete all elements in this project
+            # V261 FIX (N+1 elimination): Batch-fetch project IDs in ONE query
+            # instead of calling _get_element_project_id() per element in a loop.
             elements = self._data_model.get_all_elements()
+            element_ids = [e.element_id for e in elements]
+            project_id_map = self._batch_get_element_project_ids(element_ids)
             for element in elements:
-                element_project_id = self._get_element_project_id(element.element_id)
-                if element_project_id == project_id:
+                if project_id_map.get(element.element_id) == project_id:
                     self._data_model.delete_element(element.element_id)
 
             # Delete from SQLite
@@ -473,10 +476,11 @@ class DatabaseService:
             return row[0] if row else 0
         except Exception:
             # Fallback: count from in-memory elements with matching project_id
-            count = 0
-            for element in self._data_model.get_all_elements():
-                if self._get_element_project_id(element.element_id) == project_id:
-                    count += 1
+            # V261 FIX (N+1 elimination): Batch-fetch project IDs in ONE query
+            elements = self._data_model.get_all_elements()
+            element_ids = [e.element_id for e in elements]
+            project_id_map = self._batch_get_element_project_ids(element_ids)
+            count = sum(1 for eid in element_ids if project_id_map.get(eid) == project_id)
             return count
 
     def _get_element_project_id(self, element_id: str) -> str | None:
@@ -491,6 +495,40 @@ class DatabaseService:
             return row[0] if row else None
         except Exception:
             return None
+
+    def _batch_get_element_project_ids(self, element_ids: list[str]) -> dict[str, str | None]:
+        """Get project IDs for multiple elements in a SINGLE query (avoids N+1).
+
+        V261 FIX (N+1 query elimination):
+        Previously, list_elements() called _get_element_project_id() for each
+        element in a loop, causing (1 + page_size) queries. For page_size=20,
+        that's 21 queries instead of 1.
+
+        This batch method uses a single SELECT with IN (?, ?, ...) to fetch
+        all project IDs at once, reducing 21 queries → 1 query.
+
+        Args:
+            element_ids: List of element IDs to look up.
+
+        Returns:
+            Dict mapping element_id → project_id (or None if not found).
+        """
+        if not element_ids:
+            return {}
+        try:
+            # Build parameterized IN clause: WHERE element_id IN (?, ?, ...)
+            placeholders = ", ".join(["?"] * len(element_ids))
+            sql = f"SELECT element_id, project_id FROM element_projects WHERE element_id IN ({placeholders})"
+            cursor = self._safe_db_execute(sql, tuple(element_ids))
+            rows = cursor.fetchall()
+            # Build result dict; elements not in rows get None (no project association)
+            result: dict[str, str | None] = {eid: None for eid in element_ids}
+            for row in rows:
+                result[row[0]] = row[1]
+            return result
+        except Exception:
+            # Fallback: return empty mapping (each element gets None)
+            return {eid: None for eid in element_ids}
 
     # ──────────────────────────────────────────────────────────────────────────
     # Element CRUD
@@ -614,9 +652,16 @@ class DatabaseService:
             end = start + page_size
             paginated = elements[start:end]
 
+            # V261 FIX (N+1 elimination): Batch-fetch project IDs in ONE query
+            # instead of calling _get_element_project_id() per element in a loop.
+            # Old: 1 + page_size queries (21 queries for page_size=20)
+            # New: 1 query total (regardless of page_size)
+            element_ids = [e.element_id for e in paginated]
+            project_id_map = self._batch_get_element_project_ids(element_ids)
+
             result = []
             for e in paginated:
-                pid = self._get_element_project_id(e.element_id)
+                pid = project_id_map.get(e.element_id)
                 result.append(self._element_to_response(e, pid))
 
             return result, total
