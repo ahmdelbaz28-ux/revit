@@ -79,7 +79,7 @@ dependencies = [
     "opcua>=0.98.0,<1.0.0",
     "opencv-python>=4.8.0,<5.0.0",
     "pandas>=2.0.0,<3.0.0",
-    "psutil>=5.9.0,<7.0.0",
+    "psutil>=5.9.0,<8.0.0",
     "pymupdf>=1.23.0,<2.0.0",
     "PyYAML>=6.0,<7.0",
     "reportlab>=4.0.0,<5.0.0",
@@ -127,7 +127,7 @@ parsing = [
     "lxml>=6.1.0,<7.0.0",  # V163: fix PYSEC-2026-87 (XXE)
     "beautifulsoup4>=4.12.0,<5.0.0",
     "pandas>=2.0.0,<3.0.0",
-    "psutil>=5.9.0,<7.0.0",
+    "psutil>=5.9.0,<8.0.0",
     "PyYAML>=6.0,<7.0",
     # V140 FIX: opencv-python for image_parser.py (JPEG/PNG floor plan parsing).
     # Kept optional — image parsing is not needed for DXF/IFC/PDF workflows.
