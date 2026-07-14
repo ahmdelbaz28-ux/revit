@@ -202,6 +202,7 @@ Changelog = "https://github.com/fireai/platform/blob/main/CHANGELOG.md"
 # For Docker builds where .git is absent, set env var:
 #   SETUPTOOLS_SCM_PRETEND_VERSION=1.55.0
 local_scheme = "no-local-version"
+tag_regex = "^[vV]?(?P<version>\\d+\\.\\d+\\.\\d+)"
 
 # V141 FIX (B4 — Launch Blocker): Without [tool.setuptools.packages.find],
 # the wheel build produced an EMPTY package (only dist-info metadata, no
