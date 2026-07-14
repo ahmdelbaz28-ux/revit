@@ -285,12 +285,15 @@ export function LoginPage() {
 						<p className="text-[10px] mt-2 uppercase tracking-[0.25em] text-cyan-400 font-bold">
 							Digital Twin Workspace
 						</p>
+						<p className="text-[11px] mt-1 text-slate-500 max-w-[280px]">
+							Safety-Critical Fire Alarm Engineering Platform
+						</p>
 					</div>
 
 					{/* Glassmorphism Login Card */}
 					<div className="rounded-2xl p-7 border border-white/[0.05] bg-white/[0.02] backdrop-blur-md shadow-[0_20px_50px_rgba(0,0,0,0.6)]">
 						<div className="mb-6">
-							<h2 className="text-xl font-bold text-white tracking-tight">Access Platform</h2>
+							<h2 className="text-xl font-bold text-white tracking-tight">Welcome back</h2>
 							<p className="text-slate-400 text-xs mt-1">Please enter your API Key to authenticate session.</p>
 						</div>
 
