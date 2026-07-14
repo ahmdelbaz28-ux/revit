@@ -120,16 +120,15 @@ jobs:
               await new Promise(resolve => setTimeout(resolve, 15000));
             }
 
-            // Timeout — proceed anyway for dev deps (safe to merge)
-            console.log('Timeout reached — proceeding with auto-merge for dev dependency');
-            core.setOutput('ready', 'true');
+            // Timeout — DO NOT auto-merge without CI greenlight (security)
+            console.log('Timeout reached — CI checks did not complete, skipping auto-merge');
+            core.setOutput('ready', 'false');
 
       - name: Enable auto-merge (dev deps only)
         if: steps.check-safe.outputs.safe == 'true' && steps.wait-for-status-checks.outputs.ready == 'true'
         run: |
           echo "Auto-merging dev dependency: ${{ steps.check-safe.outputs.package }}"
           gh pr merge --auto --squash "${{ github.event.pull_request.number }}" || \
-          gh pr merge --admin --squash "${{ github.event.pull_request.number }}" || \
           echo "::warning::Auto-merge not available - PR may need manual merge"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

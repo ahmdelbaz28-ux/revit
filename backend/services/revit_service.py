@@ -2437,7 +2437,7 @@ class RevitService:
                 import urllib.parse
                 safe_query = urllib.parse.quote(query)
 
-                async with httpx.AsyncClient() as client:
+                async with httpx.AsyncClient(timeout=httpx.Timeout(30.0)) as client:
                     response = await client.get(f"{base_url}/{safe_query}", params=params)
 
                     if response.status_code == 200:

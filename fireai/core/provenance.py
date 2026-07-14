@@ -210,7 +210,7 @@ class DecisionProvenance:
         """
         if "decision_id" not in kwargs:
             kwargs["decision_id"] = (
-                f"dp-{hashlib.md5(str(kwargs).encode(), usedforsecurity=False).hexdigest()[:12]}"
+                f"dp-{hashlib.sha256(str(kwargs).encode()).hexdigest()[:12]}"
             )
         if "timestamp" not in kwargs:
             kwargs["timestamp"] = time.time()
