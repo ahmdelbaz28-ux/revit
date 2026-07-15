@@ -19,7 +19,6 @@ from fastapi import (
     Header,
     HTTPException,
     Request,
-    UploadFile,
 )
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -303,7 +302,7 @@ async def get_audit_trail() -> dict[str, Any]:
 # Rate-limited endpoints
 @app.post("/projects/", tags=["Projects"], dependencies=[Depends(verify_api_key)])
 @limiter.limit("10/minute")
-async def upload_file(request: Request, file: UploadFile = File(...)) -> dict[str, Any]:  # NOSONAR - python:S8410
+async def upload_file(request: Request, file = File(...)) -> dict[str, Any]:  # NOSONAR - python:S8410
     content = await file.read()
     if len(content) > MAX_FILE_SIZE_BYTES:
         raise HTTPException(status_code=413, detail=f"File too large. Maximum allowed size is {MAX_FILE_SIZE_MB} MB.")  # NOSONAR — S8415: assignment kept for readability / debuggability
