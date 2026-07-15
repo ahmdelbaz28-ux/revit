@@ -117,7 +117,7 @@ def _should_emit_hsts(_scope: Scope) -> bool:  # NOSONAR — S1172: parameter re
 # the V119 fix. unsafe-eval is NEVER permitted in production.
 _CSP_PRODUCTION = (
     "default-src 'self'; "
-    "script-src 'self' 'sha256-<hash1>' 'sha256-<hash2>'; "
+    "script-src 'self' 'unsafe-inline'; "
     "style-src 'self' 'unsafe-inline'; "
     "img-src 'self' data: blob:; "
     "font-src 'self' data:; "
