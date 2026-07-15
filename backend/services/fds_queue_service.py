@@ -20,10 +20,8 @@ in LOCAL_SIMULATION mode so the system stays fully functional for demo purposes.
 from __future__ import annotations
 
 import hashlib
-import json
 import logging
 import os
-import time
 import uuid
 from datetime import datetime, timezone
 from enum import Enum

@@ -114,6 +114,7 @@ def get_revit_service() -> RevitService:
 from backend.auth import require_permission
 from backend.limiter import limiter
 from backend.rbac import Permission
+from backend.routers.agent_ws import has_active_agent, send_agent_command
 from parsers._path_security import UnsafePathError, validate_input_path
 
 

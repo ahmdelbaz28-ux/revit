@@ -13,14 +13,12 @@ Handles:
 from __future__ import annotations
 
 import logging
-import os
 from typing import Any, Dict, Optional
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from backend.services.fds_queue_service import (
-    FDSJobStatus,
     get_fds_job_status,
     handle_fds_webhook,
     list_fds_jobs,
