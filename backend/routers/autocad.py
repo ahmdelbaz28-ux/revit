@@ -41,14 +41,7 @@ from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
 from pydantic import BaseModel
 
-# V130 SECURITY FIX: Add auth dependencies for AutoCAD write/upload endpoints.
-# Previously every endpoint in this router was unauthenticated — any network
-# caller could read/write DWG files on the server. Write/upload operations now
-# require ENGINEER+ permission; read operations require VIEWER+.
-from backend.auth import require_permission
-
-# V130: Rate limiter for upload endpoints — prevents DoS via large/cadenced uploads.
-from backend.limiter import limiter
+from pydantic import BaseModel
 from backend.rbac import Permission
 from backend.services.autocad_service import AutoCADService
 

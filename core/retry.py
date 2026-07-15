@@ -283,16 +283,7 @@ def async_network_retry(
         OSError,
     )
 ):
-    """
-    Async version of network retry decorator.
-
-    Args:
-        max_attempts: Maximum number of retry attempts
-        max_delay: Maximum delay between retries in seconds
-        multiplier: Multiplier for exponential backoff
-        exceptions: Tuple of exception types to retry on
-
-    """
+    """Async version of network retry decorator."""
     def retry_decorator(func):
         @wraps(func)
         async def wrapper(*args, **kwargs):
