@@ -228,7 +228,7 @@ async def list_fire_classes(request: Request) -> Dict[str, Any]:
 async def validate_ship(request: Request, body: DesignRequest) -> Dict[str, Any]:
     """Validate a ship's SOLAS compliance (zones, divisions, escape routes)."""
     ship = body.ship.to_domain()
-    zones = [MarineZone(**z.dict()) for z in body.zones] if body.zones else None
+    zones = [MarineZone(**z.model_dump()) for z in body.zones] if body.zones else None  # V264: model_dump() (Pydantic v2)
     if zones is None:
         from marine.engine.zone_mapper import divide_into_main_vertical_zones
         zones = divide_into_main_vertical_zones(ship.length_overall_m, ship)
@@ -261,7 +261,7 @@ async def design_full(request: Request, body: DesignRequest) -> Dict[str, Any]:
     compliance validation results.
     """
     ship = body.ship.to_domain()
-    zones = [MarineZone(**z.dict()) for z in body.zones] if body.zones else None
+    zones = [MarineZone(**z.model_dump()) for z in body.zones] if body.zones else None  # V264: model_dump() (Pydantic v2)
     service = get_marine_service()
     try:
         return service.design_full(ship, zones)

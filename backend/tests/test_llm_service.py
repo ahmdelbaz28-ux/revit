@@ -173,6 +173,11 @@ class TestLLMServiceChat:
         mock_completion = MagicMock()
         mock_completion.choices = [mock_choice]
         mock_completion.usage = mock_usage
+        # V264 FIX: Set model explicitly — MagicMock auto-creates attributes,
+        # so hasattr(completion, 'model') is always True. Without this explicit
+        # set, completion.model returns a MagicMock object instead of a string,
+        # causing: assert <MagicMock> == 'z-ai/glm-4.7' → AssertionError
+        mock_completion.model = "z-ai/glm-4.7"
         mock_completion.model_dump.return_value = {"id": "chatcmpl-123"}
 
         # Mock the client

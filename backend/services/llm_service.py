@@ -385,7 +385,10 @@ class LLMService:
             total_tokens=getattr(
                 getattr(completion, 'usage', None), 'total_tokens', 0
             ),
-            raw=completion.dict() if hasattr(completion, 'dict') else {},
+            # V264 FIX: Use model_dump() (Pydantic v2) instead of deprecated .dict()
+            # OpenAI SDK v1+ uses Pydantic v2, so model_dump() is preferred.
+            # Fall back to .dict() for older SDK versions, then {} if neither exists.
+            raw=completion.model_dump() if hasattr(completion, 'model_dump') else (completion.dict() if hasattr(completion, 'dict') else {}),
         )
 
     async def chat_stream(
