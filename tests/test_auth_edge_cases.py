@@ -337,18 +337,19 @@ class TestSessionTokenFormat:
     """Tests for session token format validation."""
 
     def test_token_has_dot_separator(self, client: TestClient) -> None:
-        """Token should have format: session_id.signature."""
+        """Token should have format: session_id.expires_at.signature."""
         resp = client.post(
             "/api/v1/auth/login",
             json={"api_key": "test_key_edge_cases"},  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
         )
         token = resp.headers.get("set-cookie", "").split("fireai_session=")[1].split(";")[0]
 
-        # Should have exactly one dot separating session_id and signature
+        # Should have exactly two dots separating session_id, expires_at, and signature
         parts = token.split(".")
-        assert len(parts) == 2, f"Token should have format id.sig, got {len(parts)} parts"
+        assert len(parts) == 3, f"Token should have format id.expires_at.sig, got {len(parts)} parts"
         assert len(parts[0]) > 0, "Session ID part should not be empty"
-        assert len(parts[1]) == 64, f"Signature should be 64 hex chars, got {len(parts[1])}"
+        assert parts[1].isdigit(), f"Expires-at part should be a numeric timestamp, got {parts[1]!r}"
+        assert len(parts[2]) == 64, f"Signature should be 64 hex chars, got {len(parts[2])}"
 
     def test_session_id_has_sufficient_entropy(self, client: TestClient) -> None:
         """Session ID should have at least 256 bits (43+ URL-safe base64 chars)."""

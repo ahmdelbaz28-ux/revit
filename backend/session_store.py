@@ -51,7 +51,10 @@ logger = logging.getLogger(__name__)
 _SESSION_TTL = int(os.getenv("FIREAI_SESSION_TTL", "86400"))  # 24 hours default
 
 # Failed-attempt window in seconds (must match _FAILED_ATTEMPT_WINDOW in auth.py)
-_FAILED_ATTEMPT_WINDOW = 300  # 5 minutes
+_FAILED_ATTEMPT_WINDOW = 300 # 5 minutes
+
+# Maximum failed attempts (must match _MAX_FAILED_ATTEMPTS in auth.py)
+_MAX_FAILED_ATTEMPTS = 5
 
 # Redis key prefixes (namespaced to avoid collisions)
 _SESSION_PREFIX = "bazspark:session:"

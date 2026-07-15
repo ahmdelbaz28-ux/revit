@@ -339,6 +339,16 @@ class CSRFMiddleware:
         # For state-changing methods (POST/PUT/DELETE/PATCH), check CSRF tokens
         # Extract cookie token from Cookie header
         headers = scope.get("headers", [])
+
+        # V135 F-XX FIX: Exempt API-key-only requests from CSRF.
+        # CSRF attacks rely on the browser automatically sending credentials
+        # (cookies). The X-API-Key header is NOT sent automatically — an
+        # attacker cannot forge it in a cross-site request. Therefore,
+        # API-key-authenticated endpoints are NOT vulnerable to CSRF.
+        if any(name == b"x-api-key" for name, _ in headers):
+            await self.app(scope, receive, send)
+            return
+
         cookie_token = self._extract_cookie_token(headers)
         header_token = self._extract_header_token(headers)
 

@@ -112,16 +112,25 @@ class TestCookieAuth:
     """Verify the cookie authenticates API requests (no X-API-Key header needed)."""
 
     def test_create_project_with_cookie_returns_201(self, client: TestClient) -> None:
-        """After login, POST /projects should work with cookie alone (no header)."""
-        # Login to get cookie
+        """After login, POST /projects should work with cookie + CSRF token."""
+        # Login to get session cookie
         client.post(
             "/api/v1/auth/login",
             json={"api_key": "test_key_for_auth_123"},  # NOSONAR: hard-coded secret in test fixture  # NOSONAR — S7632: test function documented via class name / module path
         )
-        # Create project — TestClient sends cookie automatically
+        # Get CSRF token (sets CSRF cookie + returns token in body)
+        csrf_resp = client.get("/api/v2/auth/csrf-token")
+        assert csrf_resp.status_code == 200, csrf_resp.text
+        csrf_token = csrf_resp.json().get("csrf_token", "")
+        assert csrf_token, "CSRF token endpoint did not return a token"
+        # The CSRF cookie is set with Secure flag; TestClient over HTTP will not
+        # store/send Secure cookies. Inject it directly so the middleware sees it.
+        client.cookies.set("__Host-fireai_csrf_token", csrf_token)
+        # Create project with CSRF token header — TestClient sends cookies automatically
         resp = client.post(
             "/api/v1/projects",
             json={"name": "cookie-auth-test", "description": "test", "author": "audit"},
+            headers={"X-CSRF-Token": csrf_token},
         )
         assert resp.status_code == 201, resp.text
 
