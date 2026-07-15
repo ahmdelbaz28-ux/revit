@@ -22,8 +22,10 @@ USAGE:
 
 import asyncio
 import logging
+import threading
 import time
-from typing import Callable, Type, Optional, Tuple, Any, TypeVar
+from functools import wraps
+from typing import Callable, Type, Optional, Tuple, Any, TypeVar, ParamSpec
 
 from tenacity import (
     retry,
@@ -35,7 +37,6 @@ from tenacity import (
     stop_after_delay,
     before_sleep_log,
     after_log,
-    wraps,
 )
 from tenacity.wait import wait_fixed
 from tenacity.stop import stop_never
@@ -90,19 +91,17 @@ class CircuitBreaker:
             self.failures = 0
             self.opened_at = None
 
-    P = ParamSpec("P")
-    R = TypeVar("R")
 
-    def call(self, func: Callable[..., Any], *args, **kwargs) -> Any:
+    async def call(self, func: Callable[..., Any], *args, **kwargs) -> Any:
         """Execute the function, applying circuit breaker logic."""
-        if self.is_open():
+        if await self.is_open():
             raise CircuitBreakerOpenError("Circuit breaker is open")
         try:
-            result = func(*args, **kwargs)
-            self.reset()
+            result = await func(*args, **kwargs)
+            await self.reset()
             return result
         except Exception as e:
-            self.record_failure()
+            await self.record_failure()
             raise
 
 logger = logging.getLogger(__name__)
