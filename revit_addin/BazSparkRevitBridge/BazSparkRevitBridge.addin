@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  BazSparkRevitBridge.addin
+  Place this file (and BazSparkRevitBridge.dll) in one of:
+    %APPDATA%\Autodesk\Revit\Addins\<version>\       (per-user)
+    C:\ProgramData\Autodesk\Revit\Addins\<version>\  (all users)
+
+  Supports Revit 2022–2025. Change the VendorId and ProductCode as needed.
+-->
+<RevitAddIns>
+  <AddIn Type="Application">
+    <Name>BAZspark Revit Bridge</Name>
+    <Assembly>BazSparkRevitBridge.dll</Assembly>
+    <FullClassName>BazSparkRevitBridge.Application</FullClassName>
+    <ClientId>4A3B2C1D-0000-0000-0000-BAZSPARK00001</ClientId>
+    <VendorId>BAZspark</VendorId>
+    <VendorDescription>BAZspark Fire Safety Engineering Platform</VendorDescription>
+  </AddIn>
+</RevitAddIns>

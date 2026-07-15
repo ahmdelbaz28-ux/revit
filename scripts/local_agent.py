@@ -78,9 +78,85 @@ except Exception as e:  # noqa: BLE001
     RevitService = None  # type: ignore
 
 
+# ── Named Pipe dispatcher for C# Revit Add-in (thread-safe, no pythonnet calls) ──
+class RevitNamedPipeDispatcher:
+    """
+    Sends JSON commands to the BazSparkRevitBridge C# Add-in via a Named Pipe.
+    The Add-in executes them safely on Revit's Main Thread (ExternalEvent).
+
+    This is the PREFERRED dispatcher when the Add-in is installed and running.
+    Falls back to RevitService (pythonnet) only when the pipe is unavailable.
+    """
+
+    PIPE_NAME = r"\\.\pipe\bazspark_revit"
+    TIMEOUT_SEC = 30.0
+
+    def __init__(self) -> None:
+        self._available: bool = False
+        if sys.platform == "win32":
+            try:
+                import pywintypes  # type: ignore  # noqa: F401
+                self._available = self._ping()
+            except ImportError:
+                logger.debug("pywin32 not installed — Named Pipe dispatcher unavailable")
+
+    @property
+    def available(self) -> bool:
+        return self._available
+
+    def _ping(self) -> bool:
+        """Quick connectivity test — try to open the pipe."""
+        try:
+            import win32pipe  # type: ignore
+            import win32file  # type: ignore
+            h = win32file.CreateFile(
+                self.PIPE_NAME,
+                win32file.GENERIC_READ | win32file.GENERIC_WRITE,
+                0, None,
+                win32file.OPEN_EXISTING,
+                0, None,
+            )
+            win32file.CloseHandle(h)
+            return True
+        except Exception:
+            return False
+
+    def send(self, action: str, params: Dict[str, Any]) -> Dict[str, Any]:
+        """Send a command and return the response dict."""
+        import win32pipe  # type: ignore
+        import win32file  # type: ignore
+        import pywintypes  # type: ignore
+
+        payload = json.dumps({"command_id": str(time.time()),
+                              "action": action, "params": params})
+        try:
+            h = win32file.CreateFile(
+                self.PIPE_NAME,
+                win32file.GENERIC_READ | win32file.GENERIC_WRITE,
+                0, None,
+                win32file.OPEN_EXISTING,
+                0, None,
+            )
+            win32pipe.SetNamedPipeHandleState(
+                h, win32pipe.PIPE_READMODE_MESSAGE, None, None)
+            # Write request
+            win32file.WriteFile(h, (payload + "\n").encode("utf-8"))
+            # Read response (up to 10 MB)
+            _, data = win32file.ReadFile(h, 10 * 1024 * 1024)
+            win32file.CloseHandle(h)
+            return json.loads(data.decode("utf-8").strip())
+        except pywintypes.error as e:
+            if e.winerror == 2:  # ERROR_FILE_NOT_FOUND — pipe not running
+                self._available = False
+                return {"success": False,
+                        "error": "BazSparkRevitBridge Add-in not running. Start Revit first."}
+            raise
+
+
 # ── Lazy service singletons ───────────────────────────────────────────────────
 _autocad_svc: Any = None
 _revit_svc: Any = None
+_revit_pipe: RevitNamedPipeDispatcher | None = None
 
 
 def _get_autocad() -> Any:
@@ -88,6 +164,14 @@ def _get_autocad() -> Any:
     if _autocad_svc is None and _autocad_available:
         _autocad_svc = AutoCADService()
     return _autocad_svc
+
+
+def _get_revit_pipe() -> RevitNamedPipeDispatcher:
+    """Return the Named Pipe dispatcher (preferred, thread-safe)."""
+    global _revit_pipe
+    if _revit_pipe is None:
+        _revit_pipe = RevitNamedPipeDispatcher()
+    return _revit_pipe
 
 
 def _get_revit() -> Any:
@@ -248,7 +332,36 @@ def _dispatch_autocad(action: str, args: Dict[str, Any]) -> Any:
 
 
 def _dispatch_revit(action: str, args: Dict[str, Any]) -> Any:
-    """Dispatch a Revit action locally and return the result dict."""
+    """
+    Dispatch a Revit action locally and return the result dict.
+
+    Routing priority:
+    1. RevitNamedPipeDispatcher — sends command to BazSparkRevitBridge C# Add-in
+       via Named Pipe so it runs on Revit's Main Thread (ExternalEvent). SAFE.
+    2. RevitService (pythonnet fallback) — direct API calls, only safe in limited
+       contexts and only when the Add-in is not installed.
+
+    Non-connection actions (get_elements, create_wall, etc.) always prefer
+    the pipe dispatcher when it is available.
+    """
+    # ── For structural actions, prefer the C# Add-in via Named Pipe ──────────
+    _PIPE_ROUTED_ACTIONS = {
+        "get_info", "list_elements", "create_wall", "create_floor",
+        "place_family_instance", "delete_element", "get_parameter",
+        "set_parameter", "list_views", "save",
+    }
+    if action in _PIPE_ROUTED_ACTIONS:
+        pipe = _get_revit_pipe()
+        if pipe.available:
+            logger.info("[Revit] Routing %s via Named Pipe (C# Add-in)", action)
+            return pipe.send(action, args)
+        else:
+            logger.warning(
+                "[Revit] Named Pipe unavailable for %s — "
+                "is BazSparkRevitBridge Add-in loaded in Revit?", action
+            )
+            # Fall through to RevitService (pythonnet) below
+
     svc = _get_revit()
     if svc is None:
         return {"error": "RevitService not available on this machine"}
