@@ -186,8 +186,9 @@ test("unknown route shows 404 page", async ({ page }) => {
         // (the 404 route is wrapped in <RouteGuard>).
         const mock = await installApiMock(page, { preAuthenticated: true });
 
-        await page.goto("/this-route-does-not-exist");
-        await page.waitForLoadState("networkidle");
+        // V192 FIX: Use 'load' instead of 'networkidle' — the 404 content renders
+        // on first paint and networkidle may never resolve due to background polling.
+        await page.goto("/this-route-does-not-exist", { waitUntil: "load" });
 
         // V242: Verify we didn't get redirected to /login (auth mock should
         // keep us authenticated so the 404 page renders).
