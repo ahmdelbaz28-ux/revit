@@ -3,6 +3,12 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from backend.app import app
+from backend.routers.fds_webhook import router as fds_router
+
+# Force register the router for testing to avoid pytest import order issues
+if not any(r.path.startswith("/api/v2/fds") for r in app.routes):
+    app.include_router(fds_router)
+
 from backend.services.fds_queue_service import (
     submit_fds_job,
     get_fds_job_status,
