@@ -90,7 +90,7 @@
     <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=()" />
 
     <title>BAZSPARK Digital Twin</title>
-    <style>
+    <style nonce="{{nonce}}">
       /* Critical CSS for initial load — prevents FOUC */
       body {
         margin: 0;
@@ -133,20 +133,3 @@
         letter-spacing: 0.05em;
       }
     </style>
-  </head>
-  <body>
-    <noscript>
-      <div style="text-align:center;padding:2rem;color:#e8f0fe;background:#070b12;min-height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;">
-        <h1 style="font-size:1.5rem;margin-bottom:1rem;">BAZSPARK requires JavaScript</h1>
-        <p style="color:#94a3b8;">Please enable JavaScript in your browser settings to use this application.</p>
-      </div>
-    </noscript>
-    <div id="root">
-      <div class="app-loader">
-        <div class="app-loader-spinner"></div>
-        <div class="app-loader-text">Loading BAZSPARK Digital Twin...</div>
-      </div>
-    </div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
-</html>

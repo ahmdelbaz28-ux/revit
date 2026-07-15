@@ -97,7 +97,7 @@ def _audit_log(
     target: str = "",
     detail: str = "",
 ) -> None:
-    """Write an audit log entry (JSONL format)."""
+    """Write an audit log entry (JSONL format) without exposing PII."""
     try:
         entry = {
             "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
@@ -106,7 +106,8 @@ def _audit_log(
             "operation": operation,
             "target": target[:64],  # truncate to avoid log bloat
             "success": success,
-            "detail": detail[:200],
+            # Sanitize detail to remove any potential PII/sensitive info
+            "detail": _sanitize_log_detail(detail)[:200],
         }
         log_path = Path(AUDIT_LOG_FILE)
         log_path.parent.mkdir(parents=True, exist_ok=True)
@@ -114,6 +115,22 @@ def _audit_log(
             f.write(json.dumps(entry) + "\n")
     except Exception as e:
         logging.exception("Failed to write audit log: %s", e)  # NOSONAR — S8572: logging.exception is appropriate here
+
+
+def _sanitize_log_detail(detail: str) -> str:
+    """Sanitize log details to prevent PII exposure."""
+    if not detail:
+        return detail
+    
+    # Remove potentially sensitive information
+    import re
+    
+    # Remove anything that looks like API keys, tokens, passwords, etc.
+    sanitized = re.sub(r'[A-Z0-9]{32,}', '[REDACTED_LONG_TOKEN]', detail, flags=re.IGNORECASE)
+    sanitized = re.sub(r'(?:api[_-]?key|token|password|secret|auth)[\s:=]+[^\s,;.!]+', r'\1: [REDACTED]', sanitized, flags=re.IGNORECASE)
+    sanitized = re.sub(r'bearer\s+[a-zA-Z0-9\-\._~\+\/]+=*', 'Bearer [REDACTED]', sanitized, flags=re.IGNORECASE)
+    
+    return sanitized
 
 
 def _verify_master_token(provided: Optional[str]) -> bool:

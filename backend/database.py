@@ -367,6 +367,28 @@ class Database:
             cur.execute("CREATE INDEX IF NOT EXISTS idx_reports_status ON reports(status)")
             cur.execute("CREATE INDEX IF NOT EXISTS idx_sync_ops_status ON sync_operations(status)")
 
+            # ── Audit Log Table for NFPA 72 Compliance ──────────────
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS audit_log (
+                    id TEXT PRIMARY KEY,
+                    timestamp TEXT NOT NULL,
+                    user_id TEXT NOT NULL,
+                    action TEXT NOT NULL,  -- CREATE, UPDATE, DELETE, VIEW
+                    entity_type TEXT NOT NULL,  -- projects, devices, etc.
+                    entity_id TEXT NOT NULL,
+                    old_values TEXT,  -- JSON string of old values
+                    new_values TEXT,  -- JSON string of new values
+                    ip_address TEXT,
+                    user_agent TEXT
+                )
+            """)
+            
+            # ── Additional indexes for audit log performance ─────────
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_audit_log_timestamp ON audit_log(timestamp)")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_audit_log_user ON audit_log(user_id)")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_audit_log_entity ON audit_log(entity_type, entity_id)")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_audit_log_action ON audit_log(action)")
+
         logger.info("PostgreSQL schema initialized successfully (matching SQLite schema)")
 
     def _init_schema(self) -> None:
@@ -481,6 +503,28 @@ class Database:
             cur.execute("CREATE INDEX IF NOT EXISTS idx_devices_type ON devices(type)")
             cur.execute("CREATE INDEX IF NOT EXISTS idx_reports_status ON reports(status)")
             cur.execute("CREATE INDEX IF NOT EXISTS idx_sync_ops_status ON sync_operations(status)")
+
+            # ── Audit Log Table for NFPA 72 Compliance ──────────────────
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS audit_log (
+                    id TEXT PRIMARY KEY,
+                    timestamp TEXT NOT NULL,
+                    user_id TEXT NOT NULL,
+                    action TEXT NOT NULL,  -- CREATE, UPDATE, DELETE, VIEW
+                    entity_type TEXT NOT NULL,  -- projects, devices, etc.
+                    entity_id TEXT NOT NULL,
+                    old_values TEXT,  -- JSON string of old values
+                    new_values TEXT,  -- JSON string of new values
+                    ip_address TEXT,
+                    user_agent TEXT
+                )
+            """)
+            
+            # ── Additional indexes for audit log performance ─────────────
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_audit_log_timestamp ON audit_log(timestamp)")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_audit_log_user ON audit_log(user_id)")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_audit_log_entity ON audit_log(entity_type, entity_id)")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_audit_log_action ON audit_log(action)")
 
     # ========================================================================
     # Projects CRUD

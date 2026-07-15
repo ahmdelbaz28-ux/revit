@@ -6,6 +6,9 @@ from enum import Enum
 from typing import Any, Dict, Optional
 
 import jwt  # PyJWT
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import rsa
+import os
 
 
 class UserRole(Enum):
@@ -18,31 +21,54 @@ class UserRole(Enum):
 class TokenManager:
     """Manages authentication tokens for distributed FACP"""
 
-    def __init__(self, secret_key: str = "default_secret_for_dev"):
-        self.secret_key = secret_key.encode() if isinstance(secret_key, str) else secret_key
+    def __init__(self, private_key_path: str = None, public_key_path: str = None):
+        # Generate RSA key pair if not provided
+        if private_key_path and os.path.exists(private_key_path):
+            with open(private_key_path, "rb") as key_file:
+                self.private_key = serialization.load_pem_private_key(
+                    key_file.read(),
+                    password=None,
+                )
+        else:
+            self.private_key = rsa.generate_private_key(
+                public_exponent=65537,
+                key_size=2048
+            )
+        
+        if public_key_path and os.path.exists(public_key_path):
+            with open(public_key_path, "rb") as key_file:
+                self.public_key = serialization.load_pem_public_key(key_file.read())
+        else:
+            self.public_key = self.private_key.public_key()
+        
         self.active_tokens = {}  # token_hash -> token_data
         self.revoked_tokens = set()  # Set of revoked token hashes
 
     def generate_token(self, user_id: str, permissions: list, roles: list, expires_in: int = 3600) -> str:
         """
-        Generate a new authentication token
+        Generate a new authentication token with expiration
         :param user_id: User identifier
         :param permissions: List of permissions
         :param roles: List of roles
-        :param expires_in: Token expiration time in seconds
+        :param expires_in: Token expiration time in seconds (default 1 hour)
         :return: Generated token string
         """
         token_data = {
             "user_id": user_id,
             "permissions": permissions,
             "roles": roles,
-            "exp": time.time() + expires_in,
-            "iat": time.time(),
-            "jti": secrets.token_urlsafe(16)  # JWT ID for uniqueness
+            "exp": int(time.time()) + expires_in,  # Unix timestamp for expiration
+            "iat": int(time.time()),  # Issued at time
+            "jti": secrets.token_urlsafe(16),  # JWT ID for uniqueness
+            "nbf": int(time.time()) - 10  # Not before (allow 10 sec clock skew)
         }
 
-        # Create token string using JWT
-        token_str = jwt.encode(token_data, self.secret_key, algorithm="HS256")
+        # Create token string using JWT with RS256 algorithm
+        token_str = jwt.encode(
+            token_data, 
+            self.private_key, 
+            algorithm="RS256"
+        )
 
         # Store token with its data
         token_hash = hashlib.sha256(token_str.encode()).hexdigest()
@@ -57,24 +83,41 @@ class TokenManager:
         :return: (is_valid, token_data)
         """
         try:
-            # Decode JWT token
-            token_data = jwt.decode(token, self.secret_key, algorithms=["HS256"])
-
-            # Check if token is revoked
+            # Check if token is revoked first (before expensive crypto operation)
             token_hash = hashlib.sha256(token.encode()).hexdigest()
             if token_hash in self.revoked_tokens:
                 return False, None
 
-            # Check if token is expired (JWT decode handles this automatically)
-            # But we also check our own records
-            if time.time() > token_data["exp"]:
-                # Clean up expired token
-                self.revoke_token(token)
+            # Decode JWT token using public key (RS256)
+            token_data = jwt.decode(
+                token, 
+                self.public_key, 
+                algorithms=["RS256"],
+                options={
+                    "require": ["exp", "iat", "nbf"],
+                    "verify_exp": True,  # Verify expiration
+                    "verify_iat": True,  # Verify issued at time
+                    "verify_nbf": True,  # Verify not before time
+                }
+            )
+
+            # Additional check: verify token is still in our active tokens list
+            if token_hash in self.active_tokens:
+                # Update active tokens if needed
+                self.active_tokens[token_hash] = token_data
+                return True, token_data
+            else:
+                # Token exists but not in our active list - might be stale
                 return False, None
 
-            return True, token_data
-
         except jwt.ExpiredSignatureError:
+            # Clean up expired token if it exists in our records
+            try:
+                token_hash = hashlib.sha256(token.encode()).hexdigest()
+                if token_hash in self.active_tokens:
+                    del self.active_tokens[token_hash]
+            except:
+                pass  # Ignore errors during cleanup
             return False, None
         except jwt.InvalidTokenError:
             return False, None
@@ -136,103 +179,3 @@ class AuthProvider:
 
         if not requested_perms.issubset(granted_perms):
             return False, None
-
-        # Return user context with distributed information
-        return True, {
-            "user_id": user_id,
-            "roles": user_data["roles"],
-            "permissions": list(granted_perms),
-            "token_data": token_data,
-            "source_node": source_node,
-            "authenticated_at": time.time()
-        }
-
-    def create_session_token(self, user_id: str, permissions: Optional[list] = None,
-                           roles: Optional[list] = None, expires_in: int = 3600) -> Optional[str]:
-        """Create a session token for a user"""
-        if user_id not in self.users:
-            return None
-
-        user_perms = self.users[user_id]["permissions"]
-        user_roles = self.users[user_id]["roles"]
-
-        perms_to_grant = permissions if permissions is not None else user_perms
-        roles_to_assign = roles if roles is not None else user_roles
-
-        # Ensure requested permissions are subset of user's allowed permissions
-        if permissions and not set(permissions).issubset(set(user_perms)):
-            return None
-
-        return self.token_manager.generate_token(user_id, perms_to_grant, roles_to_assign, expires_in)
-
-    def distribute_auth_state(self, target_nodes: list):
-        """Distribute authentication state to other nodes in the cluster"""
-        auth_state = {
-            "users": self.users,
-            "active_tokens": dict(self.active_tokens.items()),
-            "revoked_tokens": list(self.revoked_tokens),
-            "timestamp": time.time()
-        }
-
-        # In a real implementation, this would send the state to other nodes
-        # via the message bus or other distributed mechanism
-        for node in target_nodes:
-            self.distributed_cache[node] = auth_state
-
-    def sync_with_cluster(self, cluster_auth_state: Dict[str, Any]):
-        """Sync authentication state with cluster"""
-        # Merge cluster state with local state
-        for user_id, user_data in cluster_auth_state.get("users", {}).items():
-            if user_id not in self.users:
-                self.users[user_id] = user_data
-
-        for token_hash, token_data in cluster_auth_state.get("active_tokens", {}).items():
-            if token_hash not in self.active_tokens:
-                self.active_tokens[token_hash] = token_data
-
-        self.revoked_tokens.update(cluster_auth_state.get("revoked_tokens", []))
-
-
-class DistributedTokenManager(TokenManager):
-    """Token manager for distributed environments with shared state"""
-
-    def __init__(self, secret_key: str = "default_secret_for_dev", node_id: str = "node_0"):
-        super().__init__(secret_key)
-        self.node_id = node_id
-        self.cluster_tokens = {}  # Shared tokens across cluster
-        self.token_sync_callback = None
-
-    def set_sync_callback(self, callback):
-        """Set callback for syncing token state with cluster"""
-        self.token_sync_callback = callback
-
-    def generate_token(self, user_id: str, permissions: list, roles: list, expires_in: int = 3600) -> str:
-        """Generate token and sync with cluster"""
-        token = super().generate_token(user_id, permissions, roles, expires_in)
-
-        # Sync with cluster if callback is available
-        if self.token_sync_callback:
-            self.token_sync_callback({
-                "action": "token_generated",
-                "token_hash": hashlib.sha256(token.encode()).hexdigest(),
-                "token_data": self.active_tokens[hashlib.sha256(token.encode()).hexdigest()],
-                "node_id": self.node_id,
-                "timestamp": time.time()
-            })
-
-        return token
-
-    def revoke_token(self, token: str) -> bool:
-        """Revoke token and sync with cluster"""
-        result = super().revoke_token(token)
-
-        # Sync with cluster if callback is available
-        if self.token_sync_callback:
-            self.token_sync_callback({
-                "action": "token_revoked",
-                "token_hash": hashlib.sha256(token.encode()).hexdigest(),
-                "node_id": self.node_id,
-                "timestamp": time.time()
-            })
-
-        return result

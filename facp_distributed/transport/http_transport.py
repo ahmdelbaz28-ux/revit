@@ -13,6 +13,59 @@ import aiohttp
 import uvicorn
 from fastapi import FastAPI, Request
 
+# Circuit Breaker Implementation
+class CircuitBreakerState:
+    CLOSED = "closed"
+    OPEN = "open"
+    HALF_OPEN = "half_open"
+
+
+class CircuitBreaker:
+    """Circuit breaker pattern to prevent cascade failures"""
+    
+    def __init__(self, failure_threshold=5, timeout=60, recovery_timeout=30):
+        self.failure_threshold = failure_threshold
+        self.timeout = timeout
+        self.recovery_timeout = recovery_timeout
+        
+        self.failure_count = 0
+        self.last_failure_time = None
+        self.state = CircuitBreakerState.CLOSED
+        self._lock = threading.Lock()
+    
+    def call(self, func, *args, **kwargs):
+        """Execute function with circuit breaker protection"""
+        with self._lock:
+            if self.state == CircuitBreakerState.OPEN:
+                if time.time() - self.last_failure_time >= self.recovery_timeout:
+                    self.state = CircuitBreakerState.HALF_OPEN
+                    logger.info("Circuit breaker transitioning to HALF_OPEN state")
+                else:
+                    raise Exception("Circuit breaker is OPEN")
+            
+            try:
+                result = func(*args, **kwargs)
+                self._on_success()
+                return result
+            except Exception as e:
+                self._on_failure()
+                raise e
+    
+    def _on_success(self):
+        """Handle successful operation"""
+        self.failure_count = 0
+        self.state = CircuitBreakerState.CLOSED
+        self.last_failure_time = None
+    
+    def _on_failure(self):
+        """Handle failed operation"""
+        self.failure_count += 1
+        self.last_failure_time = time.time()
+        
+        if self.failure_count >= self.failure_threshold:
+            self.state = CircuitBreakerState.OPEN
+            logger.warning(f"Circuit breaker opened after {self.failure_count} consecutive failures")
+
 
 class TransportLayer(ABC):
     """Abstract base class for transport layers"""
@@ -21,6 +74,8 @@ class TransportLayer(ABC):
         self.handlers = {}  # method -> handler_function
         self.is_running = False
         self.node_id = f"node_{int(time.time())}_{hash(str(threading.current_thread().ident)) % 10000}"
+        # Add circuit breaker for transport operations
+        self.circuit_breaker = CircuitBreaker()
 
     def register_handler(self, method: str, handler: Callable):
         """Register a handler for a specific method"""
@@ -65,7 +120,25 @@ class HTTPTransport(TransportLayer):
         async def handle_facp_request(request: Request):
             try:
                 request_data = await request.json()
-
+                
+                # Input validation gate - validate request structure and content
+                if not self._validate_request(request_data):
+                    return {
+                        "protocol": "FACP/1.1",
+                        "id": request_data.get("id", "unknown"),
+                        "status": "error",
+                        "error": {
+                            "code": "INVALID_REQUEST",
+                            "message": "Request validation failed"
+                        },
+                        "trace": {
+                            "node_id": self.node_id,
+                            "node_type": self.node_type,
+                            "execution_path": [self.node_type],
+                            "latency_ms": 0
+                        }
+                    }
+                
                 # Add node information to the request
                 request_data["trace"] = request_data.get("trace", {})
                 request_data["trace"]["node_id"] = self.node_id
@@ -119,6 +192,44 @@ class HTTPTransport(TransportLayer):
                 "node_type": self.node_type,
                 "timestamp": time.time()
             }
+    
+    def _validate_request(self, request_data: Dict[str, Any]) -> bool:
+        """Validate incoming request for security"""
+        # Check if request has required fields
+        required_fields = ["method", "id"]
+        for field in required_fields:
+            if field not in request_data:
+                logger.warning(f"Missing required field: {field}")
+                return False
+        
+        # Validate method is in allowed list
+        allowed_methods = {
+            "create_device", "update_device", "delete_device",
+            "create_connection", "update_connection", "delete_connection", 
+            "get_project", "list_projects", "create_project",
+            "execute_calculation", "run_simulation", "generate_report"
+        }
+        
+        method = request_data.get("method", "")
+        if method not in allowed_methods:
+            logger.warning(f"Unauthorized method: {method}")
+            return False
+        
+        # Validate ID format (should be alphanumeric with hyphens/underscores)
+        request_id = request_data.get("id", "")
+        if not isinstance(request_id, str) or not request_id.replace('-', '').replace('_', '').isalnum():
+            logger.warning(f"Invalid request ID format: {request_id}")
+            return False
+        
+        # Validate size limits to prevent oversized requests
+        import json
+        request_size = len(json.dumps(request_data))
+        if request_size > 1024 * 1024:  # 1MB limit
+            logger.warning(f"Request too large: {request_size} bytes")
+            return False
+        
+        # If we got here, request is valid
+        return True
 
     def start(self):
         """Start HTTP server in a separate thread"""
@@ -174,31 +285,52 @@ class HTTPTransport(TransportLayer):
 
     def send_request(self, request_data: Dict[str, Any], target_node: Optional[str] = None) -> Dict[str, Any]:
         """
-        Send request to target (synchronous wrapper for async method)
+        Send request to target (synchronous wrapper for async method) with circuit breaker protection
         target_node format: "host:port" (e.g., "localhost:8001")
         """
-        if target_node:
-            host, port = target_node.split(":")
-            port = int(port)
-        else:
-            # Default to localhost:8001 for testing
-            host, port = "localhost", 8001
+        def _internal_send():
+            if target_node:
+                host, port = target_node.split(":")
+                port = int(port)
+            else:
+                # Default to localhost:8001 for testing
+                host, port = "localhost", 8001
 
-        # Run the async function synchronously
-        import asyncio
+            # Run the async function synchronously
+            import asyncio
+            try:
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                result = loop.run_until_complete(self.async_send_request(request_data, host, port))
+                loop.close()
+                return result
+            except Exception as e:
+                return {
+                    "protocol": "FACP/1.1",
+                    "id": request_data.get("id", "unknown"),
+                    "status": "error",
+                    "error": {
+                        "code": "ASYNC_ERROR",
+                        "message": str(e)
+                    },
+                    "trace": {
+                        "node_id": self.node_id,
+                        "node_type": self.node_type,
+                        "execution_path": [self.node_type],
+                        "latency_ms": 0
+                    }
+                }
+
+        # Use circuit breaker to protect against cascade failures
         try:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            result = loop.run_until_complete(self.async_send_request(request_data, host, port))
-            loop.close()
-            return result
+            return self.circuit_breaker.call(_internal_send)
         except Exception as e:
             return {
                 "protocol": "FACP/1.1",
                 "id": request_data.get("id", "unknown"),
                 "status": "error",
                 "error": {
-                    "code": "ASYNC_ERROR",
+                    "code": "CIRCUIT_BREAKER_OPEN" if str(e) == "Circuit breaker is OPEN" else "REQUEST_FAILED",
                     "message": str(e)
                 },
                 "trace": {

@@ -190,3 +190,27 @@ class SyncOperation(Base):
         Index("idx_sync_ops_entity", "entity_type", "entity_id"),
         Index("idx_sync_ops_status", "status"),
     )
+
+
+class AuditLog(Base):
+    """Audit log for tracking safety-critical operations per NFPA 72."""
+
+    __tablename__ = "audit_log"
+
+    id = Column(String, primary_key=True)
+    timestamp = Column(String, nullable=False)
+    user_id = Column(String, nullable=False)
+    action = Column(String, nullable=False)  # CREATE, UPDATE, DELETE, VIEW
+    entity_type = Column(String, nullable=False)  # projects, devices, etc.
+    entity_id = Column(String, nullable=False)
+    old_values = Column(Text)  # JSON string of old values
+    new_values = Column(Text)  # JSON string of new values
+    ip_address = Column(String)
+    user_agent = Column(String)
+
+    __table_args__ = (
+        Index("idx_audit_log_timestamp", "timestamp"),
+        Index("idx_audit_log_user", "user_id"),
+        Index("idx_audit_log_entity", "entity_type", "entity_id"),
+        Index("idx_audit_log_action", "action"),
+    )
