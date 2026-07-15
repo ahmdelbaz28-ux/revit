@@ -36,11 +36,9 @@ import re
 import tempfile
 import threading
 import uuid
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
-from typing import Optional
-
 from pydantic import BaseModel
 
 # V130 SECURITY FIX: Add auth dependencies for AutoCAD write/upload endpoints.
