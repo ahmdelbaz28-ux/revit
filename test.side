@@ -1,0 +1,30 @@
+{
+  "id": "test-project",
+  "version": "2.0",
+  "name": "Test Project",
+  "url": "https://www.google.com",
+  "tests": [{
+    "id": "test-1",
+    "name": "Open Google",
+    "commands": [
+      {
+        "id": "command-1",
+        "comment": "",
+        "command": "open",
+        "target": "/",
+        "targets": [],
+        "value": ""
+      }
+    ]
+  }],
+  "suites": [{
+    "id": "suite-1",
+    "name": "Test Suite",
+    "persistSession": false,
+    "parallel": false,
+    "timeout": 300,
+    "tests": ["test-1"]
+  }],
+  "urls": ["https://www.google.com/"],
+  "plugins": []
+}

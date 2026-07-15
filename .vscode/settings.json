@@ -1,0 +1,10 @@
+{
+    "QoderCN.cloudModelAutoTriggerGenerateLength": "long",
+    "QoderCN.cloudModelManualTriggerGenerateLength": "long",
+    "QoderCN.localMachineModel": true,
+    "QoderCN.aI Chat.webToolsInAsk/AgentMode": "Auto-execute",
+    "QoderCN.aI Chat.mcpToolsInAgentMode": true,
+    "QoderCN.DisplayLanguage": "English",
+    "QoderCN.PreferredLanguage for AI Chat": "English",
+    "QoderCN.PreferredLanguage forCommitMessage": "English"
+}
