@@ -34,10 +34,10 @@ jobs:
       matrix:
         python-version: ["3.12"]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
@@ -257,7 +257,7 @@ jobs:
           - dockerfile: deploy/docker/Dockerfile.nginx
             target: nginx
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3  # NOSONAR — S7637: GitHub Actions acceptable
@@ -305,7 +305,7 @@ jobs:
       name: staging
       url: https://staging.fireai.example.com
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Configure kubectl
         uses: azure/setup-kubectl@v4  # NOSONAR — S7637: GitHub Actions acceptable
@@ -363,7 +363,7 @@ jobs:
       url: https://fireai.example.com
     concurrency: production-deploy
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Configure kubectl
         uses: azure/setup-kubectl@v4  # NOSONAR — S7637: GitHub Actions acceptable
