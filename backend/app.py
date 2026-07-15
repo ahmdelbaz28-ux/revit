@@ -744,6 +744,17 @@ def _register_v2_router() -> None:
     except Exception as e:
         logger.warning("V2 router registration failed: %s", e)
 
+    # FDS Simulation Queue router — mounted directly on app at /api/v2/fds
+    # (fds_webhook.router has prefix="/fds", so we add "/api/v2" here)
+    try:
+        from backend.routers.fds_webhook import router as fds_router
+        app.include_router(fds_router, prefix="/api/v2", tags=["FDS Simulation Queue"])
+        logger.info("FDS Simulation Queue router mounted at /api/v2/fds")
+    except ImportError as e:
+        logger.warning("FDS router skipped (optional dependency missing): %s", e)
+    except Exception as e:
+        logger.warning("FDS router registration failed: %s", e)
+
 _register_v2_router()
 
 # V254 CRITICAL FIX: Actually call _register_csrf_middleware().

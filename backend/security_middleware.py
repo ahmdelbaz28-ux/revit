@@ -310,6 +310,9 @@ _PUBLIC_PATHS_EXACT = frozenset({
     "/favicon.ico",
     "/manifest.json",
     "/robots.txt",
+    # FDS Webhook: receives callbacks from Modal cloud worker.
+    # Auth is handled internally via HMAC secret (not API key).
+    "/api/v2/fds/webhook",
 })
 
 # Path prefixes that are public (for routes with path params, e.g. /docs/*)

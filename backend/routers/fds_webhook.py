@@ -29,7 +29,7 @@ from backend.services.fds_queue_service import (
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/v2/fds", tags=["FDS Simulation Queue"])
+router = APIRouter(prefix="/fds", tags=["FDS Simulation Queue"])
 
 
 # ── Pydantic models ───────────────────────────────────────────────────────────
