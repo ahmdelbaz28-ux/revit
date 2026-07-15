@@ -986,7 +986,7 @@ class TestRoundTrip:
         assert retrieved is not None
         assert retrieved.geometry is not None
         assert len(retrieved.geometry.points) == len(sample_element.geometry.points)
-        for orig, got in zip(sample_element.geometry.points, retrieved.geometry.points, strict=False):
+        for orig, got in zip(sample_element.geometry.points, retrieved.geometry.points):
             assert abs(orig.x - got.x) < 1e-9
             assert abs(orig.y - got.y) < 1e-9
             assert abs(orig.z - got.z) < 1e-9

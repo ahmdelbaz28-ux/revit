@@ -436,7 +436,7 @@ class DDCAdapter:
                     headers = [str(h).strip() if h else "" for h in row]
                     continue
 
-                row_dict = dict(zip(headers, row, strict=False))
+                row_dict = dict(zip(headers, row))
                 category = str(row_dict.get("Category", "")).lower()
 
                 # Rooms are "Rooms" category in Revit, "IfcSpace" in IFC
@@ -479,7 +479,7 @@ class DDCAdapter:
                 if i == 0:
                     headers = [str(h).strip() if h else "" for h in row]
                     continue
-                row_dict = dict(zip(headers, row, strict=False))
+                row_dict = dict(zip(headers, row))
                 elements.append(row_dict)
 
             wb.close()

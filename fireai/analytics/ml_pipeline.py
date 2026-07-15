@@ -174,7 +174,7 @@ class _LinearRegression:
             self.coef_ = [0.0] * m
             self.intercept_ = 0.0
             return
-        Xt = list(zip(*X, strict=False))  # NOSONAR - python:S117
+        Xt = list(zip(*X))  # NOSONAR - python:S117
         x_means = [sum(col) / n for col in Xt]
         y_mean = sum(y) / n
         coef: list[float] = []
@@ -183,7 +183,7 @@ class _LinearRegression:
             den = sum((X[i][j] - x_means[j]) ** 2 for i in range(n))
             coef.append(num / den if den != 0 else 0.0)
         self.coef_ = coef
-        self.intercept_ = y_mean - sum(c * xm for c, xm in zip(coef, x_means, strict=False))
+        self.intercept_ = y_mean - sum(c * xm for c, xm in zip(coef, x_means))
 
     def predict(self, X: list[list[float]]) -> list[float]:
         return [self.intercept_ + sum(c * x[j] for j, c in enumerate(self.coef_)) for x in X]
@@ -496,7 +496,7 @@ class MLPipeline:
                 fold_model.fit(X_ft, y_ft)
                 fold_pred = fold_model.predict(X_fv) if hasattr(fold_model, "predict") else []
                 if fold_pred and target == "coverage_pct":
-                    mae = sum(abs(a - b) for a, b in zip(y_fv, fold_pred, strict=False)) / max(len(fold_pred), 1)
+                    mae = sum(abs(a - b) for a, b in zip(y_fv, fold_pred)) / max(len(fold_pred), 1)
                     cv_scores.append(mae)
             if cv_scores:
                 eval_report.mae = sum(cv_scores) / len(cv_scores)
@@ -549,23 +549,23 @@ class MLPipeline:
         if not y_pred:
             return EvaluationReport()
         report = EvaluationReport()
-        errors = [abs(a - b) for a, b in zip(y_test, y_pred, strict=False)] if len(y_test) == len(y_pred) else []
+        errors = [abs(a - b) for a, b in zip(y_test, y_pred)] if len(y_test) == len(y_pred) else []
         if errors:
             report.mae = round(sum(errors) / max(len(errors), 1), 6)
-            sq_errors = [(a - b) ** 2 for a, b in zip(y_test, y_pred, strict=False)]
+            sq_errors = [(a - b) ** 2 for a, b in zip(y_test, y_pred)]
             report.rmse = round(math.sqrt(sum(sq_errors) / max(len(sq_errors), 1)), 6)
         if model_type in ("random_forest_classifier",):
-            correct = sum(1 for a, b in zip(y_test, y_pred, strict=False) if abs(a - b) < 0.5) if len(y_test) == len(y_pred) else 0
+            correct = sum(1 for a, b in zip(y_test, y_pred) if abs(a - b) < 0.5) if len(y_test) == len(y_pred) else 0
             report.accuracy = round(correct / max(len(y_test), 1), 6)
-            tp = sum(1 for a, b in zip(y_test, y_pred, strict=False) if a > 0.5 and b > 0.5) if len(y_test) == len(y_pred) else 0
-            fp = sum(1 for a, b in zip(y_test, y_pred, strict=False) if a < 0.5 < b) if len(y_test) == len(y_pred) else 0
-            fn = sum(1 for a, b in zip(y_test, y_pred, strict=False) if a > 0.5 > b) if len(y_test) == len(y_pred) else 0
+            tp = sum(1 for a, b in zip(y_test, y_pred) if a > 0.5 and b > 0.5) if len(y_test) == len(y_pred) else 0
+            fp = sum(1 for a, b in zip(y_test, y_pred) if a < 0.5 < b) if len(y_test) == len(y_pred) else 0
+            fn = sum(1 for a, b in zip(y_test, y_pred) if a > 0.5 > b) if len(y_test) == len(y_pred) else 0
             report.precision = round(tp / max(tp + fp, 1), 6)
             report.recall = round(tp / max(tp + fn, 1), 6)
             report.f1 = round(2 * report.precision * report.recall / max(report.precision + report.recall, 1e-9), 6)
         else:
             if y_test and y_pred:
-                ss_res = sum((a - b) ** 2 for a, b in zip(y_test, y_pred, strict=False))
+                ss_res = sum((a - b) ** 2 for a, b in zip(y_test, y_pred))
                 y_mean = sum(y_test) / len(y_test)
                 ss_tot = sum((a - y_mean) ** 2 for a in y_test)
                 report.r2 = round(1.0 - ss_res / max(ss_tot, 1e-9), 6)

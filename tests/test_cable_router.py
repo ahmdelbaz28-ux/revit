@@ -684,7 +684,7 @@ class TestCableRouterDeterminism:
         route1 = router.route(start=(2.0, 2.0, 1.5), end=(8.0, 5.0, 1.5))
         route2 = router.route(start=(2.0, 2.0, 1.5), end=(8.0, 5.0, 1.5))
         assert len(route1.waypoints) == len(route2.waypoints)
-        for w1, w2 in zip(route1.waypoints, route2.waypoints, strict=False):
+        for w1, w2 in zip(route1.waypoints, route2.waypoints):
             assert abs(w1.x - w2.x) < 0.001
             assert abs(w1.y - w2.y) < 0.001
             assert abs(w1.z - w2.z) < 0.001

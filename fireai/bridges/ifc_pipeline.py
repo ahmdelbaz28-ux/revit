@@ -196,8 +196,8 @@ class IfcFirePipeline:
         areas = [getattr(r, '_space_area_m2', getattr(r, 'space_area_m2', 0.0)) for r in all_results]
         total_area = sum(areas) if areas else 0.0
         if total_area > 0:
-            global_cov = sum(c * a for c, a in zip(cov_pcts, areas, strict=False)) / total_area
-            global_bs = sum(b * a for b, a in zip(blind_pcts, areas, strict=False)) / total_area
+            global_cov = sum(c * a for c, a in zip(cov_pcts, areas)) / total_area
+            global_bs = sum(b * a for b, a in zip(blind_pcts, areas)) / total_area
         elif all_results:
             # V79 FIX: All spaces have zero area — geometry extraction may have failed.
             # Arithmetic mean of unreliable coverage values is still unreliable.

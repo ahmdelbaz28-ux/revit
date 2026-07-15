@@ -378,7 +378,7 @@ def cmd_audit(argv: Sequence[str]) -> int:  # NOSONAR - python:S3776
         ws_d = wb_data[sname]
         ws_f = wb_form[sname]
         for row_d, row_f in zip(ws_d.iter_rows(), ws_f.iter_rows(), strict=False):
-            for cd, cf in zip(row_d, row_f, strict=False):
+            for cd, cf in zip(row_d, row_f):
                 fval = cf.value
                 if not is_formula(fval):
                     continue

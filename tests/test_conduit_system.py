@@ -506,7 +506,7 @@ class TestRouter:
         assert r1.is_ok()
         assert r2.is_ok()
         assert len(r1.value.waypoints) == len(r2.value.waypoints)
-        for p1, p2 in zip(r1.value.waypoints, r2.value.waypoints, strict=False):
+        for p1, p2 in zip(r1.value.waypoints, r2.value.waypoints):
             assert p1.x == p2.x
             assert p1.y == p2.y
             assert p1.z == p2.z
