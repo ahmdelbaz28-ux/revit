@@ -60,7 +60,15 @@ class FDSJobStatus(str, Enum):
 
 # ── In-memory job store (replace with DB calls when Supabase migration done) ──
 # Keys: job_id (str) → job dict
+# IMPORTANT: defined at module level so it is a true singleton across all
+# FastAPI routes and test clients that import this module. Never reassign the
+# dict itself — only mutate it (add/update keys) so all references stay live.
 _JOB_STORE: Dict[str, Dict[str, Any]] = {}
+
+
+def _get_job_store() -> Dict[str, Dict[str, Any]]:
+    """Return the singleton job store. Always use this instead of _JOB_STORE directly."""
+    return _JOB_STORE
 
 
 # ════════════════════════════════════════════════════════════════════════════════
@@ -104,7 +112,7 @@ def submit_fds_job(
         "metadata":        metadata or {},
         "modal_call_id":   None,
     }
-    _JOB_STORE[job_id] = job
+    _get_job_store()[job_id] = job
 
     if _MODAL_AVAILABLE:
         _submit_to_modal(job_id, fds_input, webhook_url)
@@ -126,7 +134,7 @@ def submit_fds_job(
 
 def get_fds_job_status(job_id: str) -> Dict[str, Any]:
     """Return the current status and result of a job."""
-    job = _JOB_STORE.get(job_id)
+    job = _get_job_store().get(job_id)
     if not job:
         return {"error": f"Job {job_id} not found"}
 
@@ -145,7 +153,7 @@ def list_fds_jobs(user_id: str = "", limit: int = 20) -> Dict[str, Any]:
     """List recent FDS jobs for a user."""
     jobs = [
         {k: v for k, v in j.items() if k != "fds_checksum"}
-        for j in _JOB_STORE.values()
+        for j in _get_job_store().values()
         if not user_id or j.get("user_id") == user_id
     ]
     jobs_sorted = sorted(jobs, key=lambda x: x["submitted_at"], reverse=True)
@@ -176,7 +184,7 @@ def handle_fds_webhook(payload: Dict[str, Any]) -> Dict[str, Any]:
         logger.warning("FDS Webhook: invalid secret for job %s", job_id)
         return {"error": "Invalid webhook secret"}
 
-    job = _JOB_STORE.get(job_id)
+    job = _get_job_store().get(job_id)
     if not job:
         return {"error": f"Job {job_id} not found"}
 
@@ -219,14 +227,14 @@ def _submit_to_modal(job_id: str, fds_input: str, webhook_url: str) -> None:
             webhook_url=webhook_url,
             webhook_secret=_compute_webhook_secret(job_id),
         )
-        _JOB_STORE[job_id]["modal_call_id"] = call.object_id
-        _JOB_STORE[job_id]["status"] = FDSJobStatus.RUNNING
+        _get_job_store()[job_id]["modal_call_id"] = call.object_id
+        _get_job_store()[job_id]["status"] = FDSJobStatus.RUNNING
         logger.info("FDS Job %s dispatched to Modal, call_id=%s", job_id, call.object_id)
 
     except Exception as exc:  # noqa: BLE001
         logger.error("Failed to submit FDS job %s to Modal: %s", job_id, exc)
-        _JOB_STORE[job_id]["status"] = FDSJobStatus.FAILED
-        _JOB_STORE[job_id]["error"] = str(exc)
+        _get_job_store()[job_id]["status"] = FDSJobStatus.FAILED
+        _get_job_store()[job_id]["error"] = str(exc)
 
 
 def _run_local_simulation(job_id: str, fds_input: str) -> None:
@@ -260,6 +268,6 @@ def _run_local_simulation(job_id: str, fds_input: str) -> None:
         ),
     }
 
-    _JOB_STORE[job_id]["status"]       = FDSJobStatus.SIMULATED
-    _JOB_STORE[job_id]["completed_at"] = datetime.now(timezone.utc).isoformat()
-    _JOB_STORE[job_id]["result"]       = simulated_result
+    _get_job_store()[job_id]["status"]       = FDSJobStatus.SIMULATED
+    _get_job_store()[job_id]["completed_at"] = datetime.now(timezone.utc).isoformat()
+    _get_job_store()[job_id]["result"]       = simulated_result
