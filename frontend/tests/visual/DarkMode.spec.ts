@@ -2,17 +2,26 @@ import { test, expect } from '@playwright/test';
 import { installApiMock } from './helpers/authMock';
 
 test('can toggle dark mode via navigation button', async ({ page }) => {
-  // Pre-authenticate so the AppShell (with TopBar toggle button) renders
-  await installApiMock(page, { preAuthenticated: true });    await page.goto('/dashboard', { waitUntil: 'load' });
-    await page.waitForTimeout(2000);
+  // Pre-authenticate so the app loads without redirecting to /login
+  await page.unroute('**/api/**');
+  await installApiMock(page, { preAuthenticated: true });
 
-    // Click the toggle button in TopBar (button with aria-label)
-  await page.locator('button[aria-label="Toggle dark mode"]').click();
+  await page.goto('/dashboard');
+  await page.waitForLoadState('networkidle');
 
-  // Now dark mode class should be added to html
+  // The dark mode toggle is inside Navigation's dropdown menu.
+  // First, open the menu by clicking the hamburger button.
+  await page.locator('button[aria-label="Navigation menu"]').click();
+
+  // Now the toggle button should be visible in the dropdown
+  const toggleBtn = page.locator('button[aria-label="Toggle dark mode"]');
+  await expect(toggleBtn).toBeVisible({ timeout: 5000 });
+
+  // Toggle dark mode ON
+  await toggleBtn.click();
   await expect(page.locator('html')).toHaveClass(/dark/);
 
-  // Click again to toggle off
-  await page.locator('button[aria-label="Toggle dark mode"]').click();
+  // Toggle dark mode OFF
+  await toggleBtn.click();
   await expect(page.locator('html')).not.toHaveClass(/dark/);
 });
