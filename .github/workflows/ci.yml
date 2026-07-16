@@ -376,7 +376,8 @@ jobs:
         # (v193-e2e-auth.spec.ts) use test.skip when API_KEY is not set.
         # Passing a fake key causes them to attempt real backend calls
         # which fail because no backend is running in CI.
-        run: npx playwright test --reporter=list
+        # Use both list and html reporters to generate the HTML report artifact.
+        run: npx playwright test --reporter=list,html
         working-directory: frontend
         env:
           CI: "true"
