@@ -37,6 +37,19 @@ const routeLabels: Record<string, string> = {
         "/digital-twin/history": "DT History",
 };
 
+// Navigation links for the hamburger menu
+const NAV_LINKS = [
+        { to: "/", label: "Dashboard" },
+        { to: "/projects", label: "Projects" },
+        { to: "/engineering", label: "Engineering" },
+        { to: "/fire-alarm-designer", label: "Fire Alarm Designer" },
+        { to: "/digital-twin", label: "Digital Twin" },
+        { to: "/reports", label: "Reports" },
+        { to: "/elements", label: "Elements" },
+        { to: "/connections", label: "Connections" },
+        { to: "/settings", label: "Settings" },
+];
+
 const TopBar: React.FC<TopBarProps> = ({
         isConnected,
         onHelpOpen,
@@ -46,11 +59,17 @@ const TopBar: React.FC<TopBarProps> = ({
 }) => {
         const location = useLocation();
         const { dark, toggle } = useTheme();
+        const [navOpen, setNavOpen] = useState(false);
         const [langOpen, setLangOpen] = useState(false);
+        const navRef = useRef<HTMLDivElement>(null);
         const langRef = useRef<HTMLDivElement>(null);
 
+        // Close nav dropdown on outside click
         useEffect(() => {
                 const handler = (e: MouseEvent) => {
+                        if (navRef.current && !navRef.current.contains(e.target as Node)) {
+                                setNavOpen(false);
+                        }
                         if (langRef.current && !langRef.current.contains(e.target as Node)) {
                                 setLangOpen(false);
                         }
@@ -63,11 +82,40 @@ const TopBar: React.FC<TopBarProps> = ({
 
         return (
                 <header
-                        className="h-16 glass flex items-center px-6 gap-4 shrink-0 sticky top-0 z-40"
+                        className="h-16 glass flex items-center px-4 lg:px-6 gap-2 lg:gap-4 shrink-0 sticky top-0 z-40"
                         style={{ borderBottom: "1px solid rgba(255,255,255,0.1)" }}
                 >
-                        {/* Left — logo + page title */}
+                        {/* Left — hamburger nav menu + logo + page title */}
                         <div className="flex items-center gap-3 min-w-0">
+                                {/* Hamburger menu with nav links */}
+                                <div className="relative" ref={navRef}>
+                                        <button
+                                                onClick={() => setNavOpen(!navOpen)}
+                                                className="px-2 py-2 text-muted-foreground hover:text-cyan-300 hover:bg-white/5 dark:hover:bg-gray-800 rounded-md transition-colors"
+                                                aria-haspopup="true"
+                                                aria-expanded={navOpen}
+                                                aria-label="Navigation menu"
+                                        >
+                                                ☰
+                                        </button>
+                                        {navOpen && (
+                                                <div className="absolute left-0 top-full mt-1 z-50 min-w-[200px] bg-background border border-white/10 rounded-lg shadow-xl overflow-hidden">
+                                                        <div className="py-1">
+                                                                {NAV_LINKS.map(({ to, label }) => (
+                                                                        <Link
+                                                                                key={to}
+                                                                                to={to}
+                                                                                className={`block py-2 px-4 text-sm text-muted-foreground hover:bg-white/5 dark:hover:bg-gray-800 transition-colors hover:text-cyan-300 dark:hover:text-cyan-300${location.pathname === to ? " bg-white/5 text-cyan-300" : ""}`}
+                                                                                onClick={() => setNavOpen(false)}
+                                                                        >
+                                                                                {label}
+                                                                        </Link>
+                                                                ))}
+                                                        </div>
+                                                </div>
+                                        )}
+                                </div>
+
                                 <BazSparkLogo size={30} className="shrink-0" />
                                 <h1 className="text-foreground font-semibold text-[16px] tracking-tight truncate ml-1">
                                         {pageName}
