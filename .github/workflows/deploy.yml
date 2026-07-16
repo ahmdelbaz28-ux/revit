@@ -35,6 +35,10 @@ jobs:
         python-version: ["3.12"]
     steps:
       - uses: actions/checkout@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: false
+          fetch-depth: 0
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v6
@@ -261,6 +265,10 @@ jobs:
             target: nginx
     steps:
       - uses: actions/checkout@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: false
+          fetch-depth: 0
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4  # NOSONAR — S7637: GitHub Actions acceptable
@@ -309,6 +317,10 @@ jobs:
       url: https://staging.fireai.example.com
     steps:
       - uses: actions/checkout@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: false
+          fetch-depth: 0
 
       - name: Configure kubectl
         uses: azure/setup-kubectl@v4  # NOSONAR — S7637: GitHub Actions acceptable
@@ -367,6 +379,10 @@ jobs:
     concurrency: production-deploy
     steps:
       - uses: actions/checkout@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: false
+          fetch-depth: 0
 
       - name: Configure kubectl
         uses: azure/setup-kubectl@v4  # NOSONAR — S7637: GitHub Actions acceptable
