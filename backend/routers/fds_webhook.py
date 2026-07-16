@@ -86,7 +86,7 @@ async def submit_simulation(
 async def get_job_status(job_id: str) -> Dict[str, Any]:
     """Poll the status and result of an FDS simulation job."""
     result = get_fds_job_status(job_id)
-    if "error" in result:
+    if result.get("error"):
         raise HTTPException(status_code=404, detail=result["error"])
     return result
 
