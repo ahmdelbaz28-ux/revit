@@ -14,8 +14,13 @@
 # that expect requirements.txt (Dependabot, some Docker base images).
 
 # ── Core Web Framework ───────────────────────────────────────────────────────
-fastapi>=1.0.0,<2.0.0
-starlette>=1.0.1,<2.0.0
+# V267 FIX: Revert fastapi pin from >=1.0.0 (doesn't exist on PyPI) back to
+# >=0.138.0,<1.0.0 (latest is 0.139.2). The >=1.0.0 pin was introduced by
+# V276 and causes pip install to fail with:
+#   ERROR: No matching distribution found for fastapi<2.0.0,>=1.0.0
+# This blocks the FireAI Deploy Pipeline and CI/CD Pipeline.
+fastapi>=0.138.0,<1.0.0
+starlette>=0.27.0,<2.0.0
 uvicorn[standard]>=0.20.0,<1.0.0
 pydantic>=2.0.0,<3.0.0
 pydantic-settings>=2.14.2,<3.0.0
