@@ -204,7 +204,8 @@ jobs:
         # threshold from pyproject.toml [tool.coverage] applies.
         # The `timeout --signal=KILL` workaround from V159-V171 is
         # removed; pytest should exit cleanly.
-        timeout-minutes: 30
+        # V275 FIX: Increased timeout to 45 minutes for 7,656+ tests.
+        timeout-minutes: 45
         env:
           PYTEST_ADDOPTS: "--color=no"
           FIREAI_SESSION_SECRET: ${{ env.FIREAI_SESSION_SECRET }}
