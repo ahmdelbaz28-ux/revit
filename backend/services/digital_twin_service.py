@@ -34,6 +34,7 @@ import json
 import logging
 import os
 import shutil
+import tempfile
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -1093,7 +1094,7 @@ class VersionManager:
             Path(tempfile.gettempdir()).resolve(),
         ]
 
-        def _is_safe(p_str: str | None) -> bool:
+        def _is_safe(p_str: Optional[str]) -> bool:
             if not p_str:
                 return True
             try:

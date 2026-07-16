@@ -34,9 +34,14 @@ def _setup_env_module() -> None:
     """
     os.environ["FIREAI_ENV"] = "development"
     os.environ["FIREAI_API_KEY"] = "test_key_for_auth_123"
-    # Use SQLite for tests to avoid psycopg2 dependency
+    # Use SQLite for test isolation (psycopg2 2.9.9 is installed, but the
+    # configured Supabase PostgreSQL host is not resolvable from this machine).
+    # When a working DATABASE_URL pointing to a reachable PostgreSQL is
+    # available via .env or system env, comment out this line to use it.
     os.environ["DATABASE_URL"] = "sqlite:///./test_db_auth.db"
-    os.environ["FIREAI_CSRF_DISABLED"] = "1"
+    # Enable CSRF for full CSRF + cookie auth testing
+    # The test handles this by injecting the CSRF cookie manually
+    # (since httpx won't store __Host- cookies with Secure flag over HTTP)
 
 
 @pytest.fixture(scope="module")

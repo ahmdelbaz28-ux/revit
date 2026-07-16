@@ -4,6 +4,9 @@
  */
 @import "tailwindcss";
 
+
+@import "./styles/dark-mode.css";
+
 :root {
         /* ── Core palette (softened) ──────────────────────────────────────── */
         --color-background: #070b12;          /* deep navy — pure void */
