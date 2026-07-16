@@ -316,7 +316,6 @@ jobs:
     environment:
       name: production
       url: https://fireai.example.com
-    concurrency: production-deploy
     steps:
       - uses: actions/checkout@v7
         with:
@@ -328,6 +327,14 @@ jobs:
         uses: azure/setup-kubectl@v5  # NOSONAR — S7637: GitHub Actions acceptable
         with:
           version: latest
+
+      - name: Validate required secrets
+        run: |
+          if [ -z "${{ secrets.KUBE_CONFIG_PRODUCTION }}" ]; then
+            echo "::error::KUBE_CONFIG_PRODUCTION is not set or is empty."
+            echo "::error::Set it as a GitHub Actions environment secret for 'production' environment."
+            exit 1
+          fi
 
       - name: Set up kubeconfig
         run: |
@@ -362,9 +369,11 @@ jobs:
 
       - name: Full smoke test
         run: |
+          echo "Waiting for service to be ready..."
+          sleep 30
           kubectl run smoke-test --image=curlimages/curl:latest \
             -n fireai --rm --restart=Never -- \
-            curl -sf https://fireai.example.com/api/health
+            curl -sf http://fireai-api.fireai.svc.cluster.local/api/health
 
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
