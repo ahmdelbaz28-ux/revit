@@ -19,7 +19,7 @@ asyncio-mqtt>=0.10.0
 prometheus_client>=0.16.0,<1.0.0
 
 # Load testing (dev)
-locust>=2.20.0
+locust>=2.45.0  # V265: bump lower bound (PR #150)
 
 # HTTP test client (required by backend/tests/conftest.py)
 httpx>=0.24.0,<1.0.0
