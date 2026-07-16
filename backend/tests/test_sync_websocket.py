@@ -21,7 +21,6 @@ from fastapi.testclient import TestClient
 def _setup_env() -> None:
     """Set development environment for testing."""
     os.environ["FIREAI_ENV"] = "development"
-    os.environ["FIREAI_API_KEY"] = ""
 
 
 @pytest.fixture(scope="module")
