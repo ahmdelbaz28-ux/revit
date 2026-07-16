@@ -275,6 +275,10 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
+          if [ ! -f hf_after_sha.txt ]; then
+            echo "Skipping verify — HF sync was not performed."
+            exit 0
+          fi
           echo "═══════════════════════════════════════════════════════════════════════"
           echo "  SYNC VERIFICATION"
           echo "═══════════════════════════════════════════════════════════════════════"
