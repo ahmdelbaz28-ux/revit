@@ -473,9 +473,15 @@ export function LoginPage() {
                 try {
                         if (remember) {
                                 try {
+                                        // V266 FIX (CodeQL js/clear-text-storage-of-sensitive-data):
+                                        // Do NOT store the API key in sessionStorage (clear text).
+                                        // Instead, store only a flag indicating the user chose
+                                        // "remember me". The API key itself is kept in the
+                                        // signed HttpOnly session cookie set by the backend
+                                        // (POST /api/v1/auth/login).
                                         sessionStorage.setItem(
-                                                "fireai_settings",
-                                                JSON.stringify({ apiKey: apiKey.trim() }),
+                                                "fireai_remember",
+                                                JSON.stringify({ remember: true }),
                                         );
                                 } catch {
                                         // sessionStorage might be unavailable
