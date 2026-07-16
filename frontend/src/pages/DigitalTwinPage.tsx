@@ -137,15 +137,15 @@ export function DigitalTwinPage() {
                                 conversionType === "autocad_to_revit"
                                         ? "/autocad/upload"
                                         : "/revit/upload_rvt";
-                        const apiKey = sessionStorage.getItem("fireai_settings");
-                        const apiKeyStr = apiKey ? JSON.parse(apiKey).apiKey : "";
+                        // V266 FIX: Removed clear-text apiKey from sessionStorage.
+                        // The backend session cookie (HttpOnly, set by POST /auth/login)
+                        // is sent automatically via `credentials: "same-origin"`.
                         const uploadFormData = new FormData();
                         uploadFormData.append("file", selectedFile);
 
                         const apiUrl = import.meta.env.VITE_API_URL || "/api/v1";
                         const uploadResp = await fetch(`${apiUrl}${uploadEndpoint}`, {
                                 method: "POST",
-                                headers: apiKeyStr ? { "X-API-Key": apiKeyStr } : {},
                                 body: uploadFormData,
                                 credentials: "same-origin",
                         });
@@ -167,11 +167,12 @@ export function DigitalTwinPage() {
                                 selectedFile.name; // fallback to filename
 
                         // Step 2: Convert via JSON (correct schema).
+                        // V266 FIX: Removed X-API-Key header — session cookie is sent
+                        // automatically via `credentials: "same-origin"`.
                         const convertResp = await fetch(`${apiUrl}/digital-twin/convert`, {
                                 method: "POST",
                                 headers: {
                                         "Content-Type": "application/json",
-                                        ...(apiKeyStr ? { "X-API-Key": apiKeyStr } : {}),
                                 },
                                 body: JSON.stringify({
                                         source_filepath: serverFilepath,
