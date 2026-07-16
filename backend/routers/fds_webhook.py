@@ -18,6 +18,7 @@ from typing import Any, Dict, Optional
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
+from backend.routers.sync import manager as ws_manager
 from backend.services.fds_queue_service import (
     get_fds_job_status,
     handle_fds_webhook,
@@ -118,5 +119,27 @@ async def fds_result_webhook(
 
     if "error" in result:
         raise HTTPException(status_code=400, detail=result["error"])
+
+    # Broadcast completion event to subscribed WebSocket clients
+    try:
+        job_status = get_fds_job_status(payload.job_id)
+        project_id = job_status.get("project_id", "")
+        if project_id:
+            notification = {
+                "event": "fds_complete",
+                "job_id": payload.job_id,
+                "status": payload.status,
+                "error": payload.error,
+            }
+            await ws_manager.send_to_project(project_id, notification)
+            logger.info(
+                "FDS WebSocket notification sent for job %s (project %s)",
+                payload.job_id, project_id,
+            )
+    except Exception as exc:  # noqa: BLE001
+        logger.warning(
+            "FDS WebSocket notification failed for job %s: %s",
+            payload.job_id, exc,
+        )
 
     return result

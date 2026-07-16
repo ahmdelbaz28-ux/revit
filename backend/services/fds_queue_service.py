@@ -193,8 +193,9 @@ def handle_fds_webhook(payload: Dict[str, Any]) -> Dict[str, Any]:
 
     logger.info("FDS Job %s → %s", job_id, status)
 
-    # TODO: emit WebSocket notification to subscribed clients
-    # _ws_broadcast(job["project_id"], {"event": "fds_complete", "job": job})
+    # WebSocket notification is handled at the router level
+    # (backend/routers/fds_webhook.py:fds_result_webhook) after this
+    # function returns, so the project_id is available in the response.
 
     return {"received": True, "job_id": job_id, "status": status}
 
