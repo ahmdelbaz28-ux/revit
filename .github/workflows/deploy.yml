@@ -329,10 +329,25 @@ jobs:
           version: latest
 
       - name: Validate required secrets
+        env:
+          KUBE_CONFIG_PRODUCTION: ${{ secrets.KUBE_CONFIG_PRODUCTION }}
+          FIREAI_API_KEY: ${{ secrets.FIREAI_API_KEY }}
+          DB_PASSWORD_PRODUCTION: ${{ secrets.DB_PASSWORD_PRODUCTION }}
+          REDIS_PASSWORD_PRODUCTION: ${{ secrets.REDIS_PASSWORD_PRODUCTION }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          FIREAI_EVIDENCE_HMAC_KEY: ${{ secrets.FIREAI_EVIDENCE_HMAC_KEY }}
         run: |
-          if [ -z "${{ secrets.KUBE_CONFIG_PRODUCTION }}" ]; then
-            echo "::error::KUBE_CONFIG_PRODUCTION is not set or is empty."
-            echo "::error::Set it as a GitHub Actions environment secret for 'production' environment."
+          missing=()
+          for var in KUBE_CONFIG_PRODUCTION FIREAI_API_KEY DB_PASSWORD_PRODUCTION REDIS_PASSWORD_PRODUCTION JWT_SECRET ENCRYPTION_KEY GEMINI_API_KEY FIREAI_EVIDENCE_HMAC_KEY; do
+            if [ -z "${!var}" ]; then
+              missing+=("$var")
+            fi
+          done
+          if [ ${#missing[@]} -ne 0 ]; then
+            echo "::error::Missing required production secrets: ${missing[*]}"
+            echo "::error::Add them as GitHub Actions environment secrets for the 'production' environment."
             exit 1
           fi
 
@@ -347,8 +362,11 @@ jobs:
           helm upgrade --install fireai deploy/helm/fireai \
             --namespace fireai \
             --create-namespace \
+            --set images.api.repository=${{ env.REGISTRY }}/${{ github.repository }}/api \
             --set images.api.tag=${{ env.VERSION }} \
+            --set images.worker.repository=${{ env.REGISTRY }}/${{ github.repository }}/worker \
             --set images.worker.tag=${{ env.VERSION }} \
+            --set images.nginx.repository=${{ env.REGISTRY }}/${{ github.repository }}/nginx \
             --set images.nginx.tag=${{ env.VERSION }} \
             --set ingress.hosts[0].host=fireai.example.com \
             --set replicas.api=3 \

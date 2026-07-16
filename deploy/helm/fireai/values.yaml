@@ -1,8 +1,7 @@
 ---
 # V141 FIX (B6 — Launch Blocker): Image repositories corrected from
-# `ghcr.io/fireai/*` (non-existent org) to `ghcr.io/ahmdelbaz28-ux/revit/*`
-# (actual GitHub Container Registry path produced by deploy.yml's
-# `ghcr.io/${{ github.repository }}/{api,worker,nginx}`).
+# `ghcr.io/fireai/*` (non-existent org) to match deploy.yml metadata images
+# `ghcr.io/${{ github.repository }}/{api,worker,nginx}`.
 # Override per-environment via `helm install --set images.api.repository=...`
 # or by maintaining separate values files per environment.
 
@@ -16,15 +15,15 @@ global:
 # ── Image Configuration ──────────────────────────────────────────────────────
 images:
   api:
-    repository: ghcr.io/ahmdelbaz28-ux/revit/api
+    repository: ghcr.io/ahmdelbaz28-ux/BAZspark/api
     tag: "1.0.0"
     pullPolicy: Always
   worker:
-    repository: ghcr.io/ahmdelbaz28-ux/revit/worker
+    repository: ghcr.io/ahmdelbaz28-ux/BAZspark/worker
     tag: "1.0.0"
     pullPolicy: Always
   nginx:
-    repository: ghcr.io/ahmdelbaz28-ux/revit/nginx
+    repository: ghcr.io/ahmdelbaz28-ux/BAZspark/nginx
     tag: "1.0.0"
     pullPolicy: Always
 
@@ -54,7 +53,7 @@ serviceAccount:
 api:
   enabled: true
   image:
-    repository: ghcr.io/ahmdelbaz28-ux/revit/api
+    repository: ghcr.io/ahmdelbaz28-ux/BAZspark/api
     tag: "1.0.0"
     pullPolicy: Always
   replicaCount: 3
@@ -133,7 +132,7 @@ api:
 worker:
   enabled: true
   image:
-    repository: ghcr.io/ahmdelbaz28-ux/revit/worker
+    repository: ghcr.io/ahmdelbaz28-ux/BAZspark/worker
     tag: "1.0.0"
     pullPolicy: Always
   replicaCount: 1
@@ -184,7 +183,7 @@ worker:
 nginx:
   enabled: true
   image:
-    repository: ghcr.io/ahmdelbaz28-ux/revit/nginx
+    repository: ghcr.io/ahmdelbaz28-ux/BAZspark/nginx
     tag: "1.0.0"
     pullPolicy: Always
   replicaCount: 2

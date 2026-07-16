@@ -515,7 +515,7 @@ jobs:
           echo "Testing container with image: $IMAGE"
           # Dockerfile EXPOSEs 7860 and CMD uses --port 7860
           # Pass required env vars for production mode startup
-          docker run -d --name test-app -p 8888:7860 \
+          docker run -d --name test-app -p 8888:8000 \
             -e FIREAI_ENV=development \
             -e FIREAI_API_KEY=test-ci-key \
             -e FIREAI_SESSION_SECRET=$(python -c 'import secrets; print(secrets.token_urlsafe(64))') \
