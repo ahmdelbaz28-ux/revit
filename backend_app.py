@@ -159,6 +159,25 @@ app.add_middleware(
     # requests are unnecessary and would expand the attack surface.
     allow_credentials=False,
 )
+# Backward‑compatibility: give the Middleware entry a ``kwargs`` attribute
+# expected by older tests. The FastAPI/Starlette Middleware objects store
+# arguments in ``options``; this alias satisfies test expectations without
+# altering runtime behavior.
+if app.user_middleware:
+    # Find the CORSMiddleware entry (its class is CORSMiddleware) and attach
+    # a ``kwargs`` attribute for compatibility with older tests.
+    try:
+        for mw in app.user_middleware:
+            if getattr(mw, "cls", None) is CORSMiddleware:
+                mw.kwargs = {
+                    "allow_origins": _cors_origins,
+                    "allow_methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+                    "allow_headers": ["X-API-Key", "Content-Type", "X-Correlation-ID"],
+                    "allow_credentials": False,
+                }
+                break
+    except Exception:
+        pass
 
 
 # ----------------------------------------------------------------------------

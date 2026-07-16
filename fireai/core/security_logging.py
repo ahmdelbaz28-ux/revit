@@ -640,6 +640,12 @@ class SecurityAuditLogger:
             # SensitiveDataFilter again, or the chain_hash hex string
             # will be corrupted by the filter's hex-regex pattern.
             self._logger.info(event_json)
+            # Ensure log entry is flushed to disk for immediate visibility in tests
+            for handler in self._logger.handlers:
+                try:
+                    handler.flush()
+                except Exception:
+                    pass
 
             return event_id
 

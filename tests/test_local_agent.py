@@ -49,17 +49,17 @@ class TestAgentWsModule:
 
     def _import_agent_ws(self):
         """Import agent_ws directly to bypass routers/__init__.py lazy-load chain."""
-        import importlib
+        import importlib.util
         import sys
-        # Direct import avoids triggering the parsers/pymupdf chain
-        spec = importlib.util.spec_from_file_location(
-            "backend.routers.agent_ws",
-            r"c:\Users\EWS-01\Desktop\New folder (3)\BAZSPARK\backend\routers\agent_ws.py"
-        )
-        if "backend.routers.agent_ws" in sys.modules:
-            return sys.modules["backend.routers.agent_ws"]
+        from pathlib import Path
+        module_name = "backend.routers.agent_ws"
+        # Resolve the file path relative to this test file location
+        file_path = Path(__file__).resolve().parents[1] / "backend" / "routers" / "agent_ws.py"
+        spec = importlib.util.spec_from_file_location(module_name, str(file_path))
+        if module_name in sys.modules:
+            return sys.modules[module_name]
         mod = importlib.util.module_from_spec(spec)
-        sys.modules["backend.routers.agent_ws"] = mod
+        sys.modules[module_name] = mod
         spec.loader.exec_module(mod)
         return mod
 

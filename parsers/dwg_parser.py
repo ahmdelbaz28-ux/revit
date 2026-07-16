@@ -115,14 +115,17 @@ class DWGParser:
         # Try each converter in order of preference
         for converter_cmd in self._available_converters:
             try:
-                subprocess.run(  # noqa: S603 — command from known list, not user input
+                result = subprocess.run(  # noqa: S603 — command from known list, not user input
                     [converter_cmd, "--help"], capture_output=True, timeout=5
                 )
-                # If command exists (doesn't raise FileNotFoundError) and returns help or succeeds
-                self._tool_available = True
-                self._active_converter = converter_cmd
-                logger.info(f"DWG converter available: {converter_cmd}")
-                break
+                # Only consider the tool available if it exits with code 0
+                if result.returncode == 0:
+                    self._tool_available = True
+                    self._active_converter = converter_cmd
+                    logger.info(f"DWG converter available: {converter_cmd}")
+                    break
+                # Non-zero exit means the tool is not usable; try next.
+                continue
             except (FileNotFoundError, subprocess.TimeoutExpired):
                 continue
 
@@ -606,12 +609,25 @@ class DWGParser:
         Raises:
             DWGConversionError: If conversion fails
         """
+        # Security validation – enforce path safety before any external call.
+        try:
+            safe_path = validate_input_path(
+                dwg_path,
+                allowed_extensions=_DWG_ALLOWED_EXTENSIONS,
+                parser_name="DWGParser._convert_to_dxf",
+            )
+        except UnsafePathError as e:
+            # Convert to DWGConversionError with a SECURITY marker for tests.
+            raise DWGConversionError(f"SECURITY: {e}") from e
+        # Note: conversion operates on the validated path.
         if not self._tool_available:
             raise DWGConversionError(
                 "No DWG conversion tools available. Install one of: "
                 "libredwg-tools (sudo apt install libredwg-tools), "
                 "Teigha File Converter, or ODA File Converter"
             )
+        # Use safe_path for subsequent operations.
+        dwg_path = str(safe_path)
 
         # Create temporary output file
         output_dir = os.path.dirname(dwg_path)

@@ -25,7 +25,6 @@ import {
         Workflow as WorkflowIcon,
         Settings2,
         Info,
-        Zap,
         Pickaxe,
         Key,
         Download,
@@ -34,6 +33,7 @@ import type React from "react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useLocation } from "react-router-dom";
+import { BazSparkLogo } from "@/components/auth/BazSparkLogo";
 
 interface NavItem {
         labelKey: string;
@@ -249,20 +249,18 @@ const Sidebar: React.FC<SidebarProps> = () => {
                                 borderLeft: isRTL ? "1px solid rgba(255,255,255,0.1)" : "none",
                         }}
                 >
-                        {/* Brand header — BAZSPARK with softened cyan accent */}
+                        {/* Brand header — BAZSPARK with official flame logo */}
                         <div className="flex items-center gap-3 px-5 h-16 shrink-0 border-b border-white/10">
-                                <div className="h-9 w-9 rounded-xl flex items-center justify-center shrink-0 bg-cyan-400/10 border border-cyan-400/20">
-                                        <Zap className="h-5 w-5 text-cyan-300" fill="currentColor" />
-                                </div>
+                                <BazSparkLogo size={32} className="shrink-0" />
                                 {!collapsed && (
-                                        <div className="flex flex-col leading-relaxed">
-                                                <span className="text-foreground font-semibold text-[15px] tracking-tight">
-                                                        BAZSPARK
-                                                </span>
-                                                <span className="text-[11px] text-muted-foreground uppercase tracking-wider mt-0.5">
-                                                        FireAI Digital Twin
-                                                </span>
-                                        </div>
+                                         <div className="flex flex-col leading-relaxed">
+                                                 <span className="text-foreground font-semibold text-[15px] tracking-tight">
+                                                         BAZSPARK
+                                                 </span>
+                                                 <span className="text-[11px] text-muted-foreground uppercase tracking-wider mt-0.5">
+                                                         FireAI Digital Twin
+                                                 </span>
+                                         </div>
                                 )}
                         </div>
 

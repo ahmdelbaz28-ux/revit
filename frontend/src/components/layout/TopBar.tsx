@@ -1,9 +1,10 @@
-import { Globe, HelpCircle, Search, Settings, Zap } from "lucide-react";
+import { Globe, HelpCircle, Search, Settings } from "lucide-react";
 import type React from "react";
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { UserMenu } from "@/components/auth/UserMenu";
 import { ContextualHelpButton } from "@/components/shared/ContextualHelpButton";
+import { BazSparkLogo } from "@/components/auth/BazSparkLogo";
 
 interface TopBarProps {
         isConnected: boolean;
@@ -65,9 +66,7 @@ const TopBar: React.FC<TopBarProps> = ({
                 >
                         {/* Left — logo + page title */}
                         <div className="flex items-center gap-3 min-w-0">
-                                <div className="h-8 w-8 rounded-lg flex items-center justify-center shrink-0 bg-cyan-400/10 border border-cyan-400/20">
-                                        <Zap className="h-4 w-4 text-cyan-300" fill="currentColor" />
-                                </div>
+                                <BazSparkLogo size={30} className="shrink-0" />
                                 <h1 className="text-foreground font-semibold text-[16px] tracking-tight truncate ml-1">
                                         {pageName}
                                 </h1>
