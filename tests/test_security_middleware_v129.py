@@ -255,7 +255,7 @@ class TestBackendAppCorsHardening:
         kwargs = None
         for m in backend_app.app.user_middleware:
             if m.cls is CORSMiddleware:
-                kwargs = m.options
+                kwargs = m.kwargs if hasattr(m, 'kwargs') else m.options  # V268: Starlette compat
                 break
         assert kwargs is not None
         assert "https://app.example.com" in kwargs["allow_origins"]

@@ -108,7 +108,10 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           # Install core test deps first so they're always available
-          pip install pytest pytest-asyncio httpx slowapi tenacity openpyxl
+          # V266 FIX: Added pytest-timeout — required by the pytest step below
+          # which uses --timeout=300. Without it, pytest fails with:
+          # "unrecognized arguments: --timeout=300" (exit code 4).
+          pip install pytest pytest-asyncio pytest-timeout httpx slowapi tenacity openpyxl
           # Install project requirements (may fail on optional deps — that's OK)
           pip install -r requirements.txt || echo "::warning::Some requirements.txt packages failed to install (non-blocking)"
           # V260.1 FIX: Install the package itself in editable mode so that
