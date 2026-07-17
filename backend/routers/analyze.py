@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 # File-level '# NOSONAR' removed per NOSONAR_AUDIT.md (V143 hardening).
 # Per-line justified suppressions (e.g., '# NOSONAR — S3776: ...') are preserved.
 """
@@ -10,7 +8,7 @@ project / room:
   POST /api/analyze/battery        - Battery capacity (standalone)
   POST /api/analyze/voltage        - Voltage drop (standalone)
   POST /api/projects/{project_id}/analyze/room
-                                    - Full room analysis pipeline
+                                     - Full room analysis pipeline
 
 These wrap the QOMN kernel and pipeline functions so the API consumer
 can choose between (a) low-level kernel calls (/api/qomn/...) or
@@ -18,7 +16,7 @@ can choose between (a) low-level kernel calls (/api/qomn/...) or
 """
 
 import logging
-from typing import Any
+from typing import Any, Dict, List
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
@@ -42,7 +40,7 @@ logger = logging.getLogger(__name__)
 # before they reach the kernel, defense-in-depth requires that we never
 # trust str(exc) in an HTTP response. We extract the structured fields
 # (field, reason, code_ref) and return them as a JSON object instead.
-def _physics_guard_detail(exc: Exception) -> dict:
+def _physics_guard_detail(exc: Exception) -> Dict[str, Any]:
     """Build a safe JSON-serializable detail dict from a PhysicsGuardError."""
     if hasattr(exc, "field") and hasattr(exc, "reason") and hasattr(exc, "code_ref"):
         return {
@@ -104,7 +102,7 @@ class RoomAnalyzeRequest(BaseModel):
     room_id: str = Field(
         ..., description="Room identifier (must match {project_id} or be scoped to it)"
     )
-    room_polygon: list[list[float]] = Field(
+    room_polygon: List[List[float]] = Field(
         ..., description="Room polygon as [[x,y], ...] list of vertices"
     )
     ceiling_height_m: float = Field(
@@ -125,7 +123,7 @@ class RoomAnalyzeRequest(BaseModel):
     dependencies=[Depends(require_permission(Permission.QOMN_EXECUTE))],
 )
 @limiter.limit("30/minute")
-async def analyze_battery(request: Request, req: BatteryRequest) -> dict[str, Any]:
+async def analyze_battery(request: Request, req: BatteryRequest) -> Dict[str, Any]:
     """
     Compute NFPA 72 battery capacity.
 
@@ -160,7 +158,7 @@ async def analyze_battery(request: Request, req: BatteryRequest) -> dict[str, An
     dependencies=[Depends(require_permission(Permission.QOMN_EXECUTE))],
 )
 @limiter.limit("30/minute")
-async def analyze_voltage(request: Request, req: VoltageRequest) -> dict[str, Any]:
+async def analyze_voltage(request: Request, req: VoltageRequest) -> Dict[str, Any]:
     """
     Compute NEC voltage drop.
 
@@ -193,7 +191,7 @@ async def analyze_voltage(request: Request, req: VoltageRequest) -> dict[str, An
     dependencies=[Depends(require_permission(Permission.QOMN_EXECUTE))],
 )
 @limiter.limit("10/minute")
-async def analyze_project_room(request: Request, project_id: str, req: RoomAnalyzeRequest) -> dict[str, Any]:
+async def analyze_project_room(request: Request, project_id: str, req: RoomAnalyzeRequest) -> Dict[str, Any]:
     """
     Run the full FireAI pipeline for a room in a project.
 
