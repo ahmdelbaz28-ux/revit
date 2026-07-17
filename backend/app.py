@@ -502,7 +502,7 @@ if _env_mode in ("production", "prod"):
         # Production without explicit CORS_ORIGINS — fail safe.
         # The platform operator MUST declare trusted origins.
         raise RuntimeError(
-            "CORS_ORIGINS environment variable is REQUIRED in production. "
+            "CORS_ORIGINS (or legacy CORS_ALLOWED_ORIGINS) environment variable is REQUIRED in production. "
             "Set it to a comma-separated list of trusted origins, e.g. "
             "'https://app.example.com,https://admin.example.com'. "
             "Wildcards are forbidden in production for life-safety audit reasons."
