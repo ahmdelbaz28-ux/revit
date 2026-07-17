@@ -496,12 +496,13 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 # to exfiltrate engineering data (building layouts, fire alarm designs).
 _env_mode = os.getenv("FIREAI_ENV", "production").lower()
 if _env_mode in ("production", "prod"):
-    _cors_raw = os.getenv("CORS_ALLOWED_ORIGINS", "")
+    # Support both CORS_ORIGINS (new) and CORS_ALLOWED_ORIGINS (legacy) for backward compatibility
+    _cors_raw = os.getenv("CORS_ORIGINS", "") or os.getenv("CORS_ALLOWED_ORIGINS", "")
     if not _cors_raw:
         # Production without explicit CORS_ORIGINS — fail safe.
         # The platform operator MUST declare trusted origins.
         raise RuntimeError(
-            "CORS_ALLOWED_ORIGINS environment variable is REQUIRED in production. "
+            "CORS_ORIGINS environment variable is REQUIRED in production. "
             "Set it to a comma-separated list of trusted origins, e.g. "
             "'https://app.example.com,https://admin.example.com'. "
             "Wildcards are forbidden in production for life-safety audit reasons."
@@ -509,16 +510,15 @@ if _env_mode in ("production", "prod"):
     ALLOWED_ORIGINS = [o.strip() for o in _cors_raw.split(",") if o.strip()]
     if "*" in ALLOWED_ORIGINS:
         raise RuntimeError(
-            "CORS_ALLOWED_ORIGINS='*' is forbidden in production. List explicit origins."
+            "CORS_ORIGINS='*' is forbidden in production. List explicit origins."
         )
 else:
     # Development / testing — safe defaults (localhost only).
+    # Support both CORS_ORIGINS and CORS_ALLOWED_ORIGINS for backward compatibility
+    _cors_raw = os.getenv("CORS_ORIGINS") or os.getenv("CORS_ALLOWED_ORIGINS")
     ALLOWED_ORIGINS = [
         o.strip()
-        for o in os.getenv(
-            "CORS_ALLOWED_ORIGINS",
-            "http://localhost:3000,http://localhost:5173,http://localhost:8000",
-        ).split(",")
+        for o in (_cors_raw or "http://localhost:3000,http://localhost:5173,http://localhost:8000").split(",")
         if o.strip()
     ]
 
@@ -755,6 +755,16 @@ def _register_v2_router() -> None:
         logger.warning("FDS router skipped (optional dependency missing): %s", e)
     except Exception as e:
         logger.warning("FDS router registration failed: %s", e)
+
+    # APS Cloud Design Automation router
+    try:
+        from backend.routers.aps import router as aps_router
+        app.include_router(aps_router)
+        logger.info("APS Cloud Design Automation router mounted at /api/v2/aps")
+    except ImportError as e:
+        logger.warning("APS router skipped (optional dependency missing): %s", e)
+    except Exception as e:
+        logger.warning("APS router registration failed: %s", e)
 
 _register_v2_router()
 
