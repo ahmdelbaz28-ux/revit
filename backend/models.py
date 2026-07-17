@@ -356,3 +356,7 @@ class HealthStatus(BaseModel):
 
 
 # ============================================================================
+# Rebuild Pydantic models to resolve forward references (required for
+# OpenAPI schema generation and FastAPI dependency injection).
+# ============================================================================
+GenerateReportInput.model_rebuild()

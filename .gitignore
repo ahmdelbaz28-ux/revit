@@ -480,3 +480,4 @@ obj/
 
 # Agent workspace directories
 .mimocode/
+API_Test_Collection.postman_collection.json

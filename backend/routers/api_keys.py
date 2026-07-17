@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 # File-level '# NOSONAR' removed per NOSONAR_AUDIT.md (V143 hardening).
 # Per-line justified suppressions (e.g., '# NOSONAR — S3776: ...') are preserved.
 """
@@ -13,7 +11,7 @@ Provides CRUD operations for API keys with role-based access control:
 """
 
 import logging
-from typing import Any
+from typing import Any, Dict
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
@@ -51,7 +49,7 @@ class UpdateKeyRoleRequest(BaseModel):
 async def list_keys(
     _role: Role = Depends(require_permission(Permission.USER_MANAGE)),  # NOSONAR — S8410: FastAPI Depends pattern is idiomatic
     ip: str = Depends(require_master_admin),  # NOSONAR — S8410: FastAPI Depends pattern is idiomatic
-) -> dict[str, Any]:
+) -> Dict[str, Any]:
     """List all API keys (admin only). Key values are never returned."""
     keys = list_api_keys()
     await audit_operation(ip, "list_keys", True, detail=f"Returned {len(keys)} keys")
@@ -65,7 +63,7 @@ async def create_key(
     body: GenerateKeyRequest,
     _role: Role = Depends(require_permission(Permission.USER_MANAGE)),  # NOSONAR — S8410: FastAPI Depends pattern is idiomatic
     ip: str = Depends(require_master_admin),  # NOSONAR — S8410: FastAPI Depends pattern is idiomatic
-) -> dict[str, Any]:
+) -> Dict[str, Any]:
     """
     Generate a new API key with the specified role (admin only).
 
@@ -106,7 +104,7 @@ async def delete_key(
     key_hash: str,
     _role: Role = Depends(require_permission(Permission.USER_MANAGE)),  # NOSONAR — S8410: FastAPI Depends pattern is idiomatic
     ip: str = Depends(require_master_admin),  # NOSONAR — S8410: FastAPI Depends pattern is idiomatic
-) -> dict[str, Any]:
+) -> Dict[str, Any]:
     """Delete an API key by its hash (admin only)."""
     deleted = delete_api_key(key_hash)
     if not deleted:
@@ -124,7 +122,7 @@ async def update_key_role_endpoint(
     body: UpdateKeyRoleRequest,
     _role: Role = Depends(require_permission(Permission.USER_MANAGE)),  # NOSONAR — S8410: FastAPI Depends pattern is idiomatic
     ip: str = Depends(require_master_admin),  # NOSONAR — S8410: FastAPI Depends pattern is idiomatic
-) -> dict[str, Any]:
+) -> Dict[str, Any]:
     """Update an API key's role (admin only)."""
     updated = update_api_key_role(key_hash, body.role)
     if not updated:
@@ -144,7 +142,7 @@ async def update_key_role_endpoint(
 async def list_roles(
     _role: Role = Depends(require_permission(Permission.USER_MANAGE)),  # NOSONAR — S8410: FastAPI Depends pattern is idiomatic
     _ip: str = Depends(require_master_admin),  # NOSONAR — S8410: FastAPI Depends pattern is idiomatic
-) -> dict[str, Any]:
+) -> Dict[str, Any]:
     """List available roles and their permissions (admin only)."""
     roles_info = {}
     for role in Role:

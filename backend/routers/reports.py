@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 """
 backend/routers/reports.py — Report generation and export endpoints.
 
@@ -24,7 +22,7 @@ import json
 import logging
 import uuid
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
@@ -33,6 +31,8 @@ from backend.auth import require_permission
 from backend.database import get_db
 from backend.limiter import limiter
 from backend.models import GenerateReportInput
+
+GenerateReportInput.model_rebuild()
 from backend.rbac import Permission
 from backend.response import safe_filename as _safe_filename
 
@@ -657,7 +657,7 @@ def _generate_report_content(report_type: str, project_id: str) -> dict:
 
 def _count_by_category(devices: list) -> dict:
     """Count devices by category."""
-    counts: dict[str, int] = {}
+    counts: Dict[str, int] = {}
     for d in devices:
         cat = d.get("category", "unknown")
         counts[cat] = counts.get(cat, 0) + 1
@@ -1013,7 +1013,7 @@ class AhjSubmittalRequest(BaseModel):
     designer: str = PydField("", description="Designer name + PE license #")
     jurisdiction: str = PydField("", description="AHJ jurisdiction name")
     nfpa_edition: str = PydField("2022", description="NFPA 72 edition")
-    rooms: Optional[list[AhjRoomInput]] =  PydField(
+    rooms: Optional[List[AhjRoomInput]] =  PydField(
         None,
         description="Optional list of rooms. If omitted, a single room is "
         "derived from the device bounding box.",

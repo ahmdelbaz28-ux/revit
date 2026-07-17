@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ApplicationPackage 
+    SchemaVersion="1.0" 
+    AppVersion="1.0.0" 
+    Author="BAZspark" 
+    ProductCode="{FA1247EE-7D22-4FB1-A480-DA31427EB2E5}" 
+    Name="BazSparkAutoCADBridge" 
+    Description="AutoCAD Cloud Design Automation Bridge for BAZspark">
+  <CompanyDetails Name="BAZspark" />
+  <ComponentsDescription>
+    <RuntimeRequirements OS="Win64" Platform="AutoCAD" SeriesMin="R24.0" SeriesMax="R24.3" />
+    <ComponentEntry 
+        AppName="BazSparkAutoCADBridge" 
+        ModuleName="./Contents/BazSparkAutoCADBridge.dll" 
+        AppDescription="AutoCAD C# named pipe and cloud executor bridge" 
+        LoadOnAutoCADStartup="True" />
+  </ComponentsDescription>
+</ApplicationPackage>

@@ -113,6 +113,9 @@ namespace BazSparkRevitBridge
                 // ── Saving ───────────────────────────────────────────────────
                 "save" => SaveDocument(doc),
 
+                // ── Speckle Live Stream Integration ──────────────────────────
+                "speckle_pull" => SpecklePull(doc, p),
+
                 _ => throw new NotSupportedException($"Unknown action: {cmd.Action}")
             };
         }
@@ -279,6 +282,20 @@ namespace BazSparkRevitBridge
                 return new { saved = false, reason = "Document has no path (unsaved new file)" };
             doc.Save();
             return new { saved = true, path = doc.PathName };
+        }
+
+        private static object SpecklePull(Document doc, JObject p)
+        {
+            string streamId = p["stream_id"]?.ToString() ?? throw new ArgumentException("stream_id parameter is required.");
+            string serverUrl = p["server_url"]?.ToString() ?? "https://speckle.xyz";
+            string token = p["token"]?.ToString() ?? throw new ArgumentException("token parameter is required.");
+
+            // Pull elements from Speckle stream asynchronously
+            var elements = System.Threading.Tasks.Task.Run(() => SpeckleConnector.ReceiveModel(streamId, serverUrl, token)).GetAwaiter().GetResult();
+            
+            // Build in Revit on Revit main thread
+            int created = SpeckleConnector.BuildElementsInRevit(doc, elements);
+            return new { success = true, pulled_count = elements.Count, created_count = created };
         }
     }
 }

@@ -2,8 +2,8 @@
 
   <PropertyGroup>
     <TargetFramework>net48</TargetFramework>
-    <AssemblyName>BazSparkRevitBridge</AssemblyName>
-    <RootNamespace>BazSparkRevitBridge</RootNamespace>
+    <AssemblyName>BazSparkAutoCADBridge</AssemblyName>
+    <RootNamespace>BazSparkAutoCADBridge</RootNamespace>
     <Nullable>enable</Nullable>
     <LangVersion>10</LangVersion>
     <PlatformTarget>x64</PlatformTarget>
@@ -12,19 +12,9 @@
     <UseWPF>true</UseWPF>
   </PropertyGroup>
 
-  <!-- Revit API assemblies — adjust path to match your Revit version -->
+  <!-- AutoCAD .NET API and Speckle references via NuGet -->
   <ItemGroup>
-    <Reference Include="RevitAPI">
-      <HintPath>$(REVIT_API_PATH)\RevitAPI.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-    <Reference Include="RevitAPIUI">
-      <HintPath>$(REVIT_API_PATH)\RevitAPIUI.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-  </ItemGroup>
-
-  <ItemGroup>
+    <PackageReference Include="AutoCAD.NET" Version="24.2.0" ExcludeAssets="runtime" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="Speckle.Core" Version="2.18.0" />
     <PackageReference Include="Speckle.Objects" Version="2.18.0" />

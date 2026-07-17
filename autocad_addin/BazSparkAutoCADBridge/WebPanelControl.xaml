@@ -1,0 +1,21 @@
+<UserControl x:Class="BazSparkAutoCADBridge.WebPanelControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
+             mc:Ignorable="d" 
+             d:DesignHeight="600" d:DesignWidth="400">
+    <Grid Background="#F3F4F6">
+        <wv2:WebView2 Name="webView" Visibility="Visible" />
+        
+        <!-- Fallback UI displayed when WebView2 Runtime is missing -->
+        <Grid Name="fallbackGrid" Visibility="Collapsed">
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Margin="30">
+                <TextBlock Text="⚠️ BAZspark Panel Alert" FontSize="18" FontWeight="Bold" Foreground="#1F2937" HorizontalAlignment="Center" Margin="0,0,0,15" />
+                <TextBlock Text="Microsoft WebView2 Runtime is required to render the Web Dashboard." TextWrapping="Wrap" TextAlignment="Center" FontSize="13" Foreground="#4B5563" Margin="0,0,0,25" />
+                <Button Content="Download WebView2 Runtime" Background="#EF4444" Foreground="White" BorderThickness="0" Padding="12,8" Cursor="Hand" Click="DownloadButton_Click" HorizontalAlignment="Center"/>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</UserControl>

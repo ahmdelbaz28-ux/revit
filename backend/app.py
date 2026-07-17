@@ -54,6 +54,54 @@ from slowapi.errors import RateLimitExceeded
 from backend.multi_db_service import get_multi_db_service
 from backend.rbac import Permission
 
+# Rebuild all Pydantic models used as route parameters to resolve ForwardRefs
+# caused by `from __future__ import annotations` in router files.
+# This must be done BEFORE importing any routers to prevent ForwardRef issues.
+def _rebuild_pydantic_models():
+    from backend.models import GenerateReportInput
+    GenerateReportInput.model_rebuild()
+    try:
+        from backend.routers.exports import ExportDataInput
+        ExportDataInput.model_rebuild()
+    except ImportError:
+        pass
+    try:
+        from backend.routers.analyze import BatteryRequest, VoltageRequest, RoomAnalyzeRequest
+        for m in (BatteryRequest, VoltageRequest, RoomAnalyzeRequest):
+            m.model_rebuild()
+    except ImportError:
+        pass
+    try:
+        from backend.routers.qomn import (
+            SmokeSpacingRequest, HeatSpacingRequest, VoltageDropRequest,
+            DuctDetectorRequest, RoomRequest,
+        )
+        for m in (SmokeSpacingRequest, HeatSpacingRequest, VoltageDropRequest,
+                  DuctDetectorRequest, RoomRequest):
+            m.model_rebuild()
+    except ImportError:
+        pass
+    try:
+        from backend.routers.v2 import (
+            IFC43MapDetectorRequest, GenerativeDesignRequest, ARExportRequest,
+            WebhookSubscribeRequest, WebhookPublishRequest,
+            TopologyAddElementRequest, TopologyAddConnectionRequest, TopologyImpactRequest,
+            VectorMemoryStoreRequest, VectorMemorySearchRequest,
+            GraphRAGAddKnowledgeRequest, GraphRAGAskRequest, GraphRAGSearchRequest,
+            BIMExtractRoomsRequest, SmokeSimulationStateRequest,
+        )
+        for m in (IFC43MapDetectorRequest, GenerativeDesignRequest, ARExportRequest,
+                  WebhookSubscribeRequest, WebhookPublishRequest,
+                  TopologyAddElementRequest, TopologyAddConnectionRequest, TopologyImpactRequest,
+                  VectorMemoryStoreRequest, VectorMemorySearchRequest,
+                  GraphRAGAddKnowledgeRequest, GraphRAGAskRequest, GraphRAGSearchRequest,
+                  BIMExtractRoomsRequest, SmokeSimulationStateRequest):
+            m.model_rebuild()
+    except ImportError:
+        pass
+
+_rebuild_pydantic_models()
+
 # Import our CAD/BIM integration routers
 from backend.routers import autocad, digital_twin, revit
 from backend.routers import health as health_router_module
@@ -436,6 +484,8 @@ async def lifespan(app: FastAPI):
 # In production, the entire API surface (including internal RBAC permission
 # names) MUST NOT be exposed to anonymous attackers. Set docs_url=None to
 # fully disable. Development keeps the docs available for DX.
+
+
 _is_prod = os.getenv("FIREAI_ENV", "production").lower() in ("production", "prod")
 _docs_url = None if _is_prod else "/docs"
 _redoc_url = None if _is_prod else "/redoc"

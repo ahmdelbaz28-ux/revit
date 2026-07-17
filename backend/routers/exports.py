@@ -1,4 +1,4 @@
-from __future__ import annotations
+
 
 # File-level '# NOSONAR' removed per NOSONAR_AUDIT.md (V143 hardening).
 # Per-line justified suppressions (e.g., '# NOSONAR — S3776: ...') are preserved.
@@ -343,7 +343,7 @@ async def export_ifc(
         )
 
 
-from typing import Optional
+from typing import Dict, List, Optional, Tuple
 
 from pydantic import BaseModel
 
@@ -489,12 +489,12 @@ async def export_data_global(request: Request, input_data: ExportDataInput):  # 
             cell.fill = header_fill
             cell.alignment = Alignment(horizontal="center")
         # Aggregate devices by (category, type)
-        agg: dict[tuple[str, str], int] = {}
+        agg: Dict[Tuple[str, str], int] = {}
         for d in devices:
             key = (str(d.get("category", "unknown")), str(d.get("type", "unknown")))
             agg[key] = agg.get(key, 0) + 1
         # Cable aggregation by size
-        cable_agg: dict[str, float] = {}
+        cable_agg: Dict[str, float] = {}
         for c in connections:
             size = str(c.get("cableSize", "unknown"))
             cable_agg[size] = cable_agg.get(size, 0.0) + float(c.get("length", 0.0))

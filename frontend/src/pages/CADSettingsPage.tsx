@@ -82,6 +82,16 @@ export function CADSettingsPage() {
         );
         const [checkingRevit, setCheckingRevit] = useState(false);
 
+        // Speckle settings
+        const [speckleServer, setSpeckleServer] = useState("https://speckle.xyz");
+        const [speckleToken, setSpeckleToken] = useState("");
+        const [speckleStreamId, setSpeckleStreamId] = useState("");
+
+        // APS settings
+        const [apsClientId, setApsClientId] = useState("");
+        const [apsClientSecret, setApsClientSecret] = useState("");
+        const [apsActivityId, setApsActivityId] = useState("BazSparkAutoCADBridge.DrawLayout");
+
         // Load saved settings on mount
         useEffect(() => {
                 try {
@@ -99,6 +109,14 @@ export function CADSettingsPage() {
                                         setRevitVersion(settings.revit.version || "2024");
                                         setRevitTemplate(settings.revit.template || "");
                                         setRevitUnits(settings.revit.units || "Millimeters");
+                                }
+                                if (settings.cloud) {
+                                        setSpeckleServer(settings.cloud.speckleServer || "https://speckle.xyz");
+                                        setSpeckleToken(settings.cloud.speckleToken || "");
+                                        setSpeckleStreamId(settings.cloud.speckleStreamId || "");
+                                        setApsClientId(settings.cloud.apsClientId || "");
+                                        setApsClientSecret(settings.cloud.apsClientSecret || "");
+                                        setApsActivityId(settings.cloud.apsActivityId || "BazSparkAutoCADBridge.DrawLayout");
                                 }
                         }
                 } catch {
@@ -222,6 +240,25 @@ export function CADSettingsPage() {
                 }
         };
 
+        const saveCloudSettings = () => {
+                try {
+                        const saved = localStorage.getItem("cad_settings");
+                        const settings = saved ? JSON.parse(saved) : {};
+                        settings.cloud = {
+                                speckleServer,
+                                speckleToken,
+                                speckleStreamId,
+                                apsClientId,
+                                apsClientSecret,
+                                apsActivityId,
+                        };
+                        localStorage.setItem("cad_settings", JSON.stringify(settings));
+                        toast.success("Cloud settings saved");
+                } catch {
+                        toast.error("Failed to save settings");
+                }
+        };
+
         return (
                 <div className="flex-1 overflow-auto">
                         <div className="p-6 max-w-5xl mx-auto space-y-6">
@@ -251,6 +288,13 @@ export function CADSettingsPage() {
                                                 >
                                                         <FileText className="h-4 w-4 mr-2" />
                                                         Revit
+                                                </TabsTrigger>
+                                                <TabsTrigger
+                                                        value="cloud"
+                                                        className="data-[state=active]:bg-secondary"
+                                                >
+                                                        <Settings className="h-4 w-4 mr-2" />
+                                                        Cloud Integration
                                                 </TabsTrigger>
                                         </TabsList>
 
@@ -637,6 +681,102 @@ export function CADSettingsPage() {
                                                                         onClick={saveRevitSettings}
                                                                 >
                                                                         Save Revit Settings
+                                                                </Button>
+                                                        </CardContent>
+                                                </Card>
+                                        </TabsContent>
+
+                                        {/* Cloud Integration Tab */}
+                                        <TabsContent value="cloud" className="space-y-6">
+                                                {/* Speckle Configuration */}
+                                                <Card className="border-border bg-card">
+                                                        <CardHeader>
+                                                                <CardTitle className="text-lg text-foreground flex items-center gap-2">
+                                                                        <Settings className="h-5 w-5 text-info" />
+                                                                        Speckle Live Synchronization
+                                                                </CardTitle>
+                                                                <CardDescription className="text-muted-foreground">
+                                                                        Configure Speckle live synchronization server and target stream
+                                                                </CardDescription>
+                                                        </CardHeader>
+                                                        <CardContent className="space-y-4">
+                                                                <div className="space-y-2">
+                                                                        <Label className="text-foreground/90">Speckle Server URL</Label>
+                                                                        <Input
+                                                                                value={speckleServer}
+                                                                                onChange={(e) => setSpeckleServer(e.target.value)}
+                                                                                placeholder="https://speckle.xyz"
+                                                                                className="bg-card border-border text-foreground"
+                                                                        />
+                                                                </div>
+                                                                <div className="space-y-2">
+                                                                        <Label className="text-foreground/90">Personal Access Token</Label>
+                                                                        <Input
+                                                                                type="password"
+                                                                                value={speckleToken}
+                                                                                onChange={(e) => setSpeckleToken(e.target.value)}
+                                                                                placeholder="Paste your Speckle access token here"
+                                                                                className="bg-card border-border text-foreground"
+                                                                        />
+                                                                </div>
+                                                                <div className="space-y-2">
+                                                                        <Label className="text-foreground/90">Default Stream/Project ID</Label>
+                                                                        <Input
+                                                                                value={speckleStreamId}
+                                                                                onChange={(e) => setSpeckleStreamId(e.target.value)}
+                                                                                placeholder="e.g. 7a92cfb38f"
+                                                                                className="bg-card border-border text-foreground"
+                                                                        />
+                                                                </div>
+                                                        </CardContent>
+                                                </Card>
+
+                                                {/* Autodesk Platform Services Configuration */}
+                                                <Card className="border-border bg-card">
+                                                        <CardHeader>
+                                                                <CardTitle className="text-lg text-foreground flex items-center gap-2">
+                                                                        <Wrench className="h-5 w-5 text-info" />
+                                                                        Autodesk Platform Services (APS)
+                                                                </CardTitle>
+                                                                <CardDescription className="text-muted-foreground">
+                                                                        Configure headless cloud processing credentials and activities
+                                                                </CardDescription>
+                                                        </CardHeader>
+                                                        <CardContent className="space-y-4">
+                                                                <div className="space-y-2">
+                                                                        <Label className="text-foreground/90">APS Client ID</Label>
+                                                                        <Input
+                                                                                value={apsClientId}
+                                                                                onChange={(e) => setApsClientId(e.target.value)}
+                                                                                placeholder="Your APS Client ID"
+                                                                                className="bg-card border-border text-foreground"
+                                                                        />
+                                                                </div>
+                                                                <div className="space-y-2">
+                                                                        <Label className="text-foreground/90">APS Client Secret</Label>
+                                                                        <Input
+                                                                                type="password"
+                                                                                value={apsClientSecret}
+                                                                                onChange={(e) => setApsClientSecret(e.target.value)}
+                                                                                placeholder="Your APS Client Secret"
+                                                                                className="bg-card border-border text-foreground"
+                                                                        />
+                                                                </div>
+                                                                <div className="space-y-2">
+                                                                        <Label className="text-foreground/90">APS Activity ID</Label>
+                                                                        <Input
+                                                                                value={apsActivityId}
+                                                                                onChange={(e) => setApsActivityId(e.target.value)}
+                                                                                placeholder="e.g. BazSparkAutoCADBridge.DrawLayout"
+                                                                                className="bg-card border-border text-foreground"
+                                                                        />
+                                                                </div>
+
+                                                                <Button
+                                                                        className="w-full bg-danger hover:bg-danger/90 text-white border-none"
+                                                                        onClick={saveCloudSettings}
+                                                                >
+                                                                        Save Cloud Settings
                                                                 </Button>
                                                         </CardContent>
                                                 </Card>

@@ -41,11 +41,16 @@ namespace BazSparkRevitBridge
                 };
                 _pipeThread.Start();
 
+                // 3. Register the WebView2 Dockable Pane tabbed behind Project Browser
+                var paneId = new DockablePaneId(new Guid("9E067D25-0E56-4DAB-805F-6A81427EB2E7"));
+                var webPage = new WebPanelPage();
+                application.RegisterDockablePane(paneId, "BAZspark Dashboard", webPage);
+
                 TaskDialog.Show(
                     "BAZspark Bridge",
                     "✅ BAZspark Revit Bridge started.\n" +
                     "Listening on named pipe: \\\\.\\pipe\\bazspark_revit\n\n" +
-                    "The Local Agent can now send Revit commands safely via this bridge."
+                    "Type/open BAZspark Dashboard tab next to your Project Browser to access the Web UI."
                 );
 
                 return Result.Succeeded;

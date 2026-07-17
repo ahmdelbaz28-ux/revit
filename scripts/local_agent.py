@@ -152,10 +152,85 @@ class RevitNamedPipeDispatcher:
             raise
 
 
+# ── Named Pipe dispatcher for C# AutoCAD Add-in ─────────────────────────────────
+class AutoCADNamedPipeDispatcher:
+    """
+    Sends JSON commands to the BazSparkAutoCADBridge C# Add-in via a Named Pipe.
+    The Add-in executes them safely inside a document lock on AutoCAD's Main Thread.
+
+    This is the PREFERRED dispatcher when the Add-in is loaded and running.
+    Falls back to AutoCADService (COM) only when the pipe is unavailable.
+    """
+
+    PIPE_NAME = r"\\.\pipe\bazspark_autocad"
+    TIMEOUT_SEC = 30.0
+
+    def __init__(self) -> None:
+        self._available: bool = False
+        if sys.platform == "win32":
+            try:
+                import pywintypes  # type: ignore  # noqa: F401
+                self._available = self._ping()
+            except ImportError:
+                logger.debug("pywin32 not installed — Named Pipe dispatcher unavailable")
+
+    @property
+    def available(self) -> bool:
+        return self._available
+
+    def _ping(self) -> bool:
+        """Quick connectivity test — try to open the pipe."""
+        try:
+            import win32file  # type: ignore
+            h = win32file.CreateFile(
+                self.PIPE_NAME,
+                win32file.GENERIC_READ | win32file.GENERIC_WRITE,
+                0, None,
+                win32file.OPEN_EXISTING,
+                0, None,
+            )
+            win32file.CloseHandle(h)
+            return True
+        except Exception:
+            return False
+
+    def send(self, action: str, params: Dict[str, Any]) -> Dict[str, Any]:
+        """Send a command and return the response dict."""
+        import pywintypes  # type: ignore
+        import win32file  # type: ignore
+        import win32pipe  # type: ignore
+
+        payload = json.dumps({"command_id": str(time.time()),
+                              "action": action, "params": params})
+        try:
+            h = win32file.CreateFile(
+                self.PIPE_NAME,
+                win32file.GENERIC_READ | win32file.GENERIC_WRITE,
+                0, None,
+                win32file.OPEN_EXISTING,
+                0, None,
+            )
+            win32pipe.SetNamedPipeHandleState(
+                h, win32pipe.PIPE_READMODE_MESSAGE, None, None)
+            # Write request
+            win32file.WriteFile(h, (payload + "\n").encode("utf-8"))
+            # Read response (up to 10 MB)
+            _, data = win32file.ReadFile(h, 10 * 1024 * 1024)
+            win32file.CloseHandle(h)
+            return json.loads(data.decode("utf-8").strip())
+        except pywintypes.error as e:
+            if e.winerror == 2:  # ERROR_FILE_NOT_FOUND — pipe not running
+                self._available = False
+                return {"success": False,
+                        "error": "BazSparkAutoCADBridge Add-in not running. Load the DLL in AutoCAD first."}
+            raise
+
+
 # ── Lazy service singletons ───────────────────────────────────────────────────
 _autocad_svc: Any = None
 _revit_svc: Any = None
 _revit_pipe: RevitNamedPipeDispatcher | None = None
+_autocad_pipe: AutoCADNamedPipeDispatcher | None = None
 
 
 def _get_autocad() -> Any:
@@ -163,6 +238,14 @@ def _get_autocad() -> Any:
     if _autocad_svc is None and _autocad_available:
         _autocad_svc = AutoCADService()
     return _autocad_svc
+
+
+def _get_autocad_pipe() -> AutoCADNamedPipeDispatcher:
+    """Return the AutoCAD Named Pipe dispatcher (preferred, thread-safe)."""
+    global _autocad_pipe
+    if _autocad_pipe is None:
+        _autocad_pipe = AutoCADNamedPipeDispatcher()
+    return _autocad_pipe
 
 
 def _get_revit_pipe() -> RevitNamedPipeDispatcher:
@@ -183,7 +266,30 @@ def _get_revit() -> Any:
 # ── Command dispatcher ────────────────────────────────────────────────────────
 
 def _dispatch_autocad(action: str, args: Dict[str, Any]) -> Any:
-    """Dispatch an AutoCAD action locally and return the result dict."""
+    """
+    Dispatch an AutoCAD action locally and return the result dict.
+
+    Routing priority:
+    1. AutoCADNamedPipeDispatcher — sends command to BazSparkAutoCADBridge C# Add-in
+       via Named Pipe so it runs on AutoCAD's main thread inside a document lock.
+    2. AutoCADService (COM fallback) — direct COM API calls, only when the Add-in
+       is not loaded.
+    """
+    _PIPE_ROUTED_ACTIONS = {
+        "get_info", "draw_line", "draw_polyline", "draw_circle",
+        "draw_text", "delete_entity", "modify_entity", "save", "speckle_push",
+    }
+    if action in _PIPE_ROUTED_ACTIONS:
+        pipe = _get_autocad_pipe()
+        if pipe.available:
+            logger.info("[AutoCAD] Routing %s via Named Pipe (C# Add-in)", action)
+            return pipe.send(action, args)
+        else:
+            logger.warning(
+                "[AutoCAD] Named Pipe unavailable for %s — "
+                "is BazSparkAutoCADBridge loaded in AutoCAD?", action
+            )
+
     svc = _get_autocad()
     if svc is None:
         return {"error": "AutoCADService not available on this machine"}
@@ -326,6 +432,9 @@ def _dispatch_autocad(action: str, args: Dict[str, Any]) -> Any:
             return {"error": "Failed to modify entity"}
         return {"success": True, "message": "Entity modified successfully"}
 
+    elif action == "speckle_push":
+        return {"success": False, "error": "speckle_push is only supported when BazSparkAutoCADBridge C# add-in is loaded."}
+
     else:
         return {"error": f"Unknown AutoCAD action: {action}"}
 
@@ -347,7 +456,7 @@ def _dispatch_revit(action: str, args: Dict[str, Any]) -> Any:
     _PIPE_ROUTED_ACTIONS = {
         "get_info", "list_elements", "create_wall", "create_floor",
         "place_family_instance", "delete_element", "get_parameter",
-        "set_parameter", "list_views", "save",
+        "set_parameter", "list_views", "save", "speckle_pull",
     }
     if action in _PIPE_ROUTED_ACTIONS:
         pipe = _get_revit_pipe()
@@ -483,6 +592,9 @@ def _dispatch_revit(action: str, args: Dict[str, Any]) -> Any:
 
     elif action == "execute_ai_command":
         return svc.execute_ai_command(args.get("command", ""), args.get("context", {}))
+
+    elif action == "speckle_pull":
+        return {"success": False, "error": "speckle_pull is only supported when BazSparkRevitBridge C# add-in is loaded."}
 
     else:
         return {"error": f"Unknown Revit action: {action}"}

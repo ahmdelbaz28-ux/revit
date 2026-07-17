@@ -1,8 +1,3 @@
-// BazSparkRevitBridge/LocalAgentServer.cs
-// Named Pipe server that listens for JSON commands from the BAZspark Python Local Agent.
-// Runs on a background thread; enqueues commands to the ExternalEventHandler
-// and waits synchronously for the result (with a timeout).
-
 using System;
 using System.IO;
 using System.IO.Pipes;
@@ -10,22 +5,14 @@ using System.Text;
 using System.Threading;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Autodesk.AutoCAD.ApplicationServices;
 
-namespace BazSparkRevitBridge
+namespace BazSparkAutoCADBridge
 {
     public class LocalAgentServer
     {
-        private const string PIPE_NAME    = "bazspark_revit";
-        private const int    TIMEOUT_MS   = 30_000; // 30 seconds per command
-        private const int    MAX_MSG_BYTES = 10 * 1024 * 1024; // 10 MB
-
-        private readonly BazSparkExternalEventHandler _handler;
+        private const string PIPE_NAME = "bazspark_autocad";
         private volatile bool _running = false;
-
-        public LocalAgentServer(BazSparkExternalEventHandler handler)
-        {
-            _handler = handler;
-        }
 
         public void Start()
         {
@@ -34,16 +21,15 @@ namespace BazSparkRevitBridge
             {
                 try
                 {
-                    // Each iteration handles one client connection (Python Agent)
+                    // Starts the secure named pipe server listener
                     using var pipe = CreateSecurePipe();
 
-                    pipe.WaitForConnection(); // Blocks until Python Agent connects
+                    pipe.WaitForConnection(); // Blocks until local Python agent connects
                     HandleClient(pipe);
                 }
                 catch (Exception ex) when (_running)
                 {
-                    // Log and restart listener on transient errors
-                    System.Diagnostics.Debug.WriteLine($"[BazSpark] Pipe error: {ex.Message}");
+                    System.Diagnostics.Debug.WriteLine($"[BazSpark AutoCAD] Pipe error: {ex.Message}");
                     Thread.Sleep(500);
                 }
             }
@@ -81,10 +67,8 @@ namespace BazSparkRevitBridge
 
         private void HandleClient(NamedPipeServerStream pipe)
         {
-            // Read all incoming bytes (one JSON message per connection)
-            using var reader = new StreamReader(pipe, Encoding.UTF8, leaveOpen: true);
-            using var writer = new StreamWriter(pipe, Encoding.UTF8, leaveOpen: true)
-                { AutoFlush = true };
+            using var reader = new StreamReader(pipe, Encoding.UTF8, true, 1024, true);
+            using var writer = new StreamWriter(pipe, Encoding.UTF8, 1024, true) { AutoFlush = true };
 
             while (pipe.IsConnected)
             {
@@ -98,28 +82,38 @@ namespace BazSparkRevitBridge
                 try
                 {
                     var payload = JObject.Parse(line);
-                    var cmd = new BazSparkCommand
+                    string action = payload["action"]?.ToString() ?? "";
+                    var parameters = payload["params"] as JObject ?? new JObject();
+
+                    // AutoCAD thread safety: We must lock the MdiActiveDocument
+                    // to safely manipulate document objects from our background Named Pipe thread.
+                    var doc = Autodesk.AutoCAD.ApplicationServices.Application.DocumentManager.MdiActiveDocument;
+                    if (doc == null)
                     {
-                        CommandId = payload["command_id"]?.ToString() ?? Guid.NewGuid().ToString(),
-                        Action    = payload["action"]?.ToString() ?? "",
-                        Params    = payload["params"] as JObject ?? new JObject()
-                    };
+                        throw new InvalidOperationException("No active AutoCAD document.");
+                    }
 
-                    // Enqueue and trigger Revit's ExternalEvent
-                    _handler.Enqueue(cmd);
+                    object result;
+                    using (doc.LockDocument())
+                    {
+                        result = AutoCADCommandHandler.DispatchCommand(doc, action, parameters);
+                    }
 
-                    // Wait for the ExternalEventHandler to process it (on Revit's main thread)
-                    bool finished = cmd.Done.Wait(TIMEOUT_MS);
-                    response = finished
-                        ? cmd.ResultJson ?? "{\"success\":false,\"error\":\"No result\"}"
-                        : JsonConvert.SerializeObject(new { success = false, error = "Timeout: Revit did not process command in 30s" });
+                    response = JsonConvert.SerializeObject(new { success = true, data = result });
                 }
                 catch (Exception ex)
                 {
                     response = JsonConvert.SerializeObject(new { success = false, error = ex.Message });
                 }
 
-                writer.WriteLine(response);
+                try
+                {
+                    writer.WriteLine(response);
+                }
+                catch
+                {
+                    break; // Connection lost
+                }
             }
         }
     }

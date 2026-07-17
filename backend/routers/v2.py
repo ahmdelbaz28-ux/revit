@@ -1,4 +1,4 @@
-from __future__ import annotations
+
 
 # File-level '# NOSONAR' removed per NOSONAR_AUDIT.md (V143 hardening).
 # Per-line justified suppressions (e.g., '# NOSONAR — S3776: ...') are preserved.
@@ -48,7 +48,7 @@ References
 # which Pydantic cannot resolve at runtime for FastAPI model parsing.
 # Removing it forces actual type resolution at import time.
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
@@ -114,7 +114,7 @@ class ARExportRequest(BaseModel):
 
     building_id: str = "API_Building"
     format: str = Field("both", pattern="^(glb|usdz|both)$")
-    nodes: list[dict[str, Any]] = Field(
+    nodes: List[Dict[str, Any]] = Field(
         default_factory=list,
         description="AR scene nodes (optional — empty uses DigitalTwin)",
     )
@@ -125,7 +125,7 @@ class WebhookSubscribeRequest(BaseModel):
 
     url: str
     secret: str = Field(..., min_length=32)  # V135 F-33: NIST SP 800-107
-    event_types: list[str] = Field(default_factory=list)
+    event_types: List[str] = Field(default_factory=list)
 
 
 class WebhookPublishRequest(BaseModel):
@@ -133,7 +133,7 @@ class WebhookPublishRequest(BaseModel):
 
     event_type: str
     source: str
-    data: dict[str, Any]
+    data: Dict[str, Any]
     trace_id: Optional[str] =  None
 
 
@@ -155,10 +155,10 @@ class SmokeSimulationStateRequest(BaseModel):
     """
 
     room_id: str = Field(..., max_length=200)
-    smoke_density_points: list[SmokeDensityPointRequest] = Field(
+    smoke_density_points: List[SmokeDensityPointRequest] = Field(
         default_factory=list, max_length=10000
     )
-    visibility_at_height: dict[float, float] = Field(default_factory=dict)
+    visibility_at_height: Dict[float, float] = Field(default_factory=dict)
     fds_run_id: Optional[str] =  None
 
 
@@ -169,7 +169,7 @@ class SmokeSimulationStateRequest(BaseModel):
 
 @router.post("/generative/design", dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))])
 @limiter.limit("10/minute")
-async def generate_design_variants(request: Request, req: GenerativeDesignRequest) -> dict[str, Any]:
+async def generate_design_variants(request: Request, req: GenerativeDesignRequest) -> Dict[str, Any]:
     """
     Generate 3 layout variants (Cost-Min, Standard, Safety-Max).
 
@@ -210,7 +210,7 @@ async def generate_design_variants(request: Request, req: GenerativeDesignReques
 
 
 @router.get("/bim/providers")
-async def list_bim_providers() -> dict[str, Any]:
+async def list_bim_providers() -> Dict[str, Any]:
     """List all registered BIM providers."""
     from fireai.bridges.bim_provider import BIMProviderRegistry
 
@@ -224,7 +224,7 @@ async def list_bim_providers() -> dict[str, Any]:
 
 @router.post("/bim/extract-rooms", dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))])
 @limiter.limit("10/minute")
-async def extract_rooms(request: Request, req: BIMExtractRoomsRequest) -> dict[str, Any]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
+async def extract_rooms(request: Request, req: BIMExtractRoomsRequest) -> Dict[str, Any]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     """
     Extract rooms via configured BIM provider.
 
@@ -315,7 +315,7 @@ async def extract_rooms(request: Request, req: BIMExtractRoomsRequest) -> dict[s
 
 
 @router.get("/bim/health")
-async def bim_health() -> dict[str, Any]:
+async def bim_health() -> Dict[str, Any]:
     """Health check for active BIM provider."""
     from fireai.bridges.bim_provider import get_provider
 
@@ -336,7 +336,7 @@ async def bim_health() -> dict[str, Any]:
 
 @router.post("/ifc43/map-detector", dependencies=[Depends(require_permission(Permission.EXPORT_EXECUTE))])
 @limiter.limit("30/minute")
-async def map_detector_to_ifc43(request: Request, req: IFC43MapDetectorRequest) -> dict[str, Any]:
+async def map_detector_to_ifc43(request: Request, req: IFC43MapDetectorRequest) -> Dict[str, Any]:
     """Map a FireAI detector to IFC 4.3 ADD2 representation."""
     from fireai.bridges.ifc43_mapper import IFC43Mapper
 
@@ -356,7 +356,7 @@ async def map_detector_to_ifc43(request: Request, req: IFC43MapDetectorRequest) 
 
 @router.post("/ifc43/map-project", dependencies=[Depends(require_permission(Permission.EXPORT_EXECUTE))])
 @limiter.limit("10/minute")
-async def map_project_to_ifc43(request: Request, req: dict[str, Any]) -> dict[str, Any]:
+async def map_project_to_ifc43(request: Request, req: Dict[str, Any]) -> Dict[str, Any]:
     """Map an entire FireAI project to IFC 4.3 ADD2."""
     from fireai.bridges.ifc43_mapper import IFC43Mapper
 
@@ -379,7 +379,7 @@ async def map_project_to_ifc43(request: Request, req: dict[str, Any]) -> dict[st
 
 @router.post("/ar/export", dependencies=[Depends(require_permission(Permission.EXPORT_EXECUTE))])
 @limiter.limit("10/minute")
-async def export_ar_snapshot(request: Request, req: ARExportRequest) -> dict[str, Any]:
+async def export_ar_snapshot(request: Request, req: ARExportRequest) -> Dict[str, Any]:
     """
     Export DigitalTwin snapshot to GLB/USDZ for AR visualization.
 
@@ -437,7 +437,7 @@ async def export_ar_snapshot(request: Request, req: ARExportRequest) -> dict[str
 
 @router.post("/webhooks/subscribe", dependencies=[Depends(require_permission(Permission.SYSTEM_CONFIG))])
 @limiter.limit("30/minute")
-async def subscribe_webhook(request: Request, req: WebhookSubscribeRequest) -> dict[str, Any]:
+async def subscribe_webhook(request: Request, req: WebhookSubscribeRequest) -> Dict[str, Any]:
     """Subscribe to webhook events."""
     from fireai.infrastructure.webhook_service import (
         WebhookSubscription,
@@ -466,7 +466,7 @@ async def subscribe_webhook(request: Request, req: WebhookSubscribeRequest) -> d
 
 
 @router.get("/webhooks/subscriptions")
-async def list_webhook_subscriptions() -> dict[str, Any]:
+async def list_webhook_subscriptions() -> Dict[str, Any]:
     """List all webhook subscriptions."""
     from fireai.infrastructure.webhook_service import get_webhook_service
 
@@ -488,7 +488,7 @@ async def list_webhook_subscriptions() -> dict[str, Any]:
 
 @router.delete("/webhooks/subscriptions/{sub_id}", dependencies=[Depends(require_permission(Permission.SYSTEM_CONFIG))])
 @limiter.limit("30/minute")
-async def unsubscribe_webhook(request: Request, sub_id: str) -> dict[str, Any]:
+async def unsubscribe_webhook(request: Request, sub_id: str) -> Dict[str, Any]:
     """Remove a webhook subscription."""
     from fireai.infrastructure.webhook_service import get_webhook_service
 
@@ -501,7 +501,7 @@ async def unsubscribe_webhook(request: Request, sub_id: str) -> dict[str, Any]:
 
 @router.post("/webhooks/publish", dependencies=[Depends(require_permission(Permission.SYSTEM_CONFIG))])
 @limiter.limit("30/minute")
-async def publish_webhook_event(request: Request, req: WebhookPublishRequest) -> dict[str, Any]:
+async def publish_webhook_event(request: Request, req: WebhookPublishRequest) -> Dict[str, Any]:
     """Publish an event to all matching webhook subscribers."""
     from fireai.infrastructure.webhook_service import get_webhook_service
 
@@ -526,7 +526,7 @@ async def publish_webhook_event(request: Request, req: WebhookPublishRequest) ->
 
 @router.post("/smoke-simulation/state", dependencies=[Depends(require_permission(Permission.CALCULATION_EXECUTE))])
 @limiter.limit("10/minute")
-async def create_smoke_state(request: Request, req: SmokeSimulationStateRequest) -> dict[str, Any]:
+async def create_smoke_state(request: Request, req: SmokeSimulationStateRequest) -> Dict[str, Any]:
     """
     Create or update smoke simulation state for a room.
 
@@ -832,7 +832,7 @@ async def graphrag_health() -> Dict[str, Any]:
 
 
 @router.get("/health")
-async def v2_health() -> dict[str, Any]:
+async def v2_health() -> Dict[str, Any]:
     """Health check for v2 API endpoints."""
     return {
         "status": "ok",
@@ -870,7 +870,7 @@ async def v2_health() -> dict[str, Any]:
 
 
 @router.get("/auth/csrf-token")
-async def get_csrf_token(request: Request) -> dict[str, Any]:
+async def get_csrf_token(request: Request) -> Dict[str, Any]:
     """
     Issue a CSRF token via Double Submit Cookie pattern.
 

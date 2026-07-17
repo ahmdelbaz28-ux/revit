@@ -71,7 +71,7 @@ dependencies = [
     "ezdxf>=1.0.0,<2.0.0",
     "google-generativeai>=0.3.0,<1.0.0",
     "ifcopenshell>=0.7.0,<1.0.0",
-    "langfuse>=3.0.0,<5.0.0",
+    "langfuse>=2.0.0,<3.0.0",
     "lxml>=6.1.0,<7.0.0",
     "matplotlib>=3.8.0,<4.0.0",
     "mem0ai>=0.1.0,<3.0.0",
@@ -175,7 +175,7 @@ integrations = [
 # langfuse is optional because self-hosted Langfuse is the recommended
 # deployment for life-safety data (no cloud exposure).
 observability = [
-    "langfuse>=3.0.0,<5.0.0",  # V265: bump upper bound (PR #153) — V163: avoid langsmith 0.8.5 vulnerability
+    "langfuse>=2.0.0,<3.0.0",  # V163: avoid langsmith 0.8.5 vulnerability; 3.x not on PyPI (latest 2.54.1)
 ]
 
 [project.scripts]

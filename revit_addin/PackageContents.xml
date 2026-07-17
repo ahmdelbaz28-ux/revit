@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ApplicationPackage 
+    SchemaVersion="1.0" 
+    AppVersion="1.0.0" 
+    Author="BAZspark" 
+    ProductCode="{EB8145BB-823E-4BBD-AA90-FF30427EA2F5}" 
+    Name="BazSparkRevitBridge" 
+    Description="Revit Cloud Design Automation Bridge for BAZspark">
+  <CompanyDetails Name="BAZspark" />
+  <ComponentsDescription>
+    <RuntimeRequirements OS="Win64" Platform="Revit" SeriesMin="2024" SeriesMax="2024" />
+    <ComponentEntry 
+        AppName="BazSparkRevitBridge" 
+        ModuleName="./Contents/BazSparkRevitBridge.addin" 
+        AppDescription="Revit C# named pipe and cloud executor bridge" 
+        LoadOnRevitStartup="True" />
+  </ComponentsDescription>
+</ApplicationPackage>
