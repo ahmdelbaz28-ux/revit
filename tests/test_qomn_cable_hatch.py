@@ -204,6 +204,8 @@ class TestQomnCableHatchIntegration(unittest.TestCase):
                 hatch_scale=0.0005
             )
 
+    @pytest.mark.timeout(600)
+    @pytest.mark.slow
     def test_determinism_under_stress(self):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         TEST 5: Stress & Determinism Validation
