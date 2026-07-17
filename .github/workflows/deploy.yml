@@ -263,7 +263,7 @@ jobs:
           fetch-depth: 0
 
       - name: Configure kubectl
-        uses: azure/setup-kubectl@v5  # NOSONAR — S7637: GitHub Actions acceptable
+        uses: azure/setup-kubectl@v6  # NOSONAR — S7637: GitHub Actions acceptable
         with:
           version: latest
 
@@ -289,6 +289,7 @@ jobs:
             --set secrets.fireai-secrets.stringData.GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }} \  # NOSONAR — S7636: GitHub Actions acceptable
             --set secrets.fireai-secrets.stringData.ENCRYPTION_KEY=${{ secrets.ENCRYPTION_KEY }} \  # NOSONAR — S7636: GitHub Actions acceptable
             --set secrets.fireai-secrets.stringData.JWT_SECRET=${{ secrets.JWT_SECRET }} \  # NOSONAR — S7636: GitHub Actions acceptable
+            --set api.environment.DATABASE_URL=sqlite:////tmp/fireai_deploy.db \
             --wait --timeout 300s
 
       - name: Verify deployment
@@ -324,7 +325,7 @@ jobs:
           fetch-depth: 0
 
       - name: Configure kubectl
-        uses: azure/setup-kubectl@v5  # NOSONAR — S7637: GitHub Actions acceptable
+        uses: azure/setup-kubectl@v6  # NOSONAR — S7637: GitHub Actions acceptable
         with:
           version: latest
 
@@ -386,6 +387,7 @@ jobs:
             --set secrets.fireai-secrets.stringData.GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }} \  # NOSONAR — S7636: GitHub Actions acceptable
             --set secrets.fireai-secrets.stringData.ENCRYPTION_KEY=${{ secrets.ENCRYPTION_KEY }} \  # NOSONAR — S7636: GitHub Actions acceptable
             --set secrets.fireai-secrets.stringData.JWT_SECRET=${{ secrets.JWT_SECRET }} \  # NOSONAR — S7636: GitHub Actions acceptable
+            --set api.environment.DATABASE_URL=sqlite:////tmp/fireai_deploy.db \
             --wait --timeout 300s
 
       - name: Verify deployment
