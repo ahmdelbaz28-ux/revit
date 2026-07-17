@@ -58,18 +58,20 @@ jobs:
         id: trigger
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_DEPLOY_TOKEN }}
-          PROJECT_ID: prj_cLO9iGH2sEG5LGSV1tv95CWimkl5
-          TEAM_ID: team_thkWFCepMKbBSrOf5ulqi4wF
+          PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          TEAM_ID: ${{ secrets.VERCEL_TEAM_ID }}
           REPO: ${{ github.repository }}
           SHA: ${{ github.sha }}
+          REPO_OWNER: ${{ github.repository_owner }}
+          REPO_NAME: ${{ github.event.repository.name }}
         run: |
           set -euo pipefail
 
-          # V235: Use the correct repo name "BAZspark" (was "revit") and the
-          # new project/team IDs. The gitSource tells Vercel to attribute the
+          # V235: Use the correct repo name (from context) and the
+          # project/team IDs from secrets. The gitSource tells Vercel to attribute the
           # deployment to this GitHub commit (shown in the Vercel dashboard).
           DEPLOY_PAYLOAD=$(cat <<EOF
-          {"name":"ba-zspark","target":"production","gitSource":{"type":"github","org":"ahmdelbaz28-ux","repo":"BAZspark","ref":"main","sha":"${SHA}"}}
+          {"name":"ba-zspark","target":"production","gitSource":{"type":"github","org":"${REPO_OWNER}","repo":"${REPO_NAME}","ref":"main","sha":"${SHA}"}}
           EOF
           )
 

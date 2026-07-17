@@ -72,13 +72,21 @@ jobs:
           SHA: ${{ github.event.pull_request.head.sha || github.sha }}
           REF: ${{ github.event.pull_request.head.ref || github.ref_name }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO_OWNER: ${{ github.repository_owner }}
+          REPO_NAME: ${{ github.event.repository.name }}
         run: |
           set -euo pipefail
 
-          # Use hardcoded project ID as fallback if secret not set
-          PROJ="${PROJECT_ID:-prj_cLO9iGH2sEG5LGSV1tv95CWimkl5}"
+          # Check that secret is set
+          if [ -z "${PROJECT_ID:-}" ]; then
+            echo "::error::VERCEL_PROJECT_ID secret not set — preview deployment cannot proceed"
+            echo "deploy_uid=" >> "$GITHUB_OUTPUT"
+            echo "deploy_url=" >> "$GITHUB_OUTPUT"
+            exit 1
+          fi
+          PROJ="$PROJECT_ID"
 
-          DEPLOY_PAYLOAD=$(printf '{"name":"bazspark","target":"preview","gitSource":{"type":"github","org":"ahmdelbaz28-ux","repo":"BAZspark","ref":"%s","sha":"%s"},"ref":"%s"}' "$REF" "$SHA" "$REF")
+          DEPLOY_PAYLOAD=$(printf '{"name":"bazspark","target":"preview","gitSource":{"type":"github","org":"%s","repo":"%s","ref":"%s","sha":"%s"},"ref":"%s"}' "$REPO_OWNER" "$REPO_NAME" "$REF" "$SHA" "$REF")
 
           echo "Branch: $REF | SHA: ${SHA:0:8} | PR: #${PR_NUMBER:-none}"
 

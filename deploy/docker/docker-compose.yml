@@ -161,7 +161,7 @@ services:
     <<: *default-security
     logging: *default-logging
     healthcheck:
-      test: ["CMD", "python", "-c", "import os; sys.exit(0 if os.path.exists('/app/data/worker_heartbeat') else 1)"]
+      test: ["CMD", "python", "-c", "import os, sys; sys.exit(0 if os.path.exists('/app/data/worker_heartbeat') else 1)"]
       interval: 30s
       timeout: 10s
       retries: 3

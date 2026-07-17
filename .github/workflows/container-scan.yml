@@ -30,7 +30,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v7
+        uses: actions/checkout@v4
 
       - name: Build Docker image
         id: docker-build
@@ -42,7 +42,7 @@ jobs:
 
       - name: Run Trivy on Docker image
         if: steps.docker-build.outputs.build_failed != 'true'
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@v0.29
         with:
           image-ref: 'bazspark:scan'
           format: 'sarif'
@@ -55,7 +55,7 @@ jobs:
 
       - name: Run Trivy filesystem scan (fallback)
         if: steps.docker-build.outputs.build_failed == 'true'
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@v0.29
         with:
           scan-type: 'fs'
           scan-ref: '.'

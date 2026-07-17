@@ -473,3 +473,10 @@ HTTP_STRESS_TEST_RESULTS.json
 STRESS_TEST_RESULTS.json
 STRICT_STRESS_V3_RESULTS.json
 sonar_fix_plan.json
+
+# .NET build artifacts (AutoCAD/Revit add-ins)
+bin/
+obj/
+
+# Agent workspace directories
+.mimocode/
