@@ -297,7 +297,7 @@ class IoTPipeline:
         self._opcua_endpoint = endpoint
 
         try:
-            import opcua  # noqa: F401
+            import asyncua  # noqa: F401
             import opcua_client  # noqa: F401
 
             self._opcua_connected = await self._connect_opcua_real(
@@ -305,8 +305,8 @@ class IoTPipeline:
             )
         except ImportError:
             logger.warning(
-                "opcua-asyncio not available — using simulated OPC-UA. "
-                "Install with: pip install opcua-asyncio"
+                "asyncua not available — using simulated OPC-UA. "
+                "Install with: pip install asyncua"
             )
             self._opcua_connected = await self._connect_opcua_simulated(
                 endpoint
@@ -669,7 +669,7 @@ class IoTPipeline:
         password: str = "",
     ) -> bool:
         try:
-            from opcua import Client as OPCUAClient
+            from asyncua import Client as OPCUAClient
 
             client = OPCUAClient(endpoint, timeout=10)
             if username and password:
