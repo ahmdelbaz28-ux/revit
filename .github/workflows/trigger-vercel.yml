@@ -1,18 +1,10 @@
 name: Trigger Vercel Deploy
 
-# V235 (2026-07-13): Re-point to the NEW Vercel project + team.
-#   OLD (broken):  PROJECT_ID=prj_Y6Qr828DXS83tWF1LntFakyofMrf  TEAM_ID=team_eeEYqzXI8zkrTo62cUOTMVmS  repo="revit"
-#   NEW (working): PROJECT_ID=prj_cLO9iGH2sEG5LGSV1tv95CWimkl5  TEAM_ID=team_thkWFCepMKbBSrOf5ulqi4wF  repo="BAZspark"
-#
-#   The previous workflow was calling the API with the old project ID, which
-#   Vercel treated as a "new project" request and rejected with HTTP 400
-#   missing_project_settings. With the correct IDs, the API call succeeds and
-#   returns the deployment URL.
-#
-#   NOTE: This workflow is now a SECONDARY trigger. The PRIMARY trigger is
-#   the native Vercel-GitHub integration (once connected via the Vercel
-#   dashboard). Until that is set up, this workflow remains the only
-#   automated deployment trigger on push.
+# NOTE: Vercel project/team IDs moved to GitHub secrets (VERCEL_PROJECT_ID, VERCEL_TEAM_ID).
+# This workflow is now a SECONDARY trigger. The PRIMARY trigger is
+# the native Vercel-GitHub integration (once connected via the Vercel
+# dashboard). Until that is set up, this workflow remains the only
+# automated deployment trigger on push.
 
 on:
   push:
