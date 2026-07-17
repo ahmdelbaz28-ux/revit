@@ -25,11 +25,6 @@ from dataclasses import dataclass
 from typing import Dict, List
 
 # V268 FIX: Import shared path-security helper (V125 Rule #23 — single source of truth)
-from parsers._path_security import (
-    UnsafePathError,
-    validate_file_size,
-    validate_input_path,
-)
 
 # V268 FIX: Expose size cap via env var (V125 DoS cap consistency)
 _IFC_MAX_FILE_SIZE_BYTES = int(
