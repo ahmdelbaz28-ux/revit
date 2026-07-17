@@ -214,6 +214,7 @@ config/secrets.json
 # API key server-side HMAC secret (per-instance, must never be committed)
 db/api_keys.secret
 *.secret
+.env.backup.*
 
 # Testing
 .pytest_cache/
