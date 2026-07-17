@@ -52,6 +52,11 @@ requests>=2.34.0,<3.0.0
 websockets>=12.0.0,<16.0.0  # V207 FIX: raised upper bound to support uvicorn[standard] 0.50+
 
 # ── Utilities ────────────────────────────────────────────────────────────────
+# V278 FIX: packaging is a transitive dep of matplotlib but NOT installed into
+# the Docker /install prefix (it lives in the base python:3.12-slim image and is
+# thus missing from the runtime stage). Pin it explicitly so the container can
+# import it at startup (Gate 6 "Test Docker container" ModuleNotFoundError).
+packaging>=20.0,<26.0
 python-dotenv>=1.0.0,<2.0.0
 python-dateutil>=2.8.0,<3.0.0
 pytz>=2023.0.0,<2027.0.0  # V265: bump upper bound (PR #148)
