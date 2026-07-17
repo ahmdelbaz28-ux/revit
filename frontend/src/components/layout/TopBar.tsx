@@ -121,16 +121,16 @@ const TopBar: React.FC<TopBarProps> = ({
                                 <Settings className="h-[18px] w-[18px]" />
                         </Link>
 
-			{/* Dark mode toggle */}
-			<button
-				onClick={toggle}
-				aria-label="Toggle dark mode"
-				className="p-2 text-muted-foreground hover:text-cyan-300 hover:bg-white/5 transition-all duration-200 rounded-lg"
-			>
-				{dark ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
-			</button>
+                        {/* Dark mode toggle */}
+                        <button
+                                onClick={toggle}
+                                aria-label="Toggle dark mode"
+                                className="p-2 text-muted-foreground hover:text-cyan-300 hover:bg-white/5 transition-all duration-200 rounded-lg"
+                        >
+                                {dark ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+                        </button>
 
-			{/* Language selector */}
+                        {/* Language selector */}
                         <div className="relative" ref={langRef}>
                                 <button
                                         onClick={() => setLangOpen(!langOpen)}

@@ -14,10 +14,7 @@
 # that expect requirements.txt (Dependabot, some Docker base images).
 
 # ── Core Web Framework ───────────────────────────────────────────────────────
-# V267 FIX: Revert fastapi pin from >=1.0.0 (doesn't exist on PyPI).
-# >=0.138.0 was also invalid (latest on PyPI is 0.124.x). Pin to
-# >=0.100.0 to match pyproject.toml — allows any stable fastapi 0.100+.
-fastapi>=0.100.0,<1.0.0
+fastapi>=0.100.0,<2.0.0
 starlette>=0.27.0,<2.0.0
 uvicorn[standard]>=0.20.0,<1.0.0
 pydantic>=2.0.0,<3.0.0
