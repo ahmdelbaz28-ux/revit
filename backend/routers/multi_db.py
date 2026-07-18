@@ -210,8 +210,26 @@ async def find_related_elements(
 
 
 @router.get("/neo4j/query", dependencies=[Depends(require_permission(Permission.SYSTEM_CONFIG))])
-async def execute_neo4j_query(query: str, parameters: Optional[str] = Query(None)):  # NOSONAR - python:S8410
-    """Execute a custom Cypher query against Neo4j."""
+async def execute_neo4j_query(
+    query_type: str = Query(..., description="Predefined safe query template to execute"),
+    parameters: Optional[str] = Query(None, description="JSON string of query parameters")
+):
+    """Execute a predefined, parameterized Cypher query against Neo4j securely."""
+    # Predefined safe, read-only queries
+    SAFE_TEMPLATES = {
+        "get_element_count": "MATCH (n) RETURN count(n) as count",
+        "get_element_by_id": "MATCH (n) WHERE n.element_id = $element_id RETURN n",
+        "get_relationships": "MATCH (a)-[r]->(b) RETURN a.element_id, type(r), b.element_id LIMIT 100",
+    }
+
+    if query_type not in SAFE_TEMPLATES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid or unsafe query type. Allowed types are: {list(SAFE_TEMPLATES.keys())}"
+        )
+
+    query = SAFE_TEMPLATES[query_type]
+
     try:
         import json
         params = json.loads(parameters) if parameters else {}
@@ -220,7 +238,7 @@ async def execute_neo4j_query(query: str, parameters: Optional[str] = Query(None
         results = db_service.neo4j_execute_query(query, params)
         return ApiResponse(
             success=True,
-            data={"query": query, "parameters": params, "results": results},
+            data={"query_type": query_type, "parameters": params, "results": results},
             message=f"Query executed successfully, returned {len(results)} results"
         )
     except Exception:

@@ -206,7 +206,12 @@ def handle_fds_webhook(payload: Dict[str, Any]) -> Dict[str, Any]:
 
 def _compute_webhook_secret(job_id: str) -> str:
     """Deterministic HMAC-like secret tied to the job_id and a server secret."""
-    server_secret = os.getenv("FDS_WEBHOOK_SECRET", "bazspark-fds-secret-change-me")
+    server_secret = os.getenv("FDS_WEBHOOK_SECRET")
+    if not server_secret:
+        raise ValueError(
+            "FDS_WEBHOOK_SECRET environment variable is not set. "
+            "Webhook authentication requires a configured server secret."
+        )
     raw = f"{job_id}:{server_secret}"
     return hashlib.sha256(raw.encode()).hexdigest()[:32]
 

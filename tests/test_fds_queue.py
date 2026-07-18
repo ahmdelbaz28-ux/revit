@@ -38,6 +38,7 @@ def test_fds_local_simulation_job():
 def test_fds_router_endpoints(monkeypatch):
     """Test the FastAPI router endpoints for FDS queue/webhook."""
     monkeypatch.setenv("FIREAI_API_KEY", "test_dev_key")
+    monkeypatch.setenv("FDS_WEBHOOK_SECRET", "test-secret-123456")
     headers = {"X-API-Key": "test_dev_key"}
 
     fds_input = """
@@ -87,8 +88,9 @@ def test_fds_router_endpoints(monkeypatch):
     assert status_data2["result"]["max_temperature_c"] == 120.0
 
 
-def test_fds_webhook_invalid_secret():
+def test_fds_webhook_invalid_secret(monkeypatch):
     """Verify that the webhook rejects requests with invalid HMAC secret (returns 400)."""
+    monkeypatch.setenv("FDS_WEBHOOK_SECRET", "test-secret-123456")
     job_id = "test-job-uuid"
     webhook_payload = {
         "job_id": job_id,

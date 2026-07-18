@@ -1,5 +1,6 @@
 # File-level '# NOSONAR' removed per NOSONAR_AUDIT.md (V143 hardening).
 # Per-line justified suppressions (e.g., '# NOSONAR — S3776: ...') are preserved.
+from __future__ import annotations
 """
 conftest.py — Shared Pytest Fixtures for FireAI Test Suite
 ===========================================================
@@ -20,7 +21,13 @@ Usage:
         ...
 """
 
-from __future__ import annotations
+# Python 3.8 compatibility patch for ReportLab: hashlib.md5 does not support usedforsecurity
+import hashlib
+_orig_md5 = hashlib.md5
+def _patched_md5(*args, **kwargs):
+    kwargs.pop("usedforsecurity", None)
+    return _orig_md5(*args, **kwargs)
+hashlib.md5 = _patched_md5
 
 import logging
 import sys
