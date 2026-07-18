@@ -909,23 +909,13 @@ class OpenFireAdapter:
     )
     def calculate_smoke_layer_height(temp_k: float, mass_flow: float) -> float:
         """
-        حساب مبسط لارتفاع طبقة الدخان.
-        الـ ZeroDivisionError هنا = فيزياء مستحيلة = FATAL = REJECTED.
+        حساب ارتفاع طبقة الدخان.
+        V143: تم إلغاء المعادلة الصورية ورمي استثناء لعدم تحميل محرك المحاكاة الفعلي (CFAST/FDS).
         """
-        if temp_k <= 0.0 or mass_flow <= 0.0:
-            # في v3.1 كان هذا ZeroDivisionError → healed إلى inf
-            # في v4.0 هذا خطأ قاتل = REJECTED
-            raise ZeroDivisionError(
-                f"Invalid physical parameters: temp_k={temp_k}, mass_flow={mass_flow}. "
-                f"Temperature and mass flow must be positive."
-            )
-        result = 10.0 / (temp_k * mass_flow)
-        if not _validate_openfire_height(result):
-            raise ValueError(
-                f"Calculated smoke layer height {result}m is outside physical range "
-                f"[{_OPENFIRE_MIN_HEIGHT}, {_OPENFIRE_MAX_HEIGHT}]"
-            )
-        return round(result, 4)
+        raise RuntimeError(
+            "Smoke simulation engine not loaded. A genuine physical solver (CFAST/OpenFOAM) "
+            "is required to calculate smoke layer height."
+        )
 
 
 # 4. Emergency Evacuation: Pathfinding
@@ -1012,22 +1002,14 @@ class DisasterEvacuationAdapter:
         unit="persons_per_second_per_meter",
     )
     def simulate_crowd_throughput(agent_count: int, exit_width: float) -> float:
-        if exit_width == 0.0:  # NOSONAR — S1244: import retained for re-export / API surface
-            # [v4.0] هذا FATAL — لا يمكن الإخلاء بدون مخرج
-            raise ZeroDivisionError(
-                "Exit width is zero — no evacuation possible. "
-                "This is a life-safety emergency, not a calculation error."
-            )
-        if exit_width < 0:
-            raise ValueError(f"Negative exit width: {exit_width}m")
-        if agent_count < 0:
-            raise ValueError(f"Negative agent count: {agent_count}")
-        result = agent_count / exit_width
-        if result > _DISASTER_MAX_THROUGHPUT:
-            raise ValueError(
-                f"Throughput {result} exceeds maximum realistic {_DISASTER_MAX_THROUGHPUT}"
-            )
-        return result
+        """
+        محاكاة تدفق الحشود.
+        V143: تم إلغاء المعادلة الصورية ورمي استثناء لعدم تحميل محرك المحاكاة الفعلي (Mass Evacuation Simulator).
+        """
+        raise RuntimeError(
+            "Evacuation simulation engine not loaded. A genuine agent-based crowd physics solver "
+            "is required to simulate evacuation throughput."
+        )
 
 
 # 7. EPyT: Hydraulic
@@ -1062,23 +1044,14 @@ class EpytAdapter:
         unit="PSI",
     )
     def calculate_epanet_flow_pressure(elevation_m: float, demand_lps: float) -> float:
-        if demand_lps == 0.0:  # NOSONAR — S1244: import retained for re-export / API surface
-            # [v4.0] هذا FATAL — لا ضغط بدون طلب
-            raise ZeroDivisionError(
-                "Zero demand — cannot calculate pressure. "
-                "Check hydraulic model inputs."
-            )
-        if demand_lps < 0:
-            raise ValueError(f"Negative demand: {demand_lps} L/s")
-        if elevation_m < 0:
-            raise ValueError(f"Negative elevation: {elevation_m}m")
-        result = elevation_m / demand_lps
-        if not _validate_epyt_pressure(result):
-            raise ValueError(
-                f"Calculated pressure {result} PSI is outside NFPA 13 range "
-                f"[{_EPYT_MIN_PSI}, {_EPYT_MAX_PSI}]"
-            )
-        return result
+        """
+        حساب ضغط تدفق المياه هيدروليكياً.
+        V143: تم إلغاء المعادلة الصورية ورمي استثناء لعدم تحميل محرك المحاكاة الفعلي (EPANET).
+        """
+        raise RuntimeError(
+            "Hydraulic simulation engine not loaded. A genuine EPANET/EPyT physical solver "
+            "is required to calculate node flow pressure."
+        )
 
 
 # 8. SprayHydraulic: Sprinkler — NO MORE INFINITY

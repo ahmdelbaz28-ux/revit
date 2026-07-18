@@ -37,6 +37,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
+import { useGsapSplitText, useGsapCounter, useGsapScrollReveal } from "@/hooks/useGsapAnimations";
 
 /**
  * BrandNetworkBackground component renders floating orange/rose sensor network nodes
@@ -454,6 +455,24 @@ export function LoginPage() {
         const [isSuccess, setIsSuccess] = useState(false);
         const [redirectReady, setRedirectReady] = useState(false);
 
+        // ─── GSAP Animation Refs ─────────────────────────────────────────
+        const headlineRef = useRef<HTMLDivElement>(null);
+        const metricsRef = useRef<HTMLDivElement>(null);
+        const leftPanelRef = useRef<HTMLDivElement>(null);
+
+        // GSAP SplitText: hero headline chars animate in
+        useGsapSplitText(headlineRef, {
+                type: "chars",
+                stagger: 0.03,
+                y: 80,
+                duration: 0.9,
+                ease: "back.out(1.7)",
+                delay: 0.6,
+        });
+
+        // GSAP Counter: metrics numbers count up on scroll
+        useGsapCounter(metricsRef, { duration: 2.2, start: "top 90%" });
+
         // Delay redirect on form submission to display success sequence
         if (!ctxLoading && isAuthenticated && (redirectReady || !isSuccess)) {
                 const from = searchParams.get("from") || "/dashboard";
@@ -634,7 +653,7 @@ export function LoginPage() {
                                                         <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping" />
                                                         THE FUTURE OF LIFE-SAFETY ENGINEERING
                                                 </span>
-                                                <h1 className="text-3xl lg:text-4xl xl:text-5xl font-black tracking-tight text-white leading-tight lg:leading-[1.12]">
+                                                <h1 ref={headlineRef} className="gsap-split text-3xl lg:text-4xl xl:text-5xl font-black tracking-tight text-white leading-tight lg:leading-[1.12]">
                                                         Autonomous 3D Routing <br />& Compliance Solver
                                                 </h1>
                                                 <p className="text-slate-400 text-sm lg:text-base leading-relaxed max-w-md opacity-90">
@@ -643,10 +662,10 @@ export function LoginPage() {
                                         </motion.div>
 
                                         {/* Glowing Metrics Grid with Enhanced Spacing & Typography */}
-                                        <motion.div variants={leftPanelItem} className="grid grid-cols-3 gap-4 lg:gap-5 pt-2">
+                                        <motion.div ref={metricsRef} variants={leftPanelItem} className="grid grid-cols-3 gap-4 lg:gap-5 pt-2">
                                                 <div className="rounded-xl border border-slate-900 bg-slate-950/60 p-3.5 lg:p-4 text-center space-y-1 hover:border-cyan-500/20 hover:shadow-[0_0_15px_rgba(6,182,212,0.08)] transition-all duration-300">
                                                         <div className="text-2xl lg:text-3xl font-black tracking-tight font-mono">
-                                                                <span className="bg-gradient-to-r from-cyan-400 to-teal-400 bg-clip-text text-transparent">80%</span>
+                                                                <span className="gsap-counter bg-gradient-to-r from-cyan-400 to-teal-400 bg-clip-text text-transparent" data-value="80" data-suffix="%">0%</span>
                                                         </div>
                                                         <p className="text-[9px] lg:text-[10px] font-extrabold text-slate-500 uppercase tracking-widest">
                                                                 Time Saved
@@ -655,7 +674,7 @@ export function LoginPage() {
 
                                                 <div className="rounded-xl border border-slate-900 bg-slate-950/60 p-3.5 lg:p-4 text-center space-y-1 hover:border-rose-500/20 hover:shadow-[0_0_15px_rgba(244,63,94,0.08)] transition-all duration-300">
                                                         <div className="text-2xl lg:text-3xl font-black tracking-tight font-mono">
-                                                                <span className="bg-gradient-to-r from-rose-400 to-orange-400 bg-clip-text text-transparent">100%</span>
+                                                                <span className="gsap-counter bg-gradient-to-r from-rose-400 to-orange-400 bg-clip-text text-transparent" data-value="100" data-suffix="%">0%</span>
                                                         </div>
                                                         <p className="text-[9px] lg:text-[10px] font-extrabold text-slate-500 uppercase tracking-widest">
                                                                 Compliant
@@ -664,7 +683,7 @@ export function LoginPage() {
 
                                                 <div className="rounded-xl border border-slate-900 bg-slate-950/60 p-3.5 lg:p-4 text-center space-y-1 hover:border-purple-500/20 hover:shadow-[0_0_15px_rgba(168,85,247,0.08)] transition-all duration-300">
                                                         <div className="text-2xl lg:text-3xl font-black tracking-tight font-mono">
-                                                                <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">ZERO</span>
+                                                                <span className="gsap-counter bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent" data-value="0" data-prefix="" data-suffix="">0</span>
                                                         </div>
                                                         <p className="text-[9px] lg:text-[10px] font-extrabold text-slate-500 uppercase tracking-widest">
                                                                 Collisions
