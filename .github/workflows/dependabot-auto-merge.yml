@@ -22,7 +22,7 @@ jobs:
     steps:
       - name: Check if dependency is safe to auto-merge
         id: check-safe
-        uses: actions/github-script@v7
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
         with:
           script: |
             const pr = context.payload.pull_request;
@@ -68,7 +68,7 @@ jobs:
       - name: Wait for status checks (with timeout protection)
         id: wait-for-status-checks
         if: steps.check-safe.outputs.safe == 'true'
-        uses: actions/github-script@v7
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
         with:
           script: |
             const ref = context.payload.pull_request.head.sha;

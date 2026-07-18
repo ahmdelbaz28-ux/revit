@@ -41,7 +41,7 @@ jobs:
       - name: Create GitHub Preview Deployment record
         id: gh-deploy
         if: steps.check-secrets.outputs.skip != 'true'
-        uses: actions/github-script@v7
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
         with:
           script: |
             const ref = context.payload.pull_request?.head.ref || context.ref.replace('refs/heads/', '');
@@ -124,7 +124,7 @@ jobs:
 
       - name: Mark GitHub deployment as success
         if: steps.check-secrets.outputs.skip != 'true' && steps.gh-deploy.outputs.deployment_id != '' && steps.trigger.outputs.deploy_uid != ''
-        uses: actions/github-script@v7
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
         env:
           DEPLOY_URL: ${{ steps.trigger.outputs.deploy_url }}
         with:
@@ -145,7 +145,7 @@ jobs:
 
       - name: Mark GitHub deployment as inactive (on skip/failure)
         if: always() && steps.check-secrets.outputs.skip == 'true' && steps.gh-deploy.outputs.deployment_id != ''
-        uses: actions/github-script@v7
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
         with:
           script: |
             const deploymentId = Number('${{ steps.gh-deploy.outputs.deployment_id }}');
@@ -162,7 +162,7 @@ jobs:
 
       - name: Comment PR with preview URL
         if: steps.trigger.outputs.deploy_url != '' && github.event.pull_request.number
-        uses: actions/github-script@v7
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
         env:
           DEPLOY_URL: ${{ steps.trigger.outputs.deploy_url }}
         with:
