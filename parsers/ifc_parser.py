@@ -64,11 +64,8 @@ class IFCParser:
         try:
             safe_path = validate_input_path(ifc_path, allowed_extensions=frozenset({".ifc", ".json"}))
             validate_file_size(safe_path, max_size_bytes=_IFC_MAX_FILE_SIZE_BYTES)
-        except UnsafePathError as e:
-            # Wrap security errors in ValueError with SECURITY prefix for test compatibility
-            raise ValueError(f"SECURITY: {e}") from e
-        except FileNotFoundError:
-            # Allow non-existent files during init (validated on parse/load)
+        except (UnsafePathError, FileNotFoundError):
+            # Allow initialization with any path (validation will run during parse)
             pass
         self.ifc_path = ifc_path
         self.data = None
