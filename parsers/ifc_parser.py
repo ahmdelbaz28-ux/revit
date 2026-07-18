@@ -25,6 +25,11 @@ from dataclasses import dataclass
 from typing import Dict, List
 
 # V268 FIX: Import shared path-security helper (V125 Rule #23 — single source of truth)
+from parsers._path_security import (
+    UnsafePathError,
+    validate_file_size,
+    validate_input_path,
+)
 
 # V268 FIX: Expose size cap via env var (V125 DoS cap consistency)
 _IFC_MAX_FILE_SIZE_BYTES = int(
@@ -55,6 +60,16 @@ class IFCParser:
     """Parse IFC format files."""
 
     def __init__(self, ifc_path: str):
+        # V125 DoS cap consistency & path safety
+        try:
+            safe_path = validate_input_path(ifc_path, allowed_extensions=frozenset({".ifc", ".json"}))
+            validate_file_size(safe_path, max_size_bytes=_IFC_MAX_FILE_SIZE_BYTES)
+        except UnsafePathError as e:
+            # Wrap security errors in ValueError with SECURITY prefix for test compatibility
+            raise ValueError(f"SECURITY: {e}") from e
+        except FileNotFoundError:
+            # Allow non-existent files during init (validated on parse/load)
+            pass
         self.ifc_path = ifc_path
         self.data = None
 
@@ -185,26 +200,26 @@ class IFCParser:
             ImportError: If trying to parse an IFC file without ifcopenshell installed
         """
         # V125/V126 SECURITY (Rule #23): validate self.ifc_path BEFORE opening.
-        # The path was supplied at __init__ time, this is the last gate
-        # before file I/O. Closes path traversal, null bytes, argument
-        # injection (defense-in-depth), and oversized files.
-        import os
+        try:
+            safe_path = validate_input_path(
+                self.ifc_path,
+                allowed_extensions=frozenset({".ifc", ".json"}),
+                parser_name="IFCParser.parse",
+            )
+            validate_file_size(
+                safe_path,
+                max_size_bytes=_IFC_MAX_FILE_SIZE_BYTES,
+                parser_name="IFCParser.parse",
+            )
+        except UnsafePathError as e:
+            raise ValueError(f"SECURITY: {e}") from e
+        except FileNotFoundError as e:
+            raise ValueError(f"File not found: {e}") from e
 
-        # Disallow null byte in path
-        if "\x00" in self.ifc_path:
-            raise ValueError("SECURITY: Null byte in path")
-        # Disallow leading dash in filename (e.g., "--evil.ifc")
-        filename = os.path.basename(self.ifc_path)
-        if filename.startswith("-"):
-            raise ValueError("SECURITY: Path cannot start with dash")
-        # Validate file extension
+        # Use resolved safe path for all subsequent operations
+        self.ifc_path = str(safe_path)
         _, ext = os.path.splitext(self.ifc_path)
         ext = ext.lower()
-        if ext not in {".ifc", ".json"}:
-            raise ValueError("SECURITY: Unsupported file extension")
-        # Ensure file exists
-        if not os.path.exists(self.ifc_path):
-            raise ValueError(f"File not found: {self.ifc_path}")
 
         # Load the data
         try:

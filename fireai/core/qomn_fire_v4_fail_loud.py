@@ -440,6 +440,10 @@ def fail_loud_v4(  # NOSONAR — S3776: cognitive complexity is inherent to the 
     unit: وحدة القياس (للسجلات والمراجعة)
     allow_healing: إذا False، أي خطأ = REJECTED (للحسابات الحرجة)
     """
+    # Python 3.8 compatibility: extract callable from staticmethod wrapper if passed
+    if isinstance(physics_validator, staticmethod):
+        physics_validator = physics_validator.__func__
+
     # [v4.0] التحقق من أن safe_minimum و default_value محددان
     if safe_minimum is None and default_value is None and allow_healing:
         raise ValueError(
@@ -1280,6 +1284,9 @@ class TestQomnFireV4FailLoud(unittest.TestCase):
     """اختبارات شاملة لفلسفة Fail-Loud."""
 
     def setUp(self) -> None:
+        # Override class attributes dynamically for test isolation
+        Config.SECRET_KEY = b"dummy_secret_key_1234567890123456"
+        Config.REFUSE_ON_MISSING_SECRET = False
         # Reset circuit breakers for test isolation
         _circuit_breakers.clear()
         # Reset audit logger singleton for test isolation
@@ -1383,10 +1390,9 @@ class TestQomnFireV4FailLoud(unittest.TestCase):
         assert res.value is None
 
     def test_negative_agents_is_rejected(self) -> None:
-        """عدد أشخاص سالب = مستحيل = REJECTED (ValueError is RECOVERABLE → HEALED)."""
+        """عدد أشخاص سالب = مستحيل = REJECTED."""
         res = DisasterEvacuationAdapter.simulate_crowd_throughput(-10, 1.0)
-        # ValueError is RECOVERABLE → HEALED
-        assert res.is_healed()
+        assert res.is_rejected()
 
     def test_valid_throughput_is_nominal(self) -> None:
         """حساب صحيح = REJECTED لغياب محرك المحاكاة الحقيقي."""
@@ -1403,9 +1409,9 @@ class TestQomnFireV4FailLoud(unittest.TestCase):
         assert res.is_rejected()
 
     def test_negative_elevation_is_rejected(self) -> None:
-        """ارتفاع سالب = HEALED (RECOVERABLE ValueError)."""
+        """ارتفاع سالب = REJECTED."""
         res = EpytAdapter.calculate_epanet_flow_pressure(-5.0, 10.0)
-        assert res.is_healed()
+        assert res.is_rejected()
 
     def test_valid_pressure_is_nominal(self) -> None:
         """ضغط صحيح = REJECTED لغياب محرك المحاكاة الحقيقي."""

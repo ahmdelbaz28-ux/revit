@@ -14,18 +14,59 @@ import { useEffect, type RefObject } from "react";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { SplitText } from "gsap/SplitText";
-import { DrawSVGPlugin } from "gsap/DrawSVGPlugin";
 import { MotionPathPlugin } from "gsap/MotionPathPlugin";
-import { CustomEase } from "gsap/CustomEase";
 
-// ─── Register GSAP Plugins ──────────────────────────────────────────
-gsap.registerPlugin(useGSAP, ScrollTrigger, SplitText, DrawSVGPlugin, MotionPathPlugin, CustomEase);
+// ─── Register GSAP Plugins (Core plugins only - Club plugins are optional) ──────────────────────────────────────────
+gsap.registerPlugin(useGSAP, ScrollTrigger, MotionPathPlugin);
 
-// ─── Custom Ease for BAZSPARK Engineering Feel ─────────────────────
-CustomEase.create("bazspark-ease", "M0,0 C0.25,0.1 0.25,1 1,1");
-CustomEase.create("bazspark-bounce", "M0,0 C0.25,0.46 0.45,0.94 1,1");
-CustomEase.create("bazspark-flame", "M0,0 C0.5,0.05 0.5,0.95 1,1");
+// ─── Optional Club GSAP Plugins (loaded dynamically if available) ──────────────────────────────────────────
+type SplitTextType = any;
+type DrawSVGPluginType = any;
+type CustomEaseType = any;
+
+let SplitText: SplitTextType | null = null;
+let DrawSVGPlugin: DrawSVGPluginType | null = null;
+let CustomEase: CustomEaseType | null = null;
+
+async function loadClubPlugins() {
+  if (typeof window === "undefined") return;
+  try {
+    // Use dynamic import with string concatenation to avoid static analysis
+    const splitTextModule = await import(/* webpackIgnore: true */ "gsap/SplitText");
+    const drawSVGModule = await import(/* webpackIgnore: true */ "gsap/DrawSVGPlugin");
+    const customEaseModule = await import(/* webpackIgnore: true */ "gsap/CustomEase");
+
+    SplitText = splitTextModule.SplitText;
+    DrawSVGPlugin = drawSVGModule.DrawSVGPlugin;
+    CustomEase = customEaseModule.CustomEase;
+
+    gsap.registerPlugin(SplitText, DrawSVGPlugin, CustomEase);
+  } catch {
+    // Club plugins not available - animations using them will gracefully degrade
+    console.warn("[GSAP] Club plugins (SplitText, DrawSVGPlugin, CustomEase) not available. Some animations will be disabled.");
+  }
+}
+
+// Load club plugins on client side
+if (typeof window !== "undefined") {
+  loadClubPlugins();
+}
+
+// ─── Import Centralized Presets ─────────────────────────────────────
+import {
+  easings,
+  durations,
+  staggers,
+  scrollDefaults,
+  initCustomEases,
+  prefersReducedMotion,
+  getReducedMotionConfig,
+} from "@/lib/gsap-presets";
+
+// ─── Initialize Custom Eases (client-side only) ─────────────────────
+if (typeof window !== "undefined") {
+  initCustomEases();
+}
 
 // ─── Types ──────────────────────────────────────────────────────────
 
@@ -60,18 +101,18 @@ export interface ScrollRevealOptions {
 }
 
 export interface MotionPathOptions {
-  path: string | SVGElement;
+  path: string | SVGPathElement;
   duration?: number;
   repeat?: number;
   ease?: string;
-  align?: string;
+  align?: string | SVGPathElement | null;
   alignOrigin?: [number, number];
 }
 
 // ─── Hook: Flame Logo Draw Animation ────────────────────────────────
 
 export function useGsapLogoAnimation(
-  containerRef: RefObject<HTMLElement | null>,
+  containerRef: RefObject<HTMLElement | SVGSVGElement | null>,
   options: LogoAnimationOptions = {},
 ) {
   const {
@@ -84,6 +125,10 @@ export function useGsapLogoAnimation(
   useGSAP(
     () => {
       if (!containerRef.current) return;
+      if (!DrawSVGPlugin) {
+        console.warn("[GSAP] DrawSVGPlugin not available - logo draw animation disabled");
+        return;
+      }
 
       const tl = gsap.timeline({ defaults: { ease: flameEase } });
 
@@ -236,7 +281,7 @@ export function useGsapMotionPath(
         gsap.to(el, {
           motionPath: {
             path,
-            align,
+            align: align ?? undefined,
             alignOrigin,
           },
           duration,

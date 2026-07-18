@@ -89,6 +89,22 @@ describe("BatteryCalculator", () => {
                         expect(result.compliance.safetyFactor).toBe(1.2);
                 });
 
+                it("should mark meetsNFPA27_6_2 as false if standbyHours < 24", () => {
+                        const result = calculateBatteryRequirements({
+                                ...validInput,
+                                standbyHours: 12,
+                        });
+                        expect(result.compliance.meetsNFPA27_6_2).toBe(false);
+                });
+
+                it("should mark meetsNFPA27_6_2 as false if alarmMinutes < 5", () => {
+                        const result = calculateBatteryRequirements({
+                                ...validInput,
+                                alarmMinutes: 3,
+                        });
+                        expect(result.compliance.meetsNFPA27_6_2).toBe(false);
+                });
+
                 it("should handle empty device list", () => {
                         const result = calculateBatteryRequirements({
                                 devices: [],

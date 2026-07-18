@@ -231,6 +231,7 @@ class TestBackendAppCorsHardening:
         with pytest.raises(RuntimeError, match="CORS_ALLOWED_ORIGINS.*REQUIRED"):
             _reload_backend_app({
                 "FIREAI_ENV": "production",
+                "CORS_ORIGINS": None,
                 "CORS_ALLOWED_ORIGINS": None,
                 "FIREAI_API_KEY": "",
             })
@@ -240,6 +241,7 @@ class TestBackendAppCorsHardening:
         with pytest.raises(RuntimeError, match=r"'\*'.*forbidden"):
             _reload_backend_app({
                 "FIREAI_ENV": "production",
+                "CORS_ORIGINS": "*",
                 "CORS_ALLOWED_ORIGINS": "*",
                 "FIREAI_API_KEY": "",
             })
@@ -248,6 +250,7 @@ class TestBackendAppCorsHardening:
         """Production + explicit origins → CORS configured correctly."""
         backend_app = _reload_backend_app({
             "FIREAI_ENV": "production",
+            "CORS_ORIGINS": None,
             "CORS_ALLOWED_ORIGINS": "https://app.example.com,https://admin.example.com",
             "FIREAI_API_KEY": "",
         })

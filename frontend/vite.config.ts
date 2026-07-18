@@ -212,6 +212,9 @@ export default defineConfig({
                                         }
                                 },
                         },
+                        // Externalize GSAP Club plugins (SplitText, DrawSVGPlugin, CustomEase)
+                        // These are Club GSAP plugins that require a paid license and are not on npm
+                        external: ["gsap/SplitText", "gsap/DrawSVGPlugin", "gsap/CustomEase"],
                 },
                 chunkSizeWarningLimit: 600,
                 // V242: Aggressive module preloading for faster navigation.

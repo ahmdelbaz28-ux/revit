@@ -53,6 +53,11 @@ Per agent.md Rule 21 (4-LAYER SELF-CRITICISM):
 from __future__ import annotations
 
 import os
+import sys as _sys
+for _m in list(_sys.modules):
+    if _m == "backend.app" or _m.startswith("backend.app."):
+        del _sys.modules[_m]
+
 import pathlib as _pathlib
 
 # ─── Test API Key ────────────────────────────────────────────────────────────
@@ -87,7 +92,8 @@ _FIREAI_TEST_DIR = _tempfile_mod.mkdtemp(prefix="fireai_test_")
 os.environ["DATABASE_URL"] = f"sqlite:///{_FIREAI_TEST_DIR}/fireai_test_conftest.db"
 os.environ.setdefault("DIGITAL_TWIN_DB_PATH", f"{_FIREAI_TEST_DIR}/fireai_test_conftest.db")
 os.environ.setdefault("UDM_DB_PATH", f"{_FIREAI_TEST_DIR}/udm_test_conftest.db")
-os.environ.setdefault("CORS_ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:5173")
+os.environ["CORS_ALLOWED_ORIGINS"] = "http://localhost:3000,http://localhost:5173"
+os.environ["CORS_ORIGINS"] = "http://localhost:3000,http://localhost:5173"
 
 # V257 FIX: Disable CSRF middleware in tests. CSRF middleware (registered in
 # V254/V255) blocks all POST/PUT/DELETE without a CSRF token. Test clients

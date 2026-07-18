@@ -1,7 +1,7 @@
 import "@testing-library/jest-dom";
 import { cleanup } from "@testing-library/react";
-import { afterEach } from "vitest";
 
+// Use vitest globals directly (globals: true in vitest config)
 afterEach(() => {
 	cleanup();
 });

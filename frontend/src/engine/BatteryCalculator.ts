@@ -17,6 +17,12 @@ export interface BatteryCalcInput {
 }
 
 interface BatteryCalcResult {
+        devices?: {
+                type: string;
+                standbyCurrent: number; // mA
+                alarmCurrent: number; // mA
+                count: number;
+        }[];
         totalStandbyCurrent: number; // A
         totalAlarmCurrent: number; // A
         requiredCapacity: number; // Ah
@@ -86,13 +92,16 @@ export function calculateBatteryRequirements(
                 recommendedBattery.capacity = Math.ceil(requiredCapacity / 2) * 2;
         }
 
+        const meetsNFPA27_6_2 = input.standbyHours >= 24 && input.alarmMinutes >= 5;
+
         return {
+                devices: input.devices,
                 totalStandbyCurrent: Number.parseFloat(totalStandbyCurrent.toFixed(2)),
                 totalAlarmCurrent: Number.parseFloat(totalAlarmCurrent.toFixed(2)),
                 requiredCapacity: Number.parseFloat(requiredCapacity.toFixed(2)),
                 recommendedBattery,
                 compliance: {
-                        meetsNFPA27_6_2: true,
+                        meetsNFPA27_6_2,
                         standbyDuration: input.standbyHours,
                         alarmDuration: input.alarmMinutes,
                         safetyFactor: input.safetyFactor,
@@ -113,12 +122,30 @@ export function generateBatteryReport(result: BatteryCalcResult): string {
         report += "─────────────────────────────────────────────────\n";
         report += "Type              Count   Standby(mA)   Alarm(mA)\n";
         report += "─────────────────────────────────────────────────\n";
-        // NOTE: In a real implementation, we would iterate through actual device types
-        // For now, we'll use generic placeholders
-        report += "Smoke Detector      24       0.05          85\n";
-        report += "Heat Detector       8        0.03          50\n";
-        report += "Pull Station       12        0.01          100\n";
-        report += "Horn/Strobe        16        0.02          150\n";
+
+        const labelMap: Record<string, string> = {
+                smoke: "Smoke Detector",
+                heat: "Heat Detector",
+                pull: "Pull Station",
+                horn: "Horn/Strobe",
+        };
+
+        const devices = result.devices || [
+                { type: "Smoke Detector", standbyCurrent: 0.05, alarmCurrent: 85, count: 24 },
+                { type: "Heat Detector", standbyCurrent: 0.03, alarmCurrent: 50, count: 8 },
+                { type: "Pull Station", standbyCurrent: 0.01, alarmCurrent: 100, count: 12 },
+                { type: "Horn/Strobe", standbyCurrent: 0.02, alarmCurrent: 150, count: 16 },
+        ];
+
+        for (const device of devices) {
+                const typeLabel = labelMap[device.type.toLowerCase()] || device.type;
+                const typeName = typeLabel.charAt(0).toUpperCase() + typeLabel.slice(1);
+                const typeStr = typeName.padEnd(18).substring(0, 18);
+                const countStr = device.count.toString().padEnd(8);
+                const standbyStr = device.standbyCurrent.toString().padEnd(14);
+                const alarmStr = device.alarmCurrent.toString();
+                report += `${typeStr}${countStr}${standbyStr}${alarmStr}\n`;
+        }
         report += "─────────────────────────────────────────────────\n\n";
 
         report += "CALCULATION:\n";
