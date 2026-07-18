@@ -10,7 +10,7 @@
  *   useGsapScrollReveal(ref, { ... })
  */
 
-import { useEffect, useRef, useCallback, type RefObject } from "react";
+import { useEffect, type RefObject } from "react";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import { ScrollTrigger } from "gsap/ScrollTrigger";

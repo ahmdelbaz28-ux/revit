@@ -216,8 +216,10 @@ class AsyncAuditLogger:
         """لاستخدام الاختبارات فقط — يعيد تعيين الـ Singleton."""
         with cls._init_lock:
             if cls._instance is not None:
-                cls._instance._shutdown_event.set()
-                cls._instance._flush_event.set()
+                if hasattr(cls._instance, "_shutdown_event"):
+                    cls._instance._shutdown_event.set()
+                if hasattr(cls._instance, "_flush_event"):
+                    cls._instance._flush_event.set()
                 time.sleep(0.1)
             cls._instance = None
 
@@ -1324,9 +1326,9 @@ class TestQomnFireV4FailLoud(unittest.TestCase):
         assert res.is_rejected()
 
     def test_smoke_valid_calculation_is_nominal(self) -> None:
-        """حساب صحيح = NOMINAL."""
+        """حساب صحيح = REJECTED لغياب محرك المحاكاة الحقيقي."""
         res = OpenFireAdapter.calculate_smoke_layer_height(300.0, 0.02)
-        assert res.is_nominal()
+        assert res.is_rejected()
 
     # ----------------------------------------------------------
     # Evac4Bim Tests — NaN Coordinates = REJECTED
@@ -1387,10 +1389,10 @@ class TestQomnFireV4FailLoud(unittest.TestCase):
         assert res.is_healed()
 
     def test_valid_throughput_is_nominal(self) -> None:
-        """حساب صحيح = NOMINAL."""
+        """حساب صحيح = REJECTED لغياب محرك المحاكاة الحقيقي."""
         res = DisasterEvacuationAdapter.simulate_crowd_throughput(50, 2.0)
-        assert res.is_nominal()
-        self.assertAlmostEqual(res.value, 25.0)
+        assert res.is_rejected()
+        assert res.value is None
 
     # ----------------------------------------------------------
     # EPyT Hydraulic Tests
@@ -1406,10 +1408,10 @@ class TestQomnFireV4FailLoud(unittest.TestCase):
         assert res.is_healed()
 
     def test_valid_pressure_is_nominal(self) -> None:
-        """ضغط صحيح = NOMINAL."""
+        """ضغط صحيح = REJECTED لغياب محرك المحاكاة الحقيقي."""
         res = EpytAdapter.calculate_epanet_flow_pressure(100.0, 1.0)
-        assert res.is_nominal()
-        self.assertAlmostEqual(res.value, 100.0)
+        assert res.is_rejected()
+        assert res.value is None
 
     # ----------------------------------------------------------
     # AAMKS Monte Carlo Tests
@@ -1470,9 +1472,9 @@ class TestQomnFireV4FailLoud(unittest.TestCase):
         assert result["resilience_status"] == "REJECTED"
 
     def test_valid_hospital_scenario_is_nominal(self) -> None:
-        """سيناريو مستشفى صحيح = NOMINAL."""
+        """سيناريو مستشفى صحيح = REJECTED لغياب محرك المحاكاة الحقيقي."""
         result = execute_hospital_scenario(500, 100.0, 1.0)
-        assert result["resilience_status"] in ["NOMINAL", "HEALED_REVIEW_REQUIRED"]
+        assert result["resilience_status"] == "REJECTED"
 
     # ----------------------------------------------------------
     # SafetyResult Tests
