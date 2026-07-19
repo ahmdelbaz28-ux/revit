@@ -112,10 +112,14 @@ export function CADSettingsPage() {
                                 }
                                 if (settings.cloud) {
                                         setSpeckleServer(settings.cloud.speckleServer || "https://speckle.xyz");
-                                        setSpeckleToken(settings.cloud.speckleToken || "");
+                                        // V284 SECURITY: speckleToken / apsClientSecret are NO LONGER
+                                        // loaded from localStorage — they were readable by any XSS
+                                        // payload. A backend credential vault is in development
+                                        // (POST /api/v1/integrations/credentials, encrypted at rest).
+                                        // Until then, the token fields stay empty on page load and
+                                        // are never persisted to localStorage by saveCloudSettings().
                                         setSpeckleStreamId(settings.cloud.speckleStreamId || "");
                                         setApsClientId(settings.cloud.apsClientId || "");
-                                        setApsClientSecret(settings.cloud.apsClientSecret || "");
                                         setApsActivityId(settings.cloud.apsActivityId || "BazSparkAutoCADBridge.DrawLayout");
                                 }
                         }
@@ -244,16 +248,26 @@ export function CADSettingsPage() {
                 try {
                         const saved = localStorage.getItem("cad_settings");
                         const settings = saved ? JSON.parse(saved) : {};
+                        // V284 SECURITY: speckleToken and apsClientSecret are NEVER written
+                        // to localStorage. They are session-only state — the user must
+                        // re-enter them each session until the backend credential vault
+                        // (POST /api/v1/integrations/credentials, encrypted at rest) is
+                        // implemented in a follow-up PR. This eliminates the XSS-readable
+                        // credential exposure flagged in P0-8 of the critical audit.
                         settings.cloud = {
                                 speckleServer,
-                                speckleToken,
                                 speckleStreamId,
                                 apsClientId,
-                                apsClientSecret,
                                 apsActivityId,
                         };
                         localStorage.setItem("cad_settings", JSON.stringify(settings));
-                        toast.success("Cloud settings saved");
+                        if (speckleToken || apsClientSecret) {
+                                toast.info(
+                                        "Non-secret cloud settings saved. Speckle/APS tokens are session-only — re-enter them each session until the backend credential vault ships (P0-8 follow-up).",
+                                );
+                        } else {
+                                toast.success("Cloud settings saved");
+                        }
                 } catch {
                         toast.error("Failed to save settings");
                 }
@@ -715,9 +729,14 @@ export function CADSettingsPage() {
                                                                                 type="password"
                                                                                 value={speckleToken}
                                                                                 onChange={(e) => setSpeckleToken(e.target.value)}
-                                                                                placeholder="Paste your Speckle access token here"
+                                                                                placeholder="Paste your Speckle access token here (session-only — NOT saved)"
                                                                                 className="bg-card border-border text-foreground"
                                                                         />
+                                                                        <p className="text-xs text-amber-500">
+                                                                                V284 SECURITY: Token is session-only and never written to
+                                                                                localStorage. Re-enter each session. Backend credential
+                                                                                vault (encrypted at rest) is in development (P0-8 follow-up).
+                                                                        </p>
                                                                 </div>
                                                                 <div className="space-y-2">
                                                                         <Label className="text-foreground/90">Default Stream/Project ID</Label>
@@ -758,9 +777,14 @@ export function CADSettingsPage() {
                                                                                 type="password"
                                                                                 value={apsClientSecret}
                                                                                 onChange={(e) => setApsClientSecret(e.target.value)}
-                                                                                placeholder="Your APS Client Secret"
+                                                                                placeholder="Your APS Client Secret (session-only — NOT saved)"
                                                                                 className="bg-card border-border text-foreground"
                                                                         />
+                                                                        <p className="text-xs text-amber-500">
+                                                                                V284 SECURITY: Secret is session-only and never written to
+                                                                                localStorage. Re-enter each session. Backend credential
+                                                                                vault (encrypted at rest) is in development (P0-8 follow-up).
+                                                                        </p>
                                                                 </div>
                                                                 <div className="space-y-2">
                                                                         <Label className="text-foreground/90">APS Activity ID</Label>
