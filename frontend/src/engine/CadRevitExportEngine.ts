@@ -7,42 +7,42 @@
 import { saveAs } from "file-saver";
 
 export interface ExportDevice {
-	id: string;
-	type: string;
-	name: string;
-	category: string;
-	x: number;
-	y: number;
-	z: number;
-	rotation: number;
-	voltage: number;
-	current: number;
-	load: number;
-	autocadBlock?: string;
-	revitFamily?: string;
-	revitType?: string;
-	ifcClass?: string;
-	ifcType?: string;
-	properties?: Record<string, unknown>;
+        id: string;
+        type: string;
+        name: string;
+        category: string;
+        x: number;
+        y: number;
+        z: number;
+        rotation: number;
+        voltage: number;
+        current: number;
+        load: number;
+        autocadBlock?: string;
+        revitFamily?: string;
+        revitType?: string;
+        ifcClass?: string;
+        ifcType?: string;
+        properties?: Record<string, unknown>;
 }
 
 export interface ExportConnection {
-	id: string;
-	fromId: string;
-	toId: string;
-	cableSize: string;
-	length: number;
-	type: string;
+        id: string;
+        fromId: string;
+        toId: string;
+        cableSize: string;
+        length: number;
+        type: string;
 }
 
 export interface ExportProject {
-	name: string;
-	description: string;
-	author: string;
-	date: string;
-	units: "mm" | "m" | "in" | "ft";
-	devices: ExportDevice[];
-	connections: ExportConnection[];
+        name: string;
+        description: string;
+        author: string;
+        date: string;
+        units: "mm" | "m" | "in" | "ft";
+        devices: ExportDevice[];
+        connections: ExportConnection[];
 }
 
 // ============================================================================
@@ -50,85 +50,85 @@ export interface ExportProject {
 // ============================================================================
 
 export function exportToDXF(project: ExportProject): void {
-	let dxf = "";
-	dxf += "0\nSECTION\n2\nHEADER\n";
-	dxf += "9\n$ACADVER\n1\nAC1015\n";
-	dxf += "9\n$INSUNITS\n70\n4\n";
-	dxf += "0\nENDSEC\n";
-	dxf += "0\nSECTION\n2\nTABLES\n";
-	dxf += "0\nTABLE\n2\nLAYER\n70\n1\n";
-	dxf += "0\nLAYER\n2\nDevices\n70\n0\n62\n7\n6\nCONTINUOUS\n";
-	dxf += "0\nLAYER\n2\nWiring\n70\n0\n62\n2\n6\nCONTINUOUS\n";
-	dxf += "0\nLAYER\n2\nAnnotations\n70\n0\n62\n3\n6\nCONTINUOUS\n";
-	dxf += "0\nENDTAB\n";
-	dxf += "0\nTABLE\n2\nBLOCK_RECORD\n70\n1\n";
-	dxf += "0\nENDTAB\n";
-	dxf += "0\nENDSEC\n";
-	dxf += "0\nSECTION\n2\nBLOCKS\n";
-	dxf += "0\nENDSEC\n";
-	dxf += "0\nSECTION\n2\nENTITIES\n";
+        let dxf = "";
+        dxf += "0\nSECTION\n2\nHEADER\n";
+        dxf += "9\n$ACADVER\n1\nAC1015\n";
+        dxf += "9\n$INSUNITS\n70\n4\n";
+        dxf += "0\nENDSEC\n";
+        dxf += "0\nSECTION\n2\nTABLES\n";
+        dxf += "0\nTABLE\n2\nLAYER\n70\n1\n";
+        dxf += "0\nLAYER\n2\nDevices\n70\n0\n62\n7\n6\nCONTINUOUS\n";
+        dxf += "0\nLAYER\n2\nWiring\n70\n0\n62\n2\n6\nCONTINUOUS\n";
+        dxf += "0\nLAYER\n2\nAnnotations\n70\n0\n62\n3\n6\nCONTINUOUS\n";
+        dxf += "0\nENDTAB\n";
+        dxf += "0\nTABLE\n2\nBLOCK_RECORD\n70\n1\n";
+        dxf += "0\nENDTAB\n";
+        dxf += "0\nENDSEC\n";
+        dxf += "0\nSECTION\n2\nBLOCKS\n";
+        dxf += "0\nENDSEC\n";
+        dxf += "0\nSECTION\n2\nENTITIES\n";
 
-	for (const device of project.devices) {
-		const blockName = device.autocadBlock || device.type;
-		dxf += "0\nINSERT\n";
-		dxf += "8\nDevices\n";
-		dxf += `2\n${blockName}\n`;
-		dxf += `10\n${device.x.toFixed(4)}\n`;
-		dxf += `20\n${device.y.toFixed(4)}\n`;
-		dxf += `30\n${device.z.toFixed(4)}\n`;
-		dxf += "41\n1.0\n42\n1.0\n43\n1.0\n";
-		dxf += `50\n${device.rotation.toFixed(4)}\n`;
+        for (const device of project.devices) {
+                const blockName = device.autocadBlock || device.type;
+                dxf += "0\nINSERT\n";
+                dxf += "8\nDevices\n";
+                dxf += `2\n${blockName}\n`;
+                dxf += `10\n${device.x.toFixed(4)}\n`;
+                dxf += `20\n${device.y.toFixed(4)}\n`;
+                dxf += `30\n${device.z.toFixed(4)}\n`;
+                dxf += "41\n1.0\n42\n1.0\n43\n1.0\n";
+                dxf += `50\n${device.rotation.toFixed(4)}\n`;
 
-		dxf += "0\nATTRIB\n";
-		dxf += "8\nAnnotations\n";
-		dxf += `10\n${device.x.toFixed(4)}\n`;
-		dxf += `20\n${(device.y + 10).toFixed(4)}\n`;
-		dxf += `30\n${device.z.toFixed(4)}\n`;
-		dxf += "40\n2.5\n";
-		dxf += `1\n${device.name}\n`;
-		dxf += "2\nDEVICENAME\n";
-		dxf += "70\n0\n";
+                dxf += "0\nATTRIB\n";
+                dxf += "8\nAnnotations\n";
+                dxf += `10\n${device.x.toFixed(4)}\n`;
+                dxf += `20\n${(device.y + 10).toFixed(4)}\n`;
+                dxf += `30\n${device.z.toFixed(4)}\n`;
+                dxf += "40\n2.5\n";
+                dxf += `1\n${device.name}\n`;
+                dxf += "2\nDEVICENAME\n";
+                dxf += "70\n0\n";
 
-		dxf += "0\nATTRIB\n";
-		dxf += "8\nAnnotations\n";
-		dxf += `10\n${device.x.toFixed(4)}\n`;
-		dxf += `20\n${(device.y + 15).toFixed(4)}\n`;
-		dxf += `30\n${device.z.toFixed(4)}\n`;
-		dxf += "40\n2.0\n";
-		dxf += `1\n${device.load.toFixed(1)}W\n`;
-		dxf += "2\nLOAD\n";
-		dxf += "70\n0\n";
-	}
+                dxf += "0\nATTRIB\n";
+                dxf += "8\nAnnotations\n";
+                dxf += `10\n${device.x.toFixed(4)}\n`;
+                dxf += `20\n${(device.y + 15).toFixed(4)}\n`;
+                dxf += `30\n${device.z.toFixed(4)}\n`;
+                dxf += "40\n2.0\n";
+                dxf += `1\n${device.load.toFixed(1)}W\n`;
+                dxf += "2\nLOAD\n";
+                dxf += "70\n0\n";
+        }
 
-	for (const conn of project.connections) {
-		const from = project.devices.find((d) => d.id === conn.fromId);
-		const to = project.devices.find((d) => d.id === conn.toId);
-		if (!from || !to) continue;
+        for (const conn of project.connections) {
+                const from = project.devices.find((d) => d.id === conn.fromId);
+                const to = project.devices.find((d) => d.id === conn.toId);
+                if (!from || !to) continue;
 
-		dxf += "0\nLINE\n";
-		dxf += "8\nWiring\n";
-		dxf += `10\n${from.x.toFixed(4)}\n`;
-		dxf += `20\n${from.y.toFixed(4)}\n`;
-		dxf += `30\n${from.z.toFixed(4)}\n`;
-		dxf += `11\n${to.x.toFixed(4)}\n`;
-		dxf += `21\n${to.y.toFixed(4)}\n`;
-		dxf += `31\n${to.z.toFixed(4)}\n`;
+                dxf += "0\nLINE\n";
+                dxf += "8\nWiring\n";
+                dxf += `10\n${from.x.toFixed(4)}\n`;
+                dxf += `20\n${from.y.toFixed(4)}\n`;
+                dxf += `30\n${from.z.toFixed(4)}\n`;
+                dxf += `11\n${to.x.toFixed(4)}\n`;
+                dxf += `21\n${to.y.toFixed(4)}\n`;
+                dxf += `31\n${to.z.toFixed(4)}\n`;
 
-		dxf += "0\nTEXT\n";
-		dxf += "8\nAnnotations\n";
-		dxf += `10\n${((from.x + to.x) / 2).toFixed(4)}\n`;
-		dxf += `20\n${((from.y + to.y) / 2 + 5).toFixed(4)}\n`;
-		dxf += "30\n0.0\n";
-		dxf += "40\n2.0\n";
-		dxf += `1\n${conn.cableSize}\n`;
-		dxf += "50\n0\n";
-	}
+                dxf += "0\nTEXT\n";
+                dxf += "8\nAnnotations\n";
+                dxf += `10\n${((from.x + to.x) / 2).toFixed(4)}\n`;
+                dxf += `20\n${((from.y + to.y) / 2 + 5).toFixed(4)}\n`;
+                dxf += "30\n0.0\n";
+                dxf += "40\n2.0\n";
+                dxf += `1\n${conn.cableSize}\n`;
+                dxf += "50\n0\n";
+        }
 
-	dxf += "0\nENDSEC\n";
-	dxf += "0\nEOF\n";
+        dxf += "0\nENDSEC\n";
+        dxf += "0\nEOF\n";
 
-	const blob = new Blob([dxf], { type: "application/dxf" });
-	saveAs(blob, `${project.name.replace(/\s+/g, "_")}.dxf`);
+        const blob = new Blob([dxf], { type: "application/dxf" });
+        saveAs(blob, `${project.name.replace(/\s+/g, "_")}.dxf`);
 }
 
 // ============================================================================
@@ -136,69 +136,69 @@ export function exportToDXF(project: ExportProject): void {
 // ============================================================================
 
 export function exportToRevitJSON(project: ExportProject): void {
-	const revitData = {
-		format: "RevitJSON",
-		version: "2024",
-		project: {
-			name: project.name,
-			description: project.description,
-			author: project.author,
-			date: project.date,
-			units: project.units,
-		},
-		families: project.devices
-			.filter((d) => d.revitFamily)
-			.map((d) => d.revitFamily!)
-			.filter((v, i, a) => a.indexOf(v) === i)
-			.map((family) => ({
-				name: family,
-				types: project.devices
-					.filter((d) => d.revitFamily === family)
-					.map((d) => ({
-						name: d.revitType || d.type,
-						parameters: {
-							Voltage: d.voltage,
-							Current: d.current,
-							Load: d.load,
-							Category: d.category,
-						},
-					}))
-					.filter((v, i, a) => a.findIndex((t) => t.name === v.name) === i),
-			})),
-		elements: project.devices.map((device) => ({
-			UniqueId: generateGUID(),
-			ElementId: device.id,
-			Category: device.category,
-			Family: device.revitFamily || "Generic",
-			Type: device.revitType || device.type,
-			Location: {
-				X: device.x,
-				Y: device.y,
-				Z: device.z,
-				Rotation: device.rotation,
-			},
-			Parameters: {
-				Name: device.name,
-				Voltage: device.voltage,
-				Current: device.current,
-				Load: device.load,
-				...device.properties,
-			},
-		})),
-		connections: project.connections.map((conn) => ({
-			UniqueId: generateGUID(),
-			FromId: conn.fromId,
-			ToId: conn.toId,
-			CableSize: conn.cableSize,
-			Length: conn.length,
-			Type: conn.type,
-		})),
-	};
+        const revitData = {
+                format: "RevitJSON",
+                version: "2024",
+                project: {
+                        name: project.name,
+                        description: project.description,
+                        author: project.author,
+                        date: project.date,
+                        units: project.units,
+                },
+                families: project.devices
+                        .filter((d) => d.revitFamily)
+                        .map((d) => d.revitFamily!)
+                        .filter((v, i, a) => a.indexOf(v) === i)
+                        .map((family) => ({
+                                name: family,
+                                types: project.devices
+                                        .filter((d) => d.revitFamily === family)
+                                        .map((d) => ({
+                                                name: d.revitType || d.type,
+                                                parameters: {
+                                                        Voltage: d.voltage,
+                                                        Current: d.current,
+                                                        Load: d.load,
+                                                        Category: d.category,
+                                                },
+                                        }))
+                                        .filter((v, i, a) => a.findIndex((t) => t.name === v.name) === i),
+                        })),
+                elements: project.devices.map((device) => ({
+                        UniqueId: generateGUID(),
+                        ElementId: device.id,
+                        Category: device.category,
+                        Family: device.revitFamily || "Generic",
+                        Type: device.revitType || device.type,
+                        Location: {
+                                X: device.x,
+                                Y: device.y,
+                                Z: device.z,
+                                Rotation: device.rotation,
+                        },
+                        Parameters: {
+                                Name: device.name,
+                                Voltage: device.voltage,
+                                Current: device.current,
+                                Load: device.load,
+                                ...device.properties,
+                        },
+                })),
+                connections: project.connections.map((conn) => ({
+                        UniqueId: generateGUID(),
+                        FromId: conn.fromId,
+                        ToId: conn.toId,
+                        CableSize: conn.cableSize,
+                        Length: conn.length,
+                        Type: conn.type,
+                })),
+        };
 
-	const blob = new Blob([JSON.stringify(revitData, null, 2)], {
-		type: "application/json",
-	});
-	saveAs(blob, `${project.name.replace(/\s+/g, "_")}_Revit.json`);
+        const blob = new Blob([JSON.stringify(revitData, null, 2)], {
+                type: "application/json",
+        });
+        saveAs(blob, `${project.name.replace(/\s+/g, "_")}_Revit.json`);
 }
 
 // ============================================================================
@@ -206,277 +206,328 @@ export function exportToRevitJSON(project: ExportProject): void {
 // ============================================================================
 
 export function exportToIFC(
-	project: ExportProject,
-	ifcVersion: "IFC2x3" | "IFC4" = "IFC4",
+        project: ExportProject,
+        ifcVersion: "IFC2x3" | "IFC4" = "IFC4",
 ): void {
-	const schema = ifcVersion === "IFC2x3" ? "IFC2X3" : "IFC4";
-	const timestamp = new Date().toISOString();
-	const projectId = generateGUID();
-	const siteId = generateGUID();
-	const buildingId = generateGUID();
-	const storeyId = generateGUID();
+        // F-09 FIX (Engineering Review): wrap the entire body in try/catch so
+        // a single malformed device/project field does not produce a half-
+        // written IFC file that silently fails to import in Revit. The
+        // previous code had no error handling — any exception left `ifc` as
+        // a truncated string and the user got a corrupt .ifc file with no
+        // error message.
+        try {
+                exportToIFCInner(project, ifcVersion);
+        } catch (err) {
+                // Re-throw as a typed error so callers can distinguish IFC
+                // export failures from other errors.
+                const msg = err instanceof Error ? err.message : String(err);
+                throw new Error(
+                        `IFC export failed: ${msg}. ` +
+                                `Check that all devices have valid type, category, voltage, ` +
+                                `and load fields, and that the project has a name and author.`,
+                );
+        }
+}
 
-	let ifc = "";
-	ifc += "ISO-10303-21;\n";
-	ifc += "HEADER;\n";
-	ifc += "FILE_DESCRIPTION(('ViewDefinition [CoordinationView]'),'2;1');\n";
-	ifc +=
-		"FILE_NAME('" +
-		project.name.replace(/'/g, "''") +  // NOSONAR: typescript:S7781
-		".ifc','" +
-		timestamp +
-		"',('" +
-		project.author.replace(/'/g, "''") +  // NOSONAR: typescript:S7781
-		"'),(''),'Express Data Manager Version 1.0.0','" +
-		schema +
-		"','');\n";
-	ifc += `FILE_SCHEMA(('${schema}'));\n`;
-	ifc += "ENDSEC;\n";
-	ifc += "DATA;\n";
+function exportToIFCInner(
+        project: ExportProject,
+        ifcVersion: "IFC2x3" | "IFC4",
+): void {
+        const schema = ifcVersion === "IFC2x3" ? "IFC2X3" : "IFC4";
+        const timestamp = new Date().toISOString();
+        const projectId = generateGUID();
+        const siteId = generateGUID();
+        const buildingId = generateGUID();
+        const storeyId = generateGUID();
 
-	let idCounter = 1;
-	const idMap: Record<string, number> = {};
+        let ifc = "";
+        ifc += "ISO-10303-21;\n";
+        ifc += "HEADER;\n";
+        ifc += "FILE_DESCRIPTION(('ViewDefinition [CoordinationView]'),'2;1');\n";
+        ifc +=
+                "FILE_NAME('" +
+                project.name.replace(/'/g, "''") +  // NOSONAR: typescript:S7781
+                ".ifc','" +
+                timestamp +
+                "',('" +
+                project.author.replace(/'/g, "''") +  // NOSONAR: typescript:S7781
+                "'),(''),'Express Data Manager Version 1.0.0','" +
+                schema +
+                "','');\n";
+        ifc += `FILE_SCHEMA(('${schema}'));\n`;
+        ifc += "ENDSEC;\n";
+        ifc += "DATA;\n";
 
-	function nextId(): string {
-		return `#${idCounter++}`;
-	}
+        let idCounter = 1;
+        const idMap: Record<string, number> = {};
 
-	function getId(key: string): string {
-		if (!idMap[key]) {
-			idMap[key] = idCounter++;
-		}
-		return `#${idMap[key]}`;
-	}
+        function nextId(): string {
+                return `#${idCounter++}`;
+        }
 
-	// Application
-	const appId = nextId();
-	ifc +=
-		appId +
-		"=IFCAPPLICATION($" +
-		",'" +
-		schema +
-		"','" +
-		schema +
-		"','NexusCAD Pro');\n";
+        function getId(key: string): string {
+                if (!idMap[key]) {
+                        idMap[key] = idCounter++;
+                }
+                return `#${idMap[key]}`;
+        }
 
-	// Owner History
-	const ownerHistoryId = nextId();
-	ifc +=
-		ownerHistoryId +
-		"=IFCOWNERHISTORY(" +
-		getId("person") +
-		"," +
-		appId +
-		",$,$,$,$," +
-		Math.floor(Date.now() / 1000) +
-		");\n";
+        // Application
+        const appId = nextId();
+        ifc +=
+                appId +
+                "=IFCAPPLICATION($" +
+                ",'" +
+                schema +
+                "','" +
+                schema +
+                "','NexusCAD Pro');\n";
 
-	// Project
-	const projectIfcId = nextId();
-	ifc +=
-		projectIfcId +
-		"=IFCPROJECT('" +
-		projectId +
-		"',$,'" +
-		project.name.replace(/'/g, "''") +  // NOSONAR: typescript:S7781
-		"',$,$,$,$,(" +
-		getId("unit") +
-		")," +
-		ownerHistoryId +
-		");\n";
+        // Owner History
+        const ownerHistoryId = nextId();
+        ifc +=
+                ownerHistoryId +
+                "=IFCOWNERHISTORY(" +
+                getId("person") +
+                "," +
+                appId +
+                ",$,$,$,$," +
+                Math.floor(Date.now() / 1000) +
+                ");\n";
 
-	// Site
-	const siteIfcId = nextId();
-	ifc +=
-		siteIfcId +
-		"=IFCSITE('" +
-		siteId +
-		"',$,'Site',$,$,$,$,$,$,$,$,$,$,$,$);\n";
+        // Project
+        const projectIfcId = nextId();
+        ifc +=
+                projectIfcId +
+                "=IFCPROJECT('" +
+                projectId +
+                "',$,'" +
+                project.name.replace(/'/g, "''") +  // NOSONAR: typescript:S7781
+                "',$,$,$,$,(" +
+                getId("unit") +
+                ")," +
+                ownerHistoryId +
+                ");\n";
 
-	// Building
-	const buildingIfcId = nextId();
-	ifc +=
-		buildingIfcId +
-		"=IFCBUILDING('" +
-		buildingId +
-		"',$,'Building',$,$,$,$,$,$,$,$);\n";
+        // Site
+        const siteIfcId = nextId();
+        ifc +=
+                siteIfcId +
+                "=IFCSITE('" +
+                siteId +
+                "',$,'Site',$,$,$,$,$,$,$,$,$,$,$,$);\n";
 
-	// Storey
-	const storeyIfcId = nextId();
-	ifc +=
-		storeyIfcId +
-		"=IFCBUILDINGSTOREY('" +
-		storeyId +
-		"',$,'Level 1',$,$,$,$,$,$,$);\n";
+        // Building
+        const buildingIfcId = nextId();
+        ifc +=
+                buildingIfcId +
+                "=IFCBUILDING('" +
+                buildingId +
+                "',$,'Building',$,$,$,$,$,$,$,$);\n";
 
-	// Containment
-	ifc +=
-		nextId() +
-		"=IFCRELAGGREGATES(" +
-		generateGUID() +
-		",$,$,$," +
-		projectIfcId +
-		",(" +
-		siteIfcId +
-		"));\n";
-	ifc +=
-		nextId() +
-		"=IFCRELAGGREGATES(" +
-		generateGUID() +
-		",$,$,$," +
-		siteIfcId +
-		",(" +
-		buildingIfcId +
-		"));\n";
-	ifc +=
-		nextId() +
-		"=IFCRELAGGREGATES(" +
-		generateGUID() +
-		",$,$,$," +
-		buildingIfcId +
-		",(" +
-		storeyIfcId +
-		"));\n";
+        // Storey
+        const storeyIfcId = nextId();
+        ifc +=
+                storeyIfcId +
+                "=IFCBUILDINGSTOREY('" +
+                storeyId +
+                "',$,'Level 1',$,$,$,$,$,$,$);\n";
 
-	// Devices
-	const deviceIds: string[] = [];
-	for (const device of project.devices) {
-		const devId = nextId();
-		deviceIds.push(devId);
-		const ifcClass = device.ifcClass || "IfcFlowTerminal";
-		const _ifcType = device.ifcType || device.type;
+        // Containment
+        ifc +=
+                nextId() +
+                "=IFCRELAGGREGATES(" +
+                generateGUID() +
+                ",$,$,$," +
+                projectIfcId +
+                ",(" +
+                siteIfcId +
+                "));\n";
+        ifc +=
+                nextId() +
+                "=IFCRELAGGREGATES(" +
+                generateGUID() +
+                ",$,$,$," +
+                siteIfcId +
+                ",(" +
+                buildingIfcId +
+                "));\n";
+        ifc +=
+                nextId() +
+                "=IFCRELAGGREGATES(" +
+                generateGUID() +
+                ",$,$,$," +
+                buildingIfcId +
+                ",(" +
+                storeyIfcId +
+                "));\n";
 
-		ifc +=
-			devId +
-			"=" +
-			ifcClass +
-			"('" +
-			generateGUID() +
-			"',$,'" +
-			device.name.replace(/'/g, "''") +  // NOSONAR: typescript:S7781
-			"',$,$," +
-			getId(`placement_${device.id}`) +
-			",''," +
-			getId(`productDef_${device.id}`) +
-			",'" +
-			generateGUID() +
-			"');\n";
+        // Devices
+        const deviceIds: string[] = [];
+        for (const device of project.devices) {
+                const devId = nextId();
+                deviceIds.push(devId);
+                const ifcClass = device.ifcClass || "IfcFlowTerminal";
+                const _ifcType = device.ifcType || device.type;
 
-		// Local placement
-		const placementId = getId(`placement_${device.id}`);
-		ifc +=
-			placementId +
-			"=IFCLOCALPLACEMENT($," +
-			getId(`axis2_${device.id}`) +
-			");\n";
-		ifc +=
-			getId(`axis2_${device.id}`) +
-			"=IFCAXIS2PLACEMENT3D(" +
-			getId(`point_${device.id}`) +
-			",$,$);\n";
-		ifc +=
-			getId(`point_${device.id}`) +
-			"=IFCCARTESIANPOINT((" +
-			device.x.toFixed(3) +
-			"," +
-			device.y.toFixed(3) +
-			"," +
-			device.z.toFixed(3) +
-			"));\n";
+                ifc +=
+                        devId +
+                        "=" +
+                        ifcClass +
+                        "('" +
+                        generateGUID() +
+                        "',$,'" +
+                        device.name.replace(/'/g, "''") +  // NOSONAR: typescript:S7781
+                        "',$,$," +
+                        getId(`placement_${device.id}`) +
+                        ",''," +
+                        getId(`productDef_${device.id}`) +
+                        ",'" +
+                        generateGUID() +
+                        "');\n";
 
-		// Product definition
-		const prodDefId = getId(`productDef_${device.id}`);
-		ifc +=
-			prodDefId +
-			"=IFCPRODUCTDEFINITIONSHAPE($,$,(" +
-			getId(`shape_${device.id}`) +
-			"));\n";
-		ifc +=
-			getId(`shape_${device.id}`) +
-			"=IFCSHAPEREPRESENTATION(" +
-			getId("context") +
-			",'Body','BoundingBox',(" +
-			getId(`bbox_${device.id}`) +
-			"));\n";
-		ifc +=
-			getId(`bbox_${device.id}`) +
-			"=IFCBOUNDINGBOX(" +
-			getId(`point_${device.id}`) +
-			",0.5,0.5,0.3);\n";
+                // Local placement
+                const placementId = getId(`placement_${device.id}`);
+                ifc +=
+                        placementId +
+                        "=IFCLOCALPLACEMENT($," +
+                        getId(`axis2_${device.id}`) +
+                        ");\n";
+                ifc +=
+                        getId(`axis2_${device.id}`) +
+                        "=IFCAXIS2PLACEMENT3D(" +
+                        getId(`point_${device.id}`) +
+                        ",$,$);\n";
+                ifc +=
+                        getId(`point_${device.id}`) +
+                        "=IFCCARTESIANPOINT((" +
+                        device.x.toFixed(3) +
+                        "," +
+                        device.y.toFixed(3) +
+                        "," +
+                        device.z.toFixed(3) +
+                        "));\n";
 
-		// Properties
-		ifc +=
-			nextId() +
-			"=IFCPROPERTYSET(" +
-			generateGUID() +
-			",$," +
-			"'" +
-			device.type.replace(/'/g, "''") +  // NOSONAR: typescript:S7781
-			" Properties',$,(" +
-			nextId() +
-			",'" +
-			device.category.replace(/'/g, "''") +  // NOSONAR: typescript:S7781
-			"')," +
-			nextId() +
-			",'" +
-			device.voltage.toFixed(1) +
-			"V')," +
-			nextId() +
-			",'" +
-			device.load.toFixed(1) +
-			"W'));\n";
-	}
+                // Product definition
+                const prodDefId = getId(`productDef_${device.id}`);
+                ifc +=
+                        prodDefId +
+                        "=IFCPRODUCTDEFINITIONSHAPE($,$,(" +
+                        getId(`shape_${device.id}`) +
+                        "));\n";
+                ifc +=
+                        getId(`shape_${device.id}`) +
+                        "=IFCSHAPEREPRESENTATION(" +
+                        getId("context") +
+                        ",'Body','BoundingBox',(" +
+                        getId(`bbox_${device.id}`) +
+                        "));\n";
+                ifc +=
+                        getId(`bbox_${device.id}`) +
+                        "=IFCBOUNDINGBOX(" +
+                        getId(`point_${device.id}`) +
+                        ",0.5,0.5,0.3);\n";
 
-	// Place devices in storey
-	if (deviceIds.length > 0) {
-		ifc +=
-			nextId() +
-			"=IFCRELCONTAINEDINSPATIALSTRUCTURE(" +
-			generateGUID() +
-			",$,$,$,(" +
-			deviceIds.join(",") +
-			")," +
-			storeyIfcId +
-			");\n";
-	}
+                // F-09 FIX (Engineering Review): the previous IFCPROPERTYSET
+                // construction was malformed — it embedded raw strings and
+                // inline nextId() calls inside the property-set tuple, producing
+                // output like:
+                //   #42=IFCPROPERTYSET(guid,$,'SmokeDetector Properties',$,(#43,'category'),#44,'12.0V'),#45,'5.0W'));
+                // This is not valid IFC — the HasProperties list must contain
+                // REFERENCES to IFCPROPERTYSINGLEVALUE entities, not inline
+                // string/value pairs. The corrected form is:
+                //   #42=IFCPROPERTYSINGLEVALUE('Category',$,IFCLABEL('category'),$);
+                //   #43=IFCPROPERTYSINGLEVALUE('Voltage',$,IFCREAL(12.0),$);
+                //   #44=IFCPROPERTYSINGLEVALUE('Load',$,IFCREAL(5.0),$);
+                //   #45=IFCPROPERTYSET(guid,$,'SmokeDetector Properties',$,(#42,#43,#44));
+                // See IFC4 specification §8.3.10 (IfcPropertySet) and §8.3.12
+                // (IfcPropertySingleValue).
+                const catId = nextId();
+                const voltId = nextId();
+                const loadId = nextId();
+                const psetId = nextId();
+                // Emit the single-value properties first.
+                ifc +=
+                        catId +
+                        "=IFCPROPERTYSINGLEVALUE('Category',$,IFCLABEL('" +
+                        device.category.replace(/'/g, "''") +
+                        "'),$);\n";
+                ifc +=
+                        voltId +
+                        "=IFCPROPERTYSINGLEVALUE('Voltage',$,IFCREAL(" +
+                        device.voltage.toFixed(1) +
+                        "),$);\n";
+                ifc +=
+                        loadId +
+                        "=IFCPROPERTYSINGLEVALUE('Load',$,IFCREAL(" +
+                        device.load.toFixed(1) +
+                        "),$);\n";
+                // Then emit the property set referencing them.
+                ifc +=
+                        psetId +
+                        "=IFCPROPERTYSET(" +
+                        generateGUID() +
+                        ",$,'" +
+                        device.type.replace(/'/g, "''") +
+                        " Properties',$,(" +
+                        catId +
+                        "," +
+                        voltId +
+                        "," +
+                        loadId +
+                        "));\n";
+        }
 
-	// Context
-	const contextId = getId("context");
-	ifc +=
-		contextId +
-		"=IFCGEOMETRICREPRESENTATIONCONTEXT($,'Model',3,1.E-05," +
-		getId("direction") +
-		",$);\n";
-	ifc += `${getId("direction")}=IFCDIRECTION((1.,0.,0.));\n`;
+        // Place devices in storey
+        if (deviceIds.length > 0) {
+                ifc +=
+                        nextId() +
+                        "=IFCRELCONTAINEDINSPATIALSTRUCTURE(" +
+                        generateGUID() +
+                        ",$,$,$,(" +
+                        deviceIds.join(",") +
+                        ")," +
+                        storeyIfcId +
+                        ");\n";
+        }
 
-	// Units
-	const unitId = getId("unit");
-	ifc +=
-		unitId +
-		"=IFCUNITASSIGNMENT((" +
-		getId("lengthUnit") +
-		"," +
-		getId("areaUnit") +
-		"," +
-		getId("volumeUnit") +
-		"));\n";
-	ifc += `${getId("lengthUnit")}=IFCSIUNIT(*,.LENGTHUNIT.,$,.METRE.);\n`;
-	ifc += `${getId("areaUnit")}=IFCSIUNIT(*,.AREAUNIT.,$,.SQUARE_METRE.);\n`;
-	ifc += `${getId("volumeUnit")}=IFCSIUNIT(*,.VOLUMEUNIT.,$,.CUBIC_METRE.);\n`;
+        // Context
+        const contextId = getId("context");
+        ifc +=
+                contextId +
+                "=IFCGEOMETRICREPRESENTATIONCONTEXT($,'Model',3,1.E-05," +
+                getId("direction") +
+                ",$);\n";
+        ifc += `${getId("direction")}=IFCDIRECTION((1.,0.,0.));\n`;
 
-	// Person/Organization
-	const personId = getId("person");
-	ifc +=
-		personId +
-		"=IFCPERSON($,'" +
-		project.author.replace(/'/g, "''") +  // NOSONAR: typescript:S7781
-		"',$,$,$,$,$,$);\n";
+        // Units
+        const unitId = getId("unit");
+        ifc +=
+                unitId +
+                "=IFCUNITASSIGNMENT((" +
+                getId("lengthUnit") +
+                "," +
+                getId("areaUnit") +
+                "," +
+                getId("volumeUnit") +
+                "));\n";
+        ifc += `${getId("lengthUnit")}=IFCSIUNIT(*,.LENGTHUNIT.,$,.METRE.);\n`;
+        ifc += `${getId("areaUnit")}=IFCSIUNIT(*,.AREAUNIT.,$,.SQUARE_METRE.);\n`;
+        ifc += `${getId("volumeUnit")}=IFCSIUNIT(*,.VOLUMEUNIT.,$,.CUBIC_METRE.);\n`;
 
-	ifc += "ENDSEC;\n";
-	ifc += "END-ISO-10303-21;\n";
+        // Person/Organization
+        const personId = getId("person");
+        ifc +=
+                personId +
+                "=IFCPERSON($,'" +
+                project.author.replace(/'/g, "''") +  // NOSONAR: typescript:S7781
+                "',$,$,$,$,$,$);\n";
 
-	const blob = new Blob([ifc], { type: "application/x-step" });
-	saveAs(blob, `${project.name.replace(/\s+/g, "_")}_${schema}.ifc`);
+        ifc += "ENDSEC;\n";
+        ifc += "END-ISO-10303-21;\n";
+
+        const blob = new Blob([ifc], { type: "application/x-step" });
+        saveAs(blob, `${project.name.replace(/\s+/g, "_")}_${schema}.ifc`);
 }
 
 // ============================================================================
@@ -484,29 +535,29 @@ export function exportToIFC(
 // ============================================================================
 
 function generateGUID(): string {
-	// V216 FIX (SonarCloud S2245): use crypto.randomUUID() instead of Math.random()
-	// crypto.randomUUID() is RFC 4122 v4 compliant and cryptographically secure.  // NOSONAR: typescript:S7767
-	// Fallback to a timestamp-based ID if crypto is unavailable (very old browsers).
-	if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-		return crypto.randomUUID();
-	}
-	return `fallback-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`; // NOSONAR — fallback only
+        // V216 FIX (SonarCloud S2245): use crypto.randomUUID() instead of Math.random()
+        // crypto.randomUUID() is RFC 4122 v4 compliant and cryptographically secure.  // NOSONAR: typescript:S7767
+        // Fallback to a timestamp-based ID if crypto is unavailable (very old browsers).
+        if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+                return crypto.randomUUID();
+        }
+        return `fallback-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`; // NOSONAR — fallback only
 }
 
 export function prepareExportProject(
-	name: string,
-	description: string,
-	author: string,
-	devices: ExportDevice[],
-	connections: ExportConnection[],
+        name: string,
+        description: string,
+        author: string,
+        devices: ExportDevice[],
+        connections: ExportConnection[],
 ): ExportProject {
-	return {
-		name,
-		description,
-		author,
-		date: new Date().toISOString(),
-		units: "mm",
-		devices,
-		connections,
-	};
+        return {
+                name,
+                description,
+                author,
+                date: new Date().toISOString(),
+                units: "mm",
+                devices,
+                connections,
+        };
 }

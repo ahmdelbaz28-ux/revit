@@ -13,6 +13,8 @@ import OnboardingTour from "@/components/onboarding/OnboardingTour";
 import { GlobalHelpDrawer } from "@/components/shared/GlobalHelpDrawer";
 import { MagneticCursor } from "@/components/interaction/MagneticCursor";
 import { SmoothScroll } from "@/components/interaction/SmoothScroll";
+// F-08 FIX (Engineering Review): visible banner when running on mock data.
+import { DemoDataBanner } from "@/components/shared/DemoDataBanner";
 import type { HelpTopicId } from "@/help/types";
 import { ROUTE_HELP_MAP } from "@/help/types";
 import { useHealth } from "@/hooks/useApi";
@@ -274,6 +276,10 @@ function App() {
                                 <MagneticCursor />
                                 <div className="h-screen bg-background text-foreground">
                                         {SkipLink}
+                                        {/* F-08 FIX: show the demo-data banner whenever we're not
+                                            on a live connection. Renders above AppShell so it is
+                                            always visible regardless of which page is loaded. */}
+                                        {!isPublicRoute && <DemoDataBanner />}
                                         {isPublicRoute ? (
                                         publicRoutes
                                 ) : (

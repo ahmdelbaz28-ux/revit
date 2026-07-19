@@ -62,7 +62,12 @@ jobs:
         run: mkdir -p reports
 
       - name: Ruff lint
-        run: ruff check backend/ fireai/ core/ skills/ backend_app.py --output-format=github || true
+        # C-XX FIX (Engineering Review): removed `|| true`. Ruff failures now
+        # block CI. The previous `|| true` made every lint error non-fatal,
+        # which defeated the purpose of running ruff in CI. If ruff reports
+        # errors, they must be fixed (or selectively suppressed with `# noqa`
+        # in the source) before the PR can merge.
+        run: ruff check backend/ fireai/ core/ skills/ backend_app.py --output-format=github
 
       - name: MyPy type check
         # V140 FIX (Rule 17 — Root-Cause Analysis): Multiple skill packages
@@ -428,25 +433,36 @@ jobs:
         run: pip install pip-audit
 
       - name: Audit Python dependencies
-        # Informational: reports vulnerabilities without blocking the pipeline.
-        # Fix upstream dependencies before re-enabling strict mode.
+        # C-XX FIX (Engineering Review): removed `|| true` from pip-audit.
+        # Vulnerabilities in installed dependencies now block CI. The previous
+        # `|| true` made every CVE non-fatal, which defeated the purpose of
+        # running pip-audit. If pip-audit reports vulnerabilities, they must
+        # be fixed (upgrade the affected package, or add a documented allowlist
+        # in pyproject.toml [tool.pip-audit] ignore-vulns) before the PR can
+        # merge. The JSON report is still generated for triage.
+        # NOTE: the second pip-audit invocation (JSON output) keeps `2>/dev/null`
+        # because we only want to suppress stderr noise from the JSON formatter,
+        # not the exit code. If the JSON write fails, the first invocation's
+        # exit code is what CI sees.
         run: |
           mkdir -p reports
-          pip-audit --skip-editable --desc --progress-spinner off || true
+          pip-audit --skip-editable --desc --progress-spinner off
           pip-audit --skip-editable -f json -o reports/pip-audit.json 2>/dev/null || true
           if [ -f reports/pip-audit.json ]; then
-            echo "Audit report generated (informational only)"
+            echo "Audit report generated"
             python3 -c "import json; d=json.load(open('reports/pip-audit.json')); print(f'Found {len(d.get(\"vulns\",d.get(\"deps\",[])))} items in audit')" 2>/dev/null || echo "Audit complete"
           fi
-          echo "Dependency audit complete (non-blocking)"
+          echo "Dependency audit complete"
 
 
       - name: Audit frontend dependencies
-        # Informational: reports npm vulnerabilities without blocking the pipeline.
+        # C-XX FIX (Engineering Review): removed `|| true` from npm audit.
+        # High-severity npm vulnerabilities now block CI. The previous
+        # `|| true` made every npm advisory non-fatal.
         run: |
           cd frontend
-          npm audit --audit-level=high 2>&1 || true
-          echo "Frontend dependency audit complete (non-blocking)"
+          npm audit --audit-level=high
+          echo "Frontend dependency audit complete"
 
 
   # ── Gate 6: Docker Build ──────────────────────────────────────────────────

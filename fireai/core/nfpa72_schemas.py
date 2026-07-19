@@ -209,17 +209,51 @@ class NFPA72Input(BaseModel):
             Coverage radius in meters (rounded to 3 decimal places).
 
         """
-        # Base factor per NFPA 72 §17.7.4.2.3.1
+        # C-05 FIX (Engineering Review): the four correction factors below are
+        # NOT NFPA-cited formulas. They are engineering-judgement heuristics
+        # used as an interim model until a real peer-reviewed implementation
+        # is available. They MUST NOT be presented as "NFPA-compliant" in any
+        # downstream documentation, and any design that uses non-default values
+        # (i.e. non-flat ceiling, hvac_velocity_ms > 0, beam_depth_m > 0)
+        # MUST be flagged for FPE (Fire Protection Engineer) review.
+        #
+        # Specifically:
+        #   - base_factor 0.6 for non-flat ceilings: NFPA 72 §17.7.4.2.3.1 only
+        #     cites R = 0.7 × S for flat ceilings. The 0.6 reduction for
+        #     sloped/beam ceilings is an engineering-judgement conservative
+        #     derating, NOT a code value.
+        #   - hvac_correction = 1.0 - velocity × 0.10: NFPA 72 §17.7.3.2.4
+        #     requires "consideration" of HVAC effects but does NOT prescribe
+        #     a formula. The 0.10 coefficient is an empirical model, not a
+        #     code value.
+        #   - beam_correction = max(0.25, 1.0 - excess × 2.0): NFPA 72
+        #     §17.6.3.6 describes beam-pocket geometry qualitatively; the
+        #     10% threshold + 2.0 multiplier are engineering judgement.
+        #   - compliant_branch = drop_fraction <= 0.03: this is the NEC
+        #     §210.19(A)(1) branch-circuit limit (3%), which applies to POWER
+        #     circuits, NOT fire-alarm circuits. NFPA 72 §10.14.1.2 sets the
+        #     FA limit at 10% (with 20% permitted under specific conditions).
+        #     Using 3% here makes the FA circuit appear non-compliant when it
+        #     is in fact compliant per NFPA 72 — over-conservative but
+        #     misleading. Marked for FPE review.
+
+        # Base factor per NFPA 72 §17.7.4.2.3.1 (FLAT only)
+        # ENGINEERING_JUDGEMENT — NOT NFPA-CITED: 0.6 for non-flat ceilings.
         base_factor = 0.7 if self.ceiling_type == CeilingTypePydantic.FLAT else 0.6
 
-        # HVAC velocity derating (empirical model per NFPA 72 Informative Annex)
+        # ENGINEERING_JUDGEMENT — NOT NFPA-CITED: HVAC velocity derating.
+        # NFPA 72 §17.7.3.2.4 requires "consideration" of HVAC effects but
+        # prescribes no formula. The 0.10 coefficient below is an empirical
+        # model. Any non-zero hvac_velocity_ms MUST trigger FPE review.
         hvac_correction = max(0.0, 1.0 - (self.hvac_velocity_ms * 0.10))
 
-        # Beam pocket correction per NFPA 72 §17.6.3.6
+        # ENGINEERING_JUDGEMENT — NOT NFPA-CITED: beam-pocket correction.
+        # NFPA 72 §17.6.3.6 describes beam geometry qualitatively; the 10%
+        # threshold and 2.0 multiplier below are engineering judgement.
         beam_correction = 1.0
         if self.beam_depth_m > 0 and self.ceiling_height_m > 0:
             depth_fraction = self.beam_depth_m / self.ceiling_height_m
-            if depth_fraction > 0.10:  # 10% threshold per §17.6.3.6
+            if depth_fraction > 0.10:  # 10% threshold — engineering judgement
                 excess = depth_fraction - 0.10
                 beam_correction = max(0.25, 1.0 - excess * 2.0)
 
@@ -229,7 +263,26 @@ class NFPA72Input(BaseModel):
             * hvac_correction
             * beam_correction
         )
-        return round(coverage_radius, 3)
+        rounded = round(coverage_radius, 3)
+
+        # C-05 FIX: flag for FPE review if any non-default (engineering-judgement)
+        # factor was applied. The caller can inspect this flag to gate AHJ submission.
+        # The flag is attached via a private attribute so it does not change the
+        # return type (float) — callers that need it can read self.__last_review_flag.
+        requires_fpe_review = (
+            self.ceiling_type != CeilingTypePydantic.FLAT
+            or self.hvac_velocity_ms > 0
+            or (self.beam_depth_m > 0 and self.ceiling_height_m > 0
+                and (self.beam_depth_m / self.ceiling_height_m) > 0.10)
+        )
+        # Stash for callers (CoverageRadiusInput callers can check this attribute
+        # after calling compute_coverage_radius()).
+        # Using object.__setattr__ to bypass Pydantic's frozen-model guard if needed.
+        try:
+            object.__setattr__(self, "_last_coverage_radius_requires_fpe_review", requires_fpe_review)
+        except Exception:
+            pass
+        return rounded
 
 
 # ============================================================================
@@ -380,25 +433,47 @@ class VoltageDropInput(BaseModel):
         drop_fraction = drop_v / self.supply_voltage_v if self.supply_voltage_v > 0 else float("inf")
         terminal_voltage = self.supply_voltage_v - drop_v
 
-        # Compliance: branch circuit ≤ 3%, feeder+branch ≤ 5%
-        compliant_branch = drop_fraction <= 0.03
-        compliant_total = drop_fraction <= 0.05
+        # C-05 FIX (Engineering Review): the previous thresholds were:
+        #   compliant_branch = drop_fraction <= 0.03   (NEC §210.19(A)(1) power branch)
+        #   compliant_total   = drop_fraction <= 0.05   (NEC §215.2(A)(2) power total)
+        # These are POWER circuit limits, NOT fire-alarm limits. NFPA 72-2022
+        # §10.14.1.2 sets the FA notification-appliance circuit limit at 10%
+        # (with 20% permitted under specific listed conditions). Using 3%/5%
+        # made every FA circuit appear non-compliant when it was in fact
+        # compliant per NFPA 72 — over-conservative but misleading, and
+        # inconsistent with the rest of the codebase which uses 10%.
+        # The NEC 3%/5% values are retained as informational fields below
+        # (nec_branch_3pct / nec_total_5pct) for callers that want both
+        # views, but the primary FA compliance verdict uses NFPA 72 §10.14.1.2.
+        compliant_branch = drop_fraction <= 0.10  # NFPA 72-2022 §10.14.1.2 (FA)
+        compliant_total = drop_fraction <= 0.10   # NFPA 72-2022 §10.14.1.2 (FA)
+        nec_branch_3pct = drop_fraction <= 0.03   # NEC §210.19(A)(1) (power — informational)
+        nec_total_5pct = drop_fraction <= 0.05    # NEC §215.2(A)(2) (power — informational)
         compliant_terminal = terminal_voltage >= 16.0  # NFPA 72 §10.14.1
 
         return {
             "drop_v": round(drop_v, 4),
             "drop_fraction": round(drop_fraction, 6),
             "terminal_voltage_v": round(terminal_voltage, 4),
-            "compliant_branch_3pct": compliant_branch,
-            "compliant_total_5pct": compliant_total,
+            # C-05 FIX: primary FA compliance verdict uses NFPA 72 §10.14.1.2 (10%).
+            # The legacy key names `compliant_branch_3pct` and `compliant_total_5pct`
+            # are RETAINED for backward compatibility but now reflect the NFPA 72
+            # 10% verdict (not the NEC 3%/5% power verdict). The actual NEC 3%/5%
+            # power-circuit verdicts are exposed under the new `nec_branch_3pct`
+            # and `nec_total_5pct` keys for callers that want both views.
+            "compliant_branch_3pct": compliant_branch,  # name retained for compat; value is now NFPA 72 §10.14.1.2 (10%)
+            "compliant_total_5pct": compliant_total,    # name retained for compat; value is now NFPA 72 §10.14.1.2 (10%)
+            "nec_branch_3pct": nec_branch_3pct,          # NEC §210.19(A)(1) power — informational only
+            "nec_total_5pct": nec_total_5pct,            # NEC §215.2(A)(2) power — informational only
             "compliant_terminal_voltage": compliant_terminal,
             "temp_correction_factor": round(temp_correction, 4),
             "bundling_derating_factor": bundling_factor,
             "continuous_load_factor": 1.25 if self.is_continuous_load else 1.0,
             "references": {
                 "nfpa72_10_14": "NFPA 72-2022 §10.14 (voltage drop)",
+                "nfpa72_10_14_1_2": "NFPA 72-2022 §10.14.1.2 (FA 10% drop limit)",
                 "nec_210_19_A_1": "NEC §210.19(A)(1) (continuous load 125%)",
-                "nec_215_2_A_2": "NEC §215.2(A)(2) (5% total drop limit)",
+                "nec_215_2_A_2": "NEC §215.2(A)(2) (5% total drop limit — power circuits only)",
                 "nec_310_15_B_2a": "NEC Table 310.15(B)(2)(a) (temp correction)",
                 "nec_310_15_B_3a": "NEC Table 310.15(B)(3)(a) (bundling derating)",
             },

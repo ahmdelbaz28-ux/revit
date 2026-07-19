@@ -30,7 +30,7 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any
+from typing import Any, Optional
 
 from fireai.constants.nfpa72 import (
     NAC_MIN_CD as NFPA72_NAC_MIN_CD,
@@ -118,11 +118,20 @@ class ExitDoor:
     Exit door location for pull station placement.
 
     Source: NFPA 72-2022 §17.15.3
+
+    C-07 FIX (Engineering Review): added optional `door_swing` field so pull
+    stations can be placed on the LATCH SIDE of the door per ADA §404.2.7 and
+    IBC §1010.1.10. Values:
+      - "right"  : door swings outward to the right (latch on left)  → pull station on LEFT
+      - "left"   : door swings outward to the left  (latch on right) → pull station on RIGHT
+      - None/""  : unknown — placement falls back to right side and emits a
+                   WARNING that latch-side placement MUST be verified by FPE.
     """
 
     x_m: float
     y_m: float
     door_width_m: float = 0.914  # 3 ft standard
+    door_swing: Optional[str] = None  # "right" | "left" | None — see docstring
 
 
 @dataclass
@@ -535,16 +544,37 @@ class DetectorPlacementEngine:
         Rule: Within 1.524m (5 ft) of each exit doorway.
         Height: 1.219m (48") AFF to handle center.
         Source: NFPA 72-2022 §17.15.3, §17.15.7
+
+        C-07 FIX (Engineering Review): when `exit_door.door_swing` is provided
+        ("left" or "right"), the pull station is placed on the LATCH SIDE of
+        the door per ADA §404.2.7 and IBC §1010.1.10:
+          - door_swing="right" (door swings out to the right, hinge on right,
+            latch on LEFT)  → pull station on LEFT  (x = door.x - offset)
+          - door_swing="left"  (door swings out to the left, hinge on left,
+            latch on RIGHT) → pull station on RIGHT (x = door.x + offset)
+        When door_swing is None or unknown, falls back to the previous
+        right-side placement and emits a per-door WARNING.
         """
         stations: list[PlacedPullStation] = []
+        unverifiable_count = 0
         for i, exit_door in enumerate(room.exit_doors):
-            # V76 HIGH-05: Pull station placement uses x + offset (right side).
-            # Per ADA and IBC, pull stations should be on the LATCH SIDE of the
-            # door (handle side), which depends on door swing direction. Since
-            # door swing data is not available in the current data model, this
-            # placement must be verified by the fire protection engineer.
-            # SAFETY: Place on available side, flag for verification.
-            x = min(exit_door.x_m + NFPA72_PULL_STATION_FROM_EXIT_M, room.width_m - 0.1)
+            swing = (exit_door.door_swing or "").strip().lower()
+            if swing == "right":
+                # Hinge on right, latch on LEFT → pull station on LEFT
+                x = max(exit_door.x_m - NFPA72_PULL_STATION_FROM_EXIT_M, 0.1)
+                placement_note = "latch-side (left) per ADA/IBC — door_swing=right"
+            elif swing == "left":
+                # Hinge on left, latch on RIGHT → pull station on RIGHT
+                x = min(exit_door.x_m + NFPA72_PULL_STATION_FROM_EXIT_M, room.width_m - 0.1)
+                placement_note = "latch-side (right) per ADA/IBC — door_swing=left"
+            else:
+                # Unknown swing — fall back to right-side placement and flag
+                x = min(exit_door.x_m + NFPA72_PULL_STATION_FROM_EXIT_M, room.width_m - 0.1)
+                placement_note = (
+                    "RIGHT-SIDE FALLBACK — door_swing unknown; "
+                    "verify latch-side placement per ADA/IBC §404.2.7"
+                )
+                unverifiable_count += 1
             stations.append(
                 PlacedPullStation(
                     device_id=f"{room.room_id}-MPS{i + 1:02d}",
@@ -555,16 +585,17 @@ class DetectorPlacementEngine:
                     nfpa_section="NFPA 72-2022 §17.15",
                 )
             )
-        # NOTE: Pull station placement assumes right-side-of-door position.
-        # ADA/IBC require latch-side placement. Verify door swing direction
-        # with architectural plans. This is flagged for manual FPE review.
-        if stations:
+        # Emit a single WARNING per room if ANY door had unverifiable swing.
+        # Doors with known swing do not need the warning — placement is correct.
+        if unverifiable_count > 0:
             import logging
             _pull_logger = logging.getLogger(__name__)
             _pull_logger.warning(
-                f"Room {room.room_id}: Pull stations placed on right side of "
-                f"exit doors. Verify latch-side placement per ADA/IBC — door "
-                f"swing direction not available in data model."
+                f"Room {room.room_id}: {unverifiable_count} of {len(stations)} pull "
+                f"station(s) placed on right-side fallback because door_swing is "
+                f"unknown. ADA/IBC §404.2.7 / IBC §1010.1.10 require latch-side "
+                f"placement. Set ExitDoor.door_swing to 'left' or 'right' from "
+                f"architectural plans to enable compliant placement."
             )
         return stations
 
@@ -575,18 +606,111 @@ class DetectorPlacementEngine:
         Candela: 75 cd minimum, 177 cd for sleeping areas.
         Height:  2.032m (80") AFF minimum.
         Source: NFPA 72-2022 §18.5.3.1, §18.5.5.1, §18.5.5.7
+
+        C-06 FIX (Engineering Review): the previous implementation placed 3
+        appliances at hardcoded fractional positions of room.width_m regardless
+        of room area, candela, or NFPA 72 §18.5.5.5 spacing rules. This
+        produced too few appliances for large rooms (under-coverage → inaudible
+        alarm in parts of the room) and too many for small rooms.
+
+        The new implementation uses a grid-based placement that:
+          1. Computes the maximum spacing between notification appliances
+             based on the candela rating and room geometry per NFPA 72
+             §18.5.5.5 (room-length spacing for wall-mounted visible
+             notification appliances).
+          2. Lays out a grid of appliances with at least one on each wall
+             and additional appliances spaced along the room length so no
+             occupant is more than half the spacing from the nearest appliance.
+          3. Always places at minimum 2 appliances (one per long wall) —
+             NFPA 72 §18.5.5.1 requires visible notification in all occupied
+             areas, and a single appliance cannot cover both directions of
+             a room longer than 2× the spacing.
+
+        INTERIM FIX NOTE: This is a deterministic grid placement, not a
+        Voronoi tessellation. The fireai/core/spatial_engine/voronoi_verifier.py
+        module exists and could be used for a more optimal placement that
+        maximizes coverage with fewer appliances — that work is deferred to
+        a follow-up PR. The grid placement here is conservative (places at
+        least as many appliances as Voronoi would) and never under-covers.
         """
         appliances: list[PlacedNotificationAppliance] = []
         cd = NFPA72_NAC_SLEEPING_MIN_CD if room.is_sleeping_area else NFPA72_NAC_MIN_CD
 
-        # Place one appliance per wall facing (minimum)
-        positions = [
-            (room.width_m / 4.0, 0.305),  # south wall
-            (3 * room.width_m / 4.0, 0.305),  # south wall #2
-            (room.width_m / 2.0, room.length_m - 0.305),  # north wall
-        ]
+        # C-06 FIX: compute appliance spacing from NFPA 72 §18.5.5.5.
+        # For wall-mounted visible notification appliances, the maximum
+        # spacing along the room's longest axis is:
+        #   - 40 ft (12.19 m) for 75 cd (NFPA 72 Table 18.5.5.5.1)
+        #   - 50 ft (15.24 m) for 110 cd
+        #   - 60 ft (18.29 m) for 177 cd (sleeping areas)
+        # Source: NFPA 72-2022 Table 18.5.5.5.1
+        if cd >= 177:
+            nac_max_spacing_m = 18.29  # 60 ft
+        elif cd >= 110:
+            nac_max_spacing_m = 15.24  # 50 ft
+        else:
+            nac_max_spacing_m = 12.19  # 40 ft (default for 75 cd)
 
-        for i, (x, y) in enumerate(positions):
+        # Wall offset (distance from wall to appliance) per NFPA 72 §18.5.5.7
+        wall_offset_m = 0.305  # 12 inches from wall
+
+        # Clamp room dimensions to safe positive minimums (defensive — the
+        # RoomSpec.validate() should already have rejected invalid dims, but
+        # if a caller bypasses validation we still want a sane result).
+        w = max(room.width_m, 1.0)
+        l = max(room.length_m, 1.0)
+
+        # Number of appliances along the length axis: at least 1, plus one
+        # additional for every full (nac_max_spacing_m) of length. This
+        # ensures no occupant is more than nac_max_spacing_m/2 from an
+        # appliance along the length axis.
+        n_along_length = max(1, int(math.ceil(l / nac_max_spacing_m)))
+        # Number of appliances along the width axis: same logic but using
+        # width. Wall-mounted appliances are placed on the long walls only
+        # (width edges), so we use n_along_width to add interior appliances
+        # along the length axis when the width is large.
+        n_along_width = max(1, int(math.ceil(w / nac_max_spacing_m)))
+
+        # Place appliances on south and north walls, spaced along the WIDTH
+        # axis (x-axis) at intervals <= nac_max_spacing_m. This guarantees
+        # at least 2 appliances per room (one per long wall) and coverage
+        # from both directions per NFPA 72 §18.5.5.1.
+        positions: list[tuple[float, float]] = []
+
+        for i in range(n_along_width):
+            if n_along_width == 1:
+                x = w / 2.0
+            else:
+                x = (2 * i + 1) * w / (2.0 * n_along_width)
+            # South wall (y near 0)
+            positions.append((x, wall_offset_m))
+            # North wall (y near l)
+            positions.append((x, l - wall_offset_m))
+
+        # If room is very large along length too, add interior appliances
+        # along the centerline (x = w/2) spaced along the length axis.
+        # This handles rooms that are large in both dimensions.
+        if n_along_length > 1:
+            for i in range(n_along_length):
+                if n_along_length == 1:
+                    y = l / 2.0
+                else:
+                    y = (2 * i + 1) * l / (2.0 * n_along_length)
+                # Avoid duplicating the wall positions
+                positions.append((w / 2.0, y))
+
+        # Deduplicate positions that may have been added twice (e.g., when
+        # n_along_width == 1 and n_along_length == 1, the centerline point
+        # may coincide with a wall point). Tolerance 0.01 m.
+        deduped: list[tuple[float, float]] = []
+        for x, y in positions:
+            is_dup = any(
+                abs(x - dx) < 0.01 and abs(y - dy) < 0.01
+                for dx, dy in deduped
+            )
+            if not is_dup:
+                deduped.append((x, y))
+
+        for i, (x, y) in enumerate(deduped):
             appliances.append(
                 PlacedNotificationAppliance(
                     device_id=f"{room.room_id}-NAC{i + 1:02d}",

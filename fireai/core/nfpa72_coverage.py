@@ -488,11 +488,18 @@ def check_coverage_polygon(  # NOSONAR — S3776: cognitive complexity is inhere
         # 99.9% area threshold = NFPA compliant (accounts for floating-point)
         is_covered_area = coverage_area_pct >= 99.9
 
-        # Keep point-based result as secondary for backward compatibility
-        if total_points > 0:
-            (covered_count / total_points) * 100
-        else:
-            pass  # NOSONAR — S108: empty except kept for graceful degradation
+        # C-11 FIX (Engineering Review): the previous block was dead code:
+        #     if total_points > 0:
+        #         (covered_count / total_points) * 100   # evaluated, never assigned
+        #     else:
+        #         pass
+        # The point-based percentage was computed and immediately discarded.
+        # The area-based primary_pct (computed below) is the only value used.
+        # We now expose the point-based percentage as a secondary metric in the
+        # CoverageResult so it is no longer dead — it can be inspected for
+        # cross-validation (point-based coverage should be within ±0.5% of
+        # area-based; a larger divergence indicates a geometry bug).
+        point_based_pct = (covered_count / total_points * 100) if total_points > 0 else 0.0
 
         # Primary coverage = area-based (NFPA compliant)
         # If area says covered but points don't, trust the area (points can miss corners)
@@ -508,12 +515,17 @@ def check_coverage_polygon(  # NOSONAR — S3776: cognitive complexity is inhere
         _logging.getLogger(__name__).warning(f"Area-based coverage failed, falling back to point-based: {area_err}")
         primary_pct = covered_count / total_points * 100 if total_points > 0 else 0
         is_covered = primary_pct >= 99.9  # V20.2 FIX: Must match primary threshold (was 99%)
+        # In fallback path, point_based_pct equals primary_pct (no area calc available)
+        point_based_pct = primary_pct
 
     return CoverageResult(
         is_covered=is_covered,
         uncovered_areas=uncovered,
         coverage_percentage=primary_pct,
         detectors_in_coverage=len(detector_positions),
+        # C-11 FIX: expose the point-based coverage percentage for cross-validation.
+        # In the fallback path (area calculation failed), this equals primary_pct.
+        point_based_coverage_percentage=point_based_pct,
     )
 
 

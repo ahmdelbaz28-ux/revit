@@ -29,11 +29,21 @@ const validInput = {
 
 describe("BatteryCalculator", () => {
         describe("calculateBatteryRequirements", () => {
-                it("should calculate total standby current correctly (mA → A)", () => {
+                it("should calculate total standby current correctly (mA → A) (F-15 FIX)", () => {
                         const result = calculateBatteryRequirements(validInput);
-                        // standby values are tiny (0.05mA etc.) → total is ~0.00188A → rounds to 0.00
-                        // This is expected — the formula is (sum of standbyCurrent × count) / 1000
-                        expect(result.totalStandbyCurrent).toBeGreaterThanOrEqual(0);
+                        // F-15 FIX (Engineering Review): the previous assertion was
+                        // `toBeGreaterThanOrEqual(0)` — trivially true for any non-negative
+                        // number, including the wrong answer. The correct expected value is
+                        // computed from the input:
+                        //   standby_total_mA = (0.05×24) + (0.03×8) + (0.01×12) + (0.02×16)
+                        //                    = 1.20 + 0.24 + 0.12 + 0.32 = 1.88 mA
+                        //   standby_total_A  = 1.88 / 1000 = 0.00188 A
+                        // The test now asserts the EXACT expected value (to 4 decimal places)
+                        // so a regression in the formula (e.g., forgetting the /1000 conversion)
+                        // would be caught.
+                        const expectedStandbyA =
+                                (0.05 * 24 + 0.03 * 8 + 0.01 * 12 + 0.02 * 16) / 1000;
+                        expect(result.totalStandbyCurrent).toBeCloseTo(expectedStandbyA, 4);
                         expect(result.totalStandbyCurrent).toBeLessThan(1); // Should be small (mA range)
                 });
 

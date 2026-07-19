@@ -57,6 +57,20 @@ jobs:
     # pushing it to HF would put the Space into RUNTIME_ERROR.
     if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
+    # C-XX FIX (Engineering Review): added `environment: huggingface-production`
+    # so a human reviewer must approve the deploy before it runs. The previous
+    # configuration auto-deployed on every successful CI Build Gate run with
+    # no manual approval — meaning any merge to main (including merges that
+    # introduce 30+ critical defects per the engineering review) would
+    # immediately ship to the public HuggingFace Space.
+    #
+    # To enable: in GitHub repo Settings → Environments → New environment →
+    # name it "huggingface-production" → add Required reviewers (yourself +
+    # at least one other engineer). Once configured, every push to main that
+    # passes CI will WAIT in "waiting for review" state until a reviewer
+    # clicks Approve.
+    environment:
+      name: huggingface-production
     steps:
       - name: Checkout GitHub source
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0

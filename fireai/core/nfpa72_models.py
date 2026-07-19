@@ -685,6 +685,12 @@ class CoverageResult:
     proof_valid: bool = False  # V112: FAIL-SAFE — proof not valid until explicitly verified
     coverage_fraction: float = 0.0  # V112: FAIL-SAFE — no coverage until verified
     max_gap_m: float = 0.0
+    # C-11 FIX (Engineering Review): point-based coverage percentage exposed
+    # for cross-validation against the area-based coverage_percentage.
+    # Should be within ±0.5% of coverage_percentage; a larger divergence
+    # indicates a geometry bug in the polygon or point-sampling code.
+    # Default 0.0 for backward compatibility with callers that don't set it.
+    point_based_coverage_percentage: float = 0.0
 
     def __bool__(self) -> bool:
         return self.is_covered
