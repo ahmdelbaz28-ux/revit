@@ -103,6 +103,7 @@ jobs:
           if [ -f reports/bandit.json ]; then
             python3 -c "
             import json
+            import sys
             with open('reports/bandit.json') as f:
                 data = json.load(f)
             results = data.get('results', [])
@@ -111,7 +112,36 @@ jobs:
             print('BANDIT_HIGH=' + str(len(high)))
             for r in high:
                 print('HIGH::' + r.get('filename', '') + ':' + str(r.get('line_number', '')) + '::' + r.get('issue_text', '') + '::[' + r.get('test_name', '') + ']')
-            " 2>/dev/null || true
+            # V287 SAFETY FIX: previously this script only PRINTED the HIGH
+            # findings but never WROTE reports/bandit_high_summary.txt.
+            # The shell check below ('if [ -f reports/bandit_high_summary.txt ]')
+            # was therefore always false — the gate was permanently PASSING
+            # regardless of how many HIGH severity findings Bandit reported.
+            # Now we write the summary file when HIGH findings exist.
+            if high:
+                with open('reports/bandit_high_summary.txt', 'w') as out:
+                    out.write('Bandit HIGH severity findings (' + str(len(high)) + ' total):\n')
+                    out.write('=' * 70 + '\n')
+                    for r in high:
+                        out.write(
+                            r.get('filename', '') + ':' + str(r.get('line_number', '')) + '\n'
+                            '  Issue: ' + r.get('issue_text', '') + '\n'
+                            '  Test:  ' + r.get('test_name', '') + '\n'
+                            '  CWE:   ' + str(r.get('issue_cwe', {}).get('link', '')) + '\n'
+                            '\n'
+                        )
+                print('Wrote reports/bandit_high_summary.txt (' + str(len(high)) + ' HIGH findings)')
+            else:
+                print('No HIGH findings — gate will pass')
+            " 2>/dev/null
+            # V287: removed '|| true' — if the Python script fails, we WANT
+            # the gate to fail (fail-safe). Previously '|| true' swallowed
+            # JSON parse errors and Bandit gate silently passed.
+            rc=$?
+            if [ $rc -ne 0 ]; then
+              echo "FAIL: Bandit report parsing failed (exit code $rc)"
+              exit 1
+            fi
             if [ -f reports/bandit_high_summary.txt ]; then
               echo "FAIL: HIGH severity Bandit findings detected"
               cat reports/bandit_high_summary.txt
