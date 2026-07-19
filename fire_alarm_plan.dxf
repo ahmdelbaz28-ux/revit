@@ -2345,7 +2345,7 @@ AcDbText
  40
 2.5
   1
-PE STAMP: LICENSED PROFESSIONAL ENGINEER - STAMP #PE-90998
+PE STAMP: [INSERT REAL PE STAMP BEFORE DELIVERY â€” drawing generation now refuses placeholder values]
 100
 AcDbText
   0
@@ -2597,7 +2597,7 @@ AcDbText
  40
 2.5
   1
-BATTERY CAPACITY   : 5.09 Ah (NFPA 72 §10.6.10)
+BATTERY CAPACITY   : 5.09 Ah (NFPA 72 ï¿½10.6.10)
 100
 AcDbText
   0
