@@ -562,12 +562,62 @@ jobs:
         run: |
           echo "CI/CD Pipeline Summary:"
           echo "======================="
-          echo "✅ Gate 1: Static Analysis"
-          echo "✅ Gate 2: Test Suite"
-          echo "✅ Gate 3: Property-Based Tests"
-          echo "✅ Gate 4: Frontend Build"
-          echo "✅ Gate 4b: Visual Regression (Playwright)"
-          echo "✅ Gate 5: Dependency Audit"
-          echo "✅ Gate 6: Docker Build & Test"
+          # V285 SAFETY FIX: Previously this job just echo'd "✅ Gate N" for each
+          # gate without checking the actual ${{ needs.<gate>.result }}. The job
+          # was always marked SUCCESS even when every gate failed — masking
+          # pipeline failures from operators and branch-protection checks.
+          #
+          # Now we read each gate's actual result and exit 1 if ANY gate
+          # failed or was cancelled. Skipped gates (skipped != failure) are OK.
+          GATE1="${{ needs.static-analysis.result }}"
+          GATE2="${{ needs.test-suite.result }}"
+          GATE3="${{ needs.property-tests.result }}"
+          GATE4="${{ needs.frontend-build.result }}"
+          GATE4B="${{ needs.frontend-visual.result }}"
+          GATE5="${{ needs.dependency-audit.result }}"
+          GATE6="${{ needs.docker-build.result }}"
+
+          echo "Gate 1 (Static Analysis):        $GATE1"
+          echo "Gate 2 (Test Suite):              $GATE2"
+          echo "Gate 3 (Property-Based Tests):    $GATE3"
+          echo "Gate 4 (Frontend Build):          $GATE4"
+          echo "Gate 4b (Visual Regression):      $GATE4B"
+          echo "Gate 5 (Dependency Audit):        $GATE5"
+          echo "Gate 6 (Docker Build & Test):     $GATE6"
           echo ""
-          echo "Pipeline completed successfully!"
+
+          # A gate is "failed" if its result is 'failure' or 'cancelled'.
+          # 'skipped' is acceptable (e.g., Gate 3/6 skip on PRs without backend changes).
+          # 'success' is the only fully-passing state.
+          FAILED_GATES=""
+          for entry in "Gate 1:$GATE1" "Gate 2:$GATE2" "Gate 3:$GATE3" "Gate 4:$GATE4" "Gate 4b:$GATE4B" "Gate 5:$GATE5" "Gate 6:$GATE6"; do
+            name="${entry%%:*}"
+            result="${entry##*:}"
+            case "$result" in
+              success)
+                echo "✅ $name: passed"
+                ;;
+              skipped)
+                echo "⊘ $name: skipped (acceptable)"
+                ;;
+              failure|cancelled|timed_out|action_required|neutral)
+                echo "❌ $name: $result"
+                FAILED_GATES="$FAILED_GATES $name"
+                ;;
+              *)
+                echo "❓ $name: unknown result '$result' — treating as failure"
+                FAILED_GATES="$FAILED_GATES $name"
+                ;;
+            esac
+          done
+
+          echo ""
+          if [ -n "$FAILED_GATES" ]; then
+            echo "❌ Pipeline FAILED — gates that did not pass:$FAILED_GATES"
+            echo ""
+            echo "This workflow's '✅ All Gates Passed' job was previously"
+            echo "a no-op that always reported success. It now correctly"
+            echo "reflects the actual state of each gate (V285 fix)."
+            exit 1
+          fi
+          echo "✅ Pipeline completed successfully — all required gates passed."
