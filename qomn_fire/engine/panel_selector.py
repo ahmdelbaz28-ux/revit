@@ -30,55 +30,98 @@ class SelectionEngine:
         device_count: int,
         nac_circuit_count: int,
         panel: FireAlarmPanel,
-        requires_voice: bool
+        requires_voice: bool,
+        min_temperature_c: float = 20.0,
     ) -> Tuple[float, Dict[str, Any]]:
         """
-        Calculates battery capacity per NFPA 72 §10.6.7 with tiered derating.
+        Calculates battery capacity per NFPA 72 §10.6.7 using IEEE 485/1188
+        temperature-aware derating (delegates to fireai.core.battery_aging_derating).
 
-        Derating methodology (V54 FIX F5 — NOT flat 1.2x):
-          1. Temperature derating: 1.10 (10% compensation for capacity loss at low temp)
-          2. Aging derating: 1.15 (15% compensation for battery end-of-life per IEEE 1188)
-          3. NFPA margin: 1.20 (20% mandatory margin per NFPA 72 §10.6.7)
+        V283 SAFETY FIX: This function previously used a FLAT temperature_derating
+        of 1.10 (constant) — meaning batteries were sized the SAME regardless of
+        whether the installation was in a 20°C office or a -10°C unheated warehouse.
+        At 0°C the real IEEE 485 derating is 1.39 (1/0.72); the old 1.10 constant
+        under-sized batteries by ~27% in cold environments.
 
-        Per-device standby current: 0.8 mA (V54 FIX F6 — NOT 1.0 mA).
+        The new implementation delegates to fireai.core.battery_aging_derating.size_battery
+        — the SAME module used by facp_system.panel_selector — eliminating the
+        divergence between the two parallel implementations (P0-5 in critical audit).
+
+        Per-device currents (V54 FIX F6 — preserved):
+          - Standby: 0.8 mA per device (realistic for modern addressable detectors)
+          - Alarm: 5.0 mA per device (LED annunciator + alarm LED)
+
+        Args:
+            device_count: Number of addressable devices on the system.
+            nac_circuit_count: Number of Notification Appliance Circuits.
+            panel: FireAlarmPanel record with standby/alarm current draws.
+            requires_voice: True for voice evacuation (15 min alarm), False for
+                non-voice (5 min alarm per NFPA 72 §10.6.7.2.1).
+            min_temperature_c: Minimum ambient temperature at the battery
+                installation. Defaults to 20°C (room temperature). For unheated
+                warehouses / outdoor enclosures, use the 1% winter design temp
+                for the installation location per ASHRAE Handbook.
 
         Returns:
             Tuple of (battery_size_ah, derating_details_dict)
 
+        Raises:
+            RuntimeError: if fireai.core.battery_aging_derating is not available
+                (life-safety fail-loud — no silent simplified fallback).
         """
         # V54 FIX F6: Per-device standby current = 0.0008 A (0.8 mA), NOT 0.001 A
         standby_load = (device_count * 0.0008) + panel.standby_current_amps
         alarm_load = (nac_circuit_count * 2.0) + (device_count * 0.005) + panel.alarm_current_amps
-        alarm_duration_h = 0.25 if requires_voice else 0.0833
+        # V283 FIX: exact 5.0/60.0 instead of 0.0833 approximation.
+        alarm_duration_h = 0.25 if requires_voice else (5.0 / 60.0)
 
-        raw_capacity = (standby_load * 24.0) + (alarm_load * alarm_duration_h)
+        # Delegate to the production battery sizing module (same as facp_system).
+        # This eliminates the duplicate/divergent algorithm — P0-5 critical audit fix.
+        try:
+            from fireai.core.battery_aging_derating import size_battery
 
-        # V54 FIX F5: Tiered derating — NOT flat 1.2x
-        temperature_derating = 1.10
-        aging_derating = 1.15
-        nfpa_margin = 1.20
-        combined_safety_factor = round(
-            temperature_derating * aging_derating * nfpa_margin, 6
-        )
+            result = size_battery(
+                standby_load_amps=standby_load,
+                alarm_load_amps=alarm_load,
+                standby_hours=24.0,
+                alarm_hours=alarm_duration_h,
+                min_temperature_c=min_temperature_c,
+                service_life_years=5,
+                safety_margin_pct=0.0,  # Derating already provides >= 1.46x safety factor
+            )
 
-        battery_size = round(raw_capacity * combined_safety_factor, 2)
+            derating_details = {
+                "method": "NFPA_72_IEEE_485_1188_full_derating",
+                "temperature_derating": result.temperature_derating,
+                "aging_derating": result.aging_derating,
+                "discharge_rate_correction": result.discharge_rate_correction,
+                "combined_safety_factor": round(
+                    1.0 / max(result.temperature_derating * result.aging_derating * result.discharge_rate_correction, 0.01),
+                    2
+                ),
+                "standby_ah": result.standby_ah,
+                "alarm_ah": result.alarm_ah,
+                "total_load_ah": result.total_load_ah,
+                "min_temperature_c": min_temperature_c,
+                "nfpa_reference": "NFPA 72-2022 §10.6.7, IEEE 485, IEEE 1188",
+            }
 
-        derating_details = {
-            "method": "NFPA 72 §10.6.7 tiered derating",
-            "temperature_derating": temperature_derating,
-            "aging_derating": aging_derating,
-            "nfpa_margin": nfpa_margin,
-            "combined_safety_factor": combined_safety_factor,
-            # BUG-PS1 FIX: Removed duplicate "enhanced_safety_factor" key that was
-            # identical to "combined_safety_factor". Having two keys with the same value
-            # creates confusion — downstream code doesn't know which to use, and neither
-            # provides more information than the other. The combined_safety_factor IS the
-            # enhanced/total safety factor: 1.10 (temp) × 1.15 (aging) × 1.20 (NFPA) = 1.518.
-            "raw_capacity_ah": round(raw_capacity, 4),
-            "per_device_standby_mA": 0.8,
-        }
+            return round(result.required_ah, 2), derating_details
 
-        return battery_size, derating_details
+        except ImportError as exc:
+            # V283 LIFE-SAFETY FIX: Refuse to operate without the production
+            # battery sizing module. The previous behavior used a flat
+            # temperature_derating=1.10 — at 0°C this under-sized batteries
+            # by ~27% compared to the IEEE 485 lookup table. In a life-safety
+            # system, an under-sized battery means the FACP goes dark during
+            # a fire event. ImportError on a critical module MUST fail loud.
+            raise RuntimeError(
+                f"fireai.core.battery_aging_derating is REQUIRED for life-safety "
+                f"battery sizing. The previous 'simplified fallback' used a flat "
+                f"temperature_derating=1.10 which under-sized batteries in cold "
+                f"environments. Refusing to operate without the production module. "
+                f"ImportError: {exc}"
+            ) from exc
 
     @classmethod
     def select_panel(cls, req: ProjectRequirements) -> Result[PanelRecommendation, FACPSelectionError]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
