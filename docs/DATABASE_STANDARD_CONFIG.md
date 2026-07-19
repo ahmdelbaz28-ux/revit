@@ -131,14 +131,14 @@ python -c "from backend.database import get_db; print(get_db().list_projects(pag
 
 | Field | Value |
 |-------|-------|
-| Project ref | `nrdqdnmyxbbdrrmqxzej` |
+| Project ref | `<SUPABASE_PROJECT_REF>` |
 | Project name | `mmx-agent-1777931988324` |
 | Region | `us-east-1` |
 | Postgres version | 17.6.1.113 |
-| Direct host | `db.nrdqdnmyxbbdrrmqxzej.supabase.co` (IPv6-only) |
-| PgBouncer host | `db.nrdqdnmyxbbdrrmqxzej.supabase.co:6543` (IPv6-only) |
+| Direct host | `db.<SUPABASE_PROJECT_REF>.supabase.co` (IPv6-only) |
+| PgBouncer host | `db.<SUPABASE_PROJECT_REF>.supabase.co:6543` (IPv6-only) |
 | Supavisor pooler | NOT ENABLED for this project (would give IPv4) |
-| REST base URL | `https://nrdqdnmyxbbdrrmqxzej.supabase.co/rest/v1/` |
+| REST base URL | `https://<SUPABASE_PROJECT_REF>.supabase.co/rest/v1/` |
 | Status | ACTIVE_HEALTHY |
 
 ### Neon
@@ -161,12 +161,12 @@ python -c "from backend.database import get_db; print(get_db().list_projects(pag
 If you want Supabase itself to be reachable via IPv4 (eliminating the
 Neon fallback), enable the **Supavisor** pooler:
 
-1. Go to <https://supabase.com/dashboard/project/nrdqdnmyxbbdrrmqxzej/settings/database>
+1. Go to <https://supabase.com/dashboard/project/<SUPABASE_PROJECT_REF>/settings/database>
 2. Click "Enable Connection Pooler" (Supavisor)
 3. The new pooler host will be `aws-0-us-east-1.pooler.supabase.com` (IPv4)
 4. Update `DATABASE_URL` to use the pooler URL with tenant prefix:
    ```
-   postgresql://postgres.nrdqdnmyxbbdrrmqxzej:<PW>@aws-0-us-east-1.pooler.supabase.com:6543/postgres?sslmode=require
+   postgresql://postgres.<SUPABASE_PROJECT_REF>:<PW>@aws-0-us-east-1.pooler.supabase.com:6543/postgres?sslmode=require
    ```
 5. Once verified, the Neon fallback becomes unnecessary (but keep it as
    a safety net).

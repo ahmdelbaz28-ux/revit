@@ -91,8 +91,11 @@ class ProductionValidator:
         if not database_url:
             return self.check("Database Connection", False, "DATABASE_URL not set")
         
-        # If URL points to known unreachable Supabase (DNS failure), treat as warning
-        if "supabase.co" in database_url and "nrdqdnmyxbbdrrmqxzej" in database_url:
+        # If URL points to known unreachable Supabase (DNS failure), treat as warning.
+        # V280 SECURITY: project ref no longer hardcoded (was leaked in public repo).
+        # Operators set SUPABASE_UNREACHABLE_PROJECT_REF env var to enable the bypass.
+        unreachable_ref = os.getenv("SUPABASE_UNREACHABLE_PROJECT_REF", "")
+        if "supabase.co" in database_url and unreachable_ref and unreachable_ref in database_url:
             return self.check(
                 "Database Connection",
                 True,

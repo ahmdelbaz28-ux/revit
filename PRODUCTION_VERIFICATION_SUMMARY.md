@@ -22,7 +22,7 @@
 ## ⚠️ Critical Findings
 
 ### 1. Supabase DNS Failure
-**Issue:** `https://nrdqdnmyxbbdrrmqxzej.supabase.co` does not resolve  
+**Issue:** `https://<SUPABASE_PROJECT_REF>.supabase.co` does not resolve  
 **Impact:** Primary database unreachable  
 **Resolution:** Create new Supabase project OR use Neon fallback  
 **Workaround:** `NEON_DATABASE_URL` already configured as fallback

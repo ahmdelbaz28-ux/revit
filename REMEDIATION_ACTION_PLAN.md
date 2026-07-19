@@ -65,12 +65,12 @@ git commit -m "chore: ensure .env is ignored"
 
 ### 2. Fix Supabase IPv6 Connectivity
 
-**Issue:** Supabase endpoint `nrdqdnmyxbbdrrmqxzej.supabase.co` may be IPv6-only, causing connection failures in IPv4-only environments.
+**Issue:** Supabase endpoint `<SUPABASE_PROJECT_REF>.supabase.co` may be IPv6-only, causing connection failures in IPv4-only environments.
 
 **Diagnosis:**
 ```bash
 # Test connectivity
-curl -v https://nrdqdnmyxbbdrrmqxzej.supabase.co/rest/v1/ 2>&1 | grep "Connected to"
+curl -v https://<SUPABASE_PROJECT_REF>.supabase.co/rest/v1/ 2>&1 | grep "Connected to"
 
 # If IPv6-only, you'll see: Connected to <IPv6 address>
 ```
@@ -169,7 +169,7 @@ sed -i 's/CORS_ALLOWED_ORIGINS/CORS_ORIGINS/g' .env
 **Action:**
 ```env
 # .env (production)
-DATABASE_URL=postgresql://postgres:YOUR_PASSWORD@db.nrdqdnmyxbbdrrmqxzej.supabase.co:5432/postgres?sslmode=require
+DATABASE_URL=postgresql://postgres:YOUR_PASSWORD@db.<SUPABASE_PROJECT_REF>.supabase.co:5432/postgres?sslmode=require
 ```
 
 **Verify:**

@@ -84,10 +84,10 @@ origin	https://github_pat_***@github.com/ahmdelbaz28-ux/BAZspark.git (push)
 
 **Current Environment Variables (.env):**
 ```env
-SUPABASE_URL=https://nrdqdnmyxbbdrrmqxzej.supabase.co
+SUPABASE_URL=https://<SUPABASE_PROJECT_REF>.supabase.co
 SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 SUPABASE_SERVICE_ROLE_KEY=sb_secret_***
-DATABASE_URL=postgresql://postgres:***@db.nrdqdnmyxbbdrrmqxzej.supabase.co:5432/postgres?sslmode=require
+DATABASE_URL=postgresql://postgres:***@db.<SUPABASE_PROJECT_REF>.supabase.co:5432/postgres?sslmode=require
 ```
 
 **Required Action:**
