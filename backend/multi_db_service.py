@@ -338,6 +338,149 @@ class MultiDatabaseService:
             logger.exception("PostgreSQL query error")
             return []
 
+    # ─── V282 FIX: BIM-specific convenience methods ────────────────────────
+    # These 6 methods were referenced by backend/routers/multi_db.py but
+    # never defined on MultiDatabaseService — every endpoint would raise
+    # AttributeError at runtime. Now implemented as thin wrappers over the
+    # existing primitives (redis_set/redis_get, qdrant_upsert_vectors/
+    # qdrant_search, neo4j_execute_query).
+    #
+    # All methods are fail-safe: return False/[] when the underlying client
+    # is unavailable (e.g., dev environment without Redis/Qdrant/Neo4j).
+
+    BIM_REDIS_PREFIX = "bim:element:"
+    BIM_QDRANT_COLLECTION = "bim_elements"
+
+    def cache_bim_element(self, element_id: str, element_data: dict) -> bool:
+        """Cache BIM element data in Redis (JSON-serialized)."""
+        if not element_id or not isinstance(element_data, dict):
+            return False
+        try:
+            import json
+            payload = json.dumps(element_data, default=str)
+            return self.redis_set(f"{self.BIM_REDIS_PREFIX}{element_id}", payload, ex=86400)
+        except Exception:
+            logger.exception("cache_bim_element failed")
+            return False
+
+    def get_cached_bim_element(self, element_id: str) -> Optional[dict]:
+        """Retrieve cached BIM element data from Redis."""
+        if not element_id:
+            return None
+        try:
+            import json
+            payload = self.redis_get(f"{self.BIM_REDIS_PREFIX}{element_id}")
+            if payload is None:
+                return None
+            return json.loads(payload)
+        except Exception:
+            logger.exception("get_cached_bim_element failed")
+            return None
+
+    def store_element_embeddings(self, element_id: str, embeddings: list) -> bool:
+        """Store element embeddings in Qdrant for similarity search."""
+        if not element_id or not isinstance(embeddings, list) or not embeddings:
+            return False
+        if not self._qdrant_client:
+            logger.warning("store_element_embeddings: Qdrant not available")
+            return False
+        try:
+            # Qdrant PointStruct: {"id": <str|uuid>, "vector": [...], "payload": {...}}
+            points = [{"id": element_id, "vector": embeddings, "payload": {"element_id": element_id}}]
+            return self.qdrant_upsert_vectors(self.BIM_QDRANT_COLLECTION, points)
+        except Exception:
+            logger.exception("store_element_embeddings failed")
+            return False
+
+    def find_similar_elements(self, query_embedding: list, limit: int = 5) -> list:
+        """Find similar BIM elements using Qdrant vector search."""
+        if not isinstance(query_embedding, list) or not query_embedding:
+            return []
+        if not self._qdrant_client:
+            logger.warning("find_similar_elements: Qdrant not available")
+            return []
+        try:
+            results = self.qdrant_search(self.BIM_QDRANT_COLLECTION, query_embedding, limit=limit)
+            # Normalize Qdrant results to a plain dict list for JSON response.
+            normalized = []
+            for r in results:
+                # Qdrant returns ScoredPoint objects — extract fields defensively.
+                payload = getattr(r, "payload", None) or (r.get("payload") if isinstance(r, dict) else {}) or {}
+                score = getattr(r, "score", None) if not isinstance(r, dict) else r.get("score")
+                element_id = payload.get("element_id", "")
+                normalized.append({"element_id": element_id, "score": score, "payload": payload})
+            return normalized
+        except Exception:
+            logger.exception("find_similar_elements failed")
+            return []
+
+    def create_element_relationships(
+        self, element_id: str, related_elements: list, relationship_type: str = "CONNECTED_TO"
+    ) -> bool:
+        """Create relationships between elements in Neo4j (graph database).
+
+        Creates a MERGE pattern: (a:Element {id: $element_id})
+        -[:relationship_type]-> (b:Element {id: $related_id})
+        for each related_id in related_elements.
+        """
+        if not element_id or not isinstance(related_elements, list) or not related_elements:
+            return False
+        if not self._neo4j_driver:
+            logger.warning("create_element_relationships: Neo4j not available")
+            return False
+        # V282 SECURITY: relationship_type must be a valid Cypher identifier
+        # to prevent Cypher injection. Allow only [A-Z_]+ after uppercasing.
+        import re
+        if not re.match(r"^[A-Z][A-Z0-9_]*$", relationship_type.upper()):
+            logger.error("create_element_relationships: invalid relationship_type %r", relationship_type)
+            return False
+        rel_type = relationship_type.upper()
+        try:
+            # MERGE ensures idempotency (no duplicate nodes/edges on retry).
+            query = (
+                f"MERGE (a:Element {{id: $element_id}}) "
+                f"WITH a "
+                f"UNWIND $related_elements AS related_id "
+                f"MERGE (b:Element {{id: related_id}}) "
+                f"MERGE (a)-[:{rel_type}]->(b)"
+            )
+            with self.neo4j_session() as session:
+                session.run(query, {"element_id": element_id, "related_elements": related_elements})
+            return True
+        except Exception:
+            logger.exception("create_element_relationships failed")
+            return False
+
+    def neo4j_find_related_elements(self, element_id: str, relationship_type: str = "CONNECTED_TO") -> list:
+        """Find elements related to a specific element in Neo4j.
+
+        Traverses outgoing relationships of the given type from the source
+        element. Returns a list of {"element_id": ..., "relationship_type": ...}.
+        """
+        if not element_id:
+            return []
+        if not self._neo4j_driver:
+            logger.warning("neo4j_find_related_elements: Neo4j not available")
+            return []
+        # V282 SECURITY: relationship_type must be a valid Cypher identifier.
+        import re
+        if not re.match(r"^[A-Z][A-Z0-9_]*$", relationship_type.upper()):
+            logger.error("neo4j_find_related_elements: invalid relationship_type %r", relationship_type)
+            return []
+        rel_type = relationship_type.upper()
+        try:
+            query = (
+                f"MATCH (a:Element {{id: $element_id}})-[:{rel_type}]->(b:Element) "
+                f"RETURN b.id AS element_id"
+            )
+            with self.neo4j_session() as session:
+                result = session.run(query, {"element_id": element_id})
+                return [{"element_id": record["element_id"], "relationship_type": rel_type}
+                        for record in result]
+        except Exception:
+            logger.exception("neo4j_find_related_elements failed")
+            return []
+
     def health_check(self) -> dict:
         """Perform health check on all database connections."""
         return {
