@@ -69,76 +69,18 @@ export default defineConfig({
                 react(),
                 isTest ? null : tailwindcss(),
                 isTest ? null : cspInjectPlugin(),
-                // V242: Custom plugin to mock API endpoints during `vite preview` so
-                // Lighthouse and other preview-time audits don't see 502 console errors
-                // when the FastAPI backend isn't running. Only intercepts /api/* paths.
-                {
-                        name: "preview-api-mock",
-                        apply: "serve" as const,
-                        configurePreviewServer(server: { middlewares: { use: (fn: any) => void } }) {
-                                server.middlewares.use(
-                                        (
-                                                req: { url?: string },
-                                                res: {
-                                                        setHeader: (k: string, v: string) => void;
-                                                        statusCode: number;
-                                                        end: (body: string) => void;
-                                                },
-                                                next: () => void,
-                                        ) => {
-                                                const url = req.url || "";
-                                                if (!url.startsWith("/api/")) {
-                                                        return next();
-                                                }
-                                                res.setHeader("Content-Type", "application/json");
-                                                if (url.includes("/api/health") || url.includes("/api/v1/health")) {
-                                                        res.statusCode = 200;
-                                                        res.end(
-                                                                JSON.stringify({
-                                                                        success: true,
-                                                                        data: {
-                                                                                status: "ok",
-                                                                                database: "connected",
-                                                                                core_modules: "loaded",
-                                                                        },
-                                                                }),
-                                                        );
-                                                        return;
-                                                }
-                                                if (url.includes("/auth/me")) {
-                                                        // V242: Return 200 with success:false (instead of 401) so
-                                                        // Lighthouse's errors-in-console audit doesn't flag the
-                                                        // 401 as a console error. The frontend's getCurrentUser()
-                                                        // checks `resp.ok` AND `body.data` — returning 200 with
-                                                        // success:false makes resp.ok true, but body.data is null
-                                                        // so getCurrentUser() returns null (not authenticated).
-                                                        // This is semantically equivalent to 401 but doesn't
-                                                        // trigger Lighthouse's console-error detection.
-                                                        res.statusCode = 200;
-                                                        res.end(
-                                                                JSON.stringify({
-                                                                        success: false,
-                                                                        data: null,
-                                                                }),
-                                                        );
-                                                        return;
-                                                }
-                                                if (url.includes("/csrf-token")) {
-                                                        res.statusCode = 200;
-                                                        res.end(
-                                                                JSON.stringify({
-                                                                        success: true,
-                                                                        data: { csrf_token: "preview-csrf-token" },
-                                                                }),
-                                                        );
-                                                        return;
-                                                }
-                                                res.statusCode = 200;
-                                                res.end(JSON.stringify({ success: true, data: [] }));
-                                        },
-                                );
-                        },
-                },
+                // F-05 FIX (Engineering Review): the `preview-api-mock` plugin has been
+                // REMOVED. The previous version intercepted every /api/* request during
+                // `vite preview` and returned a canned `success: true` response — which
+                // meant Lighthouse / preview audits would always see a "healthy" backend
+                // even when the real FastAPI backend was broken or returning 502s. This
+                // masked real integration defects and made every "Lighthouse 100/100/100"
+                // claim in the documentation meaningless.
+                //
+                // If you need a mock backend for Lighthouse audits, run a real mock
+                // server (e.g. MSW in `server` mode, or a tiny FastAPI stub) on the
+                // configured API port. Do NOT inline the mock into vite preview — it
+                // destroys the audit's signal.
         ].filter(Boolean),
         resolve: {
                 alias: {

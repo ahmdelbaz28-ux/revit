@@ -9,21 +9,21 @@
 // ============================================================================
 
 export interface ColorStop {
-	value: number;
-	hex: string;
-	label?: string;
+        value: number;
+        hex: string;
+        label?: string;
 }
 
 export interface ColorScale {
-	name: string;
-	stops: ColorStop[];
+        name: string;
+        stops: ColorStop[];
 }
 
 export interface GradientConfig {
-	min: number;
-	max: number;
-	scale: ColorScale;
-	unit: string;
+        min: number;
+        max: number;
+        scale: ColorScale;
+        unit: string;
 }
 
 // ============================================================================
@@ -31,28 +31,28 @@ export interface GradientConfig {
 // ============================================================================
 
 export const VOLTAGE_DROP_THRESHOLDS = {
-	GREEN_MAX: 3, // IEC: 3% max for lighting
-	YELLOW_MAX: 5, // IEC: 5% max for power
-	ORANGE_MAX: 10, // Warning threshold
-	RED_START: 10, // Critical
+        GREEN_MAX: 3, // IEC: 3% max for lighting
+        YELLOW_MAX: 5, // IEC: 5% max for power
+        ORANGE_MAX: 10, // Warning threshold
+        RED_START: 10, // Critical
 };
 
 export const LOAD_THRESHOLDS = {
-	GREEN_MAX: 80, // Normal operation
-	YELLOW_MAX: 100, // At limit
-	RED_START: 100, // Overload
+        GREEN_MAX: 80, // Normal operation
+        YELLOW_MAX: 100, // At limit
+        RED_START: 100, // Overload
 };
 
 export const SHORT_CIRCUIT_THRESHOLDS = {
-	GREEN_MAX: 50, // 50% of breaking capacity
-	YELLOW_MAX: 80, // Warning
-	RED_START: 80, // Critical
+        GREEN_MAX: 50, // 50% of breaking capacity
+        YELLOW_MAX: 80, // Warning
+        RED_START: 80, // Critical
 };
 
 export const POWER_FACTOR_THRESHOLDS = {
-	GREEN_MIN: 0.95, // Excellent PF
-	YELLOW_MIN: 0.85, // Acceptable
-	RED_START: 0.85, // Poor
+        GREEN_MIN: 0.95, // Excellent PF
+        YELLOW_MIN: 0.85, // Acceptable
+        RED_START: 0.85, // Poor
 };
 
 // ============================================================================
@@ -60,46 +60,52 @@ export const POWER_FACTOR_THRESHOLDS = {
 // ============================================================================
 
 export const THERMAL_SCALE: ColorScale = {
-	name: "Thermal",
-	stops: [
-		{ value: 0, hex: "#10b981", label: "Safe" }, // Emerald Green
-		{ value: 3, hex: "#84cc16", label: "Low" }, // Lime
-		{ value: 5, hex: "#f59e0b", label: "Warning" }, // Amber
-		{ value: 7, hex: "#f97316", label: "High" }, // Orange
-		{ value: 10, hex: "#64748b", label: "Critical" }, // Red
-	],
+        name: "Thermal",
+        stops: [
+                { value: 0, hex: "#10b981", label: "Safe" }, // Emerald Green
+                { value: 3, hex: "#84cc16", label: "Low" }, // Lime
+                { value: 5, hex: "#f59e0b", label: "Warning" }, // Amber
+                { value: 7, hex: "#f97316", label: "High" }, // Orange
+                // F-13 FIX (Engineering Review): was #64748b (slate gray) labeled "Critical" / "// Red",
+                // which is misleading — gray is not a hazard color. Replaced with #dc2626 (red-600).
+                { value: 10, hex: "#dc2626", label: "Critical" }, // Red (canonical)
+        ],
 };
 
 export const LOAD_SCALE: ColorScale = {
-	name: "Load",
-	stops: [
-		{ value: 0, hex: "#10b981", label: "0%" },
-		{ value: 50, hex: "#84cc16", label: "50%" },
-		{ value: 80, hex: "#facc15", label: "80%" },
-		{ value: 100, hex: "#64748b", label: "100%" },
-	],
+        name: "Load",
+        stops: [
+                { value: 0, hex: "#10b981", label: "0%" },
+                { value: 50, hex: "#84cc16", label: "50%" },
+                { value: 80, hex: "#facc15", label: "80%" },
+                // F-13 FIX: was #64748b at 100% — replaced with #dc2626 (red).
+                { value: 100, hex: "#dc2626", label: "100%" },
+        ],
 };
 
 export const FREQUENCY_SCALE: ColorScale = {
-	name: "Frequency",
-	stops: [
-		{ value: 49.5, hex: "#64748b", label: "49.5Hz" },
-		{ value: 49.8, hex: "#f59e0b", label: "49.8Hz" },
-		{ value: 50.0, hex: "#10b981", label: "50Hz" },
-		{ value: 50.2, hex: "#f59e0b", label: "50.2Hz" },
-		{ value: 50.5, hex: "#64748b", label: "50.5Hz" },
-	],
+        name: "Frequency",
+        stops: [
+                // F-13 FIX: was #64748b at the under-frequency extreme — replaced with #dc2626 (red).
+                { value: 49.5, hex: "#dc2626", label: "49.5Hz" },
+                { value: 49.8, hex: "#f59e0b", label: "49.8Hz" },
+                { value: 50.0, hex: "#10b981", label: "50Hz" },
+                { value: 50.2, hex: "#f59e0b", label: "50.2Hz" },
+                // F-13 FIX: was #64748b at the over-frequency extreme — replaced with #dc2626 (red).
+                { value: 50.5, hex: "#dc2626", label: "50.5Hz" },
+        ],
 };
 
 export const HEAT_SCALE: ColorScale = {
-	name: "Heat",
-	stops: [
-		{ value: 0, hex: "#3b82f6", label: "Cold" }, // Blue
-		{ value: 30, hex: "#10b981", label: "Normal" }, // Green
-		{ value: 60, hex: "#f59e0b", label: "Warm" }, // Yellow
-		{ value: 80, hex: "#f97316", label: "Hot" }, // Orange
-		{ value: 100, hex: "#64748b", label: "Overheating" }, // Red
-	],
+        name: "Heat",
+        stops: [
+                { value: 0, hex: "#3b82f6", label: "Cold" }, // Blue
+                { value: 30, hex: "#10b981", label: "Normal" }, // Green
+                { value: 60, hex: "#f59e0b", label: "Warm" }, // Yellow
+                { value: 80, hex: "#f97316", label: "Hot" }, // Orange
+                // F-13 FIX: was #64748b labeled "Overheating" / "// Red" — replaced with #dc2626 (red).
+                { value: 100, hex: "#dc2626", label: "Overheating" }, // Red (canonical)
+        ],
 };
 
 // ============================================================================
@@ -114,18 +120,18 @@ export const HEAT_SCALE: ColorScale = {
  * @returns Interpolated hex color
  */
 export function interpolateColor(
-	color1: string,
-	color2: string,
-	factor: number,
+        color1: string,
+        color2: string,
+        factor: number,
 ): string {
-	const rgb1 = hexToRgb(color1);
-	const rgb2 = hexToRgb(color2);
+        const rgb1 = hexToRgb(color1);
+        const rgb2 = hexToRgb(color2);
 
-	const r = Math.round(rgb1.r + (rgb2.r - rgb1.r) * factor);
-	const g = Math.round(rgb1.g + (rgb2.g - rgb1.g) * factor);
-	const b = Math.round(rgb1.b + (rgb2.b - rgb1.b) * factor);
+        const r = Math.round(rgb1.r + (rgb2.r - rgb1.r) * factor);
+        const g = Math.round(rgb1.g + (rgb2.g - rgb1.g) * factor);
+        const b = Math.round(rgb1.b + (rgb2.b - rgb1.b) * factor);
 
-	return rgbToHex(r, g, b);
+        return rgbToHex(r, g, b);
 }
 
 /**
@@ -135,34 +141,34 @@ export function interpolateColor(
  * @returns Interpolated hex color
  */
 export function getColorForValue(value: number, scale: ColorScale): string {
-	const { stops } = scale;
+        const { stops } = scale;
 
-	// Value is below minimum
-	if (value <= stops[0].value) {
-		return stops[0].hex;
-	}
+        // Value is below minimum
+        if (value <= stops[0].value) {
+                return stops[0].hex;
+        }
 
-	// Value is above maximum
-	if (value >= stops[stops.length - 1].value) {
-		return stops[stops.length - 1].hex;  // NOSONAR: typescript:S7755
-	}
+        // Value is above maximum
+        if (value >= stops[stops.length - 1].value) {
+                return stops[stops.length - 1].hex;  // NOSONAR: typescript:S7755
+        }
 
-	// Find the two stops the value falls between
-	for (let i = 0; i < stops.length - 1; i++) {
-		const current = stops[i];
-		const next = stops[i + 1];
+        // Find the two stops the value falls between
+        for (let i = 0; i < stops.length - 1; i++) {
+                const current = stops[i];
+                const next = stops[i + 1];
 
-		if (value >= current.value && value <= next.value) {
-			const range = next.value - current.value;
-			const position = value - current.value;
-			const factor = range > 0 ? position / range : 0;
+                if (value >= current.value && value <= next.value) {
+                        const range = next.value - current.value;
+                        const position = value - current.value;
+                        const factor = range > 0 ? position / range : 0;
 
-			return interpolateColor(current.hex, next.hex, factor);
-		}
-	}
+                        return interpolateColor(current.hex, next.hex, factor);
+                }
+        }
 
-	// Fallback
-	return stops[0].hex;
+        // Fallback
+        return stops[0].hex;
 }
 
 // ============================================================================
@@ -173,55 +179,55 @@ export function getColorForValue(value: number, scale: ColorScale): string {
  * Convert hex to RGB
  */
 export function hexToRgb(hex: string): { r: number; g: number; b: number } {
-	const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-	return result
-		? {
-				r: Number.parseInt(result[1], 16),
-				g: Number.parseInt(result[2], 16),
-				b: Number.parseInt(result[3], 16),
-			}
-		: { r: 0, g: 0, b: 0 };
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result
+                ? {
+                                r: Number.parseInt(result[1], 16),
+                                g: Number.parseInt(result[2], 16),
+                                b: Number.parseInt(result[3], 16),
+                        }
+                : { r: 0, g: 0, b: 0 };
 }
 
 /**
  * Convert RGB to hex
  */
 export function rgbToHex(r: number, g: number, b: number): string {
-	return (
-		"#" +
-		[r, g, b]
-			.map((x) => {
-				const hex = Math.max(0, Math.min(255, x)).toString(16);
-				return hex.length === 1 ? `0${hex}` : hex;
-			})
-			.join("")
-	);
+        return (
+                "#" +
+                [r, g, b]
+                        .map((x) => {
+                                const hex = Math.max(0, Math.min(255, x)).toString(16);
+                                return hex.length === 1 ? `0${hex}` : hex;
+                        })
+                        .join("")
+        );
 }
 
 /**
  * Calculate relative position within a range
  */
 export function normalizeValue(
-	value: number,
-	min: number,
-	max: number,
+        value: number,
+        min: number,
+        max: number,
 ): number {
-	if (max === min) return 0;
-	return Math.max(0, Math.min(1, (value - min) / (max - min)));
+        if (max === min) return 0;
+        return Math.max(0, Math.min(1, (value - min) / (max - min)));
 }
 
 /**
  * Get color for value with custom range
  */
 export function getColorInRange(
-	value: number,
-	min: number,
-	max: number,
-	colorStops: { value: number; hex: string }[],
+        value: number,
+        min: number,
+        max: number,
+        colorStops: { value: number; hex: string }[],
 ): string {
-	const normalized = normalizeValue(value, min, max);
-	const scaledValue = min + normalized * (max - min);
-	return getColorForValue(scaledValue, { name: "custom", stops: colorStops });
+        const normalized = normalizeValue(value, min, max);
+        const scaledValue = min + normalized * (max - min);
+        return getColorForValue(scaledValue, { name: "custom", stops: colorStops });
 }
 
 // ============================================================================
@@ -233,44 +239,45 @@ export function getColorInRange(
  * Based on IEC 60364 standards
  */
 export function getVoltageDropColor(percentage: number): string {
-	return getColorForValue(percentage, THERMAL_SCALE);
+        return getColorForValue(percentage, THERMAL_SCALE);
 }
 
 /**
  * Get color for load percentage
  */
 export function getLoadColor(percentage: number): string {
-	return getColorForValue(percentage, LOAD_SCALE);
+        return getColorForValue(percentage, LOAD_SCALE);
 }
 
 /**
  * Get color for frequency deviation
  */
 export function getFrequencyColor(frequency: number): string {
-	return getColorForValue(frequency, FREQUENCY_SCALE);
+        return getColorForValue(frequency, FREQUENCY_SCALE);
 }
 
 /**
  * Get color for temperature
  */
 export function getTemperatureColor(tempCelsius: number): string {
-	return getColorForValue(tempCelsius, HEAT_SCALE);
+        return getColorForValue(tempCelsius, HEAT_SCALE);
 }
 
 /**
  * Get color for short circuit percentage of breaking capacity
  */
 export function getShortCircuitColor(percentageOfBreaking: number): string {
-	return getColorForValue(percentageOfBreaking, {
-		name: "Short Circuit",
-		stops: [
-			{ value: 0, hex: "#10b981" },
-			{ value: 30, hex: "#84cc16" },
-			{ value: 50, hex: "#f59e0b" },
-			{ value: 80, hex: "#f97316" },
-			{ value: 100, hex: "#64748b" },
-		],
-	});
+        return getColorForValue(percentageOfBreaking, {
+                name: "Short Circuit",
+                stops: [
+                        { value: 0, hex: "#10b981" },
+                        { value: 30, hex: "#84cc16" },
+                        { value: 50, hex: "#f59e0b" },
+                        { value: 80, hex: "#f97316" },
+                        // F-13 FIX: was #64748b — replaced with #dc2626 (red).
+                        { value: 100, hex: "#dc2626" },
+                ],
+        });
 }
 
 // ============================================================================
@@ -280,59 +287,59 @@ export function getShortCircuitColor(percentageOfBreaking: number): string {
 export type StressLevel = "NORMAL" | "WARNING" | "CRITICAL";
 
 export interface StressResult {
-	color: string;
-	level: StressLevel;
-	percentage: number;
-	label: string;
+        color: string;
+        level: StressLevel;
+        percentage: number;
+        label: string;
 }
 
 /**
  * Calculate stress level for voltage drop
  */
 export function calculateVoltageDropStress(percentage: number): StressResult {
-	let level: StressLevel = "NORMAL";
-	let label = "Safe";
+        let level: StressLevel = "NORMAL";
+        let label = "Safe";
 
-	if (percentage > 10) {
-		level = "CRITICAL";
-		label = "Critical - exceeds 10%";
-	} else if (percentage > 5) {
-		level = "WARNING";
-		label = "Warning - exceeds 5%";
-	} else if (percentage > 3) {
-		level = "WARNING";
-		label = "Caution - exceeds 3%";
-	}
+        if (percentage > 10) {
+                level = "CRITICAL";
+                label = "Critical - exceeds 10%";
+        } else if (percentage > 5) {
+                level = "WARNING";
+                label = "Warning - exceeds 5%";
+        } else if (percentage > 3) {
+                level = "WARNING";
+                label = "Caution - exceeds 3%";
+        }
 
-	return {
-		color: getVoltageDropColor(percentage),
-		level,
-		percentage,
-		label,
-	};
+        return {
+                color: getVoltageDropColor(percentage),
+                level,
+                percentage,
+                label,
+        };
 }
 
 /**
  * Calculate stress level for load
  */
 export function calculateLoadStress(percentage: number): StressResult {
-	let level: StressLevel = "NORMAL";
-	let label = "Normal";
+        let level: StressLevel = "NORMAL";
+        let label = "Normal";
 
-	if (percentage >= 100) {
-		level = "CRITICAL";
-		label = "Overloaded!";
-	} else if (percentage >= 80) {
-		level = "WARNING";
-		label = "Near capacity";
-	}
+        if (percentage >= 100) {
+                level = "CRITICAL";
+                label = "Overloaded!";
+        } else if (percentage >= 80) {
+                level = "WARNING";
+                label = "Near capacity";
+        }
 
-	return {
-		color: getLoadColor(percentage),
-		level,
-		percentage,
-		label,
-	};
+        return {
+                color: getLoadColor(percentage),
+                level,
+                percentage,
+                label,
+        };
 }
 
 // ============================================================================
@@ -340,9 +347,9 @@ export function calculateLoadStress(percentage: number): StressResult {
 // ============================================================================
 
 export interface GradientSegment {
-	startX: number;
-	endX: number;
-	color: string;
+        startX: number;
+        endX: number;
+        color: string;
 }
 
 /**
@@ -350,47 +357,47 @@ export interface GradientSegment {
  * Returns segments with calculated colors
  */
 export function generateCableGradient(
-	length: number,
-	startVoltageDrop: number,
-	endVoltageDrop: number,
-	segments: number = 10,
+        length: number,
+        startVoltageDrop: number,
+        endVoltageDrop: number,
+        segments: number = 10,
 ): GradientSegment[] {
-	const result: GradientSegment[] = [];
-	const segmentLength = length / segments;
+        const result: GradientSegment[] = [];
+        const segmentLength = length / segments;
 
-	for (let i = 0; i < segments; i++) {
-		const startPercent =
-			startVoltageDrop + (endVoltageDrop - startVoltageDrop) * (i / segments);
-		const endPercent =
-			startVoltageDrop +
-			(endVoltageDrop - startVoltageDrop) * ((i + 1) / segments);
+        for (let i = 0; i < segments; i++) {
+                const startPercent =
+                        startVoltageDrop + (endVoltageDrop - startVoltageDrop) * (i / segments);
+                const endPercent =
+                        startVoltageDrop +
+                        (endVoltageDrop - startVoltageDrop) * ((i + 1) / segments);
 
-		result.push({
-			startX: i * segmentLength,
-			endX: (i + 1) * segmentLength,
-			color: interpolateColor(
-				getVoltageDropColor(startPercent),
-				getVoltageDropColor(endPercent),
-				0.5,
-			),
-		});
-	}
+                result.push({
+                        startX: i * segmentLength,
+                        endX: (i + 1) * segmentLength,
+                        color: interpolateColor(
+                                getVoltageDropColor(startPercent),
+                                getVoltageDropColor(endPercent),
+                                0.5,
+                        ),
+                });
+        }
 
-	return result;
+        return result;
 }
 
 /**
  * Create SVG linear gradient definition
  */
 export function createSvgLinearGradient(
-	id: string,
-	stops: { offset: number; color: string }[],
+        id: string,
+        stops: { offset: number; color: string }[],
 ): string {
-	const gradientStops = stops
-		.map((s) => `<stop offset="${s.offset}%" stop-color="${s.color}"/>`)
-		.join("");
+        const gradientStops = stops
+                .map((s) => `<stop offset="${s.offset}%" stop-color="${s.color}"/>`)
+                .join("");
 
-	return `<linearGradient id="${id}" x1="0%" y1="0%" x2="100%" y2="0%">${gradientStops}</linearGradient>`;
+        return `<linearGradient id="${id}" x1="0%" y1="0%" x2="100%" y2="0%">${gradientStops}</linearGradient>`;
 }
 
 // ============================================================================
@@ -398,25 +405,28 @@ export function createSvgLinearGradient(
 // ============================================================================
 
 export interface PulseConfig {
-	enabled: boolean;
-	speed: number; // ms per cycle
-	minOpacity: number;
-	maxOpacity: number;
+        enabled: boolean;
+        speed: number; // ms per cycle
+        minOpacity: number;
+        maxOpacity: number;
 }
 
 /**
  * Get CSS animation for critical state
  */
 export function getCriticalAnimation(): string {
-	return `
+        // F-13 FIX: drop-shadow color was #64748b (gray) — replaced with #dc2626 (red)
+        // so the critical-state pulse actually visually reads as red, matching the
+        // THERMAL_SCALE / HEAT_SCALE critical stop color.
+        return `
     @keyframes criticalPulse {
-      0%, 100% { 
+      0%, 100% {
         opacity: 1;
-        filter: drop-shadow(0 0 8px #64748b);
+        filter: drop-shadow(0 0 8px #dc2626);
       }
-      50% { 
+      50% {
         opacity: 0.7;
-        filter: drop-shadow(0 0 16px #64748b);
+        filter: drop-shadow(0 0 16px #dc2626);
       }
     }
   `;
@@ -426,7 +436,7 @@ export function getCriticalAnimation(): string {
  * Get CSS animation for warning state
  */
 export function getWarningAnimation(): string {
-	return `
+        return `
     @keyframes warningPulse {
       0%, 100% { 
         opacity: 1;
@@ -444,7 +454,7 @@ export function getWarningAnimation(): string {
  * Get dash animation for active fault
  */
 export function getDashAnimation(_speed: number = 1000): string {
-	return `
+        return `
     @keyframes dashFlow {
       to {
         stroke-dashoffset: -20;
@@ -458,43 +468,44 @@ export function getDashAnimation(_speed: number = 1000): string {
 // ============================================================================
 
 export interface GlowConfig {
-	color: string;
-	intensity: number; // 0-1
-	blur: number;
+        color: string;
+        intensity: number; // 0-1
+        blur: number;
 }
 
 /**
  * Calculate glow intensity based on stress level
  */
 export function calculateGlowIntensity(stress: StressResult): GlowConfig {
-	switch (stress.level) {
-		case "CRITICAL":
-			return {
-				color: "#64748b",
-				intensity: 1,
-				blur: 12,
-			};
-		case "WARNING":
-			return {
-				color: "#f59e0b",
-				intensity: 0.6,
-				blur: 8,
-			};
-		default:
-			return {
-				color: "#10b981",
-				intensity: 0.2,
-				blur: 4,
-			};
-	}
+        switch (stress.level) {
+                case "CRITICAL":
+                        // F-13 FIX: was #64748b (gray) — replaced with #dc2626 (red).
+                        return {
+                                color: "#dc2626",
+                                intensity: 1,
+                                blur: 12,
+                        };
+                case "WARNING":
+                        return {
+                                color: "#f59e0b",
+                                intensity: 0.6,
+                                blur: 8,
+                        };
+                default:
+                        return {
+                                color: "#10b981",
+                                intensity: 0.2,
+                                blur: 4,
+                        };
+        }
 }
 
 /**
  * Generate SVG filter for glow effect
  */
 export function createGlowFilter(id: string, config: GlowConfig): string {
-	const { color, blur } = config;
-	return `
+        const { color, blur } = config;
+        return `
     <filter id="${id}" x="-50%" y="-50%" width="200%" height="200%">
       <feGaussianBlur in="SourceGraphic" stdDeviation="${blur / 2}" result="blur"/>
       <feFlood flood-color="${color}" flood-opacity="0.5" result="color"/>
@@ -512,28 +523,28 @@ export function createGlowFilter(id: string, config: GlowConfig): string {
 // ============================================================================
 
 export const DEFAULT_VISUALIZATION_CONFIG = {
-	voltageDrop: {
-		min: 0,
-		max: 15,
-		scale: THERMAL_SCALE,
-		unit: "%",
-	},
-	load: {
-		min: 0,
-		max: 150,
-		scale: LOAD_SCALE,
-		unit: "%",
-	},
-	frequency: {
-		min: 49,
-		max: 51,
-		scale: FREQUENCY_SCALE,
-		unit: "Hz",
-	},
-	temperature: {
-		min: 0,
-		max: 100,
-		scale: HEAT_SCALE,
-		unit: "°C",
-	},
+        voltageDrop: {
+                min: 0,
+                max: 15,
+                scale: THERMAL_SCALE,
+                unit: "%",
+        },
+        load: {
+                min: 0,
+                max: 150,
+                scale: LOAD_SCALE,
+                unit: "%",
+        },
+        frequency: {
+                min: 49,
+                max: 51,
+                scale: FREQUENCY_SCALE,
+                unit: "Hz",
+        },
+        temperature: {
+                min: 0,
+                max: 100,
+                scale: HEAT_SCALE,
+                unit: "°C",
+        },
 };

@@ -6,7 +6,7 @@ import logging
 import uuid
 from typing import Any, Dict
 
-from fastapi import APIRouter, HTTPException, Query, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect
 
 logger = logging.getLogger(__name__)
 
@@ -28,16 +28,53 @@ def get_agent_lock(websocket: WebSocket) -> asyncio.Lock:
     return agent_locks[ws_id]
 
 
+# S-06 FIX (Engineering Review): the previous signature used
+#   api_key: str = Query(..., alias="api_key")
+# which placed the API key in the URL query string. Query strings are logged
+# by every proxy (nginx, Cloudflare, Akamai, Vercel), captured in browser
+# history, and may leak via Referer headers. The key is now extracted from the
+# `X-API-Key` request header BEFORE the WebSocket handshake is accepted.
+#
+# Backward compatibility: if the header is missing, we fall back to checking
+# the Sec-WebSocket-Protocol subprotocol (clients can send the key as the
+# first subprotocol). The query-string path is no longer supported.
+
+
+def _extract_api_key_from_handshake(websocket: WebSocket) -> str:
+    """Pull the API key from headers or subprotocol — never from the query string."""
+    # 1. Header-based (preferred)
+    headers = websocket.headers
+    for name in ("x-api-key", "X-API-Key", "authorization"):
+        val = headers.get(name)
+        if val:
+            if name.lower() == "authorization" and val.lower().startswith("bearer "):
+                return val[7:].strip()
+            return val.strip()
+    # 2. Subprotocol-based (for browsers that cannot set custom headers on WS)
+    protocols = websocket.headers.get("sec-websocket-protocol", "")
+    if protocols:
+        # The first token is the API key (client must send it as the subprotocol)
+        return protocols.split(",")[0].strip()
+    return ""
+
+
 @router.websocket("/ws")
-async def agent_websocket_endpoint(
-    websocket: WebSocket,
-    api_key: str = Query(..., alias="api_key"),
-):
+async def agent_websocket_endpoint(websocket: WebSocket):
     """
     WebSocket endpoint for the local agent to connect.
-    Secured by api_key query param validation.
+
+    S-06 FIX: the API key MUST be supplied via the `X-API-Key` request header
+    (or as the Sec-WebSocket-Protocol subprotocol for browser clients). It is
+    no longer accepted as a query-string parameter — query strings are logged
+    by every reverse proxy and would leak the key.
     """
     from backend.api_keys import validate_api_key
+
+    api_key = _extract_api_key_from_handshake(websocket)
+    if not api_key:
+        logger.warning("Rejected agent connection: no API key in headers/subprotocol")
+        await websocket.close(code=4003)
+        return
 
     try:
         is_valid = validate_api_key(api_key) is not None

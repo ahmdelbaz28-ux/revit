@@ -401,8 +401,14 @@ QOMN-FIRE PHYSICAL AND REGULATORY CONSTANTS
 """
 
 # NFPA 72 Spacing Limits (2022 §17)
-NFPA_SMOKE_DETECTOR_SPACING_M = 9.144  # 30 feet smooth ceiling spacing
-NFPA_MAX_WALL_DISTANCE_M = 6.400       # 0.7 times spacing constraint (21 feet)
+# C-02/C-09 FIX (Engineering Review): canonical value is 9.1m per NFPA 72-2022
+# §17.7.3.2.3 (verbatim "9.1 m"), NOT 9.144m (which is the exact ft→m conversion
+# of 30ft but is NOT what the standard states). All canonical consumers must
+# import from fireai.constants.nfpa72; this module-level constant is kept for
+# legacy imports only and now matches the canonical value.
+NFPA_SMOKE_DETECTOR_SPACING_M = 9.1    # 30 ft (9.1 m) per NFPA 72-2022 §17.7.3.2.3
+# Coverage radius R = 0.7 × S = 0.7 × 9.1 = 6.37m per §17.7.4.2.3.1
+NFPA_MAX_WALL_DISTANCE_M = 4.55        # 0.5 × 9.1m per §17.7.3.2.3 (half spacing)
 
 # NEC Conduit Area Specifications (mm2) - Chapter 9 Table 4
 EMT_INTERNAL_AREA_1_2_MM2 = 196.1

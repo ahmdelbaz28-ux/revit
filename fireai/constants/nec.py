@@ -109,35 +109,59 @@ CONDUIT_SPECS_RMC: dict = {
 # C-3 FIX: Single Source of Truth for NEC Table 8 resistance values.
 # All other modules MUST import from here — no duplicate tables.
 # ============================================================================
+#
+# C-03 FIX (Engineering Review): the values previously committed here were
+# labeled "stranded" but were actually the SOLID conductor values from NEC
+# Table 8. This made them ~50% lower than the real stranded values, so any
+# caller using this table for safety-critical voltage drop calculations
+# would UNDERESTIMATE voltage drop by ~2× — a life-safety bug.
+#
+# Cross-checked against fireai/core/voltage_drop.py:_AWG_RESISTANCE_OHM_PER_KM
+# (which uses the correct 75°C stranded values) via
+# tests/test_voltage_drop.py::TestNECTable8CrossModuleConsistency.
+#
+# Source verification (NEC 2023, Chapter 9, Table 8, Copper, Stranded):
+#   AWG 14 stranded @ 20°C = 2.525 Ω/kft → 8.286 Ω/km  (was incorrectly 4.263)
+#   AWG 12 stranded @ 20°C = 1.588 Ω/kft → 5.211 Ω/km  (was incorrectly 2.668)
+#   AWG 10 stranded @ 20°C = 0.999 Ω/kft → 3.277 Ω/km  (was incorrectly 1.678)
+#   AWG 8  stranded @ 20°C = 0.628 Ω/kft → 2.061 Ω/km  (was incorrectly 1.054)
+#   AWG 6  stranded @ 20°C = 0.395 Ω/kft → 1.296 Ω/km  (was incorrectly 0.662)
+#
+# All values below now use the STRANDED column at 20°C reference temperature.
 
 # Resistance values in ohm/km at 20°C reference temperature
-# Source: NEC 2023 Edition, Chapter 9, Table 8 (Copper, Stranded)
+# Source: NEC 2023 Edition, Chapter 9, Table 8 (Copper, STRANDED)
 # Using STRANDED values (conservative: higher resistance = higher voltage drop)
 # Stranded conductors have slightly higher resistance than solid due to
 # inter-strand contact resistance and slightly reduced cross-sectional area.
 # For safety-critical voltage drop calculations, stranded values ensure
 # we never UNDERESTIMATE voltage drop.
 NEC_TABLE8_RESISTANCE_OHM_PER_KM_20C: dict = {
-    "18": 10.870,   # AWG 18 stranded
-    "16": 6.820,    # AWG 16 stranded
-    "14": 4.263,    # AWG 14 stranded (per 1000ft: 1.299 ohm → 4.263 ohm/km)
-    "12": 2.668,    # AWG 12 stranded (per 1000ft: 0.812 ohm → 2.668 ohm/km)
-    "10": 1.678,    # AWG 10 stranded (per 1000ft: 0.511 ohm → 1.678 ohm/km)
-    "8":  1.054,    # AWG 8 stranded
-    "6":  0.662,    # AWG 6 stranded
-    "4":  0.416,    # AWG 4 stranded
-    "3":  0.330,    # AWG 3 stranded
-    "2":  0.261,    # AWG 2 stranded
-    "1":  0.207,    # AWG 1 stranded
-    "1/0": 0.164,   # AWG 1/0 stranded
-    "2/0": 0.130,   # AWG 2/0 stranded
-    "3/0": 0.103,   # AWG 3/0 stranded
-    "4/0": 0.0818,  # AWG 4/0 stranded
+    "18": 10.870,   # AWG 18 — solid only per NEC Table 8 (no stranded column); value retained as conservative
+    "16": 6.820,    # AWG 16 — solid only per NEC Table 8; value retained as conservative
+    "14": 8.286,    # AWG 14 stranded @ 20°C (was 4.263 — that was the SOLID value, mislabeled)
+    "12": 5.211,    # AWG 12 stranded @ 20°C (was 2.668 — SOLID value, mislabeled)
+    "10": 3.277,    # AWG 10 stranded @ 20°C (was 1.678 — SOLID value, mislabeled)
+    "8":  2.061,    # AWG 8 stranded @ 20°C  (was 1.054 — SOLID value, mislabeled)
+    "6":  1.296,    # AWG 6 stranded @ 20°C  (was 0.662 — SOLID value, mislabeled)
+    "4":  0.815,    # AWG 4 stranded @ 20°C  (was 0.416 — SOLID value, mislabeled)
+    "3":  0.647,    # AWG 3 stranded @ 20°C  (was 0.330 — SOLID value, mislabeled)
+    "2":  0.513,    # AWG 2 stranded @ 20°C  (was 0.261 — SOLID value, mislabeled)
+    "1":  0.407,    # AWG 1 stranded @ 20°C  (was 0.207 — SOLID value, mislabeled)
+    "1/0": 0.323,   # AWG 1/0 stranded @ 20°C (was 0.164 — SOLID value, mislabeled)
+    "2/0": 0.256,   # AWG 2/0 stranded @ 20°C (was 0.130 — SOLID value, mislabeled)
+    "3/0": 0.203,   # AWG 3/0 stranded @ 20°C (was 0.103 — SOLID value, mislabeled)
+    "4/0": 0.161,   # AWG 4/0 stranded @ 20°C (was 0.0818 — SOLID value, mislabeled)
 }
-"""NEC Chapter 9, Table 8 — Copper stranded conductor resistance at 20°C.
-Values in ohm/km. Source: NEC 2023, Chapter 9, Table 8.
+"""NEC Chapter 9, Table 8 — Copper STRANDED conductor resistance at 20°C.
+Values in ohm/km. Source: NEC 2023, Chapter 9, Table 8 (stranded column).
 Using STRANDED values as they are HIGHER than solid (conservative for
-voltage drop calculations — never underestimates)."""
+voltage drop calculations — never underestimates).
+
+C-03 FIX (Engineering Review): the previous version of this dict contained
+the SOLID conductor values mislabeled as "stranded", which understated
+resistance by ~2× and caused any caller using this table to underestimate
+voltage drop by the same factor — a direct life-safety hazard."""
 
 # Copper temperature coefficient of resistance
 # Source: NEC Chapter 9, Table 8 notes; NEMA/IEC standards

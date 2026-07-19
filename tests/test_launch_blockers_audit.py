@@ -1060,14 +1060,31 @@ class TestRegressionProtection:
         assert abs(result['required_ah'] - 18.9453) < 0.01
 
     def test_voltage_drop_calculation_matches(self):
-        """Voltage drop with known inputs produces expected output."""
+        """Voltage drop with known inputs produces expected output.
+
+        C-03 FIX (Engineering Review): the previously expected value of 1.037V
+        was computed from a SOLID-conductor resistance (4.263 Ω/km at 20°C) that
+        had been mislabeled as "stranded" in fireai.constants.nec.py. The actual
+        NEC Table 8 STRANDED copper value for AWG 14 at 20°C is 8.286 Ω/km,
+        which corrects to 10.07 Ω/km at 75°C operating temperature.
+
+        Recomputed:
+          R_20 = 8.286 Ω/km at 20°C per NEC Table 8 (STRANDED copper)
+          R_T = R_20 × [1 + α×(T-20)] = 8.286 × 1.21615 = 10.073 Ω/km at 75°C
+          V_drop = 2 × 1.0 × 100 × (10.073/1000) = 2.015V
+
+        Cross-checked against:
+          - fireai/core/voltage_drop.py:_AWG_RESISTANCE_OHM_PER_KM["14"] = 10.07
+            (correct NEC 75°C stranded value)
+          - tests/test_voltage_drop.py::TestNECTable8CrossModuleConsistency
+        """
         from fireai.core.qomn_kernel import compute_voltage_drop
 
         result = compute_voltage_drop(1.0, 100.0, "14", 24.0, 10.0)
-        # R_20 = 4.263 Ω/km at 20°C per NEC Table 8 (stranded copper)
-        # R_T = R_20 × [1 + α×(T-20)] = 4.263 × 1.21615 = 5.184 Ω/km at 75°C
-        # V_drop = 2 × 1.0 × 100 × (5.184/1000) = 1.037V
-        assert abs(result['voltage_drop_v'] - 1.037) < 0.01
+        # R_20 = 8.286 Ω/km at 20°C per NEC Table 8 (STRANDED copper)
+        # R_T = R_20 × [1 + α×(T-20)] = 8.286 × 1.21615 = 10.073 Ω/km at 75°C
+        # V_drop = 2 × 1.0 × 100 × (10.073/1000) = 2.015V
+        assert abs(result['voltage_drop_v'] - 2.015) < 0.01
 
 
 # ============================================================================

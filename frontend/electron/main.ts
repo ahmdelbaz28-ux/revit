@@ -174,9 +174,20 @@ function startPythonBackend(): Promise<boolean> {
                 }
 
                 const pathDelimiter = process.platform === "win32" ? ";" : ":";
+                // F-06 FIX (Engineering Review): the previous logic gated FIREAI_ENV
+                // on whether `FIREAI_API_KEY` was set, which meant any cookie-only
+                // deployment (or a dev machine that happened to have FIREAI_API_KEY
+                // in .env) would silently enable production-mode backend routes —
+                // including the now-removed username/password auth backdoor (S-05).
+                // The correct gate is `app.isPackaged` — only an Electron build that
+                // has been packaged for distribution should run in production mode.
+                // Dev runs (electron ., npm run dev) always use "development".
+                const fireaiEnv = app.isPackaged
+                        ? "production"
+                        : (process.env.FIREAI_ENV || "development");
                 const env: Record<string, string> = {
                         ...(process.env as Record<string, string>),
-                        FIREAI_ENV: process.env.FIREAI_API_KEY ? "production" : "development",
+                        FIREAI_ENV: fireaiEnv,
                         PORT: PYTHON_BACKEND_PORT,
                         PYTHONPATH: `${appDir}${pathDelimiter}${path.resolve(appDir, "..")}${pathDelimiter}${process.env.PYTHONPATH || ""}`,
                 };

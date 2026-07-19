@@ -89,7 +89,11 @@ class SafetyTier(enum.Enum):
 # Coverage thresholds (internal quality gates; NFPA 72 requires 100% coverage)
 MINIMUM_COVERAGE_FOR_SUBMISSION = 95.0  # Below this = REJECTED
 STANDARD_COVERAGE_THRESHOLD = 99.0  # Below this = FALLBACK_USED
-PROOF_VERIFIED_THRESHOLD = 99.5  # Above this = PROOF_VERIFIED
+# C-08 FIX (Engineering Review): threshold MUST match the documented tier semantics
+# in the SafetyTier docstring (Tier 1 — PROOF_VERIFIED: coverage >= 99.99%).
+# Previously 99.5 — that admitted designs with up to 5 m² blind spot in a 1000 m²
+# room into the "APPROVE without review" tier, which is unsafe for life-safety systems.
+PROOF_VERIFIED_THRESHOLD = 99.99  # Above this = PROOF_VERIFIED (Tier 1)
 
 # Absolute minimum coverage — CANNOT be overridden even by FPE
 ABSOLUTE_MINIMUM_COVERAGE = 90.0

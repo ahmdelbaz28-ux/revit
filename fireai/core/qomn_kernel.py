@@ -1065,8 +1065,58 @@ class QOMNKernel:
 
 import functools
 import logging as _logging
+import os as _os
 
 _healing_logger = _logging.getLogger("fireai.core.qomn_kernel.self_healing")
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# C-01 FIX (Engineering Review): QOMNCalculationError
+# ═══════════════════════════════════════════════════════════════════════════════
+# The engineering review flagged the SelfHealingQOMNKernel fallbacks (battery=0 Ah,
+# smoke_spacing=9.1m) as "fail-quiet-to-death" because a healed result is still
+# returned to the caller and may be silently treated as a valid design.
+#
+# The team's existing philosophy (verified by tests/test_v214_self_healing_integration.py)
+# is that the conservative fallbacks are intentional — they force manual
+# intervention by returning a sentinel that the engineer MUST investigate.
+# This is a legitimate design choice and we do NOT change the default behaviour.
+#
+# To reconcile both views we:
+#   1. Add a dedicated `QOMNCalculationError` exception class so callers that
+#      prefer fail-loud semantics can opt-in via `fail_loud=True`.
+#   2. Tag every healed fallback with `safety_tier="FALLBACK_USED"` and
+#      `requires_fpe_review=True` so downstream `classify_safety_tier` consumers
+#      can never silently accept a healed result as PROOF_VERIFIED.
+#   3. Provide an env override `QOMN_FAIL_LOUD=1` for production safety-critical
+#      deployments that want exceptions instead of fallbacks.
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+class QOMNCalculationError(RuntimeError):
+    """
+    Raised when a QOMNKernel life-safety calculation fails AND the caller has
+    opted into fail-loud mode (`fail_loud=True` or `QOMN_FAIL_LOUD=1` env var).
+
+    In the default fail-safe mode the kernel returns a healed fallback dict
+    tagged with `safety_tier="FALLBACK_USED"` instead of raising, so that
+    downstream safety-tier classification forces FPE review.
+    """
+
+    def __init__(self, method_name: str, original_exc: BaseException, fallback: dict):
+        self.method_name = method_name
+        self.original_exc = original_exc
+        self.fallback = fallback
+        super().__init__(
+            f"QOMN calculation '{method_name}' failed: "
+            f"{type(original_exc).__name__}: {original_exc}. "
+            f"Design MUST be rejected (fail-loud mode)."
+        )
+
+
+def _fail_loud_enabled() -> bool:
+    """True if QOMN_FAIL_LOUD env var is set to a truthy value."""
+    return _os.getenv("QOMN_FAIL_LOUD", "0").strip().lower() in ("1", "true", "yes", "on")
 
 
 def _healing_wrapper(
@@ -1083,6 +1133,11 @@ def _healing_wrapper(
         safe_result: Default dict to return on healing (if None, uses safe_minimum
                      to construct a minimal valid result).
         safe_minimum: Float fallback value for numeric fields.
+
+    C-01 FIX: The healed fallback is now tagged with `safety_tier="FALLBACK_USED"`
+    and `requires_fpe_review=True` so downstream safety classification can never
+    silently accept it as a verified design. If `QOMN_FAIL_LOUD=1` is set in the
+    environment, a `QOMNCalculationError` is raised instead (fail-loud mode).
     """
     def decorator(method):
         @functools.wraps(method)
@@ -1153,10 +1208,23 @@ def _healing_wrapper(
                 fallback["healed"] = True
                 fallback["healing_error"] = str(exc)
                 fallback["healing_tier"] = 1
+                # C-01 FIX: tag the fallback so downstream safety-tier classification
+                # can never silently accept a healed result as PROOF_VERIFIED.
+                # Any healed computation MUST be routed through FALLBACK_USED (Tier 3)
+                # which requires FPE review per fireai.core.safety_assurance.
+                fallback["safety_tier"] = "FALLBACK_USED"
+                fallback["requires_fpe_review"] = True
+                fallback["fail_safe_required"] = True
                 _healing_logger.warning(
-                    "Self-healing activated for %s: %s → fallback returned",
+                    "Self-healing activated for %s: %s → fallback returned "
+                    "(safety_tier=FALLBACK_USED, requires_fpe_review=True)",
                     method.__name__, type(exc).__name__,
                 )
+
+                # C-01 FIX: optional fail-loud mode for safety-critical deployments.
+                if _fail_loud_enabled():
+                    raise QOMNCalculationError(method.__name__, exc, fallback) from exc
+
                 return fallback
 
         return wrapper

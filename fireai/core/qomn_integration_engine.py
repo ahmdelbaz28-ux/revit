@@ -340,12 +340,18 @@ class HatchPlacementEngine:
         """
         Constructs a deterministic multi-vertex circle polygon on the XY plane.
 
-        Reference: NFPA 72 Section 17.7.3.2.3.1: Spacing limitation for
-        standard smoke coverage. Default radius 9.144m (30ft).
+        Reference: NFPA 72-2022 §17.7.4.2.3.1 — coverage radius R = 0.7 × S,
+        where S = 9.1m (max smoke spacing per §17.7.3.2.3). So R = 6.37m.
+
+        C-02 FIX (Engineering Review): the previous docstring said "Default
+        radius 9.144m (30ft)" which conflates spacing (S) with radius (R).
+        9.1m is the SPACING; 0.7 × 9.1 = 6.37m is the RADIUS. The function
+        itself accepts any positive radius — callers should pass 6.37m for
+        NFPA-compliant smoke detector coverage boundaries.
 
         Args:
             center: Center point of the detector coverage zone.
-            radius: Coverage radius in meters (default 9.144m per NFPA 72).
+            radius: Coverage radius in meters (NFPA default: 6.37m = 0.7 × 9.1m).
             num_sides: Number of polygon sides for circle approximation.
 
         Returns:
@@ -437,16 +443,26 @@ class CableHatchIntegrator:
         self.cable_runs: dict[str, dict[str, Any]] = {}
 
     def add_smoke_detector(
-        self, detector_id: str, location: Point3D, radius: float = 9.144
+        self, detector_id: str, location: Point3D, radius: float = 6.37
     ) -> None:
         """
         Adds a smoke detector to the map with a standard radius.
-        Default: 30ft / 9.144m per NFPA 72 Section 17.7.3.2.3.1.
+        Default: 6.37m = 0.7 × 9.1m (NFPA 72-2022 §17.7.3.2.5 coverage radius).
+
+        C-02 FIX (Engineering Review): the previous default was 9.144m, which is
+        the SMOKE DETECTOR SPACING (S), NOT the coverage radius (R). Using S as R
+        inflates the coverage area by π·S² / π·(0.7·S)² ≈ 2.04× — meaning a single
+        detector would be assumed to cover ~262 m² instead of the canonical ~127 m².
+        This under-density was a life-safety bug.
+
+        The correct relationship per NFPA 72-2022:
+          S = 9.1m  (max spacing on smooth ceilings, §17.7.3.2.3)
+          R = 0.7 × S = 6.37m  (coverage radius, §17.7.4.2.3.1)
 
         Args:
             detector_id: Unique identifier for the detector.
             location: Physical 3D location of the detector.
-            radius: Coverage radius in meters (default 9.144m).
+            radius: Coverage radius in meters (default 6.37m = 0.7 × 9.1m).
 
         Raises:
             ValueError: If radius is not positive.

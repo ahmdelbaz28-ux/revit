@@ -231,14 +231,21 @@ async def login(request: Request, body: LoginRequest):  # NOSONAR — S3776: cog
 
     api_key = body.api_key.strip() if body.api_key else ""
     if not api_key:
-        if body.username and body.password and os.getenv("FIREAI_ENV") == "development":
-            # V243 SECURITY: Username/password fallback is ONLY allowed in
-            # development mode (for Postman integration tests). In production,
-            # this would be a backdoor — any non-empty username+password would
-            # bypass the API-key requirement if API_KEY env var is set.
-            api_key = os.getenv("API_KEY")  # NOSONAR — reads from env, not hard-coded (S6418 false positive)
-        else:
-            raise HTTPException(status_code=400, detail="API key is required")  # NOSONAR — S8415: assignment kept for readability / debuggability
+        # S-05 FIX (Engineering Review): the dev-mode username/password fallback
+        # was a backdoor — in any environment where FIREAI_ENV=development, ANY
+        # non-empty username + password would be silently substituted with the
+        # value of the API_KEY env var, granting ADMIN role. This defeats the
+        # purpose of API-key auth. The fallback has been removed; an API key is
+        # now required in ALL environments. If body.username/body.password were
+        # supplied, they are ignored (the fields remain on LoginRequest for
+        # backward compatibility with clients that still send them, but they no
+        # longer affect authentication).
+        if body.username or body.password:
+            logger.warning(
+                "Login attempt with username/password (ignored — S-05 backdoor removed) from %s",
+                client_ip,
+            )
+        raise HTTPException(status_code=400, detail="API key is required")  # NOSONAR — S8415: assignment kept for readability / debuggability
 
     # Validate the API key
     role: Optional[Role] =  None

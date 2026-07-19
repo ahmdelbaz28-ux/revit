@@ -276,11 +276,15 @@ async def select_facp(request: Request, req: FACPSelectionRequest):
     except ValueError as exc:
         # No compliant panels found
         logger.warning("FACP selection failed: %s", exc)
+        # S-07 FIX (Engineering Review): do not return str(exc) to the client —
+        # it may leak internal paths, SQL fragments, or stack-trace context.
+        # The full message is preserved in the server log; the client only sees
+        # a stable, generic error code.
         raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
             status_code=422,
             detail={
                 "error": "NO_COMPLIANT_PANEL",
-                "detail": str(exc),
+                "detail": "No compliant panel available for the requested configuration.",
                 "action": (
                     "Relax design requirements or expand the panel database. "
                     "Consider splitting the system into multiple networked panels."

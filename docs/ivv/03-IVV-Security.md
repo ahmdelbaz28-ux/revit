@@ -20,7 +20,7 @@ Independent security verification by code inspection, configuration review, and 
 
 **Risk: HIGH**
 
-**Finding:** The GitHub Personal Access Token (`github_pat_11CCHF4XA0p...`) was pasted in plaintext in this conversation transcript during the cloning step. It was embedded in the git remote URL (`origin`) until removed by this auditor in step `ivv-certification-20260714113042`.
+**Finding:** The GitHub Personal Access Token (`<GITHUB_PAT>` — S-04 redacted, previously a real PAT prefix was exposed here) was pasted in plaintext in this conversation transcript during the cloning step. It was embedded in the git remote URL (`origin`) until removed by this auditor in step `ivv-certification-20260714113042`.
 
 **Evidence:** The PAT was found in `.git/config` via `git remote get-url origin`. It was removed and replaced with a clean URL.
 

@@ -497,5 +497,77 @@ class TestVoltageDropEdgeCases:
         assert result["is_compliant"] is True
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# C-03 CONSISTENCY: voltage_drop.py table (75°C reference) vs
+# fireai.constants.nec.py table (20°C reference) — both must produce the
+# same physical resistance at a common operating temperature.
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+class TestNECTable8CrossModuleConsistency:
+    """
+    C-03 FIX (Engineering Review):
+
+    Two parallel NEC Table 8 implementations exist:
+      1. fireai/core/voltage_drop.py:_AWG_RESISTANCE_OHM_PER_KM
+         — values at 75°C reference (NEC 75°C column).
+      2. fireai/constants/nec.py:NEC_TABLE8_RESISTANCE_OHM_PER_KM_20C
+         — values at 20°C reference (NEC standard reference temperature).
+
+    Both are physically correct (NEC Table 8 lists values at 20°C; the 75°C
+    column is derived via R_T = R_20 × [1 + α·(T-20)] with α=0.00393). But
+    having two tables risks divergence if one is updated and the other isn't.
+
+    These tests verify the two tables AGREE at a common operating temperature.
+    If a future PR edits one table without updating the other, these tests fail.
+    """
+
+    @pytest.mark.parametrize("awg", ["14", "12", "10", "8", "6"])
+    def test_tables_agree_at_75c(self, awg):
+        """
+        At 75°C operating temperature:
+          - voltage_drop.py returns _AWG_RESISTANCE_OHM_PER_KM[awg] directly
+            (its reference temperature IS 75°C).
+          - constants/nec.py returns NEC_TABLE8_RESISTANCE_OHM_PER_KM_20C[awg]
+            corrected from 20°C to 75°C via R_75 = R_20 × [1 + α·(75-20)],
+            α = 0.00393 (copper).
+        The two must agree to within 5% (tolerance for rounding in source tables).
+        """
+        from fireai.constants.nec import (
+            COPPER_TEMP_COEFFICIENT,
+            NEC_TABLE8_RESISTANCE_OHM_PER_KM_20C,
+        )
+
+        # voltage_drop.py path: direct lookup at 75°C
+        r_75_from_voltage_drop = get_wire_resistance_ohm_per_m(awg) * 1000.0  # Ω/km
+
+        # constants/nec.py path: 20°C value corrected to 75°C
+        r_20 = NEC_TABLE8_RESISTANCE_OHM_PER_KM_20C[awg]
+        alpha = COPPER_TEMP_COEFFICIENT
+        r_75_from_nec = r_20 * (1.0 + alpha * (75.0 - 20.0))
+
+        assert r_75_from_voltage_drop == pytest.approx(r_75_from_nec, rel=0.05), (
+            f"AWG {awg}: voltage_drop.py table gives {r_75_from_voltage_drop} Ω/km at 75°C, "
+            f"but constants/nec.py 20°C table corrected to 75°C gives {r_75_from_nec} Ω/km. "
+            f"The two NEC Table 8 implementations have diverged — update one to match the other."
+        )
+
+    def test_voltage_drop_calculation_within_5pct_of_known_good(self):
+        """
+        C-03 sanity check: a known-good voltage drop for AWG 14, 1A, 100m, 24V.
+        Reference value computed by hand from NEC Table 8 (20°C stranded copper):
+          R_20 = 8.286 Ω/km → R_75 = 8.286 × (1 + 0.00393 × 55) = 10.073 Ω/km
+          V_drop = I × 2L × R_per_m = 1.0 × 200 × (10.073/1000) = 2.015 V
+        The voltage_drop.py implementation must produce a value within 5% of this.
+        """
+        result = calculate_voltage_drop(1.0, 100.0, "14", 24.0, temperature_c=75.0)
+        expected_v_drop = 2.015  # V, hand-computed from NEC Table 8 stranded
+        assert result["voltage_drop_v"] == pytest.approx(expected_v_drop, rel=0.05), (
+            f"Voltage drop for AWG14/1A/100m/24V/75°C = {result['voltage_drop_v']} V, "
+            f"expected ~{expected_v_drop} V (NEC Table 8 stranded at 20°C, corrected to 75°C). "
+            f"If this drifts, the NEC Table 8 source values have changed."
+        )
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

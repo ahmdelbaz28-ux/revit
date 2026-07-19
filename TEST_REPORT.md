@@ -665,7 +665,7 @@ Successfully built cad_bim_integration_platform-1.2.2.dev112-py3-none-any.whl
 
 ### ⚠️ شروط ما قبل الإطلاق / Pre-Launch Conditions
 
-1. **إلغاء التوكن المُسرَّب** — التوكن `github_pat_11CCHF4XA0...` الذي شاركه المشغّل في بداية الجلسة لا يزال فعّالاً. **يجب إلغاؤه فوراً** من GitHub Settings.
+1. **إلغاء التوكن المُسرَّب** — التوكن `<GITHUB_PAT>` (S-04 redacted — سابقاً بادئة PAT حقيقية كانت مُسرَّبة هنا) الذي شاركه المشغّل في بداية الجلسة لا يزال فعّالاً. **يجب إلغاؤه فوراً** من GitHub Settings.
 
 2. **معالجة 91 CodeQL alert في V142** — 65 error + 26 warning. معظمها موروث (85 alert من V138/V140). الأولوية:
    - 34 `clear-text-logging-sensitive-data` (backend/services)

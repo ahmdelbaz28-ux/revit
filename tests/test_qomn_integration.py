@@ -156,13 +156,19 @@ class TestQOMNKernelLayer2Computation:
         """
         GOLDEN TEST: V_drop = 2 × I × L × R per NEC Chapter 9, Table 8.
 
-        R_20 = 4.263 Ω/km at 20°C per NEC Table 8 (stranded copper)
-        R_T = R_20 × [1 + α×(T-20)] = 4.263 × 1.21615 = 5.184 Ω/km at 75°C
-        V_drop = 2 × 2.5A × 100m × (5.184/1000) Ω/m = 2.592V
+        C-03 FIX (Engineering Review): the previously used R_20 = 4.263 Ω/km
+        was the SOLID conductor value (mislabeled as "stranded" in source).
+        The correct STRANDED value at 20°C for AWG 14 copper is 8.286 Ω/km.
+        Cross-checked against fireai/core/voltage_drop.py:_AWG_RESISTANCE_OHM_PER_KM
+        which uses 10.07 Ω/km at 75°C stranded (= 8.286 × (1 + 0.00393×55) = 10.073).
+
+        R_20 = 8.286 Ω/km at 20°C per NEC Table 8 (STRANDED copper)
+        R_T = R_20 × [1 + α×(T-20)] = 8.286 × 1.21615 = 10.073 Ω/km at 75°C
+        V_drop = 2 × 2.5A × 100m × (10.073/1000) Ω/m = 5.037V
         """
         r = kernel.voltage_drop(2.5, 100, "14", 24.0)
-        # R_effective = R_20 × temp_correction = 4.263 × (1 + 0.00393×55) = 5.184 Ω/km
-        expected = 2.0 * 2.5 * 100 * (4.263 * (1.0 + 0.00393 * 55.0) / 1000.0)
+        # R_effective = R_20 × temp_correction = 8.286 × (1 + 0.00393×55) = 10.073 Ω/km
+        expected = 2.0 * 2.5 * 100 * (8.286 * (1.0 + 0.00393 * 55.0) / 1000.0)
         assert abs(r["voltage_drop_v"] - expected) < 1e-4, \
             f"Expected {expected:.4f}V, got {r['voltage_drop_v']}"
 
@@ -491,15 +497,15 @@ class TestGoldenOutputs:
 
     def test_golden_vdrop_awg14_100m(self, kernel):
         """
-        V_drop = 2 × 2.5A × 100m × 5.184e-3 Ω/m = 2.592V.
+        C-03 FIX (Engineering Review): use STRANDED AWG 14 resistance at 20°C.
 
-        R_20 = 4.263 Ω/km at 20°C per NEC Table 8 (stranded copper)
-        R_T = R_20 × [1 + α×(T-20)] = 4.263 × 1.21615 = 5.184 Ω/km at 75°C
-        V_drop = 2 × 2.5 × 100 × (5.184/1000) = 2.592V
+        R_20 = 8.286 Ω/km at 20°C per NEC Table 8 (STRANDED copper)
+        R_T = R_20 × [1 + α×(T-20)] = 8.286 × 1.21615 = 10.073 Ω/km at 75°C
+        V_drop = 2 × 2.5 × 100 × (10.073/1000) = 5.037V
         """
         r = kernel.voltage_drop(2.5, 100, "14", 24.0)
-        # R_effective = R_20 × temp_correction = 4.263 × (1 + 0.00393×55) = 5.184 Ω/km
-        expected = 2.0 * 2.5 * 100 * (4.263 * (1.0 + 0.00393 * 55.0) / 1000.0)
+        # R_effective = R_20 × temp_correction = 8.286 × (1 + 0.00393×55) = 10.073 Ω/km
+        expected = 2.0 * 2.5 * 100 * (8.286 * (1.0 + 0.00393 * 55.0) / 1000.0)
         assert abs(r["voltage_drop_v"] - expected) < 1e-4
 
     def test_deterministic_across_instances(self):

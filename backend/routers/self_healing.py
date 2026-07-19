@@ -73,7 +73,15 @@ async def self_healing_audit(limit: int = 20):
     try:
         chain_result = global_audit_logger.verify_chain()
     except Exception as e:
-        chain_result = {"valid": False, "error": str(e)}
+        # S-07 FIX (Engineering Review): do not echo str(e) to the client —
+        # the audit chain exception may include filesystem paths, HMAC key
+        # metadata, or internal state. Log the full exception server-side;
+        # return a generic message to the client.
+        logger.exception("Self-healing audit chain verification failed: %s", e)
+        chain_result = {
+            "valid": False,
+            "error": "Chain verification failed — see server logs for details.",
+        }
 
     return {
         "success": True,

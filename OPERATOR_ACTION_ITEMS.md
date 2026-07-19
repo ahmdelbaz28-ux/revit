@@ -8,7 +8,7 @@ operator must decide on, organized by urgency.
 ## 🔴 URGENT — Do Now (security)
 
 ### 1. Revoke the leaked PAT
-- **Token:** `github_pat_11CCHF4XA0GNN...` (shown in chat history)
+- **Token:** `<GITHUB_PAT>` (S-04 redacted — previously a real fine-grained PAT prefix was committed here)
 - **Action:** https://github.com/settings/tokens → Revoke
 - **Why:** Fine-grained PATs cannot self-revoke via API. The agent
   has been using this token to push to main. Anyone who reads the

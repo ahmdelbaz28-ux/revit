@@ -393,11 +393,16 @@ class TestNECConstants:
 
     def test_awg14_resistance(self):
         """
-        AWG 14: 4.263 Ω/km at 20°C stranded (NEC Table 8).
-        C-3 FIX: Value changed from 8.19 (incorrect 75°C claim) to 4.263 (correct 20°C stranded).
-        Temperature correction to 75°C is applied in compute_voltage_drop().
+        AWG 14: 8.286 Ω/km at 20°C STRANDED copper (NEC Table 8).
+
+        C-03 FIX (Engineering Review): the previously asserted value of 4.263
+        was the SOLID conductor resistance — mislabeled as "stranded" in
+        fireai.constants.nec.py. The actual NEC Table 8 STRANDED value at
+        20°C for AWG 14 copper is 2.525 Ω/kft = 8.286 Ω/km. Cross-checked
+        against fireai/core/voltage_drop.py:_AWG_RESISTANCE_OHM_PER_KM["14"]
+        = 10.07 Ω/km at 75°C (which equals 8.286 × (1 + 0.00393 × 55) = 10.073).
         """
-        assert NEC_TABLE8_RESISTANCE_OHM_PER_KM["14"] == pytest.approx(4.263, abs=0.01)
+        assert NEC_TABLE8_RESISTANCE_OHM_PER_KM["14"] == pytest.approx(8.286, abs=0.01)
 
     def test_resistance_increases_with_gauge(self):
         """Thinner wire (higher AWG) has more resistance."""

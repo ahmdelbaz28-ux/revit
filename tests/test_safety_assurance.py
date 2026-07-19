@@ -52,7 +52,8 @@ class TestConstants:
         assert STANDARD_COVERAGE_THRESHOLD == 99.0  # NOSONAR — S1244: import retained for re-export / API surface
 
     def test_proof_verified_threshold(self):
-        assert PROOF_VERIFIED_THRESHOLD == 99.5  # NOSONAR — S1244: import retained for re-export / API surface
+        # C-08 FIX: must be 99.99 to match the SafetyTier docstring (Tier 1 = >= 99.99%).
+        assert PROOF_VERIFIED_THRESHOLD == 99.99  # NOSONAR — S1244: import retained for re-export / API surface
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -142,22 +143,23 @@ class TestClassifySafetyTier:
     # ── Rule 5: proof_valid and coverage >= PROOF_VERIFIED_THRESHOLD → PROOF_VERIFIED
 
     def test_rule5_proof_verified_at_threshold(self):
-        assert classify_safety_tier(99.5, True, False, 0) == SafetyTier.PROOF_VERIFIED
+        # C-08 FIX: threshold is now 99.99 (was 99.5)
+        assert classify_safety_tier(99.99, True, False, 0) == SafetyTier.PROOF_VERIFIED
 
     def test_rule5_proof_verified_above_threshold(self):
-        assert classify_safety_tier(99.9, True, False, 0) == SafetyTier.PROOF_VERIFIED
+        assert classify_safety_tier(99.999, True, False, 0) == SafetyTier.PROOF_VERIFIED
 
     def test_rule5_proof_verified_at_100(self):
         assert classify_safety_tier(100.0, True, False, 0) == SafetyTier.PROOF_VERIFIED
 
     def test_rule5_proof_valid_but_coverage_below_proof_threshold(self):
-        """proof_valid=True but coverage 99.4 → not PROOF_VERIFIED."""
-        result = classify_safety_tier(99.4, True, False, 0)
+        """proof_valid=True but coverage 99.5 → not PROOF_VERIFIED (below 99.99)."""
+        result = classify_safety_tier(99.5, True, False, 0)
         assert result == SafetyTier.PROOF_VALID  # Falls to rule 6
 
     def test_rule5_proof_valid_false_even_with_high_coverage(self):
-        """proof_valid=False, coverage >= 99.5 → PROOF_VALID (not PROOF_VERIFIED)."""
-        result = classify_safety_tier(99.5, False, False, 0)
+        """proof_valid=False, coverage >= 99.99 → PROOF_VALID (not PROOF_VERIFIED)."""
+        result = classify_safety_tier(99.99, False, False, 0)
         assert result == SafetyTier.PROOF_VALID
 
     # ── Rule 6: coverage >= STANDARD and no wall violations → PROOF_VALID ─
@@ -253,8 +255,8 @@ class TestClassifySafetyTier:
         assert result == SafetyTier.FALLBACK_USED
 
     def test_proof_valid_fallback_used_high_coverage(self):
-        """proof_valid=True, fallback=True, coverage=99.5 → PROOF_VERIFIED (rule 5)."""
-        result = classify_safety_tier(99.5, True, True, 0)
+        """proof_valid=True, fallback=True, coverage=99.99 → PROOF_VERIFIED (rule 5)."""
+        result = classify_safety_tier(99.99, True, True, 0)
         assert result == SafetyTier.PROOF_VERIFIED
 
 

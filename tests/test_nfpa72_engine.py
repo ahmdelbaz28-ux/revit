@@ -855,11 +855,17 @@ class TestCalculateVoltageDrop:
         assert "× 2" in result.formula or "2" in result.formula
 
     def test_formula_contains_gauge_resistance(self):
-        """Formula should include the wire resistance value."""
+        """Formula should include the wire resistance value.
+
+        C-03 FIX (Engineering Review): the previously asserted value "4.263"
+        was the SOLID conductor resistance from NEC Table 8 (mislabeled as
+        "stranded" in the source). The correct STRANDED value at 20°C is
+        8.286 Ω/km — see fireai.constants.nec.NEC_TABLE8_RESISTANCE_OHM_PER_KM_20C.
+        """
         # V97 FIX: Use 20°C so formula shows raw Table 8 resistance
         result = calculate_voltage_drop(1.0, 100.0, "14", ambient_temperature_c=20.0)
-        # Should contain 4.263 (the Ω/km for 14 AWG at 20°C per NEC Table 8)
-        assert "4.263" in result.formula
+        # C-03 FIX: 8.286 is the STRANDED AWG 14 resistance at 20°C per NEC Table 8.
+        assert "8.286" in result.formula
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

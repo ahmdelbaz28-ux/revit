@@ -130,12 +130,24 @@ export function generateBatteryReport(result: BatteryCalcResult): string {
                 horn: "Horn/Strobe",
         };
 
-        const devices = result.devices || [
-                { type: "Smoke Detector", standbyCurrent: 0.05, alarmCurrent: 85, count: 24 },
-                { type: "Heat Detector", standbyCurrent: 0.03, alarmCurrent: 50, count: 8 },
-                { type: "Pull Station", standbyCurrent: 0.01, alarmCurrent: 100, count: 12 },
-                { type: "Horn/Strobe", standbyCurrent: 0.02, alarmCurrent: 150, count: 16 },
-        ];
+        // F-02 FIX (Engineering Review): the previous code fell back to a
+        // hardcoded fake device list (24 smoke + 8 heat + 12 pull + 16 horn)
+        // whenever `result.devices` was empty. This fabricated device list
+        // would appear in the printed report and silently mask the fact that
+        // no devices had actually been provided — producing a misleading
+        // "compliant" battery calculation for a design that had no devices.
+        // Now: if no devices are present, we emit a prominent "NO DEVICES
+        // PROVIDED" warning block instead of fabricating numbers.
+        const devices = result.devices || [];
+        if (devices.length === 0) {
+                report += "⚠️  NO DEVICES PROVIDED\n";
+                report += "─────────────────────────────────────────────────\n";
+                report += "Battery calculation cannot be performed without a\n";
+                report += "device list. Please call calculateBatteryRequirements()\n";
+                report += "with a non-empty `devices` array and regenerate this\n";
+                report += "report. The compliance verdict below is INVALID until\n";
+                report += "real device data is supplied.\n\n";
+        }
 
         for (const device of devices) {
                 const typeLabel = labelMap[device.type.toLowerCase()] || device.type;
