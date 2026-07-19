@@ -11,7 +11,7 @@ Safety-Critical: These tests protect against bugs that could result in
 undersized batteries or non-compliant panel selections in life-safety systems.
 
 Standards Referenced:
-  - NFPA 72-2022 SS10.6.7, SS10.6.10, SS21.7
+  - NFPA 72-2022 SS10.6.7, SS21.7
   - UL 864 10th Edition
   - IEEE 485 (Battery Sizing), IEEE 1188 (VRLA Maintenance)
   - CSFM, FDNY COA

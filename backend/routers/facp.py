@@ -13,7 +13,7 @@ ENDPOINTS:
   GET  /api/facp/panels      — List all available panels in the database
 
 STANDARDS:
-  NFPA 72-2022 SS10.6.10 — FACP selection and listing requirements
+  NFPA 72-2022 SS10.6.7 — FACP selection and listing requirements
   NFPA 72-2022 SS10.6.7  — Battery backup capacity
   UL 864 10th Edition    — Control unit listing requirements
   CSFM                   — California State Fire Marshal listing
@@ -269,7 +269,7 @@ async def select_facp(request: Request, req: FACPSelectionRequest):
                 "warnings": recommendation.warnings,
                 "alternatives": recommendation.alternatives,
                 "signature_hash": recommendation.signature_hash,
-                "nfpa_reference": "NFPA 72-2022 SS10.6.10, SS10.6.7",
+                "nfpa_reference": "NFPA 72-2022 SS10.6.7",
                 "ul_reference": "UL 864 10th Edition",  # NOSONAR — S1192: duplicated literal acceptable in this localized context
             },
         }
@@ -307,7 +307,7 @@ async def verify_facp(request: Request, req: FACPVerificationRequest):
     Runs programmatic compliance checks from
     facp_system.panel_verifier.ComplianceVerifier:
       - UL 864 listing validation
-      - Battery safety margin check (NFPA 72 SS10.6.10)
+      - Battery safety margin check (NFPA 72 SS10.6.7)
       - Voice evacuation capability check
       - FDNY Certificate of Approval check
       - Releasing service verification (V54 FIX F4)
@@ -370,7 +370,7 @@ async def verify_facp(request: Request, req: FACPVerificationRequest):
                 "is_compliant": is_compliant,
                 "violations": violations,
                 "violation_count": len(violations),
-                "nfpa_reference": "NFPA 72-2022 SS10.6.10",
+                "nfpa_reference": "NFPA 72-2022 SS10.6.7",
                 "ul_reference": "UL 864 10th Edition",
             },
         }
@@ -566,7 +566,7 @@ async def list_available_panels():
                 "total_count": len(panels),
                 "manufacturers": list({p.manufacturer for p in MASTER_PANEL_DATABASE}),
                 "standards": [
-                    "NFPA 72-2022 SS10.6.10",
+                    "NFPA 72-2022 SS10.6.7",
                     "UL 864 10th Edition",
                     "CSFM",
                     "FDNY COA",

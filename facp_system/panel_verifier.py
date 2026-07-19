@@ -20,7 +20,7 @@ class ComplianceVerifier:
         if "UL" not in rec.listings:
             violations.append("Violation: Panel does not carry mandatory UL 864 compliance listing.")
 
-        # 2. Battery safety margin validation (NFPA 72 SS10.6.10)
+        # 2. Battery safety margin validation (NFPA 72 SS10.6.7)
         if rec.battery_size_ah <= 0.0:
             violations.append("Violation: Back-up battery size cannot be zero or negative.")
 

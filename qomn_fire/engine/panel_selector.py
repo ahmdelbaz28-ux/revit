@@ -2,7 +2,7 @@
 # Per-line justified suppressions (e.g., '# NOSONAR — S3776: ...') are preserved.
 """
 QOMN-FIRE FACP SELECTION ENGINE
-Reference Standard: NFPA 72 (2022) §10.6.10, UL 864 10th Edition.
+Reference Standard: NFPA 72 (2022) §10.6.7, UL 864 10th Edition.
 
 V54 Bug Fixes Preserved:
   F2: NAC capacity uses EXACT match — required_nacs = nac_circuit_count
@@ -33,12 +33,12 @@ class SelectionEngine:
         requires_voice: bool
     ) -> Tuple[float, Dict[str, Any]]:
         """
-        Calculates battery capacity per NFPA 72 §10.6.10 with tiered derating.
+        Calculates battery capacity per NFPA 72 §10.6.7 with tiered derating.
 
         Derating methodology (V54 FIX F5 — NOT flat 1.2x):
           1. Temperature derating: 1.10 (10% compensation for capacity loss at low temp)
           2. Aging derating: 1.15 (15% compensation for battery end-of-life per IEEE 1188)
-          3. NFPA margin: 1.20 (20% mandatory margin per NFPA 72 §10.6.10)
+          3. NFPA margin: 1.20 (20% mandatory margin per NFPA 72 §10.6.7)
 
         Per-device standby current: 0.8 mA (V54 FIX F6 — NOT 1.0 mA).
 
@@ -64,7 +64,7 @@ class SelectionEngine:
         battery_size = round(raw_capacity * combined_safety_factor, 2)
 
         derating_details = {
-            "method": "NFPA 72 §10.6.10 tiered derating",
+            "method": "NFPA 72 §10.6.7 tiered derating",
             "temperature_derating": temperature_derating,
             "aging_derating": aging_derating,
             "nfpa_margin": nfpa_margin,
@@ -82,7 +82,7 @@ class SelectionEngine:
 
     @classmethod
     def select_panel(cls, req: ProjectRequirements) -> Result[PanelRecommendation, FACPSelectionError]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
-        # Enforce code capacity margins (20% spare capacity per NFPA 72 §10.6.10.2)
+        # Enforce code capacity margins (20% spare capacity per NFPA 72 §10.6.7.2)
         required_points = req.device_count * 1.2
         # V54 FIX F2: NAC circuits sized by exact count, NOT 1.2x
         required_nacs = req.nac_circuit_count
@@ -173,7 +173,7 @@ class SelectionEngine:
             listings=selected.listings,
             code_compliance=(
                 "UL 864 10th Edition",
-                "NFPA 72 §10.6.10 Compliance"
+                "NFPA 72 §10.6.7 Compliance"
             ),
             warnings=tuple(warnings),
             alternatives=alternatives,

@@ -736,7 +736,7 @@ MASTER_PANEL_DATABASE = [
 # ─────────────────────────────────────────────────────────────────────
 INTEGRATED_FILES["qomn_fire/engine/panel_selector.py"] = '''"""
 QOMN-FIRE FACP SELECTION ENGINE
-Reference Standard: NFPA 72 (2022) §10.6.10, UL 864 10th Edition.
+Reference Standard: NFPA 72 (2022) §10.6.7, UL 864 10th Edition.
 
 V54 Bug Fixes Preserved:
   F2: NAC capacity uses EXACT match — required_nacs = nac_circuit_count
@@ -762,12 +762,12 @@ class SelectionEngine:
         requires_voice: bool
     ) -> Tuple[float, Dict[str, Any]]:
         """
-        Calculates battery capacity per NFPA 72 §10.6.10 with tiered derating.
+        Calculates battery capacity per NFPA 72 §10.6.7 with tiered derating.
 
         Derating methodology (V54 FIX F5 — NOT flat 1.2x):
           1. Temperature derating: 1.10 (10% compensation for capacity loss at low temp)
           2. Aging derating: 1.15 (15% compensation for battery end-of-life per IEEE 1188)
-          3. NFPA margin: 1.20 (20% mandatory margin per NFPA 72 §10.6.10)
+          3. NFPA margin: 1.20 (20% mandatory margin per NFPA 72 §10.6.7)
 
         Per-device standby current: 0.8 mA (V54 FIX F6 — NOT 1.0 mA).
 
@@ -792,7 +792,7 @@ class SelectionEngine:
         battery_size = round(raw_capacity * combined_safety_factor, 2)
 
         derating_details = {
-            "method": "NFPA 72 §10.6.10 tiered derating",
+            "method": "NFPA 72 §10.6.7 tiered derating",
             "temperature_derating": temperature_derating,
             "aging_derating": aging_derating,
             "nfpa_margin": nfpa_margin,
@@ -810,7 +810,7 @@ class SelectionEngine:
 
     @classmethod
     def select_panel(cls, req: ProjectRequirements) -> Result[PanelRecommendation, FACPSelectionError]:
-        # Enforce code capacity margins (20% spare capacity per NFPA 72 §10.6.10)
+        # Enforce code capacity margins (20% spare capacity per NFPA 72 §10.6.7)
         required_points = req.device_count * 1.2
         # V54 FIX F2: NAC circuits sized by exact count, NOT 1.2x
         required_nacs = req.nac_circuit_count
@@ -901,7 +901,7 @@ class SelectionEngine:
             listings=selected.listings,
             code_compliance=(
                 "UL 864 10th Edition",
-                "NFPA 72 §10.6.10 Compliance"
+                "NFPA 72 §10.6.7 Compliance"
             ),
             warnings=tuple(warnings),
             alternatives=alternatives,
@@ -1309,7 +1309,7 @@ def draw_facp_schedule(doc: ezdxf.document.Drawing, rec: PanelRecommendation):
 
     layout.add_text(f"RECOMMENDED MODEL : {rec.recommended_model}", dxfattribs={"insert": (15.0, 450.0), "height": 2.5, "color": 7})
     layout.add_text(f"MANUFACTURER      : {rec.manufacturer}", dxfattribs={"insert": (15.0, 430.0), "height": 2.5, "color": 7})
-    layout.add_text(f"BATTERY CAPACITY   : {rec.battery_size_ah} Ah (NFPA 72 §10.6.10)", dxfattribs={"insert": (15.0, 410.0), "height": 2.5, "color": 7})
+    layout.add_text(f"BATTERY CAPACITY   : {rec.battery_size_ah} Ah (NFPA 72 §10.6.7)", dxfattribs={"insert": (15.0, 410.0), "height": 2.5, "color": 7})
     layout.add_text(f"POINTS UTILIZATION : {rec.capacity_utilization:.2%}", dxfattribs={"insert": (15.0, 390.0), "height": 2.5, "color": 7})
     layout.add_text(f"NAC UTILIZATION    : {rec.nac_utilization:.2%}", dxfattribs={"insert": (15.0, 370.0), "height": 2.5, "color": 7})
     layout.add_text(f"UL CODES LISTINGS  : {', '.join(rec.listings)}", dxfattribs={"insert": (15.0, 350.0), "height": 2.5, "color": 7})

@@ -2,7 +2,7 @@
 FACP SELECTION ENGINE - MASTER GENERATOR & RUNTIME INTEGRATOR
 =============================================================
 Author: Senior Fire Protection Engineer & Systems Architect
-Standards: NFPA 72 (2022) SS10.6.10, UL 864 10th Edition, CSFM, FDNY COA
+Standards: NFPA 72 (2022) SS10.6.7, UL 864 10th Edition, CSFM, FDNY COA
 
 V54 Bug Fixes Applied (vs. original user-submitted code):
   F1: Missing hashlib/dataclass imports in panel_selector.py (HIGH)

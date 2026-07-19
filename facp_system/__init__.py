@@ -1,7 +1,7 @@
 """
 FACP Selection Engine — Fire Alarm Control Panel Selection & Compliance System
 =============================================================================
-Standards: NFPA 72 (2022) SS10.6.10, UL 864 10th Edition, CSFM, FDNY COA
+Standards: NFPA 72 (2022) SS10.6.7, UL 864 10th Edition, CSFM, FDNY COA
 
 This package provides deterministic FACP selection, battery sizing per
 NFPA 72 SS10.6.7 with proper temperature/aging/Peukert derating, and

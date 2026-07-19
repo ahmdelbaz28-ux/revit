@@ -13,7 +13,7 @@ selection engine. Incorrect HTTP responses could mislead fire protection
 engineers into selecting non-compliant panels.
 
 Standards Referenced:
-  - NFPA 72-2022 SS10.6.7, SS10.6.10, SS21.7
+  - NFPA 72-2022 SS10.6.7, SS21.7
   - UL 864 10th Edition
   - CSI MasterFormat 28 31 11
 """

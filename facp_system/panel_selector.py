@@ -299,7 +299,7 @@ class SelectionEngine:
             listings=selected_panel.listings,
             code_compliance=[
                 "UL 864 10th Edition",
-                "NFPA 72 SS10.6.10 Compliance",
+                "NFPA 72 SS10.6.7 Compliance",
                 f"Sizing margin verified: {1.2:.1f}x multiplier (points only)",
                 f"Battery derating: {battery_derating['method']}",
             ],
