@@ -86,7 +86,14 @@ jobs:
             BODY=$(echo "$RESPONSE" | head -n -1)
 
             echo "HTTP response: $HTTP_CODE"
-            echo "Body: $BODY"
+            # Truncate response body for safe logging
+            BODY_LEN=${#BODY}
+            BODY_PREVIEW="${BODY:0:300}"
+            if [ "$BODY_LEN" -gt 300 ]; then
+              echo "Body (${BODY_LEN} chars, showing first 300): ${BODY_PREVIEW}..."
+            else
+              echo "Body (${BODY_LEN} chars): ${BODY_PREVIEW}"
+            fi
             echo "::endgroup::"
 
             # Success cases
@@ -144,7 +151,14 @@ jobs:
               sleep "$BACKOFF"
             else
               echo "❌ ERROR: All $MAX_ATTEMPTS attempts failed (last HTTP $HTTP_CODE)"
-              echo "   Vercel API response: $BODY"
+              # Truncate response body for safe logging
+              BODY_LEN=${#BODY}
+              BODY_PREVIEW="${BODY:0:300}"
+              if [ "$BODY_LEN" -gt 300 ]; then
+                echo "   Vercel API response (${BODY_LEN} chars, showing first 300): ${BODY_PREVIEW}..."
+              else
+                echo "   Vercel API response (${BODY_LEN} chars): ${BODY_PREVIEW}"
+              fi
               exit 1
             fi
           done

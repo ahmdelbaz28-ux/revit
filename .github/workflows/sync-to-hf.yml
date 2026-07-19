@@ -258,8 +258,16 @@ jobs:
                      -m "Trigger: ${{ github.event_name }} by ${{ github.actor }}" \
                      -m "Workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
-          # Push back to HF
-          git push "https://${HF_USERNAME}:${HF_TOKEN}@huggingface.co/spaces/${HF_USERNAME}/${HF_SPACE_NAME}" HEAD:main
+          # Set up .netrc for authentication (avoids exposing token in git URL)
+          echo "machine huggingface.co login ${HF_USERNAME} password ${HF_TOKEN}" > ~/.netrc
+          chmod 600 ~/.netrc
+
+          # Set clean remote URL (no embedded token)
+          HF_REPO_URL="https://huggingface.co/spaces/${HF_USERNAME}/${HF_SPACE_NAME}"
+          git remote set-url origin "${HF_REPO_URL}"
+
+          # Push back to HF (credentials handled by .netrc, not embedded in URL)
+          git push origin HEAD:main
 
           # Print HF commit SHA for traceability (after sync)
           git rev-parse --short HEAD | tee ../hf_after_sha.txt

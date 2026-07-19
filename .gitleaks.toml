@@ -1,0 +1,98 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# Gitleaks Configuration — BAZSPARK FireAI Platform
+# ═══════════════════════════════════════════════════════════════════════════
+# This file configures gitleaks secret scanning rules and allowlists.
+# It prevents false positives from test fixtures, documentation, and
+# lock files while still catching real secret leaks.
+#
+# Usage:
+#   gitleaks detect --source . --config .gitleaks.toml
+#   pre-commit run gitleaks --all-files
+#
+# When adding a new false positive:
+#   Option A: Add the file/pattern to the global allowlist below
+#   Option B: Add `# gitleaks:allow` to the specific line (inline)
+# ═══════════════════════════════════════════════════════════════════════════
+
+title = "BAZSPARK FireAI Secret Scanning Configuration"
+
+# ── Global Allowlist ─────────────────────────────────────────────────────
+[[allowlist]]
+description = "Lock files — auto-generated, contain integrity hashes only"
+paths = [
+  '''(?:^|/)(?:package-lock\.json|npm-shrinkwrap\.json)$''',
+  '''(?:^|/)pnpm-lock\.yaml$''',
+  '''(?:^|/)yarn\.lock$''',
+  '''(?:^|/)Pipfile\.lock$''',
+  '''(?:^|/)poetry\.lock$''',
+]
+
+[[allowlist]]
+description = "Dependency directories — third-party code, not project secrets"
+paths = [
+  '''(?:^|/)node_modules(?:/.*)?$''',
+  '''(?:^|/)\.venv(?:/.*)?$''',
+  '''(?:^|/)venv(?:/.*)?$''',
+  '''(?:^|/)__pycache__(?:/.*)?$''',
+]
+
+[[allowlist]]
+description = "Binary and media files"
+paths = [
+  '''(?i)\.(?:bmp|gif|jpe?g|png|svg|tiff?)$''',
+  '''(?i)\.(?:docx?|xlsx?|pdf|bin|exe|gltf|woff2?|eot|ttf|ico)$''',
+  '''(?i)\.(?:zip|tar|gz|bz2|7z|rar)$''',
+  '''(?i)\.(?:db|sqlite|sqlite3)$''',
+  '''(?i)\.(?:pyc|pyo)$''',
+]
+
+# ── Test Fixture Allowlist ───────────────────────────────────────────────
+[[allowlist]]
+description = "Test fixtures with synthetic keys for security validation"
+paths = [
+  '''tests/test_security\.py''',
+  '''tests/test_security_logging_v2\.py''',
+  '''tests/test_security_middleware_v129\.py''',
+  '''tests/conftest\.py''',
+  '''fireai/core/tests/test_security_logging\.py''',
+  '''backend/tests/conftest\.py''',
+  '''frontend/tests/visual/v193-e2e-auth\.spec\.ts''',
+  '''setup_and_run_tests\.(?:bat|sh)''',
+  '''setup_databases\.py''',
+]
+
+# ── Documentation Allowlist ──────────────────────────────────────────────
+[[allowlist]]
+description = "Documentation and example files with placeholder credentials"
+paths = [
+  '''\.env\.example.*''',
+  '''env\.example\.txt''',
+  '''skills/.*\.md$''',
+  '''^agent\.md$''',
+  '''README\.md$''',
+  '''README_revit\.md$''',
+  '''HF_README\.md$''',
+  '''fireai/README\.md''',
+]
+
+# ── Security Config Allowlist ────────────────────────────────────────────
+[[allowlist]]
+description = "Security tooling configuration files"
+paths = [
+  '''\.secrets\.baseline''',
+  '''NOSONAR_AUDIT\.md''',
+]
+
+# ── Regex Stopwords (content-based exclusions) ───────────────────────────
+[[allowlist]]
+description = "Regex-based content exclusions for inline patterns"
+regexes = [
+  '''your-api-key-here''',
+  '''YOUR_API_KEY''',
+  '''sk-placeholder''',
+  '''changeme''',
+  '''CHANGE_ME''',
+  '''your-key''',
+  '''gitleaks:allow''',
+  '''secrets\.fireai-secrets\.stringData\.''',
+]

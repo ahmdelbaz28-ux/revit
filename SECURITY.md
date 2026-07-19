@@ -181,6 +181,76 @@ FireAI aims to meet or exceed the following security standards:
 
 *Supply chain security by Eng. Ahmed Elbaz*
 
+## Preventing Secret Leaks — Developer Guide
+
+Accidentally committing secrets (API keys, tokens, passwords) is one of the most common security incidents in software development. This section documents the tools and practices used by this project to prevent secret leaks.
+
+### Automated Protection
+
+#### Pre-Commit Hooks (Gitleaks + detect-secrets)
+
+Two complementary secret scanners run automatically on every commit:
+
+1. **Gitleaks** — Detects hardcoded secrets using pattern matching (AWS keys, GitHub tokens, private keys, etc.)
+2. **detect-secrets** — Detects secrets using entropy analysis (catches things Gitleaks might miss)
+
+**Setup:**
+```bash
+pip install pre-commit
+pre-commit install
+pre-commit run --all-files
+```
+
+#### CI/CD Secret Scanning
+
+A GitHub Actions workflow (`.github/workflows/secret-scan.yml`) runs gitleaks on every PR push to main. It uses the same `.gitleaks.toml` configuration.
+
+### Configuration Files
+
+| File | Purpose |
+|------|---------|
+| `.pre-commit-config.yaml` | Orchestrates all pre-commit hooks including secret scanning |
+| `.gitleaks.toml` | Gitleaks configuration with project-specific allowlists |
+| `.secrets.baseline` | detect-secrets baseline for known false positives |
+| `.gitleaksignore` | (Optional) Individual finding fingerprints to ignore |
+
+### How to Handle False Positives
+
+If a secret scanner flags a file that contains a **non-secret** (e.g., a test fixture with a synthetic API key), use one of:
+
+- **Inline**: Add `# gitleaks:allow` at the end of the flagged line
+- **Path allowlist**: Add the file pattern to `.gitleaks.toml` under `[[allowlist]]`
+- **Update baseline**: Run `detect-secrets scan --baseline .secrets.baseline`
+
+### Prevention Checklist
+
+- [ ] No real API keys, tokens, or passwords in the diff
+- [ ] Test keys use obvious placeholder values (e.g., `sk-test-...`)
+- [ ] `.env` files are in `.gitignore` and NOT committed
+- [ ] Pre-commit hooks pass (`pre-commit run --all-files`)
+- [ ] CI workflow secrets use `${{ secrets.SECRET_NAME }}`, not hardcoded values
+- [ ] Git commands avoid embedding tokens in URLs (use `.netrc` or SSH)
+
+### Incident Response — Secret Committed
+
+1. **Do NOT delete the commit** (secret is still in git history)
+2. **Rotate the credential immediately**
+3. **Remove the secret** via `git commit --amend` (if latest commit)
+4. **Report** via security@fireai.org
+5. **Add file to allowlists** to prevent recurrence
+
+### Common Pitfalls
+
+| Scenario | Solution |
+|----------|----------|
+| Git remote URL contains a PAT | `git remote set-url origin https://github.com/user/repo.git` |
+| CI log prints env vars | Use `echo "Key length: ${#VAR}"` instead of `echo "Key: $VAR"` |
+| Test fixture has API key | Add `# gitleaks:allow` or allowlist in `.gitleaks.toml` |
+| Token in git push URL | Use `.netrc` file or SSH authentication instead |
+| API response in CI logs | Truncate: `echo "Body (${#BODY} chars): ${BODY:0:300}..."` |
+
+*Secret leak prevention established by Eng. Ahmed Elbaz*
+
 ## Contact
 
 For security inquiries:
