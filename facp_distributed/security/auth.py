@@ -21,28 +21,93 @@ class UserRole(Enum):
 class TokenManager:
     """Manages authentication tokens for distributed FACP"""
 
-    def __init__(self, private_key_path: str = None, public_key_path: str = None):
-        # Generate RSA key pair if not provided
-        if private_key_path and os.path.exists(private_key_path):
-            with open(private_key_path, "rb") as key_file:
-                self.private_key = serialization.load_pem_private_key(
-                    key_file.read(),
-                    password=None,
-                )
-        else:
-            self.private_key = rsa.generate_private_key(
-                public_exponent=65537,
-                key_size=2048
-            )
+    def __init__(
+        self,
+        private_key_path: str = None,
+        public_key_path: str = None,
+        secret_key: str = None,
+    ):
+        """
+        Initialize TokenManager with either RSA key files or HMAC secret.
 
-        if public_key_path and os.path.exists(public_key_path):
-            with open(public_key_path, "rb") as key_file:
-                self.public_key = serialization.load_pem_public_key(key_file.read())
-        else:
-            self.public_key = self.private_key.public_key()
+        V289 SAFETY FIX: Previously, if private_key_path was None or didn't
+        exist, the code SILENTLY generated a random RSA key pair. This meant:
+        - Every app restart generated new keys
+        - ALL existing tokens became invalid after restart
+        - In a distributed FACP system, nodes couldn't validate each other's
+          tokens (different random keys per node)
 
+        Now the caller must explicitly choose an authentication mode:
+        1. RSA (production, distributed): pass private_key_path + public_key_path
+           pointing to persistent PEM key files shared across nodes.
+        2. HMAC (simpler, single-instance): pass secret_key (a strong random
+           string). Uses HS256 algorithm — no key rotation issue.
+
+        If NEITHER is provided, raises RuntimeError (fail-loud — no silent
+        random key generation that would invalidate tokens on restart).
+        """
         self.active_tokens = {}  # token_hash -> token_data
         self.revoked_tokens = set()  # Set of revoked token hashes
+        # V289: track which signing mode is active
+        self._signing_mode = None  # 'rsa' or 'hmac'
+        self._hmac_secret = None
+        self.private_key = None
+        self.public_key = None
+
+        has_rsa_paths = bool(private_key_path or public_key_path)
+        has_hmac_secret = bool(secret_key)
+
+        if has_rsa_paths and has_hmac_secret:
+            raise ValueError(
+                "TokenManager: cannot specify both RSA key paths and HMAC secret. "
+                "Choose one authentication mode: RSA (for distributed deployments "
+                "with persistent key files) or HMAC (for single-instance with "
+                "shared secret)."
+            )
+
+        if not has_rsa_paths and not has_hmac_secret:
+            raise RuntimeError(
+                "TokenManager: no authentication credentials provided. "
+                "Pass either private_key_path/public_key_path (RSA, for "
+                "distributed deployments) or secret_key (HMAC, for "
+                "single-instance). Refusing to generate random RSA keys — "
+                "that would invalidate all existing tokens on every restart "
+                "(V289 life-safety fix)."
+            )
+
+        if has_rsa_paths:
+            # RSA mode (RS256) — for distributed deployments with persistent keys
+            self._signing_mode = 'rsa'
+            if private_key_path and os.path.exists(private_key_path):
+                with open(private_key_path, "rb") as key_file:
+                    self.private_key = serialization.load_pem_private_key(
+                        key_file.read(),
+                        password=None,
+                    )
+            else:
+                raise FileNotFoundError(
+                    f"TokenManager: private_key_path '{private_key_path}' does not exist. "
+                    f"RSA mode requires a persistent PEM key file — generate one with: "
+                    f"openssl genrsa -out private_key.pem 2048"
+                )
+
+            if public_key_path and os.path.exists(public_key_path):
+                with open(public_key_path, "rb") as key_file:
+                    self.public_key = serialization.load_pem_public_key(key_file.read())
+            else:
+                # Derive public key from private key (single-file mode)
+                self.public_key = self.private_key.public_key()
+        else:
+            # HMAC mode (HS256) — for single-instance with shared secret
+            self._signing_mode = 'hmac'
+            self._hmac_secret = secret_key.encode("utf-8")
+            # V289: validate secret strength — reject weak defaults
+            if len(secret_key) < 32:
+                raise ValueError(
+                    f"TokenManager: HMAC secret_key must be at least 32 characters "
+                    f"for adequate security (got {len(secret_key)}). Generate one with: "
+                    f"python3 -c \"import secrets; print(secrets.token_urlsafe(48))\""
+                )
 
     def generate_token(self, user_id: str, permissions: list, roles: list, expires_in: int = 3600) -> str:
         """
@@ -63,11 +128,19 @@ class TokenManager:
             "nbf": int(time.time()) - 10  # Not before (allow 10 sec clock skew)
         }
 
-        # Create token string using JWT with RS256 algorithm
+        # V289: Choose signing key + algorithm based on mode
+        if self._signing_mode == 'rsa':
+            sign_key = self.private_key
+            algorithm = "RS256"
+        else:  # hmac
+            sign_key = self._hmac_secret
+            algorithm = "HS256"
+
+        # Create token string using JWT
         token_str = jwt.encode(
             token_data,
-            self.private_key,
-            algorithm="RS256"
+            sign_key,
+            algorithm=algorithm
         )
 
         # Store token with its data
@@ -88,11 +161,19 @@ class TokenManager:
             if token_hash in self.revoked_tokens:
                 return False, None
 
-            # Decode JWT token using public key (RS256)
+            # V289: Choose validation key + algorithm based on mode
+            if self._signing_mode == 'rsa':
+                validate_key = self.public_key
+                algorithms = ["RS256"]
+            else:  # hmac
+                validate_key = self._hmac_secret
+                algorithms = ["HS256"]
+
+            # Decode JWT token
             token_data = jwt.decode(
                 token,
-                self.public_key,
-                algorithms=["RS256"],
+                validate_key,
+                algorithms=algorithms,
                 options={
                     "require": ["exp", "iat", "nbf"],
                     "verify_exp": True,  # Verify expiration
@@ -138,8 +219,27 @@ class TokenManager:
 class AuthProvider:
     """Main authentication provider for distributed FACP"""
 
-    def __init__(self, secret_key: str = "default_secret_for_dev"):
-        self.token_manager = TokenManager(secret_key)
+    def __init__(self, secret_key: str = None, private_key_path: str = None, public_key_path: str = None):
+        """
+        Initialize AuthProvider.
+
+        V289 FIX: Previously __init__ took `secret_key` and passed it to
+        TokenManager as `private_key_path` — which was interpreted as a file
+        path, not a secret. Since the "secret" was never a valid file path,
+        TokenManager silently generated random RSA keys on every instantiation.
+
+        Now AuthProvider correctly delegates to TokenManager with the right
+        parameter names. The caller must provide EITHER:
+        - secret_key (for HMAC/HS256 mode — single-instance), OR
+        - private_key_path + public_key_path (for RSA/RS256 mode — distributed)
+
+        If neither is provided, raises RuntimeError (fail-loud).
+        """
+        self.token_manager = TokenManager(
+            private_key_path=private_key_path,
+            public_key_path=public_key_path,
+            secret_key=secret_key,
+        )
         self.users = {}  # user_id -> user_data
         self.distributed_cache = {}  # For sharing auth state across nodes
 

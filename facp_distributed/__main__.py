@@ -36,8 +36,24 @@ def create_distributed_system(config: Optional[Dict[str, Any]] = None) -> Dict[s
     """Create and configure the distributed FACP system"""
     config = config or {}
 
-    # Set up security components
-    auth_provider = AuthProvider(config.get("auth_secret", "default_secret_for_dev"))
+    # V289 SAFETY FIX: AuthProvider now requires explicit credentials.
+    # The old default "default_secret_for_dev" was:
+    #   1. Only 22 characters (below the 32-char HMAC minimum)
+    #   2. A weak, publicly known default — anyone reading the source
+    #      could forge valid auth tokens
+    #   3. Silently used when auth_secret was not configured, masking
+    #      deployment misconfiguration
+    # Now we fail-loud if no auth_secret is provided.
+    auth_secret = config.get("auth_secret")
+    if not auth_secret:
+        raise RuntimeError(
+            "create_distributed_system: 'auth_secret' is required in config. "
+            "Generate a strong secret with: "
+            "python3 -c \"import secrets; print(secrets.token_urlsafe(48))\" "
+            "and set it via config['auth_secret'] or the FACP_AUTH_SECRET env var. "
+            "Refusing to start with no auth secret (V289 life-safety fix)."
+        )
+    auth_provider = AuthProvider(secret_key=auth_secret)
     rbac_engine = RBACEngine()
     permission_checker = PermissionChecker(rbac_engine)
     audit_logger = AuditLogger()
