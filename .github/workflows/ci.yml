@@ -593,7 +593,7 @@ jobs:
           echo "CI/CD Pipeline Summary:"
           echo "======================="
           # V285 SAFETY FIX: Previously this job just echo'd "✅ Gate N" for each
-          # gate without checking the actual ${{ needs.<gate>.result }}. The job
+          # gate without checking the actual needs.<gate>.result value. The job
           # was always marked SUCCESS even when every gate failed — masking
           # pipeline failures from operators and branch-protection checks.
           #
