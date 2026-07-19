@@ -196,9 +196,37 @@ class AutoCADNamedPipeDispatcher:
 
     def send(self, action: str, params: Dict[str, Any]) -> Dict[str, Any]:
         """Send a command and return the response dict."""
-        import pywintypes  # type: ignore
-        import win32file  # type: ignore
-        import win32pipe  # type: ignore
+        # V291 SAFETY FIX: pywintypes/win32file/win32pipe are Windows-only.
+        # Previously this method imported them unconditionally at the top,
+        # causing ModuleNotFoundError on Linux/macOS CI — which made the
+        # entire test suite report pywintypes as the failure reason and
+        # blocked CI from reporting real issues.
+        # Now we fail gracefully with a clear error message on non-Windows.
+        if sys.platform != "win32":
+            self._available = False
+            return {
+                "success": False,
+                "error": (
+                    "Named Pipe dispatcher is only available on Windows. "
+                    "On Linux/macOS, install pywin32 in a Windows environment "
+                    "or use the HTTP/COM fallback dispatcher."
+                ),
+            }
+
+        try:
+            import pywintypes  # type: ignore
+            import win32file  # type: ignore
+            import win32pipe  # type: ignore
+        except ImportError as exc:
+            self._available = False
+            return {
+                "success": False,
+                "error": (
+                    f"pywin32 not installed on this Windows system — Named Pipe "
+                    f"dispatcher unavailable. Install with: pip install pywin32. "
+                    f"ImportError: {exc}"
+                ),
+            }
 
         payload = json.dumps({"command_id": str(time.time()),
                               "action": action, "params": params})
