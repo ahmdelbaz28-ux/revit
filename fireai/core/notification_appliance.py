@@ -165,8 +165,13 @@ _MIN_SPL_ABOVE_AMBIENT_DBA = 15.0
 # NFPA 72 §18.4.3.1: Minimum absolute SPL
 _MIN_ABSOLUTE_SPL_DBA = 75.0
 
-# NFPA 72 §18.4.3.1: Maximum SPL (to prevent hearing damage)
-_MAX_SPL_DBA = 120.0
+# NFPA 72 §18.4.1.2: Maximum SPL (to prevent hearing damage)
+# V286 SAFETY FIX: was 120.0 dBA — inconsistent with the rest of the codebase
+# (acoustic_calculator.py, acoustics_engine.py, integration_bridge.py all use 110).
+# 120 dBA exceeds the OSHA hearing damage threshold and would cause permanent
+# hearing loss within minutes of exposure. NFPA 72 §18.4.1.2 caps notification
+# appliance SPL at 110 dBA at the minimum distance from the source.
+_MAX_SPL_DBA = 110.0
 
 # Reference distance for horn specifications (typically 10 ft = 3.05m)
 _HORN_REFERENCE_DISTANCE_M = 3.05
@@ -183,7 +188,7 @@ class SPLResult:
     NFPA 72 §18.4.3:
       - Sound Pressure Level at any point must be ≥15 dBA above
         the average ambient sound level, OR ≥75 dBA, whichever is greater
-      - Maximum SPL must not exceed 120 dBA
+      - Maximum SPL must not exceed 110 dBA (V286: was 120 — hearing damage threshold)
       - In mechanical rooms, the minimum is 5 dBA above ambient (not 15)
         per NFPA 72 §18.4.3.1 exception
 
@@ -224,7 +229,7 @@ def calculate_spl(
     Compliance requirements:
       - SPL must be ≥15 dBA above ambient (or 5 dBA in mechanical rooms)
       - SPL must be ≥75 dBA absolute minimum
-      - SPL must be ≤120 dBA maximum (hearing protection)
+      - SPL must be ≤110 dBA maximum (hearing protection, V286 fix)
 
     Args:
         horn_rating_dba: Horn rated output in dBA at reference distance.
@@ -692,7 +697,7 @@ class NotificationAssessment:
                 self.is_compliant = False
                 if self.spl_result.exceeds_max:
                     self.violations.append(
-                        f"SPL {self.spl_result.spl_dba:.1f} dBA exceeds maximum {_MAX_SPL_DBA} dBA (NFPA 72 §18.4.3)"
+                        f"SPL {self.spl_result.spl_dba:.1f} dBA exceeds maximum {_MAX_SPL_DBA} dBA (NFPA 72 §18.4.1.2)"
                     )
                 else:
                     self.violations.append(
