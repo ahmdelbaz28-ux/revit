@@ -94,7 +94,12 @@ def submit_fds_job(
         Dict with job_id, status, estimated_runtime_sec.
     """
     job_id = str(uuid.uuid4())
-    checksum = hashlib.md5(fds_input.encode()).hexdigest()
+    # V294 SECURITY FIX (Bandit B324): MD5 used for non-security checksum
+    # (deduplication of FDS input files). Marked usedforsecurity=False to
+    # satisfy Bandit and document intent. If this checksum is ever used for
+    # security purposes (auth, integrity verification against adversarial
+    # input), switch to hashlib.sha256().
+    checksum = hashlib.md5(fds_input.encode(), usedforsecurity=False).hexdigest()
 
     job: Dict[str, Any] = {
         "job_id":          job_id,
