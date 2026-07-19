@@ -724,16 +724,29 @@ class TestFireAlarmPanel:
             panel.add_device("D3")
 
     def test_check_voltage_drop_deprecated(self):
-        """Issue #12: check_voltage_drop is deprecated."""
+        """Issue #12 + C-04 FIX: check_voltage_drop is deprecated but now
+        delegates to the correct calculation (was returning bogus 0.04V
+        for 100m; now returns the real ~4.12V for 2A on AWG14@75°C×100m)."""
         panel = FireAlarmPanel(panel_id="P1")
         with pytest.warns(DeprecationWarning, match="deprecated"):
             v_drop = panel.check_voltage_drop(100.0)
-        assert v_drop == pytest.approx(0.04, abs=0.001)  # 100m × 0.0004
+        # C-04 FIX: delegated to voltage_drop.calculate_voltage_drop with
+        # defaults: 2A NAC load, AWG 14 stranded copper @ 75°C, 24V supply.
+        # R_per_m = 10.30/1000 = 0.01030 Ω/m (STRANDED @ 75°C per NEC Table 8)
+        # V_drop = 2 × 2.0 × 100 × 0.01030 = 4.12V
+        # (was 0.04V under the old bogus 0.0004 formula — 100× understated)
+        assert v_drop == pytest.approx(4.12, abs=0.05)
 
     def test_verify_voltage_compliant(self):
+        """C-04 FIX: verify_voltage now uses the delegated (correct) calc.
+        For distance=1000m at 2A/AWG14/24V/75°C:
+        V_drop = 2 × 2 × 1000 × 0.01030 = 41.2V > 24V → non-compliant.
+        Previously this returned True (bogus 0.4V drop). Now it must return
+        False because the real drop exceeds the supply voltage."""
         panel = FireAlarmPanel(panel_id="P1")
         with pytest.warns(DeprecationWarning):
-            assert panel.verify_voltage(1000.0) is True
+            # 1000m at 2A/AWG14 produces ~41V drop on a 24V supply → non-compliant
+            assert panel.verify_voltage(1000.0) is False
 
     def test_is_accessible(self):
         panel = FireAlarmPanel(panel_id="P1")
@@ -746,46 +759,62 @@ class TestFireAlarmPanel:
 
 
 class TestGetSmokeDetectorRadius:
-    """NFPA 72 Table 17.6.3.2 — R = 0.7 × S per height bracket."""
+    """NFPA 72-2022 §17.7.4.2.3.1 — R = 0.7 × S = 6.37m, FLAT for all heights.
+
+    C-09 FIX (Engineering Review): the previous tests asserted height-based
+    reduction (R decreasing from 6.37m to 3.64m as ceiling height increased).
+    That reduction was a CODE VIOLATION — it applied NFPA 72 Table 17.6.3.1.1
+    (the HEAT detector table) to SMOKE detectors. NFPA 72-2022 §17.7.3.2.3
+    specifies FLAT 9.1m spacing for smoke detectors at all heights; R = 0.7 × S
+    = 6.37m constant.
+    """
 
     def test_h_3_0m(self):
         assert get_smoke_detector_radius(3.0) == pytest.approx(6.37, abs=0.01)
 
     def test_h_3_5m(self):
-        """V20.2 FIX: h=3.5 falls in (3.0, 3.7) bracket → R=6.37."""
+        """C-09 FIX: R is now FLAT — same value at all heights."""
         assert get_smoke_detector_radius(3.5) == pytest.approx(6.37, abs=0.01)
 
     def test_h_3_7m(self):
-        """Boundary: h=3.7 falls in (3.7, 4.6) bracket → R=6.09."""
-        assert get_smoke_detector_radius(3.7) == pytest.approx(6.09, abs=0.01)
+        """C-09 FIX: R is now FLAT — was 6.09 (heat-detector bracket)."""
+        assert get_smoke_detector_radius(3.7) == pytest.approx(6.37, abs=0.01)
 
     def test_h_4_0m(self):
-        assert get_smoke_detector_radius(4.0) == pytest.approx(6.09, abs=0.01)
+        """C-09 FIX: R is now FLAT — was 6.09 (heat-detector bracket)."""
+        assert get_smoke_detector_radius(4.0) == pytest.approx(6.37, abs=0.01)
 
     def test_h_5_0m(self):
-        assert get_smoke_detector_radius(5.0) == pytest.approx(5.74, abs=0.01)
+        """C-09 FIX: R is now FLAT — was 5.74 (heat-detector bracket)."""
+        assert get_smoke_detector_radius(5.0) == pytest.approx(6.37, abs=0.01)
 
     def test_h_6_0m(self):
-        assert get_smoke_detector_radius(6.0) == pytest.approx(5.39, abs=0.01)
+        """C-09 FIX: R is now FLAT — was 5.39 (heat-detector bracket)."""
+        assert get_smoke_detector_radius(6.0) == pytest.approx(6.37, abs=0.01)
 
     def test_h_7_0m(self):
-        assert get_smoke_detector_radius(7.0) == pytest.approx(5.11, abs=0.01)
+        """C-09 FIX: R is now FLAT — was 5.11 (heat-detector bracket)."""
+        assert get_smoke_detector_radius(7.0) == pytest.approx(6.37, abs=0.01)
 
     def test_h_8_0m(self):
-        assert get_smoke_detector_radius(8.0) == pytest.approx(4.76, abs=0.01)
+        """C-09 FIX: R is now FLAT — was 4.76 (heat-detector bracket)."""
+        assert get_smoke_detector_radius(8.0) == pytest.approx(6.37, abs=0.01)
 
     def test_h_9_5m(self):
-        assert get_smoke_detector_radius(9.5) == pytest.approx(4.48, abs=0.01)
+        """C-09 FIX: R is now FLAT — was 4.48 (heat-detector bracket)."""
+        assert get_smoke_detector_radius(9.5) == pytest.approx(6.37, abs=0.01)
 
     def test_h_11_0m(self):
-        assert get_smoke_detector_radius(11.0) == pytest.approx(4.20, abs=0.01)
+        """C-09 FIX: R is now FLAT — was 4.20 (heat-detector bracket)."""
+        assert get_smoke_detector_radius(11.0) == pytest.approx(6.37, abs=0.01)
 
     def test_h_13_0m(self):
-        assert get_smoke_detector_radius(13.0) == pytest.approx(3.64, abs=0.01)
+        """C-09 FIX: R is now FLAT — was 3.64 (heat-detector bracket)."""
+        assert get_smoke_detector_radius(13.0) == pytest.approx(6.37, abs=0.01)
 
     def test_h_15_24m(self):
-        """Upper boundary: h=15.24 must return R=3.64."""
-        assert get_smoke_detector_radius(15.24) == pytest.approx(3.64, abs=0.01)
+        """C-09 FIX: R is now FLAT — was 3.64 (heat-detector bracket)."""
+        assert get_smoke_detector_radius(15.24) == pytest.approx(6.37, abs=0.01)
 
     def test_reject_below_3m(self):
         """V24 FIX: h < 3.0m must raise CeilingHeightError."""
@@ -797,12 +826,18 @@ class TestGetSmokeDetectorRadius:
         with pytest.raises(CeilingHeightError):
             get_smoke_detector_radius(19.0)
 
-    def test_radius_decreases_with_height(self):
-        """Higher ceilings → smaller radius → more detectors → safer."""
+    def test_radius_constant_across_heights(self):
+        """C-09 FIX: R is FLAT — same value at all valid heights per NFPA 72 §17.7.3.2.3.
+
+        Previously this test asserted R decreases with height (applying the
+        heat-detector table to smoke detectors — a code violation). Now R is
+        constant at 6.37m for all heights in [3.0, 18.288]m.
+        """
         r_3 = get_smoke_detector_radius(3.0)
         r_6 = get_smoke_detector_radius(6.0)
         r_12 = get_smoke_detector_radius(12.5)
-        assert r_3 > r_6 > r_12
+        r_18 = get_smoke_detector_radius(18.0)
+        assert r_3 == r_6 == r_12 == r_18 == pytest.approx(6.37, abs=0.01)
 
 
 # get_smoke_detector_coverage_max

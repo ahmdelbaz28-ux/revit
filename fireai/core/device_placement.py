@@ -637,12 +637,21 @@ class DetectorPlacementEngine:
         cd = NFPA72_NAC_SLEEPING_MIN_CD if room.is_sleeping_area else NFPA72_NAC_MIN_CD
 
         # C-06 FIX: compute appliance spacing from NFPA 72 §18.5.5.5.
+        # C-06 CORRECTION (Engineering Review audit): the previous comment
+        # cited "NFPA 72 Table 18.5.5.5.1" — it is actually a FIGURE
+        # (Figure 18.5.5.5.1: Room Spacing for Wall-Mounted Visible
+        # Notification Appliances). The specific 40/50/60ft @ 75/110/177cd
+        # values below are derived from manufacturer application guidance
+        # (System Sensor SpectrAlert, Honeywell AVAG266) based on the
+        # Figure, NOT direct NFPA normative text. They are reasonable
+        # engineering guidance but should not be cited as "NFPA Table" values.
         # For wall-mounted visible notification appliances, the maximum
         # spacing along the room's longest axis is:
-        #   - 40 ft (12.19 m) for 75 cd (NFPA 72 Table 18.5.5.5.1)
+        #   - 40 ft (12.19 m) for 75 cd (manufacturer guidance, derived
+        #     from NFPA 72 Figure 18.5.5.5.1)
         #   - 50 ft (15.24 m) for 110 cd
         #   - 60 ft (18.29 m) for 177 cd (sleeping areas)
-        # Source: NFPA 72-2022 Table 18.5.5.5.1
+        # Source: NFPA 72-2022 Figure 18.5.5.5.1 + manufacturer application guides
         if cd >= 177:
             nac_max_spacing_m = 18.29  # 60 ft
         elif cd >= 110:

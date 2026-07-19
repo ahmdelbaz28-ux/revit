@@ -385,11 +385,21 @@ exclude_lines = [
 # remediation plan in the audit report is completed.
 # V288 FIX (Phase 2.4): Raised from 40% to 45% as an incremental step.
 # Current actual coverage is ~47% (per CI Gate 2 output). Raising to 45%
-# provides a safety margin while preventing coverage regression. Target
-# is 80% for life-safety modules (nfpa72_*, voltage_drop, battery_aging_
-# derating, audit_trail) — to be achieved in follow-up sprints by adding
-# targeted tests, not by lowering the threshold.
-fail_under = 45
+# provides a safety margin while preventing coverage regression.
+#
+# C-XX FIX (Engineering Review): the report recommends 95% coverage on
+# fireai/core/. The current 45% threshold applies repo-wide. Raising to
+# 95% repo-wide would fail CI immediately because actual coverage is ~47%.
+# Strategy:
+#   - Step 1 (this commit): raise to 50% — achievable with current tests
+#     + the new C-03/C-09/etc. test coverage added in this PR.
+#   - Step 2 (next sprint): add a SEPARATE per-module threshold of 95% for
+#     fireai/core/ via `--cov-fireai-core-fail-under=95` in CI.
+#   - Step 3 (Month 3 per the report roadmap): raise repo-wide to 80%.
+#   - Step 4 (Month 6): raise repo-wide to 95% after PE review + UL 864.
+# The 95% target is documented but NOT enforced yet — enforcing it now would
+# block all PRs without improving safety.
+fail_under = 50
 
 [tool.bandit]
 targets = ["fireai", "tests"]

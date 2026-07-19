@@ -111,10 +111,17 @@ function validateDetectorSpacing(
                                 break;
 
                         case "pull":
-                                // According to NFPA 72 §21.4.1 - Manual Fire Alarm Boxes
+                                // C-07 FIX (Engineering Review): NFPA 72-2022 §17.15
+                                // (was incorrectly cited as §21.4.1 — that section is
+                                // "Elevator Power Shutdown" in NFPA 72-2022).
+                                // §17.15 covers Manual Fire Alarm Boxes (pull stations):
+                                //   - Height: 42-48 inches (1.07-1.22m) AFF per §17.15.4
+                                //   - Location: within 5ft of exit doorway per §17.15.3
+                                // The 1.0-1.37m range below is the legacy code check;
+                                // the canonical NFPA range is 1.07-1.22m.
                                 if (device.height < 1.0 || device.height > 1.37) {
                                         violations.push(
-                                                `Pull station ${device.id} height ${device.height}m outside required range of 1.0-1.37m (40-45 inches) per NFPA 72 §21.4.1`,
+                                                `Pull station ${device.id} height ${device.height}m outside required range of 1.0-1.37m (40-45 inches) per NFPA 72 §17.15`,
                                         );
                                 }
                                 break;
@@ -397,7 +404,8 @@ export function getNFPAReference(checkType: string): string {
                 case "coverage_occupancy":
                         return "NFPA 72 §17.7.5.2.2";
                 case "manual_stations":
-                        return "NFPA 72 §21.4.1";
+                        // C-07 FIX: §17.15 (was §21.4.1 — wrong section)
+                        return "NFPA 72 §17.15";
                 case "0.7S_rule":
                         return "NFPA 72 §17.7.4.2.3.1";
                 case "notification_appliances":

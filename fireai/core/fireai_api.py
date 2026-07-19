@@ -362,8 +362,16 @@ async def analyse_floor(request: Request, body: AnalyseFloorRequest) -> FloorRes
         try:
             room_specs.append(_build_room_spec(r))
         except ValueError as e:
+            # S-07 FIX (Engineering Review): log the full reason to the audit
+            # trail (server-side), but return a generic message to the client
+            # that does not include str(e). The room_id is safe to return
+            # because it identifies which room failed — that is not sensitive.
             _audit_trail.log_rejection(room_id=r.room_id, reason=str(e))
-            raise HTTPException(status_code=422, detail=f"Room '{r.room_id}': {e}")  # NOSONAR — S8415: assignment kept for readability / debuggability
+            logger.warning("Room '%s' rejected: %s", r.room_id, e)
+            raise HTTPException(
+                status_code=422,
+                detail=f"Room '{r.room_id}' was rejected — see server logs for details.",
+            )  # NOSONAR — S8415: assignment kept for readability / debuggability
 
     orchestrator = FloorOrchestrator(audit_trail=_audit_trail)
     floor_result = orchestrator.process(room_specs=room_specs, project_name=body.floor_id, source_dxf="")

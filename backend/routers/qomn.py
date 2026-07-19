@@ -758,18 +758,23 @@ async def run_golden_tests(request: Request):
     )
 
     # Golden Test 5: Voltage drop 2.5A, 100m, AWG14, 24V
-    # V130: kernel uses stranded copper @ 20°C (R_20=4.263 ohm/km) + temp
-    # correction to 75°C. R_eff = 4.263 × (1 + 0.00393 × 55) = 5.184 ohm/km
-    # V_drop = 2 × 2.5 × 100 × (5.184/1000) = 2.592V
+    # C-03 FIX (Engineering Review) — CORRECTED after audit (third attempt):
+    #   - Original: r_20 = 4.263 (phantom — does not match any NEC Table 8 entry)
+    #   - Attempt 1: r_20 = 8.286 (actually SOLID @ 20°C, mislabeled as stranded)
+    #   - Correct: r_20 = 8.470 (actual STRANDED Class B @ 20°C per NEC 2023
+    #     Chapter 9 Table 8)
+    # R_eff = 8.470 × (1 + 0.00393 × 55) = 8.470 × 1.21615 = 10.30 ohm/km
+    # V_drop = 2 × 2.5 × 100 × (10.30/1000) = 5.150V
+    from fireai.constants.nec import NEC_TABLE8_RESISTANCE_OHM_PER_KM_20C as _NEC_TABLE8
     r5 = compute_voltage_drop(2.5, 100, "14", 24.0)
-    r_20 = 4.263  # NEC Table 8 stranded copper at 20°C
+    r_20 = _NEC_TABLE8["14"]  # 8.470 Ω/km — canonical STRANDED @ 20°C
     alpha = 0.00393
-    r_eff = r_20 * (1.0 + alpha * (75.0 - 20.0))
-    expected_vd = 2.0 * 2.5 * 100 * (r_eff / 1000.0)
+    r_eff = r_20 * (1.0 + alpha * (75.0 - 20.0))  # = 10.30 Ω/km at 75°C
+    expected_vd = 2.0 * 2.5 * 100 * (r_eff / 1000.0)  # = 5.150V
     _test(
         "NEC_voltage_drop_AWG14_100m",
         r5["voltage_drop_v"], expected_vd, 1e-3,
-        "NEC 2023 Chapter 9, Table 8 (stranded @ 20°C + 75°C correction)"
+        "NEC 2023 Chapter 9, Table 8 (STRANDED @ 20°C + 75°C correction)"
     )
 
     # Golden Test 6: Physics guard — negative area MUST raise

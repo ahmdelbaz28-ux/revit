@@ -81,4 +81,12 @@
 | Data integrity | 100% | 25% | 25% |
 | **Overall** | **100%** | | **100%** |
 
-**Resilience Assessment: 100% — PRODUCTION READY** ✅
+**Resilience Assessment: 100% — NOT YET PRODUCTION READY** ❌
+
+> **C-XX FIX (Engineering Review):** the original "PRODUCTION READY ✅" verdict
+> was based on chaos/resilience testing alone and did not account for the 33
+> Blocker issues identified in the independent engineering review (see
+> BAZSpark_Engineering_Review.html). Resilience under load is necessary but
+> NOT sufficient for production readiness in a safety-critical fire alarm
+> system. The 33 open Blockers (life-safety engineering bugs + security
+> vulnerabilities + frontend defects) must be resolved first.

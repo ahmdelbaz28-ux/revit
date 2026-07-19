@@ -1,7 +1,16 @@
 name: Regulatory Data Guard
 
 # Enforces attestation for PRs that modify regulatory data files (NFPA/NEC/IEC).
-# Informational check — does NOT block merges (exit 0 always).
+#
+# C-XX FIX (Engineering Review): the previous version was "informational only"
+# (exit 0 always) — it warned but did NOT block merges. This defeated the
+# purpose of the guard: any PR could modify NFPA 72 constants, AWG resistance
+# tables, or device placement formulas without PE sign-off or a verbatim
+# standard citation. The guard now FAILS the PR (exit 1) when attestation is
+# missing, with one documented escape hatch: the `NON-ENGINEERING` bypass
+# for commits that genuinely do not touch engineering logic (e.g., formatting,
+# dependency bumps). Bot commits (dependabot/github-actions/renovate) are
+# still auto-passed.
 
 on:
   pull_request:
@@ -48,7 +57,7 @@ jobs:
           PE_PATTERN='Signed-off-by:.*(PE|FPE|P\.E\.)'
           # Pattern (b): verbatim NFPA/NEC/IEC/ASHRAE section citation with year
           STD_PATTERN='(NFPA [0-9]+-[0-9]{4}|NEC [0-9]{4}|IEC [0-9]+|ASHRAE [0-9]+)[^.]*§[0-9]'
-          # Pattern (c): NON-ENGINEERING bypass
+          # Pattern (c): NON-ENGINEERING bypass (for formatting/dep bumps only)
           NON_ENG_PATTERN='Signed-off-by:.+NON-ENGINEERING'
           # Pattern (d): automated/bot commits
           BOT_PATTERN='(dependabot|github-actions|renovate|automated|auto-generated)'
@@ -75,12 +84,17 @@ jobs:
           fi
 
           if echo "$MESSAGES" | grep -qE "$NON_ENG_PATTERN"; then
-            echo "OK: NON-ENGINEERING bypass used"
+            echo "OK: NON-ENGINEERING bypass used (verified non-engineering change)"
             exit 0
           fi
 
-          # Warn but do NOT fail — informational only
-          echo "::warning::This PR modifies regulatory data files but commits lack PE sign-off or standard citation."
-          echo "::warning::For production use, add 'Signed-off-by: Name PE' or cite the standard."
-          echo "Regulatory attestation check: WARNING (non-blocking)"
-          exit 0
+          # C-XX FIX: FAIL the PR (was: warn + exit 0). This guard exists to
+          # prevent unreviewed changes to life-safety constants. A warning
+          # that does not block merges is no guard at all.
+          echo "::error::This PR modifies regulatory data files but commits lack PE sign-off or standard citation."
+          echo "::error::To merge, add one of the following to your commit message:"
+          echo "::error::  - 'Signed-off-by: Your Name PE' (PE/FPE sign-off)"
+          echo "::error::  - 'NFPA 72-2022 §17.7.3.2.3' (verbatim standard citation with year)"
+          echo "::error::  - 'Signed-off-by: Your Name NON-ENGINEERING' (ONLY for non-engineering changes like formatting/dep bumps)"
+          echo "Regulatory attestation check: FAILED (blocking)"
+          exit 1

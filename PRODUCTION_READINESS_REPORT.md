@@ -1,5 +1,12 @@
 # PRODUCTION READINESS REPORT — BAZspark v1.55.0 (V246 Final)
 
+> **C-XX FIX (Engineering Review):** The original version of this report
+> claimed "PRODUCTION READY ✅" without qualification. That claim was
+> **not supported** by the engineering review, which identified 33 Blocker
+> issues (11 engineering + 7 security + 15 frontend) that must be resolved
+> before any production deployment. The verdict has been corrected below.
+> See: BAZSpark_Engineering_Review.html for the full audit.
+
 **Release Date:** 2026-07-13 (Africa/Cairo)
 **Branch:** `main`
 **Final Commit:** `dd42b085`
@@ -12,17 +19,26 @@
 
 BAZspark is a **safety-critical fire alarm engineering platform** with a React 18
 SPA frontend and Python FastAPI backend. After 6 comprehensive audit rounds,
-the project is **PRODUCTION READY**:
+the project is **NOT YET PRODUCTION READY** — 33 Blocker issues remain open
+per the independent engineering review:
 
 - ✅ All build gates pass (lint, typecheck, build — 0 errors)
 - ✅ All 163 automated tests pass with **zero skips**
-- ✅ Lighthouse: **94 / 100 / 100 / 100** (Perf / A11y / BP / SEO)
+- ⚠️ Lighthouse: **94 / 100 / 100 / 100** (Perf / A11y / BP / SEO) — but audit
+  masked backend errors via `preview-api-mock` plugin (since removed)
 - ✅ All CRITICAL, HIGH, and MEDIUM security vulnerabilities fixed
 - ✅ All safety-critical sample data removed or clearly marked
 - ✅ 0 npm audit vulnerabilities, 0 hardcoded secrets in source
 - ✅ 104+ backend endpoints rate-limited across 21 routers
+- ❌ **33 Blocker issues open** (engineering + security + frontend) per
+  BAZSpark_Engineering_Review.html
+- ❌ **Independent PE review not yet completed**
+- ❌ **UL 864 / FM approval not yet obtained**
+- ❌ **AHJ sign-off not yet obtained**
 
-**Verdict: PRODUCTION READY** ✅
+**Verdict: NOT YET PRODUCTION READY** ❌ — see Blocker list in
+BAZSpark_Engineering_Review.html. Estimated 6 months to launch readiness
+after Blocker fixes + PE review + certification.
 
 ---
 
@@ -203,7 +219,9 @@ the project is **PRODUCTION READY**:
 
 ## 8. VERDICT
 
-### PRODUCTION READY ✅
+### NOT YET PRODUCTION READY ❌ (C-XX FIX)
+
+See BAZSpark_Engineering_Review.html for the 33 open Blocker issues.
 
 BAZspark v1.55.0 (commit `dd42b085`) has passed all production-readiness gates
 across 6 audit iterations (V241-V246):

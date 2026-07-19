@@ -48,7 +48,7 @@ const validPullStation = {
         y: 1,
         zone: "zone-1",
         room: "room-1",
-        height: 1.2, // 1.0-1.37m per NFPA 72 §21.4.1
+        height: 1.2, // 1.0-1.37m per NFPA 72 §17.15 (C-07 FIX: was §21.4.1)
         manufacturer: "Edwards",
         model: "SIGA-278",
 };
@@ -309,7 +309,7 @@ describe("NFPA72Validator", () => {
                 });
 
                 it("should return correct reference for manual stations", () => {
-                        expect(getNFPAReference("manual_stations")).toBe("NFPA 72 §21.4.1");
+                        expect(getNFPAReference("manual_stations")).toBe("NFPA 72 §17.15");
                 });
 
                 it("should return correct reference for 0.7S rule", () => {

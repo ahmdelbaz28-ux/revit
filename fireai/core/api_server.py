@@ -447,13 +447,18 @@ def analyse_room(req: RoomRequest):
     try:
         spec = _build_spec(req)
     except Exception as exc:
-        raise HTTPException(status_code=422, detail=f"Invalid room spec: {exc}")  # NOSONAR — S8415: assignment kept for readability / debuggability
+        # S-07 FIX (Engineering Review): do not echo str(exc) to the client —
+        # may leak internal paths, SQL fragments, or stack-trace context.
+        logger.warning("Invalid room spec: %s", exc)
+        raise HTTPException(status_code=422, detail="Invalid room specification — see server logs for details.")  # NOSONAR — S8415: assignment kept for readability / debuggability
 
     try:
         result = _get_system().analyse_room(spec, user_id="api", run_resilience=req.run_resilience)
         return _to_response(result)
     except ValueError as exc:
-        raise HTTPException(status_code=422, detail=str(exc))  # NOSONAR — S8415: assignment kept for readability / debuggability
+        # S-07 FIX: log full exception server-side; return generic message to client.
+        logger.warning("Room analysis ValueError: %s", exc)
+        raise HTTPException(status_code=422, detail="Room analysis rejected the input — see server logs for details.")  # NOSONAR — S8415: assignment kept for readability / debuggability
     except Exception as exc:
         logger.exception("Room analysis failed: %s", exc)
         raise HTTPException(status_code=500, detail="Analysis failed")  # NOSONAR — S8415: assignment kept for readability / debuggability
@@ -558,7 +563,9 @@ def run_integration(req: IntegrationRequest):
             user_id="api",
         )
     except ValueError as exc:
-        raise HTTPException(status_code=422, detail=str(exc))  # NOSONAR — S8415: assignment kept for readability / debuggability
+        # S-07 FIX: do not leak str(exc) to client.
+        logger.warning("Integration pipeline ValueError: %s", exc)
+        raise HTTPException(status_code=422, detail="Integration pipeline rejected the input — see server logs for details.")  # NOSONAR — S8415: assignment kept for readability / debuggability
     except Exception as exc:
         logger.exception("Integration pipeline failed: %s", exc)
         raise HTTPException(status_code=500, detail="Integration pipeline failed")  # NOSONAR — S8415: assignment kept for readability / debuggability

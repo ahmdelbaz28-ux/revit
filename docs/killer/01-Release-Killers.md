@@ -3,7 +3,17 @@
 **Project:** BAZspark v1.55.0
 **Audit Date:** 2026-07-13
 **Final Commit:** `4e7f1ae2`
-**Audit Method:** Zero-defect production validation (V250)
+
+> **C-XX FIX (Engineering Review):** the original "Audit Method: Zero-defect
+> production validation (V250)" claim was misleading. The V250 audit found
+> 7 release killers, but an independent engineering review subsequently
+> identified **33 Blocker issues** (11 engineering + 7 security + 15 frontend)
+> that the V250 audit did not catch. The "zero-defect" label has been removed
+> because it was not supported by the deeper review. See
+> BAZSpark_Engineering_Review.html for the full list.
+
+**Audit Method:** V250 release-killer audit (7 found) + independent
+engineering review (33 Blockers found — see BAZSpark_Engineering_Review.html)
 
 ---
 

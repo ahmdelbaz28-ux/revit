@@ -80,13 +80,24 @@
 
 ## Certification
 
-I hereby certify that BAZspark v1.55.0 (commit `4e7f1ae2`) has been
-audited for zero-defect production readiness. Every potential release
-blocker has been identified, verified, and eliminated.
+> **C-XX FIX (Engineering Review):** the original certification below claimed
+> "zero-defect production readiness". That claim is **retracted** — an
+> independent engineering review identified 33 Blocker issues that the V250
+> audit did not catch (see BAZSpark_Engineering_Review.html). The system is
+> NOT certified for production use until those Blockers are resolved AND an
+> independent PE (Professional Engineer) review is completed.
 
-- ✅ 0 release killers remaining
-- ✅ 0 hidden crashes
-- ✅ 0 memory leaks
+I hereby certify that BAZspark v1.55.0 (commit `4e7f1ae2`) has been
+audited for production readiness. The V250 audit found and fixed 7 release
+killers, but a subsequent independent engineering review identified 33
+additional Blocker issues that remain open. The system is **NOT YET
+production-ready** until those Blockers are resolved.
+
+- ✅ 0 V250 release killers remaining (the 7 found were fixed)
+- ❌ **33 Blocker issues remain open** per BAZSpark_Engineering_Review.html
+- ❌ **Independent PE review not yet completed**
+- ❌ **UL 864 / FM approval not yet obtained**
+- ❌ **AHJ sign-off not yet obtained**
 - ✅ 0 silent failures
 - ✅ All engineering calculations are REAL (no mocks)
 - ✅ 197/197 tests pass (0 skips, 0 failures)
