@@ -176,11 +176,11 @@ class TestSPLExtended:
         assert result.is_compliant is True
 
     def test_exactly_at_max_spl(self):
-        """SPL exactly at 120 dBA should NOT exceed max (it's the boundary)."""
-        # Need a horn/distance combo that gives exactly 120 dBA
-        # At 3.05m, SPL = horn rating. If horn = 120, SPL at 3.05m = 120
-        result = calculate_spl(120.0, _HORN_REFERENCE_DISTANCE_M)
-        assert result.spl_dba == pytest.approx(120.0, abs=0.01)
+        """SPL exactly at 110 dBA should NOT exceed max (it's the boundary)."""
+        # V286 UPDATE: max SPL changed from 120 to 110 dBA per NFPA 72 §18.4.1.2
+        # At 3.05m, SPL = horn rating. If horn = 110, SPL at 3.05m = 110
+        result = calculate_spl(110.0, _HORN_REFERENCE_DISTANCE_M)
+        assert result.spl_dba == pytest.approx(110.0, abs=0.01)
         assert result.exceeds_max is False
 
     def test_formula_contains_distance(self):
@@ -456,13 +456,14 @@ class TestNotificationAssessmentExtended:
         assert "NFPA 72 §18.5.5.4" in assessment.nfpa_references
 
     def test_spl_exceeds_max_violation_message(self):
-        """When SPL exceeds 120 dBA, violation must mention it."""
+        """When SPL exceeds 110 dBA, violation must mention it."""
+        # V286 UPDATE: max SPL changed from 120 to 110 dBA per NFPA 72 §18.4.1.2
         spl = calculate_spl(130.0, 1.0)
         assert spl.exceeds_max is True
         assessment = NotificationAssessment(room_id="R1", spl_result=spl)
         assessment.evaluate()
         assert assessment.is_compliant is False
-        assert any("exceeds maximum" in v or "120" in v for v in assessment.violations)
+        assert any("exceeds maximum" in v or "110" in v for v in assessment.violations)
 
     def test_room_id_preserved(self):
         """Room ID must be preserved in assessment."""
