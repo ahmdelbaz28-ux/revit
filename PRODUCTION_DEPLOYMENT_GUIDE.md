@@ -6,7 +6,7 @@
 
 ## ⚠️ CRITICAL: Supabase Project Replacement Required
 
-**Issue Confirmed:** The configured Supabase project `nrdqdnmyxbbdrrmqxzej.supabase.co` does not exist (DNS failure).
+**Issue Confirmed:** The configured Supabase project `<SUPABASE_PROJECT_REF>.supabase.co` does not exist (DNS failure).
 
 **Impact:** Production deployment will fail because the database is unreachable.
 
