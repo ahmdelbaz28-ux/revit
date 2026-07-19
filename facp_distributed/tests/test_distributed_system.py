@@ -38,7 +38,10 @@ class TestDistributedFACP(unittest.TestCase):
     def setUp(self):
         """Set up test fixtures"""
         # Create security components
-        self.auth_provider = AuthProvider("test_secret")
+        # V289: AuthProvider now requires a strong secret (>= 32 chars).
+        # The old "test_secret" was only 11 chars — would fail validation.
+        import secrets as _secrets
+        self.auth_provider = AuthProvider(secret_key=_secrets.token_urlsafe(48))
         self.rbac_engine = RBACEngine()
         self.permission_checker = PermissionChecker(self.rbac_engine)
         self.audit_logger = AuditLogger()
@@ -76,9 +79,11 @@ class TestDistributedFACP(unittest.TestCase):
         )
 
         # Create a test token
-        self.test_token = self.auth_provider.create_session_token(
+        # V289 FIX: AuthProvider delegates token creation to TokenManager.generate_token
+        self.test_token = self.auth_provider.token_manager.generate_token(
             user_id=self.test_user_id,
-            permissions=["engine_access", "execute"]
+            permissions=["engine_access", "execute"],
+            roles=["operator"],
         )
 
     def test_protocol_validation(self):
@@ -604,7 +609,9 @@ class TestDistributedSecurity(unittest.TestCase):
 
     def setUp(self):
         """Set up security test fixtures"""
-        self.auth_provider = AuthProvider("security_test_secret")
+        # V289 FIX: use a strong 48-char secret (was "security_test_secret" — 20 chars)
+        import secrets as _secrets2
+        self.auth_provider = AuthProvider(secret_key=_secrets2.token_urlsafe(48))
         self.rbac_engine = RBACEngine()
         self.validation_firewall = ValidationFirewall(self.auth_provider)
 
@@ -628,9 +635,16 @@ class TestDistributedSecurity(unittest.TestCase):
         )
 
         # Create tokens for each user
-        self.admin_token = self.auth_provider.create_session_token("admin_user")
-        self.operator_token = self.auth_provider.create_session_token("operator_user")
-        self.viewer_token = self.auth_provider.create_session_token("viewer_user")
+        # V289 FIX: use TokenManager.generate_token (AuthProvider has no create_session_token)
+        self.admin_token = self.auth_provider.token_manager.generate_token(
+            "admin_user", ["engine_access", "execute", "read", "write"], ["admin"]
+        )
+        self.operator_token = self.auth_provider.token_manager.generate_token(
+            "operator_user", ["engine_access", "execute", "read", "write"], ["operator"]
+        )
+        self.viewer_token = self.auth_provider.token_manager.generate_token(
+            "viewer_user", ["read"], ["viewer"]
+        )
 
     def test_permission_levels(self):
         """Test different permission levels"""
