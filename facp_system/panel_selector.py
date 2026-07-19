@@ -138,34 +138,28 @@ class SelectionEngine:
 
             return round(result.required_ah, 2), derating_details
 
-        except ImportError:
-            # Standalone deployment: enhanced simplified calculation
-            # Uses aging derating (0.80 EOL) + temperature derating + 1.20x safety margin
-            logger.warning(
-                "fireai.core.battery_aging_derating not available. "
-                "Using enhanced simplified battery sizing with 1.46x safety factor."
-            )
-
-            raw_capacity = (standby_load * 24.0) + (alarm_load * alarm_duration_h)
-
-            # Enhanced safety factor: aging EOL (0.80) + temperature (conservative 0.85)
-            # + base margin (1.20) = 1 / (0.80 * 0.85) * 1.00 = 1.47x
-            aging_derating = 0.80  # IEEE 1188 EOL
-            temp_derating = 0.85  # Conservative for indoor conditioned space
-            enhanced_factor = 1.0 / (aging_derating * temp_derating)
-
-            battery_ah = raw_capacity * enhanced_factor
-
-            derating_details = {
-                "method": "enhanced_simplified_standalone",
-                "aging_derating_eol": aging_derating,
-                "temperature_derating": temp_derating,
-                "enhanced_safety_factor": round(enhanced_factor, 2),
-                "min_temperature_c": min_temperature_c,
-                "nfpa_reference": "NFPA 72-2022 SS10.6.7 (simplified)",
-            }
-
-            return round(battery_ah, 2), derating_details
+        except ImportError as exc:
+            # V279 LIFE-SAFETY FIX: Refuse to operate without the production
+            # battery sizing module. The previous behavior fell back to a
+            # "simplified" 1.47x safety factor and only emitted a logger.warning
+            # — but that fallback used a FLAT temperature derating (0.85)
+            # regardless of the actual min_temperature_c. At 0°C the real
+            # IEEE 485 derating is 0.72 (1.39x), so the fallback under-sized
+            # batteries by ~31% in cold environments.
+            #
+            # In a life-safety system, a battery that fails to deliver 24h
+            # standby + alarm duration means the FACP goes dark during a fire
+            # event. ImportError on a critical calculation module MUST fail
+            # loud — there is no safe "simplified" substitute.
+            raise RuntimeError(
+                "fireai.core.battery_aging_derating is REQUIRED for life-safety "
+                "battery sizing. The previous 'simplified fallback' used a flat "
+                "temperature derating (0.85) that under-sized batteries by ~31% "
+                "at 0°C vs. the real IEEE 485 derating (0.72). Refusing to "
+                "operate without the production module — ImportError on a "
+                "safety-critical calculation cannot be safely downgraded to a "
+                "warning. Original error: " + str(exc)
+            ) from exc
 
     @classmethod
     def select_panel(cls, req: ProjectRequirements) -> PanelRecommendation:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
