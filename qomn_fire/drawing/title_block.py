@@ -20,6 +20,32 @@ def draw_title_block(doc, title: TitleBlock):
 
     layout = doc.layout("A1-Fire-Alarm-Plan") if "A1-Fire-Alarm-Plan" in doc.layouts else doc.layouts.new("A1-Fire-Alarm-Plan")
 
+    # V279 SAFETY FIX: Reject drawing generation when pe_stamp is empty or a known
+    # placeholder. NFPA 72 submittals MUST bear the seal of a licensed Professional
+    # Engineer (PE) — emitting a drawing without a real PE stamp, or with a hardcoded
+    # fake stamp (the prior default "LICENSED PROFESSIONAL ENGINEER - STAMP #PE-90998"),
+    # would constitute forgery of an engineering document. This guard makes the
+    # failure loud at drawing time so no deliverable can ship without proper PE
+    # sign-off.
+    _PLACEHOLDER_PE_STAMPS = frozenset({
+        "",
+        "N/A",
+        "TBD",
+        "TODO",
+        "PENDING",
+        "LICENSED PROFESSIONAL ENGINEER - STAMP #PE-90998",  # legacy hardcoded fake
+        "REPLACE_WITH_REAL_PE_STAMP_BEFORE_DELIVERY",  # explicit placeholder used in demo scripts
+    })
+    normalized_pe_stamp = (title.pe_stamp or "").strip()
+    if not normalized_pe_stamp or normalized_pe_stamp.upper() in {s.upper() for s in _PLACEHOLDER_PE_STAMPS}:
+        raise ValueError(
+            "PE stamp is required for NFPA 72 submittal drawings. The pe_stamp "
+            "field must contain the licensed Professional Engineer's name, license "
+            "number, and jurisdiction. Refusing to generate drawing without a "
+            "valid PE stamp — emitting a drawing with no stamp or a placeholder "
+            "would constitute forgery of an engineering document."
+        )
+
     # Border margins
     layout.add_line((10.0, 10.0), (831.0, 10.0), dxfattribs={"color": 7})
     layout.add_line((831.0, 10.0), (831.0, 584.0), dxfattribs={"color": 7})

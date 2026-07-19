@@ -372,7 +372,7 @@ def execute_integrated_master_project():
         date="2026-06-01",
         designer="Systems Automation Architect",
         checker="Senior Verification Audit Engineer",
-        pe_stamp="LICENSED PROFESSIONAL ENGINEER - STAMP #PE-90998",
+        pe_stamp="REPLACE_WITH_REAL_PE_STAMP_BEFORE_DELIVERY",
         client="Hospital General Board",
         address="Zone 2 Building C Complex"
     )
