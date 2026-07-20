@@ -22,7 +22,7 @@ prometheus_client>=0.16.0,<1.0.0
 locust>=2.45.0  # V265: bump lower bound (PR #150)
 
 # HTTP test client (required by backend/tests/conftest.py)
-httpx>=0.24.0,<1.0.0
+httpx>=0.28.1,<1.0.0
 
 # ═══════════════════════════════════════════════════════════════════════════
 # V214: DWG file conversion — system binaries (NOT pip packages)
