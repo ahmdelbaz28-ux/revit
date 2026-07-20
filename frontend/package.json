@@ -108,7 +108,7 @@
 		"@types/terser": "^3.8.1",
 		"@types/three": "^0.160.0",
 		"@vitejs/plugin-react": "^6.0.3",
-		"@vitest/coverage-v8": "^4.1.8",
+		"@vitest/coverage-v8": "^4.1.10",
 		"chokidar": "^4.0.3",
 		"electron": "^42.4.0",
 		"electron-builder": "^26.15.3",
