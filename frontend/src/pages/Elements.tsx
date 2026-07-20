@@ -87,7 +87,7 @@ function Elements() {
                                         </p>
                                 </div>
                                 <button type="button" onClick={() => setShowCreateModal(true)}
-						className="inline-flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary text-white text-sm font-medium rounded-lg transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary text-white text-sm font-medium rounded-lg transition-colors"
                                 >
                                         <svg
                                                 width="16"
@@ -371,11 +371,11 @@ function Elements() {
                                                 )}
                                                 <div className="flex justify-end gap-3">
                                                         <button type="button" onClick={() => setDeleteTarget(null)}
-								className="px-4 py-2 text-sm text-foreground/90 hover:text-white transition-colors"
-						>
-							{t("common.cancel")}
-						</button>
-						<Button
+                className="px-4 py-2 text-sm text-foreground/90 hover:text-white transition-colors"
+            >
+              {t("common.cancel")}
+            </button>
+            <Button
                                                                 onClick={() => deleteMutation.mutate(deleteTarget.element_id)}
                                                                 disabled={deleteMutation.isPending}
                                                                 className="bg-danger hover:bg-danger/90 text-white border-none"
@@ -585,3 +585,4 @@ function CreateElementModal({
 }
 
 export default Elements;
+
