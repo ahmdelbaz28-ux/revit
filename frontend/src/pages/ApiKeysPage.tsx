@@ -101,38 +101,48 @@ export function ApiKeysPage() {
                 // This avoids the blocking browser confirm() dialog which is not
                 // production-quality and can't be styled.
                 let confirmed = false;
-                // NOSONAR - typescript:S2004: nested callbacks intentional for promise-based toast confirmation flow
+                let resolveFn: ((value: void) => void) | null = null;
+                let rejectFn: ((reason?: unknown) => void) | null = null;
+
+                const onDeleteClick = () => {
+                        confirmed = true;
+                        const apiKey = getApiKey();
+                        const headers: Record<string, string> = {};
+                        if (apiKey) headers["X-API-Key"] = apiKey;
+                        fetch(`/api/v1/admin/keys/${keyHash}`, {
+                                method: "DELETE",
+                                headers,
+                        })
+                                .then((resp) => {
+                                        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                                        toast.success("API key deleted");
+                                        if (resolveFn) resolveFn();
+                                })
+                                .catch((err) => {
+                                        toast.error(`Failed to delete: ${err.message}`);
+                                        if (rejectFn) rejectFn(err);
+                                });
+                };
+
+                const onCancelClick = () => {
+                        if (rejectFn) rejectFn(new Error("Cancelled"));
+                };
+
                 const deletePromise = new Promise<void>((resolve, reject) => {
+                        resolveFn = resolve;
+                        rejectFn = reject;
                         toast("Delete this API key? This cannot be undone.", {
                                 duration: 10000,
                                 action: {
                                         label: "Delete",
-                                        onClick: () => {  // NOSONAR - typescript:S2004
-                                                confirmed = true;
-                                                const apiKey = getApiKey();
-                                                const headers: Record<string, string> = {};
-                                                if (apiKey) headers["X-API-Key"] = apiKey;
-                                                fetch(`/api/v1/admin/keys/${keyHash}`, {
-                                                        method: "DELETE",
-                                                        headers,
-                                                })
-                                                        .then((resp) => {
-                                                                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-                                                                toast.success("API key deleted");
-                                                                resolve();
-                                                        })
-                                                        .catch((err) => {
-                                                                toast.error(`Failed to delete: ${err.message}`);
-                                                                reject(err);
-                                                        });
-                                        },
+                                        onClick: onDeleteClick,
                                 },
                                 cancel: {
                                         label: "Cancel",
-                                        onClick: () => reject(new Error("Cancelled")),
+                                        onClick: onCancelClick,
                                 },
                                 onDismiss: () => {
-                                        if (!confirmed) reject(new Error("Cancelled"));
+                                        if (!confirmed && rejectFn) rejectFn(new Error("Cancelled"));
                                 },
                         });
                 });
