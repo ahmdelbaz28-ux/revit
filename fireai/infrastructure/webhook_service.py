@@ -225,7 +225,6 @@ class DeadLetterEntry:
     url: str
     final_error: str
     attempts: list[WebhookDeliveryAttempt]
-    # V135 F-12: Store original payload for replay
     payload: bytes = b""
     source: str = ""
     timestamp: str = field(
@@ -303,7 +302,6 @@ class WebhookDeliveryService:
         self.retry_backoff_base = retry_backoff_base
         self.retry_backoff_max = retry_backoff_max
         self.dlq_max_size = dlq_max_size
-        # V135 F-21: Configurable history cap (was hardcoded 1000)
         self.history_max_size = history_max_size
 
         # Determine HTTP allowance
@@ -432,7 +430,6 @@ class WebhookDeliveryService:
             )
 
         # Secret validation
-        # V135 F-33 FIX: Increased minimum secret length from 16 to 32 chars.
         # Per NIST SP 800-107, HMAC-SHA256 should use keys ≥ 32 bytes.
         # The OLD 16-char minimum was below NIST recommendation.
         MIN_HMAC_SECRET_LENGTH = 32
@@ -498,13 +495,11 @@ class WebhookDeliveryService:
             event_id, event_type, len(matching),
         )
 
-        # V135 F-11 / V137 F-3 FIX: Deliver ASYNCHRONOUSLY via ThreadPoolExecutor.
         # The V135 F-11 "fix" used `concurrent.futures.wait()` which does NOT
         # raise TimeoutError — it returns (done, not_done) tuple. The `except
         # TimeoutError` was dead code. Additionally, `with ThreadPoolExecutor()`
         # exit blocks via `shutdown(wait=True)` — negating the timeout entirely.
         #
-        # V137 F-3 FIX: Use `as_completed()` with timeout, which DOES raise
         # TimeoutError when the timeout expires. Cancel pending futures on
         # timeout. Do NOT use `with` statement (which blocks on exit) —
         # manually shutdown(wait=False) to avoid blocking.
@@ -530,14 +525,12 @@ class WebhookDeliveryService:
 
             GLOBAL_DELIVERY_TIMEOUT_S = 60.0
             try:
-                # V137 F-3: as_completed raises TimeoutError when timeout expires
                 for future in as_completed(futures, timeout=GLOBAL_DELIVERY_TIMEOUT_S):
                     try:
                         future.result()
                     except Exception as exc:
                         logger.warning("Webhook delivery worker error: %s", exc)
             except FuturesTimeoutError:
-                # V137 F-3: Cancel remaining futures (was dead code before)
                 cancelled = 0
                 for f in futures:
                     if not f.done():
@@ -549,7 +542,6 @@ class WebhookDeliveryService:
                     GLOBAL_DELIVERY_TIMEOUT_S, event_id, cancelled,
                 )
             finally:
-                # V138 F-6 FIX: shutdown(wait=False) leaves orphaned threads that
                 # continue mutating _dlq/_delivery_history. Cancel ALL pending futures
                 # before shutdown to prevent orphaned mutations.
                 for f in futures:
@@ -651,7 +643,6 @@ class WebhookDeliveryService:
             # Store in history (capped)
             with self._lock:
                 self._delivery_history.append(attempt)
-                # V135 F-21: Use configurable history_max_size (was hardcoded 1000)
                 if len(self._delivery_history) > self.history_max_size:
                     self._delivery_history = self._delivery_history[-self.history_max_size:]
 
@@ -677,7 +668,6 @@ class WebhookDeliveryService:
                 time.sleep(backoff)
 
         # All retries exhausted → dead-letter
-        # V135 F-12: Store payload + source for actual replay capability
         dlq_entry = DeadLetterEntry(
             subscription_id=subscription.id,
             event_id=event_id,
@@ -717,7 +707,6 @@ class WebhookDeliveryService:
                 },
             )
         except Exception as audit_exc:
-            # V135 F-20 FIX: Audit failure MUST be escalated, not silenced.
             # The OLD code did `except Exception: pass` which silently
             # swallowed audit failures. Per NFPA 72 §7.5, audit trail
             # integrity is a legal requirement — failures MUST be logged
@@ -794,7 +783,6 @@ class WebhookDeliveryService:
             return None  # All resolved IPs are public
 
         except Exception as exc:
-            # V138 F-12 FIX: FAIL CLOSED (was fail-open).
             # The OLD code returned None (safe = allow request) on any
             # exception. For SSRF protection, failing open means an
             # attacker can craft a URL that triggers an exception in
@@ -835,7 +823,6 @@ class WebhookDeliveryService:
         """
         t_start = time.perf_counter()
 
-        # V134 F-1: Pre-flight SSRF check — reject internal/reserved IPs
         ssrf_error = self._check_ssrf_url(url)
         if ssrf_error:
             duration_ms = (time.perf_counter() - t_start) * 1000.0
@@ -854,7 +841,6 @@ class WebhookDeliveryService:
             import urllib.error
             import urllib.request
 
-            # V134 F-2: Custom opener that BLOCKS redirects (SSRF mitigation)
             # Per OWASP SSRF Prevention Cheat Sheet: never follow redirects
             # when fetching user-provided URLs.
             class _NoRedirectHandler(urllib.request.HTTPRedirectHandler):
@@ -981,7 +967,6 @@ class WebhookDeliveryService:
             True if replay succeeded, False if index invalid or delivery failed.
 
         """
-        # V138 F-2: Pop entry FIRST (under lock) to prevent TOCTOU
         with self._lock:
             if dlq_index < 0 or dlq_index >= len(self._dlq):
                 return False
@@ -994,7 +979,6 @@ class WebhookDeliveryService:
                 "Cannot replay DLQ entry %s: subscription %s not active — re-queuing",
                 entry.event_id, entry.subscription_id,
             )
-            # V138 F-2: Re-queue the entry since we popped it
             with self._lock:
                 self._dlq.insert(dlq_index, entry)
             return False
@@ -1029,7 +1013,6 @@ class WebhookDeliveryService:
                 logger.info("DLQ entry %s replayed successfully", entry.event_id)
                 return True
             logger.warning("DLQ entry %s replay failed: %s", entry.event_id, attempt.error)
-            # V138 F-2: Re-queue on failure
             with self._lock:
                 self._dlq.insert(min(dlq_index, len(self._dlq)), entry)
             return False

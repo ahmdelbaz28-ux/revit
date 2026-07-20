@@ -98,7 +98,7 @@ export function MainWorkspace() {
                                                                 "Tools",
                                                                 "Help",
                                                         ].map((tab) => (
-                                                                <button
+                                                                <button type="button"
                                                                         key={tab}
                                                                         className={`px-3 py-1 rounded-sm transition-colors ${activeTab === tab ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-muted"}`}
                                                                         onClick={() => setActiveTab(tab)} onKeyDown={(e) => { if (e.key === "Enter") (() => setActiveTab(tab))(); }}                                                            >

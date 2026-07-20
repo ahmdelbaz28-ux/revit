@@ -72,7 +72,6 @@ _build_csp = _load_build_csp_in_isolation()
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# V119 — Environment-Aware Default Tests
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
@@ -96,7 +95,6 @@ class TestCSPEnvironmentAwareDefaults:
         assert "'unsafe-eval'" not in csp, (
             f"V119 REGRESSION: production CSP contains 'unsafe-eval' by default! CSP: {csp}"
         )
-        # V140 FIX: production no longer includes 'unsafe-inline' for scripts.
         # Only 'self' is allowed for script-src in production (React doesn't
         # need inline scripts). style-src still has 'unsafe-inline' (Tailwind CSS).
         assert "script-src 'self'" in csp

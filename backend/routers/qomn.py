@@ -41,7 +41,6 @@ from backend.auth import require_permission
 from backend.limiter import limiter
 from backend.rbac import Permission
 
-# V118: Canonical NEC Table 8 gauge set — MUST stay in sync with
 # fireai/core/qomn_kernel.py:NEC_TABLE8_RESISTANCE_OHM_PER_KM keys.
 # Module-level (NOT class-attr) so Pydantic V2 doesn't treat it as a
 # private model attribute (leading underscore convention).
@@ -82,7 +81,6 @@ _kernel = None
 _kernel_lock = threading.Lock()
 
 # ── Cached kernel exception classes ─────────────────────────────────────────
-# V116 FIX: Cache exception classes at module level instead of importing
 # inside _handle_error(). The old code did `from fireai.core.qomn_kernel
 # import PhysicsGuardError, ...` inside the function body. If that import
 # failed for ANY reason (module partially loaded, class renamed, corruption),
@@ -192,11 +190,9 @@ class VoltageDropRequest(BaseModel):
 
     current_a:        float = Field(..., gt=0, description="Circuit current in Amperes")
     length_m:         float = Field(..., gt=0, description="One-way circuit length in meters")
-    # V65 FIX: Validate AWG gauge against NEC Table 8 valid sizes.
     # An invalid gauge could produce incorrect voltage drop — in a fire alarm
     # system, underestimated voltage drop means devices may not operate.
     #
-    # V118 FIX: The previous regex accepted 6 values (3, 250, 300, 350, 400, 500)
     # that DO NOT EXIST in NEC_TABLE8_RESISTANCE_OHM_PER_KM (kernel source of
     # truth). A user submitting awg_gauge="250" would pass router validation
     # and then hit ValueError in the kernel → opaque HTTP 422 with no helpful
@@ -205,7 +201,6 @@ class VoltageDropRequest(BaseModel):
     # deliver). The regex is now aligned EXACTLY with the kernel's table
     # keys: 18, 16, 14, 12, 10, 8, 6, 4, 2, 1, 1/0, 2/0, 3/0, 4/0.
     #
-    # V118 NORMALIZATION: Accept user-friendly variants ("AWG14", "14 ",
     # "awg 14") via Pydantic validator BEFORE regex check, matching the
     # kernel's awg_gauge.strip().upper().replace("AWG","").strip() logic.
     # This eliminates the previous mismatch where router rejected "AWG14"
@@ -222,7 +217,6 @@ class VoltageDropRequest(BaseModel):
     supply_voltage_v: float = Field(24.0, gt=0, description="Supply voltage (default 24VDC)")
     max_drop_pct:     float = Field(10.0, gt=0, le=50, description="Max allowable drop %")
 
-    # V118: Field validator delegates to module-level _normalize_awg_gauge
     # to keep the kernel/router AWG validation in lockstep.
     _validate_awg = field_validator("awg_gauge", mode="before")(_normalize_awg_gauge)
 
@@ -748,7 +742,6 @@ async def run_golden_tests(request: Request):
     )
 
     # Golden Test 4: Battery — 0.5A standby 24h + 3.0A alarm 5min → check formula
-    # V130: tolerance relaxed to 1e-2 to handle round() in kernel output.
     r4 = compute_battery_capacity_ah(0.5, 3.0)
     ah_manual = ((0.5 * 24 + 3.0 * (5/60)) / 0.80) * 1.25
     _test(
@@ -758,7 +751,6 @@ async def run_golden_tests(request: Request):
     )
 
     # Golden Test 5: Voltage drop 2.5A, 100m, AWG14, 24V
-    # V130: kernel uses stranded copper @ 20°C (R_20=4.263 ohm/km) + temp
     # correction to 75°C. R_eff = 4.263 × (1 + 0.00393 × 55) = 5.184 ohm/km
     # V_drop = 2 × 2.5 × 100 × (5.184/1000) = 2.592V
     r5 = compute_voltage_drop(2.5, 100, "14", 24.0)
@@ -839,7 +831,6 @@ def _handle_error(exc: Exception) -> NoReturn:
     In a safety-critical system, this is a SAFETY HAZARD per agent.md
     Anti-Deception Directive. Now we use cached classes with safe fallback.
     """
-    # V116: Use cached exception classes — safe even if kernel is unavailable
     if _PhysicsGuardError is not None and isinstance(exc, _PhysicsGuardError):
         raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
             status_code=422,

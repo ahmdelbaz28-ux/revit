@@ -87,7 +87,6 @@ async def list_devices(
     sort: str = Query("createdAt"),  # NOSONAR - python:S8410
     order: str = Query("desc"),  # NOSONAR - python:S8410
 ):
-    # V140 FIX: Validate order to prevent injection
     if order not in ("asc", "desc"):
         order = "desc"
     """List all devices in a project with pagination."""
@@ -248,7 +247,6 @@ async def delete_device(request: Request, project_id: str, device_id: str):
     """
     _verify_project(project_id)
     db = get_db()
-    # V114 FIX: Record device data BEFORE deletion for audit trail
     device = db.get_device(project_id, device_id)
     if not device:
         raise HTTPException(status_code=404, detail="Device not found")  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path

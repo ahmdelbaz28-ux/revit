@@ -151,7 +151,6 @@ def _get_hmac_key() -> str:
             'Set AUDIT_HMAC_KEY: python -c "import secrets; print(secrets.token_hex(32))"'
         )
     # -- Development fallback --------------------------------
-    # V150 FIX (Thread Safety): protect dev-key generation with
     # _hmac_init_lock. The warning flag is also set under the lock
     # so the warning is emitted exactly once even under concurrency.
     with _hmac_init_lock:
@@ -187,11 +186,9 @@ _db_initialized = False
 _memory_conn: sqlite3.Connection | None = None
 _init_lock: threading.Lock = threading.Lock()  # Guards _db_initialized singleton
 
-# V137 F-1: Lock for the hash chain read-modify-write sequence.
 # Without this, concurrent add_event() calls cause chain forking.
 _chain_lock: threading.Lock = threading.Lock()
 
-# V150 FIX (Thread Safety): Lock for _get_hmac_key() lazy dev-key
 # initialization. Without this, two concurrent threads could both
 # see _DEV_HMAC_KEY is None, both generate DIFFERENT random keys,
 # and one would win while the other thread's key is discarded —
@@ -216,7 +213,6 @@ def _init_database() -> None:
     if _db_initialized:
         return
     with _init_lock:
-        # V138 F-15 FIX: Double-checked locking — ALL init code MUST be
         # inside the lock block. The OLD code released the lock before
         # doing the actual DB creation, allowing two threads to both
         # pass the double-check and create separate DBs.
@@ -227,7 +223,6 @@ def _init_database() -> None:
             db_dir = os.path.dirname(DATABASE_PATH)
             if db_dir and not os.path.isdir(db_dir):
                 os.makedirs(db_dir, exist_ok=True)
-        # V137 F-1: Use check_same_thread=False for thread safety.
         # Our _chain_lock serializes access, so cross-thread usage is safe.
         conn = sqlite3.connect(DATABASE_PATH, check_same_thread=False)
         if DATABASE_PATH == ":memory:":
@@ -283,7 +278,6 @@ def _init_database() -> None:
         # For :memory: databases, keep the connection alive — closing it destroys the data
         if DATABASE_PATH != ":memory:":
             conn.close()
-        # V138 F-15: Set _db_initialized INSIDE the lock block
         _db_initialized = True
     # End of with _init_lock block — all init code was inside the lock
 
@@ -299,7 +293,6 @@ def _get_connection() -> sqlite3.Connection:
     _init_database()
     if DATABASE_PATH == ":memory:" and _memory_conn is not None:
         return _memory_conn
-    # V137 F-1: check_same_thread=False for thread-safe concurrent access
     return sqlite3.connect(DATABASE_PATH, check_same_thread=False)
 
 
@@ -348,7 +341,6 @@ def _get_last_hash() -> str:
 # Module-level ECDSA signer (lazy initialization)
 _ecdsa_signing_key: Any | None = None
 _ecdsa_initialized = False
-# V150 FIX (Thread Safety): _ecdsa_init_lock protects the lazy
 # initialization of the ECDSA signer. The previous code had a classic
 # check-then-act race: two threads could both see _ecdsa_initialized=False,
 # both proceed past the check, and both call SigningKey.from_pem(). In
@@ -536,7 +528,6 @@ def add_event(event_type: str, room_id: str, details_dict: dict[str, Any]) -> st
     if not isinstance(details_dict, dict):
         raise ValueError("details_dict must be a dictionary")
 
-    # V137 F-1: Acquire chain lock for the ENTIRE read-modify-write sequence.
     # This prevents concurrent add_event() calls from forking the chain.
     with _chain_lock:
         # Generate timestamp
@@ -585,7 +576,6 @@ def verify_chain() -> tuple[bool, dict[str, Any] | None] | None:
         (is_valid, error_details) tuple
 
     """
-    # V138 F-9: Acquire chain lock to prevent read-during-write race
     with _chain_lock:
         conn = _get_connection()
         cursor = conn.cursor()
@@ -659,7 +649,6 @@ def get_events() -> list[dict[str, Any]]:
 
     events = []
     for row in rows:
-        # V11: row may have 8 or 9 columns (with/without ecdsa_signature)
         if len(row) >= 9:
             (
                 event_id,

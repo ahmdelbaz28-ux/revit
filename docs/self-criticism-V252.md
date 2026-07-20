@@ -1,4 +1,3 @@
-# V252 — Self-Criticism Report
 
 **Date:** 2026-07-13
 **Auditor:** Self (the AI that did V241-V251)

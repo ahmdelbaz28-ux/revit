@@ -30,7 +30,6 @@ from parsers._path_security import (
 )
 from qomn_fire.core.errors import ConversionError, Result
 
-# V128: Allowed extensions and size cap for DWG converter
 _DWG_ALLOWED_EXTENSIONS = frozenset({".dwg"})
 _DWG_MAX_FILE_SIZE_BYTES = int(
     os.getenv("FIREAI_DWG_MAX_FILE_SIZE_BYTES", str(500 * 1024 * 1024))  # 500 MB
@@ -50,7 +49,6 @@ class DwgConverter:
     surface this so engineers know the DXF has no real entities.
     """
 
-    # V213: Ordered list of converter binaries to try. The first one found
     # on PATH is used. This lets the same code work in environments with
     # LibreDWG (Linux Docker), ODA File Converter (Windows), or neither.
     _CONVERTER_BINARIES = (
@@ -73,7 +71,6 @@ class DwgConverter:
         DXF file. The mock result includes ``simulation_mode=True`` in the
         success message so callers can surface the truth.
         """
-        # V128 SECURITY: Validate source path BEFORE any file access or subprocess.
         try:
             safe_input_path = validate_input_path(
                 dwg_path,
@@ -88,8 +85,6 @@ class DwgConverter:
                 remedy="Ensure input file is in allowed upload directory with correct extension."
             ))
 
-        # V128 SECURITY: Validate output path to prevent path traversal in output.
-        # V142 FIX: Use validate_output_path (not validate_input_path) — the
         # output DXF file does NOT exist yet (we are about to create it).
         try:
             safe_output_path = validate_output_path(
@@ -104,7 +99,6 @@ class DwgConverter:
                 remedy="Ensure output file is in allowed directory with correct extension."
             ))
 
-        # V213: Try each converter binary in order. First one found wins.
         converter_bin = None
         for candidate in DwgConverter._CONVERTER_BINARIES:
             if shutil.which(candidate):
@@ -112,11 +106,9 @@ class DwgConverter:
                 break
 
         if converter_bin is None:
-            # V142/V213: No converter binary available — fall back to mock.
             return DwgConverter._mock_convert_dwg_to_dxf(dwg_path, output_dxf_path)
 
         try:
-            # V213: Different converters have different CLI syntax.
             # dwg2dxf (LibreDWG): dwg2dxf -o output.dxf input.dwg
             # ODAFileConverter: ODAFileConverter <in_dir> <out_dir> ACAD2010 DXF_0
             #   (note: ODA converts whole directories, not single files — we
@@ -166,7 +158,6 @@ class DwgConverter:
                     remedy="Verify input file is a valid DWG file"
                 ))
 
-            # V213: Real conversion succeeded — simulation_mode=False
             return Result.success(output_dxf_path)
 
         except subprocess.CalledProcessError as e:

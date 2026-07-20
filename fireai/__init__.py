@@ -70,16 +70,13 @@ _PUBLIC_NAMES = [
     "PROOF_VERIFIED_THRESHOLD",
     "FireAISystem",
     "EnhancedRoomResult",
-    # V17 Critical Life-Safety Triad
     "AcousticSPLCalculator",
     "StrictBatterySizer",
     "TenabilityEvaluator",
     "EnterpriseOrchestrator",
-    # V19 High-Rise Engineering Suite
     "ElevatorShuntTripAuditor",
     "NACBoosterAllocator",
     "SeismicJointPenalyer",
-    # V20 Digital Signaling & Master Network Architecture
     "SLCCapacitanceAuditor",
     "StairwellSmokeControlIntegrator",
     "NetworkTopologyAuditor",
@@ -89,7 +86,6 @@ _PUBLIC_NAMES = [
 def __getattr__(name):
     """Lazy import: only load sub-modules when actually accessed."""
     if name in _PUBLIC_NAMES:
-        # V17 Critical Trilogy — import from v17_core package
         _V17_NAMES = {"AcousticSPLCalculator", "StrictBatterySizer", "TenabilityEvaluator"}
         if name in _V17_NAMES:
             from fireai.v17_core import (

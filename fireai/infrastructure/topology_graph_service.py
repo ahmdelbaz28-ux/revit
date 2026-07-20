@@ -378,7 +378,6 @@ class TopologyGraphService:
             with self._driver.session() as session:
                 # Find all Load nodes downstream of the breaker
                 # Traversal: Breaker → FEEDS/CONNECTED_TO → * → Load
-                # V141 FIX: Neo4j Cypher doesn't allow parameterized depth in relationship patterns.
                 # Use string interpolation for depth (safe — max_depth is an int we control).
                 cypher_query = (
                     "MATCH (b:Breaker {element_id: $breaker_id}) "

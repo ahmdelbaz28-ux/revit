@@ -201,7 +201,6 @@ def elevation_tier_from_detector_z(z_position: float, ceiling_height_m: float = 
         ElevationTier based on detector height relative to ceiling
 
     """
-    # V57 FIX: NaN z_position silently falls through to BREATHING_ZONE.
     # NaN >= X is False, NaN <= X is False → BREATHING_ZONE (middle tier).
     # A detector with unknown elevation should NOT be classified as correctly placed.
     if not isinstance(z_position, (int, float)) or not math.isfinite(z_position):
@@ -255,7 +254,6 @@ def _get_required_redundancy(
         Minimum number of independent detectors required per point
 
     """
-    # V43 FIX: If zone is None or unrecognized, return a conservative default
     # (2 detectors) instead of 1. A single detector in an unknown zone is a
     # Single Point of Failure. Fail-safe: require MORE redundancy for unknown
     # zones, not less. Per IEC 60079-10-1, unknown zone classification is a
@@ -349,7 +347,6 @@ class SafetyAuditEngine:
         total_checks = 0
         passed_checks = 0
 
-        # V48 FIX: Wrap each gate in try/except to ensure audit NEVER fails to
         # produce a result. In safety-critical systems, the audit engine must
         # ALWAYS return a result — any gate crash should produce a CRITICAL
         # violation, not propagate an exception (fail-safe, not fail-open).
@@ -510,7 +507,6 @@ class SafetyAuditEngine:
             region = _JURISDICTION_REGION_MAP.get(audit_input.jurisdiction, RegionProfile.STANDARD_IEC)
 
         # Build EnvironmentalContext from AuditInput jurisdiction and region
-        # V48 FIX: Pass lens_fouling_factor from AuditInput to EnvironmentalContext.
         # Without this, fouling gate always uses the optimistic default (0.85)
         # regardless of actual environmental conditions, allowing a detector
         # that cannot sense fire to PASS audit.
@@ -546,7 +542,6 @@ class SafetyAuditEngine:
         passed_checks += pc
 
         # ── Gate 3: Zone Mapping ──
-        # V48 FIX: Always run zone mapping gate, even when hazard_type is None.
         # Skipping this gate means missing zone/hazard consistency issues.
         # When hazard_type is None, _check_zone_mapping emits a WARNING.
         v, tc, pc = self._check_zone_mapping(zone, hazard_type)
@@ -659,7 +654,6 @@ class SafetyAuditEngine:
 
         required = _get_required_redundancy(zone, env_context.jurisdiction)
 
-        # V48 FIX: None-guard for zone.value — zone=None caused AttributeError crash
         zone_label = zone.value if zone is not None else "UNCLASSIFIED"
 
         if min_redundancy < required:
@@ -705,7 +699,6 @@ class SafetyAuditEngine:
 
         # Check 2a: Fouling factor itself
         total_checks += 1
-        # V55 FIX: NaN guard — fouling must be a finite number
         if not isinstance(fouling, (int, float)) or not math.isfinite(fouling):
             violations.append(
                 AuditViolation(
@@ -767,7 +760,6 @@ class SafetyAuditEngine:
         # Check 2b: Effective transmittance after fouling
         if min_transmittance is not None:
             total_checks += 1
-            # V57 FIX: NaN min_transmittance makes effective_t = NaN,
             # then NaN < threshold is False → fouling gate PASSES.
             # Cannot verify optical path with corrupt spectral data.
             if not isinstance(min_transmittance, (int, float)) or not math.isfinite(min_transmittance):
@@ -788,7 +780,6 @@ class SafetyAuditEngine:
                         ),
                     )
                 )
-                # V79 FIX: Don't reset passed_checks to 0 — this erases the valid
                 # pass from Check 2a (fouling factor ≥ 0.70). Just don't increment
                 # for this check. The NaN/Inf case is already handled above with
                 # a CRITICAL violation, which will correctly mark the audit as failed.
@@ -837,7 +828,6 @@ class SafetyAuditEngine:
                 else:
                     passed_checks += 1
         else:
-            # V31 FIX: min_transmittance not provided — severity depends on
             # fouling severity. CRITICAL only when fouling is already at
             # CRITICAL level (< 0.50 per FOUL-001), because:
             #   - Fouling < 0.50: detection may be compromised; missing
@@ -962,7 +952,6 @@ class SafetyAuditEngine:
                 )
             )
         elif zone is None or hazard_type is None:
-            # V48 FIX: Missing zone or hazard_type is a safety concern.
             # Previously silently passed — now emits a WARNING.
             violations.append(
                 AuditViolation(
@@ -1234,7 +1223,6 @@ class SafetyAuditEngine:
             passed_checks += 1
 
         # Check 5c: HCIS jurisdiction-specific check
-        # V48 FIX: When zone is None, emit WARNING for Saudi HCIS —
         # unclassified zone may still require 1oo2 per HCIS directive.
         if env_context.jurisdiction == Jurisdiction.SAUDI_HCIS:
             total_checks += 1
@@ -1262,7 +1250,6 @@ class SafetyAuditEngine:
                     )
                 )
             elif zone is None:
-                # V48: Unknown zone in Saudi HCIS — assume Zone 2/22 requirements may apply
                 violations.append(
                     AuditViolation(
                         gate="MENA",

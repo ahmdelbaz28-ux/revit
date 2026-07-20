@@ -69,13 +69,11 @@ _SESSION_ID_BYTES = 32  # 256 bits of entropy
 #   - Constant-time comparison: all comparisons use hmac.compare_digest
 _SECRET_MANAGER = get_secret_manager()
 
-# V244: Session storage is now handled by backend/session_store.py — a hybrid
 # Redis + in-memory store that persists sessions across restarts when REDIS_URL
 # is set, and gracefully falls back to in-memory in dev mode.
 # The old _SESSION_STORE and _FAILED_ATTEMPTS dicts are replaced by the singleton.
 from backend.session_store import session_store as _session_store
 
-# V244: Keep _MAX_FAILED_ATTEMPTS and _FAILED_ATTEMPT_WINDOW as module-level
 # constants (they're referenced by other modules and tests).
 _MAX_FAILED_ATTEMPTS = 5
 _FAILED_ATTEMPT_WINDOW = 300  # 5 minutes
@@ -189,7 +187,6 @@ def _check_rate_limit(client_ip: str) -> bool:
 
     Returns True if request is allowed, False if rate limited.
     """
-    # V244: Delegate to session_store which handles both Redis and in-memory
     attempts = _session_store.get_failed_attempts(client_ip)
     return len(attempts) < _MAX_FAILED_ATTEMPTS
 
@@ -232,7 +229,6 @@ async def login(request: Request, body: LoginRequest):  # NOSONAR — S3776: cog
     api_key = body.api_key.strip() if body.api_key else ""
     if not api_key:
         if body.username and body.password and os.getenv("FIREAI_ENV") == "development":
-            # V243 SECURITY: Username/password fallback is ONLY allowed in
             # development mode (for Postman integration tests). In production,
             # this would be a backdoor — any non-empty username+password would
             # bypass the API-key requirement if API_KEY env var is set.
@@ -267,7 +263,6 @@ async def login(request: Request, body: LoginRequest):  # NOSONAR — S3776: cog
     session_id = secrets.token_urlsafe(_SESSION_ID_BYTES)
     session_id_hash = _hash_secret(session_id)
 
-    # V244: Store session via the hybrid Redis/in-memory session_store.
     # If REDIS_URL is set, the session persists across restarts and is
     # shared across workers. Otherwise, falls back to in-memory.
     if api_key:

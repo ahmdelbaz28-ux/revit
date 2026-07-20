@@ -24,7 +24,6 @@ from fireai.core.event_bus import EventBus, Events
 
 logger = logging.getLogger(__name__)
 
-# V279 SECURITY FIX: Replace unsalted SHA-256 password hashing with bcrypt.
 # ===========================================================================
 # Previously _hash_password() returned hashlib.sha256(password).hexdigest()
 # — unsalted, fast to compute, and trivially crackable with GPU brute-force
@@ -241,7 +240,6 @@ class MobileAPI:
             raise PermissionError("Invalid username or password")
 
         stored_hash = user.get("password_hash", "")
-        # V279 SECURITY FIX: Use bcrypt verification (constant-time, salted)
         # instead of secrets.compare_digest on unsalted SHA-256 hashes.
         # The client still sends SHA-256(password) — _verify_password runs
         # bcrypt.checkpw on the received value against the stored bcrypt hash.
@@ -518,7 +516,6 @@ if __name__ == "__main__":
     api = MobileAPI()
 
     api.register_user("field_engineer", "secure_pass_123!")
-    # V279: Client-side pre-hashing protocol preserved.
     # The mobile client sends SHA-256(password) over the wire (TLS-protected).
     # The server-side authenticate() runs bcrypt.checkpw on the received
     # SHA-256 digest against the stored bcrypt hash.
@@ -534,7 +531,6 @@ if __name__ == "__main__":
     print(f"Auth token: {token.token[:20]}...")
     print(f"Expires: {token.expires_at}")
 
-    # V279: Verify that an INVALID password is rejected (regression test
     # for the bcrypt migration — confirms we're not silently accepting
     # wrong credentials).
     bad_password_hash = hashlib.sha256(b"wrong_password").hexdigest()

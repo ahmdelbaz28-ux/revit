@@ -29,7 +29,6 @@ Standards Referenced:
 
 # ============================================================================
 # NFPA 72 — CANONICAL IMPORTS (Single Source of Truth)
-# V128 FIX: All NFPA 72 constants imported from fireai.constants.nfpa72
 # No duplicate definitions allowed — one source of truth only.
 # ============================================================================
 
@@ -122,7 +121,6 @@ sustained loads."""
 # ============================================================================
 
 # AWG resistance table at 75°C — NEC Chapter 9 Table 8
-# V51 FIX: Corrected to NEC Table 8 DC resistance at 75°C (stranded copper).
 # Old values for AWG 14/12/10 were ~18% too low (20°C values, unsafe).
 # NEC Table 8 at 75°C: AWG 14 stranded = 3.070 Ω/kft = 10.07 Ω/km.
 AWG_RESISTANCE_OHM_PER_M: dict = {
@@ -159,7 +157,6 @@ column is the correct reference for THHN/THWN fire alarm cables."""
 # ============================================================================
 
 # Pressurization height threshold — NFPA 101 §7.2.3.9
-# V25 Bug #26: "exceeding 75 ft" means STRICTLY > 75 ft, NOT ≥
 STAIRWELL_PRESSURIZATION_HEIGHT_M: float = 22.86
 """Height threshold for stairwell pressurization. Per NFPA 101 §7.2.3.9,
 stairwells "exceeding 75 ft" require pressurization. "Exceeding" means
@@ -219,7 +216,6 @@ LFL_T = LFL_25C x (1 - 0.001824 x (T - 25)). Per IEC 60079-10-1
 Annex B. V31 Bug: 50% floor was non-conservative at high temperatures."""
 
 # LFL floor ratio default (backward-compatible)
-# V31 Bug: configurable lfl_floor_ratio parameter
 LFL_FLOOR_RATIO_DEFAULT: float = 0.5
 """Default floor on corrected LFL as fraction of reference LFL.
 V31: default=0.5 for backward compatibility. Set None for no floor

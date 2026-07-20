@@ -62,7 +62,6 @@ class AuditEntry:
             sort_keys=True,
             ensure_ascii=False,
         )
-        # V114 FIX: Extend hash from 16→32 hex chars (64→128 bits).
         # 64-bit hashes are vulnerable to birthday collision (~4B attempts).
         # Matches V99 fix standard for cable_router.py and revit_exporter.py.
         return hashlib.sha256(content.encode()).hexdigest()[:32]

@@ -296,7 +296,6 @@ class TestServerLifecycle:
         server.start(block=False)
         assert server._running is True
         assert server._stdin_thread is not None
-        # V144 FIX: Small retry loop to handle OS thread scheduler delays in CI.
         deadline = time.time() + 2.0
         while time.time() < deadline:
             if server._stdin_thread.is_alive():

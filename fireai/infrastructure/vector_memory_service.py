@@ -385,7 +385,6 @@ class VectorMemoryService:
 
             search_filter = Filter(must=must_conditions) if must_conditions else None
 
-            # V142 FIX: Qdrant client v1.18+ uses query_points() not search()
             results = self._client.query_points(
                 collection_name=collection,
                 query=query_embedding,

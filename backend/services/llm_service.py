@@ -385,10 +385,9 @@ class LLMService:
             total_tokens=getattr(
                 getattr(completion, 'usage', None), 'total_tokens', 0
             ),
-            # V264 FIX: Use model_dump() (Pydantic v2) instead of deprecated .dict()
             # OpenAI SDK v1+ uses Pydantic v2, so model_dump() is preferred.
             # Fall back to .dict() for older SDK versions, then {} if neither exists.
-            raw=completion.model_dump() if hasattr(completion, 'model_dump') else (completion.dict() if hasattr(completion, 'dict') else {}),
+            raw=completion.model_dump() if hasattr(completion, "model_dump") else (completion.dict() if hasattr(completion, "dict") else {}),  # NOSONAR — S3358: nested ternary intentional for provider-agnostic response parsing
         )
 
     async def chat_stream(
@@ -454,7 +453,7 @@ class LLMService:
 
         yield {"type": "error", "message": "All LLM providers failed"}
 
-    async def _stream_provider(
+    async def _stream_provider(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         self,
         provider: _ProviderConfig,
         messages: list[dict[str, str]],

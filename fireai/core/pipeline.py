@@ -46,7 +46,6 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any
 
-# V61: Late import for cable routing (optional, may not be available)
 try:
     from fireai.core.cable_router import CableRouter
     from fireai.core.cable_routing_engine import WireGauge
@@ -326,7 +325,6 @@ def _stage05_qomn_physics_guard(
         }
 
     except ImportError:
-        # V114 FIX: Missing QOMN kernel = physics guard CANNOT be performed.
         # Must NEVER report True when the check was not actually performed.
         # A missing physics check is a FAIL-SAFE condition per agent.md Rule 5.
         return {
@@ -584,7 +582,6 @@ def _estimate_coverage(  # NOSONAR - python:S3776
 
     bbox_area = (max_x - min_x) * (max_y - min_y)
 
-    # V98 FIX: Adaptive step based on coverage radius.
     # Old fixed step=0.5m was too coarse for heat detectors (R≈3m) in small
     # rooms: step/radius ratio = 0.5/3 = 17% → high quantization error →
     # false compliance. New formula: min(0.25m, radius_m / 10.0) ensures
@@ -633,7 +630,6 @@ def _estimate_coverage(  # NOSONAR - python:S3776
             x += step
         y += step
 
-    # V96 FIX: Clamp coverage to [0.0, 100.0]. Detector coverage circles can
     # extend slightly outside the polygon boundary, making covered > total
     # (coverage > 100%). This violates the 0–100% contract and confuses
     # downstream classify_safety_tier which expects 0–100.
@@ -941,7 +937,6 @@ def analyze_room(  # NOSONAR - python:S3776
 
     """
     t_total = time.perf_counter()
-    # V61 FIX: Deterministic run_id from input content hash.
     # Previous uuid4() produced different IDs on every run, breaking
     # audit reproducibility. Same input → same run_id, always.
     _input_canonical = json.dumps(payload, sort_keys=True, default=str)
@@ -1141,7 +1136,6 @@ def analyze_room(  # NOSONAR - python:S3776
                 constraint_engine=constraint_engine,
             )
 
-            # V65 FIX: Pass temperature parameters to cable routing.
             # Previously, route_all() used default ambient_temp_c=20°C
             # and conductor_operating_temp_c=None (falls back to 20°C).
             # For Egyptian summer conditions (40-50°C ambient), this
@@ -1419,7 +1413,6 @@ def _stage7_cable_routing(  # NOSONAR - python:S3776
             "routes": [],
         }
 
-    # V69-9 FIX: Use correct key "room_polygon" (not "room"/"polygon_points")
     polygon = validated.get("room_polygon", [])
     area_m2 = validated.get("area_m2", 0.0)
 
@@ -1441,13 +1434,11 @@ def _stage7_cable_routing(  # NOSONAR - python:S3776
 
     try:
         # Build model from polygon walls
-        # V67 SAFETY FIX: If building model construction fails, cable routing
         # MUST NOT proceed — routing without wall awareness allows cables
         # through walls, elevator shafts, and concrete obstructions.
         building_model = None
         if polygon:
             try:
-                # V98 FIX: build_abstract_model signature is (obstacles, spaces, building_name, resolution)
                 # NOT (polygon, room_height_m=...). The old call passed room_height_m which
                 # doesn't exist in the signature, causing TypeError every run.
                 # We pass polygon walls as BoundingBox3D obstacles for cable routing.
@@ -1496,7 +1487,6 @@ def _stage7_cable_routing(  # NOSONAR - python:S3776
                 "safety_block": True,
             }
 
-        # V98 FIX: CableRouter.__init__ signature is (self, model, constraint_engine=None)
         # NOT (building_model=...). Must pass model as positional arg.
         constraint_engine = ConstraintEngine()
         router = CableRouter(building_model, constraint_engine=constraint_engine)
@@ -1576,7 +1566,6 @@ def _stage7_cable_routing(  # NOSONAR - python:S3776
         ]
 
         # WireGauge enum — NOT string. "14 AWG" would cause TypeError.
-        # V113 FIX: Import WireGauge BEFORE the try block so ImportError
         # is NOT caught by the generic Exception handler below. Previously,
         # if cable_routing_engine was missing, the ImportError was swallowed
         # by the generic except clause and reported as "routing failed"
@@ -1596,7 +1585,6 @@ def _stage7_cable_routing(  # NOSONAR - python:S3776
 
         # from_routing_schedule reads schedule.routes (Tuple[CableRoute])
         sg = ScheduleGenerator()
-        # V113: Pass ps_voltage from validated config to schedule generator
         ps_voltage_for_schedule = float(validated.get("ps_voltage_v", 24.0))
         rows = sg.from_routing_schedule(schedule, ps_voltage=ps_voltage_for_schedule)
 
@@ -1616,7 +1604,6 @@ def _stage7_cable_routing(  # NOSONAR - python:S3776
         }
 
     except ImportError as e:
-        # V113 FIX: Separate ImportError from generic Exception.
         # A missing dependency is NOT a "routing failure" — it's a
         # "system misconfiguration". These require completely different
         # responses: routing failure = redesign, missing dependency = install package.
@@ -1633,7 +1620,6 @@ def _stage7_cable_routing(  # NOSONAR - python:S3776
         }
 
     except Exception as e:
-        # V67 SAFETY FIX: Any cable routing failure must set safety_block=True.
         # The inner handler (building_model=None) correctly sets this flag,
         # but this outer handler was missing it. Downstream code checking
         # for safety_block would not see it, potentially allowing the pipeline
@@ -1788,7 +1774,6 @@ def _failed_result(
     """
     room_id = room_id or str(payload.get("room_id", "UNKNOWN") if isinstance(payload, dict) else "UNKNOWN")
 
-    # V137 F-4: Record audit for failed analysis (was missing entirely)
     try:
         from fireai.core.audit_store import AuditStore as _AuditStore
         _AuditStore.add_event(

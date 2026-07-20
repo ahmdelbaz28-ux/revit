@@ -26,8 +26,6 @@ from fireai.core.audit_store import AuditStore
 from fireai.core.audit_trail import AuditTrail
 from fireai.core.bps_allocator import NACBoosterAllocator
 from fireai.core.building_engine import BuildingEngine
-
-# V25 — Pipeline Integration Modules (8 consultant subsystems)
 from fireai.core.cable_routing_engine import (
     MAX_VOLTAGE_DROP_PCT as MAX_VOLTAGE_DROP_PCT,
 )
@@ -60,8 +58,6 @@ from fireai.core.digital_twin_sync import (
     SyncResult,
 )
 from fireai.core.dxf_table_schedule import TrueAECDraftingTable
-
-# V19 — Elevator Shunt-Trip + NAC Booster Allocator + Seismic Joint Penalty
 from fireai.core.elevator_shunt_trip import ElevatorShuntTripAuditor
 
 # Event Bus (Digital Twin foundation)
@@ -77,8 +73,6 @@ from fireai.core.firestop_annotator import FirestoppingAnnotator
 from fireai.core.flame_detector_aoc_raytrace import FlameDetectorAOCRayTrace
 from fireai.core.floor_analyser import FloorAnalyser
 from fireai.core.hac_classification_engine import HACClassificationEngine
-
-# V24 — Layer 7: Hybrid Survivability Index Engine
 from fireai.core.hybrid_survivability import (
     AcousticCoverageDetail,
     HybridPointResult,
@@ -140,8 +134,6 @@ from fireai.core.models_v21 import (
 from fireai.core.models_v21 import (
     RegulatoryFramework as V21RegulatoryFramework,
 )
-
-# V21 — Pydantic Models (Fail-Fast Validation) + Hazardous Area Classification
 from fireai.core.models_v21 import (
     SubstanceProperties as V21SubstanceProperties,
 )
@@ -194,8 +186,6 @@ from fireai.core.routing_engine_v10 import (
     EliteClassARouter,
     RouteSegment,
 )
-
-# V12 — Class A Routing + Firestopping + Safe Building Engine + DXF Schedule
 from fireai.core.routing_global_class_a import EliteGlobalRouter
 from fireai.core.safe_building_engine import SafeBuildingEngine
 
@@ -232,8 +222,6 @@ from fireai.core.seismic_joint_penalyer import SeismicJointPenalyer
 
 # Optimisation & analysis tools
 from fireai.core.sensitivity_analyzer import SensitivityAnalyzer
-
-# V20 — SLC Capacitance + Stairwell Smoke Control + Network Topology
 from fireai.core.slc_capacitance import SLCCapacitanceAuditor
 from fireai.core.spatial_engine.consensus_engine import (
     ConfidenceLevel,
@@ -271,13 +259,9 @@ from fireai.core.ugld_acoustics import (
     max_detection_range_m,
     speed_of_sound,
 )
-
-# V23 — Ultrasonic Gas Leak Detection (UGLD) Acoustic Physics Engine
 from fireai.core.ugld_acoustics import (
     UltrasonicSensor as V23UltrasonicSensor,
 )
-
-# V23 Phase 2 — UGLD Ray Tracing & Maekawa Barrier Diffraction
 from fireai.core.ugld_raytrace import (
     AcousticObstacle as V23AcousticObstacle,
 )
@@ -310,9 +294,7 @@ __all__ = [
     "AuditViolation",
     "BuildingAnalysis",
     "BuildingEngine",
-    # V21.2 — CLI Orchestration Engine
     "CLIFireAIEngine",
-    # V25 — Pipeline Integration (8 consultant subsystems)
     "CableRoutingEngine",
     "ChangeRecord",
     "CircuitTopology",
@@ -330,10 +312,8 @@ __all__ = [
     "DriftReport",
     "ElevationTier",
     "ElevatorRecallResult",
-    # V19 — Elevator Shunt-Trip + NAC Booster + Seismic Joint
     "ElevatorShuntTripAuditor",
     "EliteClassARouter",
-    # V12 — Class A Routing + Firestopping + Safe Engine + DXF
     "EliteGlobalRouter",
     "EngineeringEvidencePackage",
     "EnvironmentalContext",
@@ -351,7 +331,6 @@ __all__ = [
     "HashChainAuditStore",
     "HazardType",
     "HybridPointResult",
-    # V24 — Layer 7: Hybrid Survivability Index
     "HybridSurvivabilityEngine",
     "HybridSurvivabilityMap",
     "ImportReport",
@@ -384,7 +363,6 @@ __all__ = [
     "RegionProfile",
     "RevitDetectorDTO",
     "RevitObstructionDTO",
-    # V21.2 — Anti-Corruption Layer
     "RevitSubstanceDTO",
     "RiserRoutingResult",
     "RoomLifecycle",
@@ -395,11 +373,9 @@ __all__ = [
     "RouteResult",
     "RouteSegment",
     "RoutingObstacle3D",
-    # V20 — SLC Capacitance + Stairwell Smoke Control + Network Topology
     "SLCCapacitanceAuditor",
     "SLCLoop",
     "SafeBuildingEngine",
-    # V21.2 — Safety Audit Engine
     "SafetyAuditEngine",
     # Safety Assurance
     "SafetyTier",
@@ -433,13 +409,10 @@ __all__ = [
     "V21RayTracePoint",
     "V21RegSelectorResult",
     "V21RegulatoryFramework",
-    # V21 — Pydantic Models + Hazardous Area Classification
     "V21SubstanceProperties",
     "V21ZoneExtent",
-    # V23 Phase 2 — UGLD Ray Tracing & Maekawa Barrier
     "V23AcousticObstacle",
     "V23AcousticPropagation",
-    # V23 — UGLD Acoustic Physics
     "V23UltrasonicSensor",
     "VentilationLevel",
     "VerticalZone",

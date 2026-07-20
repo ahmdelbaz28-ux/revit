@@ -507,7 +507,6 @@ class CableRoutingEngine:
         """
         voltage = ps_voltage if ps_voltage is not None else self._ps_voltage
 
-        # V65 FIX: Validate per-circuit ps_voltage override for NaN/Inf.
         # The constructor validates self._ps_voltage, but per-circuit overrides
         # were not validated. NaN voltage → NaN drop percentage → fail-safe
         # but NaN propagates through result fields, breaking downstream code.
@@ -527,7 +526,6 @@ class CableRoutingEngine:
                 val = getattr(dev, attr_name, 0.0)
                 if not math.isfinite(val):
                     raise ValueError(f"Device '{dev.device_id}' has non-finite {attr_name}={val}")
-            # V65 FIX: Check for NaN current first, then negative.
             # Old code: math.isfinite(dev.current_a) short-circuited on NaN,
             # silently accepting NaN → NaN downstream current → NaN voltage drop.
             if hasattr(dev, "current_a"):
@@ -567,7 +565,6 @@ class CableRoutingEngine:
                         total_return_length_m=getattr(circuit, "return_length_m", 0.0),
                     )
             # No compliant gauge found — use the largest gauge tried and report violation
-            # V58 FIX (BUG #6): Use largest gauge (_ALL_GAUGES[-1]) instead of smallest
             # (_ALL_GAUGES[0]). Reporting the smallest gauge makes the situation appear
             # worse than it is, potentially leading to unnecessary expensive design changes.
             gauge = WireGauge._ALL_GAUGES[-1]
@@ -653,7 +650,6 @@ class CableRoutingEngine:
                 getattr(dev, "position_z", 0.0),
             )
 
-            # V65 FIX: Apply routing factor to Euclidean distance.
             # Real cables follow corridors, route around walls, through conduit,
             # and make bends — ALWAYS longer than straight-line distance.
             # The old code used raw Euclidean distance, underestimating voltage
@@ -738,7 +734,6 @@ class CableRoutingEngine:
         if getattr(circuit, "circuit_class", None) == CircuitClass.CLASS_A:
             return_length = getattr(circuit, "return_length_m", 0.0)
             if return_length > 0 and total_current > 0:
-                # V76 MED-08 FIX: Class A return path uses 1.0× instead of 2.0×.
                 # Under normal operation, Class A circuits carry current on the outbound
                 # path only — the return path is not energized. Under single-fault
                 # conditions (wire break), the return path carries partial current.
@@ -791,7 +786,6 @@ class CableRoutingEngine:
         result.is_compliant = is_compliant
         result.total_voltage_drop_v = cumulative_drop
         result.total_voltage_drop_pct = total_drop_pct
-        # V65 FIX: Clamp end-of-line voltage to 0.0 (physically impossible to be negative).
         # Old code: voltage - cumulative_drop could be negative when drop exceeds supply.
         # A negative voltage is physically impossible and could confuse downstream code.
         eol_voltage_raw = voltage - cumulative_drop

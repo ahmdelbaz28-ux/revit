@@ -172,7 +172,6 @@ class ParserConfidence:
 
             if is_raster and has_completeness and has_scale and final >= 0.5:
                 # First try standard text extraction
-                # V108 FIX: All src.core.* imports replaced with try/except guards.
                 # These modules (dimension_extractor, scale_bar_detector,
                 # raster_enhancer, reverse_scale_estimator) don't exist in the
                 # current codebase. Scale extraction falls through to default.
@@ -193,7 +192,6 @@ class ParserConfidence:
                 if not actual_scale:
                     try:
                         from .pdf_parser import PDFParser
-                        # V140 FIX: PDFParser.__init__ takes min_confidence (float),
                         # not pdf_path. The path is passed to .parse().
                         _parser = PDFParser()
                         _result = _parser.parse(self.pdf_path)

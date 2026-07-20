@@ -181,7 +181,6 @@ def _test_openai_connectivity(api_key: str) -> bool:
             logger.warning("OpenAI API returned 403: %s", body[:200])
             return False
         # Other HTTP errors — might be temporary
-        # V83 FIX: Decode bytes before slicing to avoid mid-UTF8-character slicing
         body = e.read().decode("utf-8", errors="replace")[:200]
         logger.warning("OpenAI API returned HTTP %s: %s", e.code, body)
         return False
@@ -277,7 +276,6 @@ def _test_openai_compatible_connectivity(base_url: str, api_key: str) -> bool:
     return False
 
 
-# V83: Provider detection cache — avoids 40s+ blocking on repeated calls
 _detect_provider_cache: dict[str, Any] | None = None
 _detect_provider_cache_time: float = 0.0
 _PROVIDER_CACHE_TTL_SECONDS = 300  # 5 minutes
@@ -364,7 +362,6 @@ def _detect_provider_uncached() -> dict[str, Any]:  # NOSONAR — S3776: cogniti
     gemini_key = os.getenv("GEMINI_API_KEY")
     openrouter_key = os.getenv("OPENROUTER_API_KEY")
     openrouter_base_url = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
-    # V81: Renamed from OpenQuotta to OpenCode — correct provider name
     # OpenCode (opencode.ai) provides OpenAI-compatible API at /zen/v1/
     # Backward compat: OPENQUOTTA_* env vars still work as fallback
     opencode_key = os.getenv("OPENCODE_API_KEY") or os.getenv("OPENQUOTTA_API_KEY")
@@ -372,7 +369,6 @@ def _detect_provider_uncached() -> dict[str, Any]:  # NOSONAR — S3776: cogniti
 
     # ── Strategy 1: Try OpenAI (PRIMARY if available and not region-blocked) ──
     if openai_key:
-        # V78: Test OpenAI connectivity before committing to it
         openai_reachable = _test_openai_connectivity(openai_key)
 
         if openai_reachable:
@@ -474,7 +470,6 @@ def _detect_provider_uncached() -> dict[str, Any]:  # NOSONAR — S3776: cogniti
 
     # ── Strategy 4: Gemini (PRIMARY when OpenAI/OpenRouter/OpenCode unavailable) ──
     if gemini_key:
-        # V87 FIX: Test Gemini connectivity before committing to it.
         # Previously, Strategy 4 returned success without testing, which meant
         # a rate-limited or invalid Gemini key would be selected, blocking
         # Strategy 5 (z-ai proxy) from ever being reached. This was a
@@ -491,7 +486,6 @@ def _detect_provider_uncached() -> dict[str, Any]:  # NOSONAR — S3776: cogniti
             #    by Mem0's v1beta API endpoint — causes 404 errors
             # 4. Local embeddings (all-MiniLM-L6-v2) are deterministic and fast
             #
-            # V77: Gemini is now PRIMARY when no OpenAI key is set.
             # The Mem0 "gemini" provider uses google-generativeai SDK internally.
             logger.info(
                 "Gemini API reachable — using Gemini as PRIMARY provider. "
@@ -576,7 +570,6 @@ def _detect_provider_uncached() -> dict[str, Any]:  # NOSONAR — S3776: cogniti
                     "api_key": "z-ai-proxy",
                     "llm_provider": "openai",
                     "llm_model": "gpt-4o-mini",
-                    # V83 FIX: Changed embedder from "openai" to "local" because
                     # text-embedding-3-small produces 1536d vectors but embedding_dims
                     # was set to 384 — Qdrant would crash on dimension mismatch.
                     # Using local embeddings (384d) is consistent with all other
@@ -638,7 +631,6 @@ def get_mem0_config() -> dict[str, Any]:
         embedder_config = {
             "provider": "huggingface",
             "config": {
-                # V78: Use Mem0's default model for consistency
                 # multi-qa-MiniLM-L6-cos-v1 produces 384-dim embeddings
                 # and is optimized for semantic search (better for NFPA queries)
                 "model": "multi-qa-MiniLM-L6-cos-v1",

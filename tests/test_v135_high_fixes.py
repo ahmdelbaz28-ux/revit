@@ -72,7 +72,6 @@ class TestScoringFormula:
             reference_cost=1000.0,
         )
 
-        # V135 F-8: Higher cost should have lower score (penalty)
         # But the difference should be reasonable (not 4x like old formula)
         assert score_low_cost > score_high_cost
         # The ratio should be modest (old formula would give ~4x difference)
@@ -197,7 +196,6 @@ class TestAsyncWebhookDelivery:
         )
         elapsed = time.perf_counter() - t_start
 
-        # V135 F-11: Should complete in < 60s (global timeout)
         # The OLD code would block for 31s (1+2+4+8+16 backoff)
         assert elapsed < 60.0, f"publish_event took {elapsed:.1f}s — possible synchronous blocking"
 
@@ -374,7 +372,6 @@ class TestBeamPocketCeilingHeight:
             ceiling_height_m=3.0,
             beams=[beam],
         )
-        # V135 F-17: Pocket ceiling should be 3.0 - 0.5 = 2.5m (not 3.0m)
         for pocket in result.pockets:
             assert pocket.ceiling_height_m == pytest.approx(2.5, abs=0.01), (
                 f"Pocket ceiling {pocket.ceiling_height_m} != 2.5m — "

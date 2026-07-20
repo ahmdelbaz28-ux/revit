@@ -20,7 +20,6 @@ import os
 from dataclasses import dataclass, field
 from typing import Dict, List
 
-# V140 FIX (Rule 17 — Root-Cause Analysis): pandas was imported at module
 # top-level. This crashed the module on systems without pandas installed,
 # even though path-security validation (the first stage of parse()) does NOT
 # require pandas. Tests `test_parsers_security_v125.py::TestExcelParserSecurity`
@@ -150,7 +149,6 @@ class ExcelParser:
             ExcelParseResult with room list
 
         """
-        # V126: Path security + file-size cap
         from parsers._path_security import (
             UnsafePathError,
             validate_file_size,
@@ -178,7 +176,6 @@ class ExcelParser:
         result = ExcelParseResult(source_file=file_path, success=False)
 
         try:
-            # V140: lazy import pandas (raises clear error if missing)
             _lazy_import_pandas()
             # Read Excel
             df = pd.read_excel(str(safe_path), engine='openpyxl')

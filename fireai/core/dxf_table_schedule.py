@@ -91,7 +91,6 @@ class TrueAECDraftingTable:
         tbl.set_col_width(3, 2.0)
         tbl.set_col_width(4, 5.5)
 
-        # V15 FIX: TablePainter.text_cell() uses 'style' parameter instead of 'bg_color'.
         # The old ezdxf Table addon used bg_color keyword, but TablePainter uses
         # named styles. We use the default style for all cells — background
         # colors can be set via custom styles if needed.

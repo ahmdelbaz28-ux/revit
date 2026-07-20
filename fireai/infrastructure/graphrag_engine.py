@@ -96,7 +96,6 @@ class GraphRAGEngine:
         self._neo4j_user = neo4j_user or os.environ.get("NEO4J_USER", "neo4j")
         self._neo4j_password = neo4j_password or os.environ.get("NEO4J_PASSWORD", "")
 
-        # V142: Multi-provider support — priority: OPENAI → MODAL → OPENQUOTTA
         self._openai_key = (
             openai_api_key
             or os.environ.get("OPENAI_API_KEY", "")
@@ -110,7 +109,6 @@ class GraphRAGEngine:
             or os.environ.get("OPENQUOTTA_BASE_URL", "")
         )
 
-        # V142: Auto-select model based on provider
         if os.environ.get("MODAL_API_KEY") and not openai_api_key:
             self._llm_model = os.environ.get("MODAL_MODEL", "zai-org/GLM-5.1-FP8")
         else:
@@ -149,7 +147,6 @@ class GraphRAGEngine:
             os.environ["NEO4J_USERNAME"] = self._neo4j_user
             os.environ["NEO4J_PASSWORD"] = self._neo4j_password
             os.environ["OPENAI_API_KEY"] = self._openai_key
-            # V142: Set base_url for OpenAI-compatible providers (Modal, OpenQuotta)
             if self._openai_base_url:
                 os.environ["OPENAI_BASE_URL"] = self._openai_base_url
 
@@ -167,7 +164,6 @@ class GraphRAGEngine:
             from langchain_neo4j import Neo4jVector
             from langchain_openai import OpenAIEmbeddings
 
-            # V142: Pass base_url for OpenAI-compatible providers
             emb_kwargs = {"model": self._embedding_model}
             if self._openai_base_url:
                 emb_kwargs["base_url"] = self._openai_base_url
@@ -211,7 +207,6 @@ class GraphRAGEngine:
             from langchain_experimental.graph_transformers import LLMGraphTransformer
             from langchain_openai import ChatOpenAI
 
-            # V142: Pass base_url for LLM too
             llm_kwargs = {"model": self._llm_model, "temperature": 0}
             if self._openai_base_url:
                 llm_kwargs["base_url"] = self._openai_base_url
@@ -222,7 +217,6 @@ class GraphRAGEngine:
             # Layer 4: GraphCypherQAChain (natural language → Cypher → answer)
             from langchain_neo4j import GraphCypherQAChain
 
-            # V142: Pass base_url for QA chain LLM + acknowledge dangerous requests
             qa_llm_kwargs = {"model": self._llm_model, "temperature": 0}
             if self._openai_base_url:
                 qa_llm_kwargs["base_url"] = self._openai_base_url

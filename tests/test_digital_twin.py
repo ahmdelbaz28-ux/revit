@@ -205,7 +205,6 @@ class TestDigitalTwinService:
 
             # Assertions
             assert isinstance(result, ConversionResult)
-            # V229: The conversion may fail (success=False) when the IFC fallback
             # pipeline cannot parse the empty temp file. The test verifies that
             # the service returns a ConversionResult (not an exception) with the
             # correct source/target paths.
@@ -266,7 +265,6 @@ class TestDigitalTwinService:
 
             # Assertions
             assert isinstance(result, ConversionResult)
-            # V229: The conversion may fail (success=False) when the IFC fallback
             # pipeline cannot parse the empty temp file. The test verifies that
             # the service returns a ConversionResult (not an exception) with the
             # correct source/target paths.

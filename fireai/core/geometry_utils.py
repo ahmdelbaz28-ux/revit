@@ -232,7 +232,6 @@ def validate_polygon(poly: Polygon, min_area: float = 0.01) -> ValidationResult:
         if math.hypot(b[0] - a[0], b[1] - a[1]) < 1e-9:
             errors.append(f"Duplicate consecutive vertices at index {i}: {a}.")
 
-    # V11: Non-consecutive near-duplicate vertices (within 0.05m)
     # These cause numerical instability in algorithms and should be simplified.
     near_dup_threshold = 0.05  # 5cm
     for i in range(len(poly)):
@@ -284,7 +283,6 @@ def validate_polygon(poly: Polygon, min_area: float = 0.01) -> ValidationResult:
                 f"which leads to incorrect detector counts."
             )
     except ImportError:
-        # V114 FIX: Shapely unavailable = geometric validation INCOMPLETE.
         # The O(n²) segment intersection check above does NOT catch all
         # self-intersection cases. Must warn, not silently pass.
         import logging as _logging

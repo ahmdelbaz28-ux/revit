@@ -399,7 +399,6 @@ class BentleyBridge:
             )
             return False
 
-        # V142: Do NOT set _api_connected = True. There is no real
         # connection. Log the truth and return False.
         # S3516 (always-False return) is INTENTIONAL here: this method
         # is the explicit honesty contract — direct Bentley API is not

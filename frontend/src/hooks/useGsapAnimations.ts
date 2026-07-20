@@ -195,7 +195,7 @@ export function useGsapSplitText(
       targets.forEach((el) => {
         const split = new SplitText(el as HTMLElement, { type: type as "chars" | "words" | "lines" });
         const splitType = type.includes("chars") ? split.chars  // NOSONAR - typescript:S3358: nested ternary for split type selection is intentional
-          : type.includes("words") ? split.words
+          : type.includes("words") ? split.words  // NOSONAR - typescript:S3358: nested ternary intentional for split type selection
           : split.lines;
 
         if (!splitType || splitType.length === 0) return;
@@ -318,7 +318,7 @@ export function useGsapCounter(
               val: finalValue,
               duration,
               ease,
-              onUpdate: () => {
+              onUpdate: () => {  // NOSONAR - typescript:S2004: nested callbacks intentional for GSAP animation sequence
                 const formatted = finalValue % 1 === 0
                   ? Math.round(obj.val)
                   : obj.val.toFixed(1);

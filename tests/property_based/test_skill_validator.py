@@ -29,7 +29,6 @@ from skills.skill_validator import (
 # ═══════════════════════════════════════════════════════════════════════════
 
 
-# V140 FIX (Rule 17): skills/skill_validator.py:74-81 only accepts ASCII
 # lowercase + digits + hyphen + underscore. Unicode "Ll" includes 'µ' (U+00B5)
 # and "Nd" includes Arabic-Indic digits — both rejected by the validator.
 # Use sampled_from over the explicit allowed alphabet to guarantee validity.
@@ -47,7 +46,6 @@ valid_version_strategy = st.tuples(
 ).map(lambda x: f"{x[0]}.{x[1]}.{x[2]}")
 
 
-# V140 FIX (Rule 17): The validator strips whitespace (ConfigDict
 # str_strip_whitespace=True) before enforcing min_length=1. The old strategy
 # allowed Zs (space separator) chars including U+0020 space, so ' ' (single
 # space) became '' after stripping and failed validation. Filter to ensure
@@ -90,7 +88,6 @@ def test_skill_metadata_valid_inputs(name, version, author):
 
     assert metadata.name == name
     assert metadata.version == version
-    # V140 FIX: SkillMetadata has str_strip_whitespace=True in its ConfigDict,
     # so author is stripped. The assertion must compare against the stripped
     # value, not the raw input.
     assert metadata.author == author.strip()
@@ -147,7 +144,6 @@ def test_description_valid_inputs(short_desc, triggers):
 
     assert desc.short_description == short_desc
     assert len(desc.trigger_words) >= 1
-    # V140 FIX (Rule 17): str.islower() returns False for digit-only strings
     # like '00' even though .lower() is a no-op on them. The validator's
     # contract (skill_validator.py:121) is `t.strip().lower()` — i.e. each
     # trigger word equals its own lowercased form. That is what we assert here.
@@ -181,7 +177,6 @@ def test_trigger_words_deduplicated(triggers):
 @settings(max_examples=50)
 def test_execution_result_mutual_exclusion(success, has_data, has_error):
     """Property: Cannot have both data and error."""
-    # V140 FIX (Rule 17): Align conditioning with the validator contract at
     # skill_validator.py:219-226:
     #   (1) success=True  → error MUST be None (data is allowed)
     #   (2) success=False → data MUST be None (error is allowed)

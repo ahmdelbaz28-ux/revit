@@ -774,14 +774,12 @@ class SelectionEngine:
         Returns:
             Tuple of (battery_size_ah, derating_details_dict)
         """
-        # V54 FIX F6: Per-device standby current = 0.0008 A (0.8 mA), NOT 0.001 A
         standby_load = (device_count * 0.0008) + panel.standby_current_amps
         alarm_load = (nac_circuit_count * 2.0) + (device_count * 0.005) + panel.alarm_current_amps
         alarm_duration_h = 0.25 if requires_voice else 0.0833
 
         raw_capacity = (standby_load * 24.0) + (alarm_load * alarm_duration_h)
 
-        # V54 FIX F5: Tiered derating — NOT flat 1.2x
         temperature_derating = 1.10
         aging_derating = 1.15
         nfpa_margin = 1.20
@@ -812,7 +810,6 @@ class SelectionEngine:
     def select_panel(cls, req: ProjectRequirements) -> Result[PanelRecommendation, FACPSelectionError]:
         # Enforce code capacity margins (20% spare capacity per NFPA 72 §10.6.7)
         required_points = req.device_count * 1.2
-        # V54 FIX F2: NAC circuits sized by exact count, NOT 1.2x
         required_nacs = req.nac_circuit_count
 
         eligible_panels: List[Tuple[FireAlarmPanel, float]] = []
@@ -826,7 +823,6 @@ class SelectionEngine:
                 continue
             if req.requires_voice and not p.supports_voice:
                 continue
-            # V54 FIX F4: Releasing service filter
             if req.requires_releasing and not p.supports_releasing:
                 continue
             if req.jurisdiction == "FDNY" and "FDNY" not in p.listings:
@@ -859,7 +855,6 @@ class SelectionEngine:
                 remedy="Reduce required device loads or transition to a multi-node networked panel architecture."
             ))
 
-        # V54 FIX F3: Deterministic sorting with right-sizing principle
         # Primary: highest score. Tie-break: smallest capacity (right-sizing),
         # then lowest standby draw, then model name for determinism.
         eligible_panels.sort(
@@ -1787,9 +1782,7 @@ class TestIntegratedQomnFire(unittest.TestCase):
 
         self.assertEqual(rec.recommended_model, "FC901")
         self.assertEqual(rec.manufacturer, "SIEMENS")
-        # V58: Tiered derating produces ~5.80 Ah (not V54 flat 1.2x ≈ 4.76)
         self.assertAlmostEqual(rec.battery_size_ah, 5.80, delta=0.01)
-        # V58: battery_derating_details present with tiered derating info
         self.assertIn("combined_safety_factor", rec.battery_derating_details)
         self.assertAlmostEqual(rec.battery_derating_details["combined_safety_factor"], 1.518, places=3)
         self.assertEqual(rec.battery_derating_details["per_device_standby_mA"], 0.8)

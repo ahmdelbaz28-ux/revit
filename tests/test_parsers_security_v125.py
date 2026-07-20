@@ -148,7 +148,6 @@ class TestExcelParserSecurity:
         assert any("SECURITY" in e for e in r.errors)
 
     def test_wrong_extension_rejected(self):
-        # V127: .csv IS allowed by ExcelParser. Use .txt instead.
         p = _make_temp(".txt")
         try:
             r = self.parser.parse(p)

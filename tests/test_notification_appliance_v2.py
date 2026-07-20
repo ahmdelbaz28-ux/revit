@@ -177,7 +177,6 @@ class TestSPLExtended:
 
     def test_exactly_at_max_spl(self):
         """SPL exactly at 110 dBA should NOT exceed max (it's the boundary)."""
-        # V286 UPDATE: max SPL changed from 120 to 110 dBA per NFPA 72 §18.4.1.2
         # At 3.05m, SPL = horn rating. If horn = 110, SPL at 3.05m = 110
         result = calculate_spl(110.0, _HORN_REFERENCE_DISTANCE_M)
         assert result.spl_dba == pytest.approx(110.0, abs=0.01)
@@ -457,7 +456,6 @@ class TestNotificationAssessmentExtended:
 
     def test_spl_exceeds_max_violation_message(self):
         """When SPL exceeds 110 dBA, violation must mention it."""
-        # V286 UPDATE: max SPL changed from 120 to 110 dBA per NFPA 72 §18.4.1.2
         spl = calculate_spl(130.0, 1.0)
         assert spl.exceeds_max is True
         assessment = NotificationAssessment(room_id="R1", spl_result=spl)

@@ -23,7 +23,6 @@ class TestApiKeyVerification:
 
     def test_verify_valid_key(self, monkeypatch):
         """Valid API key should be accepted."""
-        # V229: Clear FIREAI_API_KEYS (plural) to ensure singular is used
         monkeypatch.delenv("FIREAI_API_KEYS", raising=False)
         monkeypatch.setenv("FIREAI_API_KEY", "test-secret-key-123")
         _init_api_keys()
@@ -44,7 +43,6 @@ class TestApiKeyVerification:
 
     def test_verify_wrong_key_raises_401(self, monkeypatch):
         """Wrong API key should raise HTTPException 401."""
-        # V229: Clear FIREAI_API_KEYS (plural) to ensure singular is used
         monkeypatch.delenv("FIREAI_API_KEYS", raising=False)
         monkeypatch.setenv("FIREAI_API_KEY", "correct-key")
         _init_api_keys()
@@ -72,7 +70,6 @@ class TestConnectionManager:
     @pytest.fixture(autouse=True)
     def setup_api_key(self, monkeypatch):
         """Set up a known API key for all tests."""
-        # V229: Clear FIREAI_API_KEYS (plural) so _init_api_keys() uses
         # FIREAI_API_KEY (singular) instead. Without this, if a previous
         # test set FIREAI_API_KEYS, the singular key is ignored.
         monkeypatch.delenv("FIREAI_API_KEYS", raising=False)

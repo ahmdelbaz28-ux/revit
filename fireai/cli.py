@@ -23,7 +23,6 @@ from pathlib import Path
 
 import click
 
-# V82 FIX: Try to import the application layer modules.
 # These are optional — the CLI degrades gracefully if missing.
 _src_modules: dict = {}
 
@@ -106,7 +105,6 @@ def build(dxf_file, calibrate, output, standard, panel) -> None:
         sys.exit(1)
 
     # 2. Device placement and coverage
-    # V82 FIX: The src.* application layer does not exist in this project.
     # These names (NFPA72, BS5839, DeviceType, CoverageService, etc.) were
     # imported from src.* modules that were removed during restructuring.
     # The full pipeline is available via `python run_full_pipeline.py`.

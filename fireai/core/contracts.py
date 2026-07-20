@@ -526,7 +526,6 @@ def validate_room_input(payload: dict[str, Any]) -> dict[str, Any]:  # NOSONAR â
                     "which leads to incorrect detector counts. Fix the polygon geometry."
                 )
     except ImportError:
-        # V114 FIX: Shapely unavailable = geometric validation SKIPPED = potential danger.
         # Must warn, not silently pass. Self-intersecting polygons produce wrong
         # detector counts â€” a life-safety catastrophe.
         import logging as _logging
@@ -541,7 +540,6 @@ def validate_room_input(payload: dict[str, Any]) -> dict[str, Any]:  # NOSONAR â
     ceiling_height = payload.get("ceiling_height_m")
     try:
         h = float(ceiling_height)
-        # V54 FIX: NaN/Inf bypass float comparisons (NaN > 30 = False, NaN <= 0 = False).
         # In a life-safety system, NaN entering the system means ALL downstream
         # safety checks are compromised. Block at the contract boundary.
         import math as _m
@@ -630,7 +628,6 @@ def validate_loop_input(payload: dict[str, Any]) -> dict[str, Any]:  # NOSONAR â
     panel_voltage = payload.get("panel_voltage_v", 24.0)
     try:
         v = float(panel_voltage)
-        # V54 FIX: NaN/Inf panel voltage bypasses all voltage drop checks.
         import math as _m2
 
         if not _m2.isfinite(v):

@@ -577,7 +577,6 @@ class TestDeltaCachePersistence:
             cache2 = DeltaCache(db_path=db_path)
             # The entry should be loaded from SQLite
             assert cache2.size > 0
-            # V131 FIX: Force persist to close any lingering connections before cleanup
             cache2.persist()
             cache1.persist()
         finally:

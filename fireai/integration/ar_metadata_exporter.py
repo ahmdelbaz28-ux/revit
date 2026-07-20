@@ -341,13 +341,11 @@ class ARMetadataExporter:
         """
         import math
 
-        # V134 F-4: Use correct field names from DetectorState dataclass
         # (was: x_m, y_m, z_m — which don't exist; correct: x, y, z)
         x = float(getattr(det_state, "x", 0.0))
         y = float(getattr(det_state, "y", 0.0))
         z = float(getattr(det_state, "z", 0.0))
 
-        # V134 F-4: Validate position is finite (per agent.md V57)
         for coord_name, coord_val in (("x", x), ("y", y), ("z", z)):
             if not math.isfinite(coord_val):
                 logger.warning(
@@ -386,7 +384,6 @@ class ARMetadataExporter:
         # Inspection criticality (DetectorState doesn't have requires_inspection — use metadata)
         inspection_critical = bool(metadata.get("requires_inspection", False))
 
-        # V134 F-4: Use DetectorStatus enum for is_active check
         # DetectorState has a `status` field of type DetectorStatus
         status = getattr(det_state, "status", None)
         is_active = True  # Default to active
@@ -492,7 +489,6 @@ class ARMetadataExporter:
             },
         })
 
-        # V139: Box mesh (for walls) with REAL vertex data
         # 8 vertices, 12 triangles (36 indices)
         # Accessor 0: POSITION (3 floats per vertex × 8 = 24 floats = 96 bytes)
         # Accessor 1: indices (36 unsigned shorts = 72 bytes)
@@ -505,7 +501,6 @@ class ARMetadataExporter:
             }],
         })
 
-        # V139: Cylinder mesh (for detectors) with REAL vertex data
         # 16 vertices (8 top + 8 bottom), 24 triangles (72 indices)
         # Accessor 2: POSITION (3 floats × 16 = 48 floats = 192 bytes)
         # Accessor 3: indices (72 unsigned shorts = 144 bytes)
@@ -547,7 +542,6 @@ class ARMetadataExporter:
             "nodes": nodes,
             "meshes": meshes,
             "materials": materials,
-            # V139: Real vertex data — buffer, bufferViews, and accessors
             # Box vertices: 8 × 3 floats = 96 bytes at offset 0
             # Box indices: 36 unsigned shorts = 72 bytes at offset 96
             # Cylinder vertices: 16 × 3 floats = 192 bytes at offset 168

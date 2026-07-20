@@ -21,7 +21,6 @@ import re
 from dataclasses import dataclass, field
 from typing import List, Optional, Tuple
 
-# V140 FIX (Rule 17 — Root-Cause Analysis): cv2 (OpenCV) and numpy were
 # imported at module top-level. This crashed the entire module on systems
 # without opencv-python installed, even though path-security validation
 # (the first stage of parse()) does NOT require cv2. Tests
@@ -176,7 +175,6 @@ class ImageParser:
             ImageParseResult with detected rooms
 
         """
-        # V126: Path security + file-size cap
         from parsers._path_security import (
             UnsafePathError,
             validate_file_size,
@@ -214,7 +212,6 @@ class ImageParser:
             result.image_size = (img.shape[1], img.shape[0])
             logger.info("Image loaded: %s", result.image_size)
 
-            # V140 Phase 10: Try YOLO segmentation first (more accurate), fall back to OpenCV
             yolo_rooms = self._try_yolo_segmentation(str(safe_path), result.image_size)
             if yolo_rooms:
                 result.rooms = yolo_rooms

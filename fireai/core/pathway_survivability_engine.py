@@ -91,13 +91,11 @@ class BuildingSpec:
     zone_count: int = 1
 
     def __post_init__(self) -> None:
-        # V20.2 FIX #17: High-rise threshold was 23.0m, but IBC §403 defines
         # high-rise as occupied floor >75ft = 22.86m above fire dept access.
         # Using 23.0m means a building at 22.9m (75.1ft) — which IS a
         # high-rise per IBC — would NOT be detected. Non-detected high-rises
         # get Level 1 pathway survivability instead of required Level 2,
         # meaning fire alarm cables would NOT have fire-resistance ratings.
-        # V55 FIX: NaN guard — conservative: assume high-rise if height is invalid
         if not math.isfinite(self.height_m):
             object.__setattr__(self, "is_high_rise", True)
             logging.getLogger(__name__).critical(
@@ -156,7 +154,6 @@ class SurvivabilityResult:
     cable_requirements: list[CableRequirement] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
     errors: list[str] = field(default_factory=list)
-    # V114 FIX: Fail-safe — compliance must be PROVEN, not assumed
     compliant: bool = False
     nfpa_version: str = "NFPA 72-2022"
     classification_rationale: list[str] = field(default_factory=list)
@@ -190,7 +187,6 @@ class PathwaySurvivabilityEngine:
         # result.building_level → LEVEL_2
     """
 
-    # V20.2 FIX: NFPA 72-2022 §12.3 (not §12.4) survivability level
     # determination rules.
     # Ordered from most to least restrictive for correct escalation.
 
@@ -210,7 +206,6 @@ class PathwaySurvivabilityEngine:
 
         # ── Step 1: Determine minimum survivability level ────────────────
 
-        # V20.2 FIX: Per NFPA 72 §12.3.3, Level 1 pathways shall be
         # permitted ONLY in buildings that are fully sprinklered throughout
         # in accordance with NFPA 13 or 13R. Start at Level 2 for
         # non-sprinklered buildings.
@@ -225,14 +220,12 @@ class PathwaySurvivabilityEngine:
             required_level = PathwaySurvivabilityLevel.LEVEL_1  # baseline for sprinklered
 
         # Rule: Staged evacuation in non-sprinklered → Level 3
-        # V20.2 FIX: Split staged evacuation into two cases
         # NFPA 72 §12.3.5: Staged + non-sprinklered → Level 3
         if spec.evacuation_type == "staged" and not spec.is_sprinklered:
             required_level = PathwaySurvivabilityLevel.LEVEL_3
             rationale.append(
                 "§12.3.5: Staged evacuation + non-sprinklered → Level 3. CI cable in 2-hour rated enclosure required."
             )
-        # V20.2 FIX: Staged + sprinklered → Level 2 minimum
         # NFPA 72 §12.3.4: Staged evacuation requires at least Level 2
         elif spec.evacuation_type == "staged" and spec.is_sprinklered:
             if required_level < PathwaySurvivabilityLevel.LEVEL_2:
@@ -243,7 +236,6 @@ class PathwaySurvivabilityEngine:
             )
 
         # Rule: Partial evacuation → Level 2 minimum
-        # V20.2 FIX: Use separate `if` not `elif` so partial+high-rise works
         # NFPA 72 §12.3.4: At least Level 2 for partial evacuation.
         if spec.evacuation_type == "partial":
             if required_level < PathwaySurvivabilityLevel.LEVEL_2:
@@ -290,7 +282,6 @@ class PathwaySurvivabilityEngine:
             )
 
         # Rule: Fully sprinklered + full evacuation → Level 1 permitted
-        # V20.2 FIX: NFPA 72 §12.3.3 — Level 1 ONLY if fully sprinklered
         if spec.is_sprinklered and spec.evacuation_type == "full" and not spec.is_high_rise and not spec.has_voice_evac:
             if required_level > PathwaySurvivabilityLevel.LEVEL_1:
                 # Higher level already determined — keep it
@@ -316,7 +307,6 @@ class PathwaySurvivabilityEngine:
 
         # ── Step 3: Warnings ────────────────────────────────────────────
 
-        # V20.2 FIX: Non-sprinklered building at Level 1 is a CODE VIOLATION
         if not spec.is_sprinklered and required_level == PathwaySurvivabilityLevel.LEVEL_1:
             result.errors.append(
                 "VIOLATION: Level 1 survivability assigned to non-sprinklered "

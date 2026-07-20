@@ -220,7 +220,6 @@ class BuildingModel:
 
     def __post_init__(self):
         if self.computation_hash == "" and self.grid_data:
-            # V64 FIX: Hash all data together, not concatenate two hashes
             # then truncate. Previous code did:
             #   h = sha256(raw).hex() + sha256(grid_data).hex()  # 128 chars
             #   hash = h[:32]  # Only keeps first 32 chars of sha256(raw)!
@@ -310,7 +309,6 @@ def _extract_fire_rating(  # NOSONAR — S3776: cognitive complexity is inherent
         (is_fire_rated, fire_rating_hours) tuple.
 
     """
-    # V96 FIX: Fail-safe defaults depend on element type.
     # Blocking elements default to fire-rated (True, 2.0h) on failure.
     _BLOCKING_DEFAULT = (True, 2.0)
     _NON_BLOCKING_DEFAULT = (False, 0.0)
@@ -335,7 +333,6 @@ def _extract_fire_rating(  # NOSONAR — S3776: cognitive complexity is inherent
                                 except (ValueError, TypeError):
                                     pass
     except Exception as exc:
-        # V96 FIX: Extraction failure defaults to fail-safe per element type.
         # Blocking elements default to fire-rated (True, 2.0h).
         # Non-blocking elements default to not-rated (False, 0.0h).
         is_rated, rating_hours = _BLOCKING_DEFAULT if is_blocking else _NON_BLOCKING_DEFAULT
@@ -510,7 +507,6 @@ def _get_element_bbox(element, settings=None) -> BoundingBox3D | None:  # NOSONA
     # Resolve world placement (handles nested PlacementRelTo chain)
     world_pos = _compute_world_placement(element)
     if world_pos is None:
-        # V93 FIX: Element placement extraction failure MUST return None.
         log.critical(
             "V93 SAFETY: World placement computation returned None for %s — "
             "DROPPING element. Elements with unknown position are MORE "
@@ -545,7 +541,6 @@ def _get_element_bbox(element, settings=None) -> BoundingBox3D | None:  # NOSONA
                         # Get extrusion dimensions
                         depth = float(item.Depth) if hasattr(item, "Depth") else 0.0
 
-                        # V106 CRITICAL FIX: Validate all dimension values for NaN/Inf.
                         # Previously, only position coordinates (cx, cy, cz, px, py, pz)
                         # were validated. Dimensions like XDim, YDim, Radius, and Depth
                         # could contain NaN from malformed IFC files, producing a
@@ -609,7 +604,6 @@ def _get_element_bbox(element, settings=None) -> BoundingBox3D | None:  # NOSONA
                                 if len(profile.Position.Location.Coordinates) > 1
                                 else 0.0
                             )
-                            # V106 FIX: Validate profile position
                             for _pval in [prof_x, prof_y]:
                                 if not math.isfinite(_pval):
                                     log.critical(
@@ -624,7 +618,6 @@ def _get_element_bbox(element, settings=None) -> BoundingBox3D | None:  # NOSONA
                         if hasattr(profile, "XDim") and hasattr(profile, "YDim"):
                             xdim = float(profile.XDim)
                             ydim = float(profile.YDim)
-                            # V106 CRITICAL FIX: Validate dimensions
                             if not math.isfinite(xdim) or not math.isfinite(ydim):
                                 log.critical(
                                     "V106 SAFETY: Non-finite profile dimensions "
@@ -686,7 +679,6 @@ def _get_element_bbox(element, settings=None) -> BoundingBox3D | None:  # NOSONA
                                 max_z = max(c[2] for c in all_corners)
                         elif hasattr(profile, "Radius"):
                             radius = float(profile.Radius)
-                            # V106 CRITICAL FIX: Validate radius
                             if not math.isfinite(radius):
                                 log.critical(
                                     "V106 SAFETY: Non-finite Radius (%s) in element %s — "
@@ -762,8 +754,6 @@ def _get_element_bbox(element, settings=None) -> BoundingBox3D | None:  # NOSONA
                                 max_y = min_y + _ndy * depth
                                 max_z = min_z + _ndz * depth
     except Exception as exc:
-        # V93 FIX: Geometry extraction failure MUST return None.
-        # V67 logged but continued, creating a zero-volume BoundingBox3D
         # that was invisible to the occupancy grid. A zero-volume box at
         # (0,0,0) is WORSE than missing the element entirely, because:
         # 1. It appears in the elements list (false sense of coverage)
@@ -786,13 +776,11 @@ def _get_element_bbox(element, settings=None) -> BoundingBox3D | None:  # NOSONA
     if min_z > max_z:
         min_z, max_z = max_z, min_z
 
-    # V93 SAFETY: Zero-volume bounding boxes are dangerous — they appear
     # in the elements list but are invisible to the occupancy grid.
     # A wall at (5,5,0)-(5,5,3) has zero width and occupies no cells.
     # For BLOCKING types (walls, slabs, beams), this is CRITICAL —
     # cables will route through an invisible wall.
     volume = (max_x - min_x) * (max_y - min_y) * (max_z - min_z)
-    # V106 FIX: Also reject zero-volume SPACE elements — phantom spaces
     # without volume produce unrouteable targets for the cable router.
     if volume == 0.0 and element_type in _BLOCKING_TYPES:  # NOSONAR — S1244: import retained for re-export / API surface
         log.critical(
@@ -824,7 +812,6 @@ def _get_element_bbox(element, settings=None) -> BoundingBox3D | None:  # NOSONA
         )
         return None
 
-    # V96 FIX: Pass element_type so _extract_fire_rating can default
     # to fire-rated (True, 2.0h) for blocking elements on failure.
     is_rated, rating_hours = _extract_fire_rating(element, element_type)
 
@@ -939,14 +926,11 @@ def _extract_building_model(ifc_model) -> BuildingModel:  # NOSONAR — S3776: c
             building_name = building.Name or ""
             break
     except Exception as exc:
-        # V67 SAFETY FIX: Building name extraction failure must be logged.
-        # V96 FIX: Removed redundant pass — logging is sufficient, and building
         # name defaults to empty string (non-safety-critical, but audit trail
         # should note the failure).
         log.warning("V67: Building name extraction failed: %s", exc)
 
     # Extract elements by type
-    # V106 FIX: Added fire-safety IFC entities (IfcAlarm, IfcSensor, IfcProtectiveDevice)
     # and structural entities (IfcStair, IfcRamp, IfcMember, IfcBuildingElementProxy)
     target_types = [
         # Structural / Architectural
@@ -959,12 +943,10 @@ def _extract_building_model(ifc_model) -> BuildingModel:  # NOSONAR — S3776: c
         "IfcWindow",
         "IfcColumn",
         "IfcCurtainWall",
-        # V106: Structural elements affecting cable routing
         "IfcStair",
         "IfcRamp",
         "IfcMember",
         "IfcBuildingElementProxy",
-        # V106: Fire safety elements — critical for a fire protection system
         "IfcAlarm",
         "IfcSensor",
         "IfcProtectiveDevice",
@@ -989,10 +971,8 @@ def _extract_building_model(ifc_model) -> BuildingModel:  # NOSONAR — S3776: c
                             )
                         )
                 else:
-                    # V93: Count dropped elements for safety audit
                     dropped_count += 1
         except Exception as exc:
-            # V67 SAFETY FIX: If extraction of one element type fails,
             # log it but continue with other types. However, missing
             # IfcWall elements are CRITICAL — cable router won't see walls.
             log.critical(
@@ -1005,7 +985,6 @@ def _extract_building_model(ifc_model) -> BuildingModel:  # NOSONAR — S3776: c
             )
             continue
 
-    # V93 SAFETY: Warn if elements were dropped due to failed extraction.
     # Dropped walls/partitions mean the cable router won't see them,
     # potentially routing cables through fire-rated barriers.
     if dropped_count > 0:
@@ -1103,7 +1082,6 @@ def _build_occupancy_grid(  # NOSONAR — S3776: cognitive complexity is inheren
 
     for elem in elements:
         # Convert element bounds to grid indices
-        # V64 FIX: Use math.floor instead of int() for grid coordinate
         # conversion. int() truncates toward zero, mapping negative
         # offsets to cell 0 instead of -1. Same V63 bug pattern —
         # elements near grid origin could be placed in wrong cells.

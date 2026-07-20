@@ -163,17 +163,14 @@ def _gate_voltage_drop(loop_data: dict | None) -> dict[str, Any]:
     vd = loop_data.get("voltage_drop")
     if vd is not None:
         if not isinstance(vd, dict):
-            # V67: Invalid voltage_drop data → BLOCK (not pass)
             return {
                 "passed": False,
                 "reason": f"Voltage drop data is not a dict (type={type(vd).__name__}) — cannot verify compliance. Release blocked for safety.",
             }
-        # V67: Missing is_compliant defaults to False — fail-safe
         is_compliant = vd.get("is_compliant", False)
         if not is_compliant:
             drop_pct = vd.get("voltage_drop_pct", "?")
             if "is_compliant" not in vd:
-                # V67: is_compliant explicitly missing — cannot verify compliance
                 reason_detail = f"Voltage drop compliance unknown (is_compliant not specified, drop={drop_pct}%)"
             elif "voltage_drop_pct" in vd:
                 reason_detail = f"Voltage drop {drop_pct}% exceeds limit"
@@ -208,12 +205,10 @@ def _gate_fault_isolation(loop_data: dict | None) -> dict[str, Any]:
     fi = loop_data.get("fault_isolation")
     if fi is not None:
         if not isinstance(fi, dict):
-            # V67: Invalid fault_isolation data → BLOCK (not pass)
             return {
                 "passed": False,
                 "reason": f"Fault isolation data is not a dict (type={type(fi).__name__}) — cannot verify compliance. Release blocked for safety.",
             }
-        # V67: Missing compliant defaults to False — fail-safe
         compliant = fi.get("compliant", False)
         if not compliant:
             violations = fi.get("violations", [])

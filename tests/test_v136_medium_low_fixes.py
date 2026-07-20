@@ -51,7 +51,6 @@ class TestForgeHealthCheck:
         p = AutodeskForgeProvider()
         result = p.health_check()
         assert result["healthy"] is False
-        # V229: The provider now attempts real APS authentication.
         # With invalid credentials, it returns healthy=False with an
         # authentication error message (not 'stub' anymore).
         assert result["details"] is not None
@@ -370,6 +369,5 @@ class TestBeamHorizontalTolerance:
     def test_slightly_diagonal_beam_not_horizontal(self):
         """Beam with 0.001 Y difference should NOT be horizontal."""
         from fireai.core.spatial_engine.beam_obstruction import Beam
-        # V135 F-38: 0.0005 difference was accepted before, now rejected
         beam = Beam(id="B1", start=(0, 4), end=(10, 4.0005), depth_m=0.5)
         assert beam.is_horizontal is False

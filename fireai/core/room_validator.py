@@ -10,7 +10,6 @@ from __future__ import annotations
 from .nfpa72_models import RoomSpec
 
 # Known occupancy types per NFPA 72
-# V20.2 FIX: Removed "kitchen" and "assembly" — these are DANGEROUS types
 # that require licensed FPE review per nfpa72_models.py. Having them here
 # created an inconsistency: room_validator accepted them but RoomSpec
 # construction would reject them. Kitchen requires heat detectors (not smoke)

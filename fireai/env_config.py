@@ -144,7 +144,6 @@ def _load_config() -> FireAIConfig:  # NOSONAR — S3776: cognitive complexity i
     default_db_path = ":memory:" if environment == "testing" else "./data/fireai.db"
     database_path = raw_db_path or default_db_path
 
-    # V80: Langfuse observability configuration
     # Langfuse is OBSERVABILITY — not required for pipeline execution
     langfuse_public_key = os.environ.get("LANGFUSE_PUBLIC_KEY", "").strip()
     langfuse_secret_key = os.environ.get("LANGFUSE_SECRET_KEY", "").strip()

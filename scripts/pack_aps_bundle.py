@@ -15,6 +15,8 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DIST_DIR = REPO_ROOT / "dist" / "appbundles"
 
+_MANIFEST_FILENAME = "PackageContents.xml"
+
 
 def compile_project(csproj_path: Path) -> bool:
     """Runs dotnet build in Release mode."""
@@ -67,7 +69,7 @@ def pack_autocad_bundle() -> bool:
     if not manifest_src.exists():
         print(f"[ERROR] Manifest missing: {manifest_src}")
         return False
-    shutil.copy2(manifest_src, bundle_dir / "PackageContents.xml")
+    shutil.copy2(manifest_src, bundle_dir / _MANIFEST_FILENAME)
 
     # Copy compiled Release DLLs
     bin_dir = REPO_ROOT / "autocad_addin" / "BazSparkAutoCADBridge" / "bin" / "Release"
@@ -108,7 +110,7 @@ def pack_revit_bundle() -> bool:
     if not manifest_src.exists():
         print(f"[ERROR] Manifest missing: {manifest_src}")
         return False
-    shutil.copy2(manifest_src, bundle_dir / "PackageContents.xml")
+    shutil.copy2(manifest_src, bundle_dir / _MANIFEST_FILENAME)
 
     # Copy compiled dlls (best effort check of bin/Release)
     bin_dir = REPO_ROOT / "revit_addin" / "BazSparkRevitBridge" / "bin" / "Release"

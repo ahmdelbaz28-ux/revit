@@ -332,7 +332,6 @@ async def export_ifc(
             },
         )
     except Exception as e:
-        # V113 SECURITY: Never expose str(e) to client — may contain
         # server paths (/home/...), Python class names, internal state.
         # In a safety-critical system, this information helps attackers
         # craft targeted exploits. Log internally only.
@@ -525,7 +524,6 @@ async def export_data_global(request: Request, input_data: ExportDataInput):  # 
         media_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         filename = f"{_safe_filename(project.get('name', 'project'))}_export.xlsx"
     else:
-        # V213: For non-Excel types, return a real JSON manifest instead of
         # the previous "MOCK EXPORT DATA" bytes. The manifest tells the
         # client exactly what is available so they can choose the right
         # specialized endpoint (/export/dxf, /export/revit, /export/ifc).

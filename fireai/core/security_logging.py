@@ -65,7 +65,6 @@ try:
     from loguru import logger as _loguru_logger
 
     _LOGURU_AVAILABLE = True
-    # V103 FIX: Remove loguru's default stderr handler. We configure our own
     # file sinks with rotation/compression. Without this removal, every
     # message routed through loguru would ALSO print to stderr, causing
     # duplicate output in production and filling Docker container logs.
@@ -90,7 +89,6 @@ _SENSITIVE_PATTERNS = [
     re.compile(r"(Bearer\s+)([A-Za-z0-9_\-\.]+)", re.IGNORECASE),  # NOSONAR — S5869: f-string without placeholders kept for future expansion
 ]
 
-# V105 FIX (HIGH-2): REMOVED the overly broad hex-regex pattern that was
 # corrupting hash values in log output. The previous pattern:
 #   re.compile(r'(?<=["\s:=])([a-f0-9]{32,})(?=["\s,])', re.IGNORECASE)
 # matched ANY 32+ char hex string, including SHA-256 hashes, HMAC signatures,
@@ -116,7 +114,6 @@ _SENSITIVE_ENV_VARS = frozenset(
     }
 )
 
-# V105 FIX: The env var cache is refreshed before each mask_sensitive()
 # call to handle runtime key rotation. This is safe because os.getenv()
 # is a C-level call that's extremely fast (~50ns per call for 7 vars).
 _ENV_VALUE_CACHE: dict[str, str] = {}
@@ -272,7 +269,6 @@ def configure_log_rotation(
         backup_count: Number of rotated backup files to keep.
 
     """
-    # V105 FIX (CRITICAL-2): Prevent duplicate sinks for security_audit.log.
     # SecurityAuditLogger already manages its own loguru sink with proper
     # filtering (audit_channel="security"). Adding another sink via this
     # function creates triple entries and corrupts the chain.
@@ -283,7 +279,6 @@ def configure_log_rotation(
     log_path = _LOG_DIR / log_file
 
     if _LOGURU_AVAILABLE:
-        # V103 FIX: Use loguru as the SOLE file writer with:
         #   - 500 MB size-based rotation
         #   - 30-day time-based retention (auto-cleanup)
         #   - Zip compression of rotated files
@@ -350,7 +345,6 @@ def configure_timed_rotation(
         backup_count: Number of days of logs to retain.
 
     """
-    # V105 FIX (CRITICAL-2): Same protection as configure_log_rotation.
     if log_file == "security_audit.log":
         return
 
@@ -358,7 +352,6 @@ def configure_timed_rotation(
     log_path = _LOG_DIR / log_file
 
     if _LOGURU_AVAILABLE:
-        # V103 FIX: loguru with time-based retention + zip compression
         _loguru_logger.add(
             str(log_path),
             rotation="1 day" if when in ("midnight", "D") else "1 hour",
@@ -403,7 +396,6 @@ def configure_timed_rotation(
 # ═══════════════════════════════════════════════════════════════════════════════
 
 # Genesis sentinel for the security audit chain hash.
-# V105 FIX (LOW-6): Use a consistent format with audit_log.py for potential
 # future cross-verification. Both now use a 64-char hex string.
 _SECURITY_GENESIS = "0" * 64
 
@@ -487,18 +479,15 @@ class SecurityAuditLogger:
         self._log_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
         self._log_path = self._log_dir / "security_audit.log"
 
-        # V102 FIX: Thread-safe lock for chain hash integrity (same pattern
         # as audit_log.py V69-11 FIX). Without this, concurrent log_event()
         # calls break the tamper-evident chain.
         self._lock = threading.Lock()
 
-        # V105 FIX (HIGH-1): Recover chain hash from existing log on restart.
         # Previously, _chain_hash was always set to "GENESIS" on restart,
         # breaking cross-restart chain continuity (NFPA 72 §14.2.4 compliance).
         # Now we scan the existing log file to recover the last chain hash.
         self._chain_hash = self._recover_chain_hash()
 
-        # V105 FIX: SecurityAuditLogger writes DIRECTLY to the log file
         # instead of routing through the global loguru singleton. The previous
         # loguru-based approach had a fundamental design flaw: loguru is a
         # GLOBAL process-level singleton, and multiple SecurityAuditLogger
@@ -526,7 +515,6 @@ class SecurityAuditLogger:
             encoding="utf-8",
         )
         handler.setFormatter(logging.Formatter("%(message)s"))  # Raw JSON
-        # V104 FIX: Do NOT add SensitiveDataFilter here. Data is already
         # masked in log_event() before JSON serialization.
         self._logger.addHandler(handler)
 
@@ -631,12 +619,10 @@ class SecurityAuditLogger:
             }
 
             # Compute new chain hash for the next event.
-            # V105 FIX: Use _compute_chain_hash() — the single source of truth.
             event_json = json.dumps(event, sort_keys=True, separators=(",", ":"))
             self._chain_hash = _compute_chain_hash(event_json)
 
             # Write to security audit log.
-            # V104 FIX: Data is already masked above. Do NOT apply
             # SensitiveDataFilter again, or the chain_hash hex string
             # will be corrupted by the filter's hex-regex pattern.
             self._logger.info(event_json)

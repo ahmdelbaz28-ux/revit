@@ -66,7 +66,6 @@ logger = logging.getLogger(__name__)
 # Constants
 # ---------------------------------------------------------------------------
 
-# V135 F-14 FIX: Use __Host- prefix for the CSRF cookie.
 # Per OWASP: the __Host- prefix enforces:
 #   - Secure attribute (HTTPS only)
 #   - Path=/ (root only)
@@ -78,7 +77,6 @@ CSRF_COOKIE_NAME = "__Host-fireai_csrf_token"
 CSRF_HEADER_NAME = "x-csrf-token"
 CSRF_TOKEN_LENGTH = 32  # bytes → 43 chars in urlsafe base64
 
-# V138 F-16 FIX: Removed dead CSRF_COOKIE_ATTRIBUTES constant.
 # It was defined but NEVER USED. The actual cookie is built by
 # build_csrf_cookie_header() which has its own inline format.
 
@@ -103,13 +101,11 @@ CSRF_EXEMPT_PATHS = frozenset({
     "/api/v1/auth/session/login",
 })
 
-# V135 F-35 FIX: Removed dead CSRF_SAFE_CONTENT_TYPES constant.
 # It was defined but NEVER USED anywhere in the codebase. Keeping it
 # misled readers into thinking the middleware enforces content-type
 # checks. The middleware enforces CSRF on ALL state-changing requests
 # regardless of content type (defense in depth per Rule 12).
 
-# V135 F-13 FIX: Read _DEV_ALLOW_HTTP_COOKIES from env var (was hardcoded True).
 # In production, this MUST be False (or unset, which defaults to False).
 # The OLD hardcoded True overrode the dev_allow_http parameter, causing the
 # Secure attribute to be omitted in production behind TLS-terminating proxies.
@@ -163,7 +159,6 @@ def validate_csrf_token(token: str) -> bool:
         decoded = base64.urlsafe_b64decode(padded)
         return len(decoded) >= 24  # At least 24 bytes decoded (192 bits)
     except Exception as e:
-        # V246 FIX: Log the exception for debugging (was silent pass)
         logger.debug("CSRF token entropy check failed: %s", e, exc_info=True)
         return False
 
@@ -230,7 +225,6 @@ class CSRFMiddleware:
         """
         self.app = app
         self.exempt_paths = CSRF_EXEMPT_PATHS | (exempt_paths or frozenset())
-        # V135 F-13 FIX: Respect the dev_allow_http parameter (don't OR with constant).
         # The OLD code did `dev_allow_http or _DEV_ALLOW_HTTP_COOKIES` which
         # ignored False values (False or True = True). Now the parameter is
         # authoritative; _DEV_ALLOW_HTTP_COOKIES is only a module-level default.
@@ -251,7 +245,6 @@ class CSRFMiddleware:
             send: ASGI send callable.
 
         """
-        # V135 F-22 / V137 F-2 FIX: WebSocket connections need Origin header
         # validation to prevent Cross-Site WebSocket Hijacking (CSWSH).
         # The V135 F-22 "fix" only logged at DEBUG and ALWAYS called
         # await self.app() — it was a NO-OP. Now we ACTUALLY enforce
@@ -267,7 +260,6 @@ class CSRFMiddleware:
                 elif name == b"host":
                     host = value.decode("utf-8", errors="replace")
 
-            # V137 F-2: If Origin header is present, verify it matches the Host.
             # Per OWASP CSWSH Prevention Cheat Sheet: the Origin header must
             # match the server's host (or be in an allowlist).
             if origin and host:
@@ -281,14 +273,12 @@ class CSRFMiddleware:
 
                     # Allow if origin host matches server host
                     # In dev mode, also allow localhost variants
-                    # V243 SECURITY: Default to "production" (fail-safe) — matches
                     # security_middleware.py. Previously defaulted to "development"
                     # which is fail-open (allows localhost bypass in production).
                     is_dev = _os.environ.get("FIREAI_ENV", "production").lower() == "development"
                     trusted_hosts = {host_name, "localhost", "127.0.0.1"} if is_dev else {host_name}
 
                     if origin_host not in trusted_hosts:
-                        # V137 F-2: REJECT the WebSocket connection (was NO-OP before)
                         logger.warning(
                             "CSWSH BLOCKED: WebSocket connection from untrusted origin '%s' "
                             "(host='%s'). Rejecting connection per OWASP CSWSH prevention.",
@@ -326,7 +316,6 @@ class CSRFMiddleware:
             await self.app(scope, receive, send)
             return
 
-        # V135 F-23 FIX: Normalize trailing slash for exempt path check.
         # The OLD code did exact match (`if path in self.exempt_paths`)
         # which failed for `/api/v2/health/` (trailing slash). FastAPI
         # often redirects trailing slashes, but the middleware runs
@@ -340,7 +329,6 @@ class CSRFMiddleware:
         # Extract cookie token from Cookie header
         headers = scope.get("headers", [])
 
-        # V135 F-XX FIX: Exempt API-key-only requests from CSRF.
         # CSRF attacks rely on the browser automatically sending credentials
         # (cookies). The X-API-Key header is NOT sent automatically — an
         # attacker cannot forge it in a cross-site request. Therefore,
@@ -486,7 +474,6 @@ def build_csrf_cookie_header(token: str, is_https: bool = True) -> str:  # NOSON
         Set-Cookie header value string.
 
     """
-    # V137 F-9: __Host- prefix REQUIRES Secure attribute per RFC 6265bis.
     # Even in dev mode with _DEV_ALLOW_HTTP_COOKIES=True, we MUST include
     # Secure because __Host- cookies without it are rejected by browsers.
     # In dev mode over HTTP, the cookie simply won't be SET by the browser

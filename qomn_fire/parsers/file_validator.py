@@ -45,7 +45,6 @@ class FileValidator:
         V128 SECURITY: Defense-in-depth path validation at validator entry.
         FormatDetector already validates, but this adds a second gate.
         """
-        # V128 SECURITY: Defense-in-depth path validation.
         # FormatDetector already validated, but we re-validate here
         # to catch any direct calls to FileValidator that bypass format_detector.
         try:
@@ -68,7 +67,6 @@ class FileValidator:
                 remedy="Provide a path within FIREAI_ALLOWED_UPLOAD_DIRS with valid BIM extension."
             ))
 
-        # V128 SECURITY: Reject oversized files (also checked by format_detector)
         try:
             validate_file_size(
                 safe_path,

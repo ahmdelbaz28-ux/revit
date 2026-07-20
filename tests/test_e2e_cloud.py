@@ -245,7 +245,6 @@ class TestQdrantCloudE2E:
 
         assert id1 and id2 and id3, "All stores should succeed"
 
-        # V144: Search with exact text (hash embeddings require exact match)
         r1 = service.search("E2E conversation memory test", MemoryType.CONVERSATION, limit=5)
         r2 = service.search("E2E study result memory test", MemoryType.STUDY_RESULT, limit=5)
 

@@ -111,7 +111,6 @@ class TestCombineSPL:
     def test_both_negative_returns_zero(self):
         assert _combine_spl_db(-10.0, -5.0) == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
 
-    # V65: NaN/Inf guards
 
     def test_nan_a_returns_b(self):
         """NaN input should fall back to the other value."""
@@ -196,7 +195,6 @@ class TestImageSourceReflection:
         )
         assert reflected == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
 
-    # V65: Negative absorption coefficient
 
     def test_negative_absorption_raises(self):
         """Negative absorption is physically impossible — adds energy."""

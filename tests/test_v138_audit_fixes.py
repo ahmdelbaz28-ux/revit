@@ -28,7 +28,6 @@ class TestGenerationMsNotStale:
         room = Room(name="TestStale", width=10.0, length=8.0, ceiling_height=3.0)
         result = agent.generate_variants(room, occupancy_type="office")
 
-        # V138 F-1: All 3 variants should have DIFFERENT generation_ms
         # (the OLD bug made them all the same — last variant's value)
         ms_values = [vr.generation_ms for vr in result.variants.values()]
         # At least 2 should be different (timing may coincidentally match)

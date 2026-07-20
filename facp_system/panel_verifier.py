@@ -38,7 +38,6 @@ class ComplianceVerifier:
         if req.jurisdiction == "FDNY" and "FDNY" not in rec.listings:
             violations.append("Violation: FACP is missing FDNY Certificate of Approval.")
 
-        # V54 FIX F4: Releasing service verification
         # Root cause: requires_releasing was defined but never checked in verifier.
         # Impact: Non-releasing panel could pass compliance for suppression systems.
         # Reference: NFPA 72-2022 SS21.7, UL 864 releasing service listing
@@ -54,7 +53,6 @@ class ComplianceVerifier:
                     "and support cross-zone verification before agent release."
                 )
 
-        # V54 FIX F5: Battery derating method verification
         # Ensure battery sizing uses proper derating, not flat 1.2x
         derating_method = rec.battery_derating_details.get("method", "unknown")
         if "1.2" in derating_method or derating_method == "unknown":

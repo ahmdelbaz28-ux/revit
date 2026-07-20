@@ -293,7 +293,6 @@ def _generate_variant_worker(args: tuple[str, dict[str, Any]]) -> dict[str, Any]
             # This places MORE detectors for fail-safe coverage
             safety_radius = optimizer.R * SAFETY_MAXIMIZED_SPACING_FACTOR
             layout = optimizer.optimize(room, coverage_radius=safety_radius)
-            # V135 F-7 FIX: Cap at 2.0× theoretical lower bound (per R3).
             # The OLD code did `layout.detectors[:cap]` which truncated the
             # FIRST `cap` detectors in placement order (grid scan) — leaving
             # large coverage holes in one corner. Now we use `_remove_redundant()`
@@ -440,7 +439,6 @@ class GenerativeLayoutAgent:
         """
         # Validate weights
         total = coverage_weight + compliance_weight + redundancy_weight + cost_weight
-        # V135 F-31 FIX: Tightened tolerance from 0.01 to 0.001
         # The OLD code allowed weights to sum to 0.99-1.01. The docstring
         # says "must sum to 1.0". Now we allow 0.999-1.001 (stricter).
         if not math.isclose(total, 1.0, abs_tol=0.001):
@@ -533,9 +531,7 @@ class GenerativeLayoutAgent:
         variants: dict[LayoutVariant, VariantResult] = {}
         audit_events: list[str] = []
 
-        # V135 F-8: First pass — compute costs for all variants to determine
         # the reference_cost (median) used in the additive scoring formula.
-        # V138 F-1 FIX: Also store generation_ms and error per variant to
         # avoid using stale loop variable `r` in the second loop.
         variant_costs: dict[LayoutVariant, float] = {}
         variant_layouts: dict[LayoutVariant, DetectorLayout] = {}
@@ -554,7 +550,6 @@ class GenerativeLayoutAgent:
             variant_gen_ms[variant] = r["generation_ms"]  # V138 F-1
             variant_errors[variant] = r.get("error")  # V138 F-1
 
-        # V135 F-8: Compute reference_cost = median of all variant costs
         # Falls back to 1000.0 if all costs are 0 (degenerate case)
         costs_list = sorted(variant_costs.values())
         if costs_list and costs_list[len(costs_list) // 2] > 0:
@@ -567,7 +562,6 @@ class GenerativeLayoutAgent:
             overlap_pct = variant_overlaps[variant]
             is_compliant = variant_compliance[variant]
 
-            # V135 F-8: Pass reference_cost to the new additive scoring formula
             score = self._compute_score(
                 coverage_pct=layout.coverage_pct,
                 is_compliant=is_compliant,
@@ -696,7 +690,6 @@ class GenerativeLayoutAgent:
                     )
 
                 total_overlap_area += overlap
-                # V138 F-10 FIX: Use TOTAL coverage area (all detectors) as denominator
                 # not just overlapping pairs. The OLD code only counted pairs that overlap
                 # in the denominator, inflating overlap_pct for sparse layouts.
                 total_possible_area += math.pi * radius ** 2
@@ -704,7 +697,6 @@ class GenerativeLayoutAgent:
         if total_possible_area == 0:
             return 0.0
 
-        # V138 F-10: Overlap % = total overlap / total coverage area (all detectors)
         # This gives the TRUE percentage of redundant coverage
         return min(100.0, (total_overlap_area / total_possible_area) * 100.0)
 
@@ -749,7 +741,6 @@ class GenerativeLayoutAgent:
             if not math.isfinite(val):
                 return 0.0  # Fail-safe: NaN/Inf → score 0
 
-        # V135 F-8: Additive formula (cost penalty, not multiplicative denominator)
         bonus = (
             self.weights["coverage"] * max(0.0, coverage_pct)
             + self.weights["compliance"] * (100.0 if is_compliant else 0.0)
@@ -811,7 +802,6 @@ class GenerativeLayoutAgent:
             if LayoutVariant.STANDARD_COMPLIANT in compliant:
                 return LayoutVariant.STANDARD_COMPLIANT
 
-        # V135 F-9: Low-hazard occupancy → COST_MINIMIZED allowed if score is competitive
         # Low-hazard = storage, parking, utility, mercantile (per NFPA 101)
         LOW_HAZARD_OCCUPANCIES = frozenset({
             "storage", "parking", "utility", "mercantile", "business",
@@ -825,7 +815,6 @@ class GenerativeLayoutAgent:
                 LayoutVariant.STANDARD_COMPLIANT,
                 compliant[LayoutVariant.COST_MINIMIZED],  # fallback
             ).score
-            # V135 F-9: Recommend COST_MINIMIZED if its score is ≥ 90% of STANDARD
             # This ensures cost savings don't come at unacceptable quality loss
             if std_score > 0 and cost_min_score >= 0.9 * std_score:
                 return LayoutVariant.COST_MINIMIZED

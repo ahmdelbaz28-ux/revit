@@ -30,7 +30,6 @@ def is_two_part_numeric_version(value: str) -> bool:
     return len(parts) == 2 and all(part.isdigit() for part in parts)
 
 
-# V140 FIX (Rule 17 — Root-Cause Analysis): The validator at
 # skills/skill_validator.py:74-81 (validate_name_chars) only accepts ASCII
 # lowercase letters, ASCII digits 0-9, hyphen, underscore. The old strategy
 # allowed Unicode categories "Ll"/"Lu"/"Nd" which include non-ASCII chars like
@@ -451,13 +450,11 @@ def test_manifest_and_result_json_serialization() -> None:
 
 @settings(max_examples=50, deadline=1000)
 @given(
-    # V140 FIX (Rule 17): The filter must produce names that the validator
     # ACTUALLY rejects. The old filter accepted '0' (single ASCII digit) which
     # the validator correctly accepts (digits are in the allowed set). The
     # validator's contract is: name must be non-empty AND contain only
     # [a-z0-9-_]. So a "bad" name must either be empty OR contain at least one
     # character outside [a-z0-9-_]. Names starting with a digit are VALID.
-    # V140 FIX 2: The validator strips whitespace (str_strip_whitespace=True)
     # BEFORE checking chars. So '0 ' (zero + space) becomes '0' after strip,
     # which is valid. The filter must check the STRIPPED value, not the raw.
     bad_name=st.text(
@@ -502,7 +499,6 @@ def test_short_description_rejected(short_description: str) -> None:
 
 @settings(max_examples=50, deadline=1000)
 @given(
-    # V140 FIX (Rule 17): The validator at skill_validator.py:115-124 rejects
     # trigger_words ONLY when: (a) the list is empty, OR (b) any element is
     # empty/whitespace-only. The old strategy generated ['0'] which is a valid
     # single-element list of a non-empty word — incorrectly expected to raise.

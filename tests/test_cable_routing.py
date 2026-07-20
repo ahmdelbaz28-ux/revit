@@ -419,7 +419,6 @@ class TestVoltageDrop:
         c.add_device(CircuitDevice("HS1", "horn_strobe", 100.0, 0.0, 0.0, 0.100))
         result = engine.route_circuit(c, wire_gauge=WireGauge.AWG_14)
 
-        # V58 FIX: Resistance at 75°C per NEC Ch.9 Table 8
         # Expected: 0.100A × 2 × 10.07Ω/km × 0.100km = 0.2014V
         expected = 0.100 * 2.0 * 10.07 * (100.0 / 1000.0)
         assert result.total_voltage_drop_v == pytest.approx(expected, rel=1e-4), (

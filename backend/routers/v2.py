@@ -43,7 +43,6 @@ References
 
 """
 
-# V141 FIX: Removed __future__ annotations to fix Pydantic forward ref resolution.
 # With __future__ annotations, Dict[str, Any] becomes ForwardRef('Dict[str, Any]')
 # which Pydantic cannot resolve at runtime for FastAPI model parsing.
 # Removing it forces actual type resolution at import time.
@@ -234,7 +233,6 @@ async def extract_rooms(request: Request, req: BIMExtractRoomsRequest) -> Dict[s
     """
     from fireai.bridges.bim_provider import get_provider
 
-    # V137 F-5 / V138 F-7: Validate source path if provided
     # CodeQL: py/path-injection — source is validated below with Path.resolve()
     # + is_relative_to() + null byte check + extension whitelist.
     if req.source:  # lgtm[py/path-injection] — validated below
@@ -247,7 +245,6 @@ async def extract_rooms(request: Request, req: BIMExtractRoomsRequest) -> Dict[s
         from pathlib import Path
         try:
             source_path = Path(req.source).resolve()  # NOSONAR
-            # V138 F-7 FIX: Use Path.is_relative_to() or proper boundary check
             # instead of str.startswith() which matches "/tmp_evil" against "/tmp"
             cwd = Path.cwd().resolve()
             allowed_roots = [
@@ -256,7 +253,6 @@ async def extract_rooms(request: Request, req: BIMExtractRoomsRequest) -> Dict[s
                 Path("/var/tmp"),  # NOSONAR
                 Path(os.environ.get("FIREAI_UPLOAD_DIR", str(cwd / "uploads"))),
             ]
-            # V138 F-7: Check if source_path is within any allowed root
             # using proper path containment (not string prefix)
             def _is_within(path: Path, root: Path) -> bool:
                 try:
@@ -539,7 +535,6 @@ async def create_smoke_state(request: Request, req: SmokeSimulationStateRequest)
     )
 
     if req.fds_run_id:
-        # V137 F-6 FIX: Validate FDS run ID format to prevent fake validation.
         # The OLD code accepted ANY string as fds_run_id — a user could submit
         # arbitrary smoke data with fds_run_id="fake" and the state would be
         # marked VALIDATED, potentially tainting the legal audit chain.
@@ -560,7 +555,6 @@ async def create_smoke_state(request: Request, req: SmokeSimulationStateRequest)
             )
 
         # Create validated state from FDS results
-        # V138 F-14: Use Pydantic-validated points (was unvalidated Dict)
         points = [
             SmokeDensityPoint(
                 x=p.x, y=p.y, z=p.z,
@@ -582,7 +576,6 @@ async def create_smoke_state(request: Request, req: SmokeSimulationStateRequest)
 
 
 # ---------------------------------------------------------------------------
-# V141: Vector Memory & Topology Endpoints
 # ---------------------------------------------------------------------------
 
 
@@ -739,7 +732,6 @@ async def topology_health() -> Dict[str, Any]:
 
 
 # ---------------------------------------------------------------------------
-# V142: GraphRAG Endpoints
 # ---------------------------------------------------------------------------
 
 

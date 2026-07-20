@@ -197,7 +197,6 @@ class SafeBuildingEngine:
         for f_data in floor_spec_registry:
             floor_lbl = f_data.get("floor_id")
             for rm in f_data.get("rooms", []):
-                # V15 FIX: Don't mutate the caller's room dicts — create a copy
                 rm_copy = dict(rm)
                 rm_copy["virtual_floor"] = floor_lbl
                 rooms_flatted.append(rm_copy)

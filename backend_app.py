@@ -41,7 +41,6 @@ from backend.routers.analyze import (
 from backend.routers.health import router as health_router
 from backend.routers.qomn import router as qomn_router
 
-# V129: Security middleware — same hardening as backend/app.py.
 # SecurityHeadersMiddleware adds X-Frame-Options, X-Content-Type-Options,
 # HSTS, CSP, Referrer-Policy, Permissions-Policy to every HTTP response.
 # CorrelationIdMiddleware adds X-Correlation-ID for end-to-end audit tracing
@@ -140,10 +139,8 @@ else:
 # can short-circuit CORS preflight (OPTIONS) requests BEFORE any other
 # middleware tries to authenticate / inspect them. Previous order put CORS
 # innermost, which broke preflight handling under cross-origin browsers.
-# V129: SecurityHeadersMiddleware — runs inside CORS so security headers
 # are still applied to every non-preflight response.
 app.add_middleware(SecurityHeadersMiddleware)
-# V129: CorrelationIdMiddleware — adds X-Correlation-ID to every request
 # for end-to-end audit tracing (NFPA 72 §14.2.4 compliance).
 app.add_middleware(CorrelationIdMiddleware)
 app.add_middleware(_RoleDevMiddleware)
@@ -216,7 +213,6 @@ async def _unhandled_exception_handler(request: Request, exc: Exception):
 
 if __name__ == "__main__":
     import uvicorn
-    # V129: Bind to 127.0.0.1 (loopback) by default. Production deployments
     # MUST use a reverse proxy (nginx, traefik, AWS ALB) to terminate TLS and
     # forward to this loopback address. Binding to 0.0.0.0 exposes the API
     # directly to the network, bypassing the proxy's rate limiting, TLS,

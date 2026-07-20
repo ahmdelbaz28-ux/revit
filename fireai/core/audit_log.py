@@ -218,7 +218,6 @@ class AuditLog:
     def __init__(self, db_path: str = ":memory:", hmac_key: bytes | None = None) -> None:
         self._db_path = db_path
         self._hmac_key = hmac_key
-        # V69-11 FIX: Thread-safe lock for hash chain integrity
         # Without this, concurrent append() calls break the hash chain
         # because both read the same prev_entry_hash before either writes.
         self._lock = threading.Lock()
@@ -260,7 +259,6 @@ class AuditLog:
             If the log has been closed.
 
         """
-        # V69-11 FIX: Lock entire append for hash chain integrity
         with self._lock:
             self._check_closed()
 

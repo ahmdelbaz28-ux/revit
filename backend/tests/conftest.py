@@ -70,7 +70,6 @@ TEST_API_KEY = "test-api-key-for-testing-only"
 # This ensures the very first test in the very first module sees a real key.
 os.environ["FIREAI_API_KEY"] = TEST_API_KEY
 
-# V212 FIX: FIREAI_SESSION_SECRET is required by backend/app.py::lifespan().
 # Without it, every TestClient test fails at startup with:
 #   RuntimeError: FIREAI_SESSION_SECRET environment variable is not set.
 # The CI sets this via `secrets.token_urlsafe(64)` — we do the same here
@@ -81,9 +80,7 @@ if not os.environ.get("FIREAI_SESSION_SECRET"):
     import secrets as _secrets
     os.environ["FIREAI_SESSION_SECRET"] = _secrets.token_urlsafe(64)
 
-# V212 FIX: backend/app.py::lifespan also requires DATABASE_URL and
 # CORS_ALLOWED_ORIGINS to start. Set safe test defaults if not already set.
-# V220 FIX (SonarCloud python:S5443): use tempfile.mkdtemp() which creates
 # a PRIVATE temp directory with mode 0o700 on Linux/Mac. This is the only
 # SonarCloud-recognized pattern for safe temp directory creation. Hardcoded
 # /tmp paths are flagged regardless of mode because /tmp itself is 1777.
@@ -96,15 +93,12 @@ os.environ.setdefault("UDM_DB_PATH", f"{_FIREAI_TEST_DIR}/udm_test_conftest.db")
 os.environ["CORS_ALLOWED_ORIGINS"] = "http://localhost:3000,http://localhost:5173"
 os.environ["CORS_ORIGINS"] = "http://localhost:3000,http://localhost:5173"
 
-# V257 FIX: Disable CSRF middleware in tests. CSRF middleware (registered in
-# V254/V255) blocks all POST/PUT/DELETE without a CSRF token. Test clients
 # don't send CSRF tokens because they're not browsers. This caused 129 test
 # failures. The FIREAI_CSRF_DISABLED env var is the officially-supported way
 # to disable CSRF (see backend/app.py::_register_csrf_middleware).
 os.environ.setdefault("FIREAI_CSRF_DISABLED", "1")
 os.environ.setdefault("FIREAI_ENV", "development")
 
-# V212 FIX: Clean up stale api_keys.secret file that causes crash in CI.
 # The file persists across test runs and may become invalid, causing:
 #   RuntimeError: Server secret file db/api_keys.secret exists but is invalid.
 # Also clean up stale DB files that cause RuntimeError on re-runs.
@@ -135,7 +129,6 @@ for _tmp_db in [
 # fixture. Import-time patching ensures EVERY TestClient gets the header,
 # regardless of when it's constructed.
 #
-# V140 FIX (Rule 17 — Root-Cause Analysis): The old patch was GLOBAL — it
 # injected X-API-Key into EVERY TestClient instance across the entire test
 # suite. This broke tests/test_auth_integration.py::test_projects_requires_auth
 # which expects a 401 response when NO X-API-Key is sent. When backend/tests/
@@ -153,7 +146,6 @@ try:
     from starlette.testclient import TestClient as _StarletteTestClient
     _original_testclient_init = _StarletteTestClient.__init__
 
-    # V140: cache the backend/tests/ directory path for fast comparison
     _BACKEND_TESTS_DIR = _os.path.dirname(_os.path.abspath(__file__))
 
     def _patched_testclient_init(self, *args, **kwargs):
@@ -163,7 +155,6 @@ try:
         (tests/, fireai/core/tests/, etc.) get an unpatched TestClient so they
         can test unauthenticated request paths.
         """
-        # V140: walk the call stack to find the calling test file
         frame = _sys._getframe(1)
         caller_file = ""
         while frame is not None:
@@ -181,7 +172,6 @@ try:
             caller_headers.setdefault("X-API-Key", TEST_API_KEY)
             kwargs["headers"] = caller_headers
         _original_testclient_init(self, *args, **kwargs)
-        # V140 FIX: Set a flag on the INSTANCE so _patched_method/_patched_request
         # can check it without call-stack inspection (which is fragile because
         # starlette's testclient.py filename contains "test_" and confuses the
         # frame walker). This is the root-cause fix for the URL rewriting bug
@@ -204,7 +194,6 @@ try:
     # the audit's HIGH-1 (auth) finding, which is already fixed above.
     _HTTP_METHODS = ("get", "post", "put", "delete", "patch", "head", "options")
 
-    # V139 FIX: Build the set of routes that ACTUALLY exist at /api/ (not /api/v1/).
     # The health router is mounted at /api (not /api/v1) via app.include_router(
     # health_router_module.router, prefix="/api"). So /api/health and
     # /api/health/statistics are valid as-is — URL rewriting them to /api/v1/
@@ -257,7 +246,6 @@ try:
 
         def _make_patched_method(orig, name):
             def _patched_method(self, url, *args, **kwargs):
-                # V140 FIX: Use instance flag instead of call-stack inspection.
                 # The flag is set in _patched_testclient_init based on whether
                 # the TestClient was created from a test under backend/tests/.
                 if getattr(self, '_fireai_backend_test', False):
@@ -272,7 +260,6 @@ try:
     if hasattr(_StarletteTestClient, "request"):
         _original_request = _StarletteTestClient.request
         def _patched_request(self, method, url, *args, **kwargs):
-            # V140 FIX: Same instance-flag check as _patched_method
             if getattr(self, '_fireai_backend_test', False):
                 return _original_request(self, method, _rewrite_legacy_url(url), *args, **kwargs)
             return _original_request(self, method, url, *args, **kwargs)

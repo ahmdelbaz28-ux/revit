@@ -94,7 +94,6 @@ def submit_fds_job(
         Dict with job_id, status, estimated_runtime_sec.
     """
     job_id = str(uuid.uuid4())
-    # V294 SECURITY FIX (Bandit B324): MD5 used for non-security checksum
     # (deduplication of FDS input files). Marked usedforsecurity=False to
     # satisfy Bandit and document intent. If this checksum is ever used for
     # security purposes (auth, integrity verification against adversarial
@@ -241,7 +240,7 @@ def _submit_to_modal(job_id: str, fds_input: str, webhook_url: str) -> None:
         logger.info("FDS Job %s dispatched to Modal, call_id=%s", job_id, call.object_id)
 
     except Exception as exc:  # noqa: BLE001
-        logger.error("Failed to submit FDS job %s to Modal: %s", job_id, exc)
+        logger.exception("Failed to submit FDS job %s to Modal: %s", job_id, exc)
         _get_job_store()[job_id]["status"] = FDSJobStatus.FAILED
         _get_job_store()[job_id]["error"] = str(exc)
 

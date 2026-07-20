@@ -266,7 +266,6 @@ class ProofCertificateGenerator:
             coverage_lower_bound = 100.0
             uncovered_area_upper = 0.0
         else:
-            # V15 FIX: Upper bound on uncovered area uses SQUARE cell area,
             # not circular inscribed area. The circular approximation
             # π(δ/2)² ≈ 0.785δ² understates the true maximum uncovered area
             # by ~21.5%. Using δ² (square cell) is the conservative bound

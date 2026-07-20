@@ -98,7 +98,6 @@ class OCRService:
             pytesseract.get_tesseract_version()
             self.logger.info("Tesseract OCR installation validated successfully")
         except Exception as e:
-            # V201 (SonarCloud S8572): use logger.exception() to include full
             # traceback automatically, instead of f-string interpolation.
             self.logger.exception("Tesseract OCR not found")
             raise RuntimeError(
@@ -306,7 +305,6 @@ class OCRService:
                 total_word_count = result['word_count']
 
         except Exception:  # NOSONAR - python:S1481
-            # V201 (SonarCloud S8572): logger.exception() includes the full
             # traceback automatically — no need to interpolate {e}.
             self.logger.exception("OCR processing failed for %s", file_path)
             raise

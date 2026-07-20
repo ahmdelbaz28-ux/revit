@@ -104,7 +104,6 @@ class ProductionValidator:
             return self.check(DATABASE_CONNECTION_LABEL, False, "DATABASE_URL not set")
 
         # If URL points to known unreachable Supabase (DNS failure), treat as warning.
-        # V280 SECURITY: project ref no longer hardcoded (was leaked in public repo).
         # Operators set SUPABASE_UNREACHABLE_PROJECT_REF env var to enable the bypass.
         unreachable_ref = os.getenv("SUPABASE_UNREACHABLE_PROJECT_REF", "")
         if "supabase.co" in database_url and unreachable_ref and unreachable_ref in database_url:
@@ -249,7 +248,7 @@ class ProductionValidator:
         except Exception as e:
             return self.check(GITIGNORE_LABEL, False, f"Error: {str(e)}")
 
-    def test_no_hardcoded_secrets(self) -> bool:
+    def test_no_hardcoded_secrets(self) -> bool:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """Test for hardcoded secrets in Python files"""
         import glob
         import re

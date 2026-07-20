@@ -85,7 +85,6 @@ DEVICE_PATTERNS = [
     (r'break\s*glass', 'PULL_STATION'),
 
     # Notification appliances — ORDER MATTERS (most specific first)
-    # V78 FIX: Moved horn-strobe pattern BEFORE simple horn pattern.
     # Previously, 'horn' matched "horn/strobe" first, misclassifying
     # combined devices as simple HORN. NFPA 72 requires separate
     # counting for combined vs standalone notification appliances.
@@ -149,7 +148,6 @@ class PDFParser:
             PDFParseResult with detected devices
 
         """
-        # V126: Path security + file-size cap
         from parsers._path_security import (
             UnsafePathError,
             validate_file_size,
@@ -169,17 +167,14 @@ class PDFParser:
                 parser_name="PDFParser",
             )
         except UnsafePathError as e:
-            # V127 FIX: Return error result instead of raising ValueError.
             # The test contract expects parse() to return a result object
             # with success=False and SECURITY errors, not to raise.
             return PDFParseResult(source_file=pdf_path, success=False, errors=[f"SECURITY: {e}"])
         except FileNotFoundError as e:
-            # V127 FIX: Return error result for missing files.
             return PDFParseResult(source_file=pdf_path, success=False, errors=[str(e)])
 
         result = PDFParseResult(source_file=pdf_path, success=False)
 
-        # V125 SECURITY (Finding #5 follow-up, Rule #23):
         # Delegate path validation to the shared helper. Closes:
         #   - Path traversal (../../etc/passwd)
         #   - Null byte truncation
@@ -224,7 +219,6 @@ class PDFParser:
             result.devices = devices
             result.text_content = text
             result.page_count = page_count
-            # V78 FIX: success requires at least some fire devices found.
             # Previously, any text at all (even non-fire-related) set success=True,
             # potentially misleading downstream code into thinking the building
             # has been analyzed for fire protection when it hasn't.
@@ -282,7 +276,6 @@ class PDFParser:
 
     def _ocr_page(self, page) -> str:
         """Extract text from page using OCR (Tesseract or DocTR)."""
-        # V140 Phase 10: Try DocTR OCR service first (more accurate), fall back to Tesseract
         try:
             from fireai.integration.document_intelligence import is_doctr_available, ocr_image
             if is_doctr_available():

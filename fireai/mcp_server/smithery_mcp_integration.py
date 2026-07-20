@@ -155,7 +155,6 @@ class ProposedAction:
     rationale: str = ""
     confidence: float = 0.0
     status: ActionStatus = ActionStatus.PROPOSED
-    # V134 F-5: New fields for enqueue transparency
     enqueue_status: str = "pending"  # "enqueued" / "dropped" / "failed" / "pending"
     enqueue_error: str | None = None
     reviewed_by: str | None = None
@@ -295,7 +294,6 @@ class RevitAPIDocsSearcher:
         short_name = class_name.rsplit(".", maxsplit=1)[-1]
         short_name_lower = short_name.lower()
 
-        # V135 F-25 FIX: Use EXACT match instead of substring match.
         # The OLD code used `class_name_lower in str(k).lower()` which
         # returned True for "Wall" if docs contained "WallType",
         # "WallFoundation", "CurtainWall", etc. This could lead the AI
@@ -305,7 +303,6 @@ class RevitAPIDocsSearcher:
             # Check exact match first
             if class_name in docs or short_name in docs:
                 return True
-            # V135 F-25: Suffix match (e.g., "Wall" matches "T:Autodesk.Revit.DB.Wall")
             # but NOT substring (so "Wall" won't match "WallType")
             for k in docs:
                 k_str = str(k)
@@ -318,7 +315,6 @@ class RevitAPIDocsSearcher:
                 if not isinstance(entry, dict):
                     continue
                 name = str(entry.get("APIName") or entry.get("Title") or entry.get("Name") or "")
-                # V135 F-25: Exact match or suffix match (not substring)
                 if name.lower() == class_name_lower or name.lower() == short_name_lower:
                     return True
                 # Suffix match: "T:Autodesk.Revit.DB.Wall" matches short_name "Wall"
@@ -617,7 +613,6 @@ class SmitheryMCPClient:
             )
             queue.enqueue(request)
 
-            # V134 F-5: Mark as successfully enqueued
             action.enqueue_status = "enqueued"
             action.enqueue_error = None
 
@@ -630,7 +625,6 @@ class SmitheryMCPClient:
             self._record_audit(action)
 
         except ImportError as exc:
-            # V134 F-5: Mark as DROPPED (not enqueued) — caller can detect this
             action.enqueue_status = "dropped"
             action.enqueue_error = f"ThreadSafeModelUpdateQueue unavailable: {exc}"
 
@@ -644,7 +638,6 @@ class SmitheryMCPClient:
             # Still record in AuditStore for traceability
             self._record_audit(action, success=False, error=action.enqueue_error)
         except Exception as exc:
-            # V134 F-5: Mark as FAILED
             action.enqueue_status = "failed"
             action.enqueue_error = str(exc)
 
@@ -678,7 +671,6 @@ class SmitheryMCPClient:
                 },
             )
         except Exception as audit_exc:
-            # V135 F-24 FIX: Audit failure MUST be escalated, not silenced.
             # The OLD code did `except Exception: pass` which silently
             # swallowed audit failures. If both the queue AND the audit
             # store are down, the proposal is COMPLETELY LOST with no trace.

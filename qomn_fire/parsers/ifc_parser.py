@@ -35,7 +35,6 @@ from qomn_fire.core.types import Building, Opening, Point3D, Room, Wall
 
 logger = logging.getLogger("qomn_fire.ifc_parser")
 
-# V128: Allowed extensions and size cap for IFC parser
 _IFC_ALLOWED_EXTENSIONS = frozenset({".ifc", ".ifcxml", ".json"})
 _IFC_MAX_FILE_SIZE_BYTES = int(
     os.getenv("FIREAI_IFC_MAX_FILE_SIZE_BYTES", str(500 * 1024 * 1024))  # 500 MB
@@ -62,7 +61,6 @@ class IfcParser:
         V128 SECURITY: Validates path BEFORE any file I/O.
         Closes path traversal, null-byte, argument injection, and oversized file DoS.
         """
-        # V128 SECURITY: Validate path BEFORE any file I/O.
         try:
             safe_path = validate_input_path(
                 filepath,
@@ -82,7 +80,6 @@ class IfcParser:
                 remedy="Provide a path within FIREAI_ALLOWED_UPLOAD_DIRS with .ifc/.ifcxml/.json extension."
             ))
 
-        # V128 SECURITY: Reject oversized files before any further work
         try:
             validate_file_size(
                 safe_path,

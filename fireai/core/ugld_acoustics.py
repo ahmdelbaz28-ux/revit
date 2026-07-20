@@ -167,7 +167,6 @@ def atmospheric_attenuation_db_per_m(
     Reference: ISO 9613-1:1993 §6, Table 2 + Annex E
 
     """
-    # V65 SAFETY: Validate inputs before computation.
     # This is a standalone function (not protected by Pydantic model validation).
     # NaN/Inf inputs produce NaN alpha → NaN SPL → false compliance pass.
     if not math.isfinite(center_frequency_hz) or center_frequency_hz <= 0:

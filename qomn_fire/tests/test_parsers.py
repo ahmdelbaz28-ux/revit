@@ -220,7 +220,6 @@ class TestFileValidator(unittest.TestCase):
 
     def test_nonexistent_file_returns_error(self):
         """Non-existent file returns FileValidationError."""
-        # V140 FIX (Rule 17): Production FileValidator enforces path-traversal
         # security BEFORE checking file existence. The old test used
         # `/nonexistent/file.ifc` which is OUTSIDE the allowed upload dirs
         # (`/tmp`, `/var/tmp`, `/var/fireai/uploads`) — so it was rejected by
@@ -384,7 +383,6 @@ class TestIfcParser(unittest.TestCase):
             res = IfcParser.parse_ifc(path, "HASH")
             self.assertTrue(res.is_success)
             building = res.unwrap()
-            # V58 FIX: has_fallback_geometry MUST be True because ALL regex-parsed
             # IFC rooms have placeholder boundaries. Real geometry requires ifcopenshell.
             self.assertTrue(building.has_fallback_geometry,
                            "has_fallback_geometry must be True when rooms have placeholder boundaries. "
@@ -484,7 +482,6 @@ class TestDxfParser(unittest.TestCase):
         f.close()
         return f.name
 
-    # V140 FIX (Rule 17): Production parser (qomn_fire/parsers/dxf_parser.py:481)
     # refuses to guess room height — NFPA 72 §17.7.3.1.4 makes height safety-
     # critical. Old tests used DXF files WITHOUT EXTMIN/EXTMAX Z values, so
     # height extraction failed and tests got Result.err instead of Result.ok.
@@ -527,7 +524,6 @@ class TestDxfParser(unittest.TestCase):
     def test_parse_dxf_fallback_room_when_empty(self):
         """DXF file with no entities creates fallback room with flag set."""
         content = "0\nSECTION\n2\nHEADER\n9\n$ACADVER\n1\nAC1015\n0\nENDSEC\n0\nEOF\n"
-        # V140: inject EXTMIN/EXTMAX so parser can extract height
         content = self._with_height_header(content)
         path = self._create_dxf_file(content)
         try:
@@ -547,7 +543,6 @@ class TestDxfParser(unittest.TestCase):
             "0\nLINE\n8\n0\n10\n0.0\n20\n0.0\n11\n5.0\n21\n5.0\n"
             "0\nENDSEC\n0\nEOF\n"
         )
-        # V140: inject EXTMIN/EXTMAX so parser can extract height
         content = self._with_height_header(content)
         path = self._create_dxf_file(content)
         try:
@@ -571,7 +566,6 @@ class TestDxfParser(unittest.TestCase):
             "10\n0.0\n20\n5.0\n"
             "0\nENDSEC\n0\nEOF\n"
         )
-        # V140: inject EXTMIN/EXTMAX so parser can extract height
         content = self._with_height_header(content)
         path = self._create_dxf_file(content)
         try:
@@ -944,7 +938,6 @@ class TestIntegrationPipeline(unittest.TestCase):
         This test now verifies the correct rejection behavior.
         """
         content = "0\nSECTION\n2\nHEADER\n9\n$ACADVER\n1\nAC1015\n0\nENDSEC\n0\nEOF\n"
-        # V140: inject EXTMIN/EXTMAX so parser can extract height (production
         # parser refuses to guess height per NFPA 72 §17.7.3.1.4 safety contract)
         content = TestDxfParser._with_height_header(content)
         with tempfile.NamedTemporaryFile(mode='w', suffix='.dxf', delete=False) as f:

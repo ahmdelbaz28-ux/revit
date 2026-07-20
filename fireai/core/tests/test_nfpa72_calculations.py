@@ -671,7 +671,6 @@ class TestCheckVoltageDrop:
         assert result["compliant"] is False
 
     def test_drop_fraction_calculation(self) -> None:
-        # V142: 1.0 A × 0.01 Ω/m × 50 m × 2 (DC return path factor per
         # NFPA 72 §10.14) = 1.0 V drop. The ×2 accounts for both the supply
         # and return conductors — a single-path calculation would understate
         # the voltage drop by 50% and could allow deployment of devices
@@ -825,6 +824,5 @@ class TestAutoSelectAWG:
 
     def test_all_candidates_populated(self) -> None:
         result = auto_select_awg(24.0, 0.5, 100.0)
-        # V131 FIX: AWG_GAUGES now excludes AWG 18/16 per NEC 760.71.
         # The count should match the permitted gauges, not the full table.
         assert len(result["all_candidates"]) == len(AWG_GAUGES)

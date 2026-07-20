@@ -55,7 +55,6 @@ def get_heat_detector_placement_params(
     """
     # CRITICAL FIX: Use spec.FIXED_SPACING_M (6.1m), NOT spec.listed_spacing_m (doesn't exist).
     # Also add ceiling height adjustments per NFPA 72 Table 17.6.2.1.
-    # V65 FIX: spec=None indicates missing detector specification — this is a
     # data error upstream, not a valid default case. Silently defaulting to 6.1m
     # could approve a design with undefined detector specs (Rule 12: safety-first).
     if spec is None:
@@ -213,7 +212,6 @@ def generate_heat_detector_positions(
     else:
         spacing = spacing_m
     positions = []
-    # V79 FIX: Replaced while-loop with count-based placement.
     # The while-loop used `x < room_spec.width_m` which skipped the last
     # detector row when x fell at or past the boundary. E.g., room 15m × 15m
     # with spacing 6.1m: while-loop places 2×2=4 detectors (x=3.05, 9.15 only;
@@ -283,7 +281,6 @@ def calculate_ridge_zone_boundary(
     if slope_degrees <= 1.5:
         return ridge_line  # No ridge zone needed
     x1, y1, x2, y2 = ridge_line
-    # V65 FIX: Ridge zone must extend buffer_m PERPENDICULAR to the ridge line,
     # not just along x-axis. The old code only adjusted x-coordinates,
     # which is correct only for horizontal ridges. For diagonal/vertical
     # ridges, the buffer zone was completely wrong — detectors could be
@@ -350,7 +347,6 @@ def requires_ridge_zone_detector(ceiling_spec: CeilingSpec) -> bool:
         True if ridge zone detector is required
 
     """
-    # V65 FIX: NFPA 72 §17.6.3.4 requires ridge zone detectors only when
     # slope exceeds 25% (approximately 14°). Old code triggered for ANY
     # slope, even 2° — overly conservative but more importantly contradicts
     # the standard, causing confusion during AHJ review.
@@ -448,7 +444,6 @@ def calculate_max_spacing(ceiling: CeilingSpec, _detector_type: DetectorType) ->
     # Use the module-level import (already imported from .nfpa72_models at top of file)
     # CRITICAL: Do NOT use bare import `from nfpa72_models import` here — that resolves
     # to the stale root-level copy which still has R=S/2 (4.55m) instead of R=0.7×S (6.37m).
-    # V65 FIX: height_at_low_point_m may not exist on flat ceilings — use getattr
     # fallback to height_m (the standard flat-ceiling attribute).
     low_height = getattr(ceiling, 'height_at_low_point_m', None)
     if low_height is None:
@@ -574,7 +569,6 @@ DetectorTypeSimple = Literal["smoke", "heat"]
 
 # NFPA 72-2022 Table 17.6.3.1.1 — Height-Adjusted Detector Spacing
 # =====================================================================
-# V127: Import from single source of truth (fireai/constants/__init__.py)
 # to eliminate divergent duplicate tables across the codebase.
 # Previously, this was a hardcoded copy that could drift from the canonical values.
 #
@@ -596,7 +590,6 @@ DetectorTypeSimple = Literal["smoke", "heat"]
 # resulting in over-conservative placement (too many detectors).
 #
 # (ceiling_height_max_meters, smoke_adjusted_spacing_m, heat_adjusted_spacing_m)
-# V128: Import from CANONICAL single source of truth (fireai/constants/nfpa72.py)
 # to eliminate divergent duplicate tables across the codebase.
 # Previously, this was imported via fireai.constants (which had its own duplicates).
 # Now imports directly from the authoritative nfpa72.py module.
@@ -612,7 +605,6 @@ _NFPA72_TABLE_17_6_3_1_1 = list(_CANONICAL_HEIGHT_TABLE)
 _NFPA72_ABSOLUTE_MAX_HEIGHT = 12.2
 
 # Fallback ADJUSTED SPACING for heights above 12.2m (beyond NFPA table).
-# V130 FIX: Smoke fallback = 9.10m (flat per §17.7.3.2.3, NO height reduction).
 # Heat fallback = 3.50m (conservative extrapolation from Table 17.6.3.5.1).
 # Coverage radius will be computed as R = 0.7 * spacing_fallback.
 _NFPA72_SMOKE_SPACING_FALLBACK = 9.10  # → R = 6.37m (flat per §17.7.3.2.3)
@@ -702,7 +694,6 @@ def calculate_coverage_radius_from_height(  # NOSONAR — S3776: cognitive compl
     if ceiling_height is None:
         raise TypeError("ceiling_height must be a float, got None.")
 
-    # V114 FIX: NaN bypasses `<= 0` guard (NaN <= 0 → False in IEEE 754).
     # A NaN ceiling height poisons every downstream Shapely geometry operation
     # and produces NaN spacing/radius/coverage — rooms appear "compliant" because
     # NaN comparisons always return False. Must use isfinite() BEFORE comparison.
@@ -744,7 +735,6 @@ def calculate_coverage_radius_from_height(  # NOSONAR — S3776: cognitive compl
 
     for h_max, smoke_spacing, heat_spacing in _NFPA72_TABLE_17_6_3_1_1:
         if ceiling_height <= h_max:
-            # V130 FIX: Smoke detectors use FLAT 9.1m per NFPA 72 §17.7.3.2.3.
             # NO height-based spacing reduction for smoke detectors.
             # The 1%/ft reduction (Table 17.6.3.5.1) applies to HEAT detectors ONLY.
             spacing = smoke_spacing if detector_type.lower() == "smoke" else heat_spacing
@@ -763,7 +753,6 @@ def calculate_coverage_radius_from_height(  # NOSONAR — S3776: cognitive compl
             )
 
     # exactly 12.2m — use last table entry
-    # V130 FIX: Smoke = flat 9.1m per §17.7.3.2.3; Heat = 3.70m per Table 17.6.3.5.1
     spacing = _NFPA72_SMOKE_SPACING_FALLBACK if detector_type.lower() == "smoke" else 3.70
     radius = round(0.7 * spacing, 2)
     wall_dist = round(spacing / 2.0, 2)
@@ -791,7 +780,6 @@ def get_ceiling_height_warnings(height: float) -> list[str]:
         List of warning strings.
 
     """
-    # V79 FIX: NaN height produces empty warnings list (all comparisons False).
     # An empty list appears "valid" to downstream code, hiding data corruption.
     if not isinstance(height, (int, float)) or not math.isfinite(height):
         return [f"Height {height!r} is not a finite number — cannot validate."]
@@ -830,7 +818,6 @@ def beam_pocket_correction_factor(
         Factor in (0, 1] by which rated spacing should be multiplied.
 
     """
-    # V65 FIX: Add NaN/Inf input guards per V114 pattern.
     # NaN beam_depth or ceiling_height would propagate silently through
     # the calculation, producing NaN correction factor → NaN spacing →
     # zero detectors placed in beam pockets.
@@ -876,7 +863,6 @@ def calculate_corridor_spacing(
         Maximum allowable along-corridor spacing in metres.
 
     """
-    # V79 FIX: Validate corridor_width_m for NaN/Inf.
     # NaN corridor_width_m >= 3.0 → False, then NaN propagates through
     # half_width and math.sqrt, producing NaN spacing → NaN detector positions.
     if not math.isfinite(corridor_width_m) or corridor_width_m <= 0:
@@ -998,7 +984,6 @@ def check_voltage_drop(
             compliant    : True if drop ≤ max_drop_fraction.
 
     """
-    # V114 FIX: Input validation — NaN/Inf and negative values produce
     # false compliance (e.g., negative cable_length_m → negative drop → compliant).
     # Must validate ALL parameters before computation per agent.md Rule 5.
     for name, val in [
@@ -1025,7 +1010,6 @@ def check_voltage_drop(
     if max_drop_fraction <= 0 or max_drop_fraction > 1:
         raise ValueError(f"max_drop_fraction must be in (0, 1], got {max_drop_fraction}")
 
-    # V142 FIX: Apply DC_RETURN_PATH_FACTOR (=2.0) per NFPA 72 §10.14. The
     # one-way cable_length_m must be multiplied by 2 to account for the
     # return conductor (supply + return path). Without this factor, voltage
     # drop is understated by 50% — a safety-critical bug that could cause
@@ -1078,7 +1062,6 @@ def required_battery_capacity_ah(
     alarm during power outage.
 
     """
-    # V114 FIX: Input validation — NaN/Inf and negative/zero values produce
     # impossible battery capacities (e.g., safety_factor=0 → 0 Ah → no battery).
     for name, val in [
         ("standby_current_a", standby_current_a),
@@ -1117,7 +1100,6 @@ def required_battery_capacity_ah(
 # AWG WIRE GAUGE TABLES — NEC/NFPA 70
 # ============================================================================
 # Resistance values from NEC Chapter 9, Table 8 (copper at 75 °C).
-# V51 FIX: Corrected to NEC Table 8 DC resistance at 75°C (stranded copper).
 # Old values for AWG 14/12/10 were ~18% too low (20°C values, unsafe direction).
 # AWG 18/16 are solid in Table 8; all others are stranded (Class B).
 
@@ -1131,7 +1113,6 @@ AWG_RESISTANCE_TABLE: dict[int, dict[str, float]] = {
 }
 
 # Available AWG gauges for auto-selection (smallest to largest)
-# V131 FIX: NEC Article 760.71 and NFPA 72 §27.4.1 require minimum AWG 14
 # for fire alarm circuit wiring. AWG 18 and 16 are NOT permitted for FA circuits.
 # They remain in AWG_RESISTANCE_TABLE for reference/lookup but are excluded from
 # auto-selection to prevent dangerously thin wire from being specified.
@@ -1208,7 +1189,6 @@ def calculate_inrush_current(
     """
     spec = DEVICE_CURRENT_DRAW.get(device_type)
     if spec is None:
-        # V65 FIX: Unknown device type — log warning instead of silent default.
         # Old code silently used 0.25A/0.63A which could significantly underestimate
         # actual current draw for high-current devices (e.g., 110cd strobes at 0.45A).
         # This could lead to NAC circuit overload or voltage sag at remote devices.

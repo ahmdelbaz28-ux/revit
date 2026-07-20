@@ -166,7 +166,6 @@ _MIN_SPL_ABOVE_AMBIENT_DBA = 15.0
 _MIN_ABSOLUTE_SPL_DBA = 75.0
 
 # NFPA 72 §18.4.1.2: Maximum SPL (to prevent hearing damage)
-# V286 SAFETY FIX: was 120.0 dBA — inconsistent with the rest of the codebase
 # (acoustic_calculator.py, acoustics_engine.py, integration_bridge.py all use 110).
 # 120 dBA exceeds the OSHA hearing damage threshold and would cause permanent
 # hearing loss within minutes of exposure. NFPA 72 §18.4.1.2 caps notification
@@ -312,7 +311,6 @@ def min_horn_rating_for_room(
         Dict with min_horn_rating_dba, coverage_distance, compliance info.
 
     """
-    # V96 FIX: Invalid room dimension must return a clearly invalid horn rating,
     # not 0.0 dBA (which looks like a valid value and could lead to specifying
     # a silent notification appliance — life safety violation).
     if not math.isfinite(room_dimension_m) or room_dimension_m <= 0:
@@ -469,7 +467,6 @@ def calculate_strobe_candela(  # NOSONAR — S3776: cognitive complexity is inhe
             required_candela = candela
             break
 
-    # V76 MED-04 FIX: Rooms exceeding the NFPA 72 table maximum (4000 sq ft)
     # require engineering analysis per NFPA 72 §18.5.5.1. The last table value
     # may not provide adequate coverage. Flag for manual FPE review.
     if room_area_sqft > table[-1][0]:
@@ -667,7 +664,6 @@ class NotificationAssessment:
         self.violations = []
         self.nfpa_references = []
 
-        # V78 FIX: Do NOT start as True — if no results were evaluated,
         # the room must NOT claim compliance. This is a fail-closed design.
         evaluated = sum(1 for r in [self.nac_result, self.spl_result,
                                      self.strobe_result, self.corridor_strobe]

@@ -342,7 +342,6 @@ class VoltageDropInput(BaseModel):
         # Ambient temperature correction (NEC Table 310.15(B)(2)(a))
         # Copper resistance increases with temperature (positive temperature coefficient).
         # At higher temperatures, conductor resistance increases → more voltage drop.
-        # V79 FIX: Separated ampacity derating (NEC 310.15, 30°C threshold) from
         # resistance correction (applies at all temperatures). The 30°C threshold
         # is for ampacity only — conductor resistance changes with temperature
         # regardless of ambient. Also corrected temperature coefficient from
@@ -371,7 +370,6 @@ class VoltageDropInput(BaseModel):
         effective_current = self.load_current_a * (1.25 if self.is_continuous_load else 1.0)
 
         # Voltage drop calculation
-        # V78 FIX: Remove bundling_factor from voltage drop. Bundling is an AMPACITY
         # derating (NEC 310.15(B)(3)(a)), NOT a resistance increase. Wire resistance
         # does not change when wires are bundled — only the current-carrying capacity
         # decreases. Dividing by bundling_factor overstated voltage drop by 25% for

@@ -20,7 +20,6 @@ the evidence chain provides cryptographic proof.
 Usage:
     from fireai.core.evidence_chain import EvidenceChain
 
-    # V113: NEVER hardcode secret keys. Use environment variables.
     import os
     secret = os.environ.get("FIREAI_EVIDENCE_SECRET")
     if not secret:
@@ -145,7 +144,6 @@ class EvidenceChain:
 
     """
 
-    # V113: Known-weak secret keys that MUST be rejected.
     # These are commonly used in examples/tutorials and provide ZERO security.
     # Using any of these allows anyone who reads the source code to forge
     # evidence envelopes — completely defeating the audit trail integrity.
@@ -170,7 +168,6 @@ class EvidenceChain:
         if not signer_id:
             raise ValueError("signer_id must not be empty")
 
-        # V113 SECURITY: Reject known-weak secret keys.
         # Per agent.md Priority 1 (Safety): a forged evidence chain in a fire
         # protection system means fake compliance reports that can kill people.
         # A predictable secret key makes HMAC signatures worthless.
@@ -186,7 +183,6 @@ class EvidenceChain:
                 f"catastrophic loss of life."
             )
 
-        # V113 SECURITY: Warn if key is too short (< 32 chars)
         # HMAC-SHA256 needs at least 32 bytes of entropy for full security.
         # Shorter keys are vulnerable to brute force.
         if len(secret_key) < 32:
@@ -201,7 +197,6 @@ class EvidenceChain:
 
         self._secret_key = secret_key.encode("utf-8")
         self._signer_id = signer_id
-        # V59 FIX (Finding 4): Include namespace in HMAC domain
         # Without this, identical payloads in different projects produce identical
         # HMACs, enabling cross-project signature replay attacks.
         self._namespace = namespace or "fireai"
@@ -404,7 +399,6 @@ class EvidenceChain:
         Without this, the same envelope_hash in different projects produces the
         same signature, enabling cross-project replay attacks.
         """
-        # V59 FIX (Finding 4): Namespace-separated HMAC
         # Format: namespace || envelope_hash ensures that signatures from
         # different projects (different namespaces) are always different,
         # even for identical envelope content.

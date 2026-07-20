@@ -417,7 +417,6 @@ class TestCalculateBatteryBackup:
         result_ok = calculate_battery_backup(0.5, 1.5, standby_hours=24.0)
         assert result_ok["nfpa_compliant"] is True
 
-        # V65 FIX: sub-24h standby now raises ValueError (not just warning)
         with pytest.raises(ValueError, match="24h"):
             calculate_battery_backup(0.5, 1.5, standby_hours=12.0)
 

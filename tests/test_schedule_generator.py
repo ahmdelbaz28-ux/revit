@@ -106,7 +106,6 @@ class TestScheduleReport:
         rep = sg.to_report([])
         assert rep.route_count == 0
         assert rep.total_cable_length_m == 0.0  # NOSONAR — S1244: import retained for re-export / API surface
-        # V97 FIX: Empty schedule reports all_compliant=False (fail-safe)
         assert not rep.all_compliant
 
     def test_single_route_report(self, sg):

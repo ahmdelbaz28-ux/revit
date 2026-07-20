@@ -189,7 +189,6 @@ class IfcFirePipeline:
         total_dets = len(all_devices)
         cov_pcts = [r.layer5_coverage_pct for r in all_results] or [0.0]
         blind_pcts = [r.layer7_blind_spot_pct for r in all_results] or [0.0]
-        # V78 FIX: Area-weighted average instead of arithmetic mean.
         # Arithmetic mean: 10m²@90% + 1000m²@50% → 70% (WRONG)
         # Area-weighted:   10m²@90% + 1000m²@50% → 50.4% (CORRECT)
         # A small room with high coverage inflates the average unfairly.
@@ -199,7 +198,6 @@ class IfcFirePipeline:
             global_cov = sum(c * a for c, a in zip(cov_pcts, areas)) / total_area
             global_bs = sum(b * a for b, a in zip(blind_pcts, areas)) / total_area
         elif all_results:
-            # V79 FIX: All spaces have zero area — geometry extraction may have failed.
             # Arithmetic mean of unreliable coverage values is still unreliable.
             # Set to worst-case instead of reporting misleading numbers.
             global_cov = 0.0
@@ -364,7 +362,6 @@ class IfcFirePipeline:
                 is_indoor=self.cfg.is_indoor,
                 env_context=env,
                 release_rate_kg_s=self.cfg.release_rate_kg_s,
-                # V78 FIX: No longer default to 1000 m³ — a typical 10m²×3m room is 30 m³.
                 # 1000 m³ default overestimates air changes, producing zone extents that
                 # are too small (more dilution assumed than reality). IEC 60079-10-1
                 # requires conservative (small volume = less dilution = larger zones).
@@ -384,7 +381,6 @@ class IfcFirePipeline:
             }
         except Exception as exc:
             warnings.append(f"L2 HAC failed: {exc}")
-            # V76 CRIT-07 FIX: Default to ZONE_0 (most hazardous) on failure.
             # Previous default was ZONE_1 — non-conservative. IEC 60079-10-1:
             # when classification fails, the safest assumption is the worst case.
             # Zone 0 equipment (EPL Ga) is always safe for Zone 1 or 2.
@@ -426,7 +422,6 @@ class IfcFirePipeline:
             }
         except Exception as exc:
             warnings.append(f"L3 ATEX failed: {exc}")
-            # V76 CRIT-08 FIX: Default to most protective spec on failure.
             # Previous default was EPL Gb/T3/ib (Zone 1 level) — non-conservative.
             # When ATEX arbitration fails, must assume worst case: EPL Ga (Zone 0),
             # T6 (lowest surface temp), ia (highest intrinsic safety). Equipment

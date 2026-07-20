@@ -4,6 +4,7 @@
 # Older ReportLab calls hashlib.md5(usedforsecurity=False), which is invalid in Python 3.12+.
 # This patch removes the unsupported kwarg to prevent TypeError during PDF generation.
 import hashlib
+
 _original_md5 = hashlib.md5  # NOSONAR — python:S4790: compatibility patch for ReportLab, NOT used for security
 
 def _patched_md5(*args, **kwargs):

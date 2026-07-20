@@ -91,7 +91,6 @@ def evaluate_elevator_recall(
     has_shaft_sprinkler: bool,
     designated_floor: str = "1",
     fire_floor: str = "1",
-    # V114 FIX: Fail-safe — Phase II must be confirmed, not assumed
     has_phase_ii: bool = False,
 ) -> ElevatorRecallResult:
     """
@@ -268,7 +267,6 @@ class SmokeControlResult:
     nfpa_section: str
 
 
-# V106: Constants for NFPA 92 compliance — replaces magic numbers
 MIN_STAIRWELL_PRESSURIZATION_PA = 25.0  # NFPA 92 §6.3: minimum 25 Pa (0.10 in. w.g.)
 MAX_PRESSURE_DIFFERENTIAL_PA = 133.0  # NFPA 92 §6.3.3: max force to open door (~0.5 in. w.g.)
 VALID_SMOKE_CONTROL_METHODS = ("pressurization", "exhaust")
@@ -278,7 +276,6 @@ def evaluate_smoke_control(
     zone_id: str,
     method: str = "pressurization",
     design_pressure_pa: float = 25.0,
-    # V114 FIX: Fail-safe defaults — missing interlock = NOT present
     has_fire_alarm_interlock: bool = False,
     has_stairwell_pressurization: bool = False,
 ) -> SmokeControlResult:
@@ -308,7 +305,6 @@ def evaluate_smoke_control(
     """
     violations = []
 
-    # V106 CRITICAL FIX: Validate method — invalid method bypasses ALL checks
     if method not in VALID_SMOKE_CONTROL_METHODS:
         raise ValueError(
             f"method must be one of {VALID_SMOKE_CONTROL_METHODS}, "
@@ -316,7 +312,6 @@ def evaluate_smoke_control(
             f"falsely claiming compliance."
         )
 
-    # V106 CRITICAL FIX: Reject negative pressure — negative pressure draws smoke
     # INTO egress paths instead of keeping it out. This is lethal.
     if not math.isfinite(design_pressure_pa):
         raise ValueError(f"design_pressure_pa must be finite, got {design_pressure_pa}")
@@ -326,7 +321,6 @@ def evaluate_smoke_control(
             f"Negative pressure draws smoke INTO egress paths — lethal condition."
         )
 
-    # V106 FIX: Reject empty zone_id — makes violations untraceable
     if not zone_id or not zone_id.strip():
         raise ValueError("zone_id must not be empty — violations must be traceable")
 
@@ -337,7 +331,6 @@ def evaluate_smoke_control(
             f"below minimum {MIN_STAIRWELL_PRESSURIZATION_PA} Pa per NFPA 92 §6.3"
         )
 
-    # V106 FIX: NFPA 92 §6.3.3: Maximum pressure differential — excessive
     # pressure prevents doors from opening, trapping occupants
     if method == "pressurization" and design_pressure_pa > MAX_PRESSURE_DIFFERENTIAL_PA:
         violations.append(
@@ -347,7 +340,6 @@ def evaluate_smoke_control(
             f"occupants may be TRAPPED"
         )
 
-    # V106 FIX: Exhaust method — must verify minimum exhaust rate
     # NFPA 92 §6.4: Exhaust method requires defined air changes
     if method == "exhaust" and design_pressure_pa <= 0:
         violations.append(
@@ -410,7 +402,6 @@ class FirePumpResult:
 
 def evaluate_fire_pump(
     pump_id: str,
-    # V114 FIX: Fail-safe defaults — missing signals = NOT present (NFPA 20 §10.4)
     has_running_signal: bool = False,
     has_power_monitor: bool = False,
     has_phase_reversal: bool = False,
@@ -492,7 +483,6 @@ class BuildingSystemsAssessment:
         self.violations = []
         self.nfpa_references = []
 
-        # V106 CRITICAL FIX: If no assessments were performed, is_compliant
         # must remain False (fail-safe). Previously, is_compliant started as
         # True even when all lists were empty, falsely claiming compliance.
         total_assessments = (

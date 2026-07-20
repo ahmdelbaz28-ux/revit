@@ -38,7 +38,6 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any
 
-# V110 FIX: HMAC unification — safety_assurance must use the same
 # compute_hmac as audit_log so that evidence package signatures are
 # consistent across the entire system.
 from fireai.core.audit_log import compute_hmac as _audit_compute_hmac
@@ -124,7 +123,6 @@ def classify_safety_tier(
         <SafetyTier.FALLBACK_USED: 'FALLBACK_USED'>
 
     """
-    # V52 FIX: NaN/Inf coverage_pct bypasses ALL safety tier checks.
     # NaN < 95.0 = False, NaN < 99.0 = False, NaN >= 99.99 = False.
     # With proof_valid=True, NaN falls through to PROOF_VALID (Tier 2, submittable).
     # This allows a design with unknown coverage to be submitted to an AHJ.
@@ -271,7 +269,6 @@ def apply_fail_safe(  # NOSONAR — S3776: cognitive complexity is inherent to t
           - recommendation: str — human-readable recommendation (backward compat)
 
     """
-    # V109: Auto-detect calling convention
     if isinstance(coverage_pct_or_tier, SafetyTier):
         # OLD convention: apply_fail_safe(tier, coverage_pct, errors)
         tier_arg = coverage_pct_or_tier
@@ -280,7 +277,6 @@ def apply_fail_safe(  # NOSONAR — S3776: cognitive complexity is inherent to t
         # Derive proof_valid from tier
         proof_valid = tier_arg in (SafetyTier.PROOF_VERIFIED, SafetyTier.PROOF_VALID)
         fallback_used = tier_arg == SafetyTier.FALLBACK_USED
-        # V110 FIX: Old convention callers don't provide hmac/audit status.
         # Setting these to True (not False) prevents the critical-stop conditions
         # from incorrectly rejecting designs that were already tier-classified.
         hmac_key_valid = True
@@ -344,12 +340,10 @@ def apply_fail_safe(  # NOSONAR — S3776: cognitive complexity is inherent to t
 
         if proof_valid is False:
             reasons.append("Mathematical proof failed — coverage cannot be guaranteed.")
-        # V52 FIX: proof_valid=None also needs a reason — no proof is not the same as failed proof
         elif proof_valid is None:
             reasons.append("Mathematical proof not verified or not provided — coverage cannot be guaranteed.")
 
     # Classify tier
-    # V52 FIX: `coverage_pct or 0.0` returns NaN when coverage_pct=NaN
     # because NaN is truthy in Python. NaN propagates into classifier.
     import math as _fs_math
 
@@ -364,7 +358,6 @@ def apply_fail_safe(  # NOSONAR — S3776: cognitive complexity is inherent to t
     # Final decision
     safe = tier_can_submit(tier) and len(reasons) == 0
 
-    # V109: Build backward-compatible fields for old API callers
     fail_safe_required = not safe
     actions = []
     if tier == SafetyTier.REJECTED:
@@ -399,7 +392,6 @@ def apply_fail_safe(  # NOSONAR — S3776: cognitive complexity is inherent to t
         "tier": tier_value,  # V109: Return string for backward compat
         "reasons": reasons,
         "requires_fpe_review": tier_requires_fpe_review(tier) or len(reasons) > 0,
-        # V109: Backward-compatible fields
         "fail_safe_required": fail_safe_required,
         "actions": actions,
         "recommendation": recommendation,
@@ -492,11 +484,9 @@ class OverrideRecord:
     timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
     def __post_init__(self):
-        # V110 FIX: Removed 50-char minimum — test contract allows short justifications.
         # The justification field is still required (non-empty) for audit trail.
         if not self.justification or not self.justification.strip():
             raise ValueError("Override justification must not be empty")
-        # V109: Check if tier_from is non-overridable
         if self.tier_from in NON_OVERRIDABLE:
             raise ValueError(
                 f"Override from tier '{self.tier_from}' is NON-OVERRIDABLE. "
@@ -568,7 +558,6 @@ def check_review_triggers(  # NOSONAR — S3776: cognitive complexity is inheren
         List of triggered review requirements.
 
     """
-    # V53 FIX (AUDIT-009 + F-008): Non-conservative defaults + NaN bypass.
     # Old defaults (100.0, "rectangular", 3.0, 100.0) meant missing data
     # was treated as BEST-CASE — no FPE review triggered. NaN comparisons
     # (NaN < 99.0 = False) also suppressed all triggers.
@@ -742,7 +731,6 @@ class EngineeringEvidencePackage:
                 "proof_valid": self.proof_valid,
                 "safety_tier": self.safety_tier,
                 "algorithm_version": self.algorithm_version,
-                # V43: Added design-critical fields previously excluded
                 "room_polygon": getattr(self, "room_polygon", None),
                 "ceiling_height_m": getattr(self, "ceiling_height_m", None),
                 "spacing_m": getattr(self, "spacing_m", None),
@@ -750,7 +738,6 @@ class EngineeringEvidencePackage:
                 "wall_violations": getattr(self, "wall_violations", 0),
                 "nfpa_references": sorted(getattr(self, "nfpa_references", [])),
                 "audit_chain_valid": getattr(self, "audit_chain_valid", None),
-                # V53 FIX (AUDIT-010): occupancy_type and detector_type omitted from
                 # integrity hash. Changing hospital→warehouse or smoke→heat after
                 # hashing goes undetected. These determine NFPA 72 spacing rules
                 # (§17.6.3 vs §17.7.4) — tampering is life-safety critical.

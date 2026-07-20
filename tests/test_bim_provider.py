@@ -316,7 +316,6 @@ class TestAutodeskForgeProvider:
         monkeypatch.setenv("APS_CLIENT_SECRET", "test_secret")
         p = AutodeskForgeProvider()
         result = p.health_check()
-        # V214: Now calls real _get_auth_token() which will fail (no real
         # APS server) → healthy=False with authentication failure message
         assert result["healthy"] is False
         assert "authentication" in result["details"].lower() or "failed" in result["details"].lower()

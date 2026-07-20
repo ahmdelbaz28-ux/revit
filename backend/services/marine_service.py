@@ -118,7 +118,6 @@ class MarineService:
                 design = size_system(zone, ship)
                 extinguishing.append(design)
             except Exception as e:
-                # V246 FIX: Log the exception instead of silently swallowing.
                 # The comment "No fixed system required" was a guess — the
                 # actual exception could be a data validation error, a missing
                 # parameter, or a real sizing failure. Log it so engineers can

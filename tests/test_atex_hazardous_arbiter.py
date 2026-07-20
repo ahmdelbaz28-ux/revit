@@ -321,9 +321,7 @@ class TestArbitrateV21:
             hazard_type=HazardType.GAS,
             autoignition_c=float("nan"),
         )
-        # V57 warning must be present — proves NaN was detected
         assert any("V57" in w for w in result.warnings)
-        # V78 FIX: temp_class defaults to T6 (most conservative)
         assert result.equipment_spec.temp_class == TemperatureClass.T6
 
     def test_inf_autoignition_fail_safe_v57(self, arbiter):

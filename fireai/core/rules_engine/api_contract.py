@@ -162,7 +162,6 @@ class ContractValidator:
         key = f"{method}:{endpoint}"
         contract = self._contracts.get(key)
 
-        # V93 FIX (V67-5): DISABLED mode short-circuits ONLY for
         # non-registered, non-critical endpoints. If the contract
         # exists and is safety_critical, we MUST validate regardless.
         if self.severity == ContractSeverity.DISABLED:
@@ -226,7 +225,6 @@ class ContractValidator:
                     f"In a fire alarm system, malformed data could cause "
                     f"incorrect engineering decisions."
                 )
-                # V93 FIX (V67-5): Safety-critical violations ALWAYS raise,
                 # regardless of severity mode. In a life-safety system,
                 # returning unvalidated safety data is worse than failing.
                 raise

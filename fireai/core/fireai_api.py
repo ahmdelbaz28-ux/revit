@@ -55,7 +55,6 @@ def create_app() -> FastAPI:
     )
     # Security Fix (VULN-006): Read allowed CORS origins from environment variable
     _cors_origins = os.getenv("FIREAI_CORS_ORIGINS", os.getenv("CORS_ORIGINS", "http://localhost:3000")).split(",")
-    # V114 FIX: Reject wildcard CORS origins — safety-critical system must not
     # allow any website to modify fire protection designs via cross-origin requests
     if "*" in _cors_origins:
         import logging

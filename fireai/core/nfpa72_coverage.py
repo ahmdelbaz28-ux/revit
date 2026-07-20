@@ -36,7 +36,6 @@ from dataclasses import dataclass
 from shapely.geometry import Point, Polygon, box
 from shapely.ops import unary_union
 
-# V20.2: Logger defined at module level (was at line 947, too late)
 logger = logging.getLogger(__name__)
 
 
@@ -77,7 +76,6 @@ from .nfpa72_models import (
 # POLYGON-BASED COVERAGE CHECKS
 # ============================================================================
 # ============================================================================
-# V9: WALL DISTANCE VALIDATION
 # ============================================================================
 NFPA_MIN_WALL_DISTANCE_M = (
     0.1016  # CRITICAL FIX (C2): 4 inches = 101.6mm per NFPA 72 §17.6.3.1.1 (was 0.10m = 100mm, 1.6mm too lenient)
@@ -173,7 +171,6 @@ def validate_wall_distances(  # NOSONAR — S3776: cognitive complexity is inher
 
 
 # ============================================================================
-# V15: HVAC SUPPLY AIR DIFFUSER EXCLUSION ZONES
 # ============================================================================
 NFPA_HVAC_EXCLUSION_RADIUS_M = (
     0.9144  # CRITICAL FIX (C3): 3 ft = 0.9144m per NFPA 72 §17.7.4.1 (was 0.914m, 0.4mm too lenient)
@@ -393,7 +390,6 @@ def check_coverage_polygon(  # NOSONAR — S3776: cognitive complexity is inhere
     else:
         # Default fallback for other detector types
         radius = get_smoke_detector_radius_safe(ceiling_spec.height_m)
-    # V9: Adaptive sampling resolution based on room size
     # Minimum 0.25m grid resolution (NFPA detection hole < 25cm)
     # Maximum 50x50 grid to limit computation
     GRID_RESOLUTION_M = 0.25  # 25cm resolution — catches all blind spots
@@ -441,7 +437,6 @@ def check_coverage_polygon(  # NOSONAR — S3776: cognitive complexity is inhere
             else:
                 uncovered.append(point)
     # =====================================================================
-    # V13 Fix: Area-based coverage calculation (replaces point-counting)
     # =====================================================================
     # Point-counting (covered_count / total_points) has a fatal flaw:
     # it can miss uncovered corners between grid points. A room with 99.77%
@@ -548,7 +543,6 @@ def calculate_voronoi_coverage(detector_positions: list[tuple[float, float]], ro
                 regions.append(clipped)
         return regions
     except Exception as e:
-        # V60 FIX (P4-1): Previously bare except returned [room_polygon] silently,
         # which could cause the coverage algorithm to incorrectly report full
         # coverage when Voronoi subdivision failed. Now we log the failure and
         # return the room polygon with a warning — callers must check for this
@@ -596,7 +590,6 @@ def check_voronoi_coverage(
     get_smoke_detector_radius_safe(ceiling_spec.height_m)
     # Voronoi regions show theoretical coverage
     calculate_voronoi_coverage(detector_positions, room_polygon)
-    # V49 FIX: Pass actual detector_type to check_coverage_polygon so heat
     # detectors use square (Chebyshev) geometry instead of always using
     # circular (smoke) geometry.
     return check_coverage_polygon(detector_positions, room_spec, ceiling_spec, detector_type)
@@ -637,7 +630,6 @@ def check_ridge_zone_compliance(  # NOSONAR — S3776: cognitive complexity is i
         NFPAComplianceResult
 
     """
-    # V65 FIX: Default spacing depends on detector type.
     # Old code hardcoded 9.1m (smoke spacing) which is 49% beyond the
     # NFPA 72 max heat spacing of 6.1m — a false PASS for heat detectors.
     if standard_spacing is None:
@@ -694,7 +686,6 @@ def check_ridge_zone_compliance(  # NOSONAR — S3776: cognitive complexity is i
                     )
                     break  # One violation is enough to flag
 
-    # V78 FIX: If no violations were added, mark as compliant
     if not result.violations:
         result.is_compliant = True
 
@@ -778,7 +769,6 @@ def check_l_shaped_coverage(  # NOSONAR — S3776: cognitive complexity is inher
 
         is_covered = area_pct >= 99.9
     except Exception as e:
-        # V60 FIX: Log exception instead of silently failing
         import logging
 
         logging.getLogger(__name__).error(  # NOSONAR — acceptable in this context  # NOSONAR — acceptable in this context
@@ -805,7 +795,6 @@ def check_l_shaped_coverage(  # NOSONAR — S3776: cognitive complexity is inher
                 y += step_y
                 continue
             total_sampled += 1
-            # V20.2 FIX: Use correct geometry per detector type
             if detector_type == DetectorType.HEAT:
                 covered = any(max(abs(x - dx), abs(y - dy)) <= half_spacing for dx, dy in detector_positions)
             else:
@@ -815,7 +804,6 @@ def check_l_shaped_coverage(  # NOSONAR — S3776: cognitive complexity is inher
             y += step_y
         x += step_x
 
-    # V20.2 FIX: Use area-based percentage (primary), with correct fallback
     if area_pct > 0:
         primary_pct = area_pct
     else:
@@ -870,7 +858,6 @@ def check_nfpa72_compliance(
         if ridge_result.violations:
             result.is_compliant = False
     result.required_detector_count = result.detector_count
-    # V78 FIX: If no violations were added, mark as compliant
     if not result.violations:
         result.is_compliant = True
     return result
@@ -930,7 +917,6 @@ def verify_full_coverage(  # NOSONAR — S3776: cognitive complexity is inherent
         Dictionary with coverage_percentage, worst_case_distance_m, compliance_status
 
     """
-    # V20.2 FIX #13: Heat detector spacing fallback was 9.1m (smoke listed
     # spacing) instead of 6.1m (heat listed spacing per NFPA 72 Table 17.6.3.1.1).
     # Using 9.1/2 = 4.55m instead of 6.1/2 = 3.05m credits heat detectors
     # with MORE coverage than they provide, leaving areas UNPROTECTED.
@@ -1073,7 +1059,6 @@ def get_sloped_ceiling_constraints(
     # Ridge zone is area within 0.9m of highest ceiling point
     ridge_buffer = 0.9  # metres per NFPA 72 §17.6.3.4
 
-    # V49 FIX: Previous code returned the entire room polygon as the ridge
     # zone, which is incorrect. Per NFPA 72 §17.6.3.4, the ridge zone is
     # the area within 0.9m (3 ft) of the highest point (ridge). Returning
     # the whole polygon meant downstream code treated the entire room as a
@@ -1094,7 +1079,6 @@ def get_sloped_ceiling_constraints(
             # as conservative fallback (ensures at least one detector near ridge)
             ridge_zone = polygon
     except Exception as e:
-        # V60 FIX (P4-2): Previously bare except silently used full polygon as
         # ridge zone, which could cause detectors to be placed in wrong positions.
         # Now we log the failure for engineering review.
         import logging
@@ -1113,7 +1097,6 @@ def get_sloped_ceiling_constraints(
     }
 
 
-# V20.2: logging and logger moved to top of file (line 24-35)
 def adjust_coverage_for_beams(
     nominal_radius_m: float,
     beam_depth_m: float,

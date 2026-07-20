@@ -121,7 +121,6 @@ MAX_CONDUIT_FILL_PCT = 0.40  # 40% fill per NEC 760.154
 # NFPA 72 §23.6.2 — NAC circuit maximum lengths by wire gauge
 # These are practical limits ensuring voltage drop compliance
 # for typical 24V NAC circuits with standard device loads
-# V108 FIX: WireGauge uses string keys ("12", "14", etc.), not enum attributes
 _NAC_MAX_LENGTHS_M = {
     "12": 914.0,  # 3000 ft practical max (12 AWG)
     "14": 610.0,  # 2000 ft practical max (14 AWG)
@@ -190,7 +189,6 @@ class RoutingConstraintSet:
     """
 
     results: tuple[ConstraintResult, ...]
-    # V114 FIX: Fail-safe — all_satisfied must be PROVEN, not assumed
     all_satisfied: bool = False
     critical_violations: int = 0
     total_violations: int = 0
@@ -361,7 +359,6 @@ class ConstraintEngine:
 
         """
         # Compute voltage drop with DC return path (×2)
-        # V60 FIX: Use temperature-corrected resistance per NEC practice
         # V FIX: Use NEC published resistance values when available.
         # WireGauge stores both 20°C and 75°C NEC published values.
         # For the standard 75°C operating temperature, use the NEC published
@@ -602,7 +599,6 @@ class ConstraintEngine:
         max_interval_mm = self._max_fastening_interval_mm
 
         if cable_length_m < 0:
-            # V67 SAFETY FIX: Negative cable length is physically impossible.
             # Previous behavior returned is_satisfied=True for L<=0, which
             # means a data error (L=-1.0) would pass the fastening check.
             # Negative length must be flagged, not silently accepted.
@@ -1025,11 +1021,9 @@ class ConstraintEngine:
         results.append(self.check_nac_max_length(cable_length_m, wire_gauge, circuit_type))
 
         # 2. Voltage drop
-        # V62 FIX: Use conductor_operating_temp_c for resistance correction,
         # NOT ambient_temp_c. These are physically different quantities.
         # Voltage drop depends on conductor operating temperature (75C for
         # THHN), while ampacity depends on ambient air temperature (30-50C).
-        # V65 FIX: When alarm_current_a == 0, add informational result
         # instead of silently skipping. The absence of a voltage drop
         # result could be misinterpreted as "compliant" when it actually
         # means "not checked."
@@ -1050,7 +1044,6 @@ class ConstraintEngine:
                 )
             )
         elif cable_length_m > 0:
-            # V67 SAFETY FIX: Voltage drop not checked because current is zero.
             # Previous behavior (V65-V66) set is_satisfied=True, creating a
             # false-positive: downstream code checking all_satisfied would see
             # this as "passed" even though NFPA 72 §10.6.4 was NEVER verified.
@@ -1094,7 +1087,6 @@ class ConstraintEngine:
             results.append(self.check_class_a_separation(outgoing_path, return_path))
 
         # 8. Wire Ampacity (NEC 310.16) — V59 addition
-        # V62 FIX: Use ambient_temp_c (air temp) for ampacity derating,
         # NOT conductor_operating_temp_c. Ampacity derating per NEC
         # 310.15(B)(2)(A) uses AMBIENT AIR temperature.
         if alarm_current_a > 0:
@@ -1115,7 +1107,6 @@ class ConstraintEngine:
         results.append(self.check_conductor_count_derating(num_current_carrying))
 
         # 11. Conduit fill (NEC Chapter 9 Table 4 / 760.154) — V61
-        # V61 FIX: Previously missing from check_all. Overfilled conduit
         # causes overheating — NEC code violation and fire hazard.
         if num_current_carrying > 0:
             # Estimate wire diameter from gauge (conservative default)
@@ -1185,7 +1176,6 @@ class ConstraintEngine:
             cost += ELECTRICAL_PROXIMITY_PENALTY_M
 
         return cost
-        # V212: Removed unreachable dead code after return (S1763).
         # The block below was retained "for documentation" but served no
         # runtime purpose — the return above exits the function before
         # reaching it. The comment is preserved for historical context:

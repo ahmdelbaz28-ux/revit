@@ -58,7 +58,6 @@ class Result(Generic[T, E]):
             raise ValueError("Panic: Attempted to fetch error of successful Result")
         return self._error
 
-    # V142 FIX: Classmethod constructors. The DWG/RVT converters
     # (qomn_fire/parsers/dwg_converter.py, rvt_converter.py) construct results
     # via Result.success(value) / Result.failure(error). Previously these
     # classmethods did not exist on this Result class, so every error path in

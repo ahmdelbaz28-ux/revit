@@ -700,7 +700,6 @@ class TwinSimulator:
         faulted = sum(1 for d in dets.values() if d.status == DetectorStatus.FAULT)
         offline = sum(1 for d in dets.values() if d.status == DetectorStatus.OFFLINE)
         decommed = sum(1 for d in dets.values() if d.status == DetectorStatus.DECOMMISSIONED)
-        # V20.2 FIX: Exclude DECOMMISSIONED from denominator — they're removed
         # from the active system per NFPA 72 §14.3.4
         active_total = len(dets) - decommed
         if active_total == 0:
@@ -887,7 +886,6 @@ class DigitalTwin:
 
     # ── Detector Registration ─────────────────────────────────────────
 
-    # V150 FIX (Edge Case): set of recognized detector_type values.
     # register_detector() validates against this set so a typo like
     # "smoke_photoelec" (missing "tric") does not silently fall back
     # to the default smoke radius while the type field is wrong —
@@ -1005,7 +1003,6 @@ class DigitalTwin:
         downstream safety calculations. Each is now validated at
         registration time with a clear ValueError.
         """
-        # V150 FIX (Edge Case): validate all inputs BEFORE any state
         # mutation, so a failed registration leaves the twin in a
         # clean state.
         self._validate_nonempty_id("room_id", room_id)
@@ -1018,7 +1015,6 @@ class DigitalTwin:
             raise ValueError(
                 f"detector_type must be a non-empty string, got {detector_type!r}"
             )
-        # V150 FIX (Edge Case): warn (do not reject) unknown detector
         # types. We accept them because custom/proprietary types exist
         # in the field, but we log a WARNING so the operator notices
         # typos. Rejecting would break existing deployments that use
@@ -1035,7 +1031,6 @@ class DigitalTwin:
                 NFPA72_SMOKE_RADIUS_M,
             )
 
-        # V150 FIX (Edge Case): validate coverage_radius is positive
         # when explicitly provided. A zero or negative radius means
         # the detector provides NO coverage — silent safety failure.
         if coverage_radius is not None:
@@ -1056,7 +1051,6 @@ class DigitalTwin:
                     f"provides NO fire protection — silent safety failure."
                 )
 
-        # V20.2 FIX: Select default radius based on detector_type
         effective_radius = (
             coverage_radius
             if coverage_radius is not None
@@ -1201,7 +1195,6 @@ class DigitalTwin:
         non-empty force_reason, which is recorded in the audit log and
         the EventBus event.
         """
-        # V150 FIX (API Ergonomics): force=True requires a reason.
         if force and not (isinstance(force_reason, str) and force_reason.strip()):
             raise ValueError(
                 "force=True requires a non-empty force_reason explaining "
@@ -1461,7 +1454,6 @@ class DigitalTwin:
         offline = sum(1 for d in detectors.values() if d.status == DetectorStatus.OFFLINE)
         decommed = sum(1 for d in detectors.values() if d.status == DetectorStatus.DECOMMISSIONED)
 
-        # V20.2 FIX: Use self._room_ids (all registered rooms) not just rooms
         # that currently have detectors. Rooms with all detectors removed are a
         # CRITICAL gap that must appear in the health report.
         with self._lock:
@@ -1474,12 +1466,10 @@ class DigitalTwin:
         coverage_pct = round(len(rooms_with_ok) / len(rooms) * 100, 2) if rooms else 0.0
 
         # Health score: weighted combination
-        # V20.2 FIX: total==0 means NO protection → score=0.0, NOT 1.0
         if total == 0:
             health_score = 0.0
             critical_issues: list[str] = ["ZERO detectors in building — NO fire protection (NFPA 72 §1.2)"]
         else:
-            # V20.2 FIX: Exclude DECOMMISSIONED from denominator
             active_total = total - decommed
             if active_total == 0:
                 raw_score = 0.0

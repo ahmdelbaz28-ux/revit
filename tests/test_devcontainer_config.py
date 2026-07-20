@@ -1,5 +1,4 @@
 # ═══════════════════════════════════════════════════════════════════════════
-# V208 — Smoke test for .devcontainer/devcontainer.json
 # ═══════════════════════════════════════════════════════════════════════════
 # Purpose: protect the CodeSandbox devbox from regressions. If someone edits
 # .devcontainer/devcontainer.json and breaks the JSON syntax, removes a
@@ -190,7 +189,6 @@ def test_dockerfile_uses_python_312_base() -> None:
     """Dockerfile must use Python 3.12 base image (matches pyproject.toml)."""
     content = DOCKERFILE.read_text()
     # Look for FROM line with python:3.12 or devcontainers/python:3.12
-    # V216 FIX (SonarCloud python:S1764): the original "python:3.12" or "python:3.12"
     # was a tautology — both sides were identical. The second operand should have
     # been "mcr.microsoft.com/devcontainers/python:3.12" to also match the
     # devcontainer base image variant.

@@ -63,7 +63,6 @@ class FireExpertSystem:
 
         """
         room = Room(name=name, width=width, length=length, ceiling_height=ceiling_height)
-        # V20.2 FIX: Use height-adjusted coverage radius from NFPA 72 Table 17.6.3.1.1
         # instead of the static default DETECTOR_RADIUS=6.40m from DensityOptimizer.
         # At h=10m: old R=6.40m → only R=4.48m is correct → 43% overestimate.
         spec = calculate_coverage_radius_from_height(ceiling_height)

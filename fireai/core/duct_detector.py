@@ -53,7 +53,6 @@ NFPA_DUCT_CFM_THRESHOLD: float = 2000.0
 # Above this velocity, sampling tubes cannot capture smoke particles (blow-by effect).
 UL268A_MAX_VELOCITY_FPM: float = 4000.0
 
-# V20.2 FIX: UL 268A minimum velocity — below 100 FPM, sampling tubes cannot
 # draw enough air through the sensing chamber. Smoke may be present but undetected.
 UL268A_MIN_VELOCITY_FPM: float = 100.0
 
@@ -90,7 +89,6 @@ class DuctSpec:
     height_m: float = 0.0  # cross-section height (0 = round duct; width_m = diameter)
 
     def __post_init__(self):
-        # V25 FIX: Validate duct_type against NFPA 72 §17.7.5.1 recognized types.
         # A misspelled duct_type (e.g., "suply") would bypass the CFM override
         # in analyse_duct(), potentially leaving a 5000+ CFM air handler without
         # smoke detection — a life-safety failure.
@@ -103,7 +101,6 @@ class DuctSpec:
                 f"{sorted(valid_types)}. A misspelled duct_type could bypass "
                 f"CFM-based detector requirements — a life-safety risk."
             )
-        # V50 FIX: Store the normalized duct_type, not the original.
         # Previous code validated normalized value but stored the original
         # (e.g., " supply " with spaces). Downstream code comparing
         # duct.duct_type.lower() against ("supply", "return", "mixed") would
@@ -111,7 +108,6 @@ class DuctSpec:
         # This caused a false exemption for high-CFM ducts with padded type.
         object.__setattr__(self, "duct_type", normalized)
 
-        # V50 FIX: Validate numeric inputs — reject NaN, Inf, negative values.
         # NaN airflow_cfm silently bypasses CFM override (NaN > 2000 = False).
         # Negative dimensions produce nonsensical results. Life-critical code
         # must reject garbage inputs rather than silently producing garbage output.
@@ -173,11 +169,9 @@ class DuctAnalysisResult:
     warnings: list[str] = field(default_factory=list)
     velocity_fpm: float = 0.0  # computed air velocity in FPM
     velocity_blindness: bool = False  # True if velocity exceeds UL 268A limit
-    # V51 FIX: When velocity_blindness=True, placed detectors are non-functional.
     # A compliance report showing detectors placed would be a false PASS.
     # This flag indicates detectors need alternative detection method.
     detectors_functional: bool = True  # False when velocity_blindness or other issue
-    # V20.2 FIX: HVAC shutdown flag per NFPA 72 §21.7.1
     hvac_shutdown_required: bool = False
     hvac_shutdown_ref: str = ""
     nfpa_ref: str = "NFPA 72-2022 §17.7.5"  # detector requirement
@@ -206,7 +200,6 @@ def analyse_duct(duct: DuctSpec) -> DuctAnalysisResult:  # NOSONAR — S3776: co
     """
     warnings: list[str] = []
 
-    # V68 FIX: Three-tier exemption logic per NFPA 72 §17.7.5.1:
     # 1. CFM override: When KNOWN CFM >2000 for supply/return/mixed,
     #    detectors are REQUIRED regardless of dimensions.
     # 2. CFM unknown block: When CFM is UNKNOWN (None) for supply/return/mixed,
@@ -342,7 +335,6 @@ def analyse_duct(duct: DuctSpec) -> DuctAnalysisResult:  # NOSONAR — S3776: co
                     f"at this velocity (blow-by effect). Reduce duct velocity or "
                     f"use alternative detection method."
                 )
-            # V20.2 FIX: Check UL 268A MINIMUM velocity — below 100 FPM,
             # sampling tubes cannot draw enough air for smoke detection.
             if velocity_fpm < UL268A_MIN_VELOCITY_FPM:
                 velocity_blindness = True
@@ -395,12 +387,10 @@ def analyse_duct(duct: DuctSpec) -> DuctAnalysisResult:  # NOSONAR — S3776: co
         warnings=warnings,
         velocity_fpm=round(velocity_fpm, 1),
         velocity_blindness=velocity_blindness,
-        # V51 FIX: When velocity_blindness=True, detectors are non-functional.
         # UL 268A listed detectors cannot operate outside their rated velocity
         # range. A compliance report showing "detectors placed" would be a
         # false PASS — the system must explicitly flag non-functional detectors.
         detectors_functional=not velocity_blindness,
-        # V20.2 FIX: HVAC shutdown per NFPA 72 §21.7.1
         hvac_shutdown_required=(
             duct.duct_type.lower() in ("supply", "return", "mixed")
             and (duct.airflow_cfm is None or duct.airflow_cfm > NFPA_DUCT_CFM_THRESHOLD)

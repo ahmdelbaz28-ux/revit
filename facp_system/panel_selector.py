@@ -37,7 +37,6 @@ from facp_system.panel_database import MASTER_PANEL_DATABASE, FireAlarmPanel
 
 logger = logging.getLogger(__name__)
 
-# V54 FIX F6: Realistic per-device standby current
 # Typical addressable device quiescent current: 0.3-2.0 mA
 # Conservative average for mixed device load: 0.8 mA
 # Reference: Notifier FLASHSCAN, Siemens FDNet, Simplex IDNet datasheets
@@ -99,7 +98,6 @@ class SelectionEngine:
             Tuple of (battery_ah: float, derating_details: dict)
 
         """
-        # V54 FIX F6: Realistic per-device currents
         standby_load = (device_count * STANDBY_MA_PER_DEVICE / 1000.0) + panel.standby_current_amps
         alarm_load = (nac_circuit_count * 2.0) + (device_count * ALARM_MA_PER_DEVICE / 1000.0) + panel.alarm_current_amps
 
@@ -139,7 +137,6 @@ class SelectionEngine:
             return round(result.required_ah, 2), derating_details
 
         except ImportError as exc:
-            # V279 LIFE-SAFETY FIX: Refuse to operate without the production
             # battery sizing module. The previous behavior fell back to a
             # "simplified" 1.47x safety factor and only emitted a logger.warning
             # — but that fallback used a FLAT temperature derating (0.85)
@@ -167,7 +164,6 @@ class SelectionEngine:
         # Points: 20% spare capacity per NFPA 72 engineering best practice
         required_points = req.device_count * 1.2
 
-        # V54 FIX F2: NAC capacity uses EXACT match, not 1.2x.
         # Root cause: NFPA 72 does NOT mandate 20% spare NAC capacity.
         # NAC circuits are physical hardware outputs on the panel.
         # Unlike addressable points (which grow with design changes), NAC count
@@ -187,7 +183,6 @@ class SelectionEngine:
             if req.requires_voice and not p.supports_voice:
                 continue
 
-            # V54 FIX F4: Releasing service filter
             # Root cause: requires_releasing was defined but never checked.
             # Impact: Non-releasing panel selected for suppression systems.
             if req.requires_releasing and not p.supports_releasing:
@@ -222,7 +217,6 @@ class SelectionEngine:
         if not eligible_panels:
             raise ValueError("No compliant panels found in database for the given design requirements.")
 
-        # V54 FIX F3: Sort by HIGHEST score, then SMALLEST adequate capacity on ties.
         # Root cause: With reverse=True and x[0].points_capacity, the most OVERSIZED
         # panel won on ties. Engineering best practice is to select the SMALLEST
         # panel that meets requirements (best utilization, lowest cost).
@@ -250,14 +244,12 @@ class SelectionEngine:
         elif capacity_util < 0.30:
             warnings.append("FACP loading is under 30% capacity. Panel is significantly oversized.")
 
-        # V54 FIX F2: Add warning for tight NAC margins (instead of hard filter)
         if nac_util > 0.80:
             warnings.append(
                 f"NAC utilization is {nac_util:.0%}. Consider a panel with more NAC circuits "
                 f"or plan for NAC extender modules to accommodate future expansion."
             )
 
-        # V54 FIX F4: Warning if releasing required but no releasing-capable alternatives
         if req.requires_releasing:
             releasing_alternatives = [p[0].model for p in eligible_panels[1:] if p[0].supports_releasing]
             if not releasing_alternatives:

@@ -132,11 +132,8 @@ class BuildingReport:
     unsafe_floors: list[str] = field(default_factory=list)
     building_warnings: list[str] = field(default_factory=list)
     analysis_time_s: float = 0.0
-    # V5.0: Project learning profile (populated after all floors analysed)
     project_profile: BuildingProjectProfile | None = None
-    # V0.2: Fire zone assignments per floor (Consultant #6 Criticism #2)
     zone_reports: dict[str, ZoneReport] = field(default_factory=dict)
-    # V0.2: DeltaCache statistics (Consultant #6 Criticism #3)
     cache_stats: dict | None = None
 
 
@@ -214,9 +211,7 @@ class BuildingEngine:
         self.opt = optimizer  # V7.3 as-is, shared read-only
         self.audit_trail = audit_trail
         self.audit_store = audit_store
-        # V0.2: Fire zone engine (Consultant #6 Criticism #2 — concept accepted)
         self.zone_engine = FireZoneEngine(constraints=zone_constraints)
-        # V0.2: Delta cache (Consultant #6 Criticism #3 — concept accepted)
         self.delta_cache = DeltaCache(db_path=delta_cache_path)
 
     # ─── public ──────────────────────────────────────────────────────
@@ -340,7 +335,6 @@ class BuildingEngine:
                 },
             )
 
-        # V0.2: Fire zone clustering per floor (Consultant #6 Criticism #2)
         # Group rooms into fire alarm zones per NFPA 72 §21.3.3.
         for floor_report in report.floor_reports:
             zone_rooms = []
@@ -365,7 +359,6 @@ class BuildingEngine:
                 if zone_report.warnings:
                     report.building_warnings.extend(f"[{floor_report.floor_id}] {w}" for w in zone_report.warnings)
 
-        # V5.0: Build project profile from all room summaries
         learner = ProjectLearner(building_id=self.building_id)
         for floor_report in report.floor_reports:
             for s in floor_report.room_summaries:
@@ -381,14 +374,12 @@ class BuildingEngine:
                 )
         report.project_profile = learner.profile()
 
-        # V0.2: Persist delta cache (Consultant #6 Criticism #3)
         self.delta_cache.persist()
         report.cache_stats = self.delta_cache.stats()
 
         # Add zone summary to building info (NOT a warning — informational only)
         total_zones = sum(zr.total_zones for zr in report.zone_reports.values())
         if total_zones > 0:
-            # V66 FIX: "Fire zones created" is informational, not a warning.
             # Adding it to building_warnings caused false-positive test failures
             # and could mislead engineers into thinking zone creation is problematic.
             logger.info(
@@ -468,7 +459,6 @@ if __name__ == "__main__":
     print(f"Unsafe floors: {report.unsafe_floors}")
     print(f"Warnings: {report.building_warnings}")
 
-    # V0.2: Print zone assignments
     for floor_id, zr in report.zone_reports.items():
         print(f"\n  Floor {floor_id} — {zr.total_zones} zones:")
         for z in zr.zones:

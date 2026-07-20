@@ -137,7 +137,6 @@ class KeyRotator:
             if current is None:
                 return False, f"Key '{key_name}' is not registered for rotation."
 
-            # V102 FIX: Use constant-time comparison to prevent timing attacks.
             # Plain `!=` leaks timing information about the current key.
             if not hmac.compare_digest(current, old_key):
                 security_audit.log_event(
@@ -186,7 +185,6 @@ class KeyRotator:
         with self._lock:
             current = self._current.get(key_name)
 
-            # V102 FIX: Use constant-time comparison to prevent timing attacks.
             # Plain `==` leaks timing information byte-by-byte.
             if current is not None and hmac.compare_digest(current, provided_key):
                 return True
@@ -195,7 +193,6 @@ class KeyRotator:
             prev = self._previous.get(key_name)
             if prev is not None:
                 # Check if provided key matches the old key's fingerprint
-                # V102 FIX: Use constant-time comparison for fingerprint too.
                 if hmac.compare_digest(self._fingerprint(provided_key), prev.fingerprint):
                     # Check if within grace period
                     elapsed = time.monotonic() - prev.rotated_at

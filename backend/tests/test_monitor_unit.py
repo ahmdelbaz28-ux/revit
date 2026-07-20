@@ -395,7 +395,6 @@ class TestSyncWSValidation:
 
     def test_validate_ws_origin_no_api_key(self) -> None:
         """Test WS origin validation when no API key is set (dev mode)."""
-        # V131 FIX: _FIREAI_API_KEY was removed from sync.py — the module
         # now reads os.getenv("FIREAI_API_KEY") at runtime. Tests must
         # monkeypatch os.environ instead of the removed module attribute.
         import os
@@ -420,7 +419,6 @@ class TestSyncWSValidation:
 
     def test_validate_ws_api_key_no_key_configured(self) -> None:
         """Test WS API key validation when no key is configured."""
-        # V131 FIX: _FIREAI_API_KEY was removed — use os.environ
         import os
 
         from backend.routers.sync import _validate_ws_api_key
@@ -439,7 +437,6 @@ class TestSyncWSValidation:
 
     def test_validate_ws_api_key_with_key_configured(self) -> None:
         """Test WS API key validation when key is configured (query param rejected)."""
-        # V131 FIX: _FIREAI_API_KEY was removed — use os.environ
         import os
 
         from backend.routers.sync import _validate_ws_api_key

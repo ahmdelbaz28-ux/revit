@@ -82,16 +82,13 @@ class FloorResult:
         self.total_detectors = sum(r.detector_count for r in self.room_results)
         self.total_time_s = sum(r.solve_time_s for r in self.room_results)
 
-        # V50 FIX: Guard against empty room list producing false APPROVED.
         # If no rooms were processed (e.g., empty DXF, parser failure), the
         # building should NOT be marked as APPROVED — no rooms were actually
         # verified. An empty "APPROVED" report is a false compliance claim.
         if self.total_rooms == 0:
             self.status = "ERROR"
-        # V13 Fix: Replace "PARTIAL" with legally safer terminology.
         # "PARTIAL" could be misinterpreted by contractors as partial approval.
         # A building either meets code (APPROVED) or doesn't (REQUIRES_REVIEW).
-        # V76 HIGH-03 FIX: Added ERROR status for all-errored buildings.
         # When every room has status ERROR, the building was NOT analyzed —
         # labeling it "REJECTED" implies analysis found non-compliance, which
         # is misleading. "ERROR" correctly signals the system failed to process.
@@ -104,7 +101,6 @@ class FloorResult:
         else:
             self.status = "REQUIRES_MANUAL_REVIEW"
 
-        # V50 FIX: Validate room count integrity — if passed+failed+errored
         # doesn't equal total, some rooms have unrecognized status strings.
         # This guards against future code changes that introduce new statuses
         # without updating this method.
@@ -161,7 +157,6 @@ class FloorResult:
             "detectors": {
                 "calculated": self.total_detectors,
             },
-            # V13: 15% spare detector margin REMOVED — no NFPA 72 basis for this.
             # NFPA compliance is verified via exact area-based coverage calculation.
             "safety": {
                 "method": "Exact Shapely area-based coverage verification",
@@ -237,7 +232,6 @@ class FloorOrchestrator:
         start = time.monotonic()
         result = RoomResult(room_id=spec.name, status="FAIL")
 
-        # V111 CRITICAL: Skip rooms with unresolved geometry.
         # Running NFPA analysis on fabricated geometry produces FALSE compliance
         # results — a building could be signed off as "protected" when it is NOT.
         if getattr(spec, "geometry_unresolved", False):
@@ -250,7 +244,6 @@ class FloorOrchestrator:
                 spec.name,
             )
             result.status = "REQUIRES_MANUAL_REVIEW"
-            # V76 HIGH-02 FIX: Changed result.violations to result.errors.
             # RoomResult dataclass has no 'violations' field — only 'errors: List[str]'.
             # Dynamic attribute would be invisible to serialization and downstream checks.
             result.errors.append(
@@ -266,7 +259,6 @@ class FloorOrchestrator:
             # Use DensityOptimizer V6 with hexagonal placement strategies
             # CRITICAL FIX: RoomSpec has depth_m not length_m,
             # and ceiling_spec not ceiling_height_m.
-            # V65 FIX: Silently defaulting to 3.0m ceiling when ceiling_spec is None
             # is a life-safety defect. A 12m warehouse with missing ceiling data would
             # get 9.1m spacing instead of ~5.2m — 40% fewer detectors than required.
             # The system must fail loudly rather than silently approve unsafe designs.
@@ -276,7 +268,6 @@ class FloorOrchestrator:
                     status="ERROR",
                     errors=[f"Room '{spec.name}' has no ceiling specification — cannot compute NFPA 72 detector placement. All rooms require ceiling height data."],
                 )
-                # V76 HIGH-01 FIX: Removed call to self._log_room_result() which
                 # does not exist — would raise AttributeError, crashing entire building
                 # analysis when any room has missing ceiling spec. The result is already
                 # an ERROR RoomResult and will be returned to process() for logging.
@@ -286,7 +277,6 @@ class FloorOrchestrator:
             # Table 17.6.3.1.1. Previously, DensityOptimizer always used R=6.37m
             # (S=9.1m at h≤3.0m) regardless of ceiling height, which overestimates
             # coverage at higher ceilings — a life-safety defect.
-            # V46 FIX: Try relative import first (standard within fireai.core package),
             # fall back to absolute import (when module loaded via alternate path by pytest).
             try:
                 from .nfpa72_calculations import calculate_coverage_radius_from_height
@@ -302,7 +292,6 @@ class FloorOrchestrator:
                 height_radius = cov_spec.radius
                 height_spacing = cov_spec.spacing_max
             except Exception as e:
-                # V60 FIX (P4-3): Log failure instead of silently falling back.
                 # Previously, if calculate_coverage_radius_from_height failed for
                 # any reason, the code silently used MAX_SPACING_M and DETECTOR_RADIUS
                 # which could be wrong for the ceiling height (e.g., using 9.1m spacing
@@ -330,7 +319,6 @@ class FloorOrchestrator:
             positions = layout.detectors
             count = layout.count
 
-            # V50 FIX: Use correct coverage geometry per detector type.
             # Heat detectors use square/Chebyshev geometry per NFPA 72 Table 17.6.2.1.
             # Previous code hardcoded "circular" for ALL detector types, causing
             # heat detector coverage to be verified with wrong geometry.
@@ -363,7 +351,6 @@ class FloorOrchestrator:
             if result.status == "FAIL":
                 result.errors.append(f"Coverage failed: {coverage['coverage_percentage']}%")
 
-                # V13 Fix: Adaptive Re-solve — if DensityOptimizer coverage fails,
                 # try the ConstraintSolver with area-based greedy placement.
                 # This mirrors the adaptive re-solve in core/floor_orchestrator.py
                 # (which uses OptimalMIPEngine) and provides the same safety net here.

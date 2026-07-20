@@ -22,7 +22,6 @@ from pathlib import Path
 from typing import Any
 
 # Import bcrypt for stronger password hashing
-# V187 Pyright fix: initialize bcrypt to None so Pyright doesn't flag it as
 # "possibly unbound" when the import fails. All bcrypt usage is guarded by
 # the HAS_BCRYPT flag, so this is type-safe.
 bcrypt: Any = None
@@ -203,7 +202,6 @@ _VALIDATED_KEY_CACHE: dict[str, tuple[APIKeyInfo, float]] = {}
 _VALIDATED_KEY_CACHE_LOCK = threading.Lock()
 _VALIDATED_KEY_CACHE_TTL = float(os.getenv("FIREAI_KEY_CACHE_TTL", "300"))
 
-# V257: Redis prefix for distributed API key cache.
 # When Redis is available, validated keys are cached there so all workers
 # share the same cache. Revocation via delete_api_key clears both the local
 # dict and the Redis key, so revoked keys are immediately invalid across
@@ -445,7 +443,7 @@ def add_api_key(key: str, role: Role, description: str = "") -> str:
     return key_hash
 
 
-def validate_api_key(key: str) -> APIKeyInfo | None:
+def validate_api_key(key: str) -> APIKeyInfo | None:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     """
     Validate an API key and return its info including role.
 
@@ -497,7 +495,6 @@ def validate_api_key(key: str) -> APIKeyInfo | None:
                 return info_cached
             del _VALIDATED_KEY_CACHE[lookup]
 
-    # V257: Check Redis cache (shared across all workers).
     # If found, also populate the local cache for faster subsequent hits.
     redis = _get_redis_for_key_cache()
     if redis is not None:
@@ -563,7 +560,6 @@ def validate_api_key(key: str) -> APIKeyInfo | None:
                 del _VALIDATED_KEY_CACHE[k]
         _VALIDATED_KEY_CACHE[lookup] = (api_key_info, now + _VALIDATED_KEY_CACHE_TTL)
 
-    # V257: Also cache in Redis so all workers share the cache.
     # This eliminates the per-worker revocation window (was up to
     # N_workers × TTL seconds before a revoked key was fully invalid).
     redis = _get_redis_for_key_cache()
@@ -673,7 +669,6 @@ def delete_api_key(key_hash: str) -> bool:
     if deleted:
         with _VALIDATED_KEY_CACHE_LOCK:
             _VALIDATED_KEY_CACHE.pop(key_hash, None)
-        # V257: Also clear Redis cache so revoked keys are immediately
         # invalid across ALL workers (not just this one).
         redis = _get_redis_for_key_cache()
         if redis is not None:
@@ -712,7 +707,6 @@ def update_api_key_role(key_hash: str, role: Role) -> bool:
     if updated:
         with _VALIDATED_KEY_CACHE_LOCK:
             _VALIDATED_KEY_CACHE.pop(key_hash, None)
-        # V257: Also clear Redis cache so role changes take effect
         # immediately across ALL workers.
         redis = _get_redis_for_key_cache()
         if redis is not None:

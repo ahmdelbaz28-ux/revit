@@ -73,7 +73,6 @@ logger = logging.getLogger(__name__)
 
 
 # ── Persistent Storage Paths ────────────────────────────────────────────────
-# V72 FIX: All paths are persistent (NOT /tmp/ which clears on reboot)
 
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 DATA_DIR = PROJECT_ROOT / "data"
@@ -235,7 +234,6 @@ class MemoryService:
         Falls back gracefully if API key unavailable.
         """
         try:
-            # V76: Try OpenAI first (best engineering accuracy), then Gemini
             openai_api_key = os.getenv("OPENAI_API_KEY") or os.getenv("FIREAI_OPENAI_API_KEY")
             gemini_api_key = os.getenv("GEMINI_API_KEY")
 

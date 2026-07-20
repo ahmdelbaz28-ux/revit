@@ -714,7 +714,6 @@ class TestAnalyzeRoomErrorHandling:
         """
         room = Room(name="str-dim", width=10.0, length=10.0)
         room.width = "ten"
-        # V140: Production now handles this gracefully — no exception raised
         result = pipeline.analyze_room(room=room, room_id="str-dim", ceiling_height=3.0)
         assert result is not None
         assert any("GEOMETRY INVALID" in e for e in result.errors)

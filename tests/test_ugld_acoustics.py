@@ -117,7 +117,6 @@ class TestAtmosphericAttenuation:
                     alpha = atmospheric_attenuation_db_per_m(freq, temp_c=temp, relative_humidity_pct=rh)
                     assert alpha > 0, f"alpha must be positive: freq={freq}, temp={temp}, rh={rh}"
 
-    # V65: NaN/Inf input validation
 
     def test_nan_frequency_raises(self):
         with pytest.raises(ValueError, match="positive and finite"):  # NOSONAR — S5778: re-raise inside except is intentional (context-specific)  # noqa: S5778

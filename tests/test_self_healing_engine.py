@@ -66,7 +66,6 @@ class TestQomnFireSelfHealing(unittest.TestCase):
         """Verify ZeroDivisionError triggers safe_minimum fallback (V58 FIX)."""
         res = calculate_sprinkler_pressure(100.0, 0.0)
         self.assertEqual(res.status, "HEALED")
-        # V58 FIX (BUG #8): Heal to safe_minimum (7.0) instead of float('inf').
         # float('inf') violates the QOMN kernel safety principle:
         # "NaN/Inf NEVER propagate -- always caught and rejected."
         self.assertEqual(res.value, 7.0)
@@ -119,7 +118,6 @@ class TestQomnFireSelfHealing(unittest.TestCase):
         self.assertIn("signature", logged_entry)
 
         # Verify signature using the global audit logger's actual secret_key.
-        # V127 SAFETY FIX: The hardcoded b"QOMN_SECRET_KEY" fallback was
         # REMOVED as a CRITICAL security vulnerability (forged audit signatures).
         # The test now reads the actual key from the logger instance.
         secret_key = global_audit_logger.secret_key
@@ -140,7 +138,6 @@ class TestQomnFireSelfHealing(unittest.TestCase):
 
 
 # =====================================================================
-# V2.0 MERGED FEATURE TESTS
 # =====================================================================
 
 class TestWeightedCircuitBreaker(unittest.TestCase):
@@ -230,7 +227,6 @@ class TestHalfOpenRecovery(unittest.TestCase):
         # Wait for cooldown
         time.sleep(0.6)
 
-        # V66 FIX: check_and_cooldown() now returns (bool, state) tuple
         is_open, _state = self.cb.check_and_cooldown()
         self.assertFalse(is_open)  # No longer fully OPEN
         self.assertEqual(self.cb.state, "HALF_OPEN")
@@ -641,7 +637,6 @@ class TestCircuitBreakerBackwardCompat(unittest.TestCase):
         # Wait for cooldown
         time.sleep(0.2)
 
-        # V66 FIX: check_and_cooldown() now returns (bool, state) tuple
         is_open, state = cb.check_and_cooldown()
         self.assertFalse(is_open)  # Not fully OPEN anymore
         self.assertEqual(state, "HALF_OPEN")
@@ -659,7 +654,6 @@ class TestV66VulnerabilityFixes(unittest.TestCase):
             except OSError:
                 pass
 
-    # V67: NaN/Inf guard in Tier 3
     def test_v67_nan_inf_guard_tier3(self):
         """V67: NaN/Inf default_value must be rejected in Tier 3 fallback."""
         @self_healing(
@@ -679,14 +673,12 @@ class TestV66VulnerabilityFixes(unittest.TestCase):
         result = bad_pressure_calc()
         self.assertEqual(result.value, 7.0)  # NOT float('inf')
 
-    # V69: validate_sprinkler_pressure rejects 0.0
     def test_v69_reject_zero_pressure(self):
         """V69: validate_sprinkler_pressure must reject 0.0 psi."""
         self.assertFalse(validate_sprinkler_pressure(0.0))
         self.assertTrue(validate_sprinkler_pressure(7.0))
         self.assertTrue(validate_sprinkler_pressure(0.1))
 
-    # V70: log_event catches all exceptions
     def test_v70_log_event_catches_all_exceptions(self):
         """V70: log_event must not crash on non-OSError exceptions."""
         logger = AsyncAuditLogger(
@@ -703,7 +695,6 @@ class TestV66VulnerabilityFixes(unittest.TestCase):
         # It may succeed (default=str might handle it) or fail gracefully
         self.assertIsInstance(result, bool)
 
-    # V71: Config safe parsing
     def test_v71_config_safe_parsing(self):
         """V71: Config must not crash on invalid env vars."""
         os.environ["QOMN_CB_THRESHOLD"] = "not_a_number"
@@ -724,7 +715,6 @@ class TestV66VulnerabilityFixes(unittest.TestCase):
         finally:
             del os.environ["QOMN_CB_THRESHOLD"]
 
-    # V72: SafetyCriticalFailure is re-raised
     def test_v72_safety_critical_failure_reraised(self):
         """V72: SafetyCriticalFailure must be re-raised, not swallowed."""
         @self_healing(safe_minimum=7.0, default_value=7.0,
@@ -735,7 +725,6 @@ class TestV66VulnerabilityFixes(unittest.TestCase):
         with pytest.raises(SafetyCriticalFailure):
             critical_func()
 
-    # V73: compute_hash is deterministic
     def test_v73_deterministic_hash(self):
         """V73: compute_hash must produce same hash across runs for same input."""
         data = {"args": (1, 2, 3), "kwargs": {"key": "value"}}
@@ -743,7 +732,6 @@ class TestV66VulnerabilityFixes(unittest.TestCase):
         hash2 = compute_hash(data)
         self.assertEqual(hash1, hash2)
 
-    # V74: LLMCircuitBreaker peek() method
     def test_v74_peek_no_side_effect(self):
         """V74: peek() must not consume a rate limit slot."""
         limiter = LLMCircuitBreaker(max_rps=2.0, timeout=2.0)
@@ -756,7 +744,6 @@ class TestV66VulnerabilityFixes(unittest.TestCase):
         # Now should be blocked
         self.assertFalse(limiter.allow_request())
 
-    # V75: KeyError NaN/Inf guard
     def test_v75_keyerror_nan_guard(self):
         """V75: KeyError path must reject NaN/Inf default_value."""
         @self_healing(
@@ -772,7 +759,6 @@ class TestV66VulnerabilityFixes(unittest.TestCase):
         # NaN should be replaced with safe_minimum
         self.assertEqual(result.value, 7.0)
 
-    # V66: Race condition fix - state returned atomically
     def test_v66_check_and_cooldown_returns_state(self):
         """V66: check_and_cooldown returns atomic (is_open, state) tuple."""
         cb = WeightedCircuitBreaker(threshold=5.0, cooldown_seconds=0.1)
@@ -794,7 +780,6 @@ class TestV66VulnerabilityFixes(unittest.TestCase):
 
 
 # =====================================================================
-# V76 CRITICAL VULNERABILITY FIX TESTS
 # =====================================================================
 # Three fixes tested here:
 #   FIX 1 (CRITICAL): Nominal path physics validation
@@ -1287,7 +1272,6 @@ if __name__ == '__main__':
 
 
 # ============================================================================
-# V127 SAFETY REGRESSION TESTS — HMAC key security (no hardcoded fallback)
 # ============================================================================
 
 

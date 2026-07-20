@@ -118,7 +118,6 @@ class ErrorSeverity(Enum):
     CATASTROPHIC = 10
 
 
-# V53 FIX (BUG 3) + V2.0 EXTENSION: Allowed status values as type constraint
 StatusType = Literal["NOMINAL", "HEALED", "CRITICAL_CIRCUIT_OPEN", "HALF_OPEN", "DEGRADED"]
 
 
@@ -141,7 +140,6 @@ class SystemStatus:
     DEGRADED: StatusType = "DEGRADED"
 
 
-# V53 FIX (BUG 3) + V2.0 EXTENSION: Allowed status values as type constraint
 VALID_STATUSES = (
     SystemStatus.NOMINAL,
     SystemStatus.HEALED,
@@ -266,7 +264,6 @@ class Config:
             return default
         try:
             val = float(raw)
-            # V76 FIX: Reject NaN and Inf BEFORE min_val check.
             # NaN < min_val evaluates to False (IEEE-754), bypassing the
             # guard. Inf passes the min_val check but makes the threshold
             # unreachable. Both must be rejected explicitly.
@@ -351,7 +348,6 @@ ERROR_WEIGHTS: dict[str, ErrorSeverity] = {
     "TimeoutError": ErrorSeverity.TRANSIENT,
     "OSError": ErrorSeverity.CRITICAL,
     "LLMUnavailableError": ErrorSeverity.DEGRADED,
-    # V76 FIX: New error types for nominal path physics validation
     "NominalPhysicsViolation": ErrorSeverity.CRITICAL,
     "PhysicsValidatorCrash": ErrorSeverity.CRITICAL,
     "NominalNaNInf": ErrorSeverity.CATASTROPHIC,
@@ -398,7 +394,6 @@ class AsyncAuditLogger:
         self.max_bytes = max_bytes
         self.backup_count = backup_count
 
-        # V76 FIX (HIGH): Hash chain — each entry includes the hash of the
         # previous entry, creating a tamper-evident chain. If any entry is
         # deleted, the chain breaks at the next entry (previous_hash mismatch).
         # This detects the "missing audit entries" attack where an attacker
@@ -406,7 +401,6 @@ class AsyncAuditLogger:
         # Genesis hash: 64 zeros (standard blockchain convention).
         self._last_chain_hash: str = "0" * 64
 
-        # V53 FIX (BUG 4): Load secret from environment with secure fallback
         # H-2 FIX: Removed hardcoded default secret key b"QOMN_SECRET_KEY".
         # A known-default key means any attacker can forge HMAC signatures
         # on audit logs, creating fake "healed" results that appear legitimate.
@@ -421,7 +415,6 @@ class AsyncAuditLogger:
         elif os.environ.get("QOMN_AUDIT_SECRET_KEY", ""):
             self.secret_key = os.environ.get("QOMN_AUDIT_SECRET_KEY").encode("utf-8")
         else:
-            # V127 SAFETY-CRITICAL FIX (agent.md Rule #17 — NO HALF-SOLUTIONS):
             # The previous "pytest in sys.modules" check used a hardcoded
             # b"QOMN_SECRET_KEY" as fallback. This is a CATASTROPHIC vulnerability
             # because pytest is importable in many production environments that
@@ -516,7 +509,6 @@ class AsyncAuditLogger:
         with self.lock:
             try:
                 # Rotate if needed before writing
-                # V76 FIX: Save chain hash BEFORE rotation so it carries
                 # forward to the new file. Without this, rotation breaks
                 # the chain — the new file starts with genesis hash "0"*64,
                 # making it impossible to detect deletion of the rotated file.
@@ -527,7 +519,6 @@ class AsyncAuditLogger:
                 # Enforce clean UTC timestamp (V59 AUDIT-012 timezone fix)
                 event_data["timestamp_utc"] = datetime.now(timezone.utc).isoformat()
 
-                # V76 FIX: Include previous hash for chain integrity
                 event_data["previous_hash"] = self._last_chain_hash
 
                 # Serialize deterministically for consistent hashing
@@ -550,7 +541,6 @@ class AsyncAuditLogger:
                 with open(self.filepath, "a", encoding="utf-8") as f:
                     f.write(entry_str)
 
-                # V76 FIX: Update chain hash — hash of the entry content
                 # (the JSON line WITHOUT trailing newline) becomes the next
                 # entry's previous_hash. This makes the chain tamper-evident:
                 # changing any entry changes its hash, which breaks the
@@ -568,8 +558,6 @@ class AsyncAuditLogger:
                 return True
 
             except Exception as e:
-                # V53 FIX (BUG 7): Never let I/O errors crash the safety system
-                # V70 FIX (MEDIUM): Broadened from OSError to Exception.
                 # The old code only caught OSError, but json.dumps() can raise
                 # TypeError (non-serializable objects whose __str__ also fails),
                 # and hmac.new() can raise TypeError if secret_key is corrupted.
@@ -687,10 +675,8 @@ class LruCache:
 
     def __init__(self, maxsize: int = 128) -> None:
         self.maxsize = maxsize
-        # V53 FIX (BUG 1): OrderedDict preserves insertion order and supports move_to_end
         self.cache: OrderedDict[str, Any] = OrderedDict()
         self.lock = threading.Lock()
-        # V53 FIX (BUG 10): Statistics for operational monitoring
         self._hits: int = 0
         self._misses: int = 0
         self._evictions: int = 0
@@ -708,7 +694,6 @@ class LruCache:
                 # Key exists: remove and re-insert to move to end (most recently used)
                 del self.cache[key]
             elif len(self.cache) >= self.maxsize:
-                # V53 FIX (BUG 1): Evict LEAST recently used (first item in OrderedDict)
                 self.cache.popitem(last=False)
                 self._evictions += 1
             self.cache[key] = copy.deepcopy(value)  # V58 FIX: deep copy on insert
@@ -723,7 +708,6 @@ class LruCache:
             if key in self.cache:
                 self.cache.move_to_end(key)  # V53 FIX: True LRU access ordering
                 self._hits += 1
-                # V53 FIX (BUG 6): Deep copy prevents caller from mutating cached value
                 return copy.deepcopy(self.cache[key])
             self._misses += 1
             return None
@@ -1157,9 +1141,7 @@ def self_healing(  # NOSONAR — S3776: cognitive complexity is inherent to the 
 
             # ---------------------------------------------------------
             # CHECK TIER 3: CIRCUIT BREAKER STATUS
-            # V53 FIX (BUG 2): Use check_and_cooldown() for combined
             # query + cooldown in a single atomic operation
-            # V2.0 EXTENSION: Half-open recovery pattern
             # ---------------------------------------------------------
             cb = global_circuit_breaker
 
@@ -1169,7 +1151,6 @@ def self_healing(  # NOSONAR — S3776: cognitive complexity is inherent to the 
                 # Breaker is fully OPEN -- instant fallback to static safe defaults
                 safe_fallback = default_value if default_value is not None else safe_minimum
 
-                # V67 FIX (CRITICAL): NaN/Inf guard in Tier 3 fallback path.
                 # Without this guard, default_value=float('inf') or float('nan')
                 # would pass through the physics_validator check when no
                 # validator is provided (physics_validator=None). Infinity as a
@@ -1182,7 +1163,6 @@ def self_healing(  # NOSONAR — S3776: cognitive complexity is inherent to the 
                 ):
                     safe_fallback = safe_minimum
 
-                # V68 FIX (HIGH): Wrap physics_validator in try/except in Tier 3.
                 # In Tier 1 (line 1010-1012), the validator call is wrapped in
                 # try/except, but in Tier 3 it was NOT. If the validator raises
                 # an exception (e.g., safe_fallback is a string and the validator
@@ -1223,7 +1203,6 @@ def self_healing(  # NOSONAR — S3776: cognitive complexity is inherent to the 
                     audit_ref=f"SH-{before_hash[:8]}-{after_hash[:8]}",
                 )
 
-            # V66 FIX (CRITICAL): Use state_at_check from atomic check_and_cooldown()
             # instead of reading cb.state without a lock. The old code:
             #   was_half_open = cb.state == cb.HALF_OPEN
             # had a race condition -- between check_and_cooldown() releasing
@@ -1237,7 +1216,6 @@ def self_healing(  # NOSONAR — S3776: cognitive complexity is inherent to the 
             try:
                 nominal_value = func(*args, **kwargs)
 
-                # V76 FIX (CRITICAL): Validate nominal value against physics
                 # constraints BEFORE declaring NOMINAL status. Without this
                 # guard, a function that returns float('nan') or a physically
                 # impossible value (e.g., negative pressure) is reported as
@@ -1339,7 +1317,6 @@ def self_healing(  # NOSONAR — S3776: cognitive complexity is inherent to the 
                         error_type="NominalNaNInf"
                     )
                     replacement = default_value if default_value is not None else safe_minimum
-                    # V67 FIX: NaN/Inf guard on replacement too
                     if isinstance(replacement, float) and (
                         math.isnan(replacement) or math.isinf(replacement)
                     ):
@@ -1374,13 +1351,11 @@ def self_healing(  # NOSONAR — S3776: cognitive complexity is inherent to the 
                 # All validations passed: update LRU cache with verified LKG
                 global_lru_cache.update(func_name, nominal_value)
 
-                # V2.0: Record success for half-open recovery
                 cb.record_success()
 
                 return SafetyResult(value=nominal_value, status=SystemStatus.NOMINAL)
 
             except Exception as e:
-                # V72 FIX (MEDIUM): SafetyCriticalFailure must NEVER be healed.
                 # This exception type means "the system has fundamentally failed
                 # in a way that healing is inappropriate" -- for example, all
                 # calculation tiers have been exhausted, or a physical constraint
@@ -1419,7 +1394,6 @@ def self_healing(  # NOSONAR — S3776: cognitive complexity is inherent to the 
                 err_msg = str(e)
                 traceback.format_exc()
 
-                # V2.0: If in HALF_OPEN state, probe has FAILED
                 # A "healed" result does NOT count as a success for recovery --
                 # the circuit breaker tests whether the UNDERLYING system works,
                 # not whether the healing system can cover for it.
@@ -1439,7 +1413,6 @@ def self_healing(  # NOSONAR — S3776: cognitive complexity is inherent to the 
                 tier_1_applied = False
 
                 if err_type == "ZeroDivisionError":
-                    # V58 FIX (BUG #8) + V59 CORRECTION + V FIX: For ZeroDivisionError,
                     # prefer safe_minimum over default_value when default_value is
                     # NaN/Inf. Per QOMN kernel safety principle, NaN/Inf NEVER
                     # propagate -- always caught and rejected.
@@ -1485,7 +1458,6 @@ def self_healing(  # NOSONAR — S3776: cognitive complexity is inherent to the 
                     tier_1_applied = True
 
                 elif err_type == "KeyError":
-                    # V75 FIX: NaN/Inf guard for KeyError path, same as ZeroDivisionError.
                     # Without this, default_value=float('inf') would pass through
                     # and be returned as a healed value.
                     if default_value is not None:
@@ -1500,14 +1472,12 @@ def self_healing(  # NOSONAR — S3776: cognitive complexity is inherent to the 
                     tier_1_applied = True
 
                 elif err_type == "TypeError":
-                    # V53 FIX (BUG 8): Duck typing fallback casting with safe fallback
                     try:
                         if default_value is not None:
                             healed_val = type(default_value)(conservative_estimate)
                         else:
                             healed_val = float(conservative_estimate)
                     except (TypeError, ValueError):
-                        # V53 FIX: If casting fails, use conservative_estimate directly
                         # rather than default_value which could be None (BUG 5)
                         healed_val = conservative_estimate
                     tier_1_applied = True
@@ -1527,7 +1497,6 @@ def self_healing(  # NOSONAR — S3776: cognitive complexity is inherent to the 
                     healed_val = partial_result
                     tier_1_applied = True
 
-                # V53 FIX (BUG 5): Reject None healed values before returning to caller
                 # In a safety-critical system, returning None as a "healed" value is
                 # unacceptable because downstream code may crash on None, causing a
                 # cascade failure. Force Tier 2 if Tier 1 produced None.
@@ -1580,7 +1549,6 @@ def self_healing(  # NOSONAR — S3776: cognitive complexity is inherent to the 
                 llm_response_val = None
                 tier_2_verified = False
 
-                # V58 FIX (BUG #4): Wrap inspect.getsource() in try-except.
                 # This function raises OSError when source is unavailable
                 # (PyInstaller bundles, .pyc-only, Cython, REPL, frozen exe).
                 try:
@@ -1588,7 +1556,6 @@ def self_healing(  # NOSONAR — S3776: cognitive complexity is inherent to the 
                 except (OSError, TypeError):
                     source_code = "<source unavailable>"
 
-                # V2.0: Rate limiter check before calling LLM
                 if not global_llm_breaker.allow_request():
                     logging.warning(
                         "[LLM RATE LIMITER] Ollama request rate limit reached. "
@@ -1724,7 +1691,6 @@ def query_local_ollama_engine(
             parsed_text = json.loads(llm_text)
             suggested_val = parsed_text.get("suggested_return_value")
 
-            # V58 FIX (BUG #12): Robust NaN/Inf detection using math module
             # instead of fragile string comparison. Also catches float('inf').
             if isinstance(suggested_val, float) and (math.isnan(suggested_val) or math.isinf(suggested_val)):
                 return default_fallback

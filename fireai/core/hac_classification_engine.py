@@ -97,7 +97,6 @@ class SoRGeometry(str, Enum):
 
 
 # ---------------------------------------------------------------------------
-# V21 mapping helpers
 # ---------------------------------------------------------------------------
 
 # Convert V21 VentilationLevel to legacy VentilationDegree
@@ -271,7 +270,6 @@ class HACResultLegacy:
 
 
 # ---------------------------------------------------------------------------
-# V21 Classification Engine
 # ---------------------------------------------------------------------------
 
 # ── GAP-01: IEC 60079-10-1 Annex B ventilation tables ───────────────
@@ -285,7 +283,6 @@ _VENT_EFFECTIVENESS: dict[str, float] = {
 }
 
 # IEC 60079-10-1:2015 Annex B Table B.1 — concentration factor Ck
-# V53 FIX (F5): PRIMARY Ck=0.25 was non-compliant with IEC. Per IEC 60079-10-1
 # Annex B Table B.1, PRIMARY should be 0.50 (not 0.25). The old value was
 # more conservative (produces 2× larger zones) but non-compliant with IEC.
 # A regulatory audit would flag this as incorrect. Using IEC value for compliance.
@@ -391,7 +388,6 @@ def _iec_annex_b_extent(  # NOSONAR — S3776: cognitive complexity is inherent 
     Vz_source_m3_s = dV_release_m3_s / (ck * lfl_frac + 1e-12)  # NOSONAR - python:S1481
 
     # Ventilation dilution — eq. B.3 (IEC 60079-10-1:2015 Annex B)
-    # V43 FIX: Vz = (dV/dt)_min / (f × n) where n is air-change rate (1/s),
     # NOT volumetric flow (m³/s). Previous code divided m³/s by m³/s producing
     # a dimensionless ratio instead of volume (m³). This caused zone extents
     # to be ~10× too small for typical rooms.
@@ -415,7 +411,6 @@ def _iec_annex_b_extent(  # NOSONAR — S3776: cognitive complexity is inherent 
         r_hz = (3.0 * Vz_diluted_m3 / (4.0 * math.pi)) ** (1.0 / 3.0)  # NOSONAR — S1854: assignment kept for debug / future use
 
     # IEC 60079-10-1 Annex B §B.4: vertical extent
-    # V25 FIX: Buoyancy classification now uses the same 3-tier density-ratio
     # system as models_v21.vapor_density_tier(), ensuring consistent vertical
     # extent calculation across the entire codebase.
     #
@@ -433,7 +428,6 @@ def _iec_annex_b_extent(  # NOSONAR — S3776: cognitive complexity is inherent 
     from fireai.core.models_v21 import ElevationTier as _ElevTier
     from fireai.core.models_v21 import vapor_density_tier
 
-    # V48 FIX: r_hz computation now includes buoyancy factor.
     # Previously computed r_hz assuming uniform hemisphere (r_hz = r_vz), then
     # adjusted r_vz by buoyancy. But this violates the volume constraint:
     # Vz = (2/3)π × r_hz² × r_vz = (2/3)π × r_hz² × (k × r_hz) = (2/3)π × k × r_hz³
@@ -459,7 +453,6 @@ def _iec_annex_b_extent(  # NOSONAR — S3776: cognitive complexity is inherent 
     r_vz = r_hz * k_buoy
     zone_vol_m3 = Vz_diluted_m3
 
-    # V53 FIX (F4): Vz not capped at room_volume_m3. Computed Vz can vastly
     # exceed room volume, producing physically impossible zone radii with no
     # warning. Example: 0.01 kg/s propane, 100 m³ room, POOR ventilation:
     # Vz ≈ 757,554 m³ → r_hz ≈ 72m in a room that's ~4.6m on a side.
@@ -482,7 +475,6 @@ def _iec_annex_b_extent(  # NOSONAR — S3776: cognitive complexity is inherent 
             r_hz = (3.0 * Vz_diluted_m3 / (4.0 * math.pi * k_buoy)) ** (1.0 / 3.0)
         r_vz = r_hz * k_buoy
 
-    # V53 FIX (F7): NaN/Inf validation — adversarial inputs bypass all safety.
     # round(float('inf')) raises OverflowError, round(float('nan')) returns nan.
     # Pydantic ZoneExtent(horizontal_m=nan) would crash with ValidationError.
     if not (math.isfinite(r_hz) and math.isfinite(r_vz) and math.isfinite(zone_vol_m3)):
@@ -596,8 +588,6 @@ class HACClassificationEngine:
         warnings: list[str] = []
         critical_flags: list[str] = []
 
-        # V21.2: Apply Burgess-Wheeler LFL correction if env_context provided
-        # V51 FIX: When env_context is None, Burgess-Wheeler was SILENTLY SKIPPED.
         # This is a life-safety issue — at elevated ambient temperatures, LFL
         # decreases, producing WIDER hazardous zones. Skipping BW correction
         # at 40°C (the default) produces NARROWER zones than reality — areas
@@ -663,7 +653,6 @@ class HACClassificationEngine:
         effective_temp = env_context.ambient_temp_c if env_context else ambient_temp_c
         effective_lfl = lfl_corrected if lfl_corrected is not None else (substance.lfl_vol_pct or 1.0)
 
-        # V48 FIX: When env_context is None, BW correction was not applied.
         # But ambient_temp_c defaults to 40°C (non-standard). At 40°C, the BW
         # correction reduces LFL by ~2.7%, making zones ~2.8% wider. Omitting
         # this is NON-CONSERVATIVE (zones too small). Apply BW with ambient_temp_c.
@@ -707,7 +696,6 @@ class HACClassificationEngine:
         if not use_annex_b:
             # Simplified k/LFL method (existing behaviour)
             # BUG FIX C-1: FIBER uses dust extent formula (MEC-based), not gas (LFL-based)
-            # V48 FIX: HYBRID substances must compute BOTH gas and dust extents,
             # then take the maximum per IEC 60079-10-1 §5.7. Previously, the
             # condition `is_dust and not is_gas` was False for HYBRID (both True),
             # so dust extent was never computed — only gas extent was used.
@@ -829,7 +817,6 @@ class HACClassificationEngine:
             )
             critical_flags.append(flag)
 
-        # V21.2: Use corrected LFL if available (wider zone)
         effective_lfl = lfl_corrected if lfl_corrected is not None else (sub.lfl_vol_pct or 1.0)
         extent = self._compute_extent_v21(effective_lfl, vent, indoor, src_h)
 
@@ -1051,7 +1038,6 @@ class HACClassificationEngine:
         # Cap at 50m matching the dust formula's guard (IEC 60079-10-1 Annex A).
         r_h = k / max(lfl, 0.01)  # Floor LFL at 0.01 vol% (no real gas has LFL < 0.01%)
         r_h = min(r_h, 50.0)  # Physical limit per IEC 60079-10-1
-        # V45 FIX: Simplified k/LFL method uses uniform hemisphere/sphere per
         # IEC 60079-10-1 Annex A. The V43 fix incorrectly applied the
         # hemi-ellipsoid model (r_v = 0.5 × r_h) to the simplified method.
         # That model is ONLY correct for the IEC Annex B method where r_hz
@@ -1104,7 +1090,6 @@ class HACClassificationEngine:
         mec_floored = max(mec, 1.0)
         r_h = k / (mec_floored / 30.0)
         r_h = min(r_h, 50.0)
-        # V45 FIX: Simplified MEC method uses uniform hemisphere/sphere per
         # IEC 60079-10-2 Annex A (same reasoning as _compute_extent_v21).
         # The V43 fix incorrectly applied hemi-ellipsoid here too.
         r_v = r_h  # Uniform hemisphere/sphere per IEC simplified method
@@ -1191,7 +1176,6 @@ class HACClassificationEngine:
         self._check_dust_properties(substance, warnings)
         self._check_temperature_class(substance, warnings)
 
-        # V49 FIX: Handle lfl_vol_pct=None (changed from default 0.0 to None)
         if (substance.lfl_vol_pct is None or substance.lfl_vol_pct <= 0) and substance.material_type in (
             HazardousMaterial.GAS,
             HazardousMaterial.VAPOR,
@@ -1259,7 +1243,6 @@ class HACClassificationEngine:
     @staticmethod
     def _apply_ventilation_degree(base_zone, degree, substance):  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         note = ""
-        # V48 FIX: Zone 0 and Zone 20 must NEVER be upgraded by ventilation.
         # Per IEC 60079-10-1 §4.3 Note 2, high dilution may reduce zone extent
         # but should NOT relax zone type for CONTINUOUS releases.
         # Zone 0/20 = CONTINUOUS hazard → always stays Zone 0/20.
@@ -1340,7 +1323,6 @@ class HACClassificationEngine:
         r_h = radius
         r_v = radius * 0.5  # V44: consistent with _gas_extent — vertical = 0.5 × horizontal per IEC 60079-10-1
         area = math.pi * r_h**2
-        # V44 FIX: Volume must use r_h² × r_v (hemi-ellipsoid/ellipsoid), not r_h³ (uniform sphere).
         # Per IEC 60079-10-1:2015 Annex A, zone extents are modeled as hemi-ellipsoids
         # when r_v ≠ r_h. This was already fixed in _gas_extent and _dust_extent (V43),
         # but this legacy _compute_extent method was missed.

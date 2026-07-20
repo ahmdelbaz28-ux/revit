@@ -218,17 +218,14 @@ class DarcyWeisbachResult:
     flow_velocity_m_s: float
     flow_regime: str
     fluid_type: str
-    # V135 F-37 FIX: Use field(default_factory=list) instead of None
     warnings: list = field(default_factory=list)
     nfpa_reference: str = "Darcy-Weisbach (NFPA 12/2001)"
-    # V135 F-27 FIX: Add converged field so callers know if the
     # Colebrook-White iteration actually converged or returned a
     # fallback. The OLD code returned unconverged values with only
     # a DEBUG log — callers had no way to know.
     converged: bool = True
 
     def __post_init__(self):
-        # V135 F-37: Keep __post_init__ for backward compat (in case
         # someone passes warnings=None explicitly)
         if self.warnings is None:
             self.warnings = []
@@ -321,7 +318,6 @@ def calculate_darcy_weisbach_friction_loss(
         raise ValueError(f"Cross-sectional area is non-positive: {cross_sectional_area}")
     flow_velocity = flow_rate_kg_s / (density * cross_sectional_area)
 
-    # V135 F-29 FIX: Validate flow velocity upper bound.
     # The OLD code accepted any velocity, even supersonic (1000+ m/s).
     # For fire suppression systems, velocities > 100 m/s indicate either:
     # (a) input error (wrong units), or (b) physically impossible scenario.
@@ -354,7 +350,6 @@ def calculate_darcy_weisbach_friction_loss(
         )
 
     # ── Compute friction factor ──
-    # V138 F-5: Unpack converged flag from _compute_friction_factor
     friction_factor, _converged = _compute_friction_factor(reynolds, roughness, pipe_diameter_m, flow_regime)
 
     # ── Compute head loss (Darcy-Weisbach) ──
@@ -368,7 +363,6 @@ def calculate_darcy_weisbach_friction_loss(
     pressure_loss_pa = density * GRAVITY_M_S2 * head_loss
     pressure_loss_psi = pressure_loss_pa / 6894.757  # 1 psi = 6894.757 Pa
 
-    # V135 F-26 FIX: Negative pressure loss indicates a COMPUTATION ERROR.
     # The OLD code used abs() which masked the error. Per safety-first
     # principle (agent.md Rule 12), we raise ValueError so the caller
     # knows something is wrong. Physically, pressure loss CANNOT be
@@ -428,7 +422,6 @@ def _compute_friction_factor(
 
     if flow_regime == "turbulent":
         # Turbulent flow: Use Colebrook-White equation (implicit)
-        # V138 F-5: Returns (f, converged) tuple
         return _solve_colebrook_white(reynolds, roughness, diameter)
 
     # Transitional: linear interpolation between laminar and turbulent
@@ -480,7 +473,6 @@ def _solve_colebrook_white(  # NOSONAR — S3776: cognitive complexity is inhere
         f = 0.02
 
     # ── Newton-Raphson iteration ──
-    # V135 F-15 FIX: Added NaN/Inf guards throughout the loop.
     # The OLD code could produce NaN friction factor via:
     #   - f becoming very small → 1/(f*sqrt_f) → Inf
     #   - Inf - Inf → NaN
@@ -488,7 +480,6 @@ def _solve_colebrook_white(  # NOSONAR — S3776: cognitive complexity is inhere
     #   - NaN < 0 is False, so sanity checks don't catch it
     # Now we break early if any intermediate value is non-finite.
     for _iteration in range(COLEBROOK_MAX_ITERATIONS):
-        # V135 F-15: Guard against non-finite f at loop start
         if not math.isfinite(f) or f <= 0:
             break
 
@@ -499,17 +490,14 @@ def _solve_colebrook_white(  # NOSONAR — S3776: cognitive complexity is inhere
         # Colebrook-White function: g(f) = 1/√f + 2×log10( (ε/d)/3.7 + 2.51/(Re×√f) )
         # We want g(f) = 0
         log_arg = (relative_roughness / 3.7) + (2.51 / (reynolds * sqrt_f))
-        # V135 F-15: log10 of non-positive → ValueError/NaN
         if log_arg <= 0:
             break
         g = (1.0 / sqrt_f) + 2.0 * math.log10(log_arg)
 
-        # V135 F-15: Guard against non-finite g
         if not math.isfinite(g):
             break
 
         # Derivative: g'(f) = -1/(2×f^(3/2)) + 2 × (-1/ln(10)) × (-2.51/(Re×2×f^(3/2)))
-        # V138 F-4 FIX: Corrected derivative sign.
         # The Colebrook-White function is: g(f) = 1/sqrt(f) + 2*log10(A + B/sqrt(f))
         # where A = eps/(3.7*d), B = 2.51/Re
         # The derivative is: g'(f) = -1/(2*f^(3/2)) - 2/(ln(10)) * B/(2*f^(3/2)) / (A + B/sqrt(f))
@@ -517,18 +505,15 @@ def _solve_colebrook_white(  # NOSONAR — S3776: cognitive complexity is inhere
         denom = log_arg  # Same as log_arg = A + B/sqrt(f)
         if denom <= 0:
             break
-        # V138 F-4: Correct sign — both terms should be NEGATIVE
         B_over_2f32 = 2.51 / (reynolds * 2.0 * f * sqrt_f)  # NOSONAR - python:S117
         g_prime = -1.0 / (2.0 * f * sqrt_f) - (2.0 / math.log(10)) * B_over_2f32 / denom
 
-        # V135 F-15: Guard against non-finite g_prime (Inf or NaN)
         if not math.isfinite(g_prime) or abs(g_prime) < 1e-15:
             break
 
         # Newton-Raphson update: f_new = f - g(f)/g'(f)
         f_new = f - g / g_prime
 
-        # V135 F-15: Guard against non-finite f_new
         if not math.isfinite(f_new):
             break
 
@@ -542,7 +527,6 @@ def _solve_colebrook_white(  # NOSONAR — S3776: cognitive complexity is inhere
 
         f = f_new
 
-    # V135 F-15: Final guard — if f is non-finite, return Haaland initial guess
     if not math.isfinite(f) or f <= 0:
         logger.warning(
             "Colebrook-White iteration produced non-finite friction factor "
@@ -557,7 +541,6 @@ def _solve_colebrook_white(  # NOSONAR — S3776: cognitive complexity is inhere
             return ((1.0 / haaland_rhs) ** 2 if haaland_rhs != 0 else 0.02, False)
         return (0.02, False)
 
-    # V138 F-5 FIX: Return converged=False when iteration didn't converge.
     # The OLD code always returned converged=True (field was never set False).
     logger.warning(
         "Colebrook-White iteration did not fully converge: Re=%f, ε/d=%f, f=%f",
@@ -634,7 +617,6 @@ def compare_with_hazen_williams(
         Dict with both results and comparison metrics.
 
     """
-    # V135 F-28 FIX: Validate inputs before calculation.
     # The OLD code didn't call _validate_input, so negative pipe_length
     # or NaN inputs would silently produce wrong results.
     _validate_input("pipe_length_m", pipe_length_m, min_val=0.0)

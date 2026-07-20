@@ -313,7 +313,6 @@ class BIMProviderRegistry:
             )
             return None
 
-        # V135 F-18 FIX: Use json.dumps for cache key instead of hash().
         # The OLD code did `hash(tuple(sorted(kwargs.items())))` which raises
         # TypeError if kwargs contains unhashable values (lists, dicts).
         # For example, `get_provider("ifc_file", levels=["L1","L2"])` would
@@ -354,7 +353,6 @@ class BIMProviderRegistry:
         cls._providers.clear()
         cls._instances.clear()
 
-    # V135 F-32: Keep backward-compat alias (deprecated)
     clear = _clear_for_testing
 
 
@@ -518,7 +516,6 @@ class IfcFileProvider:
     _CAPABILITIES: tuple[BIMProviderCapability, ...] = (
         BIMProviderCapability.ROOM_EXTRACTION,
         BIMProviderCapability.DEVICE_READ,
-        # V135 F-10 FIX: Removed DEVICE_WRITE — write_devices is a stub that
         # returns 0. Declaring a capability the provider doesn't actually
         # implement is a LIE that could cause callers to assume devices were
         # written when they weren't. Per the BIMProvider Protocol docstring:
@@ -1073,7 +1070,6 @@ class AutodeskForgeProvider:
                     headers=headers,
                     timeout=15.0,
                 )
-                # V214 self-critique: APS may return 200 (done) or 202 (accepted,
                 # still processing). Both are valid — don't treat 202 as error.
                 if resp.status_code not in (200, 202):
                     logger.warning("APS poll failed: HTTP %d", resp.status_code)

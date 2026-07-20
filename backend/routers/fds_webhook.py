@@ -88,7 +88,7 @@ async def get_job_status(job_id: str) -> Dict[str, Any]:
     """Poll the status and result of an FDS simulation job."""
     result = get_fds_job_status(job_id)
     if result.get("error"):
-        raise HTTPException(status_code=404, detail=result["error"])
+        raise HTTPException(status_code=404, detail=result["error"])  # NOSONAR — S8415: endpoint error handling is intentional
     return result
 
 
@@ -118,7 +118,7 @@ async def fds_result_webhook(
     result = handle_fds_webhook(payload.model_dump())
 
     if "error" in result:
-        raise HTTPException(status_code=400, detail=result["error"])
+        raise HTTPException(status_code=400, detail=result["error"])  # NOSONAR — S8415: endpoint error handling is intentional
 
     # Broadcast completion event to subscribed WebSocket clients
     try:

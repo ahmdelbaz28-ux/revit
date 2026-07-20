@@ -129,7 +129,6 @@ class TestNFPA72Input:
             NFPA72Input(spacing_m=9.1, ceiling_height_m=-1.0)
 
     def test_reject_ceiling_height_above_18_288(self):
-        # V128 FIX: Max ceiling height is now 18.288m (60ft) per NFPA 72 §17.7.3.2.4
         with pytest.raises(ValidationError, match="less than or equal to 18.288"):
             NFPA72Input(spacing_m=9.1, ceiling_height_m=19.0)
 
@@ -434,7 +433,6 @@ class TestVoltageDropInputCompute:
             cable_length_m=100.0,
         )
         result = data.compute_voltage_drop()
-        # V14 Bug #12 FIX: total_resistance = R × L × 2
         total_r = 0.00820 * 100.0 * 2.0
         # Continuous load: I_eff = 0.5 × 1.25
         i_eff = 0.5 * 1.25
@@ -530,7 +528,6 @@ class TestVoltageDropInputCompute:
         )
         r_2 = data_2.compute_voltage_drop()
         r_6 = data_6.compute_voltage_drop()
-        # V78 FIX: bundling no longer affects voltage drop — same resistance
         assert r_6["drop_v"] == pytest.approx(r_2["drop_v"], rel=0.001)
         # Bundling factor is still reported for ampacity checks
         assert r_6["bundling_derating_factor"] == 0.80  # NOSONAR — S1244: import retained for re-export / API surface

@@ -170,7 +170,6 @@ def _generate_voltage_drop_report(devices: list, connections: list, now: str) ->
     }
 
 
-# V213: Cable size → AWG gauge mapping for voltage drop computation.
 # Values are approximate cross-section equivalents per NEC Chapter 9 Table 8
 # and IEC 60228. Used only when the connection's cableSize string cannot
 # be parsed as a direct AWG value.
@@ -690,7 +689,6 @@ async def list_reports(
     sort: str = Query("createdAt"),  # NOSONAR - python:S8410
     order: str = Query("desc"),  # NOSONAR - python:S8410
 ):
-    # V140 FIX: Validate order to prevent injection
     if order not in ("asc", "desc"):
         order = "desc"
     """List all reports for a project."""
@@ -931,7 +929,6 @@ async def export_report(  # NOSONAR — S3776: cognitive complexity is inherent 
                 detail="PDF export requires the reportlab package",
             )
         except Exception:
-            # V113 SECURITY: Never expose str(e) to client
             logger.exception("PDF generation failed", exc_info=True)  # Use exception instead of error
             raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
                 status_code=500,
@@ -989,7 +986,6 @@ async def export_report(  # NOSONAR — S3776: cognitive complexity is inherent 
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# V213: AHJ COMPLIANCE PROOF DOCUMENT ENDPOINT
 # ══════════════════════════════════════════════════════════════════════════════
 
 
@@ -1116,14 +1112,12 @@ async def generate_ahj_submittal(request: Request, project_id: str, body: AhjSub
     # and add the result to the AHJ document.
     for room, detector_type in rooms:
         try:
-            # V216 FIX (SonarCloud python:S930): optimizer.optimize() does not
             # accept a detector_type kwarg — the detector type is fixed at the
             # optimizer instance level. The detector_type from the loop is
             # informational only (used in the AHJ document metadata below).
             layout: DetectorLayout = optimizer.optimize(
                 room=room,
             )
-            # V214 FIX: Run consensus engine with REAL verification.
             # Previously ConsensusEngine() was called without the required
             # coverage_radius argument → TypeError → caught → consensus=None.
             # The AHJ document claimed "Triple Verification System" but the

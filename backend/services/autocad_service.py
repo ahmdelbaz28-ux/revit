@@ -36,7 +36,6 @@ logger = logging.getLogger(__name__)
 # Cross-platform support: Real imports for Windows, mock for Linux/Mac
 IS_WINDOWS = platform.system() == "Windows"
 
-# V140 FIX (Rule 17 — Root-Cause Analysis): On non-Windows platforms,
 # `pythoncom` and `win32com` were not imported at all, so the module had no
 # `pythoncom` / `win32com` attributes. This broke `unittest.mock.patch(
 # 'backend.services.autocad_service.pythoncom')` and
@@ -86,7 +85,6 @@ class AutoCADService:
         self.acad_doc = None
         self.acad_util = None
         self.connected = False
-        # V213: Explicit simulation flag. True when connect() fell back to
         # the dev-mode simulation (no real AutoCAD COM handle). Clients and
         # tests can read this to know that no real drawing operations will
         # occur — only MockAutoCADObject instances are returned.
@@ -380,7 +378,6 @@ class AutoCADService:
 
         """
         try:
-            # V141.4.1 FIX (Devin review): validate_input_path does NOT accept
             # must_exist kwarg. Removed the unsafe fallback too.
             # validate_input_path is the SOLE authority — fail-closed.
             from parsers._path_security import validate_input_path
@@ -429,7 +426,6 @@ class AutoCADService:
                 }
 
             if self.connected and not self.acad_app:
-                # V214 FIX (Rule 1 — Truthfulness): Previously, in simulation
                 # mode, this method returned two hardcoded fake entities
                 # (handle "H1" AcDbLine on layer WALLS, handle "H2"
                 # AcDbBlockReference on layer DEVICES) and reported success.
@@ -521,7 +517,6 @@ class AutoCADService:
 
         """
         try:
-            # V141.4.1 FIX (Devin review): validate_input_path does NOT accept
             # must_exist kwarg. For output paths, use validate_output_path.
             from parsers._path_security import validate_output_path
             safe_path = validate_output_path(filepath, parser_name="autocad_write_dwg")
@@ -532,7 +527,6 @@ class AutoCADService:
                 return False
 
             if not self.acad_app:
-                # V214: Simulation mode cannot write a real DWG — return False
                 # honestly so the caller can surface an error or fall back to
                 # DXF export (ezdxf, cross-platform). Writing a fake "MOCK DWG
                 # DATA" file and returning True was a safety-critical deception.
@@ -899,7 +893,6 @@ class AutoCADService:
                 logger.error("AutoCAD service not connected. Cannot save document.")
                 return False
             if not self.acad_doc:
-                # V214: Simulation mode cannot save — there is no real document.
                 # Writing a fake "MOCK SAVED DWG" file and returning True was
                 # a safety-critical deception.
                 logger.warning(
@@ -944,7 +937,6 @@ class AutoCADService:
             or AutoCAD COM raised an exception.
 
         """
-        # V220 FIX (SonarCloud S5145): sanitize handle ONCE at function entry.
         # str() result is not user-controlled per SonarCloud's taint analysis.
         safe_handle = str(handle) if handle else "<empty>"
         try:
@@ -952,7 +944,6 @@ class AutoCADService:
                 logger.error("AutoCAD service not connected. Cannot delete entity %s.", safe_handle)
                 return False
             if not self.acad_doc:
-                # V213: Simulation mode cannot delete — there is no real entity.
                 logger.warning(
                     "delete_entity %s skipped: simulation mode (no acad_doc). "
                     "Returning False honestly — no entity was deleted.",
@@ -1000,7 +991,6 @@ class AutoCADService:
             or AutoCAD COM raised an exception.
 
         """
-        # V220: break taint flow — str() result is not user-controlled per SonarCloud
         safe_handle = str(handle) if handle else "<empty>"
         try:
             if not self.connected:

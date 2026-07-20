@@ -174,7 +174,6 @@ class TestRecommendation:
         result = sequential_agent.generate_variants(
             small_office, occupancy_type="office"
         )
-        # V135 F-9: Office is low-hazard — COST_MINIMIZED is now a valid
         # recommendation if its score is ≥ 90% of STANDARD_COMPLIANT.
         # Both variants are acceptable; the test should accept either.
         assert result.recommended_variant in (

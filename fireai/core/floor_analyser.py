@@ -209,22 +209,17 @@ class RoomSummary:
     ceiling_height: float | None = None
     radius_warning: str | None = None
     nfpa_table_ref: str = "NFPA 72-2022 Table 17.6.3.1.1"
-    # V3.0: Scenario verification fields
     scenario_pass: bool | None = None
     scenario_fail_count: int = 0
     scenario_worst_time_s: float | None = None
     scenario_blind_spots: int = 0
     scenario_battery_ms: float = 0.0
-    # V3.1: Duct detector fields
     duct_results: list = field(default_factory=list)
     duct_warnings: list[str] = field(default_factory=list)
-    # V4.0: Non-rectangular room support
     shape_type: str = "rectangular"  # "rectangular", "l_shape", "polygon"
     polygon_coords: list | None = None  # original polygon for non-rectangular rooms
-    # V5.0: Room dimensions for project learning (bounding rectangle)
     width: float = 0.0  # bounding rectangle width (metres)
     length: float = 0.0  # bounding rectangle length (metres)
-    # V6.0: Polygon verifier (Greedy Set Cover) — verification only
     polygon_verifier_count: int | None = None  # detectors from Greedy Set Cover on actual polygon
     polygon_verifier_method: str | None = None  # "greedy_polygon" or None
     polygon_verifier_ms: float = 0.0  # verifier runtime in ms
@@ -260,11 +255,8 @@ class FloorReport:
     unsafe_rooms: list[str] = field(default_factory=list)
     floor_warnings: list[str] = field(default_factory=list)
     analysis_time_s: float = 0.0
-    # V3.0: Scenario verification aggregation
     scenario_non_compliant_rooms: list[str] = field(default_factory=list)
-    # V114 FIX: Fail-safe — must be consistent with safe_to_submit=False
     scenario_safe_to_submit: bool = False
-    # V3.1: Duct detector aggregation
     total_duct_devices: int = 0
 
 
@@ -355,17 +347,13 @@ class FloorAnalyser:
         self.use_mip = use_mip
         self.mip_candidate_step = mip_candidate_step
         self.mip_time_limit = mip_time_limit
-        # V3.0: Scenario verification
         self.use_scenarios = use_scenarios
         self.scenario_time_step = scenario_time_step
         self.scenario_skip_blind = scenario_skip_blind  # skip blind scan for speed
-        # V6.0: Polygon verifier (Greedy Set Cover)
         self.use_polygon_verifier = use_polygon_verifier
-        # V11: Per-room timeout (Consultant #5 Criticism #3 - timeout concept accepted)
         # If a room analysis takes longer than this, flag it for manual review.
         # NOT using ProcessPoolExecutor - sequential execution is maintained for safety.
         self.room_timeout_s = room_timeout_s
-        # V12: Sensor Physics Advisor (Consultant #6 Criticism #1 — advisory concept accepted)
         # Provides warnings for extreme ceiling/slope conditions where
         # point detectors may be insufficient (beam detectors recommended).
         self.sensor_advisor = SensorPhysicsAdvisor()
@@ -561,7 +549,6 @@ class FloorAnalyser:
             # BOUNDARY_LIMIT + LOW_CEILING live warnings
             room_warnings = list(layout.warnings) if layout.warnings else []
 
-            # V4.0: Non-rectangular room warning
             if is_non_rect:
                 poly_area = polygon_area(polygon_coords)
                 bbox_w, bbox_h = room.width, room.length
@@ -765,10 +752,8 @@ class FloorAnalyser:
                 ceiling_height=ceiling_h,
                 radius_warning=spec.warning,
                 nfpa_table_ref=spec.nfpa_ref,
-                # V4.0: Non-rectangular room tracking
                 shape_type=shape_type,
                 polygon_coords=polygon_coords if is_non_rect else None,
-                # V5.0: Room dimensions for project learning
                 width=room.width,
                 length=room.length,
             )
@@ -807,7 +792,6 @@ class FloorAnalyser:
         report.fully_compliant = len(report.non_compliant_rooms) == 0
         report.safe_to_submit = len(report.unsafe_rooms) == 0
 
-        # V3.0: Scenario verification aggregation
         if self.use_scenarios:
             report.scenario_non_compliant_rooms = [s.room_id for s in report.room_summaries if s.scenario_pass is False]
             report.scenario_safe_to_submit = len(report.scenario_non_compliant_rooms) == 0
@@ -819,7 +803,6 @@ class FloorAnalyser:
         if not report.fully_compliant:
             report.floor_warnings.append(f"Non-compliant rooms: {report.non_compliant_rooms}")
 
-        # V3.0: Scenario warnings at floor level
         if self.use_scenarios and report.scenario_non_compliant_rooms:
             report.floor_warnings.append(
                 f"SCENARIO_NON_COMPLIANT rooms (detection time > NFPA 72 §17.7.3): "

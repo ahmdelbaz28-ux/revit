@@ -146,7 +146,6 @@ def get_langfuse_callback_handler(
                 # update_trace_metadata may not exist in all langfuse versions
                 pass
 
-        # V141.4 SECURITY FIX (CodeQL: py/clear-text-logging-sensitive-data):
         # Do NOT log trace_id or project_id — they are considered sensitive
         # because they can leak project identifiers to anyone with log access.
         # Log only a boolean success indicator + the trace_name (which is a

@@ -6,7 +6,6 @@ import uuid
 from typing import Any, Dict
 from unittest.mock import Mock
 
-# V138 FIX (MEDIUM-3): Converted relative imports to absolute imports.
 # The original `from ..event_bus.cluster_communicator import ...` syntax fails
 # when pytest collects this file directly (raises
 # "ImportError: attempted relative import beyond top-level package") because
@@ -38,7 +37,6 @@ class TestDistributedFACP(unittest.TestCase):
     def setUp(self):
         """Set up test fixtures"""
         # Create security components
-        # V289: AuthProvider now requires a strong secret (>= 32 chars).
         # The old "test_secret" was only 11 chars — would fail validation.
         import secrets as _secrets
         self.auth_provider = AuthProvider(secret_key=_secrets.token_urlsafe(48))
@@ -79,7 +77,6 @@ class TestDistributedFACP(unittest.TestCase):
         )
 
         # Create a test token
-        # V289 FIX: AuthProvider delegates token creation to TokenManager.generate_token
         self.test_token = self.auth_provider.token_manager.generate_token(
             user_id=self.test_user_id,
             permissions=["engine_access", "execute"],
@@ -609,7 +606,6 @@ class TestDistributedSecurity(unittest.TestCase):
 
     def setUp(self):
         """Set up security test fixtures"""
-        # V289 FIX: use a strong 48-char secret (was "security_test_secret" — 20 chars)
         import secrets as _secrets2
         self.auth_provider = AuthProvider(secret_key=_secrets2.token_urlsafe(48))
         self.rbac_engine = RBACEngine()
@@ -635,7 +631,6 @@ class TestDistributedSecurity(unittest.TestCase):
         )
 
         # Create tokens for each user
-        # V289 FIX: use TokenManager.generate_token (AuthProvider has no create_session_token)
         self.admin_token = self.auth_provider.token_manager.generate_token(
             "admin_user", ["engine_access", "execute", "read", "write"], ["admin"]
         )

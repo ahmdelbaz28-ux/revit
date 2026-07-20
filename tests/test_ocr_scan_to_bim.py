@@ -27,7 +27,6 @@ from unittest.mock import patch
 
 import pytest
 
-# V207 FIX: Skip this entire module if pytesseract is not installed.
 # pytesseract requires the tesseract system package (apt install tesseract-ocr)
 # which is not available in all CI environments. Without this skip, the
 # collection error aborts the ENTIRE test run, masking all other test results.

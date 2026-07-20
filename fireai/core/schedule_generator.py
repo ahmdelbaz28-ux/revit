@@ -121,7 +121,6 @@ class ScheduleGenerator:
         and schedule.wire_gauge (on CableRoute, not RoutingSchedule).
         Fixed to iterate schedule.routes and read per-CableRoute fields.
         """
-        # V113: Determine ps_voltage with fail-safe hierarchy:
         # 1. Explicit parameter (preferred — caller knows the system voltage)
         # 2. From schedule object (if it stores ps_voltage)
         # 3. Default 24.0V with CRITICAL warning (last resort)
@@ -168,7 +167,6 @@ class ScheduleGenerator:
 
         V113 FIX: Added ps_voltage parameter (same as from_routing_schedule).
         """
-        # V113: Same ps_voltage resolution logic as from_routing_schedule
         actual_ps_voltage = ps_voltage
         if actual_ps_voltage <= 0.0:
             actual_ps_voltage = 24.0
@@ -242,7 +240,6 @@ class ScheduleGenerator:
         Includes: total cable length, bends, max circuit length.
         """
         if not rows:
-            # V97 FIX: Empty schedule must report all_compliant=False (fail-safe).
             # An empty schedule means no circuits were analyzed — claiming
             # compliance is the false-GREEN anti-pattern. Per Rule 17:
             # a half-solution (empty=True) is worse than no solution because

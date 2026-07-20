@@ -57,7 +57,6 @@ def _validate_json_size_and_depth(
     return value
 
 
-# V108 FIX: Add camelCase alias generator so Pydantic schemas serialize
 # to camelCase (matching the API contract in backend/contract.py) while
 # keeping Python snake_case attribute names internally.
 def _to_camel(field_name: str) -> str:
@@ -66,7 +65,6 @@ def _to_camel(field_name: str) -> str:
     return components[0] + ''.join(x.title() for x in components[1:])
 
 
-# V108 FIX: Base model with camelCase serialization.
 # All Response schemas serialize to camelCase (e.g., element_id → elementId),
 # matching the API contract in backend/contract.py. Create/Update schemas
 # also accept camelCase input via populate_by_name=True.

@@ -480,7 +480,6 @@ class ATEXEquipmentSpec(BaseModel):
         Correct gas hierarchy: Ga > Gb > Gc (Ga = highest protection)
         Correct dust hierarchy: Da > Db > Dc.
         """
-        # V54 FIX (V48 #4): Validate atex_category against ATEX 2014/34/EU Annex I.
         _VALID_ATEX_CATEGORIES = {"1G", "2G", "3G", "1D", "2D", "3D", "M1", "M2"}
         if self.atex_category not in _VALID_ATEX_CATEGORIES:
             raise ValueError(
@@ -529,7 +528,6 @@ class ATEXEquipmentSpec(BaseModel):
         [IEC 60079-14].
         """
         zone_allowed = {
-            # V25 FIX: IEC 60079-14 protection concepts permitted per zone.
             # Zone 0 (EPL Ga) — most hazardous, continuous hazard.
             # ONLY "ia" (intrinsically safe, level a), "ma" (encapsulation, level a),
             # and "s" (special, if specifically designed for Zone 0) are permitted.
@@ -563,7 +561,6 @@ class ATEXEquipmentSpec(BaseModel):
             # Zone 20 (EPL Da) — dust equivalent of Zone 0.
             # "tb" is EPL Db (Zone 21 only). Removed from Zone 20 allowed list.
             ZoneType.ZONE_20: {"ia", "ma", "ta", "s", "tD"},
-            # V48 FIX: Removed "tc" from Zone 21 — "tc" is EPL Dc (Zone 22 only).
             # Zone 21 requires EPL Db minimum. Per IEC 60079-31:2022 §6,
             # "tc" (protection by enclosure) is rated EPL Dc for Zone 22.
             ZoneType.ZONE_21: {"ia", "ib", "ma", "mb", "tb"},
@@ -744,7 +741,6 @@ class RegSelectorResult(BaseModel):
 
 
 # ===========================================================================
-# V21.2: Environmental Context (Dynamic Physics Inputs)
 # ===========================================================================
 
 
@@ -899,7 +895,6 @@ class EnvironmentalContext(BaseModel):
 
 
 # ===========================================================================
-# V21.2: Zone-Based Minimum Redundancy (NFPA 72 §17.8.3.4)
 # ===========================================================================
 
 MIN_REDUNDANCY_BY_ZONE: dict[ZoneType, int] = {
@@ -915,7 +910,6 @@ MIN_REDUNDANCY_BY_ZONE: dict[ZoneType, int] = {
 
 
 # ===========================================================================
-# V21.2: Vapor Density Tier (Ratio-Based Buoyancy Classification)
 # ===========================================================================
 
 # Molecular weight of dry air at STP (g/mol)
@@ -971,7 +965,6 @@ def vapor_density_tier(molecular_weight: float) -> ElevationTier:
     Reference: IEC 60079-10-1:2015 §B.4, NFPA 497 §4.5
 
     """
-    # V57 FIX (Finding 13): NaN molecular_weight silently returns LOW — NaN <= 0
     # is False, NaN < _MW_HIGH_THRESHOLD is False, NaN <= _MW_LOW_THRESHOLD is False,
     # so the else branch returns LOW. A NaN molecular weight means the gas buoyancy
     # is UNKNOWN and must not be silently classified. Raise ValueError instead.
@@ -996,7 +989,6 @@ def vapor_density_tier(molecular_weight: float) -> ElevationTier:
 
 
 # ===========================================================================
-# V21.2: Room Purge Time (IEC 60079-10-1 Annex B Ventilation Dilution)
 # ===========================================================================
 
 
@@ -1074,7 +1066,6 @@ def room_concentration_at_time(
 
 
 # ===========================================================================
-# V21.2: Burgess-Wheeler LFL Thermal Correction
 # ===========================================================================
 
 
@@ -1116,7 +1107,6 @@ def burgess_wheeler_lfl(
                Bulletin 627, IEC 60079-10-1 Annex B.
 
     """
-    # V53 FIX: lfl_25c must be positive — it's a physical property.
     # Zero or negative LFL has no physical meaning and would bypass
     # zone extent calculations or produce division-by-zero downstream.
     if lfl_25c <= 0.0:
@@ -1132,7 +1122,6 @@ def burgess_wheeler_lfl(
     delta_t = ambient_temp_c - 25.0
 
     # Standard Burgess-Wheeler coefficient
-    # V53 FIX: Removed fabricated "refined" correction (ΔHc/800 scaling).
     # The standard BW formula (Burgess & Wheeler 1929, Zabetakis 1965) is:
     #   LFL_T = LFL_25C × (1 - 0.001824 × ΔT)
     # There is no published basis for scaling the coefficient by ΔHc/800.
@@ -1143,7 +1132,6 @@ def burgess_wheeler_lfl(
     lfl_t = lfl_25c * (1.0 - correction)
 
     # LFL must remain positive.
-    # V31 FIX: The 50% floor is now configurable via lfl_floor_ratio parameter.
     # - lfl_floor_ratio=0.5 (default): backward-compatible, prevents extreme
     #   corrections but may underestimate zone extent at T>200C.
     # - lfl_floor_ratio=None: no floor — physically correct, conservative for
@@ -1155,7 +1143,6 @@ def burgess_wheeler_lfl(
 
 
 # ===========================================================================
-# V21.2: IEC 60079-14 Thermal Margin (Safe Temperature Selection)
 # ===========================================================================
 
 
@@ -1201,7 +1188,6 @@ def _select_temp_class_with_margin(
     else:  # Zone 2/22
         t_safe = autoignition_c - 1.0  # Just strictly below
 
-    # V21.2 Round 4: Extended T-class subdivisions for more granular selection
     # GAP-08: The condition `_T_CLASS_MAX[t_class] <= t_safe` is intentional.
     # IEC 60079-0:2017 §7.3 states: "the maximum surface temperature of
     # the equipment shall not exceed the ignition temperature of the
@@ -1237,7 +1223,6 @@ def _select_temp_class_with_margin(
 
 
 # ===========================================================================
-# V21.2: Spectral Signature Registry (Lazy Load)
 # ===========================================================================
 
 # ── GAP-03: Default medium absorption coefficients ───────────
@@ -1336,7 +1321,6 @@ class SpectralSignatureRegistry:
         # For CO2-band (4.3um): hydrocarbons have strong absorption
         self._signatures = {
             # Methane (CH4)
-            # V30 FIX: alpha_ir3 corrected from 0.8 to 0.4 per HITRAN 2020 data.
             # CH4's dominant IR absorption is at 3.3 µm (ν₃) and 7.7 µm (ν₄).
             # In the CO2-band (4.3 µm), CH4 absorption is weak; the broadband
             # 3-5 µm average was previously 0.8 but this overestimates by ~2×
@@ -1809,7 +1793,6 @@ class SpectralSignatureRegistry:
             # ── Gas mixtures / blends ─────────────────────────────────────
             # Natural Gas (blend ~90% CH₄, 8% C₂H₆, 2% C₃H₈)  CAS 8006-14-2
             # IR1 dominated by CH₄; pipeline gas, utility
-            # V53 FIX: alpha_ir1 was 4.0 — same class of error as V51 LNG fix.
             # Natural Gas is ~90% CH₄ (alpha_ir1=0.05), 8% C₂H₆ (alpha_ir1=0.4),
             # 2% C₃H₈ (alpha_ir1=0.1). Weighted: 0.90×0.05+0.08×0.4+0.02×0.1=0.079.
             # Value 4.0 overestimated IR1 absorption by ~50×, leading to incorrect
@@ -1825,7 +1808,6 @@ class SpectralSignatureRegistry:
             ),
             # LPG (blend ~60% propane / 40% butane)  CAS 68476-85-7
             # Weighted alpha between propane and butane
-            # V48 FIX: alpha_ir3 was 1.0 — NON-CONSERVATIVE. IR3 is the primary
             # detection band for most commercial flame detectors. Component-weighted:
             # 0.6×propane_ir3(1.2) + 0.4×butane_ir3(4.5) = 2.52. Previous value
             # underestimated absorption by 2.5×, meaning the system thought IR3
@@ -1840,7 +1822,6 @@ class SpectralSignatureRegistry:
                 alpha_ir3=2.52,
             ),
             # LNG Vapor (primarily methane at cryogenic release)  CAS 74-82-8-LNG
-            # V51 FIX: alpha_ir1 was 4.5, which is 90× the methane value (0.05).
             # LNG vapor IS methane — spectral absorption coefficients are molecular
             # properties, NOT concentration-dependent. At higher concentration, the
             # optical path increases (more molecules per unit path), but the alpha
@@ -1851,7 +1832,6 @@ class SpectralSignatureRegistry:
             # Weighted average for typical LNG (95% CH₄ + 3% C₂H₆ + 1% C₃H₈):
             #   alpha_ir1 ≈ 0.95×0.05 + 0.03×0.4 + 0.01×0.3 ≈ 0.066
             # Using 0.07 (slightly conservative for trace higher hydrocarbons).
-            # V29 FIX: alpha_uv reduced from 0.1 to 0.03. Methane is essentially
             # transparent in the UV range used by flame detectors (185-260 nm);
             # its absorption edge is below 145 nm. The previous 0.1 value was
             # copied from the parent methane entry without physical justification.
@@ -1909,7 +1889,6 @@ class SpectralSignatureRegistry:
 
 
 # ===========================================================================
-# V21.2: Volumetric Medium (Gaseous/Smoke Obstruction)
 # ===========================================================================
 
 
@@ -2069,7 +2048,6 @@ class VolumetricMedium(BaseModel):
 
 
 # ===========================================================================
-# V21.2: Beer-Lambert Volumetric Transmittance
 # ===========================================================================
 
 

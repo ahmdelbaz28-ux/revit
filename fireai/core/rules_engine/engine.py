@@ -263,7 +263,6 @@ class RulesEngine:
         # Alpha network: fact_type → list of rule_ids that match
         self._alpha_index: dict[str, list[str]] = {}
 
-        # V160 FIX — fact_type → dict[fact_id → Fact] index.
         # Root-cause fix for BUG-V95-ENGINE-02 performance regression:
         # get_facts(fact_type) was O(N) over ALL facts; rule actions
         # that call get_facts() inside their action loop turned the
@@ -349,7 +348,6 @@ class RulesEngine:
                 self._retract_fact_internal(fact.fact_id, trigger_tms=True)
 
             self._facts[fact.fact_id] = fact
-            # V160 FIX: maintain _facts_by_type index in lockstep with _facts.
             # If the fact's type changes between retract and re-assert (rare
             # but possible if the same fact_id is reused with a different
             # fact_type), _retract_fact_internal already removed it from the
@@ -375,7 +373,6 @@ class RulesEngine:
 
         fact = self._facts.pop(fact_id)
 
-        # V160 FIX: remove from _facts_by_type index in lockstep with _facts.
         # Use .pop with default to avoid KeyError if the type bucket was
         # already cleared by a parallel code path (defensive — should not
         # happen given the lock, but costs nothing).
@@ -724,7 +721,6 @@ class RulesEngine:
         """
         with self._lock:
             self._facts.clear()
-            # V160 FIX: clear the by-type index in lockstep with _facts.
             self._facts_by_type.clear()
             self._results.clear()
             self._audit_log.clear()

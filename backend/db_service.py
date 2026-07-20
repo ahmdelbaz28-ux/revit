@@ -48,7 +48,6 @@ from core.models import (
 logger = logging.getLogger(__name__)
 
 
-# V113 FIX: Sort field whitelist to prevent injection.
 # The old _normalize_sort blindly converted any string to snake_case
 # using regex, allowing arbitrary sort keys like "__class__",
 # "__dict__", or other Python dunder attributes. While the sort key
@@ -401,7 +400,6 @@ class DatabaseService:
                 return False
 
             # Soft-delete all elements in this project
-            # V261 FIX (N+1 elimination): Batch-fetch project IDs in ONE query
             # instead of calling _get_element_project_id() per element in a loop.
             elements = self._data_model.get_all_elements()
             element_ids = [e.element_id for e in elements]
@@ -476,7 +474,6 @@ class DatabaseService:
             return row[0] if row else 0
         except Exception:
             # Fallback: count from in-memory elements with matching project_id
-            # V261 FIX (N+1 elimination): Batch-fetch project IDs in ONE query
             elements = self._data_model.get_all_elements()
             element_ids = [e.element_id for e in elements]
             project_id_map = self._batch_get_element_project_ids(element_ids)
@@ -652,7 +649,6 @@ class DatabaseService:
             end = start + page_size
             paginated = elements[start:end]
 
-            # V261 FIX (N+1 elimination): Batch-fetch project IDs in ONE query
             # instead of calling _get_element_project_id() per element in a loop.
             # Old: 1 + page_size queries (21 queries for page_size=20)
             # New: 1 query total (regardless of page_size)
@@ -932,7 +928,6 @@ class DatabaseService:
                 connection_id=connection_id,
             )
 
-            # V188 FIX: Use immutable update pattern — construct NEW frozen
             # element instances with the extended relationships tuple.
             # ``dataclasses.replace()`` returns a new frozen dataclass with
             # the specified field replaced; the original is untouched.
@@ -965,7 +960,6 @@ class DatabaseService:
                 logger.exception("Error persisting connection: %s", e)
                 raise RuntimeError(f"Failed to persist connection: {e}")
 
-            # V191 FIX: The V188 code put both update_element calls in ONE
             # try/except block. If the first raised, the second was SKIPPED —
             # leaving the cache inconsistent (to_element updated, from_element
             # not). Root-cause fix: make each update_element call independent
@@ -1146,7 +1140,6 @@ class DatabaseService:
                 )
                 row = cursor.fetchone()
             except sqlite3.Error as e:
-                # V191: DB error on SELECT is NOT "not found" — raise
                 raise RuntimeError(f"Database error checking connection {connection_id}: {e}") from e
 
             if not row:
@@ -1164,7 +1157,6 @@ class DatabaseService:
                 )
                 conn.commit()
             except sqlite3.Error as e:
-                # V191: DB error on DELETE is a real failure — raise, don't return False
                 raise RuntimeError(f"Database error deleting connection {connection_id}: {e}") from e
 
             # Phase 3: Update the denormalized relationships cache on both
@@ -1195,7 +1187,6 @@ class DatabaseService:
                         eid,
                         {"relationships": [r.to_dict() for r in new_rels]},
                     )
-                    # V191: Check return value — update_element returns False
                     # on failure (element not found, DB error). Log if so.
                     if not success:
                         logger.warning(  # NOSONAR
@@ -1293,7 +1284,6 @@ class DatabaseService:
         non-existent self._data_model.conflicts dict.
         """
         with self._service_lock:
-            # V129 FIX: Get conflicts via detect_conflicts() which queries
             # both the conflicts SQL table and detects new ones
             all_conflicts = self._data_model.detect_conflicts()
 

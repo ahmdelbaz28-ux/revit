@@ -111,7 +111,6 @@ def validate_project(data: dict[str, Any]) -> dict[str, Any]:
     violations = _validate_fields(data, required, optional)
     if violations:
         logger.critical("Project contract violation: %s — data was: %s", violations, list(data.keys()))
-        # V115: Log but do NOT raise — both naming conventions are valid in production.
         # Raising would break ALL System A endpoints that use database.py.
         logger.warning(
             "Contract violation logged but not raised. "  # NOSONAR — S1192: duplicated literal acceptable in this localized context

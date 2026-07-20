@@ -245,7 +245,6 @@ def calculate_aset(  # NOSONAR — S3776: cognitive complexity is inherent to th
         aset = float("inf")
         limiting_factor = "none"
 
-        # V57 FIX: NaN/Inf in time-series data bypasses tenability checks.
         # NaN <= threshold is False → untenable condition never detected → ASET=inf.
         # Building PASSES when conditions are actually unknown — potentially lethal.
         # Per Life-Safety Rule 5: conservative interpretation (more detectors = safer).
@@ -286,7 +285,6 @@ def calculate_aset(  # NOSONAR — S3776: cognitive complexity is inherent to th
                         limiting_factor = f"CO_{co:.0f}ppm_exceeds_{max_co}ppm"
                     break
 
-        # V57: If NaN was detected in any series, ASET is unreliable.
         # Fail-safe: set ASET=0 (assume immediately untenable).
         if _nan_detected_in_series:
             import logging as _nan_log
@@ -334,7 +332,6 @@ def calculate_aset(  # NOSONAR — S3776: cognitive complexity is inherent to th
 
     # === Mode 2: Estimate from smoke fill time (APPROXIMATE) ===
     if smoke_fill_time_s is not None and smoke_fill_time_s > 0:
-        # V59 FIX: NaN/Inf in smoke_fill_time_s produces NaN descent_rate,
         # NaN additional_time, and NaN ASET. The ASET > RSET check treats
         # NaN > value as False (fail-safe), but the actual ASET is meaningless.
         if not math.isfinite(smoke_fill_time_s):
@@ -444,7 +441,6 @@ def calculate_rset(  # NOSONAR — S3776: cognitive complexity is inherent to th
     """
     occ = occupancy_type.lower()
     if occ not in PREMOVEMENT_DELAYS:
-        # V48 FIX: Unknown occupancy type must NOT default to "business" (lowest risk).
         # A hospital silently evaluated as "business" would have RSET underestimated
         # by ~50%, allowing a building that should FAIL to PASS. Now uses the MOST
         # conservative occupancy type and emits a CRITICAL warning.
@@ -462,7 +458,6 @@ def calculate_rset(  # NOSONAR — S3776: cognitive complexity is inherent to th
     # Premovement delay
     if premovement_delay_s is not None:
         pm_delay = float(premovement_delay_s)
-        # V57 FIX: NaN/Inf in premovement delay propagates through RSET.
         # max(NaN, 0.2) = NaN in Python (implementation-dependent). NaN RSET
         # makes ASET > RSET check meaningless.
         if not math.isfinite(pm_delay):
@@ -480,7 +475,6 @@ def calculate_rset(  # NOSONAR — S3776: cognitive complexity is inherent to th
     # Walking speed — reduce for high population density
     if walking_speed_mps is not None:
         speed = float(walking_speed_mps)
-        # V57 FIX: NaN walking speed → NaN travel_time → NaN RSET → meaningless
         if not math.isfinite(speed):
             import logging as _nan_log3
 
@@ -503,7 +497,6 @@ def calculate_rset(  # NOSONAR — S3776: cognitive complexity is inherent to th
     speed = max(speed, 0.2)  # Absolute minimum (wheelchair, injured)
 
     # Travel time
-    # V59 FIX: NaN/Inf travel_distance_m produces NaN travel_time, NaN RSET.
     # NaN RSET makes ASET > RSET comparison meaningless (NaN > value = False,
     # fail-safe, but the safety margin is lost).
     if not math.isfinite(travel_distance_m) or travel_distance_m <= 0:
@@ -521,14 +514,11 @@ def calculate_rset(  # NOSONAR — S3776: cognitive complexity is inherent to th
         travel_time = travel_distance_m / speed
 
     # Total RSET
-    # V43 FIX: Include detection time per SFPE Engineering Guide and PD 7974-6:2019.
     # RSET = detection_time + premovement_delay + travel_time.
     # Previously omitted detection time, underestimating RSET by 60-300s.
     # A building that should FAIL ASET > RSET × SF could PASS, costing lives.
-    # V29 FIX: detection_time_s=None defaults to 0.0 for backward compatibility.
     # The V48 fix changed None→60.0 which broke the API contract: existing callers
     # that don't pass detection_time_s expect RSET = premovement + travel_time only.
-    # V59 HARDPACK FIX: detection_time_s=None now uses conservative 60.0s default (hard gate).
     # The previous 0.0 default silently underestimated RSET, creating a false-PASS
     # risk. Callers MUST provide an explicit detection time.
     # The ASET-RSET comparison in validate_aset_vs_rset() applies safety_factor >= 1.5
@@ -566,7 +556,6 @@ def calculate_rset(  # NOSONAR — S3776: cognitive complexity is inherent to th
     # Safety factor
     if safety_factor is not None:
         sf = float(safety_factor)
-        # V57 FIX: NaN safety_factor makes rset_with_safety = RSET * NaN = NaN.
         # ASET > NaN is False (fail-safe) but the verdict formatting crashes.
         if not math.isfinite(sf) or sf < 1.0:
             import logging as _nan_log4
@@ -631,7 +620,6 @@ def validate_aset_vs_rset(
     sf = override_safety_factor if override_safety_factor is not None else rset_result.safety_factor
     rset_with_sf = rset * sf
 
-    # V57 FIX: NaN/Inf in ASET or RSET makes margin comparison meaningless.
     # NaN > 0 is False (fail-safe) but verdict formatting crashes with division.
     if not math.isfinite(aset) or not math.isfinite(rset) or not math.isfinite(sf):
         is_safe = False
@@ -817,7 +805,6 @@ def perform_aset_rset_analysis(  # NOSONAR — S3776: cognitive complexity is in
         rset_with_safety = rset_seconds * sf
 
         # Verify ASET > RSET with safety factor
-        # V20.2 FIX #19: Was passing rset_with_safety as rset_seconds AND sf
         # as safety_factor to verify_aset_rset(), which internally computes
         # required_aset = rset_seconds * safety_factor. This resulted in:
         #   required_aset = (rset * sf) * sf = rset * sf²

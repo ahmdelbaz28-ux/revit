@@ -388,7 +388,6 @@ class FireAISystem:
             details_dict=details,
         )
 
-        # V25: Also log to SHA-256 Hash Chain Audit for tamper-evident forensic trail.
         # This creates a dual-audit system: AuditStore for operational logging,
         # HashChainAuditStore for tamper-evident forensic chain per NFPA 72 §10.6.
         try:
@@ -488,7 +487,6 @@ class FireAISystem:
             details_dict=floor_details,
         )
 
-        # V25: After floor analysis, automatically trigger the full integration
         # pipeline if we have compliant rooms. This wires cable routing,
         # digital twin sync, acoustics, and multi-floor orchestration into
         # the standard analysis path — they were previously unreachable.

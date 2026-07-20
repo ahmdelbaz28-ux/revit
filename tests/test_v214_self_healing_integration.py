@@ -21,7 +21,6 @@ import pytest
 # Set dev env + audit key before importing
 os.environ.setdefault("FIREAI_ENV", "development")
 os.environ.setdefault("QOMN_AUDIT_SECRET_KEY", "test_secret_key_for_v214_tests_32bytes")
-# V214: Do NOT override QOMN_AUDIT_LOG_PATH — the old test_self_healing_engine.py
 # expects the default path "qomn_fire_healing_audit.jsonl" in the CWD.
 # Overriding it breaks the old test's file existence check.
 # The fixture below truncates the file between tests for isolation.
@@ -174,7 +173,6 @@ class TestV214SelfHealingAuditTrail:
 
         health = global_circuit_breaker.health()
         # The circuit breaker should have registered at least 1 event
-        # V214: field name is "event_count" not "total_events"
         assert health.get("event_count", 0) > 0 or health.get("weighted_sum", 0) > 0
 
         global_circuit_breaker.reset()

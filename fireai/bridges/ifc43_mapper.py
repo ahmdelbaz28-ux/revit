@@ -270,7 +270,6 @@ class IFC43Mapper:
         # SHA-256 → first 16 bytes (128 bits)
         digest = hashlib.sha256(seed.encode("utf-8")).digest()[:16]
 
-        # V137 F-7: IFC custom base64 alphabet
         # Per IFC spec: uses "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_$"
         # instead of standard "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
         _IFC_BASE64_ALPHABET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_$"
@@ -326,7 +325,6 @@ class IFC43Mapper:
         # Lookup IFC 4.3 element type
         ifc_type_enum = FIREAI_TO_IFC43_MAP.get(fireai_type)
         if ifc_type_enum is None:
-            # V137 F-8 FIX: Raise ValueError instead of silently defaulting to SMOKE_DETECTOR.
             # The OLD code silently mapped unknown types to smoke — a heat detector
             # could be exported as smoke, producing wrong physics in downstream BIM tools.
             # Per agent.md Rule 12 (Safety-First): fail LOUD, not silent.

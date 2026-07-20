@@ -46,7 +46,7 @@ async def agent_websocket_endpoint(
             await websocket.close(code=4003)
             return
     except Exception as e:
-        logger.error("Error validating agent API Key: %s", e)
+        logger.exception("Error validating agent API Key: %s", e)
         await websocket.close(code=4003)
         return
 

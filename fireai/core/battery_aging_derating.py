@@ -392,13 +392,11 @@ def _compute_discharge_rate_correction(
         Multiply rated Ah by this factor to get effective capacity.
 
     """
-    # V65 FIX: Zero/negative battery capacity or load is physically impossible.
     # Old code silently returned 1.0, hiding data errors upstream. A zero
     # battery capacity indicates corrupted data that must be flagged, not
     # silently accepted. Returning 1.0 would make size_battery() compute
     # required_ah = load / (derating * 1.0), then adequacy fails at
     # installed_ah=0 >= required_ah — but the data error is hidden.
-    # V79 FIX: Added NaN/Inf guard. NaN <= 0 → False in IEEE-754, so NaN
     # battery_ah_20h bypasses the check, then min(NaN, 1.0) returns 1.0 in
     # CPython (NaN < 1.0 is False), masking the NaN with a seemingly valid
     # correction factor. This propagates NaN through battery sizing.
@@ -571,7 +569,6 @@ def size_battery(  # NOSONAR — S3776: cognitive complexity is inherent to the 
             f"standby={standby_load_amps}, alarm={alarm_load_amps}. "
             f"NaN/Inf inputs indicate data corruption upstream."
         )
-    # V131 FIX: Negative load currents produce negative Ah consumption,
     # making any battery appear adequate. Negative currents are physically
     # impossible and indicate data corruption or sign error upstream.
     # Without this check: standby=-0.5A → standby_ah=-12 → total_ah<0 →
@@ -582,7 +579,6 @@ def size_battery(  # NOSONAR — S3776: cognitive complexity is inherent to the 
             f"standby={standby_load_amps}A, alarm={alarm_load_amps}A. "
             f"Negative loads indicate data corruption or sign error upstream."
         )
-    # V79 FIX: Validate remaining numeric inputs for NaN/Inf.
     # NaN standby_hours → standby_ah = NaN → confusing results.
     # NaN min_temperature_c → temp_derating falls through comparisons → NaN.
     for _name, _val in [("standby_hours", standby_hours),
@@ -665,7 +661,6 @@ def size_battery(  # NOSONAR — S3776: cognitive complexity is inherent to the 
         required_ah *= 1.0 + safety_margin_pct / 100.0
 
     # --- Step 8: Compare with installed capacity ---
-    # V20.2 FIX #14: Battery adequacy check was double-applying derating.
     # Old code: is_adequate = usable_ah >= required_ah
     #   where usable_ah = installed * derating, required_ah = load / derating
     #   This is equivalent to: installed >= load / derating^2 (WRONG)
@@ -681,7 +676,6 @@ def size_battery(  # NOSONAR — S3776: cognitive complexity is inherent to the 
         installed_ah = battery.amp_hour_20h
         usable_ah = installed_ah * combined_derating
         is_adequate = installed_ah >= required_ah  # V20.2 FIX #14: was usable_ah >= required_ah
-        # V76 HIGH-06 FIX: CRITICAL violations must override is_adequate.
         # A battery may have sufficient capacity but still violate NFPA 72
         # (e.g., standby < 24h, alarm < 5min). These are life-safety violations
         # that must not be masked by is_adequate=True.

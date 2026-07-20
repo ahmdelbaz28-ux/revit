@@ -31,7 +31,6 @@ from shapely.geometry import Point, Polygon
 
 logger = logging.getLogger(__name__)
 
-# V109 FIX: Conditional imports with fallback to inline stubs.
 # Try to import from fireai.core equivalents first; fall back to inline
 # dataclasses when the fireai package is not on the Python path.
 
@@ -78,7 +77,6 @@ class Room:
     ceiling_height: float = 3.0
     ceiling_type: str = "SMOOTH"
     geometry_unresolved: bool = field(default=False, repr=False)
-    # V111: When True, downstream NFPA analysis MUST skip this room —
     # geometry is a placeholder and compliance results would be INVALID.
 
 @dataclass
@@ -437,7 +435,6 @@ class IFCBridge:
                     if placement:
                         x, y, _z = self._resolve_placement(placement)
                         if x > 0 or y > 0:  # Valid placement
-                            # V111 CRITICAL FIX: Do NOT create fabricated geometry.
                             # A 10x10m box around a placement point is NOT real room
                             # geometry — running NFPA compliance on it produces FALSE
                             # results. Mark as unresolved instead.
@@ -453,7 +450,6 @@ class IFCBridge:
                     logger.warning("IFC placement fallback failed for space %s: %s",
                                    getattr(space, 'GlobalId', space.id()), exc)
 
-            # V111 CRITICAL FIX: Do NOT fall back to a default 10x10m room.
             # Previous code assigned a fabricated polygon [(0,0),(10,0),(10,10),(0,10)]
             # when ALL geometry extraction methods failed. This means:
             # - A room with completely unparseable geometry gets FAKE 100m²
@@ -547,7 +543,6 @@ def run_compliance_on_ifc(ifc_path: str) -> dict:
     Complete binding function: takes IFC path, returns compliance report.
     Uses bridge then Oracle.
     """
-    # V108 FIX: Inline compliance verification (ComplianceOracle was from non-existent validation package)
     bridge = IFCBridge(ifc_path)
     rooms, devices, obstructions = bridge.extract_and_normalize()
 

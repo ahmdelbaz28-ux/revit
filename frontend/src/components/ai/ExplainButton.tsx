@@ -94,7 +94,7 @@ export function ExplainButton({
                                                                 {t("ai.aiExplanation", "AI Explanation")}
                                                         </span>
                                                 </div>
-                                                <button
+                                                <button type="button"
                                                         onClick={() => setIsOpen(false)}
                                                         className="text-muted-foreground hover:text-foreground/90"
                                                         aria-label={t("common.close", "Close")}

@@ -33,7 +33,6 @@ from parsers._path_security import (
 )
 from qomn_fire.core.errors import FormatError, Result
 
-# V128: Allowed extensions and size cap for format detector
 _FORMAT_MAX_FILE_SIZE_BYTES = int(
     os.getenv("FIREAI_FORMAT_MAX_FILE_SIZE_BYTES", str(100 * 1024 * 1024))  # 100 MB
 )
@@ -69,7 +68,6 @@ class FormatDetector:
         V128 SECURITY: Validates path BEFORE any file I/O.
         Closes path traversal, null-byte, argument injection, and oversized file DoS.
         """
-        # V128 SECURITY: Validate path BEFORE any file I/O.
         try:
             safe_path = validate_input_path(
                 filepath,
@@ -90,7 +88,6 @@ class FormatDetector:
                 remedy="Provide a path within FIREAI_ALLOWED_UPLOAD_DIRS with valid BIM extension."
             ))
 
-        # V128 SECURITY: Reject oversized files before any further work
         try:
             validate_file_size(
                 safe_path,

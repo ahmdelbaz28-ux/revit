@@ -50,7 +50,7 @@ function Connections() {
 							: t("common.loading")}
 					</p>
 				</div>
-				<button
+				<button type="button"
 					onClick={() => setShowCreateModal(true)}
 					className="inline-flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary text-white text-sm font-medium rounded-lg transition-colors"
 				>
@@ -81,7 +81,7 @@ function Connections() {
 					className="bg-card border border-border text-white text-sm rounded-lg px-3 py-2 focus:border-primary focus:outline-none w-full sm:w-72"
 				/>
 				{elementFilter && (
-					<button
+					<button type="button"
 						onClick={() => setElementFilter("")}
 						className="text-sm text-muted-foreground hover:text-white"
 					>
@@ -206,7 +206,7 @@ function Connections() {
 												)}
 											</td>
 											<td className="px-4 py-3 text-right">
-												<button
+												<button type="button"
 													onClick={() => setDeleteTarget(conn.connection_id)}
 													className="text-muted-foreground hover:text-danger transition-colors"
 													title="Delete"
@@ -257,13 +257,13 @@ function Connections() {
 							{t("connectionsPage.deleteConfirmation")}
 						</p>
 						<div className="flex justify-end gap-3">
-							<button
+							<button type="button"
 								onClick={() => setDeleteTarget(null)}
 								className="px-4 py-2 text-sm text-foreground/90 hover:text-white transition-colors"
 							>
 								{t("common.cancel")}
 							</button>
-							<button
+							<button type="button"
 								onClick={() => deleteMutation.mutate(deleteTarget)}
 								disabled={deleteMutation.isPending}
 								className="px-4 py-2 bg-danger hover:bg-slate-500 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
@@ -374,13 +374,13 @@ function CreateConnectionModal({
 				</div>
 
 				<div className="flex justify-end gap-3 mt-6">
-					<button
+					<button type="button"
 						onClick={onClose}
 						className="px-4 py-2 text-sm text-foreground/90 hover:text-white transition-colors"
 					>
 						{t("common.cancel")}
 					</button>
-					<button
+					<button type="button"
 						onClick={() => createMutation.mutate()}
 						disabled={
 							!fromId || !toId || !relationshipType || createMutation.isPending

@@ -127,12 +127,8 @@ AMPACITY_TABLE_NEC_310_16 = {
 # Table from NEC 310.15(B)(2)(A):
 AMBIENT_TEMP_CORRECTION_FACTORS = {
     # (ambient_degC): (60 degC rated, 75 degC rated, 90 degC rated)
-    # V62 FIX: Added 60 degC column per NEC 310.15(B)(2)(A).
     # Previously, 60 degC rated conductors used the 75 degC column,
     # overestimating ampacity by up to 7.3% — potential fire hazard.
-    # V65 FIX: Corrected 30°C entry for 60°C column from 0.82 to 1.00.
-    # V66 FIX: Corrected ALL entries per NEC 310.15(B)(2)(A) verified values.
-    # V65 had systematically wrong 75°C and 90°C columns — each value
     # was the NEC value for 5°C LOWER temperature, overstating ampacity
     # by up to 19% for 60°C-rated wire at 50°C ambient (Egyptian summer).
     # Key semantics: each key represents the UPPER bound of the NEC range.
@@ -323,7 +319,6 @@ def get_detector_spacing(
         SpacingResult with max spacing, coverage radius, and NFPA reference.
 
     """
-    # V96 FIX: Invalid ceiling height must raise ValueError, not return
     # a valid-looking SpacingResult. The old code returned max_spacing_m=3.00
     # (a real NFPA table value) with table_row_used="fallback_conservative",
     # but no downstream code checks that field. A NaN/negative ceiling height
@@ -382,7 +377,6 @@ def estimate_detector_count(
     spacing_result = get_detector_spacing(ceiling_height_m, detector_type)
     radius_m = spacing_result.coverage_radius_m
 
-    # V96 FIX: Invalid room area must NOT return a success-like result.
     # Returning min_detector_count=1 for NaN/negative area is the
     # "failure returns success" anti-pattern — downstream code sees
     # count >= 1 and treats the room as covered. Fail-safe: return
@@ -502,7 +496,6 @@ def calculate_battery(  # NOSONAR — S3776: cognitive complexity is inherent to
         raise ValueError(f"alarm_current_a must be non-negative finite, got {alarm_current_a}")
     if standby_current_a == 0 and alarm_current_a == 0:
         raise ValueError("Both standby and alarm current cannot be zero — no load specified")
-    # V69-6 FIX: Validate safety_margin, standby_hours, alarm_minutes
     # A negative safety_margin reduces required capacity — life safety hazard.
     # standby_hours ≤ 0 or alarm_minutes ≤ 0 violates NFPA 72 §10.6.7.
     if not math.isfinite(safety_margin) or safety_margin < 0:
@@ -605,7 +598,6 @@ def temperature_corrected_resistance(
         raise ValueError(f"operating_temp_c must be finite and >= -50, got {operating_temp_c}")
 
     corrected = r_at_20c * (1.0 + COPPER_TEMP_COEFFICIENT * (operating_temp_c - TABLE8_REFERENCE_TEMP_C))
-    # V65 SAFETY: Negative resistance means temperature factor made R negative.
     # This occurs at extremely cold temperatures (below ~-234°C for copper).
     # Silently clamping to 0.0 is DANGEROUS — it makes voltage drop = 0V,
     # which always passes compliance. A 0V drop on a fire alarm circuit is
@@ -676,7 +668,6 @@ def calculate_voltage_drop(
         raise ValueError(f"circuit_length_m must be non-negative finite, got {circuit_length_m}")
     if not math.isfinite(ambient_temperature_c) or ambient_temperature_c < -50:
         raise ValueError(f"ambient_temperature_c must be finite and >= -50, got {ambient_temperature_c}")
-    # V66 FIX: Validate ps_voltage — negative ps_voltage produces negative
     # drop_pct which always passes compliance check (NaN <= max == False is safe,
     # but negative ps_voltage <= 10.0 == True is dangerous).
     if not math.isfinite(ps_voltage) or ps_voltage <= 0:
@@ -691,7 +682,6 @@ def calculate_voltage_drop(
 
     r_at_20c = AWG_RESISTANCE_OHM_PER_KM[gauge]
 
-    # V59 FIX: Apply temperature correction to resistance
     # Per NEC practice, use operating temperature resistance for
     # voltage drop calculations, NOT the 20 degC reference value.
     r_per_km = temperature_corrected_resistance(r_at_20c, ambient_temperature_c)
@@ -779,7 +769,6 @@ def get_ambient_derating_factor(
     if conductor_temp_rating_c not in (60, 75, 90):
         raise ValueError(f"conductor_temp_rating_c must be 60, 75, or 90, got {conductor_temp_rating_c}")
 
-    # V65 FIX: Removed early return for temps ≤ 30°C. Previously, this
     # returned 1.0 for ALL conductor ratings at ≤30°C, but the actual NEC
     # 310.15(B)(2)(A) table has non-1.0 values for some ratings below 30°C.
     # For example, at 25°C ambient with 60°C-rated wire, the correct factor
@@ -788,7 +777,6 @@ def get_ambient_derating_factor(
 
     # Look up in the correction table
     # Find the nearest temperature entry at or below the requested temp
-    # V62 FIX: Added 60 degC column support. Previously, 60 degC rated
     # conductors incorrectly used the 75 degC column, overstating ampacity.
     col_idx = {60: 0, 75: 1, 90: 2}[int(conductor_temp_rating_c)]
 
@@ -920,7 +908,6 @@ def check_ampacity(
         base_ampacity = amp_90
 
     if base_ampacity <= 0:
-        # V63 FIX: AWG 18/16 have NO ampacity rating in the 60°C and
         # 75°C columns per NEC 310.16. Previously, the code fell through
         # to max(amp_60, amp_75, amp_90), using the 90°C column value
         # (e.g., 14A for AWG 18) for a 60°C rated conductor.
@@ -1010,7 +997,6 @@ def verify_fault_isolator_placement(devices: list[dict[str, Any]]) -> dict[str, 
 
     """
     if not devices:
-        # V69-4 FIX: Empty device list is NOT compliant — fail-safe
         # Empty list could indicate a data extraction failure (parser bug),
         # not that the circuit is genuinely compliant.
         return {
@@ -1041,7 +1027,6 @@ def verify_fault_isolator_placement(devices: list[dict[str, Any]]) -> dict[str, 
 
         # Track circuit changes
         if current_circuit != circuit:
-            # V69-3 FIX: Check multi-zone segment before resetting
             if len(segment_zone_ids) > 1:
                 violations.append(
                     {
@@ -1078,7 +1063,6 @@ def verify_fault_isolator_placement(devices: list[dict[str, Any]]) -> dict[str, 
             current_circuit = circuit
 
         if "isolator" in dev_type:
-            # V69-3 FIX: Check multi-zone segment before resetting at isolator
             if len(segment_zone_ids) > 1:
                 violations.append(
                     {
@@ -1120,7 +1104,6 @@ def verify_fault_isolator_placement(devices: list[dict[str, Any]]) -> dict[str, 
             if zone:
                 segment_zone_ids.add(zone)
 
-    # V69-3 FIX: Check multi-zone in last segment too
     if len(segment_zone_ids) > 1:
         violations.append(
             {

@@ -198,11 +198,9 @@ async def start_workflow(
     LIFE-SAFETY: skip_human_review=True should NEVER be used in production.
     It bypasses the PE review gate required by NFPA 72.
     """
-    # V113: Path traversal defense-in-depth — validate at router level
     _validate_file_path(file_path)
 
     if skip_human_review:
-        # V114 FIX: Block skip_human_review in production environments.
         # NFPA 72 requires PE review for all fire alarm designs.
         # Allowing this in production is a direct violation of NFPA 72.
         env = os.getenv("FIREAI_ENV", os.getenv("NODE_ENV", "production")).lower()

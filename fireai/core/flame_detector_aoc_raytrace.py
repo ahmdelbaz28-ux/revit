@@ -169,7 +169,6 @@ class MultiDetectorCoverageResult:
 
 
 # ---------------------------------------------------------------------------
-# V21 Result dataclasses
 # ---------------------------------------------------------------------------
 
 
@@ -223,7 +222,6 @@ class CoverageResult:
         if self.covered_points == self.total_points:
             return 100.00  # True full coverage
         rounded_pct = round(raw_pct, 2)
-        # V59: If rounding masks <100% as 100%, return the raw value with more precision
         if rounded_pct >= 100.0 and raw_pct < 100.0:
             return round(raw_pct, 4)  # Show 4 decimal places to reveal the gap
         return rounded_pct
@@ -419,7 +417,6 @@ class FlameDetectorAOCRayTrace:
     @staticmethod
     def _sensitivity_v21(distance_m: float, rated_range: float) -> float:
         """Fix #19: Inverse square law, capped at 1.0 for near distances."""
-        # V57 FIX (Finding 10): NaN distance bypasses guards — NaN <= 0 is False,
         # NaN <= rated_range is False, so NaN propagates to ratio = rated_range/NaN
         # = NaN, then NaN*NaN = NaN returned as sensitivity. Fail-safe: return 0.0.
         if not math.isfinite(distance_m):
@@ -485,7 +482,6 @@ class FlameDetectorAOCRayTrace:
         warnings: list[str] = []
         volumetric_media = volumetric_media or []
 
-        # V59 FIX (Finding 9): Check detector geometry for NaN/Inf
         # If the detector's position or orientation contains NaN, ALL coverage
         # calculations will be meaningless. Previously this was silently ignored
         # — NaN position → NaN distances which ARE caught by the isfinite guard,
@@ -544,7 +540,6 @@ class FlameDetectorAOCRayTrace:
             dz = tgt[2] - src[2]
             dist = math.sqrt(dx * dx + dy * dy + dz * dz)
 
-            # V57 FIX (Finding 14): NaN dist bypasses fast-reject — NaN > X is False,
             # so NaN distance is never rejected and proceeds to AOC/sensitivity
             # checks, producing NaN results. Reject non-finite distances immediately.
             if not math.isfinite(dist):
@@ -557,7 +552,6 @@ class FlameDetectorAOCRayTrace:
             if not self._in_aoc_v21(detector, tgt):
                 continue
 
-            # V21.2: Spectral transmittance per band (solid + volumetric)
             best_transmittance = 0.0
             for band in detector.spectral_bands:
                 t = self._ray_spectral_transmittance_v21(src, tgt, obstructions, volumetric_media, band)  # type: ignore[arg-type]
@@ -601,7 +595,6 @@ class FlameDetectorAOCRayTrace:
         volumetric_media = volumetric_media or []
         env_context = env_context or EnvironmentalContext()
         fouling = env_context.lens_fouling_factor
-        # V57 FIX (Finding 9): NaN fouling bypasses attenuation — NaN < 1.0 is False,
         # so the fouling attenuation block is skipped entirely. This means a NaN
         # fouling factor results in ZERO attenuation applied, as if the lens were
         # pristine. Use worst-case fouling (0.5) as conservative default.
@@ -621,7 +614,6 @@ class FlameDetectorAOCRayTrace:
 
         for det in detectors:
             result = self.analyse_single_v21(det, target_grid, obstructions, volumetric_media)
-            # V22: Apply lens fouling attenuation to spectral transmittance
             if fouling < 1.0:
                 fouled_map = {k: round(v * fouling, 4) for k, v in result.spectral_transmittance_map.items()}
                 # Re-evaluate covered points after fouling
@@ -671,8 +663,6 @@ class FlameDetectorAOCRayTrace:
                 "min_redundancy >= 2 (FM Global DS 5-48 §3.1)."
             )
 
-        # V22: Zone-based minimum redundancy check
-        # V54 FIX (V48 #5): Use jurisdiction-aware redundancy when env_context
         # available. SAUDI_HCIS requires 1oo2 for Zone 2, while IEC only requires 1.
         # Without this, a Saudi installation in Zone 2 could PASS with 1 detector
         # but FAIL the safety audit engine — conflicting results.
@@ -850,7 +840,6 @@ class FlameDetectorAOCRayTrace:
         dz = target_3d[2] - detector.position[2]
         distance = math.sqrt(dx * dx + dy * dy + dz * dz)
 
-        # V58 HIGH: NaN distance bypasses all coverage classification
         if not math.isfinite(distance):
             return RayTracePointLegacy(
                 target=(target_3d[0], target_3d[1]),
@@ -894,7 +883,6 @@ class FlameDetectorAOCRayTrace:
             sensitivity = (detector.rated_range_m / distance) ** 2
         sensitivity *= detector.sensitivity_factor
 
-        # V58 HIGH: NaN sensitivity bypasses BELOW_SENSITIVITY classification
         if not math.isfinite(sensitivity):
             sensitivity = 0.0
 

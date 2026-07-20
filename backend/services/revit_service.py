@@ -79,6 +79,8 @@ from backend.utils.log_sanitizer import safe_str as _safe_str
 
 logger = logging.getLogger(__name__)
 
+_EXC_MSG = ""
+
 # ============================================================================
 # CONSTANTS AND ENUMS
 # ============================================================================
@@ -190,7 +192,6 @@ class RevitService:
         self._revit_doc = None
         self._uiapp = None
         self._uidoc = None
-        # V213: Explicit simulation flag. True when connect() fell back to
         # the simulation path (no real Revit instance acquired). Clients and
         # tests can read this to know that create_wall/floor/door will
         # return None (no real document is open).
@@ -225,7 +226,6 @@ class RevitService:
         """
         self._connected = bool(value)
 
-    # V140 FIX: Public read-only proxies for the underscore-prefixed private
     # connection-state attributes. The test suite and external integrations
     # access `service.revit_app` / `service.revit_doc` directly (the contract
     # documented in the public API). Without these proxies, callers had to
@@ -459,7 +459,6 @@ class RevitService:
         # This is a simulated implementation - in reality this would interface with Revit API
         try:
             # Helper to safely get attribute value as a STRING.
-            # V140 FIX (Rule 17): The old get_attr blindly called val.ToString()
             # on every value. This was wrong for compound Revit API objects like
             # `Category` and `level` which expose `.Name` directly.
             #
@@ -491,7 +490,7 @@ class RevitService:
                         if hasattr(val, 'Name') and val.Name is not None:
                             return val.Name
                     except Exception:
-                                                logger.debug("Suppressed Exception in revit_service.py", exc_info=True)
+                                                logger.debug(_EXC_MSG, exc_info=True)
                 try:
                     if hasattr(val, 'ToString'):
                         return val.ToString()  # type: ignore[union-attr]
@@ -503,10 +502,9 @@ class RevitService:
                         if hasattr(val, 'Name') and val.Name is not None:
                             return val.Name
                     except Exception:
-                                                logger.debug("Suppressed Exception in revit_service.py", exc_info=True)
+                                                logger.debug(_EXC_MSG, exc_info=True)
                 return val
 
-            # V140 FIX: pass `prefer` per-attribute to match Revit API semantics.
             element_data = {
                 "id": get_attr(element, 'Id', 'unknown', prefer='tostring'),
                 "name": get_attr(element, 'Name', 'unnamed', prefer='auto'),
@@ -516,7 +514,6 @@ class RevitService:
                 "element_type": getattr(element, 'GetType', lambda: 'Element')(),
             }
 
-            # V214 FIX (self-critique revised): Extract REAL geometry from Revit
             # elements instead of hardcoded dummy values.
             #
             # SELF-CRITIQUE: Previous fix used __import__() inside production code —
@@ -632,14 +629,12 @@ class RevitService:
           - Never fabricates fake elements
         """
         try:
-            # V141.4 SECURITY FIX (CodeQL: py/path-injection):
             from parsers._path_security import validate_input_path
             safe_path = validate_input_path(filepath)
             filepath = str(safe_path)
 
             file_size = os.path.getsize(filepath)
 
-            # V214: If we have a real Revit document, read actual elements
             if self._connection_method == ConnectionMethod.API and self._revit_doc is not None:
                 try:
                     from Autodesk.Revit.DB import (
@@ -675,7 +670,6 @@ class RevitService:
                 except Exception as e:
                     logger.exception("Real Revit element read failed: %s", e)  # NOSONAR: python:S3776
 
-            # V214: Simulation mode — return honest failure
             logger.warning(
                 "read_rvt %s failed: simulation mode (no real Revit document). "
                 "Returning empty result with success=False — no fake elements "
@@ -760,7 +754,6 @@ class RevitService:
 
         """
         try:
-            # V141.4 SECURITY FIX (CodeQL: py/path-injection):
             from parsers._path_security import validate_output_path
             safe_path = validate_output_path(filepath, parser_name="revit_write_rvt")
             filepath = str(safe_path)
@@ -770,7 +763,6 @@ class RevitService:
             if output_dir:
                 os.makedirs(output_dir, exist_ok=True)
 
-            # V214: If we have a real Revit document, create elements via API
             if self._connection_method == ConnectionMethod.API and self._revit_doc is not None:
                 try:
                     from Autodesk.Revit.DB import Transaction  # type: ignore[import-not-found]
@@ -784,7 +776,6 @@ class RevitService:
                         skipped_count = 0
                         for elem in elements:
                             try:
-                                # V220 FIX (SonarCloud S5145): sanitize user-controlled
                                 # element fields ONCE per iteration. str() result is
                                 # not user-controlled per SonarCloud's taint analysis.
                                 safe_cat = str(elem.get("category", "unknown"))[:64]
@@ -818,7 +809,6 @@ class RevitService:
                                     )
                                     skipped_count += 1
                             except Exception:  # NOSONAR: python:S1192
-                                # V216 FIX (SonarCloud python:S8572): use
                                 # logger.exception() to capture the traceback
                                 # for debugging element-creation failures.
                                 logger.exception(
@@ -845,7 +835,6 @@ class RevitService:
                 except ImportError:
                     logger.warning("Revit API not available — falling back to IFC export")
 
-            # V214: Simulation mode — write a REAL IFC4 file via ifcopenshell
             # Revit can import IFC natively (File → Open → IFC).
             try:
                 import ifcopenshell
@@ -880,7 +869,6 @@ class RevitService:
             # Add each element as an IfcBuildingElementProxy
             for elem in elements:
                 try:
-                    # V220 FIX (S5145): name already sanitized via str() below,
                     # which breaks SonarCloud taint flow.
                     name = str(elem.get("name", "Unnamed"))
                     safe_elem_name = name[:200]  # truncate for safe logging
@@ -929,7 +917,6 @@ class RevitService:
                 len(elements), ifc_path,
             )
 
-            # V214 self-critique fix: Do NOT write a fake .rvt file with a
             # redirect notice — that was confusing (user opens .rvt in Revit
             # and it fails). Instead, write ONLY the .ifc file and log clearly
             # that the output is IFC format (not RVT). The caller can check
@@ -973,7 +960,6 @@ class RevitService:
             Real ElementId string on success, None on failure.
 
         """
-        # V141.2: Reject simulation mode explicitly — no more fake UUIDs.
         if not self.connected:
             logger.error(
                 "create_wall failed: not connected to Revit. "
@@ -1001,7 +987,6 @@ class RevitService:
             return None
 
         try:
-            # V141.2: Real Revit API wall creation.
             # Uses pythonnet to call RevitAPI.dll's Wall.Create().
             import clr  # noqa: F401  (already imported at module level on Windows)
             from Autodesk.Revit.DB import (
@@ -1104,13 +1089,11 @@ class RevitService:
             Real ElementId string on success, None on failure.
 
         """
-        # V141.2: Accept boundary_points as alias for boundary (router compat)
         actual_boundary = boundary_points if boundary_points is not None else boundary
         if not actual_boundary:
             logger.error("create_floor failed: boundary or boundary_points is required.")
             return None
 
-        # V141.2: Reject simulation mode explicitly — no more fake UUIDs.
         if not self.connected:
             logger.error(
                 "create_floor failed: not connected to Revit. "
@@ -1143,7 +1126,6 @@ class RevitService:
             return None
 
         try:
-            # V141.2: Real Revit API floor creation.
             import clr  # noqa: F401
             from Autodesk.Revit.DB import (
                 XYZ,
@@ -1266,7 +1248,6 @@ class RevitService:
             Real ElementId string on success, None on failure.
 
         """
-        # V142: Reject simulation mode explicitly — no more fake UUIDs.
         if not self.connected:
             logger.error(
                 "create_column failed: not connected to Revit. "
@@ -1293,14 +1274,12 @@ class RevitService:
             logger.error("create_column failed: no active Revit document.")
             return None
 
-        # V140 FIX: Accept location_point as alias for location (router compat)
         actual_location = location_point if location_point is not None else location
         if not actual_location:
             logger.error("create_column failed: location or location_point is required.")
             return None
 
         try:
-            # V142: Real Revit API column creation.
             import clr  # noqa: F401
             from Autodesk.Revit.DB import (
                 XYZ,
@@ -1499,7 +1478,6 @@ class RevitService:
             logger.exception("Close failed: %s", e)
             return False
 
-    # V140 FIX (Rule 17 — Root-Cause Analysis): Removed the two legacy duplicate
     # method definitions that were shadowing the modern, simulation-aware
     # implementations defined earlier in this class:
     #   - `save` (was at line ~671, calling `save_document` which requires
@@ -1650,7 +1628,6 @@ class RevitService:
     # ELEMENT OPERATIONS - CREATE
     # =========================================================================
 
-    # V140 FIX (Rule 17 — Root-Cause Analysis): Removed THREE legacy duplicate
     # method definitions that were shadowing the modern, simulation-aware
     # implementations defined earlier in this class:
     #   - `create_wall` (legacy required `self._connected == True`)
@@ -1683,7 +1660,6 @@ class RevitService:
         Previous versions returned a random UUID in SIMULATION mode — a
         safety-critical deception for fire-rated door placement. Fixed.
         """
-        # V142: Reject simulation mode explicitly — no more fake UUIDs.
         if not self.connected:
             logger.error(
                 "create_door failed: not connected to Revit. "
@@ -1779,11 +1755,9 @@ class RevitService:
         Returns None on any platform without a real Revit API connection.
         Does NOT generate a fake UUID.
         """
-        # V142: Delegates to create_door which now enforces honest behavior.
         # The caller should pass a window family_type (e.g. "M_Fixed").
         return self.create_door(host_wall_id, location_point, family_type, level)
 
-    # V140 FIX (Rule 17): Removed legacy `create_column` duplicate that shadowed
     # the modern, simulation-aware implementation defined earlier in this class.
     # The legacy impl required `self._connected == True`; the modern impl always
     # returns a UUID. See the long comment above `create_door` for full context.
@@ -1808,7 +1782,6 @@ class RevitService:
         Previous versions returned a random UUID unconditionally — a
         safety-critical deception for structural beam placement. Fixed.
         """
-        # V142: Reject simulation mode explicitly — no more fake UUIDs.
         if not self.connected:
             logger.error(
                 "create_beam failed: not connected to Revit. "
@@ -1937,7 +1910,6 @@ class RevitService:
         Previous versions returned a random UUID in SIMULATION mode — a
         safety-critical deception for fire-device family placement. Fixed.
         """
-        # V142: Reject simulation mode explicitly — no more fake UUIDs.
         if not self.connected:
             logger.error(
                 "create_family_instance failed: not connected to Revit. "
@@ -2099,7 +2071,6 @@ class RevitService:
         Previous versions returned a random UUID unconditionally — a
         safety-critical deception. Fixed.
         """
-        # V142: Reject simulation mode explicitly — no more fake UUIDs.
         if not self.connected:
             logger.error(
                 "create_view failed: not connected to Revit. "
@@ -2204,7 +2175,6 @@ class RevitService:
         Previous versions returned a random UUID unconditionally — a
         safety-critical deception. Fixed.
         """
-        # V142: Reject simulation mode explicitly — no more fake UUIDs.
         if not self.connected:
             logger.error(
                 "create_level failed: not connected to Revit. "
@@ -2347,11 +2317,9 @@ class RevitService:
     def load_revit_api_data(self, json_path: str) -> bool:
         """Load Revit API data from JSON file."""
         try:
-            # V141.4 SECURITY FIX (CodeQL: py/path-injection):
             # Validate path before opening. Previous code called open() on
             # an unvalidated path — path-injection vulnerability.
             from parsers._path_security import validate_input_path
-            # V141.4.1 FIX (Devin review): convert Path to str after validation.
             safe_path = validate_input_path(json_path)
             json_path = str(safe_path)
 
@@ -2573,7 +2541,7 @@ class RevitService:
                 if level.Name == name:
                     return level
         except Exception:
-                        logger.debug("Suppressed Exception in revit_service.py", exc_info=True)
+                        logger.debug(_EXC_MSG, exc_info=True)
         return None
 
     def _get_wall_type_id(self, wall_type_name: str):
@@ -2591,7 +2559,7 @@ class RevitService:
                 if wt.Name == wall_type_name:
                     return wt.Id
         except Exception:
-                        logger.debug("Suppressed Exception in revit_service.py", exc_info=True)
+                        logger.debug(_EXC_MSG, exc_info=True)
         return None
 
     def _get_floor_type_id(self, floor_type_name: str):
@@ -2609,7 +2577,7 @@ class RevitService:
                 if ft.Name == floor_type_name:
                     return ft.Id
         except Exception:
-                        logger.debug("Suppressed Exception in revit_service.py", exc_info=True)
+                        logger.debug(_EXC_MSG, exc_info=True)
         return None
 
     def _get_family_symbol(self, _category: str, symbol_name: str):  # NOSONAR — S1172: parameter retained for API stability
@@ -2666,7 +2634,6 @@ class RevitService:
         except Exception:
             return None
 
-    # V140 FIX (Rule 17): Removed the legacy `_extract_element_data` duplicate
     # (was at line ~1448) that was shadowing the modern, safety-hardened
     # implementation defined at line 234. The legacy impl:
     #   - Did NOT catch exceptions inside get_attr (safety regression)

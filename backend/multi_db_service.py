@@ -101,7 +101,6 @@ class MultiDatabaseService:
     def _setup_redis(self):
         """Initialize Redis connection."""
         try:
-            # V257: Skip if neither REDIS_URL nor REDIS_HOST is configured.
             # Previously defaulted to localhost, causing 3s timeout in production.
             if not config.REDIS_URL and not config.REDIS_HOST:
                 logger.info("Redis not configured (REDIS_URL/REDIS_HOST not set) — skipping")
@@ -134,7 +133,6 @@ class MultiDatabaseService:
             logger.warning("Qdrant client not installed. Install with: pip install qdrant-client")
             return
 
-        # V257: Skip if Qdrant is not configured
         if not config.QDRANT_URL and not config.QDRANT_HOST:
             logger.info("Qdrant not configured (QDRANT_URL/QDRANT_HOST not set) — skipping")
             return
@@ -166,7 +164,6 @@ class MultiDatabaseService:
             logger.warning("Neo4j driver not installed. Install with: pip install neo4j")
             return
 
-        # V257: Skip if Neo4j is not configured
         if not config.NEO4J_URI:
             logger.info("Neo4j not configured (NEO4J_URI not set) — skipping")
             return
@@ -428,7 +425,6 @@ class MultiDatabaseService:
         if not self._neo4j_driver:
             logger.warning("create_element_relationships: Neo4j not available")
             return False
-        # V282 SECURITY: relationship_type must be a valid Cypher identifier
         # to prevent Cypher injection. Allow only [A-Z_]+ after uppercasing.
         import re
         if not re.match(r"^[A-Z][A-Z0-9_]*$", relationship_type.upper()):
@@ -462,7 +458,6 @@ class MultiDatabaseService:
         if not self._neo4j_driver:
             logger.warning("neo4j_find_related_elements: Neo4j not available")
             return []
-        # V282 SECURITY: relationship_type must be a valid Cypher identifier.
         import re
         if not re.match(r"^[A-Z][A-Z0-9_]*$", relationship_type.upper()):
             logger.error("neo4j_find_related_elements: invalid relationship_type %r", relationship_type)

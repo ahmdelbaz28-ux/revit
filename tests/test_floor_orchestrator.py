@@ -465,7 +465,6 @@ class TestProcessOneRoomUnresolvedGeometry:
         fo = FloorOrchestrator()
         spec = self._make_unresolved_spec()
         result = fo._process_one_room(spec)
-        # V76 HIGH-02 FIX: violations attribute removed — data is now in errors list.
         # RoomResult has no 'violations' field; the data is stored in 'errors'.
         assert len(result.errors) > 0
         assert any("IFC_GEOMETRY_UNRESOLVED" in str(e) for e in result.errors)

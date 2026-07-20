@@ -80,7 +80,6 @@ def env_cleanup():
 # ═══════════════════════════════════════════════════════════════════════════════
 
 # Per-path rate limit configuration (mirrors backend_app._PER_PATH_LIMITS)
-# V105 FIX: Updated to match the actual _PER_PATH_LIMITS in backend_app.py
 _PER_PATH_LIMITS = [
     ("/api/environment/weather",     10, 60),
     ("/api/environment/geocoding",    1,  1),
@@ -900,11 +899,9 @@ class TestPerPathRateLimitPathMatching:
         V138 added PerPathRateLimitMiddleware to backend_app.py (not backend/app.py).
         This test now checks both files for rate limiting logic.
         """
-        # V143: Check backend/app.py (main app)
         backend_app_path = Path(__file__).resolve().parent.parent / "backend" / "app.py"
         source = backend_app_path.read_text(encoding="utf-8")
 
-        # V143: Also check backend_app.py (security-hardened version)
         backend_app_v2_path = Path(__file__).resolve().parent.parent / "backend_app.py"
         if backend_app_v2_path.exists():
             source_v2 = backend_app_v2_path.read_text(encoding="utf-8")
@@ -913,7 +910,6 @@ class TestPerPathRateLimitPathMatching:
 
         combined = source + source_v2
 
-        # V143: Verify rate limiting logic exists somewhere
         assert any(pattern in combined for pattern in [
             "PerPathRateLimitMiddleware",
             "InMemoryRateLimitMiddleware",
@@ -987,7 +983,6 @@ class TestCorsWildcardRejection:
         """Verify that the backend_app source code rejects wildcards in production."""
         # Read source directly from file since backend_app cannot be imported
         # in the test environment (missing backend dependencies).
-        # V106 FIX: Updated path from backend_app.py to backend/app.py
         backend_app_path = Path(__file__).resolve().parent.parent / "backend" / "app.py"
         source = backend_app_path.read_text(encoding="utf-8")
         # Must contain wildcard rejection logic

@@ -195,7 +195,6 @@ CONDUIT_SPECS: dict[tuple[str, str], dict[str, float]] = {
     ("IMC", "1-1/4"): {"id_mm": 36.00, "area_mm2": 1017.88},
     ("IMC", "1-1/2"): {"id_mm": 41.80, "area_mm2": 1372.88},
     ("IMC", "2"): {"id_mm": 53.50, "area_mm2": 2248.93},
-    # V20.2 FIX: PVC Schedule 40 — NEC Chapter 9 Table 4
     # PVC is commonly used for fire alarm installations per NEC 760.154.
     # Missing specs caused silent fallback to cable tray recommendation.
     ("PVC40", "1/2"): {"id_mm": 15.30, "area_mm2": 183.85},
@@ -208,7 +207,6 @@ CONDUIT_SPECS: dict[tuple[str, str], dict[str, float]] = {
     ("PVC40", "3"): {"id_mm": 77.60, "area_mm2": 4729.90},
     ("PVC40", "3-1/2"): {"id_mm": 89.50, "area_mm2": 6291.77},
     ("PVC40", "4"): {"id_mm": 101.50, "area_mm2": 8089.43},
-    # V20.2 FIX: PVC Schedule 80 — NEC Chapter 9 Table 4
     ("PVC80", "1/2"): {"id_mm": 13.20, "area_mm2": 136.85},
     ("PVC80", "3/4"): {"id_mm": 17.90, "area_mm2": 251.79},
     ("PVC80", "1"): {"id_mm": 23.10, "area_mm2": 419.10},
@@ -218,7 +216,6 @@ CONDUIT_SPECS: dict[tuple[str, str], dict[str, float]] = {
     ("PVC80", "2-1/2"): {"id_mm": 57.20, "area_mm2": 2569.30},
     ("PVC80", "3"): {"id_mm": 71.90, "area_mm2": 4059.87},
     ("PVC80", "4"): {"id_mm": 95.30, "area_mm2": 7131.27},
-    # V20.2 FIX: LFMC — Liquidtight Flexible Metal Conduit
     ("LFMC", "3/8"): {"id_mm": 12.40, "area_mm2": 120.76},
     ("LFMC", "1/2"): {"id_mm": 15.70, "area_mm2": 193.59},
     ("LFMC", "3/4"): {"id_mm": 20.40, "area_mm2": 326.85},
@@ -226,7 +223,6 @@ CONDUIT_SPECS: dict[tuple[str, str], dict[str, float]] = {
     ("LFMC", "1-1/4"): {"id_mm": 34.30, "area_mm2": 923.89},
     ("LFMC", "1-1/2"): {"id_mm": 40.10, "area_mm2": 1262.92},
     ("LFMC", "2"): {"id_mm": 51.60, "area_mm2": 2089.88},
-    # V20.2 FIX: FMC — Flexible Metal Conduit
     ("FMC", "3/8"): {"id_mm": 12.30, "area_mm2": 118.82},
     ("FMC", "1/2"): {"id_mm": 15.60, "area_mm2": 191.13},
     ("FMC", "3/4"): {"id_mm": 20.30, "area_mm2": 323.65},
@@ -317,7 +313,6 @@ class WireSpec:
                 # Use frozen dataclass workaround
                 object.__setattr__(self, "outer_diameter_mm", WIRE_DIAMETERS_MM[key])
             else:
-                # V78 FIX: Conservative default 6.0mm instead of 3.5mm.
                 # Underestimating cable area means conduit appears to have more fill
                 # capacity than it actually does — overfilled conduit can cause insulation
                 # damage and thermal buildup per NEC 310.15. Overestimating area is SAFE

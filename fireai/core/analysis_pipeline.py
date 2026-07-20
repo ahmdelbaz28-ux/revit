@@ -419,7 +419,6 @@ class AnalysisPipeline:
         # ═══════════════════════════════════════════════════════════════
         # ROOM GEOMETRY VALIDATION (NaN/Inf guard)
         # ═══════════════════════════════════════════════════════════════
-        # V59 FIX: NaN/Inf in room dimensions silently propagates through the
         # optimizer, producing invalid layouts that appear valid (proof_valid=True).
         # Life-Safety Rule 5: reject non-finite geometry immediately.
         _geom_valid = True
@@ -754,7 +753,6 @@ class AnalysisPipeline:
                 pipeline_hash = hashlib.sha256(json.dumps(hash_payload, sort_keys=True).encode()).hexdigest()
                 result.metadata["pipeline_hash"] = pipeline_hash
                 result.metadata["pipeline_timestamp"] = datetime.now(timezone.utc).isoformat()
-                # V60 FIX (P1-5): Log full hash (not truncated) for verification
                 logger.info("  SIGNING: pipeline_hash=%s (no certificate — hash from layout)", pipeline_hash)
 
             result.stage_reached = PipelineStage.SIGNING

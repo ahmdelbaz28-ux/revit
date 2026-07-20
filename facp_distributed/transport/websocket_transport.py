@@ -158,7 +158,6 @@ class WebSocketTransport(TransportLayer):
         # In a real implementation, this would connect to the target WebSocket endpoint
         import asyncio
 
-        # V138 FIX (HIGH-2 from adversarial audit):
         # The original code assigned to `target_node` inside the nested
         # coroutine `send_to_target()`, which made Python treat `target_node`
         # as a LOCAL of that coroutine. Line 161 (`if not target_node:`) then

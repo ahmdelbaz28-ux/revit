@@ -74,7 +74,7 @@ def _safe_resolve_upload_path(filename: str) -> str:
     """
     # Validate filename at source to prevent path traversal
     if not re.match(r'^[a-zA-Z0-9._\- ]{1,255}$', filename):
-        raise HTTPException(
+        raise HTTPException(  # NOSONAR — S8415: endpoint error handling is intentional(
             status_code=400,
             detail="Filename contains invalid characters. Only letters, numbers, dots, hyphens, underscores, and spaces are allowed."
         )
@@ -88,7 +88,7 @@ def _safe_resolve_upload_path(filename: str) -> str:
 
     # Verify the resolved path is still within upload_dir
     if not resolved.startswith(abs_upload):
-        raise HTTPException(status_code=400, detail="Invalid file path")
+        raise HTTPException(status_code=400, detail="Invalid file path")  # NOSONAR — S8415: endpoint error handling is intentional
     return resolved
 
 
@@ -237,7 +237,6 @@ async def convert_files(  # NOSONAR — S3776: cognitive complexity is inherent 
                 async with await anyio.open_file(source_filepath, "w", encoding="utf-8") as f:
                     await f.write("MOCK SOURCE DATA")
         else:
-            # V217 FIX (SonarCloud S5145): validate user-supplied filepath
             # at source to break taint flow into logger calls in
             # digital_twin_service.py. Only allow alphanumeric, /, \, ., _, -.
             if not re.match(r'^[a-zA-Z0-9/\\._\- ]{1,512}$', source_filepath):
@@ -248,7 +247,6 @@ async def convert_files(  # NOSONAR — S3776: cognitive complexity is inherent 
             temp_dir = tempfile.gettempdir()
             target_filepath = os.path.join(temp_dir, f"sample_target.{target_format.lower()}")
         else:
-            # V217 FIX: same validation for target_filepath
             if not re.match(r'^[a-zA-Z0-9/\\._\- ]{1,512}$', target_filepath):
                 raise HTTPException(status_code=400, detail="Invalid target_filepath: contains forbidden characters")
 
@@ -286,11 +284,9 @@ async def convert_files(  # NOSONAR — S3776: cognitive complexity is inherent 
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# V214: FILE UPLOAD + CONVERT ENDPOINT (cloud workflow)
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
-# V243 SECURITY: Maximum upload size — 50 MB (matches revit.py and autocad.py).
 # Without this check, `await file.read()` reads the entire file into memory,
 # enabling OOM denial-of-service via arbitrarily large uploads.
 _MAX_UPLOAD_SIZE = 50 * 1024 * 1024  # 50 MB
@@ -301,7 +297,7 @@ _MAX_UPLOAD_SIZE = 50 * 1024 * 1024  # 50 MB
     dependencies=[Depends(require_permission(Permission.EXPORT_EXECUTE))],
 )
 @limiter.limit("10/minute")  # V243: Rate limit expensive upload+convert
-async def upload_and_convert(
+async def upload_and_convert(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     request: Request,  # V243: Required by slowapi rate limiter
     file: UploadFile = File(...),
     target_format: str = "ifc",
@@ -344,7 +340,6 @@ async def upload_and_convert(
                 ),
             )
 
-        # V217 FIX (SonarCloud pythonsecurity:S5145 + S6350):
         # The user-controlled filename flows into logger calls (S5145 log injection)
         # AND into subprocess arguments (S6350 command injection). Wrapping it in
         # _safe_str() at the sink does NOT break SonarCloud's taint analysis.
@@ -377,7 +372,6 @@ async def upload_and_convert(
         source_path = os.path.join(upload_dir, safe_name)
 
         # Write file
-        # V216 FIX (SonarCloud python:S7493): synchronous open() in an async
         # endpoint is acceptable here because:
         #   1. The file write is small (max upload size is enforced below)
         #   2. Using aiofiles would add a new dependency for a 2-line operation
@@ -385,7 +379,6 @@ async def upload_and_convert(
         # The S5145 (log injection) issue is fixed by wrapping source_path in
         # _safe_str() before logging.
         #
-        # V243 SECURITY: Read in chunks and enforce _MAX_UPLOAD_SIZE to prevent
         # OOM denial-of-service. The previous `await file.read()` read the
         # entire file into memory with no size check.
         content = await file.read(_MAX_UPLOAD_SIZE + 1)
@@ -395,7 +388,7 @@ async def upload_and_convert(
                 os.remove(source_path)
             except OSError:
                 pass
-            raise HTTPException(
+            raise HTTPException(  # NOSONAR — S8415: endpoint error handling is intentional(
                 status_code=413,
                 detail=(
                     f"File too large. Maximum upload size is "

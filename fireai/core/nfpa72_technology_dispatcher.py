@@ -117,7 +117,6 @@ _STEEP_SLOPE_THRESHOLD_DEG = 30.0  # Beyond this, spot detectors impractical
 _HIGH_CEILING_ECONOMIC_THRESHOLD_M = 9.1  # Consider beam for cost efficiency
 
 # NFPA 72 Table 17.6.3.1.1 — Height-adjusted smoke spacing
-# V128: Import from CANONICAL single source of truth (fireai/constants/nfpa72.py)
 # to eliminate divergent duplicate tables across the codebase.
 # Previously, this was imported via fireai.constants (which had its own duplicates).
 # Now imports directly from the authoritative nfpa72.py module.
@@ -192,7 +191,6 @@ class EliteTechnologyDispatcher:
         if ceiling_height_m <= 0:
             raise ValueError(f"Ceiling height must be positive, got {ceiling_height_m}m.")
 
-        # V20.2 FIX: Handle heat detector category.
         # Previously, detector_category was accepted but IGNORED, causing
         # heat detector requests to return POINT_SMOKE with smoke spacing.
         # Heat detectors at h≤3.0m use S=6.1m (R=4.27m), NOT S=9.1m.
@@ -286,7 +284,6 @@ class EliteTechnologyDispatcher:
             )
 
         # ─── Check 4: Within NFPA table — Point detectors ──────────
-        # V130 FIX: Smoke detector spacing is FLAT 9.1m per §17.7.3.2.3.
         # NO height-based reduction — the table now returns 9.1m at all heights.
         spacing = EliteTechnologyDispatcher._get_smoke_spacing(ceiling_height_m)
 

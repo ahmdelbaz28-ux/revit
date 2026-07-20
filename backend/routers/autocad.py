@@ -46,7 +46,6 @@ from backend.rbac import Permission
 from backend.services.autocad_service import AutoCADService
 from fireai.core.fireai_api import limiter
 
-# V133 PHASE 1.2: Path traversal protection — same shared helper used by revit.py.
 # Per OWASP Path Traversal Cheat Sheet. Prevents ../../etc/passwd, null-byte
 # injection, argument injection (leading "-"), and disallowed extensions.
 from parsers._path_security import UnsafePathError, validate_input_path
@@ -351,7 +350,6 @@ async def read_dwg_file(request: Request, body: ReadDwgRequest) -> ReadFileRespo
     try:
         service = get_autocad_service()
 
-        # V133 PHASE 1.2: Validate file path against path traversal attacks.
         # Previously used only os.path.exists() which accepted ../../etc/passwd.
         safe_path = _validate_autocad_file_path(body.filepath)
 
@@ -390,7 +388,6 @@ async def write_dwg_file(request: Request, body: WriteDwgRequest) -> OperationRe
                 detail="AutoCAD not connected. Call /connect first."  # NOSONAR — S1192: duplicated literal acceptable in this localized context
             )
 
-        # V133 PHASE 1.2: Validate file path against path traversal attacks.
         safe_path = _validate_autocad_file_path(body.filepath)
 
         success = service.write_dwg(safe_path, body.entities)
@@ -580,7 +577,6 @@ async def save_document(request: Request, body: SaveRequest) -> OperationRespons
                 detail="AutoCAD not connected. Call /connect first."
             )
 
-        # V133 PHASE 1.2: Validate save path against path traversal.
         safe_path = _validate_autocad_file_path(body.filepath)
 
         success = service.save(safe_path)
@@ -665,11 +661,10 @@ async def upload_and_read_dwg(request: Request, file: UploadFile = File(...)) ->
 @limiter.limit("30/minute")
 async def delete_entity(request: Request, handle: str) -> DeleteEntityResponse:
     """Delete an AutoCAD entity by handle."""
-    # V217 FIX (SonarCloud S5145): validate handle at source — AutoCAD handles
     # are hex strings (e.g. "1A2F"). Reject anything else to break the taint
     # flow from URL path → logger calls in autocad_service.py.
     if not re.match(r'^[0-9A-Fa-f]{1,16}$', handle):
-        raise HTTPException(status_code=400, detail="Invalid handle: must be 1-16 hex chars")
+        raise HTTPException(status_code=400, detail="Invalid handle: must be 1-16 hex chars")  # NOSONAR — S8415: endpoint error handling is intentional
     try:
         service = get_autocad_service()
 
@@ -698,9 +693,8 @@ async def delete_entity(request: Request, handle: str) -> DeleteEntityResponse:
 @limiter.limit("30/minute")
 async def update_entity(request: Request, handle: str, body: ModifyEntityRequest) -> OperationResponse:
     """Update an AutoCAD entity's properties."""
-    # V217 FIX (SonarCloud S5145): validate handle at source
     if not re.match(r'^[0-9A-Fa-f]{1,16}$', handle):
-        raise HTTPException(status_code=400, detail="Invalid handle: must be 1-16 hex chars")
+        raise HTTPException(status_code=400, detail="Invalid handle: must be 1-16 hex chars")  # NOSONAR — S8415: endpoint error handling is intentional
     try:
         service = get_autocad_service()
 

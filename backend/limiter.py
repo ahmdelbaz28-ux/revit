@@ -78,7 +78,6 @@ def get_remote_address(request: Request) -> str:
     return "0.0.0.0"
 
 
-# V248 FIX: Configure rate limiter with Redis storage when available.
 # Without storage_uri, slowapi defaults to in-memory storage which is
 # per-worker. With N uvicorn workers, the effective rate limit becomes N×
 # the configured limit (each worker has its own counter).

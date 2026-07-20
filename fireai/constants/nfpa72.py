@@ -82,7 +82,6 @@ recommendation from ECMAG and SFPE Europe."""
 
 # Height-adjusted smoke detector spacing table
 #
-# V130 CRITICAL FIX (2026-06-13): CORRECTED to flat 9.1m per NFPA 72-2022 §17.7.3.2.3.
 #
 # Per NFPA 72-2022 §17.7.3.2.3 (verbatim):
 #   "Spot-type smoke detectors shall be spaced not more than
@@ -148,7 +147,6 @@ alternative TECHNOLOGY (beam §17.7.4.6, aspirating §17.7.4.7), NOT
 reducing point detector spacing."""
 
 # Fallback spacing beyond the table range
-# V130 FIX: Flat 9.1m per NFPA 72 §17.7.3.2.3 — NO height reduction for smoke
 SMOKE_SPACING_FALLBACK_M: float = 9.10
 """Fallback spacing for smoke detectors at ceilings above 12.2m.
 V130 FIX: Flat 9.1m per NFPA 72-2022 §17.7.3.2.3 — smoke detector
@@ -212,7 +210,6 @@ HEAT_SPACING_FALLBACK_M: float = 3.50
 
 # Combined height-spacing table (smoke + heat)
 # For backward compatibility with modules that use 3-tuple format
-# V130 FIX: Smoke column corrected to flat 9.1m per §17.7.3.2.3.
 # Heat column unchanged (correct per Table 17.6.3.5.1).
 COMBINED_HEIGHT_SPACING_TABLE: List[Tuple[float, float, float]] = [
     # (ceiling_height_max_m, smoke_spacing_m, heat_spacing_m)

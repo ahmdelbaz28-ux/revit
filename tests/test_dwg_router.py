@@ -26,7 +26,6 @@ from fastapi.testclient import TestClient
 def app():
     """V143: Create app without auth dependencies for testing."""
     _app = FastAPI()
-    # V143: Import the actual parse_dwg function and register it directly
     # without the _AUTH dependency that causes 403 in tests
     from backend.routers.dwg import parse_dwg
 

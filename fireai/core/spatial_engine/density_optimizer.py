@@ -71,14 +71,12 @@ DETECTOR_RADIUS = 0.7 * MAX_SPACING_M  # 6.37 m (NFPA 72 §17.7.4.2.3.1 - 0.7S R
 # NOTE: Previous version used 9.144m (exact 30ft) giving R=6.40m. This was
 # inconsistent with the canonical nfpa72_models.RADIUS_MAP which uses 9.1m giving
 # R=6.37m. Aligned to 9.1m for consistency — all models now agree on R=6.37m.
-# V76 HIGH-12 FIX: Changed from 0.10m to 0.1016m per NFPA 72 §17.6.3.1.1.
 # NFPA 72 specifies 4 inches minimum wall distance = 101.6mm, not 100mm.
 # The 1.6mm difference caused detectors at 100mm to pass density_optimizer
 # NFPA audit but fail nfpa72_coverage validation (which uses 0.1016m).
 WALL_MIN_M = WALL_MIN_DISTANCE_M  # NFPA 72 §17.6.3.1.1 — 4 inches = 101.6mm (alias for canonical)
 VERIFY_STEP = 0.20  # proof resolution (m)
 COARSE_STEP = 1.00  # hierarchical coarse grid step (m)
-# V7.4: Placement margin — must match the fine verification margin to ensure
 # placement decisions align with verification proof. This guarantees that
 # detectors placed using R_place will pass the R_eff check in _verify_fast().
 PLACEMENT_MARGIN = VERIFY_STEP * math.sqrt(2) / 2  # 0.1414m
@@ -261,7 +259,6 @@ class DensityOptimizer:
         self.timeout_seconds = timeout_seconds
         self._start_time: float | None = None
         self._iteration_count: int = 0
-        # V7.4: Placement radius — R minus verification margin.
         # This ensures detectors are placed using the SAME effective radius
         # that verification uses for corner checks, eliminating the systematic
         # mismatch that caused ~44% proof failure rate.
@@ -614,7 +611,6 @@ class DensityOptimizer:
         pts = [(x, y) for x in xs for y in ys]
 
         # Corner guards: ensure all corners are within R_place of a detector
-        # V7.4: use R_place so guards match verification
         W, L = room.width, room.length
         wm, Rp = self.wm, self.R_place  # NOSONAR - python:S117
         corners = [(wm, wm), (W - wm, wm), (wm, L - wm), (W - wm, L - wm)]
@@ -1148,7 +1144,6 @@ class DensityOptimizer:
                     continue
                 min_dist = min(min_dist, math.hypot(x1 - x2, y1 - y2))
             max_gap = max(max_gap, min_dist)
-        # V76 HIGH-13 FIX: Removed 1% tolerance (S * 1.01). NFPA 72 uses
         # "shall not exceed" — mandatory language with no tolerance. The 1%
         # tolerance (91mm for S=9.1m) masked real spacing violations. V65
         # already removed this tolerance for ridge zones; same principle applies

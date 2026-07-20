@@ -993,9 +993,7 @@ class TestConnectionsV2Router:
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# V188 REGRESSION TESTS — Connections V2 router (db_service.create_connection)
 # ══════════════════════════════════════════════════════════════════════════════
-# V188 FIX: The previous test_create_connection_v2 accepted HTTP 500 as a
 # valid outcome. That hid a CRITICAL bug: db_service.create_connection()
 # called .append() on a tuple (frozen dataclass), which always raised
 # AttributeError → HTTP 500 on every call. The frontend's Connections.tsx
@@ -1167,9 +1165,7 @@ class TestConnectionsV2RegressionV188:
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# V191 REGRESSION TESTS — metadata preservation + delete_connection error handling
 # ══════════════════════════════════════════════════════════════════════════════
-# V191 FIX: The V189 transformer corrupted metadata camelCase keys. The V188
 # delete_connection conflated "not found" with "DB error". These tests prove
 # the V191 fixes work.
 # ══════════════════════════════════════════════════════════════════════════════

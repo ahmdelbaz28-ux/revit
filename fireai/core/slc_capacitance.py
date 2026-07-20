@@ -87,7 +87,6 @@ CABLE_CAPACITANCE_PF_PER_M: dict[str, float] = {
     "Fiber_Optic": 0.0,  # Immune to capacitance
 }
 
-# V20.2 FIX: Conservative per-device parasitic capacitance (pF)
 # Each addressable device on an SLC loop adds parasitic capacitance
 # — typically 15-30 pF per detector/module, up to 40-50 pF per isolator.
 # Source: Notifier NFS2-3030 p.17, System Sensor, Edwards datasheets.
@@ -220,7 +219,6 @@ class SLCCapacitanceAuditor:
             device_count = int(loop.get("device_count", 0))
             isolator_count = int(loop.get("isolator_count", 0))
 
-            # V20.2 FIX: Validate loop length is positive
             if total_length_m <= 0:
                 violations.append(
                     {
@@ -247,10 +245,8 @@ class SLCCapacitanceAuditor:
                 continue
 
             # Get per-loop capacitance limit
-            # V20.2 FIX: Unknown manufacturer → conservative warning
             cap_limit_uf = SLC_MAX_CAPACITANCE_UF.get(loop_mfr, self.max_cap_uf)
             if loop_mfr not in SLC_MAX_CAPACITANCE_UF:
-                # V65 FIX: Unknown manufacturer should add a violation, not just warn.
                 # Old code only logged a warning but marked the loop as "safe" if
                 # capacitance was below the default limit. But the actual panel limit
                 # may be tighter (e.g., 0.3µF vs default 0.5µF), so a loop at 0.45µF
@@ -283,7 +279,6 @@ class SLCCapacitanceAuditor:
                         ),
                     })
 
-            # V20.2 FIX: Unknown wire type → use most conservative (highest) value
             cap_pf_per_m = CABLE_CAPACITANCE_PF_PER_M.get(wire_type)
             if cap_pf_per_m is None:
                 cap_pf_per_m = max(CABLE_CAPACITANCE_PF_PER_M.values())  # 164.0
@@ -293,7 +288,6 @@ class SLCCapacitanceAuditor:
                     f"Specify a known cable type for accurate results."
                 )
 
-            # V20.2 FIX: Calculate total loop capacitance INCLUDING device parasitics
             # Total = (cable capacitance) + (device parasitic) + (isolator parasitic)
             # Per UL 864 10th Ed., total loop capacitance includes ALL connected devices.
             cable_cap_pf = total_length_m * cap_pf_per_m

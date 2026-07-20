@@ -519,7 +519,6 @@ def calculate_eol_voltage(
     v_drop = calculate_voltage_drop_vdc(total_current_a, one_way_length_ft, awg, v_nom)
     v_eol = v_nom - v_drop
 
-    # V76 MED-09 FIX: EOL voltage can be negative when voltage drop exceeds
     # supply. This is physically impossible (can't have negative voltage).
     # Clamped to 0.0 and flagged as CRITICAL violation.
     if v_eol < 0:
@@ -1269,7 +1268,6 @@ class NACBoosterAllocator:
         last_pt: tuple[float, float] | None = source_location
 
         for i, dev in enumerate(devices_line):
-            # V59 FIX: Guard device coordinates against NaN/Inf. Non-finite
             # coordinates produce NaN distances and silently disable voltage
             # drop checks (NaN < min_eol = False). Per IEEE-754-2008 §7.
             _dev_x = dev.get("x", 0.0)
@@ -1297,7 +1295,6 @@ class NACBoosterAllocator:
             running_length += dist
 
             # V_drop = 2 × I × R_per_ft × L  (NEC 760 DC return path)
-            # V59 FIX: Guard running_current_tail against NaN before multiplication
             if not math.isfinite(running_current_tail):
                 logger.critical("BPS-004: running_current_tail=%r is NaN/Inf. Resetting to 0.", running_current_tail)
                 running_current_tail = 0.0
@@ -1310,7 +1307,6 @@ class NACBoosterAllocator:
                 running_voltage -= segment_drop
 
             # Subtract this device's current from downstream tail
-            # V59 FIX: Guard device current against NaN/Inf
             _raw_current = dev.get("inrush_a", 0.2)
             try:
                 dev_current = _guard_finite(float(_raw_current), f"devices_line[{i}].inrush_a")

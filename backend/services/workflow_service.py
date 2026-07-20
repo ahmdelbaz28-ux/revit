@@ -228,7 +228,6 @@ def node_initialize(state: PipelineState) -> PipelineState:
     """
     file_path = state.get("file_path", "")
 
-    # V112: Path traversal validation — prevent reading arbitrary files.
     # In a safety-critical system, file access MUST be restricted to
     # allowed directories. Path traversal can leak secrets, configs,
     # or audit logs to unauthorized users.
@@ -549,7 +548,6 @@ def node_memory_enrich(state: PipelineState) -> PipelineState:
             enrich_with_memory_context,
         )
 
-        # V75: Now passes env_context for regional standards search
         result = enrich_with_memory_context(
             rooms=rooms,
             workflow_id=workflow_id,
@@ -695,7 +693,6 @@ def node_environmental_context(state: PipelineState) -> PipelineState:
 
     if lat is not None and lon is not None:
         try:
-            # V84 FIX: Replaced asyncio.get_event_loop() pattern with
             # ThreadPoolExecutor. The old code had a critical bug:
             # when running inside FastAPI (async context), loop.is_running()
             # returns True, and the code fell back to empty defaults —
@@ -816,7 +813,6 @@ def node_nfpa_analysis(state: PipelineState) -> PipelineState:  # NOSONAR — S3
                 detector_type = detector.name
 
                 if detector_type.startswith("SMOKE"):
-                    # V87 FIX: Changed from round() to ceil() per NFPA 72.
                     # round() systematically under-counts: a 10m² room with
                     # 9m² smoke detector coverage gets 1 detector (round) but
                     # needs 2 (ceil) — 1m² uncovered = no fire detection.
@@ -840,7 +836,6 @@ def node_nfpa_analysis(state: PipelineState) -> PipelineState:  # NOSONAR — S3
                     detector_count = max(1, math.ceil(area_sqm / 20.0))
                     warnings.append("Kitchen — SMOKE prohibited, HEAT required per NFPA 72 §17.6.4")
 
-                # V73: Add memory suggestions as ADVISORY warnings
                 # Memory NEVER changes the calculation — only adds context
                 for hint in memory_hints_by_occupancy.get(occupancy_type, []):
                     hint_content = hint.get("content", "")
@@ -1171,7 +1166,6 @@ def node_generate_report(state: PipelineState) -> PipelineState:
                 f"Design incomplete. {unknown_count} rooms require manual type verification."
                 if has_unknown else None
             ),
-            # V85 FIX: generated_utc is added AFTER SHA-256 computation.
             # Per agent.md Priority 5 (Determinism): report_sha256 must be
             # deterministic — same input = same hash. Including a timestamp
             # in the hash makes it non-deterministic, which violates the
@@ -1207,7 +1201,6 @@ def node_generate_report(state: PipelineState) -> PipelineState:
         },
     }
 
-    # V85 FIX: Compute report integrity hash BEFORE adding generated_utc.
     # This ensures report_sha256 is deterministic (same input = same hash).
     # Per agent.md Priority 5 (Determinism) > Priority 7 (Traceability).
     # The timestamp is added after hashing for traceability, but does not
@@ -1215,7 +1208,6 @@ def node_generate_report(state: PipelineState) -> PipelineState:
     report_sha256 = _compute_sha256(report)
 
     # Add timestamp AFTER hash computation (for display, not for integrity)
-    # V85: Store generated_utc as a separate top-level field so it doesn't
     # pollute the deterministic report dict. This makes golden file comparison
     # and regression testing possible — the report dict is purely deterministic.
     generated_utc = datetime.now(timezone.utc).isoformat()
@@ -1227,7 +1219,6 @@ def node_generate_report(state: PipelineState) -> PipelineState:
     elif state.get("has_critical_conflicts", False):
         final_status = WorkflowStatus.REJECTED.value
 
-    # V73: Store analysis results in Mem0 for future reference
     # FAIL-SAFE: Storage failure NEVER blocks report generation
     memory_storage_result = {"stored": 0, "failed": 0, "skipped": True}
     try:
@@ -1251,7 +1242,6 @@ def node_generate_report(state: PipelineState) -> PipelineState:
             "Report generated successfully without memory storage."
         )
 
-    # V78: Store procedural trace in Mem0 (Pattern 6: Procedural Memory)
     # Records the execution path of the workflow for future reference.
     # FAIL-SAFE: Storage failure NEVER blocks report generation.
     try:
@@ -1391,7 +1381,6 @@ def build_fireai_workflow() -> StateGraph:
     )
 
     # Conditional: validation pass → environmental context, fail → report
-    # V83 FIX: Route to environmental_context first (not memory_enrich) because
     # environmental_context must populate state before memory_enrich reads it.
     workflow.add_conditional_edges(
         "validate",
@@ -1403,7 +1392,6 @@ def build_fireai_workflow() -> StateGraph:
     )
 
     # Sequential: env context → memory enrich → NFPA → conflict detection
-    # V83 FIX: Swapped order — environmental_context must run BEFORE memory_enrich
     # because node_memory_enrich reads state["environmental_context"] for regional
     # standards search (V75 feature). With the old order (memory_enrich → env_context),
     # the env_context was always empty {} when memory_enrich ran, making the V75
@@ -1459,7 +1447,6 @@ class WorkflowService:
 
     def __init__(self) -> None:
         self._workflows: dict[str, dict[str, Any]] = {}
-        # V129 FIX: Expose _langgraph_available and is_initialized so that
         # app.py lifespan can correctly report service status instead of
         # falling through to the "DEGRADED" warning path.
         self._langgraph_available = True
@@ -1477,7 +1464,6 @@ class WorkflowService:
         self._checkpointer: Any = None  # Lazy-init in async context
         self._checkpointer_ctx: Any = None
         self._graph = build_fireai_workflow()
-        # V88 FIX: Compile graph synchronously (without checkpointer) so that
         # _graph_compiled is not None after __init__. This fixes the test
         # contract that expects service._graph_compiled to be set immediately.
         # The graph will be re-compiled WITH AsyncSqliteSaver in _ensure_compiled()
@@ -1489,7 +1475,6 @@ class WorkflowService:
             interrupt_before=["human_review_gate"],
         )
 
-        # V77: Stuck detection — monitors node execution times
         self._stuck_detector = None
         if STUCK_DETECTION_AVAILABLE:
             self._stuck_detector = get_stuck_detector()
@@ -1591,7 +1576,6 @@ class WorkflowService:
             "completed_at": None,
             "transition_log": [],
             "error_message": None,
-            # V77: Stuck detection fields
             "stuck_detected": False,
             "stuck_node": None,
             "stuck_duration_seconds": None,
@@ -1600,7 +1584,6 @@ class WorkflowService:
 
         config = {"configurable": {"thread_id": workflow_id}}
 
-        # V77: Register workflow with StuckDetector
         if self._stuck_detector is not None:
             self._stuck_detector.register_workflow(workflow_id)
 
@@ -1616,7 +1599,6 @@ class WorkflowService:
         else:
             result = await self._run_graph(compiled, initial_state, config)
 
-        # V77: Unregister workflow from StuckDetector (completed/failed/stuck)
         if self._stuck_detector is not None:
             self._stuck_detector.unregister_workflow(workflow_id)
 
@@ -1655,7 +1637,6 @@ class WorkflowService:
         FAIL-SAFE: If Langfuse is unavailable, graph runs without tracing.
         """
         try:
-            # V80: Get Langfuse callback handler for this workflow
             # This auto-traces every LangGraph node execution
             langfuse_handler = None
             if LANGFUSE_AVAILABLE:
@@ -1669,14 +1650,12 @@ class WorkflowService:
             invoke_config = dict(config)
             if langfuse_handler:
                 invoke_config["callbacks"] = [langfuse_handler]
-                # V141.4 SECURITY FIX (CodeQL: py/clear-text-logging-sensitive-data):
                 # Do NOT log workflow_id — it can contain project identifiers.
                 # Log only a boolean indicator that tracing is active.
                 logger.info("Langfuse tracing ACTIVE for workflow")
             else:
                 logger.debug("Langfuse tracing not active (handler not available)")
 
-            # V85 FIX: Replaced asyncio.get_event_loop() with
             # asyncio.get_running_loop(). The deprecated get_event_loop()
             # emits DeprecationWarning since Python 3.10 and will be
             # removed in Python 3.14. Since _run_graph is an async method,
@@ -1691,7 +1670,6 @@ class WorkflowService:
                 lambda: graph.invoke(initial_state, invoke_config),
             )
 
-            # V80: Log verification scores to Langfuse after workflow completes
             if LANGFUSE_AVAILABLE and langfuse_handler:
                 self._log_workflow_scores_to_langfuse(result, langfuse_handler)
                 # Flush to ensure all traces/scores are sent
@@ -1779,7 +1757,6 @@ class WorkflowService:
             "total_detectors": state.get("total_detectors", 0),
             "nfpa_compliant": state.get("nfpa_compliant", False),
             "transition_count": len(state.get("transition_log", [])),
-            # V77: Stuck detection info
             "stuck_detected": state.get("stuck_detected", False),
             "stuck_node": state.get("stuck_node"),
             "node_timings": state.get("node_timings", {}),
@@ -1927,7 +1904,6 @@ class WorkflowService:
         # Resume workflow (re-invoke with updated state)
         try:
             compiled = await self._ensure_compiled()
-            # V85 FIX: Same as _run_graph — replaced deprecated
             # asyncio.get_event_loop() with asyncio.get_running_loop().
             # This is an async method so a running loop is guaranteed.
             import asyncio

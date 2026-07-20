@@ -373,7 +373,6 @@ def _image_source_reflection_spl(
 
     # Apply ceiling absorption: reflection reduces energy by (1 - alpha)
     # In dB: reflection_loss = -10 * log10(1 - alpha)
-    # V65 SAFETY: Negative absorption coefficient is physically meaningless.
     # It would produce log10(>1) = negative loss, ADDING energy — violates
     # energy conservation and is physically impossible.
     if ceiling_absorption_coeff < 0:
@@ -404,7 +403,6 @@ def _combine_spl_db(spl_a: float, spl_b: float) -> float:
         Combined SPL in dB.
 
     """
-    # V65 SAFETY: Guard against NaN/Inf inputs.
     # NaN SPL silently bypasses compliance checks (NaN < threshold is False).
     if not math.isfinite(spl_a) and not math.isfinite(spl_b):
         return 0.0
@@ -415,7 +413,6 @@ def _combine_spl_db(spl_a: float, spl_b: float) -> float:
     if spl_a <= 0.0 and spl_b <= 0.0:
         return 0.0
     result = 10.0 * math.log10(math.pow(10, spl_a / 10.0) + math.pow(10, spl_b / 10.0))
-    # V65 SAFETY: Guard result against overflow
     if not math.isfinite(result):
         return max(spl_a, spl_b)
     return result

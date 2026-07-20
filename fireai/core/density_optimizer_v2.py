@@ -72,7 +72,6 @@ except ImportError:
         DensityOptimizer = None  # type: ignore[assignment,no-redef, misc]
 
 # ── Import models with fallback ────────────────────────────────────────────
-# V112: fireai.core.models does NOT exist. RoomSpec is in nfpa72_models.
 # Geometry and Point3D are not defined anywhere in the codebase as standalone
 # classes — they were never implemented. The fallback sets them to None,
 # meaning the batch optimizer is non-functional without them.

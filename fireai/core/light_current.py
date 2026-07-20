@@ -491,7 +491,6 @@ def calculate_cctv_coverage(
 
 def validate_access_control(
     reader_height_m: float = 1.22,
-    # V114 FIX: Fail-safe — door monitoring and RTE must be confirmed, not assumed
     has_door_switch: bool = False,
     has_rte: bool = False,
     egress_type: str = "fail_safe",

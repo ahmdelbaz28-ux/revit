@@ -1074,7 +1074,6 @@ class TestFileDatabase:
 
 
 # ---------------------------------------------------------------------------
-# V10 migration (ALTER TABLE for ecdsa_signature column)
 # ---------------------------------------------------------------------------
 
 class TestV10Migration:
@@ -1118,7 +1117,6 @@ class TestV10Migration:
 
 
 # ---------------------------------------------------------------------------
-# V10 row handling in verify_chain and get_events (8-column rows)
 # ---------------------------------------------------------------------------
 
 class TestV10RowHandling:
@@ -1214,7 +1212,6 @@ class TestV10RowHandling:
             events = get_events()
             assert len(events) == 1
             assert events[0]["event_type"] == "V10_GET"
-            # V10 rows should NOT have ecdsa_signature key
             assert "ecdsa_signature" not in events[0]
             audit_mod._db_initialized = False
 

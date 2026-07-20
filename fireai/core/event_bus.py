@@ -276,7 +276,6 @@ class EventBus:
         self._lock = threading.Lock()
         self._listeners: dict[str, list[EventCallback]] = {}
         self._recorder = EventRecorder()
-        # V150 FIX (Thread Safety): _error_count is now protected by a
         # dedicated _error_lock. The publish() method dispatches callbacks
         # OUTSIDE self._lock (to avoid blocking subscribe/unsubscribe
         # during long callback chains), which means the increment at
@@ -395,7 +394,6 @@ class EventBus:
             try:
                 callback(event)
             except Exception as exc:
-                # V150 FIX (Thread Safety): _error_count was previously
                 # incremented WITHOUT any lock held (self._lock was
                 # released above after copying the callback lists).
                 # Under concurrent publish() calls with failing
@@ -431,7 +429,6 @@ class EventBus:
     @property
     def error_count(self) -> int:
         """Number of callback errors since creation."""
-        # V150 FIX (Thread Safety): read under _error_lock so that a
         # concurrent publish() cannot observe a half-incremented value.
         with self._error_lock:
             return self._error_count

@@ -14,7 +14,6 @@ from unittest.mock import Mock
 
 import pytest
 
-# V207 FIX: Skip if pytesseract is not installed (same as test_ocr_scan_to_bim.py)
 pytest.importorskip("pytesseract", reason="pytesseract not installed — OCR integration tests skipped")
 
 from backend.services.ocr_service import OCRService

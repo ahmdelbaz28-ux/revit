@@ -1,4 +1,3 @@
-# V143 audit: File-level suppression removed. Per-line justified
 # suppressions remain (e.g., inline rule keys for S3776 — cognitive complexity
 # is inherent to the safety-critical algorithm). See audit report in repo.
 """
@@ -259,7 +258,6 @@ class ScenarioResult:
     grid_points_tested: int
     compute_time_s: float
 
-    # V143 FIX: `margin_s` field was MISSING from this dataclass, but it is
     # passed by ScenarioRunner.run() (line 917) and read by summary_dict()
     # (line 1065), to_text() (line 1097), and to_csv() (line 1131). This
     # caused `TypeError: ScenarioResult.__init__() got an unexpected keyword
@@ -672,7 +670,6 @@ class FirePhysics:
             # Near field (plume impingement zone): smoke is concentrated
             # Plume mass flow (Heskestad):
             #   m_p = 0.071 * Q_c^(1/3) * H^(5/3) + 0.0018 * Q_c
-            # V60 FIX (P5-5): These are Heskestad correlation coefficients from
             # SFPE Handbook 6th Ed., Table 16.5.1. They are empirically derived
             # and do not vary with conditions — documenting the source for traceability.
             _HESKESTAD_C1 = 0.071  # kg/(s·kW^1/3·m^5/3) — SFPE Handbook, Heskestad (2016)

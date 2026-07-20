@@ -45,6 +45,10 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["facp"])
 
+# ── Constants ────────────────────────────────────────────────────────────────
+NFPA_72_REF = "NFPA 72-2022 SS10.6.7"
+UL_864_REF = "UL 864 10th Edition"
+
 # ── Request/Response Models ──────────────────────────────────────────────────
 
 class FACPSelectionRequest(BaseModel):
@@ -269,8 +273,8 @@ async def select_facp(request: Request, req: FACPSelectionRequest):
                 "warnings": recommendation.warnings,
                 "alternatives": recommendation.alternatives,
                 "signature_hash": recommendation.signature_hash,
-                "nfpa_reference": "NFPA 72-2022 SS10.6.7",
-                "ul_reference": "UL 864 10th Edition",  # NOSONAR — S1192: duplicated literal acceptable in this localized context
+                "nfpa_reference": NFPA_72_REF,
+                "ul_reference": UL_864_REF,
             },
         }
     except ValueError as exc:
@@ -370,8 +374,8 @@ async def verify_facp(request: Request, req: FACPVerificationRequest):
                 "is_compliant": is_compliant,
                 "violations": violations,
                 "violation_count": len(violations),
-                "nfpa_reference": "NFPA 72-2022 SS10.6.7",
-                "ul_reference": "UL 864 10th Edition",
+                "nfpa_reference": NFPA_72_REF,
+                "ul_reference": UL_864_REF,
             },
         }
     except Exception as exc:
@@ -566,8 +570,8 @@ async def list_available_panels():
                 "total_count": len(panels),
                 "manufacturers": list({p.manufacturer for p in MASTER_PANEL_DATABASE}),
                 "standards": [
-                    "NFPA 72-2022 SS10.6.7",
-                    "UL 864 10th Edition",
+                    NFPA_72_REF,
+                    UL_864_REF,
                     "CSFM",
                     "FDNY COA",
                 ],

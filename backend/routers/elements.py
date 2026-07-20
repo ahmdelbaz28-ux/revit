@@ -27,7 +27,6 @@ from backend.schemas import (
 
 logger = logging.getLogger(__name__)
 
-# V139 FIX: Changed prefix from "/api/v1/elements" (absolute) to "/elements"
 # (relative). The absolute prefix caused double-prefixing when
 # _safe_include_router added "/api/v1" via app.include_router(prefix="/api/v1"),
 # producing /api/v1/api/v1/elements which broke all tests.
@@ -46,7 +45,6 @@ async def list_elements(
     db: DatabaseService = Depends(get_db_service),
 ):
     """List elements with optional filtering and pagination."""
-    # V140 FIX: Validate sort_order to prevent injection
     if sort_order not in ("asc", "desc"):
         sort_order = "desc"
     try:
@@ -88,7 +86,6 @@ async def create_element(
         element = db.create_element(element_data)
         return ApiResponse(success=True, data=element, message="Element created successfully")
     except ValueError as e:
-        # V113 SECURITY: ValueError messages may contain internal paths
         # or class details. Sanitize before exposing to client.
         safe_msg = str(e)[:200]  # Truncate to prevent overflow
         # Remove common path patterns that leak server structure

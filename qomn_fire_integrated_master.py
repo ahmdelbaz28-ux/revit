@@ -45,7 +45,6 @@ class TestIntegratedQomnFire(unittest.TestCase):
 
         self.assertEqual(rec.recommended_model, "FC901")
         self.assertEqual(rec.manufacturer, "SIEMENS")
-        # V54 FIX F5: Battery must be > 5.0 Ah with proper derating
         # Original flat 1.2x gave 4.76 Ah (insufficient at 0C)
         self.assertGreater(rec.battery_size_ah, 5.0)
         # Derating method must NOT be flat 1.2x

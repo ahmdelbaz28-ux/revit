@@ -143,13 +143,11 @@ class TestGLBConsistency:
         json_bytes = glb[20:20 + json_length]
         gltf = json.loads(json_bytes)
 
-        # V139: buffers must have non-zero byteLength (real vertex data)
         buffers = gltf.get("buffers", [])
         assert len(buffers) > 0, "Must have at least one buffer"
         for buf in buffers:
             assert buf.get("byteLength", 0) > 0, "Buffer byteLength must be > 0"
 
-        # V139: Every POSITION accessor referenced in mesh primitives must exist
         accessors = gltf.get("accessors", [])
         for mesh in gltf.get("meshes", []):
             for prim in mesh.get("primitives", []):
@@ -180,7 +178,6 @@ class TestGLBConsistency:
         import struct
         json_length = struct.unpack("<I", glb[12:16])[0]
         gltf = json.loads(glb[20:20 + json_length])
-        # V139: Accessors should NOT be empty — we have real vertex data now
         assert len(gltf.get("accessors", [])) > 0, "Accessors should have real entries (V139)"
 
 
@@ -214,7 +211,6 @@ class TestARExporterFieldNames:
         snapshot = exporter.from_digital_twin(FakeTwin())
 
         detector_node = next(n for n in snapshot.nodes if n.node_type == "detector")
-        # V134 F-4: Position must be (5.0, 3.0, 2.8) — not (0.0, 0.0, 0.0)
         assert detector_node.position == (5.0, 3.0, 2.8), (
             f"Expected (5.0, 3.0, 2.8) but got {detector_node.position} — "
             "AR exporter is using wrong field names"
@@ -384,7 +380,6 @@ class TestBeamMixedOrientation:
             ceiling_height_m=3.0,
             beams=beams,
         )
-        # V134 F-6: Should still subdivide (using horizontal beam)
         # The old code would have returned 1 pocket (no subdivision)
         assert len(result.pockets) >= 2, (
             f"Expected subdivision with 1 horizontal beam, got {len(result.pockets)} pocket(s)"

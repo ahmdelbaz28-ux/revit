@@ -48,7 +48,6 @@ try:
 except ImportError:
     HAS_SHAPELY = False
 
-# V30 B3: Shapely 2.x fast union path
 try:
     from shapely import union_all  # Shapely 2.x fast path
 
@@ -116,7 +115,6 @@ class ExactCoverageEngine:
     # 0.001 sqm = 10cm × 10cm — far too small for a person to occupy.
     AREA_TOLERANCE_SQM = 0.001
 
-    # V30 B3: Circle polygon approximation segments
     # 16 segments sufficient for NFPA verification accuracy while reducing
     # polygon vertex count 4× (was 64 in original via Point.buffer default).
     _CIRCLE_SEGS = 16
@@ -135,7 +133,6 @@ class ExactCoverageEngine:
         # 2% safety factor — matches density_optimizer.COVERAGE_SAFETY_FACTOR
         self.effective_radius = coverage_radius_m * 0.98
         self.nominal_radius = coverage_radius_m
-        # V30 B3: Store nominal radius for analytical bypass comparison
         self._coverage_radius_m = coverage_radius_m
 
     def verify(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
@@ -247,7 +244,6 @@ class ExactCoverageEngine:
                     pass  # Skip invalid obstacles  # NOSONAR - python:S2772
 
         # Build sensor coverage circles using effective radius (2% safety)
-        # V30 B3: Use fewer segments (16 vs default 64) — sufficient for NFPA accuracy
         sensor_areas = []
         for loc in sensor_locations:
             try:
@@ -262,7 +258,6 @@ class ExactCoverageEngine:
                 )
                 continue
 
-        # V76 CRIT-09 FIX: Recompute room_area AFTER obstacle subtraction.
         # Previously, room_area was captured at line 220 BEFORE obstacles were
         # subtracted from room_poly (lines 230-238). This caused coverage_ratio
         # to be inflated by the obstacle area. Example: room 200m² with 50m²
@@ -295,7 +290,6 @@ class ExactCoverageEngine:
             )
 
         # Union all sensor coverage areas
-        # V30 B3: Use union_all() (Shapely 2.x GEOS-native) when available
         # — 3-5× faster than unary_union() for non-overlapping circles.
         try:
             total_coverage_poly = self._fast_union(sensor_areas)
@@ -397,7 +391,6 @@ class ExactCoverageEngine:
                 return union_all(geoms)
             return unary_union(geoms)
 
-        # V55: Large sets — hierarchical spatial chunking
         # Divide into spatial chunks, union each, then union chunk results.
         # Bounds worst-case complexity of individual union operations.
         chunk_size = max(8, int(math.sqrt(n)))

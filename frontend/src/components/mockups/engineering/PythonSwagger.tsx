@@ -73,7 +73,7 @@ export function PythonSwagger() {
 							"Connections",
 							"History",
 						].map((tab) => (
-							<button
+							<button type="button"
 								key={tab}
 								className={`px-3 py-1.5 rounded font-medium transition-colors ${activeTab === tab ? "bg-card text-info" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"}`}
 								onClick={() => setActiveTab(tab)}

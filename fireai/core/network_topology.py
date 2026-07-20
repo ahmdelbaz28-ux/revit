@@ -274,7 +274,6 @@ class NetworkTopologyAuditor:
         # Check 1: Every non-master panel must have ≥2 connections
         # (Class X = redundant path)
         #
-        # V20.2 FIX: Now also verifies 2-edge-connectivity (bridge-finding).
         # Previously only checked degree (number of adjacent links) per panel,
         # which is NECESSARY but NOT SUFFICIENT. A panel can have degree ≥2
         # yet still be isolated from the master by a single link cut if its
@@ -388,7 +387,6 @@ class NetworkTopologyAuditor:
                 )
             logger.critical(desc)
 
-        # V20.2 FIX: Check 4 — Bridge detection (2-edge-connectivity).
         # A bridge edge is one whose removal disconnects the graph.
         # NFPA 72 §23.8 requires NO single point of failure in the
         # network backbone. If any bridge exists between a non-master

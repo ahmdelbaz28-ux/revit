@@ -349,7 +349,6 @@ class _ObstacleIndex:
                 poly = self._polys[orig_idx]
                 if poly is None:
                     continue
-                # V14 Fix: intersects catches all cases; touches allows tangent
                 if line.intersects(poly) and not line.touches(poly):
                     return False
             return True
@@ -781,7 +780,6 @@ class RoutingEngineV10:
                     elif obs.obstacle_type == "hvac":
                         cost *= 1.2
                     elif obs.obstacle_type == "seismic_joint":
-                        # V19.1: Anisotropic cost for seismic joints
                         angle = self._compute_approach_angle(p1, p2, obs)
                         if angle is not None and abs(angle - 90) <= 30:
                             # Orthogonal crossing — discount
@@ -979,7 +977,6 @@ class RoutingEngineV10:
             if obs.passable:
                 continue
             for i in range(len(result.waypoints) - 1):
-                # V65 FIX: Use full clearance_m (not 0.5×). Old code validated at 50% of
                 # required clearance, producing FALSE PASS on routes that violate the actual
                 # NEC 760.24 clearance requirement.
                 aabb = obs.expanded_bounds(clearance_m)
@@ -1262,7 +1259,6 @@ if __name__ == "__main__":
 # test_v13_class_a_routing.py, test_v14_multi_device_routing.py,
 # test_v15_full_integration.py, test_regulatory_penetration.py
 #
-# V56 FIX: Restored after V55 rewrite broke 7+ downstream imports.
 # The old Class A + Firestopping engine is a DIFFERENT concern from the
 # general-purpose Lazy A* STRtree engine above. Both engines coexist.
 # ════════════════════════════════════════════════════════════════════════════
@@ -1563,6 +1559,5 @@ class EliteClassARouter:
 
 
 # ── Backward-Compatible Aliases ──────────────────────────────────────────
-# V55 introduced RoutingEngineV10 as the canonical name.
 # The old engineering_router.py used "EngineeringRouter" as the main class.
 EngineeringRouter = RoutingEngineV10  # type: ignore[misc]

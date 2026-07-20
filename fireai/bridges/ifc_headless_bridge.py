@@ -216,7 +216,6 @@ class HeadlessIFCBridge:
 
         """
         # Fetch storeys and sort by elevation for correct device placement
-        # V78 FIX: Previously ALL devices were placed on the first storey regardless
         # of their z-coordinate. A 10-storey building would have 200+ devices on
         # the ground floor in the IFC model — corrupt data for AHJ/BMS systems.
         storeys = self.model.by_type("IfcBuildingStorey")
@@ -230,7 +229,6 @@ class HeadlessIFCBridge:
         storey_elevs.sort(key=lambda x: x[1])
 
         for dev in devices:
-            # V78 FIX: Proper device type mapping — previously everything that wasn't
             # SMOKE was mapped to HEATSENSOR, losing UGLD, FLAME, and combo types.
             # This affects maintenance scheduling and ATEX marking per NFPA 72 §14.3.
             type_upper = dev.get("type", "").upper()
@@ -276,7 +274,6 @@ class HeadlessIFCBridge:
                     "Loop_ID": str(dev.get("loop_id", "UNK")),
                     "Device_Address": str(dev.get("address", "UNK")),
                     "Validation_Hash": str(dev.get("checksum", "INVALID")),
-                    # V76 CRIT-04 FIX: Was hardcoded True — fabricated NFPA 72
                     # compliance claim written to IFC BIM model regardless of
                     # whether the device placement was actually verified. This
                     # is a legal liability and life-safety fraud risk. Now reads
@@ -290,7 +287,6 @@ class HeadlessIFCBridge:
         return True
 
     # ══════════════════════════════════════════════════════════════
-    # V24 GAP-1 NEW METHODS (additive — no breaking changes)
     # ══════════════════════════════════════════════════════════════
 
     def extract_storeys(self) -> list[dict[str, Any]]:
@@ -476,7 +472,6 @@ class HeadlessIFCBridge:
         polygon, center, height, area, volume = self._tessellate_space(space)
 
         if polygon is None:
-            # V76 CRIT-05 FIX: Previously created a phantom 2m×2m room (4m²)
             # when tessellation failed. A 500m² atrium would receive fire
             # protection designed for a 4m² closet — 2 detectors instead of 50+.
             # This is a life-safety catastrophe. Now we return None to signal
@@ -591,7 +586,6 @@ class HeadlessIFCBridge:
             except Exception as e:
                 logger.debug("Geometry extraction failed for element: %s", e)
 
-        # V76 HIGH-09 FIX: Previously created a phantom 30cm AABB when geometry
         # extraction failed. A 30cm box replacing a 10m wall means corridors
         # appear unobstructed — detectors placed inside real walls.
         # Now returns None, forcing caller to flag for manual FPE review.

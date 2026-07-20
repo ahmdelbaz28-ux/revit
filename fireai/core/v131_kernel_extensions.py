@@ -69,7 +69,6 @@ class NFPA72Constants:
     MAX_AUDIBLE_DBA: float = 110.0
     SLEEPING_MIN_PILLOW_DBA: float = 75.0
 
-    # V131: Security and serialization constants
     MAX_SERIALIZATION_DEPTH: int = 100  # Prevent circular reference attacks
     MAX_JSON_PAYLOAD_SIZE: int = 10 * 1024 * 1024  # 10MB max payload
     WEBHOOK_TIMEOUT_SECONDS: float = 30.0  # Webhook request timeout
@@ -345,7 +344,6 @@ class WebhookPublisher:
         try:
             parsed = urlparse(url)
             # Only allow https in production for security
-            # V131: Add URL validation against allowed hosts
             allowed_hosts_env = os.getenv("FIREAI_WEBHOOK_ALLOWED_HOSTS", "")
             if allowed_hosts_env:
                 allowed_hosts = [host.strip() for host in allowed_hosts_env.split(",") if host.strip()]

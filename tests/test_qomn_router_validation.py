@@ -43,7 +43,6 @@ from backend.routers.qomn import (
 from fireai.core.qomn_kernel import NEC_TABLE8_RESISTANCE_OHM_PER_KM
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# V118 — AWG Normalization Tests (validator behavior)
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
@@ -91,7 +90,6 @@ class TestAWGNormalization:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# V118 — False-Accept Regression Tests
 # Historic regex accepted these but kernel rejected them (split-brain).
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -148,7 +146,6 @@ class TestTrulyInvalidRejected:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# V118 — Kernel/Router Contract Tests (single source of truth)
 # ═══════════════════════════════════════════════════════════════════════════════
 
 

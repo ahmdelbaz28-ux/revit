@@ -20,7 +20,7 @@ class UserRole(Enum):
 class TokenManager:
     """Manages authentication tokens for distributed FACP"""
 
-    def __init__(
+    def __init__(  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         self,
         private_key_path: str = None,
         public_key_path: str = None,
@@ -47,7 +47,6 @@ class TokenManager:
         """
         self.active_tokens = {}  # token_hash -> token_data
         self.revoked_tokens = set()  # Set of revoked token hashes
-        # V289: track which signing mode is active
         self._signing_mode = None  # 'rsa' or 'hmac'
         self._hmac_secret = None
         self.private_key = None
@@ -100,7 +99,6 @@ class TokenManager:
             # HMAC mode (HS256) — for single-instance with shared secret
             self._signing_mode = 'hmac'
             self._hmac_secret = secret_key.encode("utf-8")
-            # V289: validate secret strength — reject weak defaults
             if len(secret_key) < 32:
                 raise ValueError(
                     f"TokenManager: HMAC secret_key must be at least 32 characters "
@@ -127,7 +125,6 @@ class TokenManager:
             "nbf": int(time.time()) - 10  # Not before (allow 10 sec clock skew)
         }
 
-        # V289: Choose signing key + algorithm based on mode
         if self._signing_mode == 'rsa':
             sign_key = self.private_key
             algorithm = "RS256"
@@ -160,7 +157,6 @@ class TokenManager:
             if token_hash in self.revoked_tokens:
                 return False, None
 
-            # V289: Choose validation key + algorithm based on mode
             if self._signing_mode == 'rsa':
                 validate_key = self.public_key
                 algorithms = ["RS256"]

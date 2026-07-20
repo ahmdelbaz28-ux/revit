@@ -45,7 +45,6 @@ from qomn_fire.core.types import Building, Opening, Point3D, Room, Wall
 
 logger = logging.getLogger("qomn_fire.dxf_parser")
 
-# V128: Allowed extensions and size cap for DXF parser
 _DXF_ALLOWED_EXTENSIONS = frozenset({".dxf"})
 _DXF_MAX_FILE_SIZE_BYTES = int(
     os.getenv("FIREAI_DXF_MAX_FILE_SIZE_BYTES", str(100 * 1024 * 1024))  # 100 MB
@@ -68,7 +67,6 @@ class DxfParser:
         rooms: List[Room] = []
         openings: List[Opening] = []
 
-        # V128 SECURITY: Validate path BEFORE any file/subprocess access.
         # This catches argument injection, path traversal, null bytes,
         # bad extensions, and paths outside FIREAI_ALLOWED_UPLOAD_DIRS.
         try:
@@ -90,7 +88,6 @@ class DxfParser:
                 remedy="Provide a path within FIREAI_ALLOWED_UPLOAD_DIRS with .dxf extension."
             ))
 
-        # V128 SECURITY: Reject oversized files before any further work
         try:
             validate_file_size(
                 safe_path,

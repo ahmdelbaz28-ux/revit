@@ -128,7 +128,6 @@ def guard_ceiling_height_m(h: float) -> float:
     Source: NFPA 72-2022 §17.7.3.2.4
     """
     v = _guard_finite(h, "ceiling_height_m")
-    # V121 FIX: Use canonical ceiling height limit from fireai/constants/nfpa72.py
     # Hard limit = 18.288m (60ft) per NFPA 72 §17.7.3.2.4
     NFPA_MAX_M = _CEILING_HEIGHT_HARD_LIMIT_M  # 18.288
     if v <= 0:
@@ -218,7 +217,6 @@ def guard_efficiency(eff: float) -> float:
 # (ceiling_height_m_max, listed_spacing_m)
 # Source: NFPA 72-2022 Table 17.6.3.1 (converted from feet to meters)
 # ── NFPA 72 constants now imported from canonical source ─────────────
-# V121 FIX: Removed parallel NFPA72_SMOKE_SPACING_TABLE definition.
 # All NFPA 72 constants are now in fireai/constants/nfpa72.py (Single Source of Truth).
 # The old table applied heat detector reduction (1%/ft) to smoke detectors —
 # a known misapplication of NFPA 72 Table 17.6.3.5.1.
@@ -250,7 +248,6 @@ from fireai.constants.nfpa72 import (  # noqa: I001
 # Do NOT redefine with a literal value here.
 
 # Maximum smoke detector spacing (absolute) — NFPA 72 §17.7.3.2.3
-# V130 FIX: Flat 9.1m per §17.7.3.2.3 (NO height reduction) — imported from fireai.constants.nfpa72
 # NOTE: NFPA72_SMOKE_MAX_SPACING_M is imported at line 227 — do NOT redefine with a literal.
 
 # Maximum heat detector spacing — NFPA 72 §17.6.3.1
@@ -411,7 +408,6 @@ def compute_smoke_detector_spacing(ceiling_height_m: float) -> dict[str, Any]:
     """
     h = guard_ceiling_height_m(ceiling_height_m)
 
-    # V130 CRITICAL FIX: Smoke detector spacing is FLAT 9.1m per NFPA 72 §17.7.3.2.3.
     # Per NFPA 72-2022 §17.7.3.2.3 (verbatim):
     #   "Spot-type smoke detectors shall be spaced not more than
     #    30 ft (9.1 m) apart on smooth ceilings."
@@ -429,7 +425,6 @@ def compute_smoke_detector_spacing(ceiling_height_m: float) -> dict[str, Any]:
     # Compute deterministic hash for audit
     result_hash = _f64_hash(spacing_m) + _f64_hash(radius_m)
 
-    # V130 SAFETY NET — WARNING for high-ceiling spot smoke detection.
     # Per NFPA 72-2022 §17.7.1.11 (stratification) and consistent FPE guidance,
     # spot-type smoke detection is unreliable above 20 ft (6.096m).
     # This is a NON-BINDING advisory — the spacing value is still 9.1m
@@ -511,7 +506,6 @@ def compute_heat_detector_spacing(
             f"area {a:.2e} m2 too small -- minimum 1e-6 m2 for meaningful calculation",
             "Physics / NFPA 72-2022 §17.6.3.1"
         )
-    # V117 FIX: Reject area > NFPA 72 §17.6.3.1 maximum coverage (232.26 m²
     # ≈ 2500 ft²). Previously, an absurd input like area=10000 m² was silently
     # clamped to spacing=15.24 m via min(), producing a result that LOOKED
     # valid but was based on out-of-spec input. Per agent.md Rule #17
@@ -545,7 +539,6 @@ def compute_heat_detector_spacing(
     # With the area guard above, this branch is now unreachable for any
     # a ≤ 232.26 since 0.7×√232.26 ≈ 10.668 m < 15.24 m. Retained as a
     # safety belt-and-braces measure per QOMN Layer 0 spec.
-    # V121 FIX: Use HEAT_ABSOLUTE_MAX_SPACING_M (15.24m = 50ft) for clamping,
     # not HEAT_MAX_SPACING_M (6.1m = 20ft standard spacing at h≤3.0m).
     spacing_m = min(spacing_m, _HEAT_ABSOLUTE_MAX_SPACING_M)
 
@@ -848,7 +841,6 @@ class QOMNAuditLog:
 
     def __init__(self) -> None:
         self._entries: list[AuditEntry] = []
-        # V114 FIX: Use HMAC-SHA256 for chain integrity (matching V105 fix
         # for security_logging.py). Plain SHA-256 is tamper-evident but NOT
         # tamper-proof — any attacker with source access can recompute chains.
         self._hmac_key = os.environ.get("FIREAI_QOMN_HMAC_KEY", "").encode()
@@ -964,7 +956,6 @@ class QOMNKernel:
         # L3 validation
         result = validate_smoke_spacing_result(result)
         # L4 audit
-        # V58 FIX (BUG #5): Pass layer3_passed=True — L3 validation was
         # performed but the audit log recorded layer3_passed=False (default)
         self.audit.record(
             "smoke_detector_spacing",
@@ -1006,7 +997,6 @@ class QOMNKernel:
         """Compute battery capacity. Full L0→L4 pipeline."""
         result = compute_battery_capacity_ah(standby_load_a, alarm_load_a, **kwargs)
         result = validate_battery_result(result)
-        # V58 FIX (BUG #5): Pass layer3_passed=True
         self.audit.record(
             "battery_capacity",
             {"standby_a": standby_load_a, "alarm_a": alarm_load_a},
@@ -1027,7 +1017,6 @@ class QOMNKernel:
         """Compute voltage drop. Full L0→L4 pipeline."""
         result = compute_voltage_drop(current_a, length_m, awg_gauge, supply_voltage_v, max_drop_pct)
         result = validate_voltage_drop_result(result)
-        # V58 FIX (BUG #5): Pass layer3_passed=True
         self.audit.record(
             "voltage_drop",
             {"current_a": current_a, "length_m": length_m, "awg": awg_gauge},
@@ -1047,7 +1036,6 @@ class QOMNKernel:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# V214: Self-Healing Integration Layer
 # ═══════════════════════════════════════════════════════════════════════════════
 # The self-healing engine (@self_healing decorator) returns SafetyResult objects.
 # QOMNKernel methods return dicts. This wrapper bridges the two:

@@ -69,7 +69,6 @@ def _clear_akamai_env(monkeypatch):
     for key in list(os.environ.keys()):  # noqa: S7504 — intentional snapshot
         if key.startswith("AKAMAI_"):
             monkeypatch.delenv(key, raising=False)
-    # V216 FIX (SonarCloud python:S3626): removed redundant `return` at end of function
 
 
 # ── AkamaiConfig tests ───────────────────────────────────────────────────────

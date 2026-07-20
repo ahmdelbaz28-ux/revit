@@ -138,7 +138,6 @@ class ProtectionType(str, Enum):
     p = "p"       # Pressurization (gas variant, EPL Gb/Gc)
     q = "q"       # Powder filling (EPL Gb — gas only)
     s = "s"       # Special protection (EPL Ga/Gb)
-    # V76 CRIT-06 FIX: Added dust-specific protection concepts per IEC 60079-31.
     # Previously missing — gas-only types (d, p, nA) were incorrectly allowed
     # in dust zones. Dust entering a flameproof enclosure accumulates on hot
     # surfaces and ignites — direct violation of IEC 60079-31:2022 §6.
@@ -211,7 +210,6 @@ _ZONE_PERMITTED_PROTECTIONS: dict[ATEXZone, set[ProtectionType]] = {
         ProtectionType.s,
     },
     ATEXZone.ZONE_20: {ProtectionType.ia, ProtectionType.ma, ProtectionType.ta, ProtectionType.tD},
-    # V76 CRIT-06 FIX: Removed gas-only types (d, p) from dust zones.
     # 'd' (flameproof) is EPL Gb — designed to CONTAIN gas explosions, NOT
     # prevent dust ingress. Dust entering a 'd' enclosure accumulates on hot
     # surfaces and ignites — IEC 60079-31:2022 §6 violation.
@@ -269,7 +267,6 @@ _FIRE_DETECTOR_IS_LEVEL: dict[ATEXZone, str] = {
     ATEXZone.ZONE_22: "ic",
 }
 
-# V21 ZoneType <-> ATEXZone mapping
 _V21_TO_ATEX_ZONE: dict[ZoneType, ATEXZone] = {
     ZoneType.ZONE_0: ATEXZone.ZONE_0,
     ZoneType.ZONE_1: ATEXZone.ZONE_1,
@@ -334,7 +331,6 @@ _NEC_TO_IEC_GAS_GROUP: dict[str, str] = {
     "B": "IIC",
     "C": "IIB",
     "D": "IIA",
-    # V43 FIX: NEC Group G (combustible dusts — flour, grain, wood) maps to
     # IEC IIIB (non-conductive combustible dust), NOT IIIA (combustible flyings).
     # IIIA covers textile fibers/flyings which have different equipment requirements.
     # Per NFPA 499-2021 and IEC 60079-0:2017 §5.
@@ -407,7 +403,6 @@ class ATEXHazardousArbiter:
         atex_zone = _V21_TO_ATEX_ZONE.get(zone)
         if atex_zone is None:
             errors.append(f"Unknown zone type: {zone.value}")
-            # V78 FIX: Default to MOST protective spec for unknown zones.
             # Previous default was Gc/3G (Zone 2 only) — an unknown zone could
             # be Zone 0 (continuous explosive atmosphere). Placing Zone 2 equipment
             # in Zone 0 is an explosion risk per IEC 60079-0 §5.
@@ -442,7 +437,6 @@ class ATEXHazardousArbiter:
         # Fix #15 (V21.2): Temperature class with IEC 60079-14 thermal margin
         # Uses _select_temp_class_with_margin which applies 5% margin
         # for Zone 0/20/1/21, instead of just "strictly below"
-        # V57 FIX (Finding 11): NaN autoignition_c passes `is not None` guard —
         # NaN is not None, so it proceeds to _select_temp_class_with_margin(NaN, zone)
         # which compares NaN < autoignition thresholds (always False), selecting T1
         # (max 450°C) — the LEAST protective class. Must reject non-finite values.
@@ -470,7 +464,6 @@ class ATEXHazardousArbiter:
                     f"[IEC 60079-14 §5.3]"
                 )
         else:
-            # V78 FIX: Default to T6 (most conservative, 85°C max) when autoignition
             # is unknown. Previous default was T4 (135°C max) — if the substance has
             # autoignition between 85-135°C, T4 equipment could have surface temperatures
             # exceeding the autoignition point, causing ignition. Per IEC 60079-0 §7.3,
@@ -483,7 +476,6 @@ class ATEXHazardousArbiter:
 
         # Gas group
         nec_grp = nec_group.upper() if nec_group else ""
-        # V48 FIX: Unknown gas group defaults to IIC (most hazardous) instead of IIB.
         # IIC covers hydrogen, acetylene, carbon disulfide — the most easily ignited.
         # IIB equipment in an IIC atmosphere could ignite the atmosphere.
         # Per IEC 60079-0:2017 §5, unknown = assume worst case.
@@ -543,7 +535,6 @@ class ATEXHazardousArbiter:
                     protection_modes=["ic"],  # V79 FIX: was "n" — invalid enum value
                 )
             except Exception:
-                # V43 FIX: Ultimate fallback must NOT downgrade Zone 0 to Zone 2.
                 # The first fallback already preserves zone/epl/category but may
                 # fail if protection_modes=["n"] is invalid for Zone 0. The ultimate
                 # fallback must use the MOST protective mode ("ia") and preserve
@@ -617,7 +608,6 @@ class ATEXHazardousArbiter:
         if zone == ATEXZone.SAFE:
             return self._safe_result_legacy(hac_result, hazard_system)
 
-        # V79 FIX: Default to most protective (Ga/CAT_1G) for unknown zones.
         # Previously defaulted to Gb/CAT_2G (Zone 1 level) — if the unknown zone
         # is actually Zone 0 (continuous explosive atmosphere), Gb equipment
         # creates an ignition source. IEC 60079-0 §5: on failure, assume worst case.
@@ -632,10 +622,8 @@ class ATEXHazardousArbiter:
         )
 
         nec_grp = substance.nec_group.upper() if substance.nec_group else ""
-        # V48 FIX: Same as v21 path — unknown gas group defaults to IIC (most hazardous)
         iec_group = _NEC_TO_IEC_GAS_GROUP.get(nec_grp, "IIC")
 
-        # V57 FIX (Finding 12): v21_zone was referenced at line 533 before definition
         # at line 576. Moved v21_zone definition here, before the autoignition check
         # that uses it for _select_temp_class_with_margin.
         from fireai.core.models_v21 import ZoneType as V21ZoneType
@@ -649,7 +637,6 @@ class ATEXHazardousArbiter:
         # Fix #15
         temp_class = substance.temperature_class
         if substance.autoignition_c is not None:
-            # V57 FIX (Finding 11): NaN autoignition_c passes `is not None` guard.
             # NaN is not None, so it proceeds to _select_temp_class_with_margin(NaN, zone)
             # which compares NaN < autoignition thresholds (always False), selecting
             # T1 (max 450°C) — the LEAST protective class. Reject non-finite values.
@@ -662,7 +649,6 @@ class ATEXHazardousArbiter:
                 )
                 temp_class = TemperatureClass.T6.value
             else:
-                # V54 FIX (V48 #16): Use _select_temp_class_with_margin for IEC
                 # 60079-14 §5.3 thermal margin compliance. The bare _select_temp_class
                 # only requires max_temp < autoignition, which provides zero margin.
                 # For Zone 0/1/20/21, IEC requires 5% thermal margin.
@@ -711,7 +697,6 @@ class ATEXHazardousArbiter:
                 hac_warnings=list(hac_result.warnings),
             )
         except Exception:
-            # V54 FIX (V48 #17): Single fallback with protection_modes=["n"] crashes
             # for Zone 0/20/21 because "n" is not in their allowed protection modes.
             # Add multi-level fallback chain matching arbitrate_v21().
             try:
@@ -843,7 +828,6 @@ class ATEXHazardousArbiter:
         for cls, max_temp in sorted(_TEMP_CLASS_MAP.items(), key=lambda x: -x[1]):
             if max_temp < autoignition_c:
                 return cls
-        # V48 FIX: When no T-class satisfies max_temp < autoignition_c,
         # the substance's autoignition is ≤85°C (T6 max). No safe equipment exists.
         # Previously returned T6 silently — equipment surface temp AT or ABOVE
         # autoignition = ignition source in explosive atmosphere.

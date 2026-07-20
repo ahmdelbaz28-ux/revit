@@ -311,7 +311,7 @@ const Sidebar: React.FC<SidebarProps> = () => {
                                                 <span className="text-[13px] font-medium">About BAZSPARK</span>
                                         </Link>
                                 )}
-                                <button
+                                <button type="button"
                                         onClick={() => setCollapsed(!collapsed)}
                                         className="flex items-center justify-center w-full py-2.5 rounded-lg text-muted-foreground hover:text-cyan-400 hover:bg-white/5 transition-all duration-200 mt-1"
                                         aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}

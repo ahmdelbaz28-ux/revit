@@ -152,7 +152,6 @@ class RoomSpec:
     def validate(self) -> None:
         """Run physics guards on room specification."""
         guard_ceiling_height_m(self.ceiling_height_m)
-        # V65 FIX: NaN bypasses <=0 check (NaN <= 0 is False in Python).
         # This allows NaN room dimensions to pass validation, producing NaN
         # area, NaN detector coordinates, and zero detectors placed.
         if not math.isfinite(self.width_m) or not math.isfinite(self.length_m):
@@ -288,7 +287,6 @@ class DetectorPlacementEngine:
             spacing_result = self._kernel.smoke_detector_spacing(room.ceiling_height_m)
             nfpa_refs.append("NFPA 72-2022 §17.7.3 / Table 17.6.3.1")
         else:  # HEAT
-            # V117 FIX (caller): Pass min(room.area_m2, NFPA_HEAT_MAX_AREA) as
             # area_per_detector. The OLD code passed room.area_m2 directly, which
             # violated the kernel's contract — the kernel's `area_per_detector_m2`
             # parameter is the coverage area PER detector (NFPA 72 §17.6.3.1 cap
@@ -316,7 +314,6 @@ class DetectorPlacementEngine:
 
         S = spacing_result.get("listed_spacing_m") or spacing_result.get("spacing_m")
         R = spacing_result.get("coverage_radius_m")
-        # V65 FIX: Guard against S=0 or S=None → infinite loop in hex grid.
         # S=0 makes row_height=0, causing y+=0 infinite loop.
         # S=None causes TypeError. Both are catastrophic in a safety-critical system.
         if S is None or not math.isfinite(S) or S <= 0:
@@ -352,7 +349,6 @@ class DetectorPlacementEngine:
 
         # ── Verify coverage ────────────────────────────────────────────────────
         coverage_pct = self._verify_coverage(room, detectors, R)
-        # V76 HIGH-04 FIX: Changed threshold from 99.0% to 99.9% to match
         # floor_orchestrator's adaptive re-solve threshold. Inconsistent thresholds
         # allowed designs at 99.5% to pass device_placement but fail orchestrator.
         if coverage_pct < 99.9:
@@ -538,7 +534,6 @@ class DetectorPlacementEngine:
         """
         stations: list[PlacedPullStation] = []
         for i, exit_door in enumerate(room.exit_doors):
-            # V76 HIGH-05: Pull station placement uses x + offset (right side).
             # Per ADA and IBC, pull stations should be on the LATCH SIDE of the
             # door (handle side), which depends on door swing direction. Since
             # door swing data is not available in the current data model, this

@@ -55,7 +55,6 @@ if str(_PROJECT_ROOT) not in sys.path:
 # Excluding from collection here so the full suite can run without cascade failures.
 collect_ignore = ["test_mip_solver.py"]
 
-# V142 SAFETY: Prevent MCP server tests from hanging on stdin in CI.
 # In CI runners, sys.stdin has no EOF, so _stdin_loop()'s `for line in sys.stdin`
 # blocks forever. Setting FIREAI_MCP_NO_STDIN=1 globally makes _stdin_loop()
 # a no-op wait on _running instead. Production deployments do NOT set this.
@@ -67,7 +66,6 @@ _os.environ.setdefault("FIREAI_HMAC_SECRET_KEY", "test_hmac_secret_key_123456")
 _os.environ.setdefault("FIREAI_CSRF_DISABLED", "1")
 _os.environ.setdefault("FIREAI_ENV", "development")
 
-# V212 FIX: FIREAI_SESSION_SECRET is required by backend/app.py::lifespan().
 # Without it, TestClient-based tests in tests/ fail at startup with:
 #   RuntimeError: FIREAI_SESSION_SECRET environment variable is not set.
 # Generate a stable test secret at import time (safe — test-only, no prod access).
@@ -75,8 +73,6 @@ if not _os.environ.get("FIREAI_SESSION_SECRET"):
     import secrets as _secrets
     _os.environ["FIREAI_SESSION_SECRET"] = _secrets.token_urlsafe(64)
 
-# V212 FIX: backend/app.py::lifespan also requires DATABASE_URL + CORS.
-# V220 FIX (SonarCloud python:S5443): use tempfile.mkdtemp() which creates
 # a PRIVATE temp directory with mode 0o700. Hardcoded /tmp paths are flagged
 # by SonarCloud regardless of mode because /tmp itself is mode 1777.
 import tempfile as _tempfile_root_mod
@@ -91,7 +87,6 @@ _os.environ.setdefault("DIGITAL_TWIN_DB_PATH", f"{_FIREAI_TEST_DIR_ROOT}/fireai_
 _os.environ.setdefault("UDM_DB_PATH", f"{_FIREAI_TEST_DIR_ROOT}/udm_test_root.db")
 _os.environ.setdefault("CORS_ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:5173")
 
-# V212 FIX: SECRET_KEY is used by webhook test fixtures as HMAC secret.
 # Must be ≥32 chars per NIST SP 800-107 (enforced by webhook_service.py:440).
 # Without this, 12 webhook tests fail with ValueError.
 _os.environ.setdefault("SECRET_KEY", "ci-test-hmac-secret-key-32-chars-minimum!!")

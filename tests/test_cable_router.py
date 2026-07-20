@@ -378,7 +378,6 @@ class TestVoltageDrop:
             wire_gauge=WireGauge.AWG_14,
             ps_voltage=24.0,
         )
-        # V58 FIX: R_AWG14 = 10.07 Ω/km at 75°C (was 8.450 at 20°C), L = 0.1km
         # V_drop = 1.0 × 2 × 10.07 × 0.1 = 2.014V
         assert abs(result.actual_value - 2.014) < 0.01
 
@@ -1153,7 +1152,6 @@ class TestCableRouteDataclass:
     def test_route_hash_auto_computed(self, router):
         route = router.route(start=(2.0, 2.0, 1.5), end=(5.0, 5.0, 1.5))
         assert route.computation_hash != ""
-        # V97 FIX: Hash extended from 16 to 32 hex chars per NIST SP 800-107
         assert len(route.computation_hash) == 32
 
     def test_route_is_frozen(self, router):
@@ -1226,7 +1224,6 @@ class TestNoApproximation:
     def test_voltage_drop_formula_exact(self):
         """Voltage drop must use exact NEC Chapter 9, Table 8 values."""
         engine = ConstraintEngine()
-        # V58 FIX: AWG 14: 10.07 Ω/km at 75°C (was 8.450 at 20°C), I=1A, L=100m
         # V_drop = 1.0 × 2 × 10.07 × 0.1 = 2.014V
         result = engine.check_voltage_drop(
             alarm_current_a=1.0,
@@ -1254,7 +1251,6 @@ class TestRoutingSchedule:
         ]
         schedule = router.route_all(connections)
         assert schedule.computation_hash != ""
-        # V97 FIX: Hash extended from 16 to 32 hex chars per NIST SP 800-107
         assert len(schedule.computation_hash) == 32
 
     def test_schedule_max_circuit_length(self, router):

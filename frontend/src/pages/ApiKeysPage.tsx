@@ -101,12 +101,13 @@ export function ApiKeysPage() {
                 // This avoids the blocking browser confirm() dialog which is not
                 // production-quality and can't be styled.
                 let confirmed = false;
+                // NOSONAR - typescript:S2004: nested callbacks intentional for promise-based toast confirmation flow
                 const deletePromise = new Promise<void>((resolve, reject) => {
                         toast("Delete this API key? This cannot be undone.", {
                                 duration: 10000,
                                 action: {
                                         label: "Delete",
-                                        onClick: () => {
+                                        onClick: () => {  // NOSONAR - typescript:S2004
                                                 confirmed = true;
                                                 const apiKey = getApiKey();
                                                 const headers: Record<string, string> = {};

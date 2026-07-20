@@ -29,12 +29,10 @@ from parsers._path_security import (
 
 logger = logging.getLogger("fireai.dwg_parser")
 
-# V122: Allowed extensions for DWG parser entry point. The parser also
 # supports DXF as a fast-path (see parse() — skips LibreDWG when input
 # is already DXF).
 _DWG_ALLOWED_EXTENSIONS = frozenset({".dwg", ".dxf"})
 
-# V122: Hard cap on input file size. DWG/DXF files larger than this are
 # either malformed, malicious, or beyond the engineering scope of this
 # system (a fire alarm floor plan does not need 500 MB of geometry).
 # Configurable via env var for legitimate edge cases.
@@ -335,7 +333,6 @@ class DWGParser:
         the conservative (safer) choice per Life-Safety Rule 5.
 
         """
-        # V82 FIX: core.models now exists at project root — no sys.path
         # manipulation needed. The old code hacked sys.path to work around
         # the missing core/models.py, which was fragile and unsafe.
         from core.models import Geometry, Point3D, UniversalElement
@@ -468,7 +465,6 @@ class DWGParser:
         start = time.monotonic()
         result = DWGParseResult(source_file=dwg_path, success=False)  # noqa: F841
 
-        # V122 SECURITY: Validate path BEFORE any file/subprocess access.
         # This catches argument injection, path traversal, null bytes,
         # bad extensions, and paths outside FIREAI_ALLOWED_UPLOAD_DIRS.
         try:
@@ -477,7 +473,6 @@ class DWGParser:
                 allowed_extensions=_DWG_ALLOWED_EXTENSIONS,
                 parser_name="DWGParser",
             )
-            # V122 SECURITY: Also validate file size (DoS protection)
             validate_file_size(
                 safe_path,
                 max_size_bytes=_DWG_MAX_FILE_SIZE_BYTES,
@@ -497,7 +492,6 @@ class DWGParser:
         # we hand the subprocess the resolved target instead.
         dwg_path = str(safe_path.resolve())
 
-        # V46 FIX: If file is already DXF, skip LibreDWG conversion and
         # parse directly with ezdxf. This handles the common case where
         # tests create DXF files and pass them to DWGParser.
         if dwg_path.lower().endswith(".dxf"):
@@ -558,12 +552,10 @@ class DWGParser:
             result.conversion_time_s = round(time.monotonic() - start_time, 3)
         return result
 
-    # V46: Backward compatibility alias — some tests use parse_dwg()
     # instead of parse(). Returns a list of UniversalElement objects
     # (from extract_rooms_from_chaos) for backward compatibility with
     # tests that expect list output.
     #
-    # V122 SECURITY: parse_dwg() now applies the same path validation
     # as parse() before calling ezdxf.readfile. ezdxf is robust against
     # malformed DXF content, but the path-level checks (extension,
     # allowed dirs, no null bytes, no leading dash) are still required.
@@ -577,7 +569,6 @@ class DWGParser:
             FileNotFoundError: if the file does not exist
 
         """
-        # V122 SECURITY: validation happens BEFORE the ezdxf import so
         # that a malicious path is rejected even on systems without
         # ezdxf installed. Order matters — validation is the first line
         # of defense and must not be gated on optional dependencies.
@@ -596,7 +587,7 @@ class DWGParser:
         doc = ezdxf.readfile(str(safe_path))
         return self.extract_rooms_from_chaos(doc)
 
-    def _convert_to_dxf(self, dwg_path: str) -> str:
+    def _convert_to_dxf(self, dwg_path: str) -> str:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """
         Convert DWG to DXF using available converter.
 

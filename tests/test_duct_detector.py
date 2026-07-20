@@ -159,7 +159,6 @@ class TestDuctExemptions:
 
     def test_zero_width_exempt(self):
         """Zero width duct is exempt (when CFM is known and ≤2000)."""
-        # V68 FIX: Must provide known CFM ≤2000 to allow dimension exemption
         duct = DuctSpec(duct_id="D1", length_m=5.0, width_m=0.0, airflow_cfm=1000.0, duct_type="supply")
         result = analyse_duct(duct)
         assert result.exempt is True
@@ -174,7 +173,6 @@ class TestDuctExemptions:
 
     def test_narrow_duct_exempt(self):
         """Duct narrower than minimum width (0.20m) is exempt."""
-        # V68 FIX: Must provide known CFM ≤2000 to allow dimension exemption
         duct = DuctSpec(duct_id="D1", length_m=5.0, width_m=0.15, airflow_cfm=1000.0, duct_type="supply")
         result = analyse_duct(duct)
         assert result.exempt is True

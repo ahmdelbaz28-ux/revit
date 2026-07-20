@@ -24,17 +24,18 @@ import os
 from dataclasses import dataclass
 from typing import Dict, List
 
-# V268 FIX: Import shared path-security helper (V125 Rule #23 — single source of truth)
 from parsers._path_security import (
     UnsafePathError,
     validate_file_size,
     validate_input_path,
 )
 
-# V268 FIX: Expose size cap via env var (V125 DoS cap consistency)
 _IFC_MAX_FILE_SIZE_BYTES = int(
     os.getenv("FIREAI_IFC_MAX_FILE_SIZE_BYTES", str(500 * 1024 * 1024))  # 500 MB
 )
+
+# ── Constants ────────────────────────────────────────────────────────────────
+_JSON_EXT = ".json"
 
 try:
     import ifcopenshell
@@ -60,9 +61,8 @@ class IFCParser:
     """Parse IFC format files."""
 
     def __init__(self, ifc_path: str):
-        # V125 DoS cap consistency & path safety
         try:
-            safe_path = validate_input_path(ifc_path, allowed_extensions=frozenset({".ifc", ".json"}))
+            safe_path = validate_input_path(ifc_path, allowed_extensions=frozenset({".ifc", _JSON_EXT}))
             validate_file_size(safe_path, max_size_bytes=_IFC_MAX_FILE_SIZE_BYTES)
         except (UnsafePathError, FileNotFoundError):
             # Allow initialization with any path (validation will run during parse)
@@ -102,8 +102,6 @@ class IFCParser:
                 origin = bounds.get('origin', {})
                 dims = bounds.get('dimensions', {})
 
-                # V78 FIX: Validate area — negative areas corrupt total_area calculation
-                # V79 FIX: Negative area → skip space entirely (not set to 0).
                 # Setting to 0 means zero protection for a room with real geometry.
                 raw_area = attrs.get('Area', 0)
                 if raw_area < 0:
@@ -196,11 +194,10 @@ class IFCParser:
                 including security validation failures (V125 hardening).
             ImportError: If trying to parse an IFC file without ifcopenshell installed
         """
-        # V125/V126 SECURITY (Rule #23): validate self.ifc_path BEFORE opening.
         try:
             safe_path = validate_input_path(
                 self.ifc_path,
-                allowed_extensions=frozenset({".ifc", ".json"}),
+                allowed_extensions=frozenset({".ifc", _JSON_EXT}),
                 parser_name="IFCParser.parse",
             )
             validate_file_size(
@@ -220,7 +217,7 @@ class IFCParser:
 
         # Load the data
         try:
-            if ext == ".json":
+            if ext == _JSON_EXT:
                 data = self._load_json()
             else:  # .ifc
                 if IFC_AVAILABLE:

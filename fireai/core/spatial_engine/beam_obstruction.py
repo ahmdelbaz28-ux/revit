@@ -475,7 +475,6 @@ def _subdivide_room_by_beams(
     vertical_beams = [b for b in significant_beams if b.is_vertical]
     mixed_beams = [b for b in significant_beams if not b.is_horizontal and not b.is_vertical]
 
-    # V134 F-6: If there are mixed-orientation beams, log a WARNING but
     # still proceed with the dominant orientation. The old code abandoned
     # all subdivision — that was unsafe (under-protection, not over-protection).
     if mixed_beams:
@@ -489,7 +488,6 @@ def _subdivide_room_by_beams(
             len(horizontal_beams), len(vertical_beams),
         )
 
-    # V134 F-6: If no horizontal or vertical beams remain (all mixed),
     # THEN fall back to single pocket with an explicit UNSAFE warning.
     if not horizontal_beams and not vertical_beams:
         logger.warning(
@@ -508,7 +506,6 @@ def _subdivide_room_by_beams(
             created_by_beam_ids=[b.id for b in significant_beams],
         )]
 
-    # V134 F-6: Use the dominant orientation (only horizontal or vertical beams)
     if len(horizontal_beams) >= len(vertical_beams):
         return _subdivide_by_horizontal_beams(
             room_id, room_polygon, ceiling_height_m, horizontal_beams
@@ -547,7 +544,6 @@ def _subdivide_by_horizontal_beams(
     y_min, y_max = min(ys), max(ys)
 
     # Create pocket boundaries: [y_min, y1, y2, ..., y_max]
-    # V135 F-30 FIX: Use inclusive bounds (y_min <= y <= y_max).
     # The OLD code used exclusive (y_min < y < y_max) which excluded
     # beams flush with the wall. Per NFPA 72 §17.7.3.2.4.2, a beam at
     # the wall still forms a pocket (wall+beam). Inclusive bounds
@@ -571,8 +567,6 @@ def _subdivide_by_horizontal_beams(
         y_low = boundaries[i]
         y_high = boundaries[i + 1]
 
-        # V139: Use Shapely for accurate pocket polygon (handles non-rectangular rooms)
-        # V135 F-16 fallback: rectangular approximation with WARNING when Shapely unavailable
         strip_rect = [
             (x_min, y_low), (x_max, y_low),
             (x_max, y_high), (x_min, y_high),
@@ -614,7 +608,6 @@ def _subdivide_by_horizontal_beams(
                     room_id, i + 1,
                 )
 
-        # V135 F-17: Reduce pocket ceiling height by max beam depth
         max_beam_depth = max((b.depth_m for b in beams), default=0.0)
         effective_ceiling_height = max(ceiling_height_m - max_beam_depth, 0.1)
 
@@ -679,12 +672,10 @@ def _subdivide_by_vertical_beams(
         ]
         area = _compute_polygon_area(pocket_polygon)
 
-        # V135 F-16: Check if room is approximately rectangular
         room_area = _compute_polygon_area(room_polygon)
         bbox_area = (x_max - x_min) * (y_max - y_min)
         is_rectangular = abs(room_area - bbox_area) < 0.01 * room_area
 
-        # V135 F-17: Reduce pocket ceiling height by max beam depth
         max_beam_depth = max((b.depth_m for b in beams), default=0.0)
         effective_ceiling_height = max(ceiling_height_m - max_beam_depth, 0.1)
 

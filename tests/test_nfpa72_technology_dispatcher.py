@@ -154,7 +154,6 @@ class TestSelectTechnology:
         d = EliteTechnologyDispatcher.select_technology(9.2)
         assert d.technology == DetectorTechnology.POINT_SMOKE
         assert d.spacing_m > 0
-        # V130: Changed from ECONOMIC_WARNING to STRATIFICATION_ADVISORY
         assert any("STRATIFICATION" in w or "ECONOMIC" in w for w in d.warnings)
 
     def test_max_point_height_point_smoke(self):
@@ -220,7 +219,6 @@ class TestSelectTechnology:
     def test_nfpa_references_in_result(self):
         d = EliteTechnologyDispatcher.select_technology(3.0)
         assert len(d.nfpa_references) >= 1
-        # V130: Now cites §17.7.3.2.3 (flat spacing) instead of Table 17.6.3.1.1
         assert any("17.7.3.2.3" in ref or "Table 17.6.3.1.1" in ref for ref in d.nfpa_references)
 
     def test_beam_nfpa_references(self):

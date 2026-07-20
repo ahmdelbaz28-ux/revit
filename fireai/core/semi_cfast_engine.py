@@ -162,7 +162,6 @@ class FireScenario:
 
     def __post_init__(self) -> None:
         """Validate scenario parameters at construction time."""
-        # V58 CRITICAL: NaN/Inf bypasses <= 0 checks (NaN <= 0 is False)
         _nan_fields = {
             "fire_load_MJ": self.fire_load_MJ,
             "room_area_m2": self.room_area_m2,
@@ -223,7 +222,6 @@ class TenabilityCriteria:
     max_o2_pct: float = 15.0
 
     def __post_init__(self) -> None:
-        # V58 CRITICAL: NaN/Inf bypasses <= 0 checks (NaN <= 0 is False)
         _nan_fields = {
             "max_temp_c": self.max_temp_c,
             "min_vis_m": self.min_vis_m,
@@ -386,7 +384,6 @@ def calculate_smoke_layer_height(
     H = room_height_m
     A = room_area_m2
 
-    # V58 CRITICAL: NaN fire_hrr_kw bypasses max() → NaN → all guards fail
     if not math.isfinite(fire_hrr_kw) or not math.isfinite(room_height_m) or not math.isfinite(room_area_m2):
         # Fail-safe: smoke at floor level (most dangerous assumption)
         return 0.0
@@ -432,7 +429,6 @@ def calculate_smoke_layer_height(
 
     Y = H * (1.0 - layer_fraction)
 
-    # V58 CRITICAL: NaN Y would be clamped to H (appears safe) per IEEE 754
     # min(H, NaN) = H → max(0.0, H) = H → smoke at ceiling = SAFE (wrong!)
     if not math.isfinite(Y):
         return 0.0  # Fail-safe: smoke at floor level
@@ -595,7 +591,6 @@ def _compute_optical_density(
     y_soot = PHYSICAL_CONSTANTS["SOOT_YIELD_FACTOR"]  # 0.050
     alpha_ext = PHYSICAL_CONSTANTS["SPECIFIC_EXTINCTION_COEFFICIENT_M2_KG"]  # 8700
 
-    # V58 HIGH: NaN fire_hrr_kw bypasses max() → NaN → OD corrupted
     if not math.isfinite(fire_hrr_kw):
         return float("inf")  # Fail-safe: worst-case optical density
 
@@ -618,7 +613,6 @@ def _compute_optical_density(
     # But we use the simpler estimate with current HRR for engineering purposes
     total_soot = m_dot_soot * time_seconds / 3.0  # kg (approximate for growing fire)
 
-    # V59 FIX (Finding 5): Upper layer volume computation improved.
     # Previously used fixed V/3 which underestimates OD in late-stage fires
     # when the smoke layer has descended below 2/3 height. In CFAST, the upper
     # layer grows as the fire develops: initially ~1/3, then 1/2, then 2/3+ as
@@ -708,7 +702,6 @@ def estimate_co_concentration(
     if time_seconds < 0:
         raise ValueError(f"time_seconds must be non-negative, got {time_seconds}")
 
-    # V58 HIGH: NaN fire_hrr_kw → max(NaN, 0.0) = NaN → CO = 0.0 (non-conservative)
     if not math.isfinite(fire_hrr_kw):
         return float("inf")  # Fail-safe: worst-case CO
 
@@ -1033,7 +1026,6 @@ def _estimate_o2_depletion(
         O₂ concentration as percentage by volume.
 
     """
-    # V58 HIGH: NaN fire_hrr_kw → NaN O₂ calculation
     if not math.isfinite(fire_hrr_kw) or not math.isfinite(room_volume_m3):
         return 0.0  # Fail-safe: 0% O₂ (most dangerous)
 

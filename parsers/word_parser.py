@@ -101,7 +101,6 @@ class WordParser:
             WordParseResult with extracted info
 
         """
-        # V126: Path security + file-size cap
         from parsers._path_security import (
             UnsafePathError,
             validate_file_size,

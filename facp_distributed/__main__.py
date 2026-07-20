@@ -36,7 +36,6 @@ def create_distributed_system(config: Optional[Dict[str, Any]] = None) -> Dict[s
     """Create and configure the distributed FACP system"""
     config = config or {}
 
-    # V289 SAFETY FIX: AuthProvider now requires explicit credentials.
     # The old default "default_secret_for_dev" was:
     #   1. Only 22 characters (below the 32-char HMAC minimum)
     #   2. A weak, publicly known default — anyone reading the source

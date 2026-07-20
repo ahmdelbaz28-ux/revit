@@ -78,7 +78,6 @@ def remove_file_level_nosonar(filepath: Path) -> bool:
     Returns True if the file was modified, False if it was already clean
     or didn't match the pattern.
     """
-    # V143 SECURITY FIX: Validate path before any file I/O
     safe_path = _validate_path_safely(filepath)
     if safe_path is None:
         return False
@@ -106,7 +105,6 @@ def remove_file_level_nosonar(filepath: Path) -> bool:
     if not new_content.endswith("\n"):
         new_content += "\n"
 
-    # V143 SECURITY FIX: Use the validated safe_path for writes
     safe_path.write_text(new_content, encoding="utf-8")
     print(f"  DONE {safe_path}")
     return True

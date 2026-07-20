@@ -139,7 +139,6 @@ def generate_logic_tree(  # NOSONAR — S3776: cognitive complexity is inherent 
         if cat == SpaceCategory.MACHINERY_SPACE_A:
             if dp.detector_type.value.startswith("flame"):
                 level = AlarmLevel.ACTION
-                # V281 SAFETY: manual_abort_button is MANDATORY for any
                 # extinguishing release (IEC 60092-502 §4.5). Without it,
                 # an accidental CO2 release in occupied machinery space
                 # would asphyxiate crew within seconds.
@@ -173,7 +172,6 @@ def generate_logic_tree(  # NOSONAR — S3776: cognitive complexity is inherent 
             delay = 0.0
         elif cat == SpaceCategory.CARGO_SPACE:
             level = AlarmLevel.ACTION
-            # V281 SAFETY: manual_abort_button MANDATORY for CO2 release
             # (SOLAS II-2/10.4.1.1.3 + FSS Code Ch.2 §2.1.2.3).
             # The 60s delay gives crew time to evacuate cargo hold access
             # AND press the abort button if the alarm is false.
@@ -192,7 +190,6 @@ def generate_logic_tree(  # NOSONAR — S3776: cognitive complexity is inherent 
             action_outputs=outputs,
             delay_s=delay,
             interlocks=("verify_two_detectors",) if level == AlarmLevel.ACTION else (),
-            # V281 SAFETY: cite the manual abort requirement explicitly.
             standard_reference=(
                 "SOLAS II-2/5.6 + IEC 60092-502 §4.5 + FSS Code Ch.2 §2.1.2.3"
                 if level == AlarmLevel.ACTION
@@ -233,7 +230,6 @@ def export_to_plc_script(nodes: list[AlarmLogicNode]) -> str:  # NOSONAR — S37
     delayed_outputs: list[tuple] = []  # (node_id, output_name, delay_s)
     needs_interlock: list[str] = []   # node_ids with interlocks
 
-    # V281 SAFETY: manual_abort_button is a PLC INPUT (physical pushbutton at
     # the fire control station), NOT an output. It must be declared as VAR_INPUT
     # and AND-complemented in the release condition: a release output is only
     # asserted when detector_trigger AND NOT manual_abort_button.
@@ -251,14 +247,12 @@ def export_to_plc_script(nodes: list[AlarmLogicNode]) -> str:  # NOSONAR — S37
                 seen_inputs.add(interlock_var)
                 declared_interlocks.append(interlock_var)
                 needs_interlock.append(n.node_id)
-        # V281 SAFETY: register manual_abort_button as a PLC INPUT (not output).
         if ABORT_INPUT_NAME in n.action_outputs and not abort_input_seen:
             abort_ident = _to_ident(ABORT_INPUT_NAME)
             seen_inputs.add(abort_ident)
             declared_inputs.append(abort_ident)
             abort_input_seen = True
         for out in n.action_outputs:
-            # V281 SAFETY: skip manual_abort_button — it's an input, not output.
             if out == ABORT_INPUT_NAME:
                 continue
             out_ident = _to_ident(out)
@@ -309,7 +303,6 @@ def export_to_plc_script(nodes: list[AlarmLogicNode]) -> str:  # NOSONAR — S37
     # don't latch forever (SOLAS II-2/5.6 requires reset-on-clear).
     for n in nodes:
         in_ident = _to_ident(n.trigger_detector)
-        # V281 SAFETY: for ACTION-level nodes with extinguishing release,
         # AND-complement with manual_abort_button (PLC input). The release
         # output is only asserted when detector_trigger AND NOT manual_abort_button.
         # This is the IEC 61131-3 ST implementation of the manual release
@@ -326,7 +319,6 @@ def export_to_plc_script(nodes: list[AlarmLogicNode]) -> str:  # NOSONAR — S37
         lines.append(f"  // {n.node_id}: zone={n.zone_id} level={n.alarm_level.value}")
         lines.append(f"  IF {cond} THEN")
         for out in n.action_outputs:
-            # V281 SAFETY: manual_abort_button is an INPUT — never assigned here.
             if out == ABORT_INPUT_NAME:
                 continue
             out_ident = _to_ident(out)

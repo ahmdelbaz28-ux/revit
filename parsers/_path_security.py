@@ -145,7 +145,6 @@ def validate_input_path(
 
     input_path_obj = Path(input_path)
 
-    # V138 FIX (LOW-1): Reordered checks — authorization BEFORE existence.
     #
     # The original order was:
     #   (1) Path exists?  ← FileNotFoundError if not

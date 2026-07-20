@@ -252,7 +252,6 @@ class StairwellZone:
     design_pressure_pa: float | None = None
     has_pressurization_fan: bool = False
     has_pressure_switches: bool = False
-    # V114 FIX: Fail-safe — interlock must be confirmed, not assumed
     has_fire_alarm_interlock: bool = False
     fail_safe_state: FailSafeState = FailSafeState.MAINTAIN_PRESSURIZATION
     has_emergency_power: bool = False
@@ -621,7 +620,6 @@ class StairwellSmokeControlIntegrator:
                 f"NaN comparisons silently return False."
             )
 
-        # V48 FIX: building_height_m=0.0 neuters the entire module —
         # pressurization_required = 0.0 > 22.86 = False. A 50-story building
         # would pass with zero pressurization. Now emit CRITICAL log warning.
         # V FIX: Also set a flag to mark ALL results as non-compliant when
@@ -710,7 +708,6 @@ class StairwellSmokeControlIntegrator:
         zone_results: list[StairwellSmokeControlResult] = []
 
         # Determine if pressurization is required based on building height
-        # V25 FIX: NFPA 101 §7.2.3.9 says buildings "exceeding 75 ft"
         # require pressurization.  "Exceeding" means strictly greater
         # than (>), not greater than or equal to (≥).
         pressurization_required = bldg_height > self.min_height_m

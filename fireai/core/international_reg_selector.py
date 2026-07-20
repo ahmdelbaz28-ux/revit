@@ -511,7 +511,6 @@ ZONE_TO_DIVISION: dict[ATEXZone, tuple[NECDivision, HazardClass]] = {
 
 
 # ---------------------------------------------------------------------------
-# V21 resolve() — raises UnknownCountryError, no silent fallback
 # ---------------------------------------------------------------------------
 
 

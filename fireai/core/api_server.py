@@ -233,7 +233,6 @@ app = FastAPI(
 )
 
 # ✅ CORS — restrict in production
-# V114 FIX: Reject wildcard CORS origins for safety-critical system
 _api_cors_origins = os.environ.get("FIREAI_CORS_ORIGINS", "http://localhost:3000").split(",")
 if "*" in _api_cors_origins:
     import logging
@@ -498,7 +497,6 @@ def audit_verify():
 
 
 # ============================================================================
-# V25 — Integration Pipeline Endpoints
 # ============================================================================
 
 

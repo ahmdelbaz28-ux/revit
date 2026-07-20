@@ -154,7 +154,6 @@ class UniversalDataModel:
         self._conn.execute("PRAGMA journal_mode=WAL")
         self._lock = threading.RLock()
         self._conn.row_factory = sqlite3.Row
-        # V138 FIX (MEDIUM-3): Track closed state so post-close operations
         # raise RuntimeError (per test contract) instead of leaking the
         # sqlite3.ProgrammingError type (which is an implementation detail
         # the test should not depend on).
@@ -241,7 +240,6 @@ class UniversalDataModel:
                     version INTEGER DEFAULT 0
                 )
             ''')
-            # V129 FIX: Migration — add element_type and project_id columns if they
             # don't exist (existing databases created before V129 won't have them).
             try:
                 cursor.execute("ALTER TABLE elements ADD COLUMN element_type TEXT DEFAULT 'unknown'")
@@ -290,12 +288,10 @@ class UniversalDataModel:
                 CREATE INDEX IF NOT EXISTS idx_conflict_element
                 ON conflicts(element_id)
             ''')
-            # V129 FIX: Index on element_type for fast type-based queries.
             cursor.execute('''
                 CREATE INDEX IF NOT EXISTS idx_element_type
                 ON elements(element_type)
             ''')
-            # V129 FIX: Index on project_id for fast project-scoped queries.
             cursor.execute('''
                 CREATE INDEX IF NOT EXISTS idx_element_project
                 ON elements(project_id)
@@ -325,7 +321,6 @@ class UniversalDataModel:
                 now = datetime.now(timezone.utc).isoformat()
 
                 cursor = self._conn.cursor()
-                # V129 FIX: Extract element_type and project_id from data for
                 # indexed column access (avoids full JSON scan on every query).
                 et = data.get('properties', {}).get('element_type', 'unknown') if isinstance(data, dict) else 'unknown'
                 if hasattr(et, 'value'):
@@ -339,10 +334,8 @@ class UniversalDataModel:
                 self._conn.commit()
                 return cursor.rowcount > 0
             except MemoryError:
-                # V83 FIX (H-5): Never swallow MemoryError — let it propagate.
                 raise
             except (sqlite3.Error, json.JSONDecodeError) as e:
-                # V83 FIX (H-5): Only catch expected exceptions. Classify:
                 # MEDIUM — database/serialization error, not data corruption.
                 logger.exception("MEDIUM: Error adding element %s: %s", element_id if 'element_id' in dir() else '?', e)
                 return False
@@ -470,7 +463,6 @@ class UniversalDataModel:
             ValueError: If updates contain keys not in the whitelist.
 
         """
-        # V83 FIX (C-3): Key whitelist validation — prevents JSON injection
         invalid_keys = set(updates.keys()) - _ELEMENT_UPDATABLE_KEYS
         if invalid_keys:
             raise ValueError(
@@ -498,7 +490,6 @@ class UniversalDataModel:
                 new_version = current_version + 1
                 now = datetime.now(timezone.utc).isoformat()
 
-                # V129 FIX: Also update element_type and project_id indexed columns
                 et = data.get('properties', {}).get('element_type', 'unknown') if isinstance(data, dict) else 'unknown'
                 if hasattr(et, 'value'):
                     et = et.value
@@ -765,7 +756,6 @@ class UniversalDataModel:
                 cursor.execute("SELECT COUNT(*) FROM conflicts WHERE resolved = 0")
                 unresolved_conflicts = cursor.fetchone()[0]
 
-                # V131 FIX: Use a proper dataclass instead of dynamic class attributes for mypy
                 from dataclasses import dataclass
                 @dataclass
                 class _Stats:
@@ -824,7 +814,6 @@ class UniversalDataModel:
                 try:
                     et = ElementType(et)
                 except (ValueError, KeyError):
-                    # V83 FIX (M-4): Log when element_type can't be resolved
                     logger.warning("Cannot resolve element_type '%s' to ElementType enum — keeping as string", et)
                 properties = SemanticProperties(
                     element_type=et,

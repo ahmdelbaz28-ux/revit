@@ -49,7 +49,6 @@ _MAX_DWG_SIZE_BYTES = 50 * 1024 * 1024  # 50 MB
 _AUTH = [Depends(require_permission(Permission.PROJECT_CREATE))]
 
 
-# V140 Phase 10 SELF-CRITICISM FIX: Rate limit for DWG upload.
 # Previous approach used @router.post THEN @limiter.limit — wrong order.
 # The @router.post decorator captures the function as endpoint BEFORE
 # @limiter.limit can add _rate_limits metadata. Result: rate limit was
@@ -183,7 +182,6 @@ async def _parse_dwg_impl(request: Request, file: UploadFile):  # NOSONAR — S3
                 logger.debug("Temp file cleanup failed: %s", exc)
 
 
-# V140 Phase 10 SELF-CRITICISM FIX: Register route MANUALLY after applying
 # @limiter.limit. This ensures the limiter-wrapped function is the actual
 # endpoint. The previous @router.post + @limiter.limit order was wrong.
 if _HAS_LIMITER:
@@ -211,7 +209,6 @@ else:
     )
 
 # HOTFIX C-3: Public alias for backward compatibility.
-# V140 Phase 10 refactor renamed parse_dwg → _parse_dwg_impl (private) and
 # registered it via router.add_api_route(). However, tests/test_dwg_router.py
 # imports `parse_dwg` directly to register it on a test FastAPI app without
 # the _AUTH dependency (which would cause 403 in tests).

@@ -57,7 +57,6 @@ class DXFParser:
     MIN_ROOM_AREA_M2: float = 2.0  # Min 2m² per NFPA 72 (columns are ~1.5m²)
     MAX_ROOM_AREA_M2: float = 50_000.0
 
-    # V76 CRIT-03 FIX: Corrected INSUNITS mapping per AutoCAD DXF specification.
     # Code 8 was mapped to 1000.0 (kilometers) but is actually Microinches
     # (2.54e-8 m). Code 3 (Miles) and Code 7 (Kilometers) were missing
     # entirely, causing ValueError on those unit types. Wrong unit mapping
@@ -108,7 +107,6 @@ class DXFParser:
         for i, poly in enumerate(polys):
             rid = f"ROOM_{i + 1:03d}"
 
-            # V79 FIX: Check for NaN/Inf area BEFORE min/max comparisons.
             # NaN < 2.0 → False and NaN > 50000.0 → False in IEEE-754, so NaN
             # area passes both checks and enters the pipeline, corrupting area-weighted
             # calculations (NaN * anything = NaN → global coverage = NaN).
@@ -122,7 +120,6 @@ class DXFParser:
                 skipped += 1
                 continue
             if area > self.max_area:
-                # V78 FIX: Skip oversized rooms instead of just warning.
                 # A room with area 500,000 m² is likely a unit conversion error
                 # (DXF in mm parsed as meters). Accepting it produces catastrophically
                 # wrong detector counts — a 500,000 m² room would get 0 detectors/m².
@@ -264,7 +261,6 @@ class DXFParser:
             if ent.dxftype() == "LINE":
                 sx, sy = ent.dxf.start.x * scale, ent.dxf.start.y * scale
                 ex, ey = ent.dxf.end.x * scale, ent.dxf.end.y * scale
-                # V76 HIGH-08 FIX: NaN/Inf coordinates from corrupt DXF files
                 # produce invalid Shapely geometries that crash downstream analysis.
                 if not (math.isfinite(sx) and math.isfinite(sy) and math.isfinite(ex) and math.isfinite(ey)):
                     logger.warning("Skipping LINE with non-finite coordinates: start=(%s,%s) end=(%s,%s)", sx, sy, ex, ey)
@@ -275,7 +271,6 @@ class DXFParser:
             elif ent.dxftype() in ("LWPOLYLINE", "POLYLINE"):
                 try:
                     raw_pts = [(p[0] * scale, p[1] * scale) for p in ent.get_points()]
-                    # V79 FIX: If ANY point is non-finite, the polyline geometry is
                     # corrupted. Removing middle points creates shortcuts across the
                     # removed vertex, producing self-intersecting or significantly
                     # different room boundaries. Skip the entire entity instead.

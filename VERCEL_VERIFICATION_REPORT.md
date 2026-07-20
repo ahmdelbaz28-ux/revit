@@ -142,7 +142,6 @@ exit 0
 
 **After**:
 ```yaml
-# V143 FIX: Exit 1 (not 0) — the deployment did NOT happen.
 # The previous behavior (exit 0) masked the failure...
 exit 1
 ```

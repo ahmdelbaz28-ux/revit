@@ -45,7 +45,6 @@ class TestAutoCADServiceInitialization:
         mock_app.ActiveDocument = mock_doc
         mock_doc.Utility = mock_util
 
-        # V140 FIX (Rule 17): The production code (autocad_service.py:99-112)
         # tries `GetActiveObject` FIRST, and only falls back to `Dispatch` if
         # GetActiveObject raises. The old test did NOT make GetActiveObject
         # raise, so the success path never reached Dispatch. The test asserted
@@ -66,7 +65,6 @@ class TestAutoCADServiceInitialization:
     @patch('backend.services.autocad_service.HAS_AUTOCAD_API', False)
     def test_connect_without_api(self):
         """Test connecting when AutoCAD API is not available."""
-        # V142 FIX: The production connect() implementation falls back to a
         # SIMULATION mode when HAS_AUTOCAD_API is False AND FIREAI_ENV is
         # "development" (the default). The simulation mode returns True and
         # sets self.connected=True — useful for local dev, but it would mask
@@ -202,7 +200,6 @@ class TestAutoCADFileOperations:
         mock_app.Documents.Add.return_value = mock_doc
         mock_doc.ModelSpace = mock_space
 
-        # V140 FIX (Rule 17): write_dwg (autocad_service.py:383-386) requires
         # `self.connected == True`. The old test forgot to connect, so the
         # method short-circuited with "AutoCAD service not connected" log.
         # Force GetActiveObject to raise so Dispatch is the path that connects,
@@ -397,7 +394,6 @@ class TestAutoCADConnectionManagement:
         assert text_result is None
         assert save_result is False
 
-        # V213: delete/modify must also fail-closed when not connected
         assert service.delete_entity("1A2F") is False
         assert service.modify_entity("1A2F", {"Color": 1}) is False
 
@@ -846,7 +842,6 @@ class TestV214NoHardcodedReadDwgEntities:
         # These may appear in docstrings (as quotes) but not as actual dict literals.
         # We look for the pattern inside a return dict: {"handle": "H1"
         hardcoded_pattern = re.compile(r'"\s*handle\s*"\s*:\s*"H[12]"')
-        # V216 FIX (SonarCloud python:S1481): removed unused `matches` variable.
         # The actual check below iterates line-by-line and collects `lines_with_matches`.
         # Filter out matches that are inside docstrings (lines starting with # or """)
         # by checking if the line is a comment or docstring

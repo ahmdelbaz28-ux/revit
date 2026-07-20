@@ -18,7 +18,6 @@ class TestAuditChainThreadSafety:
 
     def test_concurrent_writes_produce_valid_chain(self, monkeypatch):
         """Multiple threads writing to AuditStore should not fork the chain."""
-        # V137 F-1: Set a FIXED HMAC key so verify_chain works across test runs
         monkeypatch.setenv("AUDIT_HMAC_KEY", "test-hmac-key-for-concurrent-testing-32chars")
 
         from fireai.core import audit_store
@@ -51,7 +50,6 @@ class TestAuditChainThreadSafety:
             t.join()
 
         assert len(errors) == 0, f"Concurrent writes failed: {errors}"
-        # V137 F-1: Chain links should be correct (no forks)
         # Note: verify_chain may fail due to pre-existing events from other tests
         # with different HMAC keys. We only check that OUR concurrent writes
         # didn't produce forked previous_hash values.
@@ -70,7 +68,6 @@ class TestWebSocketOriginEnforcement:
 
         from backend.security_csrf import CSRFMiddleware
         source = inspect.getsource(CSRFMiddleware.__call__)
-        # V137 F-2: Must contain rejection code (not just logging)
         assert "websocket.close" in source, (
             "WebSocket handling must include close/reject code (was NO-OP in V135)"
         )
@@ -88,7 +85,6 @@ class TestWebhookAsyncTimeout:
 
         from fireai.infrastructure.webhook_service import WebhookDeliveryService
         source = inspect.getsource(WebhookDeliveryService.publish_event)
-        # V137 F-3: Must use as_completed (not concurrent.futures.wait)
         assert "as_completed" in source, "Must use as_completed for timeout to work"
         assert "shutdown(wait=False)" in source, "Must not block on exit"
 

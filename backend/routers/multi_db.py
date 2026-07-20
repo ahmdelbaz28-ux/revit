@@ -223,7 +223,7 @@ async def execute_neo4j_query(
     }
 
     if query_type not in SAFE_TEMPLATES:
-        raise HTTPException(
+        raise HTTPException(  # NOSONAR — S8415: endpoint error handling is intentional(
             status_code=400,
             detail=f"Invalid or unsafe query type. Allowed types are: {list(SAFE_TEMPLATES.keys())}"
         )

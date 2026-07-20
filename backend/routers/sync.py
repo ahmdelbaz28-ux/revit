@@ -70,7 +70,6 @@ class ConnectionManager:
 
     def _get_client_ip(self, websocket: WebSocket) -> str:
         """Extract client IP from the WebSocket connection."""
-        # V131 FIX: Use getattr for defensive access — disconnect() may be
         # called for connections that were never properly accepted (e.g.,
         # rejected at IP limit, or a test mock without 'client' attr).
         # Without this, disconnect() raises AttributeError, preventing cleanup
@@ -191,7 +190,6 @@ async def sync_project(request: Request, project_id: str):
         "pendingChanges": 0,
     })
 
-    # V214 FIX (self-critique revised): This endpoint performs an INTERNAL
     # database consistency check — it re-reads all devices + connections
     # and updates sync_status with real counts. It does NOT sync with
     # external BIM systems (Revit/AutoCAD). For external BIM sync, use
@@ -288,7 +286,6 @@ def _validate_ws_origin(websocket: WebSocket) -> bool:
         "http://127.0.0.1:3000",
         "http://127.0.0.1:5173",
         "http://127.0.0.1:8000",
-        # V140: also accept the testclient's synthetic origin
         "http://testserver",  # NOSONAR
         "https://testserver",
     ):
@@ -371,7 +368,6 @@ async def websocket_endpoint(websocket: WebSocket) -> None:  # NOSONAR — S3776
         return
 
     # ── API key check ─────────────────────────────────────────────────────
-    # V140 FIX (Rule 17 — Root-Cause Analysis): The old design rejected query-
     # parameter auth for security reasons (query params leak in server logs,
     # browser history, referrer headers, proxy logs) — that part is correct.
     # But it ONLY accepted message-based auth (`{"action": "auth", "apiKey":...}`)
@@ -396,7 +392,6 @@ async def websocket_endpoint(websocket: WebSocket) -> None:  # NOSONAR — S3776
 
     # If auth is required, try X-API-Key header FIRST, fall back to message auth
     if needs_auth:
-        # V140: Check X-API-Key header on the initial WebSocket handshake
         header_api_key = websocket.headers.get("x-api-key", "") or websocket.headers.get("X-API-Key", "")
         env_key = os.getenv("FIREAI_API_KEY")
         if header_api_key:
@@ -404,7 +399,6 @@ async def websocket_endpoint(websocket: WebSocket) -> None:  # NOSONAR — S3776
             rbac_info = validate_api_key(header_api_key)
             env_match = bool(env_key) and _hmac.compare_digest(header_api_key, env_key)
             if rbac_info is not None or env_match:
-                # V140: Header auth succeeded — SILENTLY proceed (no auth_success
                 # message sent). This matches HTTP semantics where a 200 response
                 # is the success indicator — no separate "auth_success" body is
                 # sent. Sending a message here would break clients (including

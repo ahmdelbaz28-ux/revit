@@ -42,7 +42,6 @@ from typing import Any
 # NEC Chapter 9, Table 8 — DC Resistance at 75°C, Copper Uncoated
 # AWG 18 and 16 are solid; all others are stranded (Class B)
 #
-# V51 CRITICAL FIX: Replaced NEC Table 9 (AC impedance) values with
 # correct NEC Table 8 (DC resistance) values. Fire alarm systems operate
 # on 24VDC, so Table 8 is the correct reference.
 #
@@ -61,7 +60,6 @@ from typing import Any
 #   AWG 12 stranded: 1.930 Ω/kft = 6.33 Ω/km (was 10.30 from Table 9)
 #
 # BUG-12 FIX: Keyed by AWG string, not numeric index
-# V51 FIX: Corrected to NEC Table 8 DC resistance at 75°C
 # ---------------------------------------------------------------------------
 
 _AWG_RESISTANCE_OHM_PER_KM: dict[str, float] = {
@@ -269,7 +267,6 @@ def recommend_wire_gauge(
                 "nfpa_reference": "NFPA 72-2022 §27.4.1.2",
             }
 
-    # V58 FIX (BUG #7): Use 4/0 (largest gauge tried) instead of 2/0 for
     # failure reporting. 2/0 understates the system's best achievable performance.
     last = calculate_voltage_drop(current_a, one_way_length_m, "4/0", nominal_voltage)
     return {
@@ -339,7 +336,6 @@ def calculate_battery_backup(
         raise ValueError(f"standby_load_a={standby_load_a}A must be a finite number")
     if not math.isfinite(alarm_load_a) or math.isnan(alarm_load_a):
         raise ValueError(f"alarm_load_a={alarm_load_a}A must be a finite number")
-    # V65 SAFETY: Reject NaN/Inf inputs — missing from original code.
     # Unlike calculate_voltage_drop(), this function had no isfinite guards.
     # NaN temperature_c produces NaN temp_derating → NaN required_ah → false pass.
     if not math.isfinite(temperature_c):
@@ -352,7 +348,6 @@ def calculate_battery_backup(
         raise ValueError(f"alarm_hours must be finite, got {alarm_hours}")
     if not 0 < derating_factor <= 1.0:
         raise ValueError(f"derating_factor={derating_factor} must be in (0, 1]")
-    # V65 FIX: Sub-24h standby violates NFPA 72 §10.6.7.2 (mandatory minimum).
     # Old code only warned but allowed the calculation to proceed. Downstream
     # code that only checks required_ah without checking nfpa_compliant could
     # approve a non-compliant battery design. This deprecated function should

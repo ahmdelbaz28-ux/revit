@@ -119,7 +119,6 @@ _rebuild_pydantic_models()
 from backend.routers import autocad, digital_twin, revit
 from backend.routers import health as health_router_module
 
-# V129: Security middleware — SecurityHeadersMiddleware adds X-Frame-Options,
 # X-Content-Type-Options, HSTS, CSP, Referrer-Policy, Permissions-Policy to
 # every HTTP response. CorrelationIdMiddleware adds X-Correlation-ID for
 # end-to-end audit tracing (NFPA 72 §14.2.4 compliance).
@@ -129,18 +128,14 @@ from backend.security_middleware import (
     SecurityHeadersMiddleware,
 )
 
-# V207 (2026-07-09): Akamai Edge integration middleware.
 # Reads True-Client-IP / Akamai-Internal / Akamai-Bot-Score / Akamai-Geo-Country
 # headers injected by Akamai Property Manager. When AKAMAI_ENABLED=false (default),
 # the middleware is a no-op pass-through — zero overhead on HF Space / Vercel
 # without Akamai, full protection when Akamai is deployed in front.
 # Pure ASGI (no body buffering) — see agent.md BUG-34 fix.
 from .akamai_middleware import AkamaiIntegrationMiddleware
-
-# V129: Auth dependency for cache management endpoints (was public).
 from .auth import require_permission
 
-# V208 (2026-07-09): Cloudflare Edge integration middleware.
 # Reads CF-Connecting-IP / CF-RAY / CF-IPCountry headers injected by Cloudflare
 # proxy. When CF_ENABLED=false (default), the middleware is a no-op pass-through.
 # Complements Akamai middleware — both can be enabled simultaneously for multi-CDN.
@@ -165,7 +160,6 @@ if not logger.handlers:
 # ============================================================================
 # CONTENT SECURITY POLICY (CSP) BUILDER
 # ============================================================================
-# V119 FIX (Finding #4): Production default for CSP_UNSAFE_EVAL is now
 # "false" (secure-by-default). Development default remains "true" for DX.
 # SAFETY: A safety-critical fire alarm engineering UI must not be vulnerable
 # to XSS amplification via 'unsafe-eval'. Modern frontend libraries
@@ -199,7 +193,6 @@ def _build_csp() -> str:  # NOSONAR — S3776: cognitive complexity is inherent 
     else:
         unsafe_eval = is_dev  # dev: True, prod: False
 
-    # V119: escalate to ERROR when production keeps unsafe-eval on.
     if unsafe_eval and not is_dev:
         logger.error(
             "CSP 'unsafe-eval' ENABLED in production (FIREAI_ENV=%s). "
@@ -208,7 +201,6 @@ def _build_csp() -> str:  # NOSONAR — S3776: cognitive complexity is inherent 
             env,
         )
 
-    # V140 FIX: Remove 'unsafe-inline' from script-src in production.
     # 'unsafe-inline' is kept for style-src (Tailwind CSS requires it).
     # For scripts, production uses 'self' only (React doesn't need inline scripts).
     # Development keeps 'unsafe-inline' for Vite HMR.
@@ -425,7 +417,6 @@ async def lifespan(app: FastAPI):
     and NO visible error. This is the PRIMARY defense; the _safe_include_router
     re-raise (for CRITICAL_ROUTERS) is the SECONDARY defense.
     """
-    # V193 (R2): Hard-fail at startup if session secret is misconfigured.
     # This is the ROOT-CAUSE fix for the silent auth-router failure that
     # allowed the app to start in a broken state.
     import os as _os
@@ -457,7 +448,6 @@ async def lifespan(app: FastAPI):
     except ImportError as exc:
         logger.warning("Could not import set_core_modules_loaded: %s", exc)
 
-    # V254 FIX: Validate configuration at startup.
     # Config.validate_config() exists but was NEVER called — meaning
     # invalid DATABASE_URL, missing required settings, etc. were silently
     # accepted. Now we call it and log warnings for any issues.
@@ -493,7 +483,6 @@ async def lifespan(app: FastAPI):
     logger.info("Shutting down CAD/BIM Integration Platform...")
 
 # Create FastAPI app with lifespan
-# V130 SECURITY FIX: docs/redoc/openapi are now gated by FIREAI_ENV.
 # In production, the entire API surface (including internal RBAC permission
 # names) MUST NOT be exposed to anonymous attackers. Set docs_url=None to
 # fully disable. Development keeps the docs available for DX.
@@ -546,7 +535,6 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # ── CORS middleware — V127 / V129 hardening ───────────────────────────────
-# V127 precedent (from backend_app.py): production MUST set CORS_ORIGINS
 # explicitly. Wildcard '*' is FORBIDDEN. Missing env var → RuntimeError
 # (fail-safe). Development defaults to localhost-only (safe default).
 #
@@ -585,7 +573,6 @@ else:
         if o.strip()
     ]
 
-# V129: Add SecurityHeadersMiddleware FIRST (outermost), so it runs AFTER
 # CORS middleware on the response path and can append headers to the final
 # response. Starlette executes middleware in LIFO order: the LAST added
 # middleware is the OUTERMOST (runs first on request, last on response).
@@ -593,7 +580,6 @@ else:
 # headers regardless of which inner middleware handled the request.
 app.add_middleware(SecurityHeadersMiddleware)
 
-# V207 (2026-07-09): Akamai Edge integration — must be SECOND outermost
 # (just inside SecurityHeadersMiddleware) so it can:
 #   1. Overwrite X-Forwarded-For with True-Client-IP BEFORE ApiKeyMiddleware
 #      reads it for audit logging.
@@ -602,12 +588,10 @@ app.add_middleware(SecurityHeadersMiddleware)
 # When AKAMAI_ENABLED=false, this is a no-op pass-through.
 app.add_middleware(AkamaiIntegrationMiddleware)
 
-# V208 (2026-07-09): Cloudflare Edge integration — third outermost.
 # Reads CF-Connecting-IP / CF-RAY / CF-IPCountry headers. Same pattern as Akamai.
 # When CF_ENABLED=false, this is a no-op pass-through.
 app.add_middleware(CloudflareIntegrationMiddleware)
 
-# V129: CorrelationIdMiddleware — adds X-Correlation-ID to every request
 # for end-to-end audit tracing. Pure ASGI (no body buffering).
 app.add_middleware(CorrelationIdMiddleware)
 
@@ -684,7 +668,6 @@ def _safe_include_router(module_name: str, prefix: str = "/api/v1", tag: str = "
         if hasattr(mod, "project_router"):
             app.include_router(mod.project_router, prefix=prefix, tags=[tag or module_name.title()])
             logger.debug("Registered project_router from: %s", module_name)
-        # V140 FIX (Rule 17 — Root-Cause Analysis): Some routers (notably
         # backend.routers.sync) export a SEPARATE `ws_router` for WebSocket
         # routes. WebSocket routes cannot share an APIRouter with HTTP routes
         # that have a path prefix like "/projects/{project_id}/sync" because
@@ -742,14 +725,12 @@ for _router_name in (
 ):
     _safe_include_router(_router_name)
 
-# V215 FIX: Register multi_db router (was never registered — 11 endpoints returned 404)
 try:
     from backend.routers import multi_db as _multi_db_module
     app.include_router(_multi_db_module.router, prefix="/api/v1", tags=["multi-db"])
 except ImportError as e:
     logger.warning("Router 'multi_db' skipped (optional dependency missing): %s", e)
 
-# V130 MARINE MODULE: Mount the marine fire-safety router.
 # Provides endpoints for IMO SOLAS II-2, IEC 60092-502, ship zone division,
 # detector selection, extinguishing sizing, alarm-logic generation, and
 # SCADA/ETAP/Revit/AutoCAD integrations for marine projects.
@@ -757,24 +738,20 @@ from backend.routers import marine as marine_router_module
 
 app.include_router(marine_router_module.router, prefix="/api/v1", tags=["Marine"])
 
-# V214: Mining fire protection router (NFPA 120/122 + MSHA 30 CFR Part 75)
 from backend.routers import mining as mining_router_module
 
 app.include_router(mining_router_module.router, prefix="/api/v1", tags=["Mining"])
 
-# V214: Self-Healing engine monitoring (circuit breaker + audit trail)
 from backend.routers import self_healing as self_healing_router_module
 
 app.include_router(self_healing_router_module.router, prefix="/api/v1", tags=["Self-Healing"])
 
-# V130 FIX: Mount the monitor router so Prometheus can scrape /api/v1/monitor/metrics.
 # Previously monitor.router was defined but NEVER registered via include_router,
 # so every Prometheus scrape returned 404 and all dashboards/alerts had no data.
 # Auth is enforced INSIDE the router via require_permission(Permission.MONITOR_READ).
 # For unauthenticated /metrics scraping, deploy a sidecar that injects a
 # service-account API key, or expose /metrics via a separate internal port.
 #
-# V140 FIX (Rule 17 — Root-Cause Analysis): The monitor router defines its
 # routes with the FULL path already (e.g. `@router.get("/api/v1/monitor/health")`
 # — see backend/routers/monitor.py:533). Adding `prefix="/api/v1"` here caused
 # the routes to be registered at /api/v1/api/v1/monitor/health — double prefix.
@@ -784,7 +761,6 @@ from backend.routers import monitor as monitor_router_module
 
 app.include_router(monitor_router_module.router, tags=["Monitor"])
 
-# V129: Mount the health router under /api prefix so /api/health works.
 # Previously only /api/v1/health existed (defined inline above), but tests
 # and deployment probes expect /api/health. The health_router_module.router
 # also provides /api/health/statistics and the legacy /api/reports/statistics
@@ -831,7 +807,6 @@ def _register_v2_router() -> None:
 
 _register_v2_router()
 
-# V254 CRITICAL FIX: Actually call _register_csrf_middleware().
 # This function was defined but NEVER called — meaning CSRF protection
 # was completely disabled in production despite the code existing.
 # Frontend was fetching CSRF tokens (wasting requests) and backend was
@@ -861,7 +836,6 @@ def _register_csrf_middleware() -> None:
     except Exception as e:
         logger.warning("CSRF middleware registration failed: %s", e)
 
-# V254/V255: Call CSRF middleware registration AFTER function definition.
 # (V254 put the call before the definition → NameError. Fixed in V255.)
 _register_csrf_middleware()
 
@@ -890,7 +864,6 @@ async def add_deprecation_headers(request: Request, call_next):
 
 
 # Health endpoints
-# V139 FIX: Removed the inline stub health endpoints that were shadowing
 # the real health_router_module (registered at /api/health above). The
 # stubs returned status="healthy" with no database check, which:
 #   1. Broke tests expecting status="ok"/"degraded" (real values from
@@ -904,7 +877,6 @@ async def add_deprecation_headers(request: Request, call_next):
 # /api/v2/health is kept as a separate v2-only endpoint.
 app.include_router(health_router_module.router, prefix="/api/v1", tags=["Health-v1"])
 
-# V139 FIX: /health (no /api prefix) — alias to /api/health for backward
 # compatibility with stress tests and deployment probes that hit /health.
 @app.get("/health", tags=["Health"])
 async def health_check_legacy_alias() -> dict[str, Any]:
@@ -959,7 +931,6 @@ async def database_health():
 # CACHE MANAGEMENT ENDPOINTS
 # ═══════════════════════════════════════════════════════════════════════════
 
-# V129: Cache management endpoints now require SYSTEM_CONFIG permission.
 # Previously these were public — an anonymous attacker could clear the cache
 # (denial-of-service via cache invalidation) or read cache statistics
 # (information disclosure: reveals internal operational metrics).
@@ -1017,7 +988,6 @@ async def cache_stats(
 
 
 if __name__ == "__main__":
-    # V129: Bind to loopback only (127.0.0.1), not 0.0.0.0
     # Production deployments must use a reverse proxy (nginx, traefik, AWS ALB)
     import uvicorn
     uvicorn.run(
@@ -1030,7 +1000,6 @@ if __name__ == "__main__":
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# V206 FIX: Serve the built frontend (Vite/React static assets) from FastAPI
 # when BAZSPARK_FRONTEND_DIST is set (HuggingFace Space deployment mode).
 #
 # WHY THIS EXISTS

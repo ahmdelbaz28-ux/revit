@@ -28,7 +28,6 @@ except ImportError:
 class Config:
     """Centralized configuration for all database connections."""
 
-    # V254 FIX: Unified database paths. Previously DATABASE_URL defaulted to
     # relative "sqlite:///./db/digital_twin.db" (CWD-dependent, outside /app/data
     # volume) while DIGITAL_TWIN_DB_PATH defaulted to an absolute path. This
     # caused data loss on container restart. Now both default to /app/data/.

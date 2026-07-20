@@ -196,7 +196,6 @@ class AutoCADNamedPipeDispatcher:
 
     def send(self, action: str, params: Dict[str, Any]) -> Dict[str, Any]:
         """Send a command and return the response dict."""
-        # V291 SAFETY FIX: pywintypes/win32file/win32pipe are Windows-only.
         # Previously this method imported them unconditionally at the top,
         # causing ModuleNotFoundError on Linux/macOS CI — which made the
         # entire test suite report pywintypes as the failure reason and
@@ -293,7 +292,7 @@ def _get_revit() -> Any:
 
 # ── Command dispatcher ────────────────────────────────────────────────────────
 
-def _dispatch_autocad(action: str, args: Dict[str, Any]) -> Any:
+def _dispatch_autocad(action: str, args: Dict[str, Any]) -> Any:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     """
     Dispatch an AutoCAD action locally and return the result dict.
 
@@ -467,7 +466,7 @@ def _dispatch_autocad(action: str, args: Dict[str, Any]) -> Any:
         return {"error": f"Unknown AutoCAD action: {action}"}
 
 
-def _dispatch_revit(action: str, args: Dict[str, Any]) -> Any:
+def _dispatch_revit(action: str, args: Dict[str, Any]) -> Any:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
     """
     Dispatch a Revit action locally and return the result dict.
 

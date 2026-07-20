@@ -44,7 +44,6 @@ import math
 from dataclasses import dataclass
 from typing import Any
 
-# V63 FIX: Use math.floor instead of int() for grid coordinate
 # conversion. int() truncates toward zero, which maps negative
 # offsets to cell 0 instead of -1, causing points slightly
 # outside the grid to appear as valid in-bounds cells.
@@ -158,7 +157,6 @@ class CableRoute:
 
     def __post_init__(self):
         if self.computation_hash == "":
-            # V61 FIX: Include ALL route fields in hash for true
             # deterministic verification. Previous hash only covered
             # route_id/start/end/length/bends — two routes with different
             # paths but same endpoints would produce the SAME hash.
@@ -172,7 +170,6 @@ class CableRoute:
                 f"{self.voltage_drop_pct:.6f}|{int(self.is_compliant)}|"
                 f"{wp_coords}"
             )
-            # V97 FIX: Extended from 16 hex (64-bit) to 32 hex (128-bit)
             # per NIST SP 800-107. 16 hex chars = 64 bits = collision risk
             # at ~4 billion hashes (birthday attack). 128 bits = collision
             # at ~2^64 hashes — practically impossible for audit trails.
@@ -209,7 +206,6 @@ class RoutingSchedule:
 
     def __post_init__(self):
         if self.computation_hash == "":
-            # V61 FIX: Include individual route hashes for true verification.
             route_hashes = "|".join(r.computation_hash for r in self.routes)
             raw = (
                 f"{self.project_name}|{len(self.routes)}|"
@@ -217,7 +213,6 @@ class RoutingSchedule:
                 f"{self.max_circuit_length_m:.6f}|{self.compliance_summary}|"
                 f"{route_hashes}"
             )
-            # V97 FIX: Extended from 16 to 32 hex chars per NIST SP 800-107
             object.__setattr__(
                 self,
                 "computation_hash",
@@ -410,11 +405,9 @@ class CableRouter:
             if not is_electrical:
                 continue
 
-            # V61 FIX: Expand element bounding box by 300mm ONLY (not 300mm
             # + sep_cells which was double-buffering to 600mm). The 0.3m
             # offset in the coordinate calculation already provides the
             # required 300mm separation per NEC 760.24.
-            # V64 FIX: Use math.floor instead of int() for grid coordinate
             # conversion. int() truncates toward zero, which maps negative
             # offsets to cell 0 instead of -1. Same V63 bug pattern —
             # electrical zone cells near grid origin could be misclassified.
@@ -502,7 +495,6 @@ class CableRouter:
                         value=coord,
                     )
 
-        # V62 FIX: Validate ps_voltage and alarm_current_a for NaN/Inf.
         # Previously, NaN ps_voltage would silently produce 0% voltage drop
         # (is_compliant=True), allowing non-compliant circuits to be approved.
         # Negative ps_voltage would also silently report 0% drop.
@@ -572,21 +564,17 @@ class CableRouter:
         _total_length, straight_length, num_bends, num_elev = self._calculate_metrics(waypoints)
 
         # ── Voltage Drop ─────────────────────────────────────────────────
-        # V61 FIX: Use physical_length (not penalty-inflated) for voltage
         # drop. Voltage drop occurs over real conductor, not fictitious
         # bend-penalty meters. Using total_with_penalties OVERESTIMATES
         # voltage drop and causes unnecessary wire upsizing.
         physical_length = straight_length  # physical length without bend penalties
-        # V62 FIX: Use conductor_operating_temp_c for resistance correction
         # if provided. Falls back to ambient_temp_c for backward compatibility.
         # These are physically different quantities — see method docstring.
         # V FIX: Default to 75°C (NEC practice) when conductor_operating_temp_c is None.
         # Using ambient_temp_c (30-50°C) underestimates resistance by 10-14.6%.
         vdrop_temp = conductor_operating_temp_c if conductor_operating_temp_c is not None else 75.0
-        # V109 FIX: wire_gauge param is a string key (e.g. "14"), not a
         # _WireGaugeInstance. Must resolve to instance for resistance lookup.
         if isinstance(wire_gauge, str):
-            # V79 FIX: Use exact NEC 20°C value from _WireGaugeInstance instead of
             # approximating from 75°C via reverse temperature correction (~2% error).
             # The approximation gave e.g. 8.278 Ω/km for AWG 14 vs NEC published 8.450.
             wg_found = None
@@ -642,7 +630,6 @@ class CableRouter:
                     (f"Bend at ({wp.x:.2f}, {wp.y:.2f}, {wp.z:.2f})", "NEC Chapter 9 — max 4 quarter bends per run")
                 )
 
-        # V61 FIX: total_length_m is the PHYSICAL cable length (not
         # penalty-inflated). The penalty-inflated length is for A* cost
         # comparison only — it does not represent real conductor.
         return CableRoute(
@@ -947,7 +934,6 @@ class CableRouter:
             total_length += seg_length
 
             # Straight length (3D Euclidean, no bend/elevation penalty)
-            # V61 FIX: Include vertical component — previously only counted
             # horizontal distance, silently dropping all vertical run length.
             straight_length += seg_length
 

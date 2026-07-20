@@ -261,7 +261,6 @@ class ComplianceProofDocument:
             )
             proof_str = "✓" if layout.proof_valid else "✗"
             nfpa_str = "✓" if layout.nfpa_valid else "✗"
-            # V57 FIX (Finding 15): NaN values produce 'nan%' in AHJ submission.
             # Use _safe_fmt to replace non-finite values with '[INVALID DATA]'.
             lines.append(
                 f"| {i} | {room.name} | "
@@ -297,7 +296,6 @@ class ComplianceProofDocument:
             room = rec.room
             layout = rec.layout
 
-            # V57 FIX (Finding 15): NaN values produce 'nan%' in AHJ submission.
             # Use _safe_fmt to replace non-finite values with '[INVALID DATA]'.
             area = room.width * room.length
             lines.extend(
@@ -339,7 +337,6 @@ class ComplianceProofDocument:
                         y,
                         room.length - y,
                     )
-                    # V57 FIX (Finding 15): NaN detector positions or wall distances
                     # produce 'nan' in AHJ table. Replace with '[INVALID DATA]'.
                     lines.append(
                         f"| {j} | {_safe_fmt(x, '.3f')} | {_safe_fmt(y, '.3f')} | {_safe_fmt(wall_dist, '.3f')} |"

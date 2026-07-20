@@ -134,7 +134,6 @@ class TestLLMServiceChat:
         from backend.services.llm_service import LLMService
 
         svc = LLMService()
-        # V210 FIX: asyncio.get_event_loop() is removed in Python 3.12+ when
         # there is no running loop. Use asyncio.run() which creates + closes
         # a new event loop automatically.
         async def _raise():
@@ -173,7 +172,6 @@ class TestLLMServiceChat:
         mock_completion = MagicMock()
         mock_completion.choices = [mock_choice]
         mock_completion.usage = mock_usage
-        # V264 FIX: Set model explicitly — MagicMock auto-creates attributes,
         # so hasattr(completion, 'model') is always True. Without this explicit
         # set, completion.model returns a MagicMock object instead of a string,
         # causing: assert <MagicMock> == 'z-ai/glm-4.7' → AssertionError

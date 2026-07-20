@@ -187,7 +187,6 @@ class CIBenchmarkSuite:
                 rounds.append(time.perf_counter() - t)
             avg = sum(rounds) / len(rounds)
             elem_per_s = 1000.0 / avg
-            # V44 FIX: Compute actual std_dev instead of hardcoded 0.0.
             # Population std (consistent with _run_timed) for 5 rounds.
             mean_r = sum(rounds) / len(rounds)
             variance = sum((r - mean_r) ** 2 for r in rounds) / len(rounds)

@@ -368,7 +368,6 @@ def _floor_tables(report: BuildingReport) -> list:
             cov = getattr(rs, "coverage_pct", 0)
             cov_str = f"{cov:.1f}%"
             method = getattr(rs, "method", getattr(rs, "detector_type", "-"))
-            # V114 FIX: Fail-safe defaults — missing attribute = NOT compliant
             # A room without nfpa_valid/proof_valid must NEVER appear as PASS
             # in the PDF report that goes to the AHJ for building permits.
             nfpa_ok = getattr(rs, "nfpa_valid", False)

@@ -175,7 +175,6 @@ CAUSE_EFFECT_RULES: dict[DeviceInputType, list[LogicFunction]] = {
         LogicFunction.DOOR_RELEASE,
         LogicFunction.HVAC_SHUTDOWN_ZONE,
     ],
-    # V20.2 FIX: Smoke at DESIGNATED floor lobby → recall to ALTERNATE floor
     # NFPA 72 §21.3.3: "Where the designated level smoke detector is activated,
     # the elevator shall be recalled to the alternate level."
     DeviceInputType.SMOKE_ELEVATOR_LOBBY_DESIGNATED: [
@@ -187,7 +186,6 @@ CAUSE_EFFECT_RULES: dict[DeviceInputType, list[LogicFunction]] = {
     ],
     # Smoke detector in elevator machine room → Alarm + recall to alternate
     # NFPA 72 §21.3.3: If machine room smoke, recall to alternate floor
-    # V20.2 FIX: Removed ELEVATOR_PHASE_II — Phase II is MANUAL firefighter
     # action only per ASME A17.1 §2.27.3.4. Auto Phase II would trap occupants.
     # Added DOOR_RELEASE for smoke containment per NFPA 72 §14.4.
     DeviceInputType.SMOKE_MACHINE_ROOM: [
@@ -197,7 +195,6 @@ CAUSE_EFFECT_RULES: dict[DeviceInputType, list[LogicFunction]] = {
         LogicFunction.DOOR_RELEASE,
         LogicFunction.HVAC_SHUTDOWN_ZONE,
     ],
-    # V20.2 FIX: Missing hoistway/shaft smoke detector type per NFPA 72 §21.3.3
     DeviceInputType.SMOKE_ELEVATOR_SHAFT: [
         LogicFunction.ALARM,
         LogicFunction.NAC_ZONE,
@@ -207,7 +204,6 @@ CAUSE_EFFECT_RULES: dict[DeviceInputType, list[LogicFunction]] = {
     ],
     # Smoke detector in return air shaft → Alarm + HVAC shutdown + door release
     # NFPA 72 §17.7.5.6
-    # V20.2 FIX: Added DOOR_RELEASE for smoke containment per NFPA 72 §14.4
     DeviceInputType.SMOKE_RETURN: [
         LogicFunction.ALARM,
         LogicFunction.NAC_ZONE,
@@ -221,7 +217,6 @@ CAUSE_EFFECT_RULES: dict[DeviceInputType, list[LogicFunction]] = {
         LogicFunction.NAC_ZONE,
         LogicFunction.DOOR_RELEASE,
     ],
-    # V20.2 FIX: Dedicated heat detector for elevator shunt-trip per
     # NFPA 72 §21.4.1. Must activate before sprinkler to avoid electrified water.
     DeviceInputType.HEAT_ELEVATOR_SHUNT_TRIP: [
         LogicFunction.ALARM,
@@ -249,7 +244,6 @@ CAUSE_EFFECT_RULES: dict[DeviceInputType, list[LogicFunction]] = {
     ],
     # Waterflow switch → Alarm (sprinkler system activated)
     # NFPA 72 §17.14: Waterflow alarm
-    # V20.2 FIX: Removed FIRE_PUMP_START — per NFPA 20 §10.5.2.1, the pump
     # controller starts the pump automatically on pressure drop, NOT the FACP.
     DeviceInputType.WATERFLOW: [
         LogicFunction.ALARM,
@@ -264,7 +258,6 @@ CAUSE_EFFECT_RULES: dict[DeviceInputType, list[LogicFunction]] = {
     DeviceInputType.SPRINKLER_SUPERVISORY: [
         LogicFunction.SUPERVISORY,
     ],
-    # V20.2 FIX: Unknown devices default to TROUBLE, NOT general alarm.
     # NFPA 72 §10.14: Alarm signals must indicate a confirmed fire condition.
     # An unknown device type is NOT a confirmed condition.
     DeviceInputType.UNKNOWN: [
@@ -448,7 +441,6 @@ class SequenceOfOperationsMatrix:
                 )
 
             # Special case: Healthcare duct detectors
-            # V20.2 FIX: In healthcare, NFPA 101 §9.7 requires alarm-level
             # notification for duct detectors because patients cannot self-evacuate.
             # Previous code only added NAC_ZONE without ALARM — this is insufficient
             # for healthcare where patients need staff assistance to evacuate.
@@ -499,7 +491,6 @@ class SequenceOfOperationsMatrix:
             sort_keys=True,
             separators=(",", ":"),
         )
-        # V60 FIX (P1-4): Removed [:16] truncation — 16 hex chars = 64 bits,
         # birthday attack complexity only 2^32 (~4B attempts). Full 256-bit
         # SHA-256 provides 2^128 collision resistance for audit integrity.
         matrix_hash = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
@@ -642,7 +633,6 @@ class SequenceOfOperationsMatrix:
                 return DeviceInputType.SMOKE_RETURN
             return DeviceInputType.SMOKE_GENERAL
 
-        # V20.2 FIX: Unknown device type → TROUBLE, NOT general alarm.
         # NFPA 72 §10.14: Alarm signals must indicate a confirmed fire condition.
         # An unknown device is NOT a confirmed condition — false general alarm
         # in a high-rise or healthcare building causes injuries during

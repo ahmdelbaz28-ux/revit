@@ -594,7 +594,6 @@ class SmokeSimulationState:
         rejected PLACEHOLDER — FAILED/EXPIRED/PENDING states could
         persist full measurement data, violating SAFETY-R2's spirit.
         """
-        # V137 F-11: Only VALIDATED data can be fully persisted
         if self.status != SimulationStatus.VALIDATED:
             return {
                 "room_id": self.room_id,

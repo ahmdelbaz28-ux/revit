@@ -307,7 +307,6 @@ class TestPhysicsGuardError:
 class TestNFPA72Constants:
     """Verify NFPA 72 reference constants match published standard."""
 
-    # V121 FIX: Smoke spacing table updated to canonical values from
     # fireai/constants/nfpa72.py. Old values applied heat detector
     # reduction (1%/ft) to smoke detectors — a known misapplication.
     # New table has 9 rows (conservative height-adjusted values).
@@ -331,13 +330,11 @@ class TestNFPA72Constants:
         """R = 0.7 × S per NFPA 72 §17.7.4.2.3.1."""
         assert NFPA72_COVERAGE_RADIUS_FACTOR == 0.7  # NOSONAR — S1244: import retained for re-export / API surface
 
-    # V121 FIX: SMOKE_MAX_SPACING_M corrected from 9.144 to 9.1
     # (NFPA 72 states 9.1m, not 30ft×0.3048=9.144)
     def test_smoke_max_spacing(self):
         """NFPA 72 §17.7.3.2.3: max 9.1m (30ft)."""
         assert pytest.approx(9.1) == NFPA72_SMOKE_MAX_SPACING_M
 
-    # V121 FIX: HEAT_MAX_SPACING_M corrected from 15.240 to 6.1
     # (6.1m = 20ft is the standard spacing at h≤3.0m per Table 17.6.3.5.1;
     # 15.24m = 50ft is the ABSOLUTE max listed spacing, now in
     # fireai/constants/nfpa72.py as HEAT_ABSOLUTE_MAX_SPACING_M)
@@ -349,7 +346,6 @@ class TestNFPA72Constants:
         """
         assert pytest.approx(6.1) == NFPA72_HEAT_MAX_SPACING_M
 
-    # V121 FIX: WALL_MIN_DISTANCE corrected from 0.305 to 0.10
     # (NFPA 72 §17.6.3.1.1 specifies 0.1m dead air space minimum)
     def test_wall_min_distance(self):
         """
@@ -474,14 +470,12 @@ class TestF64Hash:
 class TestComputeSmokeDetectorSpacing:
     """NFPA 72 Table 17.6.3.1 + §17.7.3.2.3 height adjustment."""
 
-    # V121 FIX: Spacing is now flat 9.1m per §17.7.3.2.3
     def test_low_ceiling(self):
         """H ≤ 3.0m → S = 9.1m, R = 0.7 × 9.1 = 6.37m."""
         result = compute_smoke_detector_spacing(3.0)
         assert result["listed_spacing_m"] == pytest.approx(9.1, rel=0.01)
         assert result["coverage_radius_m"] == pytest.approx(0.7 * 9.1, rel=0.01)
 
-    # V127 PHASE C: Height-adjusted spacing per Table 17.6.3.1.1 restored.
     # The V121 flat-only override was removed in favor of the canonical
     # height-adjusted spacing table from fireai/constants/__init__.py.
     def test_medium_ceiling(self):
@@ -739,7 +733,6 @@ class TestValidateHeatSpacingResult:
         with pytest.raises(ComputationError, match="NaN"):
             validate_heat_spacing_result(result)
 
-    # V121 FIX: Error message updated to say "absolute max"
     def test_exceeds_max_rejected(self):
         result = {"spacing_m": 20.0, "coverage_radius_m": 14.0}
         with pytest.raises(ValidationError, match="absolute max"):
@@ -910,7 +903,6 @@ class TestQOMNKernel:
         kernel.smoke_detector_spacing(3.0)
         audit = kernel.get_audit_log()
         assert audit["total_entries"] == 1
-        # V58 FIX: layer3_passed should be True (not default False)
         assert audit["entries"][0]["layer3_passed"] is True
 
     def test_audit_integrity(self):

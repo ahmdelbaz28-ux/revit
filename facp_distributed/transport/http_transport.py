@@ -13,6 +13,8 @@ import aiohttp
 import uvicorn
 from fastapi import FastAPI, Request
 
+_FACP_PROTOCOL = "facp/1.0"
+
 
 # Circuit Breaker Implementation
 class CircuitBreakerState:
@@ -125,7 +127,7 @@ class HTTPTransport(TransportLayer):
                 # Input validation gate - validate request structure and content
                 if not self._validate_request(request_data):
                     return {
-                        "protocol": "FACP/1.1",
+                        "protocol": _FACP_PROTOCOL,
                         "id": request_data.get("id", "unknown"),
                         "status": "error",
                         "error": {
@@ -152,7 +154,7 @@ class HTTPTransport(TransportLayer):
                     handler = self.handlers[method]
                     return await handler(request_data) if asyncio.iscoroutinefunction(handler) else handler(request_data)
                 return {
-                    "protocol": "FACP/1.1",  # NOSONAR — S1192: duplicated literal acceptable in this localized context
+                    "protocol": _FACP_PROTOCOL,  # NOSONAR — S1192: duplicated literal acceptable in this localized context
                     "id": request_data.get("id", "unknown"),
                     "status": "error",
                     "error": {
@@ -170,7 +172,7 @@ class HTTPTransport(TransportLayer):
                 # CodeQL: py/stack-trace-exposure — sanitize error message
                 safe_msg = str(e)[:200] if "Traceback" not in str(e) else "Transport error"
                 return {
-                    "protocol": "FACP/1.1",
+                    "protocol": _FACP_PROTOCOL,
                     "id": request_data.get("id", "unknown") if 'request_data' in locals() else "unknown",
                     "status": "error",
                     "error": {
@@ -269,7 +271,7 @@ class HTTPTransport(TransportLayer):
                 return await response.json()
         except Exception as e:
             return {
-                "protocol": "FACP/1.1",
+                "protocol": _FACP_PROTOCOL,
                 "id": request_data.get("id", "unknown"),
                 "status": "error",
                 "error": {
@@ -307,7 +309,7 @@ class HTTPTransport(TransportLayer):
                 return result
             except Exception as e:
                 return {
-                    "protocol": "FACP/1.1",
+                    "protocol": _FACP_PROTOCOL,
                     "id": request_data.get("id", "unknown"),
                     "status": "error",
                     "error": {
@@ -327,7 +329,7 @@ class HTTPTransport(TransportLayer):
             return self.circuit_breaker.call(_internal_send)
         except Exception as e:
             return {
-                "protocol": "FACP/1.1",
+                "protocol": _FACP_PROTOCOL,
                 "id": request_data.get("id", "unknown"),
                 "status": "error",
                 "error": {

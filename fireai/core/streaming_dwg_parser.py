@@ -97,7 +97,6 @@ def _shoelace_area(poly: list[tuple[float, float]]) -> float:
 
 
 # ---------------------------------------------------------------------------
-# V29 Bidirectional Polygon Assembly (from our dwg_parser.py)
 # ---------------------------------------------------------------------------
 
 
@@ -236,7 +235,6 @@ def _assemble_closed_polygons_v29(  # NOSONAR — S3776: cognitive complexity is
             if close_dist_sq <= tol_sq:
                 closed_polygons.append(chain_vertices[:-1])
 
-    # V44 FIX: Also return consumed line indices so callers can filter
     # pending_lines correctly. Previously, callers had to use id() matching
     # which fails because polygon vertices are new tuples, not original lines.
     if return_consumed:
@@ -320,7 +318,6 @@ class StreamingDXFParser:
                             stats.rooms_yielded += 1
 
                         # Keep only lines not yet assembled into polygons
-                        # V44 FIX: Previously `pending_lines = []` silently dropped ALL lines,
                         # including orphans not consumed by polygon assembly. This meant rooms
                         # that span chunk boundaries were NEVER assembled — missing rooms = missing
                         # fire detectors = life safety failure. Now only remove consumed lines
@@ -350,7 +347,6 @@ class StreamingDXFParser:
 
         except Exception as exc:
             stats.errors += 1
-            # V44 FIX: Previously, exceptions were silently swallowed without logging.
             # In fire protection software, a parse error that drops rooms means missing
             # fire detectors — a life-safety failure. Now we log the error.
             logger.exception("DWG parse error at line %s: %s", stats.lines_parsed, exc)

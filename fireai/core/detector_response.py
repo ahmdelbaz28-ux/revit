@@ -47,7 +47,6 @@ _RTI_SPOT_HEAT_HIGH = 120.0  # Slow spot heat detector
 _SMOKE_ACTIVATION_VELOCITY = 0.05  # Typical smoke entry velocity
 
 # Ambient temperature (°C)
-# V96 FIX: Changed default from 20°C to 30°C (NEC baseline ambient).
 # At 20°C, a 57°C heat detector has 37°C rise to trigger; at 40–50°C
 # (Egypt), the rise is only 7–17°C — detector activates much faster.
 # Using 20°C underestimates activation time in hot climates, which could
@@ -175,7 +174,6 @@ def calculate_heat_detector_response(  # NOSONAR — S3776: cognitive complexity
 
     # If gas temperature never reaches activation temperature, detector won't activate
     if T_gas <= activation_temp_c:
-        # V96 FIX: Set activation_possible=False so downstream code can
         # detect non-activation without checking for float('inf').
         return DetectorResponseResult(
             activation_time_s=float("inf"),

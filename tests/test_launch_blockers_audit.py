@@ -694,7 +694,6 @@ class TestPESignoffRequirements:
         # Take the first 2000 chars after the table definition (includes docstring)
         table_section = table_section[:2000]
 
-        # V130: Check for V130 fix reference or CRITICAL FIX or §17.7.3.2.3
         assert ("V130" in table_section or "CRITICAL FIX" in table_section or
                 "17.7.3.2.3" in table_section or "flat" in table_section.lower()), (
             "SMOKE_HEIGHT_SPACING_TABLE definition must carry a comment explaining "

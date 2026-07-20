@@ -244,7 +244,6 @@ class TestCalculateSPL:
 
     def test_exceeds_max_spl(self):
         """SPL > 110 dBA is non-compliant (hearing protection)."""
-        # V286 UPDATE: max SPL changed from 120 to 110 dBA per NFPA 72 §18.4.1.2
         result = calculate_spl(130.0, 1.0)
         # At 1m from 130 dBA horn → definitely > 110 dBA
         assert result.exceeds_max is True

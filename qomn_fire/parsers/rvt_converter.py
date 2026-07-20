@@ -30,7 +30,6 @@ from parsers._path_security import (
 )
 from qomn_fire.core.errors import ConversionError, Result
 
-# V128: Allowed extensions and size cap for RVT converter
 _RVT_ALLOWED_EXTENSIONS = frozenset({".rvt"})
 _RVT_MAX_FILE_SIZE_BYTES = int(
     os.getenv("FIREAI_RVT_MAX_FILE_SIZE_BYTES", str(2 * 1024 * 1024 * 1024))  # 2 GB
@@ -49,7 +48,6 @@ class RvtConverter:
         V128 SECURITY: Validates source path BEFORE any file access or subprocess.
         Closes path traversal, null-byte, argument injection, and oversized file DoS.
         """
-        # V128 SECURITY: Validate source path BEFORE any file access or subprocess.
         try:
             safe_input_path = validate_input_path(
                 rvt_path,
@@ -64,8 +62,6 @@ class RvtConverter:
                 remedy="Ensure input file is in allowed upload directory with correct extension."
             ))
 
-        # V128 SECURITY: Validate output path to prevent path traversal in output.
-        # V142 FIX: Use validate_output_path (not validate_input_path) — the
         # output IFC file does NOT exist yet (we are about to create it).
         # validate_input_path raises FileNotFoundError when the path does not
         # exist, which made every legitimate fallback conversion abort with
@@ -153,7 +149,6 @@ class RvtConverter:
                 ))
 
             # Create minimal IFC content
-            # V142 FIX: Use the correct ISO 10303-21 end marker
             # "END-ISO-10303-21;" (with hyphens) per ISO 10303-21 §7.3.
             # The previous "END ISO-10303-21;" (with a space) failed IFC
             # structural validation in qomn_fire/tests/test_parsers.py

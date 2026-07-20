@@ -101,7 +101,6 @@ class RevitMCPServer:
         self._running = False
         self._stdin_thread: Optional[threading.Thread] = None
         self._client_capabilities: dict[str, Any] = {}
-        # V214 FIX: Initialize named pipe client to forward commands to C# add-in.
         # Previously the queue was filled but NEVER consumed — commands died in the queue.
         # Now after enqueue, we forward the command to the C# add-in via named pipe.
         try:
@@ -197,7 +196,6 @@ class RevitMCPServer:
                 error=f"Failed to enqueue model update: {e}",
             )
 
-        # V214 FIX: Forward to C# add-in via named pipe
         pipe_status = "not_forwarded"
         pipe_message = ""
         if self._pipe_client is not None:
@@ -679,7 +677,6 @@ class RevitMCPServer:
         tool_args = params.get("arguments", {})
 
         # Build an MCPRequest and delegate to the safety-enforcing handler.
-        # V142 FIX (Rule 17 root-cause): Previously called `process_request`
         # which does NOT exist on SanitizedMCPHandler — the actual method
         # is `handle`. This caused every tools/call to fail with
         # AttributeError, breaking Claude Desktop integration entirely.

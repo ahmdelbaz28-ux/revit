@@ -69,10 +69,8 @@ class SelectionEngine:
             RuntimeError: if fireai.core.battery_aging_derating is not available
                 (life-safety fail-loud — no silent simplified fallback).
         """
-        # V54 FIX F6: Per-device standby current = 0.0008 A (0.8 mA), NOT 0.001 A
         standby_load = (device_count * 0.0008) + panel.standby_current_amps
         alarm_load = (nac_circuit_count * 2.0) + (device_count * 0.005) + panel.alarm_current_amps
-        # V283 FIX: exact 5.0/60.0 instead of 0.0833 approximation.
         alarm_duration_h = 0.25 if requires_voice else (5.0 / 60.0)
 
         # Delegate to the production battery sizing module (same as facp_system).
@@ -109,7 +107,6 @@ class SelectionEngine:
             return round(result.required_ah, 2), derating_details
 
         except ImportError as exc:
-            # V283 LIFE-SAFETY FIX: Refuse to operate without the production
             # battery sizing module. The previous behavior used a flat
             # temperature_derating=1.10 — at 0°C this under-sized batteries
             # by ~27% compared to the IEEE 485 lookup table. In a life-safety
@@ -127,7 +124,6 @@ class SelectionEngine:
     def select_panel(cls, req: ProjectRequirements) -> Result[PanelRecommendation, FACPSelectionError]:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         # Enforce code capacity margins (20% spare capacity per NFPA 72 §10.6.7.2)
         required_points = req.device_count * 1.2
-        # V54 FIX F2: NAC circuits sized by exact count, NOT 1.2x
         required_nacs = req.nac_circuit_count
 
         eligible_panels: List[Tuple[FireAlarmPanel, float]] = []
@@ -141,7 +137,6 @@ class SelectionEngine:
                 continue
             if req.requires_voice and not p.supports_voice:
                 continue
-            # V54 FIX F4: Releasing service filter
             if req.requires_releasing and not p.supports_releasing:
                 continue
             if req.jurisdiction == "FDNY" and "FDNY" not in p.listings:
@@ -174,7 +169,6 @@ class SelectionEngine:
                 remedy="Reduce required device loads or transition to a multi-node networked panel architecture."
             ))
 
-        # V54 FIX F3: Deterministic sorting with right-sizing principle
         # Primary: highest score. Tie-break: smallest capacity (right-sizing),
         # then lowest standby draw, then model name for determinism.
         eligible_panels.sort(

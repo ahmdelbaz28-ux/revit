@@ -364,7 +364,7 @@ function TabBtn({
 	active?: boolean;
 }) {
 	return (
-		<button
+		<button type="button"
 			className={`px-3 py-1.5 text-xs font-medium rounded-t-sm transition-colors ${active ? "bg-card text-indigo-400 border-t-2 border-indigo-500" : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"}`}
 		>
 			{label}

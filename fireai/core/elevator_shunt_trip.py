@@ -89,7 +89,6 @@ MAX_HD_SPRINKLER_DISTANCE_M: float = 0.6
 # Default RTI values (m·s)^0.5
 # Quick-response sprinkler per NFPA 13 §8.3.3.1
 DEFAULT_SPRINKLER_RTI: float = 50.0
-# V20.2 FIX: Standard-response heat detector per UL 521 typically has
 # RTI of 100–150 (m·s)^0.5. Previous value of 50.0 was WRONG — it
 # matched the quick-response sprinkler default, making the RTI check
 # `hd_rti > (spk_rti * 1.0)` ALWAYS False. The V19.1 RTI fix was
@@ -260,7 +259,6 @@ class ElevatorShuntTripAuditor:
                 )
                 spk_temp = 68.3
 
-            # V57 FIX: NaN/Inf in sprinkler data bypasses all safety checks.
             # NaN > X is always False → no temp_violation, no rti_violation → compliant=True.
             # This means a sprinkler with corrupt data passes audit → electrocution risk.
             # Per Life-Safety Rule 2: every code change must be committed + pushed.
@@ -303,7 +301,6 @@ class ElevatorShuntTripAuditor:
             best_hd = None
             best_dist = float("inf")
 
-            # V43 FIX: Track assigned HDs to enforce 1:1 sprinkler→HD mapping
             # per NFPA 72 §21.4.2. Previously, two sprinklers near the same HD
             # would both pass with that HD as their dedicated detector. But one
             # HD cannot trigger shunt-trip for two independent sprinklers — if
@@ -346,7 +343,6 @@ class ElevatorShuntTripAuditor:
                     hd_temp = 57.2
                     hd_rti = DEFAULT_HD_RTI
 
-                # V57 FIX: NaN/Inf in HD data bypasses temperature and RTI checks.
                 # NaN > threshold is False → no violation detected → compliant=True.
                 # A heat detector with corrupt thermal data would PASS the audit,
                 # potentially allowing sprinkler to burst before power is severed.

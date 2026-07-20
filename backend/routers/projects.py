@@ -57,7 +57,6 @@ async def list_projects(
     sort: str = Query("createdAt", description="Sort field"),  # NOSONAR - python:S8410
     order: str = Query("desc", description="Sort order (asc/desc)"),  # NOSONAR - python:S8410
 ):
-    # V140 FIX: Validate order to prevent injection
     if order not in ("asc", "desc"):
         order = "desc"
     """List all projects with pagination."""

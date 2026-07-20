@@ -22,7 +22,6 @@ class TestRevitServiceInitialization:
         """Test that Revit service initializes properly."""
         service = RevitService()
 
-        # V140 FIX (Rule 17): revit_service.py was refactored to use
         # underscore-prefixed private attributes (_revit_app, _revit_doc)
         # with public properties for `connected` and `connection_method`.
         # The old test accessed the now-private attributes directly. Updated
@@ -89,9 +88,6 @@ class TestRevitElementOperations:
         assert element_data["category"] == "Walls"
         assert element_data["level"] == "Level 1"
         # Wall-specific properties should be simulated
-        # V214: geometry keys (length, height, width, area) are only present when Revit API is available
-        # V214: geometry keys (length, height, width, area) are only present when Revit API is available
-        # V214: geometry keys (length, height, width, area) are only present when Revit API is available
 
     def test_extract_floor_element_data(self):
         """Test extracting data from a floor element."""
@@ -124,8 +120,6 @@ class TestRevitElementOperations:
         assert element_data["name"] == "Generic Floor"
         assert element_data["category"] == "Floors"
         # Floor-specific properties should be simulated
-        # V214: geometry keys (length, height, width, area) are only present when Revit API is available
-        # V214: boundary only present with real Revit API
 
     def test_extract_door_element_data(self):
         """Test extracting data from a door element."""
@@ -158,9 +152,6 @@ class TestRevitElementOperations:
         assert element_data["name"] == "M_Single-Flush"
         assert element_data["category"] == "Doors"
         # Door-specific properties should be simulated
-        # V214: geometry keys (length, height, width, area) are only present when Revit API is available
-        # V214: geometry keys (length, height, width, area) are only present when Revit API is available
-        # V214: location_point only present with real Revit API
 
 
 class TestRevitFileOperations:
@@ -258,13 +249,11 @@ class TestRevitFileOperations:
             result = service.write_rvt(temp_path, elements)
             assert result is True
 
-            # V214 self-critique: .rvt file must NOT be created (no fake file)
             assert not os.path.exists(temp_path), (
                 "write_rvt must NOT create a .rvt file in simulation mode — "
                 "only the .ifc file should be created"
             )
 
-            # V214: The actual data must be in a .ifc file (same basename)
             ifc_path = temp_path[:-4] + ".ifc"
             assert os.path.exists(ifc_path), (
                 f"write_rvt must create a real IFC file at {ifc_path}"
@@ -323,7 +312,6 @@ class TestRevitElementCreation:
 
         result = service.create_wall([0, 0, 0], [5000, 0, 0], height=3000.0, level="Level 1")
 
-        # V141.2: Without a real Revit API connection, create_wall MUST
         # return None — NOT a fake UUID. Silent fake creation in a fire
         # protection system is a safety violation.
         assert result is None, (
@@ -340,7 +328,6 @@ class TestRevitElementCreation:
         boundary = [[0, 0, 0], [5000, 0, 0], [5000, 5000, 0], [0, 5000, 0]]
         result = service.create_floor(boundary, level="Level 1")
 
-        # V141.2: Same honest-failure contract as create_wall.
         assert result is None, (
             "create_floor returned a non-None value without a real Revit "
             "connection. Fake floor IDs are a safety-critical deception."
@@ -361,7 +348,6 @@ class TestRevitElementCreation:
 
         result = service.create_column([2500, 2500, 0], height=3000.0, level="Level 1")
 
-        # V142: Same honest-failure contract as create_wall and create_floor.
         # No more fake UUIDs in safety-critical Revit element creation.
         assert result is None, (
             "create_column returned a non-None value without a real Revit "
@@ -465,7 +451,6 @@ class TestRevitErrorHandling:
         # Should not crash — should return error info or partial data
         element_data = service._extract_element_data(mock_element)
 
-        # V214: Either returns error info OR partial data (both acceptable)
         assert element_data is not None
         assert "id" in element_data or "error" in element_data
 

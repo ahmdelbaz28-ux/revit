@@ -792,7 +792,6 @@ class IntegrationBridge:
                 )
                 continue
 
-            # V76 HIGH-14 FIX: Previously hardcoded 0.5A and AWG 14 for all NAC
             # circuits. This underestimates current for multi-device circuits and
             # uses incorrect wire gauge. Now calculates current from device count.
             # Default 0.1A per notification appliance (typical horn/strobe per
@@ -831,7 +830,6 @@ class IntegrationBridge:
                 violations.append(f"Circuit {route.circuit_id}: {v}")
 
         cable_result.routes = all_routes
-        # V79 FIX: Zero-panel cable routing is NOT compliant.
         # Previously, if no panels were defined, the for-loop never executed
         # and all_valid/all_vd_compliant remained True, making compliant=True.
         # NFPA 72 §10.14 requires verification of ALL circuits. Zero circuits ≠ compliant.
@@ -1106,7 +1104,6 @@ class IntegrationBridge:
                     worst_result.margin_dba,
                 )
         else:
-            # V79 FIX: No rooms with speaker/check_point data is NOT just "no results"
             # — it means audible notification was never verified. NFPA 72 §18.4
             # requires audible coverage in ALL occupiable spaces. Returning None
             # means acoustics is excluded from the compliance gate entirely, allowing
@@ -1272,7 +1269,6 @@ class IntegrationBridge:
             compliance_checks.append(("Digital Twin Sync", twin_compliant))
 
         # Acoustics: check the AcousticCoverageResult
-        # V76 CRIT-02 FIX: Default changed from True to False (fail-safe).
         # If the result object lacks a 'compliant' attribute (e.g., dict instead
         # of dataclass, or attribute renamed), the system must NOT silently
         # approve. Missing acoustics compliance = occupants may not hear
@@ -1282,7 +1278,6 @@ class IntegrationBridge:
             compliance_checks.append(("Acoustics", acoustic_compliant))
 
         # Multi-Floor: check the BuildingAnalysis
-        # V76 CRIT-02 FIX: Same fail-safe default as acoustics.
         if result.multi_floor_result is not None:
             mf_compliant = getattr(result.multi_floor_result, "compliant", False)
             compliance_checks.append(("Multi-Floor", mf_compliant))

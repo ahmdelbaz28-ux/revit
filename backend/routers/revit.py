@@ -64,7 +64,6 @@ from pydantic import BaseModel, Field
 from backend.services.revit_service import RevitService
 
 logger = logging.getLogger(__name__)
-# V139 FIX: Added prefix="/revit" to prevent route collision with
 # backend/routers/elements.py. The revit router defines /elements/* routes
 # (for Revit-specific element operations like /elements/create/wall), but
 # elements.py also defines /elements/* (for UDM-backed CRUD). Without a
@@ -93,7 +92,6 @@ def get_revit_service() -> RevitService:
 
 
 # ── Path validation helper (FIX V130: Path Traversal prevention) ────────
-# V130 SECURITY FIX (2026-06-18 audit): Replaced broken str.startswith()
 # check (bypassable: "/tmp/fireai-data-evil/payload.rvt" matched "/tmp/fireai-data")
 # with the centralised parsers._path_security.validate_input_path() helper.
 # This is the same hardened implementation already used by every parser in
@@ -105,7 +103,6 @@ def get_revit_service() -> RevitService:
 #   - Null-byte rejection (defends C-string truncation in downstream libs)
 #   - Leading-"-" rejection (defends argument injection)
 #   - Optional extension allow-list
-# V130 SECURITY FIX: Auth + rate-limiter dependencies.
 # The /execute endpoint runs arbitrary natural-language commands against the
 # live Revit session (create walls, delete elements, search API, etc.).
 # Leaving it unauthenticated meant ANY network caller could execute AI-driven
@@ -618,7 +615,6 @@ async def write_rvt_file(request: Request, body: WriteRvtRequest) -> Dict[str, A
     # FIX: Path traversal validation
     _validate_file_path(body.filepath)
 
-    # V217 FIX (SonarCloud S5145): validate element categories and IDs at source.
     # These flow into logger calls in revit_service.py write_rvt(). Validate
     # with a whitelist to break the taint flow.
     _SAFE_CATEGORY_RE = re.compile(r'^[a-zA-Z0-9_\- ]{1,64}$')

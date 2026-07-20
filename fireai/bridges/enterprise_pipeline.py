@@ -118,7 +118,6 @@ class EnterpriseOrchestrator:
             tenability_pre_movement_delay_s: Default pre-movement delay.
 
         """
-        # V78 FIX: Safe import pattern — if v17_core is unavailable, degrade gracefully
         # instead of crashing the entire enterprise pipeline. Per integration_bridge.py
         # pattern: each subsystem should work independently.
         try:

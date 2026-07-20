@@ -190,13 +190,11 @@ class DDCAdapter:
 
         start = time.monotonic()
 
-        # V123 REFACTOR (per agent.md Rule #23 — single source of truth):
         # All path-security validation now delegates to the shared helper
         # in parsers._path_security. The previous ~70 lines of inline
         # path-traversal / symlink / allowed-bases / extension checks
         # have been replaced with a single call to validate_input_path()
         # which performs the same checks PLUS new defenses introduced by
-        # V122 (null byte rejection, leading-dash argument-injection
         # guard). This guarantees DDC and DWG parsers share IDENTICAL
         # security posture — no drift possible.
         #
@@ -232,7 +230,6 @@ class DDCAdapter:
             # callers continue to work without modification.
             raise ValueError(str(e)) from e
 
-        # V126: File-size cap — reject oversized files before feeding them
         # to the DDC subprocess. Without this, a multi-GB .rvt/.ifc would
         # exhaust memory and potentially hang the converter for hours.
         _DDC_MAX_FILE_SIZE_BYTES = int(
@@ -306,7 +303,6 @@ class DDCAdapter:
                     f"Allowed: {_allowed_paths}"
                 )
         else:
-            # V105 FIX (MEDIUM-9): When _allowed_paths is empty and
             # platform is Windows without converter_dir, REJECT the binary
             # (fail-closed). Previously, empty list = no validation.
             if not (self._platform == "windows" and self._converter_dir):

@@ -364,9 +364,7 @@ class TestCauseEffectRules:
         }
         assert set(rules) == expected
         assert len(rules) == len(expected)
-        # V18 bug regression: NAC must be present
         assert LogicFunction.NAC_ZONE in rules
-        # V18 bug regression: HVAC is zone-specific, not building-wide
         assert LogicFunction.HVAC_SHUTDOWN_ALL not in rules
 
     # --- SMOKE_ELEVATOR_LOBBY ---
@@ -409,7 +407,6 @@ class TestCauseEffectRules:
         }
         assert set(rules) == expected
         assert len(rules) == len(expected)
-        # V18 bug regression: Phase II is MANUAL per ASME A17.1 §2.27.3.4
         assert LogicFunction.ELEVATOR_PHASE_II not in rules
 
     # --- SMOKE_ELEVATOR_SHAFT ---
@@ -436,7 +433,6 @@ class TestCauseEffectRules:
         }
         assert set(rules) == expected
         assert len(rules) == len(expected)
-        # V18 bug regression: HVAC is zone-specific
         assert LogicFunction.HVAC_SHUTDOWN_ALL not in rules
 
     # --- HEAT ---
@@ -463,7 +459,6 @@ class TestCauseEffectRules:
         }
         assert set(rules) == expected
         assert len(rules) == len(expected)
-        # V18 bug regression: ELEVATOR_SHUNT_TRIP must exist
         assert LogicFunction.ELEVATOR_SHUNT_TRIP in rules
 
     # --- MANUAL_CALL_POINT ---
@@ -480,7 +475,6 @@ class TestCauseEffectRules:
         # MANUAL_CALL_POINT is building-wide NAC_ALL, not zone-specific NAC_ZONE
         assert LogicFunction.NAC_ALL in rules
         assert LogicFunction.NAC_ZONE not in rules
-        # V18 bug regression: HVAC_ALL is building-wide for MCP
         assert LogicFunction.HVAC_SHUTDOWN_ALL in rules
 
     # --- DUCT_DETECTOR ---
@@ -492,9 +486,7 @@ class TestCauseEffectRules:
         }
         assert set(rules) == expected
         assert len(rules) == len(expected)
-        # V18 bug regression: DUCT_DETECTOR must NOT produce ALARM
         assert LogicFunction.ALARM not in rules
-        # V18 bug regression: DUCT_DETECTOR is NOT general evacuation
         assert LogicFunction.NAC_ZONE not in rules
         assert LogicFunction.NAC_ALL not in rules
 
@@ -507,7 +499,6 @@ class TestCauseEffectRules:
         }
         assert set(rules) == expected
         assert len(rules) == len(expected)
-        # V18 bug regression: FIRE_PUMP_START removed per NFPA 20 §10.5.2.1
         assert LogicFunction.FIRE_PUMP_START not in rules
 
     # --- VALVE_TAMPER ---

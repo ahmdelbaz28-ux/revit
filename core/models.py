@@ -75,7 +75,6 @@ try:
     from backend.schemas import ChangeSource, ConflictType, ElementType
 except ImportError as _import_err:
     # Fallback for standalone usage (e.g., parsers without backend installed).
-    # V83 FIX: Log the fallback reason — silent fallback hides real errors
     # (e.g., syntax error in schemas.py would be silently swallowed).
     _logger.warning(
         "backend.schemas not available (%s) — using local enum fallback. "
@@ -211,7 +210,6 @@ class Geometry:
             dz = pts[i + 1].z - pts[i].z
             perimeter += math.sqrt(dx * dx + dy * dy + dz * dz)
         if self.polyline_closed and len(pts) >= 2:
-            # V83 FIX: Was >= 3, but 2-point closed polyline needs round-trip too
             dx = pts[0].x - pts[-1].x
             dy = pts[0].y - pts[-1].y
             dz = pts[0].z - pts[-1].z
@@ -261,7 +259,6 @@ class SemanticProperties:
     revit_category: str | None = None
 
     def __post_init__(self) -> None:
-        # V83 FIX: Validate numeric fields — negative/NaN/Inf heights are
         # data corruption indicators in fire-protection engineering.
         for _name, _val in (("height", self.height), ("width", self.width)):
             if _val is not None:
@@ -433,7 +430,6 @@ class UniversalElement:
     project_id: str | None = None
 
     def __post_init__(self) -> None:
-        # V83 FIX: No uuid.uuid4() — element_id must be provided by caller.
         # Determinism is mandatory (Priority #5).
         if not self.element_id:
             raise ValueError(

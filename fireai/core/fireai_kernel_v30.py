@@ -1,4 +1,3 @@
-# V143 audit: File-level suppression removed. Per-line justified
 # suppressions remain (e.g., inline rule keys for S3776 — cognitive complexity
 # is inherent to the safety-critical algorithm). See audit report in repo.
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -492,7 +491,6 @@ class StreamingParser:
                 for line in fh:
                     buffer.append(line)
                     if len(buffer) >= self.CHUNK_LINES:
-                        # V86 FIX: Replaced deprecated asyncio.get_event_loop()
                         # with asyncio.get_running_loop(). Per Python 3.10+
                         # deprecation: get_event_loop() emits DeprecationWarning
                         # and will be removed in Python 3.14. Since this is an
@@ -503,7 +501,6 @@ class StreamingParser:
                             yield walls
                         buffer = []
                 if buffer:
-                    # V86 FIX: Same as above — replaced deprecated
                     # asyncio.get_event_loop() with asyncio.get_running_loop().
                     walls = await asyncio.get_running_loop().run_in_executor(None, self._parse_dxf_chunk, buffer)
                     if walls:
@@ -535,7 +532,6 @@ class StreamingParser:
                 logger.warning("PDF page %s error: %s", page_num, e)
                 return []
 
-        # V86 FIX: Replaced asyncio.get_event_loop() with
         # asyncio.get_running_loop(). Same root cause as V85 fixes
         # in workflow_service.py — deprecated since Python 3.10.
         loop = asyncio.get_running_loop()
@@ -714,7 +710,6 @@ class AdaptivePipeline:
                 if asyncio.iscoroutinefunction(fn):
                     result = await fn(item)
                 else:
-                    # V86 FIX: Replaced deprecated asyncio.get_event_loop()
                     # with asyncio.get_running_loop().
                     loop = asyncio.get_running_loop()
                     result = await loop.run_in_executor(None, fn, item)
@@ -755,7 +750,6 @@ class SafetyLedger:
     ) -> None:
         import hmac as _hmac
 
-        # V112: Security — secret_key MUST be provided, never use a default.
         # A hardcoded secret defeats the entire HMAC audit trail.
         # NFPA 72 §10.6.1: tamper-evidence requires unique, secret keys.
         if secret_key is None:
@@ -1124,7 +1118,6 @@ class WireRouterV2:
 
     def _line_clear(self, a: tuple[float, float], b: tuple[float, float]) -> bool:
         """Vectorized LOS check using pre-built segment arrays."""
-        # V143 FIX: `if not ndarray` raises ValueError for arrays with >1
         # element. Use explicit None check. This was a latent bug that
         # crashed any Class A/B routing call with non-empty obstacles.
         if self._segs is None:
@@ -1221,7 +1214,6 @@ class KernelCore:
         self._parser = parser
         self._workers = n_workers or os.cpu_count() or 4
         self._pipeline_metrics: dict[str, Any] = {}
-        # V131 Kernel Extensions
         from fireai.core.v131_kernel_extensions import V131KernelExtension
         self.v131_extensions = V131KernelExtension(self)
 
