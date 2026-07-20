@@ -738,6 +738,11 @@ from backend.routers import marine as marine_router_module
 
 app.include_router(marine_router_module.router, prefix="/api/v1", tags=["Marine"])
 
+# ETAP Integration router — standalone integration page for ETAP power system analysis
+from backend.routers import etap as etap_router_module
+
+app.include_router(etap_router_module.router, prefix="/api/v1", tags=["ETAP Integration"])
+
 from backend.routers import mining as mining_router_module
 
 app.include_router(mining_router_module.router, prefix="/api/v1", tags=["Mining"])

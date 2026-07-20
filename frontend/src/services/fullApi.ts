@@ -974,3 +974,152 @@ export const marineApi = {
 
 };
 
+// ─── ETAP Integration API ────────────────────────────────────────────────────
+
+export interface EtapConnectionSettings {
+        host: string;
+        port: number;
+        username: string;
+        password: string;
+        timeout_seconds: number;
+}
+
+export interface EtapConnectionTestResponse {
+        success: boolean;
+        message: string;
+        latency_ms?: number;
+        server_version?: string;
+}
+
+export interface EtapProjectInfo {
+        project_id: string;
+        name: string;
+        modified_at?: string;
+        size_mb?: number;
+        is_remote: boolean;
+}
+
+export interface EtapExportRequest {
+        project_id: string;
+        include_loads: boolean;
+        include_sources: boolean;
+        include_topology: boolean;
+        format: "csv" | "ort";
+}
+
+export interface EtapImportRequest {
+        project_id: string;
+        etap_project_id: string;
+        import_loads: boolean;
+        import_sources: boolean;
+        conflict_resolution: "skip" | "overwrite" | "merge";
+}
+
+export interface EtapSyncLog {
+        id: string;
+        direction: "export" | "import";
+        status: "success" | "error" | "partial";
+        records_synced: number;
+        error_message?: string;
+        created_at: string;
+}
+
+export interface EtapSettingsResponse {
+        id: string;
+        project_id: string;
+        host: string;
+        port: number;
+        username: string;
+        enabled: boolean;
+        last_sync?: string;
+        created_at: string;
+        updated_at: string;
+}
+
+export interface EtapSyncLogResponse {
+        items: EtapSyncLog[];
+        total: number;
+        page: number;
+        page_size: number;
+}
+
+export const etapApi = {
+        /** POST /api/v1/integrations/etap/connect */
+        testConnection: async (settings: EtapConnectionSettings, projectId?: string): Promise<EtapConnectionTestResponse> => {
+                const qs = projectId ? `?project_id=${encodeURIComponent(projectId)}` : "";
+                return apiCall(`/api/v1/integrations/etap/connect${qs}`, {
+                        method: "POST",
+                        body: JSON.stringify(settings),
+                });
+        },
+
+        /** POST /api/v1/integrations/etap/disconnect */
+        disconnect: async (projectId?: string): Promise<{ message: string; enabled: boolean }> => {
+                const qs = projectId ? `?project_id=${encodeURIComponent(projectId)}` : "";
+                return apiCall(`/api/v1/integrations/etap/disconnect${qs}`, { method: "POST" });
+        },
+
+        /** GET /api/v1/integrations/etap/status */
+        getStatus: async (projectId: string): Promise<{ enabled: boolean; configured: boolean; last_sync?: string; host?: string; port?: number; username?: string }> =>
+                apiCall(`/api/v1/integrations/etap/status?project_id=${encodeURIComponent(projectId)}`),
+
+        /** GET /api/v1/integrations/etap/projects */
+        listEtapProjects: async (projectId: string): Promise<EtapProjectInfo[]> =>
+                apiCall(`/api/v1/integrations/etap/projects?project_id=${encodeURIComponent(projectId)}`),
+
+        /** GET /api/v1/integrations/etap/projects/local */
+        listLocalProjects: async (): Promise<Array<{ id: string; name: string }>> =>
+                apiCall("/api/v1/integrations/etap/projects/local"),
+
+        /** POST /api/v1/integrations/etap/export */
+        exportToEtap: async (data: EtapExportRequest): Promise<{
+                project_id: string;
+                format: string;
+                loads_csv: string;
+                sources_csv: string;
+                records_exported: number;
+        }> => apiCall("/api/v1/integrations/etap/export", {
+                method: "POST",
+                body: JSON.stringify(data),
+        }),
+
+        /** POST /api/v1/integrations/etap/import */
+        importFromEtap: async (data: EtapImportRequest): Promise<{
+                project_id: string;
+                etap_project_id: string;
+                records_imported: number;
+                message: string;
+        }> => apiCall("/api/v1/integrations/etap/import", {
+                method: "POST",
+                body: JSON.stringify(data),
+        }),
+
+        /** GET /api/v1/integrations/etap/logs */
+        getLogs: async (projectId: string, page = 1, pageSize = 50): Promise<EtapSyncLogResponse> =>
+                apiCall(`/api/v1/integrations/etap/logs?project_id=${encodeURIComponent(projectId)}&page=${page}&page_size=${pageSize}`),
+
+        /** POST /api/v1/integrations/etap/settings */
+        createSettings: async (projectId: string, settings: EtapConnectionSettings): Promise<EtapSettingsResponse> =>
+                apiCall(`/api/v1/integrations/etap/settings?project_id=${encodeURIComponent(projectId)}`, {
+                        method: "POST",
+                        body: JSON.stringify(settings),
+                }),
+
+        /** GET /api/v1/integrations/etap/settings */
+        getSettings: async (projectId: string): Promise<EtapSettingsResponse | null> =>
+                apiCall(`/api/v1/integrations/etap/settings?project_id=${encodeURIComponent(projectId)}`),
+
+        /** PUT /api/v1/integrations/etap/settings */
+        updateSettings: async (projectId: string, data: Partial<EtapConnectionSettings> & { enabled?: boolean }): Promise<EtapSettingsResponse> =>
+                apiCall(`/api/v1/integrations/etap/settings?project_id=${encodeURIComponent(projectId)}`, {
+                        method: "PUT",
+                        body: JSON.stringify(data),
+                }),
+
+        /** DELETE /api/v1/integrations/etap/settings */
+        deleteSettings: async (projectId: string): Promise<{ message: string }> =>
+                apiCall(`/api/v1/integrations/etap/settings?project_id=${encodeURIComponent(projectId)}`, {
+                        method: "DELETE",
+                }),
+};
+

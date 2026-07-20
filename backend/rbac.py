@@ -74,6 +74,9 @@ class Permission(str, Enum):
     # Workflow permissions
     WORKFLOW_READ = "workflow:read"
     WORKFLOW_MANAGE = "workflow:manage"
+    # Integration permissions
+    INTEGRATION_READ = "integration:read"
+    INTEGRATION_MANAGE = "integration:manage"
 
 
 # Role-permission mapping
@@ -116,6 +119,8 @@ ROLE_PERMISSIONS: dict[Role, set[Permission]] = {
         Permission.WORKFLOW_READ,
         Permission.WORKFLOW_MANAGE,
         Permission.MONITOR_READ,
+        Permission.INTEGRATION_READ,
+        Permission.INTEGRATION_MANAGE,
     },
     Role.VIEWER: {
         Permission.PROJECT_READ,
@@ -131,6 +136,7 @@ ROLE_PERMISSIONS: dict[Role, set[Permission]] = {
         Permission.FACP_READ,
         Permission.WORKFLOW_READ,
         Permission.MONITOR_READ,
+        Permission.INTEGRATION_READ,
     },
 }
 

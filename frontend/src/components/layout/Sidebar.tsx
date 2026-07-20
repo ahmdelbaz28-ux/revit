@@ -28,6 +28,7 @@ import {
         Pickaxe,
         Key,
         Download,
+        Server,
 } from "lucide-react";
 import type React from "react";
 import { useState } from "react";
@@ -158,6 +159,12 @@ const navItems: NavItem[] = [
                 icon: Download,
                 path: "/exports",
                 dataOnboarding: "nav-exports",
+        },
+        {
+                labelKey: "nav.etap",
+                defaultLabel: "ETAP",
+                icon: Server,
+                path: "/etap",
         },
         {
                 labelKey: "nav.environment",

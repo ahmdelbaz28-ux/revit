@@ -80,6 +80,9 @@ const DigitalTwinHistoryPage = lazy(() =>
 const DigitalTwinPage = lazy(() =>
         import("./pages/DigitalTwinPage").then((m) => ({ default: m.DigitalTwinPage })),
 );
+const EtapPage = lazy(() =>
+        import("./pages/EtapPage").then((m) => ({ default: m.EtapPage })),
+);
 const ElementDetail = lazy(() => import("./pages/ElementDetail"));
 const Elements = lazy(() => import("./pages/Elements"));
 const EngineeringPage = lazy(() =>
@@ -263,6 +266,7 @@ function App() {
                 { path: "/digital-twin/convert", element: <DigitalTwinConvertPage /> },
                 { path: "/digital-twin/config", element: <DigitalTwinConfigPage /> },
                 { path: "/digital-twin/history", element: <DigitalTwinHistoryPage /> },
+                { path: "/etap", element: <EtapPage /> },
         ];
 
         // Determine if we're on a public route (no AppShell)

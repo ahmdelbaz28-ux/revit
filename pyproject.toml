@@ -465,6 +465,7 @@ ignore = [
     "N815",    # Mixed case variable in class scope (Revit API convention)
     "PLW0603", # Global statement (intentional for singleton pattern)
     "B008",    # Function call in default argument (FastAPI Depends() pattern)
+    "PT028",   # Test function parameter has default argument (FastAPI Depends() pattern, not pytest)
     "PT011",   # Pytest-raises-too-broad (test code)
     # V140: Additional rules disabled for CI Gate 1 compliance
     "E402",    # Module import not at top of file (intentional for lazy/optional imports)

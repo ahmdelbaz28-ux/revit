@@ -388,6 +388,39 @@ class Database:
             cur.execute("CREATE INDEX IF NOT EXISTS idx_audit_log_entity ON audit_log(entity_type, entity_id)")
             cur.execute("CREATE INDEX IF NOT EXISTS idx_audit_log_action ON audit_log(action)")
 
+            # ── ETAP Integration Tables ─────────────────────────────────────
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS etap_integrations (
+                    id TEXT PRIMARY KEY,
+                    project_id TEXT NOT NULL,
+                    host TEXT NOT NULL,
+                    port INTEGER NOT NULL,
+                    username TEXT NOT NULL,
+                    password TEXT NOT NULL,
+                    enabled BOOLEAN NOT NULL DEFAULT FALSE,
+                    last_sync TEXT,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+                )
+            """)
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_etap_integrations_project ON etap_integrations(project_id)")
+
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS etap_sync_logs (
+                    id TEXT PRIMARY KEY,
+                    project_id TEXT NOT NULL,
+                    direction TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    records_synced INTEGER NOT NULL DEFAULT 0,
+                    error_message TEXT,
+                    created_at TEXT NOT NULL,
+                    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+                )
+            """)
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_etap_sync_logs_project ON etap_sync_logs(project_id)")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_etap_sync_logs_created ON etap_sync_logs(created_at)")
+
         logger.info("PostgreSQL schema initialized successfully (matching SQLite schema)")
 
     def _init_schema(self) -> None:
@@ -524,6 +557,39 @@ class Database:
             cur.execute("CREATE INDEX IF NOT EXISTS idx_audit_log_user ON audit_log(user_id)")
             cur.execute("CREATE INDEX IF NOT EXISTS idx_audit_log_entity ON audit_log(entity_type, entity_id)")
             cur.execute("CREATE INDEX IF NOT EXISTS idx_audit_log_action ON audit_log(action)")
+
+            # ── ETAP Integration Tables ─────────────────────────────────────
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS etap_integrations (
+                    id TEXT PRIMARY KEY,
+                    project_id TEXT NOT NULL,
+                    host TEXT NOT NULL,
+                    port INTEGER NOT NULL,
+                    username TEXT NOT NULL,
+                    password TEXT NOT NULL,
+                    enabled BOOLEAN NOT NULL DEFAULT 0,
+                    last_sync TEXT,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+                )
+            """)
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_etap_integrations_project ON etap_integrations(project_id)")
+
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS etap_sync_logs (
+                    id TEXT PRIMARY KEY,
+                    project_id TEXT NOT NULL,
+                    direction TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    records_synced INTEGER NOT NULL DEFAULT 0,
+                    error_message TEXT,
+                    created_at TEXT NOT NULL,
+                    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+                )
+            """)
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_etap_sync_logs_project ON etap_sync_logs(project_id)")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_etap_sync_logs_created ON etap_sync_logs(created_at)")
 
     # ========================================================================
     # Projects CRUD
