@@ -52,12 +52,12 @@ export interface PaginatedResponse<T> {
 // ============================================================================
 
 class ApiClient {
-        private baseUrl: string;  // NOSONAR: typescript:S2933
+        private readonly baseUrl: string;
         private defaultHeaders: Record<string, string>;  // NOSONAR: typescript:S2933
         private wsConnection: WebSocket | null = null;
-        private wsCallbacks: Map<string, Set<(data: unknown) => void>> = new Map();  // NOSONAR: typescript:S2933
+        private readonly wsCallbacks: Map<string, Set<(data: unknown) => void>> = new Map();
         private reconnectAttempts = 0;
-        private maxReconnectAttempts = 5;  // NOSONAR: typescript:S2933
+        private readonly maxReconnectAttempts = 5;
         private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
         constructor(baseUrl?: string) {

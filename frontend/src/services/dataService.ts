@@ -38,7 +38,7 @@ const WS_HEALTH_CHECK_INTERVAL = 30000;
 export class DataService {
         private static instance: DataService;
         private buffer: any[] = [];
-        private maxBufferSize = 50;  // NOSONAR: typescript:S2933
+        private readonly maxBufferSize = 50;
         private isConnected = false;
         private isAuthenticated = false;
         private reconnectAttempts = 0;

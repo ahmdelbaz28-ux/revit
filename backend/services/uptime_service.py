@@ -65,7 +65,7 @@ class UptimeService:
         self._last_ping_status = "never"
         self._last_ping_time: float = 0.0
 
-    async def start_heartbeat_loop(self) -> None:
+    def start_heartbeat_loop(self) -> None:
         """Start the periodic heartbeat ping background task."""
         if self._loop_running:
             return

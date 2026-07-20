@@ -1,8 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useState, ReactNode } from "react";
 
 interface Theme {
-  dark: boolean;
-  toggle: () => void;
+  readonly dark: boolean;
+  readonly toggle: () => void;
 }
 
 const ThemeContext = createContext<Theme | null>(null);

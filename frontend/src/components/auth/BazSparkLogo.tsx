@@ -19,9 +19,9 @@ import { useRef } from "react";
 import { useGsapLogoAnimation } from "@/hooks/useGsapAnimations";
 
 interface BazSparkLogoProps {
-	size?: number;
-	animated?: boolean;
-	className?: string;
+	readonly size?: number;
+	readonly animated?: boolean;
+	readonly className?: string;
 }
 
 export function BazSparkLogo({
@@ -110,8 +110,8 @@ export function BazSparkLogo({
 }
 
 interface BazSparkWordmarkProps {
-	size?: "sm" | "md" | "lg";
-	className?: string;
+	readonly size?: "sm" | "md" | "lg";
+	readonly className?: string;
 }	export function BazSparkWordmark({
 		size = "md",
 		className = "",

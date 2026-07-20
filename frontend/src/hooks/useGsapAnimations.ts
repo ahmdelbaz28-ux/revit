@@ -404,7 +404,6 @@ export function useGsapGridBackground(
 
       for (let i = -10; i < width / gridSize + 10; i++) {
         const x = i * gridSize + offset % gridSize;
-        const topY = (vanishY - height * 0.3) * perspective + height * 0.3;
         ctx.beginPath();
         ctx.moveTo(x, 0);
         ctx.lineTo(x + 40, height);

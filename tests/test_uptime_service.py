@@ -91,7 +91,7 @@ class TestUptimeService:
         """Test GET /api/v1/monitor/uptime endpoint with patched services."""
         from backend.services.uptime_service import UptimeService
 
-        async def mock_fetch_monitor_status(self):
+        async def mock_fetch_monitor_status(self):  # NOSONAR: python:S7503 — mock must be async to replace async method
             return {
                 "success": True,
                 "monitors": [{"id": 12345, "name": "Test Monitor"}]

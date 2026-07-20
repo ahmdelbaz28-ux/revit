@@ -455,7 +455,6 @@ export function LoginPage() {  // NOSONAR - typescript:S3776: cognitive complexi
         // ─── GSAP Animation Refs ─────────────────────────────────────────
         const headlineRef = useRef<HTMLDivElement>(null);
         const metricsRef = useRef<HTMLDivElement>(null);
-        const leftPanelRef = useRef<HTMLDivElement>(null);
 
         // GSAP SplitText: hero headline chars animate in
         useGsapSplitText(headlineRef, {

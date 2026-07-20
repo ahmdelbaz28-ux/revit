@@ -73,7 +73,7 @@ export function ReportsPage() {
                         properties: unknown;
                 }>
         >([]);
-        const [elementsLoading, setElementsLoading] = useState(false);
+        const [, setElementsLoading] = useState(false);
 
         useEffect(() => {
                 if (!firstProjectId) return;
