@@ -24,7 +24,7 @@
          Inter is still loaded as a progressive enhancement, but the
          critical text renders immediately using the system font. This
          eliminates the render-blocking Google Fonts request from FCP. -->
-    <style nonce="{{nonce}}">
+    <style>
       /* Critical CSS — system font fallback for instant FCP */
       body {
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
@@ -73,8 +73,7 @@
      <meta http-equiv="Content-Security-Policy"
       content="default-src 'self';
     script-src 'self';
-    style-src 'self' 'nonce-{{nonce}}' https://fonts.googleapis.com;
-    style-src-attr 'unsafe-inline';
+    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
     img-src 'self' data: blob:;
     font-src 'self' https://fonts.gstatic.com;
     connect-src 'self' https://ahmdelbaz28-bazspark.hf.space https://revit-rust.vercel.app;
