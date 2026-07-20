@@ -6,15 +6,15 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
-from fastapi.testclient import TestClient
 
 import pytest
+from fastapi.testclient import TestClient
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
-from backend.services.aps_service import get_aps_service, ApsService
 from backend.app import app
+from backend.services.aps_service import ApsService, get_aps_service
 
 
 class TestApsService:

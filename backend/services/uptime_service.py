@@ -22,13 +22,25 @@ import httpx
 logger = logging.getLogger(__name__)
 
 # ── Keys and Configuration ───────────────────────────────────────────────────
-# Defaults are set to the keys provided by the user.
-_DEFAULT_USER_KEY = "u3475686-dcae0377ed9ef73751fce22a"
-_DEFAULT_MONITOR_KEY = "m802977288-8dd335d0ab0bb8ac38e282b1"
+# SECURITY: Keys MUST be set via environment variables. Never hardcode them.
+# Set UPTIMEROBOT_USER_KEY (read-only key recommended) and
+# UPTIMEROBOT_MONITOR_KEY (heartbeat monitor key) in your environment.
+# Get keys from: https://dashboard.uptimerobot.com/integrations
 
-USER_KEY = os.getenv("UPTIMEROBOT_USER_KEY", _DEFAULT_USER_KEY)
-MONITOR_KEY = os.getenv("UPTIMEROBOT_MONITOR_KEY", _DEFAULT_MONITOR_KEY)
+USER_KEY = os.getenv("UPTIMEROBOT_USER_KEY", "")
+MONITOR_KEY = os.getenv("UPTIMEROBOT_MONITOR_KEY", "")
 HEARTBEAT_INTERVAL = int(os.getenv("UPTIMEROBOT_HEARTBEAT_INTERVAL", "300"))  # 5 minutes
+
+if not USER_KEY:
+    logger.warning(
+        "UPTIMEROBOT_USER_KEY is not set. Monitor status API will be disabled. "
+        "Set it in your environment to enable UptimeRobot monitoring."
+    )
+if not MONITOR_KEY:
+    logger.warning(
+        "UPTIMEROBOT_MONITOR_KEY is not set. Heartbeat pings will be disabled. "
+        "Set it in your environment to enable keep-awake heartbeats."
+    )
 
 # ── Singleton Pattern ──────────────────────────────────────────────────────────
 

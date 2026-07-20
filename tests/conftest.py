@@ -1,6 +1,7 @@
 # File-level '# NOSONAR' removed per NOSONAR_AUDIT.md (V143 hardening).
 # Per-line justified suppressions (e.g., '# NOSONAR — S3776: ...') are preserved.
 from __future__ import annotations
+
 """
 conftest.py — Shared Pytest Fixtures for FireAI Test Suite
 ===========================================================
@@ -24,6 +25,7 @@ Usage:
 # Python 3.8 compatibility patch for ReportLab: hashlib.md5 does not support usedforsecurity
 # NOSONAR — python:S4790: md5 is used for ReportLab PDF generation compatibility, not security
 import hashlib
+
 _orig_md5 = hashlib.md5  # NOSONAR — python:S4790
 
 

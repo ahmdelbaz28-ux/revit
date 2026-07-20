@@ -3,12 +3,13 @@
 BAZSPARK End-to-End Production Validation
 Runs comprehensive checks to verify production readiness.
 """
+import asyncio
 import os
 import sys
-import asyncio
+from typing import List, Tuple
+
 import httpx
 import psycopg2
-from typing import Dict, List, Tuple
 
 # Load .env file if present
 env_path = os.path.join(os.path.dirname(__file__), '..', '.env')
@@ -48,7 +49,7 @@ class ProductionValidator:
     def __init__(self):
         self.results: List[Tuple[str, bool, str]] = []
         self.base_url = os.getenv("BASE_URL", "http://localhost:8000")
-        
+
     def check(self, name: str, success: bool, message: str):
         self.results.append((name, success, message))
         if success:
@@ -56,7 +57,7 @@ class ProductionValidator:
         else:
             print_error(f"{name}: {message}")
         return success
-    
+
     async def test_health_endpoint(self) -> bool:
         """Test /api/health endpoint"""
         try:
@@ -84,13 +85,13 @@ class ProductionValidator:
                     "WARN: Server not running (expected in validation-only mode)"
                 )
             return self.check("Health Endpoint", False, f"Error: {error_msg}")
-    
+
     def test_database_connection(self) -> bool:
         """Test PostgreSQL connection or fallback config"""
         database_url = os.getenv("DATABASE_URL")
         if not database_url:
             return self.check("Database Connection", False, "DATABASE_URL not set")
-        
+
         # If URL points to known unreachable Supabase (DNS failure), treat as warning.
         # V280 SECURITY: project ref no longer hardcoded (was leaked in public repo).
         # Operators set SUPABASE_UNREACHABLE_PROJECT_REF env var to enable the bypass.
@@ -101,7 +102,7 @@ class ProductionValidator:
                 True,
                 "WARN: Current Supabase URL unreachable, but NEON_DATABASE_URL fallback configured"
             )
-        
+
         # Try NEON fallback if Supabase fails
         neon_url = os.getenv("NEON_DATABASE_URL")
         if neon_url and "YOUR_NEON_PASSWORD" in neon_url:
@@ -110,7 +111,7 @@ class ProductionValidator:
                 True,
                 "WARN: NEON_DATABASE_URL placeholder present, needs real credentials"
             )
-        
+
         try:
             conn = psycopg2.connect(database_url, connect_timeout=5)
             cursor = conn.cursor()
@@ -128,7 +129,7 @@ class ProductionValidator:
                     "WARN: DNS failure - verify host or use NEON fallback"
                 )
             return self.check("Database Connection", False, f"Error: {error_msg}")
-    
+
     def test_environment_variables(self) -> bool:
         """Test required environment variables"""
         required_vars = [
@@ -143,12 +144,12 @@ class ProductionValidator:
             "NVIDIA_API_KEY",
             "CORS_ORIGINS",
         ]
-        
+
         missing = []
         for var in required_vars:
             if not os.getenv(var):
                 missing.append(var)
-        
+
         if missing:
             return self.check(
                 "Environment Variables",
@@ -161,17 +162,17 @@ class ProductionValidator:
                 True,
                 f"All {len(required_vars)} required variables set"
             )
-    
+
     def test_cors_configuration(self) -> bool:
         """Test CORS configuration"""
         cors_origins = os.getenv("CORS_ORIGINS", "")
         if not cors_origins:
             return self.check("CORS Configuration", False, "CORS_ORIGINS not set")
-        
+
         origins = [o.strip() for o in cors_origins.split(",")]
         if len(origins) == 0:
             return self.check("CORS Configuration", False, "No origins defined")
-        
+
         # Check for wildcards
         if "*" in cors_origins:
             return self.check(
@@ -179,13 +180,13 @@ class ProductionValidator:
                 False,
                 "Wildcard (*) not allowed in production"
             )
-        
+
         return self.check(
             "CORS Configuration",
             True,
             f"Configured with {len(origins)} origin(s)"
         )
-    
+
     def test_session_secret_strength(self) -> bool:
         """Test session secret strength"""
         secret = os.getenv("FIREAI_SESSION_SECRET", "")
@@ -208,19 +209,19 @@ class ProductionValidator:
                 True,
                 f"Strong: {len(secret)} chars"
             )
-    
+
     def test_gitignore(self) -> bool:
         """Test .gitignore properly excludes .env"""
         try:
             with open(".gitignore", "r") as f:
                 content = f.read()
-                
+
             checks = [
                 (".env" in content, ".env pattern found"),
                 (".env.backup.*" in content, ".env.backup.* pattern found"),
                 ("*.secret" in content, "*.secret pattern found"),
             ]
-            
+
             failed = [msg for check, msg in checks if not check]
             if failed:
                 return self.check(
@@ -236,12 +237,12 @@ class ProductionValidator:
                 )
         except Exception as e:
             return self.check("Gitignore Configuration", False, f"Error: {str(e)}")
-    
+
     def test_no_hardcoded_secrets(self) -> bool:
         """Test for hardcoded secrets in Python files"""
-        import re
         import glob
-        
+        import re
+
         secret_patterns = [
             r'(api_key|secret|token|password|private_key)\s*[:=]\s*["\']([a-zA-Z0-9_\-]{20,})["\']',
             r'(ghp_|github_pat_|sk-|pk-|vcp_|dtn_|csb_|cfut_|hf_|sbp_|sb_secret_)',
@@ -268,18 +269,18 @@ class ProductionValidator:
                 continue
             if any(fp.lower() in normalized for fp in false_positive_indicators):
                 continue
-            
+
             try:
                 with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
                     content = f.read()
-                
+
                 for pattern in secret_patterns:
                     matches = re.findall(pattern, content, re.IGNORECASE)
                     if matches:
                         violations.append(f"{filepath}: {len(matches)} matches")
             except Exception:
                 pass
-        
+
         if violations:
             return self.check(
                 "No Hardcoded Secrets",
@@ -292,7 +293,7 @@ class ProductionValidator:
                 True,
                 "No secrets detected in source code"
             )
-    
+
     async def test_external_connectivity(self) -> bool:
         """Test connectivity to external services"""
         services = {
@@ -301,7 +302,7 @@ class ProductionValidator:
             "Cloudflare": "https://api.cloudflare.com/client/v4/ips",
             "NVIDIA": "https://integrate.api.nvidia.com/v1",
         }
-        
+
         results = []
         async with httpx.AsyncClient() as client:
             for name, url in services.items():
@@ -311,18 +312,18 @@ class ProductionValidator:
                         results.append(f"{name}: OK")
                     else:
                         results.append(f"{name}: WARN ({response.status_code})")
-                except Exception as e:
+                except Exception:
                     results.append(f"{name}: FAIL")
-        
+
         all_ok = all("OK" in r for r in results)
         message = ", ".join(results)
-        
+
         return self.check(
             "External Connectivity",
             all_ok,
             message
         )
-    
+
     def test_documentation_exists(self) -> bool:
         """Test that required documentation exists"""
         required_docs = [
@@ -331,9 +332,9 @@ class ProductionValidator:
             ".env.example",
             "PRODUCTION_DEPLOYMENT_GUIDE.md",
         ]
-        
+
         missing = [doc for doc in required_docs if not os.path.exists(doc)]
-        
+
         if missing:
             return self.check(
                 "Documentation",
@@ -346,63 +347,63 @@ class ProductionValidator:
                 True,
                 f"All {len(required_docs)} required docs present"
             )
-    
+
     async def run_all_tests(self):
         """Run all validation tests"""
         print_header("BAZSPARK Production Readiness Validation")
-        
+
         print_info(f"Base URL: {self.base_url}")
         print_info(f"Environment: {os.getenv('FIREAI_ENV', 'not set')}")
         print()
-        
+
         # Environment checks
         print_header("1. Environment Configuration")
         self.test_environment_variables()
         self.test_session_secret_strength()
         self.test_cors_configuration()
-        
+
         # Security checks
         print_header("2. Security Validation")
         self.test_gitignore()
         self.test_no_hardcoded_secrets()
-        
+
         # Documentation checks
         print_header("3. Documentation")
         self.test_documentation_exists()
-        
+
         # Infrastructure checks
         print_header("4. Infrastructure")
         self.test_database_connection()
-        
+
         # External connectivity
         print_header("5. External Services")
         await self.test_external_connectivity()
-        
+
         # Runtime checks (if server is running)
         print_header("6. Runtime Validation")
         await self.test_health_endpoint()
-        
+
         # Summary
         self.print_summary()
-    
+
     def print_summary(self):
         """Print test summary"""
         print_header("Test Summary")
-        
+
         passed = sum(1 for _, success, _ in self.results if success)
         failed = sum(1 for _, success, _ in self.results if not success)
         total = len(self.results)
-        
+
         print(f"\nTotal Tests: {total}")
         print(f"{Colors.GREEN}Passed: {passed}{Colors.RESET}")
         print(f"{Colors.RED}Failed: {failed}{Colors.RESET}")
-        
+
         if failed > 0:
             print(f"\n{Colors.RED}Failed Tests:{Colors.RESET}")
             for name, success, message in self.results:
                 if not success:
                     print(f"  - {name}: {message}")
-        
+
         print(f"\n{Colors.BLUE}Overall Status:{Colors.RESET}")
         if failed == 0:
             print_success("PRODUCTION READY")
@@ -410,13 +411,13 @@ class ProductionValidator:
             print_warning("PRODUCTION READY with warnings")
         else:
             print_error("NOT READY FOR PRODUCTION")
-        
+
         print()
 
 async def main():
     validator = ProductionValidator()
     await validator.run_all_tests()
-    
+
     # Exit with error code if any tests failed
     failed = sum(1 for _, success, _ in validator.results if not success)
     sys.exit(0 if failed == 0 else 1)

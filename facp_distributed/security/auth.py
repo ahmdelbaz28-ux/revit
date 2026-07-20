@@ -8,7 +8,6 @@ from typing import Any, Dict, Optional
 
 import jwt  # PyJWT
 from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric import rsa
 
 
 class UserRole(Enum):

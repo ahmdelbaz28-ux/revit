@@ -26,7 +26,7 @@ from fastapi.testclient import TestClient
 @pytest.fixture(scope="module", autouse=True)
 def _setup_env_module() -> None:
     """Set test environment BEFORE module-scoped fixtures import the app.
-    
+
     Module-scoped autouse runs before other module-scoped fixtures in this
     file (pytest executes fixtures in definition order within same scope).
     This ensures env vars are set before `client` imports backend.app,

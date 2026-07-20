@@ -5,7 +5,6 @@ add-in project files + Python AutoCAD named pipe client in local_agent.py.
 
 from __future__ import annotations
 
-import os
 import platform
 import sys
 from pathlib import Path
@@ -69,7 +68,7 @@ class TestV214PythonAutoCADNamedPipeClient:
         """The Python AutoCAD pipe name must match the C# pipe name."""
         agent_path = REPO_ROOT / "scripts" / "local_agent.py"
         agent_content = agent_path.read_text(encoding="utf-8")
-        
+
         # Verify the pipe name is configured correctly
         assert "bazspark_autocad" in agent_content, "local_agent.py must reference bazspark_autocad"
 
@@ -77,11 +76,11 @@ class TestV214PythonAutoCADNamedPipeClient:
         """AutoCADNamedPipeDispatcher can be instantiated and behaves correctly."""
         sys.path.insert(0, str(REPO_ROOT))
         from scripts.local_agent import AutoCADNamedPipeDispatcher
-        
+
         dispatcher = AutoCADNamedPipeDispatcher()
         assert hasattr(dispatcher, "available")
         assert hasattr(dispatcher, "send")
-        
+
         if platform.system() != "Windows":
             assert dispatcher.available is False
             # Check sending command fails gracefully on non-windows

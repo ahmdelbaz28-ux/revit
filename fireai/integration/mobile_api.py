@@ -522,7 +522,7 @@ if __name__ == "__main__":
     # The mobile client sends SHA-256(password) over the wire (TLS-protected).
     # The server-side authenticate() runs bcrypt.checkpw on the received
     # SHA-256 digest against the stored bcrypt hash.
-    client_password_hash = hashlib.sha256("secure_pass_123!".encode("utf-8")).hexdigest()
+    client_password_hash = hashlib.sha256(b"secure_pass_123!").hexdigest()
     token = api.authenticate(
         MobileCredentials(
             username="field_engineer",
@@ -537,7 +537,7 @@ if __name__ == "__main__":
     # V279: Verify that an INVALID password is rejected (regression test
     # for the bcrypt migration — confirms we're not silently accepting
     # wrong credentials).
-    bad_password_hash = hashlib.sha256("wrong_password".encode("utf-8")).hexdigest()
+    bad_password_hash = hashlib.sha256(b"wrong_password").hexdigest()
     try:
         api.authenticate(
             MobileCredentials(

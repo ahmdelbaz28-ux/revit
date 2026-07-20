@@ -7,12 +7,10 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-import pytest
-
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
-from backend.services.speckle_service import get_speckle_service, SpeckleService
+from backend.services.speckle_service import SpeckleService, get_speckle_service
 from scripts.local_agent import _dispatch_autocad, _dispatch_revit
 
 

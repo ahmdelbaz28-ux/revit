@@ -20,11 +20,10 @@ def compile_project(csproj_path: Path) -> bool:
     """Runs dotnet build in Release mode."""
     print(f"[BUILD] Compiling project: {csproj_path.name} in Release mode...")
     try:
-        res = subprocess.run(
+        subprocess.run(
             ["dotnet", "build", str(csproj_path), "-c", "Release"],
             cwd=str(REPO_ROOT),
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            capture_output=True,
             text=True,
             check=True
         )
@@ -75,7 +74,7 @@ def pack_autocad_bundle() -> bool:
     if not bin_dir.exists():
         # Try without config-specific subdir if output path is overridden
         bin_dir = REPO_ROOT / "autocad_addin" / "BazSparkAutoCADBridge" / "bin"
-    
+
     target_dlls = ["BazSparkAutoCADBridge.dll", "Newtonsoft.Json.dll", "Speckle.Core.dll", "Speckle.Objects.dll", "Microsoft.Web.WebView2.Wpf.dll", "Microsoft.Web.WebView2.Core.dll"]
     for dll in target_dlls:
         src_dll = bin_dir / dll

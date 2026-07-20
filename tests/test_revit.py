@@ -206,7 +206,7 @@ class TestRevitFileOperations:
         mocked_ifcopenshell = False
         if "ifcopenshell" not in sys.modules:
             from unittest.mock import MagicMock
-            
+
             class MockModel:
                 def __init__(self, schema):
                     self.schema = schema
@@ -217,13 +217,13 @@ class TestRevitFileOperations:
                         f.write("Exterior Wall\n")
                         f.write("Foundation Slab\n")
                         f.write("IFCBUILDINGELEMENTPROXY\n")
-            
+
             mock_ifco = MagicMock()
             mock_ifco.file = MockModel
-            
+
             mock_api = MagicMock()
             mock_api.run = lambda action, model, **kwargs: MagicMock()
-            
+
             sys.modules["ifcopenshell"] = mock_ifco
             sys.modules["ifcopenshell.api"] = mock_api
             mocked_ifcopenshell = True
