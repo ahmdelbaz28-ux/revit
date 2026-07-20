@@ -194,7 +194,7 @@ export function useGsapSplitText(
 
       targets.forEach((el) => {
         const split = new SplitText(el as HTMLElement, { type: type as "chars" | "words" | "lines" });
-        const splitType = type.includes("chars") ? split.chars  // NOSONAR - typescript:S3358: nested ternary for split type selection is intentional
+        const splitType = type.includes("chars") ? split.chars
           : type.includes("words") ? split.words  // NOSONAR - typescript:S3358: nested ternary intentional for split type selection
           : split.lines;
 
