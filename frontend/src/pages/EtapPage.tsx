@@ -17,9 +17,7 @@ import {
         Download,
         Globe,
         Import,
-        KeyRound,
         Loader2,
-        Lock,
         Play,
         RefreshCw,
         Save,
@@ -741,7 +739,7 @@ export function EtapPage() {
 }
 
 // Icons as components to avoid JSX issues
-function EyeIcon({ className }: { className: string }) {
+function EyeIcon({ className }: { readonly className: string }) {
         return (
                 <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -750,7 +748,7 @@ function EyeIcon({ className }: { className: string }) {
         );
 }
 
-function EyeOffIcon({ className }: { className: string }) {
+function EyeOffIcon({ className }: { readonly className: string }) {
         return (
                 <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7a10.059 10.059 0 013.999-5.398M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
