@@ -26,7 +26,7 @@ class ApsProcessRequest(BaseModel):
     params: Dict[str, Any] = Field(default_factory=dict, description="Command line parameter overrides")
 
 
-@router.post("/process", response_model=Dict[str, Any])
+@router.post("/process")
 async def process_file_in_cloud(
     body: ApsProcessRequest,
     service: Annotated[ApsService, Depends(get_aps_service)]
@@ -77,7 +77,7 @@ async def process_file_in_cloud(
     }
 
 
-@router.get("/status/{work_item_id}", response_model=Dict[str, Any])
+@router.get("/status/{work_item_id}")
 async def get_work_item_status(
     work_item_id: str,
     service: Annotated[ApsService, Depends(get_aps_service)]
