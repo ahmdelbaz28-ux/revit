@@ -27,8 +27,9 @@ class TestUptimeService:
     """Test UptimeService background loop and API queries."""
 
     @pytest.mark.asyncio
-    async def test_ping_heartbeat_success(self):
+    async def test_ping_heartbeat_success(self, monkeypatch):
         """Test sending a single heartbeat ping successfully."""
+        monkeypatch.setenv("UPTIMEROBOT_MONITOR_KEY", "test-monitor-key-12345")
         from backend.services.uptime_service import UptimeService
 
         mock_res = MagicMock()
@@ -45,8 +46,9 @@ class TestUptimeService:
         assert svc._last_ping_time > 0
 
     @pytest.mark.asyncio
-    async def test_ping_heartbeat_failure(self):
+    async def test_ping_heartbeat_failure(self, monkeypatch):
         """Test handling single heartbeat ping network error."""
+        monkeypatch.setenv("UPTIMEROBOT_MONITOR_KEY", "test-monitor-key-12345")
         import httpx
 
         from backend.services.uptime_service import UptimeService
@@ -61,8 +63,9 @@ class TestUptimeService:
         assert "failed" in svc._last_ping_status
 
     @pytest.mark.asyncio
-    async def test_fetch_monitor_status(self):
+    async def test_fetch_monitor_status(self, monkeypatch):
         """Test querying UptimeRobot API for monitor status details."""
+        monkeypatch.setenv("UPTIMEROBOT_USER_KEY", "test-user-key-67890")
         from backend.services.uptime_service import UptimeService
 
         mock_res = MagicMock()

@@ -27,16 +27,14 @@ logger = logging.getLogger(__name__)
 # UPTIMEROBOT_MONITOR_KEY (heartbeat monitor key) in your environment.
 # Get keys from: https://dashboard.uptimerobot.com/integrations
 
-USER_KEY = os.getenv("UPTIMEROBOT_USER_KEY", "")
-MONITOR_KEY = os.getenv("UPTIMEROBOT_MONITOR_KEY", "")
 HEARTBEAT_INTERVAL = int(os.getenv("UPTIMEROBOT_HEARTBEAT_INTERVAL", "300"))  # 5 minutes
 
-if not USER_KEY:
+if not os.getenv("UPTIMEROBOT_USER_KEY", ""):
     logger.warning(
         "UPTIMEROBOT_USER_KEY is not set. Monitor status API will be disabled. "
         "Set it in your environment to enable UptimeRobot monitoring."
     )
-if not MONITOR_KEY:
+if not os.getenv("UPTIMEROBOT_MONITOR_KEY", ""):
     logger.warning(
         "UPTIMEROBOT_MONITOR_KEY is not set. Heartbeat pings will be disabled. "
         "Set it in your environment to enable keep-awake heartbeats."
@@ -105,13 +103,15 @@ class UptimeService:
 
     async def _ping_heartbeat(self, client: httpx.AsyncClient) -> bool:
         """Send a single heartbeat ping to UptimeRobot."""
-        if not MONITOR_KEY:
+        # Check env at call time (not import time) so tests can set it dynamically
+        monitor_key = os.getenv("UPTIMEROBOT_MONITOR_KEY", "")
+        if not monitor_key:
             logger.warning("UptimeRobot Monitor Key is not set. Skipping heartbeat ping.")
             self._last_ping_status = "disabled"
             return False
 
         # Heartbeat endpoint format: https://heartbeat.uptimerobot.com/MONITOR_KEY
-        url = f"https://heartbeat.uptimerobot.com/{MONITOR_KEY}"
+        url = f"https://heartbeat.uptimerobot.com/{monitor_key}"
         try:
             res = await client.get(url)
             if res.status_code == 200:
@@ -132,12 +132,14 @@ class UptimeService:
         """
         Query the UptimeRobot API using the user key to get monitor statuses.
         """
-        if not USER_KEY:
+        # Check env at call time so tests and runtime can set it dynamically
+        user_key = os.getenv("UPTIMEROBOT_USER_KEY", "")
+        if not user_key:
             return {"success": False, "error": "User API Key is not configured."}
 
         url = "https://api.uptimerobot.com/v2/getMonitors"
         payload = {
-            "api_key": USER_KEY,
+            "api_key": user_key,
             "format": "json",
             "logs": 1
         }
