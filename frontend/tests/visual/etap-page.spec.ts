@@ -150,10 +150,10 @@ test.describe("ETAP Integration Page", () => {
                 await page.goto("/etap");
                 await page.waitForSelector("h1", { timeout: 15000 });
 
-                await expect(page.locator("text=Connection")).toBeVisible();
-                await expect(page.locator("text=Projects")).toBeVisible();
-                await expect(page.locator("text=Synchronization")).toBeVisible();
-                await expect(page.locator("text=Sync Logs")).toBeVisible();
+                await expect(page.getByRole("tab", { name: "Connection" })).toBeVisible();
+                await expect(page.getByRole("tab", { name: "Projects" })).toBeVisible();
+                await expect(page.getByRole("tab", { name: "Synchronization" })).toBeVisible();
+                await expect(page.getByRole("tab", { name: "Sync Logs" })).toBeVisible();
         });
 
         test("ETAP page shows connection status badge", async ({ page }) => {
