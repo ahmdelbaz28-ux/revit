@@ -46,7 +46,7 @@ cryptography>=48.0.1,<50.0.0
 
 # ── Networking ───────────────────────────────────────────────────────────────
 requests>=2.34.0,<3.0.0
-websockets>=12.0.0,<16.0.0  # V207 FIX: raised upper bound to support uvicorn[standard] 0.50+
+websockets>=12.0.0,<17.0.0  # V207 FIX: raised upper bound to support uvicorn[standard] 0.50+
 
 # ── Utilities ────────────────────────────────────────────────────────────────
 # V278 FIX: packaging is a transitive dep of matplotlib but NOT installed into
