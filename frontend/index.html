@@ -67,9 +67,7 @@
           'unsafe-inline' in style-src is required for React apps that use
           inline styles — this is a known limitation of CSP with React.
      -->
-     <!-- NOSONAR -->
-     <meta
-       http-equiv="Content-Security-Policy"
+     <meta http-equiv="Content-Security-Policy"
       content="default-src 'self';
     script-src 'self';
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
@@ -77,8 +75,7 @@
     font-src 'self' https://fonts.gstatic.com;
     connect-src 'self' https://ahmdelbaz28-bazspark.hf.space https://revit-rust.vercel.app;
     base-uri 'self';
-    form-action 'self';"
-    />
+    form-action 'self';" /> <!-- NOSONAR -->
 
     <!-- Security: Prevent MIME-type sniffing -->
     <meta http-equiv="X-Content-Type-Options" content="nosniff" />
