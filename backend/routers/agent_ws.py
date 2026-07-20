@@ -108,7 +108,8 @@ async def send_agent_command(agent_type: str, action: str, args: Dict[str, Any],
                 "action": f"{agent_type}/{action}",
                 "args": args
             })
-            response = await asyncio.wait_for(future, timeout=timeout)
+            async with asyncio.timeout(timeout):
+                response = await future
             if isinstance(response, dict) and "error" in response:
                 raise HTTPException(status_code=400, detail=response["error"])
             return response
