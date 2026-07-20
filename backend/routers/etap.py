@@ -18,7 +18,7 @@ Endpoints:
 """
 from __future__ import annotations
 
-from typing import Annotated, List, Optional
+from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
@@ -52,7 +52,7 @@ def get_etap_service(request: Request) -> EtapService:
 async def test_connection(
     request: Request,
     settings: EtapConnectionSettings,
-    service: Annotated[EtapService, Depends(get_etap_service)],
+    service: EtapService = Depends(get_etap_service),
 ) -> EtapConnectionTestResponse:
     """
     Test connection to ETAP server.
@@ -66,10 +66,15 @@ async def test_connection(
     return EtapConnectionTestResponse(**result)
 
 
-@router.post("/disconnect")
+@router.post(
+    "/disconnect",
+    responses={
+        404: {"description": "ETAP integration not configured"},
+    },
+)
 async def disconnect(
     request: Request,
-    service: Annotated[EtapService, Depends(get_etap_service)],
+    service: EtapService = Depends(get_etap_service),
 ) -> dict:
     """Disconnect from ETAP (disable integration)."""
     require_permission(Permission.INTEGRATION_MANAGE)
@@ -86,8 +91,8 @@ async def disconnect(
 @router.get("/status")
 async def get_status(
     request: Request,
-    service: Annotated[EtapService, Depends(get_etap_service)],
     project_id: str = Query(..., description="Project ID"),
+    service: EtapService = Depends(get_etap_service),
 ) -> dict:
     """Get ETAP integration status for a project."""
     require_permission(Permission.INTEGRATION_READ)
@@ -100,8 +105,8 @@ async def get_status(
 @router.get("/projects")
 async def list_etap_projects(
     request: Request,
-    service: Annotated[EtapService, Depends(get_etap_service)],
     project_id: str = Query(..., description="Project ID"),
+    service: EtapService = Depends(get_etap_service),
 ) -> List[EtapProjectInfo]:
     """List available ETAP projects."""
     require_permission(Permission.INTEGRATION_READ)
@@ -112,7 +117,7 @@ async def list_etap_projects(
 @router.get("/projects/local")
 async def list_local_projects(
     request: Request,
-    service: Annotated[EtapService, Depends(get_etap_service)],
+    service: EtapService = Depends(get_etap_service),
 ) -> List[dict]:
     """List local BAZSPARK projects."""
     require_permission(Permission.INTEGRATION_READ)
@@ -122,11 +127,17 @@ async def list_local_projects(
 # ─── Export/Import Endpoints ─────────────────────────────────────────────────
 
 
-@router.post("/export")
+@router.post(
+    "/export",
+    responses={
+        400: {"description": "Bad request — invalid export parameters"},
+        500: {"description": "Export failed"},
+    },
+)
 async def export_to_etap(
     request: Request,
     export_request: EtapExportRequest,
-    service: Annotated[EtapService, Depends(get_etap_service)],
+    service: EtapService = Depends(get_etap_service),
 ) -> dict:
     """
     Export local project data to ETAP.
@@ -142,7 +153,13 @@ async def export_to_etap(
         raise HTTPException(status_code=500, detail=f"Export failed: {exc}") from exc
 
 
-@router.post("/import")
+@router.post(
+    "/import",
+    responses={
+        400: {"description": "Bad request — invalid import parameters"},
+        500: {"description": "Import failed"},
+    },
+)
 async def import_from_etap(
     request: Request,
     import_request: EtapImportRequest,
@@ -225,7 +242,12 @@ async def get_settings(
     return EtapSettingsResponse(**safe_settings)
 
 
-@router.put("/settings")
+@router.put(
+    "/settings",
+    responses={
+        404: {"description": "ETAP integration not configured"},
+    },
+)
 async def update_settings(
     request: Request,
     service: Annotated[EtapService, Depends(get_etap_service)],
@@ -257,7 +279,12 @@ async def update_settings(
     return EtapSettingsResponse(**safe_settings)
 
 
-@router.delete("/settings")
+@router.delete(
+    "/settings",
+    responses={
+        404: {"description": "ETAP integration not configured"},
+    },
+)
 async def delete_settings(
     request: Request,
     service: Annotated[EtapService, Depends(get_etap_service)],

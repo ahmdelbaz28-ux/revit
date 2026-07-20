@@ -43,7 +43,14 @@ def _verify_project(project_id: str) -> dict:
     return project
 
 
-@router.get("/dxf", dependencies=[Depends(require_permission(Permission.EXPORT_READ))])
+@router.get(
+    "/dxf",
+    dependencies=[Depends(require_permission(Permission.EXPORT_READ))],
+    responses={
+        404: {"description": "Project not found"},
+        503: {"description": "DXF export unavailable (ezdxf not installed)"},
+    },
+)
 async def export_dxf(project_id: str):
     """Export project as DXF (AutoCAD Drawing Exchange Format)."""
     project = _verify_project(project_id)
@@ -147,7 +154,13 @@ async def export_dxf(project_id: str):
     )
 
 
-@router.get("/revit", dependencies=[Depends(require_permission(Permission.EXPORT_READ))])
+@router.get(
+    "/revit",
+    dependencies=[Depends(require_permission(Permission.EXPORT_READ))],
+    responses={
+        404: {"description": "Project not found"},
+    },
+)
 async def export_revit(project_id: str):
     """Export project as Revit-compatible JSON."""
     project = _verify_project(project_id)
@@ -213,7 +226,14 @@ async def export_revit(project_id: str):
     )
 
 
-@router.get("/ifc", dependencies=[Depends(require_permission(Permission.EXPORT_READ))])
+@router.get(
+    "/ifc",
+    dependencies=[Depends(require_permission(Permission.EXPORT_READ))],
+    responses={
+        404: {"description": "Project not found"},
+        500: {"description": "IFC export failed"},
+    },
+)
 async def export_ifc(
     project_id: str,
     version: str = Query("IFC4", pattern="^(IFC2X3|IFC4)$"),  # NOSONAR - python:S8410
@@ -352,7 +372,14 @@ class ExportDataInput(BaseModel):
     dataIds: Optional[list] = None
 
 
-@project_router.post("", status_code=200, dependencies=[Depends(require_permission(Permission.EXPORT_READ))])
+@project_router.post(
+    "",
+    status_code=200,
+    dependencies=[Depends(require_permission(Permission.EXPORT_READ))],
+    responses={
+        404: {"description": "No projects found to export data"},
+    },
+)
 @limiter.limit("10/minute")
 async def export_data_global(request: Request, input_data: ExportDataInput):  # NOSONAR — S3776
     """
