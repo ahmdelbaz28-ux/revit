@@ -16,16 +16,16 @@ export function MCCDesigner() {  // NOSONAR - typescript:S9011: Intentionally co
 					</div>
 					<Separator orientation="vertical" className="h-5" />
 					<div className="flex space-x-1 text-xs">
-						<button className="px-3 py-1 rounded bg-blue-500/10 text-info font-medium border border-blue-500/20">
+						<button type="button" className="px-3 py-1 rounded bg-blue-500/10 text-info font-medium border border-blue-500/20">
 							MCC-1
 						</button>
-						<button className="px-3 py-1 rounded text-muted-foreground hover:bg-muted">
+						<button type="button" className="px-3 py-1 rounded text-muted-foreground hover:bg-muted">
 							MCC-2
 						</button>
-						<button className="px-3 py-1 rounded text-muted-foreground hover:bg-muted">
+						<button type="button" className="px-3 py-1 rounded text-muted-foreground hover:bg-muted">
 							MCC-3
 						</button>
-						<button className="px-3 py-1 rounded text-muted-foreground hover:bg-muted flex items-center">
+						<button type="button" className="px-3 py-1 rounded text-muted-foreground hover:bg-muted flex items-center">
 							<Plus className="h-3 w-3 mr-1" /> Add
 						</button>
 					</div>

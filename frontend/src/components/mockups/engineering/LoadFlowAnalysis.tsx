@@ -22,19 +22,19 @@ export function LoadFlowAnalysis() {  // NOSONAR - typescript:S9011: Intentional
 					</div>
 					<Separator orientation="vertical" className="h-5" />
 					<div className="flex space-x-1 text-xs">
-						<button className="px-3 py-1 rounded bg-blue-500/10 text-info font-medium border border-blue-500/20">
+						<button type="button" className="px-3 py-1 rounded bg-blue-500/10 text-info font-medium border border-blue-500/20">
 							Load Flow
 						</button>
-						<button className="px-3 py-1 rounded text-muted-foreground hover:bg-muted">
+						<button type="button" className="px-3 py-1 rounded text-muted-foreground hover:bg-muted">
 							Short Circuit
 						</button>
-						<button className="px-3 py-1 rounded text-muted-foreground hover:bg-muted">
+						<button type="button" className="px-3 py-1 rounded text-muted-foreground hover:bg-muted">
 							Harmonic
 						</button>
-						<button className="px-3 py-1 rounded text-muted-foreground hover:bg-muted">
+						<button type="button" className="px-3 py-1 rounded text-muted-foreground hover:bg-muted">
 							Transient
 						</button>
-						<button className="px-3 py-1 rounded text-muted-foreground hover:bg-muted">
+						<button type="button" className="px-3 py-1 rounded text-muted-foreground hover:bg-muted">
 							Motor Starting
 						</button>
 					</div>

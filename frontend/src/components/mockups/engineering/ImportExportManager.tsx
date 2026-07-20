@@ -196,18 +196,15 @@ export function ImportExportManager() {
         };
 
         return (
-                <div className="flex items-center gap-2">
-                        <button
-                                onClick={handleExportJSON}
-                                className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 rounded-md transition-colors border border-emerald-500/20"
-                        >
+                <div className="flex items-center gap-2">						<button type="button"
+								onClick={handleExportJSON}
+								className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 rounded-md transition-colors border border-emerald-500/20"
+						>
                                 <Download size={14} /> Export JSON
-                        </button>
-
-                        <button
-                                onClick={() => fileInputRef.current?.click()}
-                                className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 rounded-md transition-colors border border-blue-500/20"
-                        >
+                        </button>						<button type="button"
+								onClick={() => fileInputRef.current?.click()}
+								className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 rounded-md transition-colors border border-blue-500/20"
+						>
                                 <Upload size={14} /> Import DXF
                         </button>
                         <input

@@ -80,7 +80,7 @@ export function NexusWorkspace() {  // NOSONAR - typescript:S9011: Intentionally
 							<span className="text-xs font-bold text-destructive flex items-center gap-2">
 								<Activity size={14} /> System Alerts ({errors.length})
 							</span>
-							<button
+							<button type="button"
 								onClick={() => actions.clearErrors()}
 								className="text-[10px] text-destructive hover:underline hover:text-destructive-foreground transition-colors"
 							>
@@ -106,28 +106,28 @@ export function NexusWorkspace() {  // NOSONAR - typescript:S9011: Intentionally
 			<div className="w-80 bg-card flex flex-col h-full shrink-0">
 				{/* Tabs Header */}
 				<div className="flex items-center border-b border-border bg-muted/20">
-					<button
+					<button type="button"
 						onClick={() => setActiveTab("controls")}
 						className={`flex-1 py-3 flex justify-center border-b-2 transition-colors ${activeTab === "controls" ? "border-primary text-primary bg-primary/5" : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50"}`}
 						title="Controls"
 					>
 						<Settings size={18} />
 					</button>
-					<button
+					<button type="button"
 						onClick={() => setActiveTab("analyzer")}
 						className={`flex-1 py-3 flex justify-center border-b-2 transition-colors ${activeTab === "analyzer" ? "border-blue-500 text-blue-500 bg-blue-500/5" : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50"}`}
 						title="System Analyzer"
 					>
 						<Activity size={18} />
 					</button>
-					<button
+					<button type="button"
 						onClick={() => setActiveTab("optimizer")}
 						className={`flex-1 py-3 flex justify-center border-b-2 transition-colors ${activeTab === "optimizer" ? "border-emerald-500 text-emerald-500 bg-emerald-500/5" : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50"}`}
 						title="Optimizer"
 					>
 						<TrendingUp size={18} />
 					</button>
-					<button
+					<button type="button"
 						onClick={() => setActiveTab("risk")}
 						className={`flex-1 py-3 flex justify-center border-b-2 transition-colors ${activeTab === "risk" ? "border-primary text-primary bg-primary/5" : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50"}`}
 						title="Risk Assessment"

@@ -58,7 +58,7 @@ export function DevicePalette({ onSelect, selectedType }: DevicePaletteProps) {
 			</div>
 			<div className="flex-1 overflow-y-auto p-4 space-y-3">
 				{DEVICES.map((dev) => (
-					<button
+					<button type="button"
 						key={dev.type}
 						onClick={() => onSelect(dev.type, dev.defaultLoad)}
 						className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-all ${
@@ -83,7 +83,7 @@ export function DevicePalette({ onSelect, selectedType }: DevicePaletteProps) {
 				))}
 			</div>
 			<div className="p-4 border-t border-border">
-				<button
+				<button type="button"
 					onClick={() =>
 						globalThis.dispatchEvent(new CustomEvent("nexus-reset-project"))
 					}

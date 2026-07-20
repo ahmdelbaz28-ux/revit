@@ -86,7 +86,7 @@ function Elements() {
                                                         : t("common.loading")}
                                         </p>
                                 </div>
-                                <buttontype="button" onClick={() => setShowCreateModal(true)}
+                                <button type="button" onClick={() => setShowCreateModal(true)}
 						className="inline-flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary text-white text-sm font-medium rounded-lg transition-colors"
                                 >
                                         <svg
@@ -370,7 +370,7 @@ function Elements() {
                                                         </p>
                                                 )}
                                                 <div className="flex justify-end gap-3">
-                                                        <buttontype="button" onClick={() => setDeleteTarget(null)}
+                                                        <button type="button" onClick={() => setDeleteTarget(null)}
 								className="px-4 py-2 text-sm text-foreground/90 hover:text-white transition-colors"
 						>
 							{t("common.cancel")}

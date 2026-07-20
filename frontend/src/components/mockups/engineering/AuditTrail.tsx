@@ -172,22 +172,22 @@ export function AuditTrail() {  // NOSONAR - typescript:S9011: Intentionally com
 				{/* Center Column - Audit Log */}
 				<div className="flex-1 flex flex-col bg-[#0a0a0f] overflow-hidden">
 					<div className="flex border-b border-slate-800 bg-card text-[11px] uppercase tracking-wider font-semibold text-muted-foreground px-2">
-						<button className="px-4 py-2 text-foreground border-b-2 border-blue-500">
+						<button type="button" className="px-4 py-2 text-foreground border-b-2 border-blue-500">
 							All Events
 						</button>
-						<button className="px-4 py-2 hover:text-foreground">
+						<button type="button" className="px-4 py-2 hover:text-foreground">
 							Drawing Changes
 						</button>
-						<button className="px-4 py-2 hover:text-foreground">
+						<button type="button" className="px-4 py-2 hover:text-foreground">
 							File Operations
 						</button>
-						<button className="px-4 py-2 hover:text-foreground">
+						<button type="button" className="px-4 py-2 hover:text-foreground">
 							Analysis Runs
 						</button>
-						<button className="px-4 py-2 hover:text-foreground">
+						<button type="button" className="px-4 py-2 hover:text-foreground">
 							User Access
 						</button>
-						<button className="px-4 py-2 hover:text-foreground">
+						<button type="button" className="px-4 py-2 hover:text-foreground">
 							System Events
 						</button>
 					</div>

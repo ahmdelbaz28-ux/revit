@@ -24,13 +24,13 @@ export function CableCalculator() {
 					</div>
 					<Separator orientation="vertical" className="h-5" />
 					<div className="flex bg-muted p-1 rounded-md text-xs">
-						<button className="px-3 py-1 rounded bg-blue-500 text-white font-medium shadow-sm">
+						<button type="button" className="px-3 py-1 rounded bg-blue-500 text-white font-medium shadow-sm">
 							IEC 60364
 						</button>
-						<button className="px-3 py-1 rounded text-muted-foreground hover:text-foreground">
+						<button type="button" className="px-3 py-1 rounded text-muted-foreground hover:text-foreground">
 							NEC 2023
 						</button>
-						<button className="px-3 py-1 rounded text-muted-foreground hover:text-foreground">
+						<button type="button" className="px-3 py-1 rounded text-muted-foreground hover:text-foreground">
 							BS 7671
 						</button>
 					</div>

@@ -34,19 +34,19 @@ export function CablingNetwork() {  // NOSONAR - typescript:S9011: Intentionally
 						</div>
 						<Separator orientation="vertical" className="h-5 bg-secondary" />
 						<div className="flex text-xs space-x-1">
-							<button className="px-3 py-1 rounded-sm transition-colors bg-emerald-500/10 text-success font-medium border border-emerald-500/20">
+							<button type="button" className="px-3 py-1 rounded-sm transition-colors bg-emerald-500/10 text-success font-medium border border-emerald-500/20">
 								Structured Cabling
 							</button>
-							<button className="px-3 py-1 rounded-sm transition-colors text-muted-foreground hover:bg-card hover:text-foreground">
+							<button type="button" className="px-3 py-1 rounded-sm transition-colors text-muted-foreground hover:bg-card hover:text-foreground">
 								Network Design
 							</button>
-							<button className="px-3 py-1 rounded-sm transition-colors text-muted-foreground hover:bg-card hover:text-foreground">
+							<button type="button" className="px-3 py-1 rounded-sm transition-colors text-muted-foreground hover:bg-card hover:text-foreground">
 								Wi-Fi
 							</button>
-							<button className="px-3 py-1 rounded-sm transition-colors text-muted-foreground hover:bg-card hover:text-foreground">
+							<button type="button" className="px-3 py-1 rounded-sm transition-colors text-muted-foreground hover:bg-card hover:text-foreground">
 								AV & PA
 							</button>
-							<button className="px-3 py-1 rounded-sm transition-colors text-muted-foreground hover:bg-card hover:text-foreground">
+							<button type="button" className="px-3 py-1 rounded-sm transition-colors text-muted-foreground hover:bg-card hover:text-foreground">
 								IPTV
 							</button>
 						</div>

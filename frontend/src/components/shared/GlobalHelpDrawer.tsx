@@ -141,7 +141,7 @@ export function GlobalHelpDrawer({
 							<div className="p-2 space-y-1">
 								{HELP_TREE.map((node) => (
 									<div key={node.category}>
-										<button
+										<button type="button"
 											onClick={() => toggleCategory(node.category)}
 											className="w-full flex items-center gap-1 px-2 py-1.5 rounded text-sm text-muted-foreground hover:bg-card hover:text-foreground transition-colors"
 										>
@@ -160,10 +160,9 @@ export function GlobalHelpDrawer({
 												{node.topics.map((topicId) => {
 													const topic = HELP_TOPICS[topicId];
 													if (!topic) return null;
-													return (
-														<button
+													return (													<button type="button"
 															key={topicId}
-															onClick={() => setSelectedTopicId(topicId)}
+																onClick={() => setSelectedTopicId(topicId)}
 															className={`w-full text-left px-2 py-1 rounded text-xs transition-colors ${
 																selectedTopicId === topicId
 																	? "bg-primary/20 text-primary font-medium"
@@ -297,12 +296,11 @@ export function GlobalHelpDrawer({
 												{selectedTopic.relatedTopics.map((rtId) => {
 													const rt = HELP_TOPICS[rtId];
 													if (!rt) return null;
-													return (
-														<button
-															key={rtId}
-															onClick={() => setSelectedTopicId(rtId)}
-															className="text-xs px-2 py-1 rounded border border-border text-muted-foreground hover:border-orange-600/30 hover:text-primary transition-colors"
-														>
+													return (														<button type="button"
+																key={rtId}
+																onClick={() => setSelectedTopicId(rtId)}
+																className="text-xs px-2 py-1 rounded border border-border text-muted-foreground hover:border-orange-600/30 hover:text-primary transition-colors"
+															>
 															{isAr ? rt.titleAr : rt.titleEn}
 														</button>
 													);

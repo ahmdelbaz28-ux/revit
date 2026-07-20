@@ -49,7 +49,7 @@ export function ReportManager() {  // NOSONAR - typescript:S9011: Intentionally 
 							"Archived",
 							"Settings",
 						].map((tab) => (
-							<button
+							<button type="button"
 								key={tab}
 								className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${activeTab === tab ? "bg-card text-info" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"}`}
 								onClick={() => setActiveTab(tab)}
@@ -635,29 +635,29 @@ export function ReportManager() {  // NOSONAR - typescript:S9011: Intentionally 
 										<option>العربية</option>
 									</select>
 									<div className="flex items-center bg-background border border-border rounded p-0.5">
-										<button className="flex-1 bg-card rounded shadow-sm text-info py-1 font-medium text-[10px]">
+										<button type="button" className="flex-1 bg-card rounded shadow-sm text-info py-1 font-medium text-[10px]">
 											SI
 										</button>
-										<button className="flex-1 text-muted-foreground py-1 text-[10px] hover:text-foreground">
+										<button type="button" className="flex-1 text-muted-foreground py-1 text-[10px] hover:text-foreground">
 											Imperial
 										</button>
 									</div>
 									<div className="flex items-center bg-background border border-border rounded p-0.5">
-										<button className="flex-1 bg-card rounded shadow-sm text-foreground py-1 font-medium text-[10px]">
+										<button type="button" className="flex-1 bg-card rounded shadow-sm text-foreground py-1 font-medium text-[10px]">
 											A4
 										</button>
-										<button className="flex-1 text-muted-foreground py-1 text-[10px]">
+										<button type="button" className="flex-1 text-muted-foreground py-1 text-[10px]">
 											Letter
 										</button>
-										<button className="flex-1 text-muted-foreground py-1 text-[10px]">
+										<button type="button" className="flex-1 text-muted-foreground py-1 text-[10px]">
 											A3
 										</button>
 									</div>
 									<div className="flex items-center bg-background border border-border rounded p-0.5">
-										<button className="flex-1 bg-card rounded shadow-sm text-foreground py-1 font-medium text-[10px]">
+										<button type="button" className="flex-1 bg-card rounded shadow-sm text-foreground py-1 font-medium text-[10px]">
 											Portrait
 										</button>
-										<button className="flex-1 text-muted-foreground py-1 text-[10px]">
+										<button type="button" className="flex-1 text-muted-foreground py-1 text-[10px]">
 											Land
 										</button>
 									</div>
