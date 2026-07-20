@@ -283,8 +283,6 @@ async def convert_files(  # NOSONAR — S3776: cognitive complexity is inherent 
         raise _safe_error(500, "Error during conversion", e)
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# ═══════════════════════════════════════════════════════════════════════════════
 
 
 # Without this check, `await file.read()` reads the entire file into memory,

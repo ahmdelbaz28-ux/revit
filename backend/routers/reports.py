@@ -986,7 +986,6 @@ async def export_report(  # NOSONAR — S3776: cognitive complexity is inherent 
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# ══════════════════════════════════════════════════════════════════════════════
 
 
 from pydantic import BaseModel

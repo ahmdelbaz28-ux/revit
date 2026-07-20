@@ -43,7 +43,6 @@ from backend.routers.qomn import (
 from fireai.core.qomn_kernel import NEC_TABLE8_RESISTANCE_OHM_PER_KM
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# ═══════════════════════════════════════════════════════════════════════════════
 
 
 class TestAWGNormalization:
@@ -145,7 +144,6 @@ class TestTrulyInvalidRejected:
             VoltageDropRequest(current_a=1.0, length_m=100.0, awg_gauge="!!INVALID!!")
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
