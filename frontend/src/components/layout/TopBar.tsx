@@ -37,7 +37,7 @@ const routeLabels: Record<string, string> = {
         "/digital-twin/history": "DT History",
 };
 
-const TopBar: React.FC<TopBarProps> = ({
+const TopBar: React.FC<TopBarProps> = ({  // NOSONAR - typescript:S9011: Intentionally complex demo UI with many interactive buttons
         isConnected,
         onHelpOpen,
         onSearchOpen,

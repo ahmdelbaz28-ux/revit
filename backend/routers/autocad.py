@@ -411,7 +411,7 @@ async def write_dwg_file(request: Request, body: WriteDwgRequest) -> OperationRe
         raise _safe_error(500, "Error writing DWG file", e)
 
 
-@router.post("/draw_line", response_model=OperationResponse)  # NOSONAR - python:S8409
+@router.post("/draw_line", response_model=OperationResponse, dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])  # NOSONAR - python:S8409
 @limiter.limit("30/minute")
 async def draw_line(request: Request, body: DrawLineRequest) -> OperationResponse:
     """Draw a line in AutoCAD."""
@@ -445,7 +445,7 @@ async def draw_line(request: Request, body: DrawLineRequest) -> OperationRespons
         raise _safe_error(500, "Error drawing line", e)
 
 
-@router.post("/draw_polyline", response_model=OperationResponse)  # NOSONAR - python:S8409
+@router.post("/draw_polyline", response_model=OperationResponse, dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])  # NOSONAR - python:S8409
 @limiter.limit("30/minute")
 async def draw_polyline(request: Request, body: DrawPolylineRequest) -> OperationResponse:
     """Draw a polyline in AutoCAD."""
@@ -479,7 +479,7 @@ async def draw_polyline(request: Request, body: DrawPolylineRequest) -> Operatio
         raise _safe_error(500, "Error drawing polyline", e)
 
 
-@router.post("/draw_circle", response_model=OperationResponse)  # NOSONAR - python:S8409
+@router.post("/draw_circle", response_model=OperationResponse, dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])  # NOSONAR - python:S8409
 @limiter.limit("30/minute")
 async def draw_circle(request: Request, body: DrawCircleRequest) -> OperationResponse:
     """Draw a circle in AutoCAD."""
@@ -513,7 +513,7 @@ async def draw_circle(request: Request, body: DrawCircleRequest) -> OperationRes
         raise _safe_error(500, "Error drawing circle", e)
 
 
-@router.post("/draw_text", response_model=OperationResponse)  # NOSONAR - python:S8409
+@router.post("/draw_text", response_model=OperationResponse, dependencies=[Depends(require_permission(Permission.ELEMENT_CREATE))])  # NOSONAR - python:S8409
 @limiter.limit("30/minute")
 async def draw_text(request: Request, body: DrawTextRequest) -> OperationResponse:
     """Draw text in AutoCAD."""
@@ -661,7 +661,7 @@ async def upload_and_read_dwg(request: Request, file: UploadFile = File(...)) ->
                 pass
 
 
-@router.delete("/entity/{handle}", response_model=DeleteEntityResponse)  # NOSONAR - python:S8409
+@router.delete("/entity/{handle}", response_model=DeleteEntityResponse, dependencies=[Depends(require_permission(Permission.ELEMENT_DELETE))])  # NOSONAR - python:S8409
 @limiter.limit("30/minute")
 async def delete_entity(request: Request, handle: str) -> DeleteEntityResponse:
     """Delete an AutoCAD entity by handle."""
@@ -694,7 +694,7 @@ async def delete_entity(request: Request, handle: str) -> DeleteEntityResponse:
         raise _safe_error(500, "Error deleting entity", e)
 
 
-@router.put("/entity/{handle}", response_model=OperationResponse)  # NOSONAR - python:S8409
+@router.put("/entity/{handle}", response_model=OperationResponse, dependencies=[Depends(require_permission(Permission.ELEMENT_UPDATE))])  # NOSONAR - python:S8409
 @limiter.limit("30/minute")
 async def update_entity(request: Request, handle: str, body: ModifyEntityRequest) -> OperationResponse:
     """Update an AutoCAD entity's properties."""

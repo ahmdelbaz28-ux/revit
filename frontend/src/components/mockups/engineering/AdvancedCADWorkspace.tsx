@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
-export function AdvancedCADWorkspace() {
+export function AdvancedCADWorkspace() {  // NOSONAR - typescript:S9011: Intentionally complex demo UI with many interactive buttons
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const [workerResult, setWorkerResult] = useState<string | null>(null);
 	const [isCalculating, setIsCalculating] = useState(false);

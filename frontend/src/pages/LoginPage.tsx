@@ -18,13 +18,10 @@
 
 import {
         AlertCircle,
-        Brain,
-        Compass,
         Eye,
         EyeOff,
         KeyRound,
         Loader2,
-        Settings,
         ShieldCheck,
 } from "lucide-react";
 import { useState, useEffect, useRef, type FormEvent } from "react";
@@ -37,7 +34,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
-import { useGsapSplitText, useGsapCounter, useGsapScrollReveal } from "@/hooks/useGsapAnimations";
+import { useGsapSplitText, useGsapCounter } from "@/hooks/useGsapAnimations";
 
 /**
  * BrandNetworkBackground component renders floating orange/rose sensor network nodes

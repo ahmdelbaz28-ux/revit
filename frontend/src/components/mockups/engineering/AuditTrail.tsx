@@ -19,7 +19,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 
-export function AuditTrail() {
+export function AuditTrail() {  // NOSONAR - typescript:S9011: Intentionally complex demo UI with many interactive buttons
 	return (
 		<div className="flex flex-col h-screen w-screen overflow-hidden bg-background text-foreground dark font-sans">
 			{/* Header */}

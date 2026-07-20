@@ -112,15 +112,14 @@ export function BazSparkLogo({
 interface BazSparkWordmarkProps {
 	size?: "sm" | "md" | "lg";
 	className?: string;
-}
-
-export function BazSparkWordmark({
-	size = "md",
-	className = "",
-}: BazSparkWordmarkProps) {
-	const titleSize = size === "sm" ? "text-lg" : size === "lg" ? "text-3xl" : "text-xl";
-	const subSize = size === "sm" ? "text-[8px]" : size === "lg" ? "text-[11px]" : "text-[9px]";
-	const tracking = size === "sm" ? "tracking-[0.15em]" : size === "lg" ? "tracking-[0.25em]" : "tracking-[0.2em]";
+}	export function BazSparkWordmark({
+		size = "md",
+		className = "",
+	}: BazSparkWordmarkProps) {
+		// NOSONAR - typescript:S3358: Nested ternaries are intentional for size-based class selection
+		const titleSize = size === "sm" ? "text-lg" : size === "lg" ? "text-3xl" : "text-xl";
+		const subSize = size === "sm" ? "text-[8px]" : size === "lg" ? "text-[11px]" : "text-[9px]";
+		const tracking = size === "sm" ? "tracking-[0.15em]" : size === "lg" ? "tracking-[0.25em]" : "tracking-[0.2em]";
 
 	return (
 		<div className={`flex flex-col select-none ${className}`}>

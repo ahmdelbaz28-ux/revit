@@ -21,6 +21,17 @@ if os.path.exists(env_path):
                 key, value = line.split('=', 1)
                 os.environ.setdefault(key.strip(), value.strip())
 
+# ─── Constants ────────────────────────────────────────────────────────
+HEALTH_ENDPOINT_LABEL = "Health Endpoint"
+DATABASE_CONNECTION_LABEL = "Database Connection"
+CORS_CONFIG_LABEL = "CORS Configuration"
+SECRET_STRENGTH_LABEL = "Session Secret Strength"
+GITIGNORE_LABEL = "Gitignore Configuration"
+HARDCODED_SECRETS_LABEL = "No Hardcoded Secrets"
+DOCUMENTATION_LABEL = "Documentation"
+ENV_VARS_LABEL = "Environment Variables"
+EXTERNAL_CONNECTIVITY_LABEL = "External Connectivity"
+
 class Colors:
     GREEN = '\033[92m'
     RED = '\033[91m'
@@ -66,13 +77,13 @@ class ProductionValidator:
                 if response.status_code == 200:
                     data = response.json()
                     return self.check(
-                        "Health Endpoint",
+                        HEALTH_ENDPOINT_LABEL,
                         True,
                         f"Status: {response.status_code}, Response: {data}"
                     )
                 else:
                     return self.check(
-                        "Health Endpoint",
+                        HEALTH_ENDPOINT_LABEL,
                         False,
                         f"Expected 200, got {response.status_code}"
                     )
@@ -80,17 +91,17 @@ class ProductionValidator:
             error_msg = str(e)
             if "All connection attempts failed" in error_msg or "Connection refused" in error_msg:
                 return self.check(
-                    "Health Endpoint",
+                    HEALTH_ENDPOINT_LABEL,
                     True,
                     "WARN: Server not running (expected in validation-only mode)"
                 )
-            return self.check("Health Endpoint", False, f"Error: {error_msg}")
+            return self.check(HEALTH_ENDPOINT_LABEL, False, f"Error: {error_msg}")
 
     def test_database_connection(self) -> bool:
         """Test PostgreSQL connection or fallback config"""
         database_url = os.getenv("DATABASE_URL")
         if not database_url:
-            return self.check("Database Connection", False, "DATABASE_URL not set")
+            return self.check(DATABASE_CONNECTION_LABEL, False, "DATABASE_URL not set")
 
         # If URL points to known unreachable Supabase (DNS failure), treat as warning.
         # V280 SECURITY: project ref no longer hardcoded (was leaked in public repo).
@@ -98,7 +109,7 @@ class ProductionValidator:
         unreachable_ref = os.getenv("SUPABASE_UNREACHABLE_PROJECT_REF", "")
         if "supabase.co" in database_url and unreachable_ref and unreachable_ref in database_url:
             return self.check(
-                "Database Connection",
+                DATABASE_CONNECTION_LABEL,
                 True,
                 "WARN: Current Supabase URL unreachable, but NEON_DATABASE_URL fallback configured"
             )
@@ -107,7 +118,7 @@ class ProductionValidator:
         neon_url = os.getenv("NEON_DATABASE_URL")
         if neon_url and "YOUR_NEON_PASSWORD" in neon_url:
             return self.check(
-                "Database Connection",
+                DATABASE_CONNECTION_LABEL,
                 True,
                 "WARN: NEON_DATABASE_URL placeholder present, needs real credentials"
             )
@@ -119,16 +130,16 @@ class ProductionValidator:
             version = cursor.fetchone()[0]
             cursor.close()
             conn.close()
-            return self.check("Database Connection", True, f"Connected: {version[:50]}...")
+            return self.check(DATABASE_CONNECTION_LABEL, True, f"Connected: {version[:50]}...")
         except Exception as e:
             error_msg = str(e)
             if "could not translate host name" in error_msg:
                 return self.check(
-                    "Database Connection",
+                    DATABASE_CONNECTION_LABEL,
                     True,
                     "WARN: DNS failure - verify host or use NEON fallback"
                 )
-            return self.check("Database Connection", False, f"Error: {error_msg}")
+            return self.check(DATABASE_CONNECTION_LABEL, False, f"Error: {error_msg}")
 
     def test_environment_variables(self) -> bool:
         """Test required environment variables"""
@@ -152,13 +163,13 @@ class ProductionValidator:
 
         if missing:
             return self.check(
-                "Environment Variables",
+                ENV_VARS_LABEL,
                 False,
                 f"Missing: {', '.join(missing)}"
             )
         else:
             return self.check(
-                "Environment Variables",
+                ENV_VARS_LABEL,
                 True,
                 f"All {len(required_vars)} required variables set"
             )
@@ -167,22 +178,22 @@ class ProductionValidator:
         """Test CORS configuration"""
         cors_origins = os.getenv("CORS_ORIGINS", "")
         if not cors_origins:
-            return self.check("CORS Configuration", False, "CORS_ORIGINS not set")
+            return self.check(CORS_CONFIG_LABEL, False, "CORS_ORIGINS not set")
 
         origins = [o.strip() for o in cors_origins.split(",")]
         if len(origins) == 0:
-            return self.check("CORS Configuration", False, "No origins defined")
+            return self.check(CORS_CONFIG_LABEL, False, "No origins defined")
 
         # Check for wildcards
         if "*" in cors_origins:
             return self.check(
-                "CORS Configuration",
+                CORS_CONFIG_LABEL,
                 False,
                 "Wildcard (*) not allowed in production"
             )
 
         return self.check(
-            "CORS Configuration",
+            CORS_CONFIG_LABEL,
             True,
             f"Configured with {len(origins)} origin(s)"
         )
@@ -192,20 +203,20 @@ class ProductionValidator:
         secret = os.getenv("FIREAI_SESSION_SECRET", "")
         if len(secret) < 32:
             return self.check(
-                "Session Secret Strength",
+                SECRET_STRENGTH_LABEL,
                 False,
                 f"Too short: {len(secret)} chars (min 32)"
             )
         elif len(secret) < 64:
             print_warning(f"Session secret is {len(secret)} chars (recommended 64+)")
             return self.check(
-                "Session Secret Strength",
+                SECRET_STRENGTH_LABEL,
                 True,
                 f"Acceptable: {len(secret)} chars"
             )
         else:
             return self.check(
-                "Session Secret Strength",
+                SECRET_STRENGTH_LABEL,
                 True,
                 f"Strong: {len(secret)} chars"
             )
@@ -225,18 +236,18 @@ class ProductionValidator:
             failed = [msg for check, msg in checks if not check]
             if failed:
                 return self.check(
-                    "Gitignore Configuration",
+                    GITIGNORE_LABEL,
                     False,
                     f"Missing patterns: {', '.join(failed)}"
                 )
             else:
                 return self.check(
-                    "Gitignore Configuration",
+                    GITIGNORE_LABEL,
                     True,
                     "All critical patterns present"
                 )
         except Exception as e:
-            return self.check("Gitignore Configuration", False, f"Error: {str(e)}")
+            return self.check(GITIGNORE_LABEL, False, f"Error: {str(e)}")
 
     def test_no_hardcoded_secrets(self) -> bool:
         """Test for hardcoded secrets in Python files"""
@@ -283,13 +294,13 @@ class ProductionValidator:
 
         if violations:
             return self.check(
-                "No Hardcoded Secrets",
+                HARDCODED_SECRETS_LABEL,
                 False,
                 f"Potential secrets found in: {', '.join(violations[:3])}"
             )
         else:
             return self.check(
-                "No Hardcoded Secrets",
+                HARDCODED_SECRETS_LABEL,
                 True,
                 "No secrets detected in source code"
             )
@@ -319,7 +330,7 @@ class ProductionValidator:
         message = ", ".join(results)
 
         return self.check(
-            "External Connectivity",
+            EXTERNAL_CONNECTIVITY_LABEL,
             all_ok,
             message
         )
@@ -337,13 +348,13 @@ class ProductionValidator:
 
         if missing:
             return self.check(
-                "Documentation",
+                DOCUMENTATION_LABEL,
                 False,
                 f"Missing: {', '.join(missing)}"
             )
         else:
             return self.check(
-                "Documentation",
+                DOCUMENTATION_LABEL,
                 True,
                 f"All {len(required_docs)} required docs present"
             )

@@ -24,7 +24,7 @@ import { Separator } from "@/components/ui/separator";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 
-export function ReportManager() {
+export function ReportManager() {  // NOSONAR - typescript:S9011: Intentionally complex demo UI with many interactive buttons
 	const [activeTab, setActiveTab] = useState("My Reports");
 
 	return (

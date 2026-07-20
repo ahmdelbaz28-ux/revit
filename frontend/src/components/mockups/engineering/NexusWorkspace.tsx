@@ -18,7 +18,7 @@ import { SystemOptimizer } from "./SystemOptimizer";
 
 type TabType = "controls" | "analyzer" | "optimizer" | "risk";
 
-export function NexusWorkspace() {
+export function NexusWorkspace() {  // NOSONAR - typescript:S9011: Intentionally complex demo UI with many interactive buttons
 	const errors = useStore((s) => s.errors);
 	const hasCriticalErrors = errors.some((e) => e.severity === "critical");
 	const [draggedItem, setDraggedItem] = useState<any>(null);

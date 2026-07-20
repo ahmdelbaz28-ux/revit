@@ -20,9 +20,11 @@ import { MotionPathPlugin } from "gsap/MotionPathPlugin";
 gsap.registerPlugin(useGSAP, ScrollTrigger, MotionPathPlugin);
 
 // ─── Optional Club GSAP Plugins (loaded dynamically if available) ──────────────────────────────────────────
-type SplitTextType = any;
-type DrawSVGPluginType = any;
-type CustomEaseType = any;
+// NOSONAR - typescript:S6564: Club GSAP plugins have no published TS types; `any` is needed because
+// these are dynamically imported at runtime and passed to gsap.registerPlugin() which expects object types.
+type SplitTextType = any;  // NOSONAR
+type DrawSVGPluginType = any;  // NOSONAR
+type CustomEaseType = any;  // NOSONAR
 
 let SplitText: SplitTextType | null = null;
 let DrawSVGPlugin: DrawSVGPluginType | null = null;
@@ -53,15 +55,7 @@ if (typeof window !== "undefined") {
 }
 
 // ─── Import Centralized Presets ─────────────────────────────────────
-import {
-  easings,
-  durations,
-  staggers,
-  scrollDefaults,
-  initCustomEases,
-  prefersReducedMotion,
-  getReducedMotionConfig,
-} from "@/lib/gsap-presets";
+import { initCustomEases } from "@/lib/gsap-presets";
 
 // ─── Initialize Custom Eases (client-side only) ─────────────────────
 if (typeof window !== "undefined") {

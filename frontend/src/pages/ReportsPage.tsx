@@ -330,19 +330,6 @@ export function ReportsPage() {
                 },
         ];
 
-        // V255: Banner shows when EITHER battery OR coverage uses sample data.
-        // Both must have real data for the banner to hide.
-        // Note: hasRealCoverageData is defined below after the coverage
-        // room/detector mapping. We use a forward reference here.
-        const isSampleData = !hasRealBatteryData; // will be refined below after coverage data is computed
-
-        const batteryCalculation = calculateBatteryRequirements({
-                devices: hasRealBatteryData ? realBatteryDevices : sampleDevices,
-                standbyHours: 24,
-                alarmMinutes: 5,
-                safetyFactor: 1.2,
-        });
-
         // V255 SAFETY FIX: Coverage calculation now uses REAL project data.
         // Previously used hardcoded sampleRooms (3 fake rooms) and sampleDetectors
         // (4 fake detectors). In a fire alarm system, showing fake 100% coverage
@@ -390,6 +377,17 @@ export function ReportsPage() {
                 hasRealCoverageData ? realCoverageRooms : sampleRooms,
                 hasRealCoverageData ? realCoverageDetectors : sampleDetectors,
         );
+
+        const batteryCalculation = calculateBatteryRequirements({
+                devices: hasRealBatteryData ? realBatteryDevices : sampleDevices,
+                standbyHours: 24,
+                alarmMinutes: 5,
+                safetyFactor: 1.2,
+        });
+
+        // V255: Banner shows when EITHER battery OR coverage uses sample data.
+        // Both must have real data for the banner to hide.
+        const isSampleData = !hasRealBatteryData || !hasRealCoverageData;
 
         // ─── Report History Content ───────────────────────────────────────────────
         // Extracted from inline JSX to reduce Cognitive Complexity (Sonar S3358).
