@@ -104,7 +104,7 @@ function BrandNetworkBackground() {
                                 radius: Math.random() * 1.4 + 0.6,  // NOSONAR - typescript:S2245
                                 alpha: 1,
                                 decay: Math.random() * 0.007 + 0.003,  // NOSONAR - typescript:S2245
-                                color: Math.random() > 0.4 ? "rgba(244, 63, 94, " : "rgba(249, 115, 22, ", // rose or orange  // NOSONAR - typescript:S2245
+                                color: Math.random() > 0.4 ? "rgba(244, 63, 94, " : "rgba(249, 115, 22, ",  // NOSONAR - typescript:S2245: visual canvas animation, not security
                         });
                 };
 
