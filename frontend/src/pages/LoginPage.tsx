@@ -40,7 +40,7 @@ import { useGsapSplitText, useGsapCounter } from "@/hooks/useGsapAnimations";
  * BrandNetworkBackground component renders floating orange/rose sensor network nodes
  * that connect dynamically, combined with rising flame particles/sparks.
  */
-function BrandNetworkBackground()  // NOSONAR - typescript:S3776: cognitive complexity is inherent to the safety-critical rendering pipeline {
+function BrandNetworkBackground() {  // NOSONAR - typescript:S3776: cognitive complexity is inherent to the safety-critical rendering pipeline
         const canvasRef = useRef<HTMLCanvasElement>(null);
 
         useEffect(() => {
@@ -440,7 +440,7 @@ function BrandSafetyHUD() {
         );
 }
 
-export function LoginPage()  // NOSONAR - typescript:S3776: cognitive complexity is inherent to the safety-critical login flow {
+export function LoginPage() {  // NOSONAR - typescript:S3776: cognitive complexity is inherent to the safety-critical login flow
         const [searchParams] = useSearchParams();
         const { isAuthenticated, loading: ctxLoading, login } = useAuth();
 
