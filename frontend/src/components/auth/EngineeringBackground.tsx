@@ -730,7 +730,7 @@ function Revit3DBuilding({ reducedMotion }: { reducedMotion: boolean }) {  // NO
                         />
                         {/* Door handle — NOSONAR: S6438, S7773 */}
                         {/* NOSONAR — S7773 */}
-                        <circle cx={parseFloat(iso(120, 0, 28).split(",")[0])} cy={parseFloat(iso(120, 0, 28).split(",")[1])} r="1.5" fill="#fbbf24" />
+                        <circle cx={Number.parseFloat(iso(120, 0, 28).split(",")[0])} cy={Number.parseFloat(iso(120, 0, 28).split(",")[1])} r="1.5" fill="#fbbf24" />
 
                         {/* ═══ Peaked roof (red — two slopes) ═══ */}
                         <polygon

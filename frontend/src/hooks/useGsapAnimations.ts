@@ -304,7 +304,7 @@ export function useGsapCounter(
 
       targets.forEach((el) => {
         const target = el as HTMLElement;
-        const finalValue = parseFloat(target.dataset.value || "0");
+        const finalValue = Number.parseFloat(target.dataset.value || "0");
         const suffix = target.dataset.suffix || "";
         const prefix = target.dataset.prefix || "";
 
@@ -438,7 +438,7 @@ export function useGsapGridBackground(
         for (let j = i + 1; j < nodes.length; j++) {
           const dx = n.x - nodes[j].x;
           const dy = n.y - nodes[j].y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
+          const dist = Math.hypot(dx, dy);
           if (dist < 120) {
             ctx.strokeStyle = `rgba(244, 63, 94, ${(1 - dist / 120) * 0.06})`;
             ctx.lineWidth = 0.6;

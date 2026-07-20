@@ -124,7 +124,7 @@ function BrandNetworkBackground() {  // NOSONAR - typescript:S3776: cognitive co
                                         const n2 = nodes[j];
                                         const dx = n1.x - n2.x;
                                         const dy = n1.y - n2.y;
-                                        const dist = Math.sqrt(dx * dx + dy * dy);
+                                        const dist = Math.hypot(dx, dy);
                                         if (dist < 140) {
                                                 ctx.strokeStyle = `rgba(244, 63, 94, ${(1 - dist / 140) * 0.065})`;
                                                 ctx.lineWidth = 0.8;

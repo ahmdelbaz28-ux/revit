@@ -94,7 +94,7 @@ export class PageErrorBoundary extends Component<Props, State> {
 									</pre>
 								)}
 
-								<button
+								<button type="button"
 									className="px-4 py-2 rounded text-sm text-white"
 									style={{ backgroundColor: "#ea580c" }}
 									onClick={this.handleRetry} onKeyDown={(e) => { if (e.key === "Enter") (this.handleRetry)(); }}									onMouseOver={(e) =>
