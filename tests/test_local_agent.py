@@ -118,7 +118,7 @@ class TestCommandForwarding:
         mock_ws = MagicMock()
         mock_ws.send_json = AsyncMock()
 
-        async def fake_send_command(agent_type, action, args, **kwargs):  # NOSONAR:S7503 mock must be async to replace async method
+        async def fake_send_command(agent_type, action, args, **kwargs):  # NOSONAR — S7503 mock must be async to replace async method
             return {
                 "success": True,
                 "message": "Connected to AutoCAD via agent",
@@ -145,7 +145,7 @@ class TestCommandForwarding:
 
         mock_ws = MagicMock()
 
-        async def fake_send_command(agent_type, action, args, **kwargs):  # NOSONAR:S7503 mock must be async to replace async method
+        async def fake_send_command(agent_type, action, args, **kwargs):  # NOSONAR — S7503 mock must be async to replace async method
             return {
                 "success": True,
                 "message": "Connected to Revit via agent",

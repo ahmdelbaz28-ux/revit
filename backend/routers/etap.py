@@ -1,4 +1,4 @@
-# File-level '# NOSONAR' removed per NOSONAR_AUDIT.md (V143 hardening).
+# File-level suppression comment removed per audit guide (V143 hardening).
 # Per-line justified suppressions are preserved.
 """
 backend/routers/etap.py — ETAP Integration REST API.
@@ -86,8 +86,8 @@ async def disconnect(
 @router.get("/status")
 async def get_status(
     request: Request,
-    project_id: str = Query(..., description="Project ID"),
     service: Annotated[EtapService, Depends(get_etap_service)],
+    project_id: str = Query(..., description="Project ID"),
 ) -> dict:
     """Get ETAP integration status for a project."""
     require_permission(Permission.INTEGRATION_READ)
@@ -100,8 +100,8 @@ async def get_status(
 @router.get("/projects")
 async def list_etap_projects(
     request: Request,
-    project_id: str = Query(..., description="Project ID"),
     service: Annotated[EtapService, Depends(get_etap_service)],
+    project_id: str = Query(..., description="Project ID"),
 ) -> List[EtapProjectInfo]:
     """List available ETAP projects."""
     require_permission(Permission.INTEGRATION_READ)
@@ -168,10 +168,10 @@ async def import_from_etap(
 @router.get("/logs")
 async def get_logs(
     request: Request,
+    service: Annotated[EtapService, Depends(get_etap_service)],
     project_id: str = Query(..., description="Project ID"),
     page: int = Query(1, ge=1, description="Page number"),
     page_size: int = Query(50, ge=1, le=100, description="Page size"),
-    service: Annotated[EtapService, Depends(get_etap_service)],
 ) -> EtapSyncLogResponse:
     """Get sync logs for a project."""
     require_permission(Permission.INTEGRATION_READ)
@@ -185,9 +185,9 @@ async def get_logs(
 @router.post("/settings")
 async def create_settings(
     request: Request,
+    service: Annotated[EtapService, Depends(get_etap_service)],
     settings: EtapConnectionSettings,
     project_id: str = Query(..., description="Project ID"),
-    service: Annotated[EtapService, Depends(get_etap_service)],
 ) -> EtapSettingsResponse:
     """
     Create ETAP integration settings for a project.
@@ -202,8 +202,8 @@ async def create_settings(
 @router.get("/settings")
 async def get_settings(
     request: Request,
-    project_id: str = Query(..., description="Project ID"),
     service: Annotated[EtapService, Depends(get_etap_service)],
+    project_id: str = Query(..., description="Project ID"),
 ) -> Optional[EtapSettingsResponse]:
     """Get ETAP settings for a project (no secrets returned)."""
     require_permission(Permission.INTEGRATION_READ)
@@ -228,9 +228,9 @@ async def get_settings(
 @router.put("/settings")
 async def update_settings(
     request: Request,
+    service: Annotated[EtapService, Depends(get_etap_service)],
     update: EtapSettingsUpdate,
     project_id: str = Query(..., description="Project ID"),
-    service: Annotated[EtapService, Depends(get_etap_service)],
 ) -> EtapSettingsResponse:
     """
     Update ETAP integration settings.
@@ -260,8 +260,8 @@ async def update_settings(
 @router.delete("/settings")
 async def delete_settings(
     request: Request,
-    project_id: str = Query(..., description="Project ID"),
     service: Annotated[EtapService, Depends(get_etap_service)],
+    project_id: str = Query(..., description="Project ID"),
 ) -> dict:
     """Delete ETAP integration settings."""
     require_permission(Permission.INTEGRATION_MANAGE)

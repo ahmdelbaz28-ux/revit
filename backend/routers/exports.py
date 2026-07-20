@@ -1,6 +1,6 @@
 
 
-# File-level '# NOSONAR' removed per NOSONAR_AUDIT.md (V143 hardening).
+# File-level suppression comment removed per audit guide (V143 hardening).
 # Per-line justified suppressions (e.g., '# NOSONAR — S3776: ...') are preserved.
 """
 backend/routers/exports.py — DXF, Revit JSON, and IFC export endpoints.
@@ -39,7 +39,7 @@ def _verify_project(project_id: str) -> dict:
     db = get_db()
     project = db.get_project(project_id)
     if not project:
-        raise HTTPException(status_code=404, detail="Project not found")  # NOSONAR: S8415 — endpoint error handling is intentional
+        raise HTTPException(status_code=404, detail="Project not found")  # NOSONAR — S8415
     return project
 
 
@@ -55,7 +55,7 @@ async def export_dxf(project_id: str):
         import ezdxf
     except ImportError:
         raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
-            status_code=503,  # NOSONAR: S8415 — endpoint error handling is intentional
+            status_code=503,  # NOSONAR — S8415
             detail={
                 "success": False,
                 "error": "DXF export unavailable: ezdxf package not installed",
@@ -206,7 +206,7 @@ async def export_revit(project_id: str):
     content = json.dumps(revit_data, indent=2)
     return StreamingResponse(
         io.BytesIO(content.encode("utf-8")),
-        media_type="application/json",  # NOSONAR: python:S1192
+        media_type="application/json",  # NOSONAR — S1192
         headers={
             "Content-Disposition": f"attachment; filename=\"{_safe_filename(project['name'])}_revit.json\""
         },
@@ -336,7 +336,7 @@ async def export_ifc(
         # In a safety-critical system, this information helps attackers
         # craft targeted exploits. Log internally only.
         logger.exception("IFC export failed: %s", e)
-        raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
+        raise HTTPException(  # NOSONAR — S8415
             status_code=500,
             detail="IFC export failed — an internal error occurred. Contact administrator.",
         )
@@ -354,7 +354,7 @@ class ExportDataInput(BaseModel):
 
 @project_router.post("", status_code=200, dependencies=[Depends(require_permission(Permission.EXPORT_READ))])
 @limiter.limit("10/minute")
-async def export_data_global(request: Request, input_data: ExportDataInput):  # NOSONAR: python:S3776
+async def export_data_global(request: Request, input_data: ExportDataInput):  # NOSONAR — S3776
     """
     Export project data globally using the first available project for compatibility.
 
@@ -374,7 +374,7 @@ async def export_data_global(request: Request, input_data: ExportDataInput):  # 
     db = get_db()
     projects = db.list_projects(page=1, limit=1)
     if not projects or not projects.get("data"):
-        raise HTTPException(status_code=404, detail="No projects found to export data")  # NOSONAR: S8415 — endpoint error handling is intentional
+        raise HTTPException(status_code=404, detail="No projects found to export data")  # NOSONAR — S8415
 
     project_id = projects["data"][0]["id"]
     project = projects["data"][0]
@@ -390,7 +390,7 @@ async def export_data_global(request: Request, input_data: ExportDataInput):  # 
             from openpyxl.styles import Alignment, Font, PatternFill
             from openpyxl.utils import get_column_letter
         except ImportError:
-            raise HTTPException(  # NOSONAR — S8415: assignment kept for readability
+            raise HTTPException(  # NOSONAR — S8415
                 status_code=503,
                 detail={
                     "success": False,

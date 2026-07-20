@@ -1,4 +1,4 @@
-# File-level '# NOSONAR' removed per NOSONAR_AUDIT.md (V143 hardening).
+# File-level suppression comment removed per audit guide (V143 hardening).
 # Per-line justified suppressions are preserved.
 """
 backend/integrations/etap_service.py — ETAP integration service layer.

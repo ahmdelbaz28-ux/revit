@@ -113,7 +113,7 @@ class DWGParser:
         # Try each converter in order of preference
         for converter_cmd in self._available_converters:
             try:
-                result = subprocess.run(  # noqa: S603 — command from known list, not user input
+                result = subprocess.run(  # noqa: S603  # NOSONAR — S603 — command from known list, not user input
                     [converter_cmd, "--help"], capture_output=True, timeout=5
                 )
                 # Only consider the tool available if it exits with code 0
