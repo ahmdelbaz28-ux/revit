@@ -138,13 +138,20 @@ class EtapService:
         if not settings:
             return {"success": False, "message": "ETAP not configured for this project"}
 
+        # Validate stored credentials are decryptable
+        _candidate = decrypt_password(settings["password"])  # noqa: F841 — validate ciphertext
+        if not _candidate:
+            return {"success": False, "message": "Stored ETAP password appears invalid"}
+
         # In a real implementation, this would connect to ETAP API
         # For now, we validate settings and simulate a connection
-        _ = decrypt_password(settings["password"])  # NOSONAR — S1172: validate credentials exist
         try:
             # Simulate connection test
             import socket
-            sock = socket.create_connection((settings["host"], settings["port"]), timeout=settings.get("timeout_seconds", 30))
+            timeout = settings.get("timeout_seconds", 30)
+            if not isinstance(timeout, (int, float)):
+                timeout = 30
+            sock = socket.create_connection((settings["host"], settings["port"]), timeout=timeout)
             sock.close()
             return {
                 "success": True,
@@ -204,8 +211,14 @@ class EtapService:
 
     def export_to_etap(self, project_id: str, request: EtapExportRequest) -> dict:
         """Export local project data to ETAP."""
-        from backend.services.marine_service import MarineService
-        from marine.integration.etap_bridge import export_etap_loads_csv, export_etap_sources_csv
+        try:
+            from backend.services.marine_service import MarineService
+            from marine.integration.etap_bridge import (
+                export_etap_loads_csv,
+                export_etap_sources_csv,
+            )
+        except ImportError as exc:
+            raise ValueError("ETAP export requires the marine integration module") from exc
 
         # Get project data
         marine_service = MarineService(self._db)
@@ -217,14 +230,15 @@ class EtapService:
         sources_csv = export_etap_sources_csv(ship_spec) if request.include_sources else ""
 
         # Log sync
-        self._log_sync(project_id, "export", "success", len(loads_csv.splitlines()) + len(sources_csv.splitlines()))
+        records = len(loads_csv.splitlines()) + len(sources_csv.splitlines())
+        self._log_sync(project_id, "export", "success", records)
 
         return {
             "project_id": project_id,
             "format": request.format,
             "loads_csv": loads_csv,
             "sources_csv": sources_csv,
-            "records_exported": len(loads_csv.splitlines()) + len(sources_csv.splitlines()),
+            "records_exported": records,
         }
 
     def import_from_etap(self, project_id: str, request: EtapImportRequest) -> dict:
