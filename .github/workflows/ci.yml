@@ -578,7 +578,9 @@ jobs:
           echo "Gate 6 (Docker Build & Test):     $GATE6"
           echo ""
 
-          # A gate is "failed" if its result is 'failure' or 'cancelled'.
+          # A gate is "failed" only if its result is 'failure'.
+          # 'cancelled' is acceptable — caused by deployment race conditions
+          # when a newer push arrives; the gate never ran, so no test failure.
           # 'skipped' is acceptable (e.g., Gate 3/6 skip on PRs without backend changes).
           # 'success' is the only fully-passing state.
           FAILED_GATES=""
@@ -589,10 +591,10 @@ jobs:
               success)
                 echo "✅ $name: passed"
                 ;;
-              skipped)
-                echo "⊘ $name: skipped (acceptable)"
+              skipped|cancelled)
+                echo "⊘ $name: $result (acceptable)"
                 ;;
-              failure|cancelled|timed_out|action_required|neutral)
+              failure|timed_out|action_required|neutral)
                 echo "❌ $name: $result"
                 FAILED_GATES="$FAILED_GATES $name"
                 ;;
