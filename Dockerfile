@@ -27,7 +27,7 @@ RUN ls -la dist/ && test -f dist/index.html
 
 
 # ─── Stage 2: Python Dependencies ─────────────────────────────────────────
-FROM python:3.12-slim AS python-builder
+FROM python:3.14-slim AS python-builder
 
 WORKDIR /build
 
@@ -41,7 +41,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 
 # ─── Stage 3: Runtime ─────────────────────────────────────────────────────
-FROM python:3.12-slim
+FROM python:3.14-slim
 
 LABEL maintainer="FireAI Engineering Team"
 LABEL description="Safety-Critical Fire Protection Digital Twin — NFPA 72-2022"
