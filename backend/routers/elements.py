@@ -9,7 +9,7 @@ CRUD endpoints for building elements.
 import logging
 import math
 import re
-from typing import Annotated, Optional
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
@@ -35,14 +35,14 @@ router = APIRouter(prefix="/elements", tags=["elements"])
 
 @router.get("", response_model=ApiResponse[PaginatedData[ElementResponse]], dependencies=[Depends(require_permission(Permission.ELEMENT_READ))])
 async def list_elements(
-    element_type: Annotated[Optional[str], Query(None, description="Filter by element type")],
-    project_id: Annotated[Optional[str], Query(None, description="Filter by project ID")],
-    is_deleted: Annotated[Optional[bool], Query(None, description="Include deleted elements")],
-    page: Annotated[int, Query(1, ge=1, description="Page number")],
-    page_size: Annotated[int, Query(20, ge=1, le=100, description="Items per page")],
-    sort_by: Annotated[str, Query("created_timestamp", description="Sort field")],
-    sort_order: Annotated[str, Query("desc", description="Sort order (asc/desc)")],
-    db: Annotated[DatabaseService, Depends(get_db_service)],
+    element_type: Optional[str] = Query(None, description="Filter by element type"),
+    project_id: Optional[str] = Query(None, description="Filter by project ID"),
+    is_deleted: Optional[bool] = Query(None, description="Include deleted elements"),
+    page: int = Query(1, ge=1, description="Page number"),
+    page_size: int = Query(20, ge=1, le=100, description="Items per page"),
+    sort_by: str = Query("created_timestamp", description="Sort field"),
+    sort_order: str = Query("desc", description="Sort order (asc/desc)"),
+    db = Depends(get_db_service),
 ):
     """List elements with optional filtering and pagination."""
     if sort_order not in ("asc", "desc"):
@@ -79,7 +79,7 @@ async def list_elements(
 async def create_element(
     request: Request,
     element_data: ElementCreate,
-    db: Annotated[DatabaseService, Depends(get_db_service)],
+    db = Depends(get_db_service),
 ):
     """Create a new element."""
     try:
@@ -100,7 +100,7 @@ async def create_element(
 @router.get("/{element_id}", response_model=ApiResponse[ElementResponse], dependencies=[Depends(require_permission(Permission.ELEMENT_READ))])
 async def get_element(
     element_id: str,
-    db: Annotated[DatabaseService, Depends(get_db_service)],
+    db = Depends(get_db_service),
 ):
     """Get an element by ID."""
     try:
@@ -121,7 +121,7 @@ async def update_element(
     request: Request,
     element_id: str,
     element_data: ElementUpdate,
-    db: Annotated[DatabaseService, Depends(get_db_service)],
+    db = Depends(get_db_service),
 ):
     """Update an element."""
     try:
@@ -141,7 +141,7 @@ async def update_element(
 async def delete_element(
     request: Request,
     element_id: str,
-    db: Annotated[DatabaseService, Depends(get_db_service)],
+    db = Depends(get_db_service),
 ):
     """Soft delete an element."""
     try:

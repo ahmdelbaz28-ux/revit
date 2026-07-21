@@ -319,15 +319,22 @@ test("Connections: create connection modal opens with form fields", async ({
 });
 
 test("Dashboard: no React key warnings", async ({ page }) => {
-        const errors: string[] = [];
-        page.on("console", (msg) => {
-                if (msg.type() === "error" && msg.text().includes("key")) {
-                        errors.push(msg.text());
-                }
-        });
+	const errors: string[] = [];
+	page.on("console", (msg) => {
+		if (msg.type() === "error" || msg.type() === "warning") {
+			const text = msg.text();
+			// Only match actual React "key" prop warnings, not CSP "keyword" messages
+			if (
+				text.includes("Each child in a list should have a unique") ||
+				text.includes("Encountered two children with the same key")
+			) {
+				errors.push(text);
+			}
+		}
+	});
 
-        await page.goto("/", { waitUntil: "domcontentloaded", timeout: 30000 });
-        await page.waitForLoadState("networkidle");  // S2925: sync on condition, not fixed wait
+	await page.goto("/", { waitUntil: "domcontentloaded", timeout: 30000 });
+	await page.waitForLoadState("networkidle");  // S2925: sync on condition, not fixed wait
 
-        expect(errors, "Dashboard should not have React key warnings").toEqual([]);
+	expect(errors, "Dashboard should not have React key warnings").toEqual([]);
 });

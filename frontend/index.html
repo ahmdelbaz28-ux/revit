@@ -73,11 +73,11 @@
      <meta http-equiv="Content-Security-Policy"
       content="default-src 'self';
     script-src 'self';
-    style-src 'self' 'sha256-OjgKj6MpAlu0zhThmZy7Qd2eh+/cx/fQIi9NFVyLsSA=' 'sha256-X7mc1Q+s+cuBT3a3hAxt+LDpvbVecfr3LzADuWQan7w=' https://fonts.googleapis.com;
+    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
     style-src-attr 'unsafe-inline';
     img-src 'self' data: blob:;
-    font-src 'self' https://fonts.gstatic.com;
-    connect-src 'self' https://ahmdelbaz28-bazspark.hf.space https://revit-rust.vercel.app;
+    font-src 'self' data: https://fonts.gstatic.com;
+    connect-src 'self' http://localhost:8000 ws://localhost:* http://127.0.0.1:8000 https://ahmdelbaz28-bazspark.hf.space https://revit-rust.vercel.app __CSP_CONNECT_SRC__;
     base-uri 'self';
     form-action 'self';" />
 

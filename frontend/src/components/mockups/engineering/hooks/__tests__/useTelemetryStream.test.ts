@@ -4,8 +4,22 @@ import { dataService } from "@/services/dataService";
 import { setState } from "@/store/simpleStore";
 import { useTelemetryStream } from "../useTelemetryStream";
 
+// Mock Worker — jsdom does not support Web Workers.
+// dataService.connect() → connectMockWorker() creates a Worker,
+// which throws "Worker is not defined" in the test environment.
+class MockWorker {
+	onmessage: ((e: { data: unknown }) => void) | null = null;
+	postMessage = vi.fn();
+	terminate = vi.fn();
+	addEventListener = vi.fn();
+	removeEventListener = vi.fn();
+	dispatchEvent = vi.fn();
+}
+
 describe("useTelemetryStream", () => {
 	beforeEach(() => {
+		// @ts-expect-error — injecting mock Worker into global scope for jsdom
+		globalThis.Worker = MockWorker;
 		setState({
 			dataMode: "mock",
 			connectionStatus: "connected",

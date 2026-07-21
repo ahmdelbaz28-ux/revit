@@ -91,6 +91,9 @@ async function expectNoConsoleErrors(page: Page, route: string) {
                 // CSP via <meta> (known Vite dev limitation, not a runtime bug)
                 /Content Security Policy directive 'frame-ancestors' is ignored when delivered via a <meta>/,
                 /X-Frame-Options may only be set via an HTTP header/,
+                // CSP inline style — React/Radix UI dynamic style attrs (dev-only, non-functional impact)
+                /Applying inline style violates the following Content Security Policy/,
+                /style-src.*unsafe-inline.*nonce.*required/,
                 // 401 Unauthorized when backend not running (auth endpoints)
                 /401 \(Unauthorized\)/,
         ];

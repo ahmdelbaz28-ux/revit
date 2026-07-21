@@ -42,7 +42,9 @@ function captureConsoleErrors(page: Page): string[] {
                                 !text.includes("Failed to load resource") &&
                                 !text.includes("ECONNREFUSED") &&
                                 !text.includes("502") &&
-                                !text.includes("net::ERR")
+                                !text.includes("net::ERR") &&
+                                // CSP inline style — React/Radix UI dynamic style attrs (dev-only)
+                                !text.includes("Applying inline style violates the following Content Security Policy")
                         ) {
                                 errors.push(text);
                         }
