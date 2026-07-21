@@ -32,6 +32,13 @@ The following skills are installed and active for this workspace. **Use them bef
 - **When:** Building or refactoring design systems, creating component libraries, establishing design tokens, implementing consistent UI patterns.
 - **Scope:** Design token systems, component architecture, accessibility standards, safety-critical UI patterns, visual design principles.
 
+### 4. `security-audit`
+
+- **Location:** `.agents/skills/security-audit/SKILL.md`
+- **References:** `.agents/skills/security-audit/` (RECONNAISSANCE.md, HUNTING.md, ATTACK-CLASSES.md, VALIDATION-AND-REPORTING.md, CLIENT-SIDE.md, AI-AND-LLM.md, WEB-PROTOCOL-AND-AUTH.md, MEMORY-SAFETY-AND-BINARY.md)
+- **When:** Security audits, vulnerability reviews, penetration testing code reviews, finding exploitable bugs.
+- **Scope:** 6-phase methodology — Recon, Hunt, Validate, Report, Structured Output, Independent Verification. Focuses on exploitable vulnerabilities with real impact, not theoretical concerns.
+
 ## Rules
 
 1. **Always invoke a relevant skill before acting.** If a skill applies to the task, use it — no exceptions.
