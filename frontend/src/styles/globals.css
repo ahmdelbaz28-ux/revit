@@ -2,43 +2,43 @@
 
 @layer base {
         :root {
-                /* ── BAZSPARK Awwwards palette ── */
-                --background: 7 11 18;                /* #070b12 — deep navy */
-                --foreground: 232 240 254;            /* #e8f0fe — off-white */
+                /* ── BAZSPARK Engineering Obsidian Theme ── */
+                --background: 8 12 20;                 /* #080c14 — deep slate obsidian canvas */
+                --foreground: 241 245 249;             /* #f1f5f9 — crisp high-contrast text */
 
-                --card: 17 24 39;                     /* glassmorphism base (with alpha via /60) */
-                --card-foreground: 232 240 254;
+                --card: 15 23 42;                      /* #0f172a — solid dark panel */
+                --card-foreground: 241 245 249;
 
-                --popover: 17 24 39;
-                --popover-foreground: 232 240 254;
+                --popover: 15 23 42;
+                --popover-foreground: 241 245 249;
 
-                --primary: 34 211 238;                /* #22d3ee — softened cyan */
-                --primary-foreground: 7 11 18;
+                --primary: 6 182 212;                  /* #06b6d4 — technical cyan */
+                --primary-foreground: 8 12 20;
 
-                --secondary: 255 255 255;             /* used with /05 alpha */
-                --secondary-foreground: 232 240 254;
+                --secondary: 30 41 59;                 /* #1e293b — slate panel highlight */
+                --secondary-foreground: 241 245 249;
 
-                --muted: 255 255 255;                 /* used with /05 alpha */
-                --muted-foreground: 148 163 184;      /* #94a3b8 — slate */
+                --muted: 30 41 59;
+                --muted-foreground: 148 163 184;       /* #94a3b8 — slate muted labels */
 
-                --accent: 34 211 238;                  /* softened cyan */
-                --accent-foreground: 7 11 18;
+                --accent: 6 182 212;                   /* technical cyan */
+                --accent-foreground: 8 12 20;
 
-                --destructive: 248 113 113;
-                --destructive-foreground: 7 11 18;
+                --destructive: 239 68 68;              /* #ef4444 — ANSI fire alert red */
+                --destructive-foreground: 255 255 255;
 
-                --border: 31 45 68;                   /* used with /50 alpha */
-                --input: 31 45 68;
-                --ring: 34 211 238;
+                --border: 30 41 59;                    /* #1e293b — crisp 1px border */
+                --input: 30 41 59;
+                --ring: 6 182 212;
 
-                --success: 52 211 153;
-                --warning: 251 191 36;
-                --danger: 248 113 113;
-                --info: 34 211 238;
+                --success: 16 185 129;                 /* #10b981 — emerald safe status */
+                --warning: 245 158 11;                 /* #f59e0b — amber warning */
+                --danger: 239 68 68;
+                --info: 6 182 212;
 
-                --darker: 10 14 23;                   /* #0a0e17 */
+                --darker: 4 6 10;                      /* #04060a */
 
-                --radius: 0.75rem;                    /* 12px */
+                --radius: 0.375rem;                    /* 6px crisp engineering corners */
         }
 }
 
@@ -69,4 +69,25 @@
                 --color-info: var(--info);
                 --color-darker: var(--darker);
         }
+
+        body {
+                background-color: rgb(var(--background));
+                color: rgb(var(--foreground));
+                font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+        }
+}
+
+/* Technical utility classes */
+.bg-glass {
+        background-color: rgba(15, 23, 42, 0.95);
+        backdrop-filter: blur(8px);
+}
+
+.border-tech {
+        border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.font-mono-num {
+        font-family: "JetBrains Mono", ui-monospace, monospace;
+        font-variant-numeric: tabular-nums;
 }
