@@ -3,7 +3,7 @@
 """
 tests/test_csp_security.py — Content-Security-Policy Header Tests
 ==================================================================
-Validates the _build_csp() function in backend/app.py.
+Validates the build_csp() function in backend/csp.py.
 
 V119 FIX (Finding #4): Production default for CSP_UNSAFE_EVAL is now
 "false" (secure-by-default). Development default remains "true" for DX.
@@ -12,7 +12,9 @@ SAFETY: A safety-critical fire alarm engineering UI must not be vulnerable
 to XSS amplification via 'unsafe-eval'. Modern frontend libraries
 (recharts ≥2.x, three.js ≥0.150) work without it in production builds.
 
-This file ensures the secure default behavior cannot be silently regressed.
+V300 ARCHITECTURE: The CSP builder was extracted from backend/app.py to
+backend/csp.py to reduce app.py's size and improve testability. This test
+was updated to load from the new module.
 """
 
 from __future__ import annotations
@@ -34,38 +36,38 @@ import types
 
 import pytest
 
-_APP_PATH = _PROJECT_ROOT / "backend" / "app.py"
+_APP_PATH = _PROJECT_ROOT / "backend" / "csp.py"
 
 
 def _load_build_csp_in_isolation():
     """
-    Load _build_csp() from backend/app.py without the rest of app.py.
+    Load build_csp() from backend/csp.py without the rest of the app.
 
     Uses ast to extract the function and its module-level constants
-    (logger, etc.). This avoids the 700+ lines of router imports.
+    (logger, etc.). This avoids importing the heavy app.py.
     """
     import ast
     source = _APP_PATH.read_text(encoding="utf-8")
     tree = ast.parse(source)
 
-    # Collect the _build_csp FunctionDef
+    # Collect the build_csp FunctionDef
     build_csp_node = None
     for node in tree.body:
-        if isinstance(node, ast.FunctionDef) and node.name == "_build_csp":
+        if isinstance(node, ast.FunctionDef) and node.name == "build_csp":
             build_csp_node = node
             break
     if build_csp_node is None:
-        raise RuntimeError("Could not find _build_csp() in backend/app.py")
+        raise RuntimeError("Could not find build_csp() in backend/csp.py")
 
-    # Minimal module containing only what _build_csp needs: os + logger
-    module = types.ModuleType("backend_app_csp_isolated")
-    exec("import os; import logging; logger = logging.getLogger('backend.app')",
+    # Minimal module containing only what build_csp needs: os + logger
+    module = types.ModuleType("backend_csp_isolated")
+    exec("import os; import logging; logger = logging.getLogger('backend.csp')",
          module.__dict__)
     # Compile and execute just the function definition
     func_code = compile(ast.Module(body=[build_csp_node], type_ignores=[]),
                         filename=str(_APP_PATH), mode="exec")
     exec(func_code, module.__dict__)
-    return module._build_csp
+    return module.build_csp
 
 
 _build_csp = _load_build_csp_in_isolation()

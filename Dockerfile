@@ -124,4 +124,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
 # For multi-worker deployments, use PostgreSQL via deploy/docker/docker-compose.yml
 #
 # H-3 FIX: Bind to 0.0.0.0 for external routing (required by cloud hosting like HF Spaces).
-CMD uvicorn backend.app:app --host 0.0.0.0 --port ${PORT:-7860} --workers ${UVICORN_WORKERS:-1}  # NOSONAR — S7019: dockerfile acceptable
+CMD ["sh", "-c", "uvicorn backend.app:app --host 0.0.0.0 --port ${PORT:-7860} --workers ${UVICORN_WORKERS:-1}"]
