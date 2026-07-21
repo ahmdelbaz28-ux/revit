@@ -98,21 +98,16 @@ export function ApiKeysPage() {
         const handleDelete = async (keyHash: string) => {
                 // V253 FIX: Replaced confirm() with a non-blocking toast confirmation.
                 // The user must click the "Delete" button in the toast to confirm.
-                // This avoids the blocking browser confirm() dialog which is not
-                // production-quality and can't be styled.
                 let confirmed = false;
                 let resolveFn: ((value: void) => void) | null = null;
                 let rejectFn: ((reason?: unknown) => void) | null = null;
 
-                const onDeleteClick = () => {
+                const onDeleteConfirmed = () => {
                         confirmed = true;
                         const apiKey = getApiKey();
                         const headers: Record<string, string> = {};
                         if (apiKey) headers["X-API-Key"] = apiKey;
-                        fetch(`/api/v1/admin/keys/${keyHash}`, {
-                                method: "DELETE",
-                                headers,
-                        })
+                        fetch(`/api/v1/admin/keys/${keyHash}`, { method: "DELETE", headers })
                                 .then((resp) => {
                                         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
                                         toast.success("API key deleted");
@@ -124,8 +119,8 @@ export function ApiKeysPage() {
                                 });
                 };
 
-                const onCancelClick = () => {
-                        if (rejectFn) rejectFn(new Error("Cancelled"));
+                const onDismissed = () => {
+                        if (!confirmed && rejectFn) rejectFn(new Error("Cancelled"));
                 };
 
                 const deletePromise = new Promise<void>((resolve, reject) => {
@@ -133,17 +128,9 @@ export function ApiKeysPage() {
                         rejectFn = reject;
                         toast("Delete this API key? This cannot be undone.", {
                                 duration: 10000,
-                                action: {
-                                        label: "Delete",
-                                        onClick: onDeleteClick,
-                                },
-                                cancel: {
-                                        label: "Cancel",
-                                        onClick: onCancelClick,
-                                },
-                                onDismiss: () => {
-                                        if (!confirmed && rejectFn) rejectFn(new Error("Cancelled"));
-                                },
+                                action: { label: "Delete", onClick: onDeleteConfirmed },
+                                cancel: { label: "Cancel", onClick: () => rejectFn?.(new Error("Cancelled")) },
+                                onDismiss: onDismissed,
                         });
                 });
                 try {
