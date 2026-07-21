@@ -383,13 +383,13 @@ exclude_lines = [
 # V130 FIX: Enforce minimum coverage on critical paths so coverage cannot
 # drop silently. 70% is a conservative floor — raise to 80% after the
 # remediation plan in the audit report is completed.
-# V288 FIX (Phase 2.4): Raised from 40% to 45% as an incremental step.
-# Current actual coverage is ~47% (per CI Gate 2 output). Raising to 45%
-# provides a safety margin while preventing coverage regression. Target
-# is 80% for life-safety modules (nfpa72_*, voltage_drop, battery_aging_
-# derating, audit_trail) — to be achieved in follow-up sprints by adding
-# targeted tests, not by lowering the threshold.
-fail_under = 45
+# V300 FIX: Raised from 45% to 47%. Current actual coverage is ~46.92%
+# (per CI Gate 2 output). Raising to 47% provides a tight safety margin
+# that prevents coverage regression while not blocking CI. Target is 80%
+# for life-safety modules (nfpa72_*, voltage_drop, battery_aging_derating,
+# audit_trail) — to be achieved in follow-up sprints by adding targeted
+# tests, not by lowering the threshold.
+fail_under = 47
 
 [tool.bandit]
 targets = ["fireai", "tests"]

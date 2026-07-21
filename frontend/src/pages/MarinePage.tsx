@@ -70,6 +70,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { marineApi } from "@/services/fullApi";
+import "@/styles/marine.css";
 
 interface ShipForm {
         project_id: string;
@@ -471,6 +472,7 @@ export function MarinePage() {
 
                                         <div className="flex items-center gap-2">
                                                 <Button
+                                                        data-testid="marine-run-pipeline-btn"
                                                         onClick={handleRunFullPipeline}
                                                         disabled={loading === "full-pipeline"}
                                                         className="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-semibold text-xs h-9 px-4"
@@ -484,6 +486,7 @@ export function MarinePage() {
                                                 </Button>
 
                                                 <Button
+                                                        data-testid="marine-alarm-sim-btn"
                                                         variant="outline"
                                                         onClick={toggleAlarmSimulation}
                                                         className={`text-xs h-9 px-3 border transition-colors ${
@@ -706,12 +709,12 @@ export function MarinePage() {
                                                                         </div>
 
                                                                         <div className="flex items-center gap-2">
-                                                                                <Button size="sm" variant="outline" onClick={handleDetection} disabled={!!loading} className="text-xs h-8 border-slate-700 text-slate-200">
+                                                                                <Button data-testid="marine-detection-btn" size="sm" variant="outline" onClick={handleDetection} disabled={!!loading} className="text-xs h-8 border-slate-700 text-slate-200">
                                                                                         {loading === "detection" ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Zap className="h-3.5 w-3.5 mr-1" />}
                                                                                         Design Zone Detection
                                                                                 </Button>
 
-                                                                                <Button size="sm" variant="outline" onClick={handleExtinguishing} disabled={!!loading} className="text-xs h-8 border-slate-700 text-slate-200">
+                                                                                <Button data-testid="marine-extinguishing-btn" size="sm" variant="outline" onClick={handleExtinguishing} disabled={!!loading} className="text-xs h-8 border-slate-700 text-slate-200">
                                                                                         {loading === "extinguishing" ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Flame className="h-3.5 w-3.5 mr-1 text-amber-400" />}
                                                                                         Size Extinguishing
                                                                                 </Button>
@@ -828,12 +831,12 @@ export function MarinePage() {
                                                                 </div>
 
                                                                 <div className="mt-5 flex items-center gap-3">
-                                                                        <Button onClick={handleValidate} disabled={loading === "validate"} className="bg-cyan-500 text-slate-950 hover:bg-cyan-400 text-xs font-semibold">
+                                                                        <Button data-testid="marine-validate-btn" onClick={handleValidate} disabled={loading === "validate"} className="bg-cyan-500 text-slate-950 hover:bg-cyan-400 text-xs font-semibold">
                                                                                 {loading === "validate" ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : <ShieldCheck className="h-4 w-4 mr-1.5" />}
                                                                                 Validate SOLAS Compliance
                                                                         </Button>
 
-                                                                        <Button onClick={handleDivideZones} disabled={loading === "zones"} variant="outline" className="border-slate-700 text-slate-200 text-xs">
+                                                                        <Button data-testid="marine-divide-zones-btn" onClick={handleDivideZones} disabled={loading === "zones"} variant="outline" className="border-slate-700 text-slate-200 text-xs">
                                                                                 {loading === "zones" ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : <Layers className="h-4 w-4 mr-1.5" />}
                                                                                 Auto-Divide MVZ Zones
                                                                         </Button>
@@ -879,7 +882,7 @@ export function MarinePage() {
                                                                         </CardDescription>
                                                                 </CardHeader>
                                                                 <CardContent className="space-y-4">
-                                                                        <Button onClick={handleDetection} disabled={loading === "detection"} className="w-full bg-slate-800 hover:bg-slate-700 text-cyan-400 border border-cyan-500/30 text-xs">
+                                                                        <Button data-testid="marine-calculate-sensor-btn" onClick={handleDetection} disabled={loading === "detection"} className="w-full bg-slate-800 hover:bg-slate-700 text-cyan-400 border border-cyan-500/30 text-xs">
                                                                                 {loading === "detection" ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Zap className="h-4 w-4 mr-2" />}
                                                                                 Calculate Sensor Layout
                                                                         </Button>
@@ -904,7 +907,7 @@ export function MarinePage() {
                                                                         </CardDescription>
                                                                 </CardHeader>
                                                                 <CardContent className="space-y-4">
-                                                                        <Button onClick={handleExtinguishing} disabled={loading === "extinguishing"} className="w-full bg-slate-800 hover:bg-slate-700 text-amber-400 border border-amber-500/30 text-xs">
+                                                                        <Button data-testid="marine-size-extinguishing-btn" onClick={handleExtinguishing} disabled={loading === "extinguishing"} className="w-full bg-slate-800 hover:bg-slate-700 text-amber-400 border border-amber-500/30 text-xs">
                                                                                 {loading === "extinguishing" ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Flame className="h-4 w-4 mr-2" />}
                                                                                 Size Extinguishing System
                                                                         </Button>
@@ -929,7 +932,7 @@ export function MarinePage() {
                                                                         </CardDescription>
                                                                 </CardHeader>
                                                                 <CardContent className="space-y-4">
-                                                                        <Button onClick={handleDesignPower} disabled={loading === "power"} className="w-full bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-emerald-500/30 text-xs">
+                                                                        <Button data-testid="marine-design-power-btn" onClick={handleDesignPower} disabled={loading === "power"} className="w-full bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-emerald-500/30 text-xs">
                                                                                 {loading === "power" ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Zap className="h-4 w-4 mr-2" />}
                                                                                 Design Emergency Power
                                                                         </Button>
@@ -962,7 +965,7 @@ export function MarinePage() {
                                                                         </CardDescription>
                                                                 </CardHeader>
                                                                 <CardContent className="space-y-4">
-                                                                        <Button onClick={handleGenerateAlarmLogic} disabled={loading === "alarm-logic"} className="bg-cyan-500 text-slate-950 hover:bg-cyan-400 text-xs font-semibold">
+                                                                        <Button data-testid="marine-generate-alarm-logic-btn" onClick={handleGenerateAlarmLogic} disabled={loading === "alarm-logic"} className="bg-cyan-500 text-slate-950 hover:bg-cyan-400 text-xs font-semibold">
                                                                                 {loading === "alarm-logic" ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Cpu className="h-4 w-4 mr-2" />}
                                                                                 Generate Logic Matrix
                                                                         </Button>
@@ -988,22 +991,22 @@ export function MarinePage() {
                                                                 </CardHeader>
                                                                 <CardContent className="space-y-3">
                                                                         <div className="grid grid-cols-2 gap-2.5">
-                                                                                <Button variant="outline" onClick={handleExportSCADA} disabled={loading === "export-scada"} className="border-slate-700 text-slate-200 text-xs h-9 justify-start">
+                                                                                <Button data-testid="marine-export-scada-btn" variant="outline" onClick={handleExportSCADA} disabled={loading === "export-scada"} className="border-slate-700 text-slate-200 text-xs h-9 justify-start">
                                                                                         {loading === "export-scada" ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Server className="h-4 w-4 mr-2 text-cyan-400" />}
                                                                                         SCADA Config (MQTT)
                                                                                 </Button>
 
-                                                                                <Button variant="outline" onClick={handleExportETAP} disabled={loading === "export-etap"} className="border-slate-700 text-slate-200 text-xs h-9 justify-start">
+                                                                                <Button data-testid="marine-export-etap-btn" variant="outline" onClick={handleExportETAP} disabled={loading === "export-etap"} className="border-slate-700 text-slate-200 text-xs h-9 justify-start">
                                                                                         {loading === "export-etap" ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <FileSpreadsheet className="h-4 w-4 mr-2 text-amber-400" />}
                                                                                         ETAP CSV Export
                                                                                 </Button>
 
-                                                                                <Button variant="outline" onClick={handleExportDXF} disabled={loading === "export-dxf"} className="border-slate-700 text-slate-200 text-xs h-9 justify-start">
+                                                                                <Button data-testid="marine-export-dxf-btn" variant="outline" onClick={handleExportDXF} disabled={loading === "export-dxf"} className="border-slate-700 text-slate-200 text-xs h-9 justify-start">
                                                                                         {loading === "export-dxf" ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <FileCode2 className="h-4 w-4 mr-2 text-emerald-400" />}
                                                                                         AutoCAD DXF Ship Plan
                                                                                 </Button>
 
-                                                                                <Button variant="outline" onClick={handleExportRevit} disabled={loading === "export-revit"} className="border-slate-700 text-slate-200 text-xs h-9 justify-start">
+                                                                                <Button data-testid="marine-export-revit-btn" variant="outline" onClick={handleExportRevit} disabled={loading === "export-revit"} className="border-slate-700 text-slate-200 text-xs h-9 justify-start">
                                                                                         {loading === "export-revit" ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Layers className="h-4 w-4 mr-2 text-cyan-400" />}
                                                                                         Revit BIM Families
                                                                                 </Button>

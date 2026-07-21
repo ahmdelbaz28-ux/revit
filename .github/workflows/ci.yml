@@ -54,30 +54,21 @@ jobs:
         run: mkdir -p reports
 
       - name: Ruff lint
-        run: ruff check backend/ fireai/ core/ backend_app.py --output-format=github || true
+        # V300 FIX: Removed `|| true` — Ruff now passes clean on the codebase.
+        # Previously non-blocking because of pre-existing violations that have
+        # since been fixed. New lint errors will now correctly block the gate.
+        run: ruff check backend/ fireai/ core/ backend_app.py --output-format=github
 
-      - name: MyPy type check
-        # V140 FIX (Rule 17 — Root-Cause Analysis): Multiple skill packages
-        # (skills/etap-expert, skills/docx, skills/skill-creator, skills/ui-ux-pro-max)
-        # each have a `scripts/` subdirectory with __init__.py. Mypy treats
-        # these as the same module "scripts" → "Duplicate module" error.
-        # Root-cause fix: removed `skills/` from the mypy target (the skills
-        # are self-contained packages that don't need type-checking against
-        # the main codebase). Also added --python-version 3.12 to resolve
-        # numpy 2.x's use of the `type` statement (PEP 695) which mypy
-        # couldn't parse without an explicit target version.
-        #
-        # V140 FIX 2: Made the step NON-BLOCKING (|| true). There are 434
-        # pre-existing type errors across the codebase (verified by running
-        # mypy with the same flags on origin/main — same 434 errors). These
-        # are NOT introduced by V140; they are technical debt from V12-V139
-        # cycles that progressively added type annotations but never reached
-        # full coverage. Fixing all 434 in this PR would balloon its scope
-        # from "launch readiness" to "complete type annotation migration" —
-        # out of scope. The step still RUNS mypy and reports errors, so new
-        # type errors introduced by future PRs will be visible in CI logs.
-        # A separate V141 cycle should address the 434 pre-existing errors.
-        run: mypy backend/ fireai/ core/ --ignore-missing-imports --no-strict-optional --exclude '.*test.*' --python-version 3.12 || true
+      - name: MyPy type check (regression gate)
+        # V300 FIX: Replaced bare `|| true` with a regression gate that fails
+        # if the error count EXCEEDS the baseline (currently 434 pre-existing
+        # errors from V12-V139 technical debt). This prevents new type errors
+        # from slipping in while allowing the existing 434 to coexist.
+        # The gate script (scripts/mypy_regression_gate.py) runs mypy, counts
+        # errors, and exits 1 only if the count goes above baseline.
+        # To update the baseline after fixing a batch: update --baseline in
+        # the command below.
+        run: python3 scripts/mypy_regression_gate.py --baseline 434
 
       - name: Bandit security scan
         # V140 FIX (Rule 17): Bandit exits with code 1 when it finds ANY
@@ -426,25 +417,56 @@ jobs:
         run: pip install pip-audit
 
       - name: Audit Python dependencies
-        # Informational: reports vulnerabilities without blocking the pipeline.
-        # Fix upstream dependencies before re-enabling strict mode.
+        # V300 FIX: Made blocking for HIGH/CRITICAL vulnerabilities.
+        # Previously fully non-blocking (`|| true` everywhere), which meant
+        # new vulnerable dependencies could be introduced without CI failing.
+        # Now: pip-audit runs and the gate script checks severity levels.
+        # LOW/MEDIUM vulns are reported as warnings (non-blocking) because
+        # they often depend on transitive deps we can't directly control.
+        # HIGH/CRITICAL vulns block the pipeline.
         run: |
           mkdir -p reports
-          pip-audit --skip-editable --desc --progress-spinner off || true
-          pip-audit --skip-editable -f json -o reports/pip-audit.json 2>/dev/null || true
+          # Run pip-audit, capturing output for the gate script
+          pip-audit --skip-editable --desc --progress-spinner off -f json -o reports/pip-audit.json 2>/dev/null || true
+          # Also run human-readable output for CI log visibility
+          pip-audit --skip-editable --desc --progress-spinner off 2>/dev/null || true
           if [ -f reports/pip-audit.json ]; then
-            echo "Audit report generated (informational only)"
-            python3 -c "import json; d=json.load(open('reports/pip-audit.json')); print(f'Found {len(d.get(\"vulns\",d.get(\"deps\",[])))} items in audit')" 2>/dev/null || echo "Audit complete"
+            echo "Audit report generated"
+            # V300: Check for HIGH/CRITICAL vulnerabilities
+            python3 scripts/pip_audit_gate.py
+            rc=$?
+            if [ $rc -eq 1 ]; then
+              echo "FAIL: HIGH/CRITICAL vulnerability detected — see report above"
+              exit 1
+            elif [ $rc -eq 2 ]; then
+              echo "WARN: Could not parse audit report (non-blocking)"
+            fi
+          else
+            echo "WARN: No audit report generated (pip-audit may have failed)"
           fi
-          echo "Dependency audit complete (non-blocking)"
 
 
       - name: Audit frontend dependencies
-        # Informational: reports npm vulnerabilities without blocking the pipeline.
+        # V300 FIX: Made blocking for HIGH severity vulnerabilities.
+        # Previously fully non-blocking (`|| true`), meaning vulnerable npm
+        # packages could be introduced without CI failing.
         run: |
           cd frontend
-          npm audit --audit-level=high 2>&1 || true
-          echo "Frontend dependency audit complete (non-blocking)"
+          # Run audit and capture output
+          OUTPUT=$(npm audit --audit-level=high 2>&1) || true
+          echo "$OUTPUT"
+          # Check if there are HIGH or CRITICAL vulnerabilities
+          if echo "$OUTPUT" | grep -qi "high\|critical"; then
+            # Verify it's an actual vulnerability count, not just the header
+            VULN_COUNT=$(echo "$OUTPUT" | grep -oP '\d+(?= High)' | head -1 || echo "0")
+            CRIT_COUNT=$(echo "$OUTPUT" | grep -oP '\d+(?= Critical)' | head -1 || echo "0")
+            TOTAL=$((VULN_COUNT + CRIT_COUNT))
+            if [ "$TOTAL" -gt 0 ]; then
+              echo "FAIL: $TOTAL HIGH/CRITICAL npm vulnerabilities detected"
+              exit 1
+            fi
+          fi
+          echo "PASS: No HIGH/CRITICAL frontend vulnerabilities"
 
 
   # ── Gate 6: Docker Build ──────────────────────────────────────────────────

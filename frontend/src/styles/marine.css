@@ -1,0 +1,232 @@
+/**
+ * marine.css — Professional Engineering UI Styles for Marine Page
+ *
+ * Design tokens for marine fire protection engineering interface:
+ * - Dark slate background (#080c14) for professional engineering UI
+ * - Cyan accents for SOLAS/fire safety theme
+ * - Monospace typography for engineering specifications
+ */
+
+/* Marine Page Base Styles */
+.marine-page {
+  background-color: #080c14;
+  color: rgb(226, 232, 240);
+  min-height: 100vh;
+}
+
+/* Telemetry Bento Bar */
+.marine-telemetry-bar {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(2, 1fr);
+}
+
+@media (min-width: 640px) {
+  .marine-telemetry-bar {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .marine-telemetry-bar {
+    grid-template-columns: repeat(6, 1fr);
+  }
+}
+
+.marine-telemetry-item {
+  padding: 0.75rem;
+  border-radius: 0.375rem;
+  background-color: rgb(15, 23, 38, 0.6);
+  border: 1px solid rgba(51, 65, 85, 0.8);
+}
+
+.marine-telemetry-label {
+  font-size: 0.75rem;
+  font-family: monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgb(148, 163, 179);
+}
+
+.marine-telemetry-value {
+  font-size: 1.125rem;
+  font-weight: 700;
+  font-family: monospace;
+  line-height: 1;
+}
+
+/* Vessel Schematic Viewport */
+.marine-viewport-background {
+  background-color: #04060a;
+  border: 1px solid rgba(56, 74, 98, 0.6);
+  border-radius: 0.375rem;
+}
+
+/* Zone Selection Badges */
+.marine-zone-badge {
+  background-color: rgba(8, 149, 255, 0.2);
+  color: rgb(8, 160, 255);
+  border: 1px solid rgba(8, 160, 255, 0.4);
+  font-family: monospace;
+  font-size: 0.75rem;
+}
+
+/* Status Badges */
+.marine-status-badge {
+  font-family: monospace;
+  font-size: 0.6875rem;
+  letter-spacing: 0.05em;
+}
+
+.marine-status-badge--success {
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  background-color: rgba(16, 185, 129, 0.1);
+  color: rgb(134, 239, 172);
+}
+
+.marine-status-badge--warning {
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  background-color: rgba(245, 158, 11, 0.1);
+  color: rgb(253, 230, 138);
+}
+
+.marine-status-badge--danger {
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  background-color: rgba(239, 68, 68, 0.1);
+  color: rgb(254, 202, 202);
+}
+
+/* Action Buttons */
+.marine-btn {
+  font-family: monospace;
+  font-size: 0.75rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.marine-btn--primary {
+  background-color: rgb(8, 160, 255);
+  color: rgb(15, 9, 22);
+}
+
+.marine-btn--primary:hover {
+  background-color: rgb(6, 145, 220);
+}
+
+.marine-btn--secondary {
+  background-color: transparent;
+  border: 1px solid;
+}
+
+.marine-btn--secondary-slate {
+  border-color: rgba(51, 65, 85, 1);
+  background-color: rgba(15, 23, 38, 0.6);
+  color: rgb(226, 232, 240);
+}
+
+.marine-btn--secondary-slate:hover {
+  background-color: rgba(21, 27, 39, 0.8);
+}
+
+.marine-btn--danger {
+  border-color: rgba(239, 68, 68, 0.3);
+  background-color: rgba(239, 68, 68, 0.2);
+  color: rgb(254, 202, 202);
+}
+
+.marine-btn--danger:hover {
+  background-color: rgba(239, 68, 68, 0.3);
+}
+
+/* Loading Spinner */
+.marine-loading {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Results Container */
+.marine-results {
+  background-color: rgb(15, 23, 38);
+  border: 1px solid rgba(51, 65, 85, 0.8);
+  border-radius: 0.375rem;
+  font-family: monospace;
+  font-size: 0.75rem;
+  color: rgb(107, 179, 230);
+  max-height: 16rem;
+  overflow: auto;
+}
+
+/* Tabs */
+.marine-tabs {
+  background-color: rgba(15, 23, 38, 0.8);
+  border: 1px solid rgba(51, 65, 85, 1);
+  border-radius: 0.25rem;
+  padding: 0.25rem;
+}
+
+.marine-tab-trigger {
+  font-size: 0.75rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.marine-tab-trigger[data-state="active"] {
+  background-color: rgb(21, 27, 39);
+  color: rgb(8, 160, 255);
+}
+
+/* Card Styles */
+.marine-card {
+  background-color: rgba(15, 23, 38, 0.6);
+  border: 1px solid rgba(51, 65, 85, 1);
+}
+
+.marine-card-header {
+  background-color: rgba(15, 23, 38, 0.8);
+  border-bottom: 1px solid rgba(51, 65, 85, 1);
+}
+
+/* Form Inputs */
+.marine-input {
+  background-color: rgb(15, 15, 20);
+  border: 1px solid rgba(51, 65, 85, 1);
+  color: rgb(226, 232, 240);
+  font-family: monospace;
+  font-size: 0.75rem;
+}
+
+.marine-input:focus {
+  outline: none;
+  border-color: rgb(8, 160, 255);
+  box-shadow: 0 0 0 1px rgb(8, 160, 255);
+}
+
+/* Select Trigger */
+.marine-select-trigger {
+  background-color: rgb(15, 15, 20);
+  border: 1px solid rgba(51, 65, 85, 1);
+  color: rgb(226, 232, 240);
+  font-size: 0.75rem;
+}
+
+/* Animations */
+.marine-animate-pulse {
+  animation: pulse 1.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}

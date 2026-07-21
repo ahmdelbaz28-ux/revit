@@ -4,6 +4,8 @@ export default defineConfig({
   testDir: "./tests",
   timeout: 30000,
   retries: 1,
+  // V286: Global setup installs auth mock in CI to bypass login screen
+  setup: "./tests/setup/global-auth-setup.ts",
   use: {
     baseURL: "http://localhost:5173",
     headless: true,

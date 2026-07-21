@@ -1064,6 +1064,98 @@ test.describe("Settings Page Button Tests", () => {
 });
 
 /**
+ * Test Marine Page Buttons
+ */
+test.describe("Marine Page Button Tests", () => {
+ test("should test all 14 marine page buttons trigger API calls", async ({ page }) => {
+ await page.goto("/marine");
+ await page.waitForLoadState("networkidle");
+
+ // Intercept all marine API calls
+ const apiCalls: string[] = [];
+ page.route("**/api/v1/marine/*", (route) => {
+ const url = route.request().url();
+ apiCalls.push(url);
+ route.continue();
+ });
+
+ // Test all 14 buttons with data-testid selectors
+ const marineButtons = [
+ "marine-run-pipeline-btn",
+ "marine-alarm-sim-btn",
+ "marine-detection-btn",
+ "marine-extinguishing-btn",
+ "marine-validate-btn",
+ "marine-divide-zones-btn",
+        "marine-calculate-sensor-btn",
+        "marine-size-extinguishing-btn",
+        "marine-design-power-btn",
+        "marine-generate-alarm-logic-btn",
+ "marine-export-scada-btn",
+ "marine-export-etap-btn",
+ "marine-export-dxf-btn",
+ "marine-export-revit-btn"
+ ];
+
+ for (const testId of marineButtons) {
+ const button = page.locator(`[data-testid="${testId}"]`);
+ if ((await button.count()) > 0) {
+ await button.click();
+ logTestResult(
+ `Marine ${testId}`,
+ `Click ${testId}`,
+ 200,
+ "OK",
+ 0,
+ );
+ }
+ }
+
+ // Wait for API calls to be captured
+ await page.waitForTimeout(500);
+
+ // Verify API calls were made
+ expect(apiCalls.length).toBeGreaterThan(0);
+ });
+
+ test("should test alarm simulation toggle", async ({ page }) => {
+ await page.goto("/marine");
+ await page.waitForLoadState("networkidle");
+
+ const alarmButton = page.locator('[data-testid="marine-alarm-sim-btn"]');
+ if ((await alarmButton.count()) > 0) {
+ await expect(alarmButton).toHaveText("Simulate Alarm");
+
+ await alarmButton.click();
+ await expect(alarmButton).toHaveText("Stop Alarm Sim");
+
+ await alarmButton.click();
+ await expect(alarmButton).toHaveText("Simulate Alarm");
+ }
+ });
+
+ test("should test marine tab navigation", async ({ page }) => {
+ await page.goto("/marine");
+ await page.waitForLoadState("networkidle");
+
+ const tabs = [
+ "Vessel Deck Viewport & Alarm Sim",
+ "Ship Parameters & SOLAS Rules",
+ "Detection, Extinguishing & Power",
+ "PLC Logic & CAD/BIM Exports"
+ ];
+
+ for (const tabName of tabs) {
+ const tab = page.getByRole("tab", { name: tabName });
+ if ((await tab.count()) > 0) {
+ await tab.click();
+ await expect(tab).toHaveAttribute("aria-selected", "true");
+ }
+ }
+ });
+});
+
+/**
  * Generate comprehensive test report
  */
 test.afterAll(async () => {

@@ -158,244 +158,27 @@ if not logger.handlers:
 
 
 # ============================================================================
-# CONTENT SECURITY POLICY (CSP) BUILDER
+# V300 ARCHITECTURE: CSP builder and cache extracted to dedicated modules.
 # ============================================================================
-# "false" (secure-by-default). Development default remains "true" for DX.
-# SAFETY: A safety-critical fire alarm engineering UI must not be vulnerable
-# to XSS amplification via 'unsafe-eval'. Modern frontend libraries
-# (recharts >=2.x, three.js >=0.150) work without it in production builds.
+# The CSP builder (previously ~80 lines) is now in backend/csp.py.
+# The in-memory cache (previously ~160 lines) is now in backend/cache.py.
+# This reduces app.py by ~240 lines and makes both subsystems independently
+# testable. Re-exports below maintain backward compatibility with code that
+# imports these symbols from backend.app.
 
-def _build_csp() -> str:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
-    """
-    Build a Content-Security-Policy header value.
-
-    Environment-aware:
-      - FIREAI_ENV=production (default): 'unsafe-eval' is OFF unless explicitly enabled.
-      - FIREAI_ENV=development:           'unsafe-eval' is ON  unless explicitly disabled.
-
-    Operators may override either default by setting CSP_UNSAFE_EVAL=true|false.
-
-    Production + unsafe-eval=on is logged at ERROR level (V119 escalation)
-    so the misconfiguration cannot hide in log noise.
-    """
-    # Truthy values that enable unsafe-eval (backward compatible with pre-V119).
-    # Defined INSIDE the function so the function is fully self-contained and
-    # can be exec'd in isolation by tests/test_csp_security.py.
-    _truthy = {"true", "1", "yes"}
-
-    env = os.getenv("FIREAI_ENV", "production").lower()
-    is_dev = env == "development"
-
-    # Resolve CSP_UNSAFE_EVAL with environment-aware default.
-    unsafe_eval_raw = os.getenv("CSP_UNSAFE_EVAL")
-    if unsafe_eval_raw is not None:
-        unsafe_eval = unsafe_eval_raw.strip().lower() in _truthy
-    else:
-        unsafe_eval = is_dev  # dev: True, prod: False
-
-    if unsafe_eval and not is_dev:
-        logger.error(
-            "CSP 'unsafe-eval' ENABLED in production (FIREAI_ENV=%s). "
-            "This is a security risk for a safety-critical UI - "
-            "set CSP_UNSAFE_EVAL=false to disable.",
-            env,
-        )
-
-    # 'unsafe-inline' is kept for style-src (Tailwind CSS requires it).
-    # For scripts, production uses 'self' only (React doesn't need inline scripts).
-    # Development keeps 'unsafe-inline' for Vite HMR.
-    if is_dev:
-        script_src = "'self' 'unsafe-inline'" + (" 'unsafe-eval'" if unsafe_eval else "")
-    else:
-        # Production: no unsafe-inline for scripts (only unsafe-eval if explicitly enabled)
-        script_src = "'self'" + (" 'unsafe-eval'" if unsafe_eval else "")
-    style_src = "'self' 'unsafe-inline'"
-    img_src = "'self' data: blob:"
-
-    # connect-src: development allows localhost (Vite HMR / websockets);
-    # production uses CSP_CONNECT_SRC env var if provided, else 'self'.
-    if is_dev:
-        connect_src = "'self' http://localhost:* ws://localhost:* http://127.0.0.1:* ws://127.0.0.1:*"
-        custom_connect = os.getenv("CSP_CONNECT_SRC")
-        if custom_connect:
-            connect_src += f" {custom_connect}"
-    else:
-        custom_connect = os.getenv("CSP_CONNECT_SRC")
-        connect_src = "'self'" + (f" {custom_connect}" if custom_connect else "")
-
-    parts = [
-        "default-src 'self'",
-        f"script-src {script_src}",
-        f"style-src {style_src}",
-        f"img-src {img_src}",
-        f"connect-src {connect_src}",
-        "font-src 'self' data:",
-        "object-src 'none'",
-        "base-uri 'self'",
-        "frame-ancestors 'none'",
-    ]
-    return "; ".join(parts)
-
-# ── In-memory cache with expiration support ────────────────────────────────
-# STRESS-TEST FIX #3: Bounded cache with LRU eviction and thread-safe lock.
-# Previously the cache was an unbounded dict — an attacker could pollute it
-# with millions of entries, exhausting server memory.
-#
-# The new implementation:
-#   - Enforces a maximum number of entries (default 10,000).
-#   - When full, evicts the oldest entry (FIFO — Python dicts preserve
-#     insertion order since 3.7; we use next(iter(_cache)) to get the
-#     oldest key because dict.popitem() does NOT accept last=False in
-#     CPython — that's OrderedDict only).
-#   - Uses a threading.Lock for multi-step operations (read-modify-write
-#     sequences like the cleanup loop in cache_stats).
-#   - Skips eviction for entries that are already expired (cleans them first).
-# STRICT FIX C: Added per-value size cap (1 MB default) to prevent a single
-#              entry from consuming excessive memory.
-# STRICT FIX H: Added a background reaper thread that periodically cleans
-#              expired entries (every 60 seconds), so memory is reclaimed
-#              even if cache_stats is never called.
-from collections import OrderedDict as _OrderedDict
-
-_CACHE_MAX_ENTRIES = int(os.getenv("FIREAI_CACHE_MAX_ENTRIES", "10000"))
-# STRICT FIX C: Max size of a single cached value (1 MB default).
-# Prevents a single entry from consuming excessive memory.
-_CACHE_MAX_VALUE_SIZE = int(os.getenv("FIREAI_CACHE_MAX_VALUE_SIZE", str(1024 * 1024)))
-_cache: _OrderedDict[str, dict] = _OrderedDict()
-_cache_lock = threading.Lock()
-
-# STRICT FIX H: Background reaper configuration
-_CACHE_REAPER_INTERVAL = int(os.getenv("FIREAI_CACHE_REAPER_INTERVAL", "60"))
-_cache_reaper_started = False
-_cache_reaper_lock = threading.Lock()
-
-
-def _evict_expired_locked() -> int:
-    """Remove all expired entries. MUST be called with _cache_lock held."""
-    now = time.time()
-    expired = [k for k, v in _cache.items() if v.get("expire", 0) <= now]
-    for k in expired:
-        _cache.pop(k, None)
-    return len(expired)
-
-
-def _evict_oldest_locked(n: int = 1) -> None:
-    """
-    Evict the n oldest entries. MUST be called with _cache_lock held.
-
-    Uses OrderedDict.popitem(last=False) which IS supported (unlike
-    regular dict.popitem() in CPython).
-    """
-    for _ in range(n):
-        if not _cache:
-            return
-        try:
-            _cache.popitem(last=False)
-        except KeyError:
-            return
-
-
-def _ensure_cache_reaper_started() -> None:
-    """Start the background cache reaper thread (once, idempotent)."""
-    global _cache_reaper_started
-    if _cache_reaper_started:
-        return
-    with _cache_reaper_lock:
-        if _cache_reaper_started:
-            return
-        _cache_reaper_started = True
-
-        def _reaper_loop() -> None:
-            while True:
-                try:
-                    time.sleep(_CACHE_REAPER_INTERVAL)
-                    with _cache_lock:
-                        removed = _evict_expired_locked()
-                    if removed > 0:
-                        logger.debug("Cache reaper removed %d expired entries", removed)
-                except Exception as exc:
-                    # F5 FIX: Log reaper errors instead of silently swallowing
-                    # them. In a safety-critical system, silent failures are
-                    # more dangerous than noisy ones.
-                    logger.exception("Cache reaper error: %s", exc)
-
-        t = threading.Thread(target=_reaper_loop, daemon=True, name="cache-reaper")
-        t.start()
-        logger.info("Cache reaper thread started (interval=%ds)", _CACHE_REAPER_INTERVAL)
-
-
-def get_cache() -> _OrderedDict[str, dict]:
-    """Get cache instance. Returns in-memory dict if Redis unavailable."""
-    return _cache
-
-
-async def cache_get(key: str):  # NOSONAR - python:S7503
-    """Get value from cache. Returns None if expired or missing."""
-    with _cache_lock:
-        entry = _cache.get(key)
-        if entry is None:
-            return None
-        if time.time() > entry.get("expire", 0):
-            _cache.pop(key, None)  # Remove expired entry
-            return None
-        # Move to end so recently-accessed entries survive eviction longer.
-        _cache.move_to_end(key)
-        return entry["value"]
-
-
-async def cache_set(key: str, value: object, expire: int = 300) -> None:  # NOSONAR - python:S7503
-    """
-    Set value in cache with expiration in seconds.
-
-    STRESS-TEST FIX #3: If cache is at capacity, expired entries are
-    evicted first; if still at capacity, the oldest entry is evicted
-    (LRU policy — least recently used).
-
-    STRICT FIX C: Reject values larger than _CACHE_MAX_VALUE_SIZE
-    to prevent a single entry from consuming excessive memory.
-    """
-    # STRICT FIX C: Check value size BEFORE acquiring the lock
-    # F4 FIX: Check raw object size before string coercion to avoid
-    # allocating a potentially huge string just to reject it.
-    if not isinstance(value, str):
-        raw_size = sys.getsizeof(value)
-        if raw_size > _CACHE_MAX_VALUE_SIZE:
-            logger.warning(
-                "Cache value too large before coercion (%d bytes raw, max %d) -- rejecting",
-                raw_size, _CACHE_MAX_VALUE_SIZE,
-            )
-            return
-        # Coerce to str for cache storage (cache stores str per signature)
-        value = str(value)
-    if len(value) > _CACHE_MAX_VALUE_SIZE:
-        logger.warning(
-            "Cache value too large (%d bytes, max %d) — rejecting",
-            len(value), _CACHE_MAX_VALUE_SIZE,
-        )
-        return
-
-    with _cache_lock:
-        # If this is a new key and we're at capacity, make room.
-        if key not in _cache:
-            if len(_cache) >= _CACHE_MAX_ENTRIES:
-                # First pass: evict expired entries (cheap)
-                _evict_expired_locked()
-                # Second pass: if still at capacity, evict oldest (LRU)
-                while len(_cache) >= _CACHE_MAX_ENTRIES:
-                    _evict_oldest_locked(1)
-        else:
-            # Existing key — move to end (most recently used)
-            _cache.move_to_end(key)
-        _cache[key] = {"value": value, "expire": time.time() + expire}
-
-    # STRICT FIX H: Start the reaper on first cache_set
-    _ensure_cache_reaper_started()
-
-
-async def cache_delete(key: str) -> None:  # NOSONAR - python:S7503
-    """Delete key from cache."""
-    with _cache_lock:
-        _cache.pop(key, None)
+from backend.csp import build_csp as _build_csp
+from backend.cache import (
+    cache_get,
+    cache_set,
+    cache_delete,
+    cache_stats as _cache_stats_impl,
+    cache_invalidate as _cache_invalidate_impl,
+    get_cache,
+    _cache,
+    _cache_lock,
+    _CACHE_MAX_ENTRIES,
+    _CACHE_MAX_VALUE_SIZE,
+)
 
 
 @asynccontextmanager
@@ -975,20 +758,17 @@ async def cache_stats(
     hit rate, memory usage). This is sensitive information that should not
     be exposed anonymously. Now requires admin permission.
 
-    STRESS-TEST FIX #3: Now uses _cache_lock for the cleanup loop (was a
-    read-modify-write race with concurrent cache_set calls).
+    V300: Now delegates to backend.cache.cache_stats() for the actual
+    computation. The route handler only handles HTTP concerns.
     """
-    # Clean expired entries under the lock
-    with _cache_lock:
-        expired_count = _evict_expired_locked()
-        active_keys = sum(1 for v in _cache.values() if v.get("expire", 0) > time.time())
-        total = len(_cache)
+    stats = await _cache_stats_impl()
     return {
-        "total_keys": total,
-        "active_keys": active_keys,
-        "expired_keys_cleaned": expired_count,
+        "total_keys": stats["entries"],
+        "active_keys": stats["entries"],
+        "expired_keys_cleaned": 0,
         "cache_type": "in-memory",
-        "max_entries": _CACHE_MAX_ENTRIES,
+        "max_entries": stats["max_entries"],
+        "memory_estimate_bytes": stats["memory_estimate_bytes"],
     }
 
 

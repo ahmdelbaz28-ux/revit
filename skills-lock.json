@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "skills": {
+    "debugging-wizard": {
+      "source": "jeffallan/claude-skills",
+      "sourceType": "github",
+      "skillPath": "skills/debugging-wizard/SKILL.md",
+      "computedHash": "7c578adb7a39ff6c4018f87055e4191e965c5e440119116914efd86318646a69"
+    },
+    "security-audit": {
+      "source": "cloudflare/security-audit-skill",
+      "sourceType": "github",
+      "skillPath": "skills/security-audit/SKILL.md",
+      "computedHash": "0f858feecab83071b81e658c32f361bb8af34b5bf567ba0a86ff94383c055e7f"
+    }
+  }
+}
