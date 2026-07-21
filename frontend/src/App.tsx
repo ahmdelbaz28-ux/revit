@@ -1,5 +1,5 @@
 
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { Toaster } from "sonner";
@@ -147,6 +147,17 @@ const WorkflowPage = lazy(() =>
         import("./pages/WorkflowPage").then((m) => ({ default: m.WorkflowPage })),
 );
 
+// V193 (R10): Skip-link for keyboard users to bypass the sidebar.
+// First focusable element on every page. WCAG 2.4.1 (Level A) requirement.
+const SkipLink = (
+        <a
+                href="#main-content"
+                className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:bg-primary focus:text-white focus:px-4 focus:py-2 focus:rounded focus:shadow-lg focus:outline-none"
+        >
+                Skip to main content
+        </a>
+);
+
 /**
  * V193 (R1): Wrap the entire app in AuthProvider so any component can read
  * the authentication state via useAuth(). The provider performs an initial
@@ -203,29 +214,27 @@ function App() {
                         }
                 };
                 globalThis.addEventListener("keydown", handleKeyDown);
-                return () => globalThis.removeEventListener("keydown", handleKeyDown);
+        return () => globalThis.removeEventListener("keydown", handleKeyDown);
         }, [location.pathname]);
 
-        // V193 (R10): Skip-link for keyboard users to bypass the sidebar.
-        // First focusable element on every page. WCAG 2.4.1 (Level A) requirement.
-        const SkipLink = (
-                <a
-                        href="#main-content"
-                        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:bg-primary focus:text-white focus:px-4 focus:py-2 focus:rounded focus:shadow-lg focus:outline-none"
-                >
-                        Skip to main content
-                </a>
-        );
+const handleHelpOpen = useCallback(() => {
+    setMagicHelpTopic(null);
+    setHelpOpen(true);
+}, []);
+
+const handleSearchOpen = useCallback(() => {
+    setCommandPaletteOpen(true);
+}, []);
 
         // PUBLIC routes — rendered without the AppShell (full-screen)
-        const publicRoutes = (
+        const publicRoutes = useMemo(() => (
                 <Routes>
                         <Route path="/login" element={<LoginPage />} />
                 </Routes>
-        );
+        ), []);
 
         // PROTECTED routes — wrapped in RouteGuard, rendered inside AppShell
-        const protectedRoutes = [
+        const protectedRoutes = useMemo(() => [
                 { path: "/", element: <Navigate to="/dashboard" /> },
                 { path: "/dashboard", element: <DashboardPage /> },
                 { path: "/projects", element: <ProjectsPage /> },
@@ -267,7 +276,7 @@ function App() {
                 { path: "/digital-twin/config", element: <DigitalTwinConfigPage /> },
                 { path: "/digital-twin/history", element: <DigitalTwinHistoryPage /> },
                 { path: "/etap", element: <EtapPage /> },
-        ];
+        ], []);
 
         // Determine if we're on a public route (no AppShell)
         const isPublicRoute = location.pathname === "/login";
@@ -287,11 +296,8 @@ function App() {
                                                 environment={import.meta.env.MODE || "development"}
                                                 currentLanguage={i18n.language}
                                                 onLanguageChange={(lng: string) => i18n.changeLanguage(lng)}
-                                                onHelpOpen={() => {
-                                                        setMagicHelpTopic(null);
-                                                        setHelpOpen(true);
-                                                }}
-                                                onSearchOpen={() => setCommandPaletteOpen(true)}
+                                                onHelpOpen={handleHelpOpen}
+                                                onSearchOpen={handleSearchOpen}
                                         >
                                                 <main
                                                         id="main-content"

@@ -1,6 +1,16 @@
 
 import { useEffect, useRef, useState } from "react";
 
+function shallowEqual<T>(a: T, b: T): boolean {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  if (typeof a !== "object" || typeof b !== "object") return false;
+  const keysA = Object.keys(a as object);
+  const keysB = Object.keys(b as object);
+  if (keysA.length !== keysB.length) return false;
+  return keysA.every((k) => (a as Record<string, unknown>)[k] === (b as Record<string, unknown>)[k]);
+}
+
 // --- Types ---
 export type DeviceType =
         | "GENERATOR"
@@ -196,24 +206,33 @@ if (savedState) {
         }
 }
 
+let persistTimer: ReturnType<typeof setTimeout> | null = null;
+
+const PERSIST_DELAY = 300;
+
+function schedulePersist() {
+        if (persistTimer) clearTimeout(persistTimer);
+        persistTimer = setTimeout(() => {
+                const serializable: Record<string, unknown> = {};
+                for (const key of SERIALIZABLE_KEYS) {
+                        serializable[key] = state[key];
+                }
+                try {
+                        localStorage.setItem("nexus_project_state", JSON.stringify(serializable));
+                } catch {
+                        console.warn("Failed to persist state to localStorage");
+                }
+                persistTimer = null;
+        }, PERSIST_DELAY);
+}
+
 export const setState = (
         nextState: Partial<AppState> | ((s: AppState) => Partial<AppState>),
 ) => {
         const updates =
                 typeof nextState === "function" ? nextState(state) : nextState;
         state = { ...state, ...updates };
-
-        // Auto-save to LocalStorage — only save serializable keys, NOT function references
-        const serializable: Record<string, unknown> = {};
-        for (const key of SERIALIZABLE_KEYS) {
-                serializable[key] = state[key];
-        }
-        try {
-                localStorage.setItem("nexus_project_state", JSON.stringify(serializable));
-        } catch {
-                console.warn("Failed to persist state to localStorage");
-        }
-
+        schedulePersist();
         listeners.forEach((listener) => listener(state));
 };
 
@@ -228,16 +247,13 @@ export const getState = (): AppState => state;
 
 export const useStore = <T>(selector: (s: AppState) => T): T => {
         const [slice, setSlice] = useState(selector(state));
-        // Store the selector in a ref so the useEffect doesn't re-subscribe
-        // on every render. Previous bug: selector was a dependency of useEffect,
-        // and since arrow functions create new references each render, this caused
-        // subscribe/unsubscribe churn on every render.
         const selectorRef = useRef(selector);
         selectorRef.current = selector;
 
         useEffect(() => {
                 const unsubscribe = subscribe((newState) => {
-                        setSlice(selectorRef.current(newState));
+                        const next = selectorRef.current(newState);
+                        setSlice((prev) => (shallowEqual(prev, next) ? prev : next));
                 });
                 return unsubscribe;
         }, []);
