@@ -1,45 +1,4 @@
-:root {
-  /* Primary palette */
-  --color-primary: 37, 96, 208;
-  --color-primary-variant: 15, 38, 96;
-  --color-primary-foreground: 239, 245, 255;
-
-  /* Secondary palette */
-  --color-secondary: 99, 102, 233;
-  --color-secondary-variant: 70, 73, 121;
-  --color-secondary-foreground: 239, 245, 255;
-
-  /* Neutrals */
-  --color-background: 241, 245, 250;
-  --color-surface: 255, 255, 255;
-  --color-muted: 100, 112, 128;
-  --color-muted-foreground: 71, 85, 99;
-
-  /* Accent */
-  --color-accent: 245, 101, 45;
-  --color-accent-foreground: 255, 226, 185;
-
-  /* Radius */
-  --radius: 8px;
-
-  /* Text */
-  --font-base: 16px;
-  --font-medium: 1rem;
-  --font-large: 1.125rem;
-  --font-xl: 1.25rem;
-  --font-xxl: 1.5rem;
-
-  /* Spacing */
-  --spacing-unit: 4px;
-  --spacing-1: calc(var(--spacing-unit) * 1);
-  --spacing-2: calc(var(--spacing-unit) * 2);
-  --spacing-3: calc(var(--spacing-unit) * 3);
-  --spacing-4: calc(var(--spacing-unit) * 4);
-  --spacing-5: calc(var(--spacing-unit) * 5);
-  --spacing-6: calc(var(--spacing-unit) * 6);
-  --spacing-8: calc(var(--spacing-unit) * 8);
-  --spacing-10: calc(var(--spacing-unit) * 10);
-  --spacing-12: calc(var(--spacing-unit) * 12);
-  --spacing-16: calc(var(--spacing-unit) * 16);
-  --spacing-20: calc(var(--spacing-unit) * 20);
-}
+/* theme.css — DEPRECATED: variables here conflicted with the dark engineering theme.
+ * All active design tokens live in index.css and styles/globals.css.
+ * This file is intentionally empty — do NOT add variables here.
+ */

@@ -95,7 +95,7 @@
 }
 
 body {
-        font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        font-family: "Geist Sans", "SF Pro Display", "Helvetica Neue", "Switzer", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
         background-color: var(--color-background);
         color: var(--color-foreground);
         -webkit-font-smoothing: antialiased;
@@ -308,7 +308,7 @@ label {
                 transform 320ms var(--ease-bounce),
                 border-color 240ms var(--ease-micro),
                 background 240ms var(--ease-micro);
-        will-change: transform, box-shadow;
+        will-change: transform;
         isolation: isolate;
 }
 
@@ -780,7 +780,7 @@ button {
 /* ── Cursor blink (command bar) ─────────────────────────────────────── */
 .cad-cursor-blink {
         animation: cad-blink 1.2s step-end infinite;
-        color: #3b82f6;
+        color: var(--color-primary);
         font-weight: 600;
 }
 

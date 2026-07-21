@@ -1,4 +1,5 @@
-@import "tailwindcss";
+/* globals.css — Engineering Obsidian Theme tokens (loaded via App.tsx) */
+/* NOTE: @import "tailwindcss" is already in index.css — do NOT add it here */
 
 @layer base {
         :root {

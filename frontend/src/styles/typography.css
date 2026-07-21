@@ -1,39 +1,47 @@
-/* ── Inter type scale (clean, modern, professional) ── */
+/* ── Engineering platform type scale (Geist / SF Pro / Helvetica Neue) ── */
 
 h1 {
-        font-size: 1.125rem;
+        font-size: 1.5rem;       /* 24px — page title */
+        font-weight: 600;
+        letter-spacing: -0.03em;
+        line-height: 1.2;
+        color: var(--color-foreground);
+}
+
+h2 {
+        font-size: 1.25rem;      /* 20px — section title */
+        font-weight: 600;
+        letter-spacing: -0.02em;
+        line-height: 1.3;
+        color: var(--color-foreground);
+}
+
+h3 {
+        font-size: 1.0625rem;    /* 17px — subsection */
         font-weight: 600;
         letter-spacing: -0.01em;
         color: var(--color-foreground);
 }
 
-h2 {
-        font-size: 1rem;
-        font-weight: 600;
-        color: var(--color-foreground);
-}
-
-h3 {
-        font-size: 0.875rem;
-        font-weight: 600;
-        color: var(--color-foreground);
-}
-
 h4 {
-        font-size: 0.875rem;
+        font-size: 0.9375rem;    /* 15px — card title */
         font-weight: 500;
         color: var(--color-foreground);
 }
 
 h5 {
-        font-size: 0.75rem;
+        font-size: 0.8125rem;    /* 13px — label */
         font-weight: 600;
-        color: var(--color-foreground);
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+        color: var(--color-muted-foreground);
 }
 
 h6 {
-        font-size: 0.75rem;
+        font-size: 0.75rem;      /* 12px — meta label */
         font-weight: 500;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
         color: var(--color-muted-foreground);
 }
 
