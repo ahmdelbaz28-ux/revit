@@ -94,10 +94,9 @@ CSRF_EXEMPT_PATHS = frozenset({
     "/redoc",
     "/openapi.json",
     # Auth endpoints: login creates the session (no existing cookie to
-    # double-submit), and logout destroys a session — neither is a
-    # cross-site forgery target.
+    # double-submit). Logout is NOT exempt — logout CSRF is a real attack
+    # that can forcibly terminate user sessions (denial of service).
     "/api/v1/auth/login",
-    "/api/v1/auth/logout",
     "/api/v1/auth/session/login",
 })
 

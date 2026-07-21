@@ -71,10 +71,31 @@ _rate_limit_counter: dict[str, list[float]] = defaultdict(list)
 
 # ═══ Helpers ═════════════════════════════════════════════════════════════
 def _get_client_ip(request: Request) -> str:
-    """Extract client IP, respecting X-Forwarded-For."""
+    """
+    Extract client IP, respecting X-Forwarded-For ONLY from trusted proxies.
+    
+    SECURITY: X-Forwarded-For can be spoofed by clients. We only trust it
+    when we know we're behind a trusted proxy (Cloudflare, Akamai, or
+    explicitly configured trusted proxies).
+    """
+    # Check if we're behind a trusted proxy
+    trusted_proxies = os.getenv("TRUSTED_PROXIES", "").split(",")
+    trusted_proxies = [p.strip() for p in trusted_proxies if p.strip()]
+    
+    # Always trust Cloudflare and Akamai IPs
+    cf_headers = ["cf-connecting-ip", "akamai-client-ip"]
+    for header in cf_headers:
+        cf_ip = request.headers.get(header)
+        if cf_ip:
+            return cf_ip.strip()
+    
+    # For X-Forwarded-For, only trust if we're behind a known proxy
     forwarded = request.headers.get("x-forwarded-for")
-    if forwarded:
-        return forwarded.split(",")[0].strip()
+    if forwarded and trusted_proxies:
+        client_ip = request.client.host if request.client else ""
+        if client_ip in trusted_proxies:
+            return forwarded.split(",")[0].strip()
+    
     return request.client.host if request.client else "unknown"
 
 

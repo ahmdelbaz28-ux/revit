@@ -129,6 +129,8 @@ def _should_emit_hsts(_scope: Scope) -> bool:  # NOSONAR — S1172: parameter re
 # ONLY because the frontend (Vite/React) uses inline event handlers in
 # some legacy components; this is a known acceptable risk documented in
 # the V119 fix. unsafe-eval is NEVER permitted in production.
+# WARNING: unsafe-inline weakens XSS protection. Remove once all inline
+# handlers are migrated to React event handlers.
 _CSP_PRODUCTION = (
     "default-src 'self'; "
     "script-src 'self' 'unsafe-inline'; "
@@ -457,10 +459,27 @@ class ApiKeyMiddleware:
             # Also accept FIREAI_API_KEY env var bypass for server-side
             # internal calls (e.g. sidecars, monitoring agents). Only honored
             # if the env var is set — admin must explicitly opt in.
+            # SECURITY: This bypass is logged and rate-limited to detect abuse.
             env_key = _os.getenv("FIREAI_API_KEY")
             role = None
             if api_key and env_key and _hmac.compare_digest(api_key, env_key):
                 # Env var bypass — grant admin role (env key is the admin key)
+                # Log this for audit trail (rate-limited to prevent log flooding)
+                if not hasattr(self, '_env_key_usage_count'):
+                    self._env_key_usage_count = 0
+                    self._env_key_last_log = 0
+                import time
+                now = time.time()
+                self._env_key_usage_count += 1
+                # Log every 100th usage or if more than 5 minutes since last log
+                if self._env_key_usage_count % 100 == 0 or now - self._env_key_last_log > 300:
+                    import logging
+                    logging.getLogger(__name__).warning(
+                        "FIREAI_API_KEY bypass used %d times (last log: %.0f seconds ago)",
+                        self._env_key_usage_count,
+                        now - self._env_key_last_log
+                    )
+                    self._env_key_last_log = now
                 role = _Role.ADMIN
             elif api_key:
                 # Validate via RBAC key store

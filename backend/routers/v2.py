@@ -47,6 +47,8 @@ References
 # which Pydantic cannot resolve at runtime for FastAPI model parsing.
 # Removing it forces actual type resolution at import time.
 import logging
+import os
+import uuid
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -216,7 +218,7 @@ async def list_bim_providers() -> Dict[str, Any]:
     providers = BIMProviderRegistry.list_available()
     return {
         "providers": providers,
-        "active": __import__("os").environ.get("FIREAI_BIM_PROVIDER"),
+        "active": os.environ.get("FIREAI_BIM_PROVIDER"),
         "count": len(providers),
     }
 
@@ -287,10 +289,11 @@ async def extract_rooms(request: Request, req: BIMExtractRoomsRequest) -> Dict[s
 
     provider = get_provider(req.provider)
     if provider is None:
+        from fireai.bridges.bim_provider import BIMProviderRegistry
         raise HTTPException(  # NOSONAR — S8415: assignment kept for readability / debuggability
             status_code=503,  # NOSONAR: S8415 — endpoint error handling is intentional  # NOSONAR — S7632: test function documented via class name / module path
             detail=f"No BIM provider available. Set FIREAI_BIM_PROVIDER env var. "
-            f"Registered: {__import__('fireai.bridges.bim_provider', fromlist=['BIMProviderRegistry']).BIMProviderRegistry.list_available()}",
+            f"Registered: {BIMProviderRegistry.list_available()}",
         )
 
     rooms = provider.extract_rooms(source=req.source)
@@ -443,7 +446,7 @@ async def subscribe_webhook(request: Request, req: WebhookSubscribeRequest) -> D
     service = get_webhook_service()
     try:
         sub = WebhookSubscription(
-            id=f"sub-{__import__('uuid').uuid4().hex[:12]}",
+            id=f"sub-{uuid.uuid4().hex[:12]}",
             url=req.url,
             secret=req.secret,
             event_types=req.event_types,

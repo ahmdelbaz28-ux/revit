@@ -229,9 +229,17 @@ async def login(request: Request, body: LoginRequest):  # NOSONAR — S3776: cog
     api_key = body.api_key.strip() if body.api_key else ""
     if not api_key:
         if body.username and body.password and os.getenv("FIREAI_ENV") == "development":
-            # development mode (for Postman integration tests). In production,
-            # this would be a backdoor — any non-empty username+password would
-            # bypass the API-key requirement if API_KEY env var is set.
+            # DEVELOPMENT MODE ONLY: For integration tests (Postman, etc.)
+            # SECURITY: This bypass requires a SPECIFIC master password (not just any credentials)
+            # and logs a warning. NEVER enable this in production.
+            dev_master_password = os.getenv("FIREAI_DEV_MASTER_PASSWORD")
+            if not dev_master_password:
+                raise HTTPException(status_code=400, detail="API key is required")
+            import hmac as _hmac_dev
+            if not _hmac_dev.compare_digest(body.password, dev_master_password):
+                logger.warning("Development mode: invalid master password attempt from %s", body.username)
+                raise HTTPException(status_code=401, detail="Invalid credentials")
+            logger.warning("Development mode: using master password bypass for user %s", body.username)
             api_key = os.getenv("API_KEY")  # NOSONAR — reads from env, not hard-coded (S6418 false positive)
         else:
             raise HTTPException(status_code=400, detail="API key is required")  # NOSONAR — S8415: assignment kept for readability / debuggability
@@ -301,7 +309,10 @@ async def login(request: Request, body: LoginRequest):  # NOSONAR — S3776: cog
         "HttpOnly",
         "SameSite=Strict",
     ]
-    if is_https or is_production:
+    # SECURITY: Always set Secure flag in production to prevent cookie interception
+    # Only skip Secure flag in explicit development mode for local HTTP testing
+    is_development = os.getenv("FIREAI_ENV", "").lower() in ("development", "dev")
+    if is_https or is_production or not is_development:
         cookie_parts.append("Secure")
 
     expires_at_iso = datetime.now(timezone.utc) + timedelta(seconds=_COOKIE_MAX_AGE_SECONDS)
