@@ -267,8 +267,14 @@ jobs:
 
       - name: Run property-based tests
         # V166 FIX: Add --no-cov to disable pytest-cov atexit hook
+        # Exit code 5 = "no tests collected" (OK when skills/ module absent)
         run: |
-          pytest tests/property_based/ -v --tb=short --no-cov -p no:cacheprovider
+          pytest tests/property_based/ -v --tb=short --no-cov -p no:cacheprovider || EXIT=$?
+          if [ "${EXIT:-0}" = "5" ]; then
+            echo "::warning::No property-based tests collected (exit code 5) — likely skills/ module not present"
+            exit 0
+          fi
+          exit "${EXIT:-0}"
 
   # ── Gate 4: Frontend Build ────────────────────────────────────────────────
   frontend-build:
