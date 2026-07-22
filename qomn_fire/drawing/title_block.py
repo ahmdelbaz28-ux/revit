@@ -20,6 +20,7 @@ def draw_title_block(doc, title: TitleBlock):
 
     layout = doc.layout("A1-Fire-Alarm-Plan") if "A1-Fire-Alarm-Plan" in doc.layouts else doc.layouts.new("A1-Fire-Alarm-Plan")
 
+    # V279 SAFETY FIX: Reject drawing generation when pe_stamp is empty or a known
     # placeholder. NFPA 72 submittals MUST bear the seal of a licensed Professional
     # Engineer (PE) — emitting a drawing without a real PE stamp, or with a hardcoded
     # fake stamp (the prior default "LICENSED PROFESSIONAL ENGINEER - STAMP #PE-90998"),

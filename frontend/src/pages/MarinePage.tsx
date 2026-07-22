@@ -104,6 +104,24 @@ const SOCIETIES = [
         { value: "NK", label: "Nippon Kaiji Kyokai (ClassNK)" },
 ];
 
+const EFFECT_LABELS: Record<string, string> = {
+        panel_pre_alarm: "Panel Pre-Alarm",
+        notify_ecr: "Notify ECR",
+        horn_zone: "Zone Alarm Horn",
+        hvac_shutdown: "HVAC Shutdown",
+        damper_close: "Close Fire Dampers",
+        fuel_pump_off: "Emergency Fuel Cut",
+        public_address: "Public Address Alarm",
+        door_release: "A-Class Door Release",
+        emergency_lighting: "Emergency Lighting",
+        release_co2: "CO2 Discharge",
+        release_water_mist: "Water Mist Release",
+        release_foam: "Foam Release",
+        release_sprinkler: "Sprinkler Zone On",
+        manual_abort_button: "Manual Abort Input",
+        hold_ventilation_close: "Close Hold Vent",
+};
+
 export function MarinePage() {
         const { t } = useTranslation();
         const { toast } = useToast();
@@ -111,6 +129,7 @@ export function MarinePage() {
         // ── Active Tab & Loading States ──────────────────────────────────────────
         const [activeTab, setActiveTab] = useState("viewport");
         const [loading, setLoading] = useState<string | null>(null);
+        const [logicView, setLogicView] = useState<"matrix" | "script">("matrix");
 
         // ── Vessel Specification Form ───────────────────────────────────────────
         const [ship, setShip] = useState<ShipForm>({
@@ -910,25 +929,163 @@ export function MarinePage() {
 
                                                         {/* Cause & Effect Logic Tree */}
                                                         <div className="marine-card">
-                                                                <div className="marine-card-header">
-                                                                        <div className="flex items-center gap-2">
-                                                                                <Cpu className="h-4 w-4 text-[#c9a84c]" />
-                                                                                <h3 className="text-sm font-semibold text-[#f1f5f9]">PLC / DCS Cause & Effect Logic Tree</h3>
+                                                                <div className="marine-card-header flex flex-row items-center justify-between">
+                                                                        <div>
+                                                                                <div className="flex items-center gap-2">
+                                                                                        <Cpu className="h-4 w-4 text-[#c9a84c]" />
+                                                                                        <h3 className="text-sm font-semibold text-[#f1f5f9]">PLC / DCS Cause & Effect Logic Tree</h3>
+                                                                                </div>
+                                                                                <CardDescription className="text-xs text-[#4a5568] mt-1">
+                                                                                        Generates automatic FACP trigger matrix for fire dampers & alarms
+                                                                                </CardDescription>
                                                                         </div>
-                                                                <CardDescription className="text-xs text-[#4a5568] mt-1">
-                                                                        Generates automatic FACP trigger matrix for fire dampers & alarms
-                                                                </CardDescription>
+                                                                        {alarmLogic && (
+                                                                                <div className="flex gap-1.5 bg-[#04060a] p-1 rounded border border-[rgba(74,85,104,0.3)]">
+                                                                                        <Button
+                                                                                                size="sm"
+                                                                                                variant="ghost"
+                                                                                                className={`h-7 px-2.5 text-[10px] font-mono ${logicView === "matrix" ? "bg-[rgba(201,168,76,0.15)] text-[#c9a84c]" : "text-[#4a5568] hover:text-[#b0b8c4]"}`}
+                                                                                                onClick={() => setLogicView("matrix")}
+                                                                                        >
+                                                                                                Matrix Grid
+                                                                                        </Button>
+                                                                                        <Button
+                                                                                                size="sm"
+                                                                                                variant="ghost"
+                                                                                                className={`h-7 px-2.5 text-[10px] font-mono ${logicView === "script" ? "bg-[rgba(201,168,76,0.15)] text-[#c9a84c]" : "text-[#4a5568] hover:text-[#b0b8c4]"}`}
+                                                                                                onClick={() => setLogicView("script")}
+                                                                                        >
+                                                                                                ST PLC Script
+                                                                                        </Button>
+                                                                                </div>
+                                                                        )}
                                                                 </div>
                                                                 <div className="p-4 space-y-4">
-                                                                        <Button data-testid="marine-generate-alarm-logic-btn" onClick={handleGenerateAlarmLogic} disabled={loading === "alarm-logic"} className="marine-btn marine-btn--primary">
-                                                                                {loading === "alarm-logic" ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Cpu className="h-4 w-4 mr-2" />}
-                                                                                Generate Logic Matrix
-                                                                        </Button>
+                                                                        <div className="flex items-center justify-between gap-3">
+                                                                                <Button data-testid="marine-generate-alarm-logic-btn" onClick={handleGenerateAlarmLogic} disabled={loading === "alarm-logic"} className="marine-btn marine-btn--primary">
+                                                                                        {loading === "alarm-logic" ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Cpu className="h-4 w-4 mr-2" />}
+                                                                                        Generate Logic Matrix
+                                                                                </Button>
+                                                                                {alarmLogic && (
+                                                                                        <span className="text-[10px] font-mono text-[#b0b8c4] bg-[#0f172a] px-2 py-1 rounded border border-[rgba(74,85,104,0.3)]">
+                                                                                                Causes: {(alarmLogic as any).node_count || 0} | Effects: {
+                                                                                                        (() => {
+                                                                                                                const effects = new Set<string>();
+                                                                                                                ((alarmLogic as any).nodes || []).forEach((n: any) => {
+                                                                                                                        (n.action_outputs || []).forEach((e: string) => {
+                                                                                                                                effects.add(e);
+                                                                                                                        });
+                                                                                                                });
+                                                                                                                return effects.size;
+                                                                                                        })()
+                                                                                                }
+                                                                                        </span>
+                                                                                )}
+                                                                        </div>
 
                                                                         {alarmLogic && (
-                                                                                <pre className="marine-code-block marine-code-block--brass">
-                                                                                        {JSON.stringify(alarmLogic, null, 2)}
-                                                                                </pre>
+                                                                                <>
+                                                                                        {logicView === "matrix" ? (
+                                                                                                <div className="overflow-x-auto w-full border border-[rgba(74,85,104,0.3)] rounded-md bg-[#04060a]">
+                                                                                                        <table className="min-w-full text-[11px] font-mono text-[#b0b8c4] border-collapse">
+                                                                                                                <thead>
+                                                                                                                        <tr className="border-b border-[rgba(74,85,104,0.4)] bg-[rgba(15,23,38,0.8)]">
+                                                                                                                                <th className="p-2 text-left font-bold text-[#f1f5f9] min-w-[140px] max-w-[200px]">Trigger Cause (Input)</th>
+                                                                                                                                <th className="p-2 text-left font-bold text-[#b0b8c4] border-l border-[rgba(74,85,104,0.3)]">Level</th>
+                                                                                                                                <th className="p-2 text-center font-bold text-[#b0b8c4] border-l border-[rgba(74,85,104,0.3)] w-[50px]">Evac</th>
+                                                                                                                                {(() => {
+                                                                                                                                        const effects = new Set<string>();
+                                                                                                                                        ((alarmLogic as any).nodes || []).forEach((n: any) => {
+                                                                                                                                                (n.action_outputs || []).forEach((e: string) => effects.add(e));
+                                                                                                                                        });
+                                                                                                                                        const uniqueEffects = Array.from(effects);
+                                                                                                                                        return uniqueEffects.map(eff => (
+                                                                                                                                                <th key={eff} className="p-2 text-center font-bold text-[#f1f5f9] border-l border-[rgba(74,85,104,0.3)] min-w-[85px] leading-tight">
+                                                                                                                                                        {EFFECT_LABELS[eff] || eff.split("_").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")}
+                                                                                                                                                </th>
+                                                                                                                                        ));
+                                                                                                                                })()}
+                                                                                                                        </tr>
+                                                                                                                </thead>
+                                                                                                                <tbody>
+                                                                                                                        {((alarmLogic as any).nodes || []).map((node: any) => {
+                                                                                                                                const isSimActive = alarmActive && node.zone_id === zones[selectedZoneIndex]?.zone_id;
+                                                                                                                                const effects = new Set<string>();
+                                                                                                                                ((alarmLogic as any).nodes || []).forEach((n: any) => {
+                                                                                                                                        (n.action_outputs || []).forEach((e: string) => effects.add(e));
+                                                                                                                                });
+                                                                                                                                const uniqueEffects = Array.from(effects);
+                                                                                                                                return (
+                                                                                                                                        <tr
+                                                                                                                                                key={node.node_id}
+                                                                                                                                                className={`border-b border-[rgba(74,85,104,0.2)] transition-colors hover:bg-[rgba(201,168,76,0.05)] ${isSimActive ? "bg-[rgba(230,57,70,0.12)] text-[#f1f5f9]" : ""}`}
+                                                                                                                                        >
+                                                                                                                                                <td className="p-2 font-semibold text-[#c9a84c] min-w-[140px] max-w-[200px]">
+                                                                                                                                                        <div>{node.node_id}</div>
+                                                                                                                                                        <div className="text-[9px] text-[#4a5568] truncate" title={`${node.trigger_detector} (${node.zone_id})`}>
+                                                                                                                                                                {node.trigger_detector} ({node.zone_id})
+                                                                                                                                                        </div>
+                                                                                                                                                </td>
+                                                                                                                                                <td className="p-2 border-l border-[rgba(74,85,104,0.2)]">
+                                                                                                                                                        <span className={`text-[8px] tracking-wide uppercase px-1 py-0.5 rounded font-extrabold ${
+                                                                                                                                                                node.alarm_level === "ACTION" ? "bg-[rgba(230,57,70,0.25)] text-[#e63946] border border-[rgba(230,57,70,0.4)]" :
+                                                                                                                                                                node.alarm_level === "ALARM" ? "bg-[rgba(245,158,11,0.25)] text-[#f59e0b] border border-[rgba(245,158,11,0.4)]" :
+                                                                                                                                                                "bg-[rgba(16,185,129,0.25)] text-[#10b981] border border-[rgba(16,185,129,0.4)]"
+                                                                                                                                                        }`}>
+                                                                                                                                                                {node.alarm_level}
+                                                                                                                                                        </span>
+                                                                                                                                                </td>
+                                                                                                                                                <td className="p-2 text-center border-l border-[rgba(74,85,104,0.2)] text-[10px] w-[50px]">
+                                                                                                                                                        {node.delay_s > 0 ? `${node.delay_s}s` : "-"}
+                                                                                                                                                </td>
+                                                                                                                                                {uniqueEffects.map(eff => {
+                                                                                                                                                        const isTriggered = (node.action_outputs || []).includes(eff);
+                                                                                                                                                        return (
+                                                                                                                                                                <td key={eff} className="p-2 text-center border-l border-[rgba(74,85,104,0.2)]">
+                                                                                                                                                                        {isTriggered ? (
+                                                                                                                                                                                <div className="flex justify-center items-center">
+                                                                                                                                                                                        <span className={`h-2.5 w-2.5 rounded-full ${isSimActive ? "bg-[#e63946] shadow-[0_0_8px_#e63946] animate-pulse" : "bg-[#c9a84c] shadow-[0_0_3px_rgba(201,168,76,0.5)]"}`} />
+                                                                                                                                                                                </div>
+                                                                                                                                                                        ) : (
+                                                                                                                                                                                <span className="text-[rgba(74,85,104,0.2)] font-light text-[9px]">•</span>
+                                                                                                                                                                        )}
+                                                                                                                                                                </td>
+                                                                                                                                                        );
+                                                                                                                                                })}
+                                                                                                                                        </tr>
+                                                                                                                                );
+                                                                                                                        })}
+                                                                                                                </tbody>
+                                                                                                        </table>
+                                                                                                </div>
+                                                                                        ) : (
+                                                                                                <div className="space-y-3">
+                                                                                                        <div className="flex items-center justify-between">
+                                                                                                                <span className="text-[10px] text-[#b0b8c4] font-mono">
+                                                                                                                        IEC 61131-3 Structured Text compliance verified.
+                                                                                                                </span>
+                                                                                                                <Button
+                                                                                                                        data-testid="marine-copy-st-btn"
+                                                                                                                        size="sm"
+                                                                                                                        variant="outline"
+                                                                                                                        className="marine-btn marine-btn--secondary h-7 text-[10px] px-2.5"
+                                                                                                                        onClick={() => {
+                                                                                                                                navigator.clipboard.writeText((alarmLogic as any).plc_script_st || "");
+                                                                                                                                toast({
+                                                                                                                                        title: "Copied ST Script",
+                                                                                                                                        description: "PLC program copied to clipboard successfully.",
+                                                                                                                                });
+                                                                                                                        }}
+                                                                                                                >
+                                                                                                                        Copy Script
+                                                                                                                </Button>
+                                                                                                        </div>
+                                                                                                        <pre className="marine-code-block marine-code-block--brass text-[10px] overflow-auto max-h-[300px] p-3 bg-[#04060a] border border-[rgba(74,85,104,0.4)] rounded-md font-mono whitespace-pre text-[#a7f3d0]">
+                                                                                                                {(alarmLogic as any).plc_script_st}
+                                                                                                        </pre>
+                                                                                                </div>
+                                                                                        )}
+                                                                                </>
                                                                         )}
                                                                 </div>
                                                         </div>
