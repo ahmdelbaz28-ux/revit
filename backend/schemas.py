@@ -17,9 +17,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 from backend.schema_base import (
     CamelModel,
     _validate_json_size_and_depth,
-    _to_camel,
 )
-
 
 # ============================================================================
 # JSON size/depth validation

@@ -23,55 +23,52 @@
  * palette, Instrument Serif display type, JetBrains Mono for engineering data.
  * Signature: Brass-etched vessel hull schematic on radar-grid viewport.
  */
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import {
-        Activity,
-        AlertTriangle,
-        Anchor,
-        CheckCircle2,
-        Cpu,
-        Download,
-        FileCode2,
-        FileSpreadsheet,
-        FileText,
-        Flame,
-        Layers,
-        Loader2,
-        Play,
-        RotateCcw,
-        Server,
-        Shield,
-        ShieldAlert,
-        ShieldCheck,
-        Ship,
-        Siren,
-        Sliders,
-        Sparkles,
-        Volume2,
-        Wrench,
-        XCircle,
-        Zap,
-} from "lucide-react";
+import { Activity } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
+import { Anchor } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
+import { Cpu } from "lucide-react";
+import { Download } from "lucide-react";
+import { FileCode2 } from "lucide-react";
+import { FileSpreadsheet } from "lucide-react";
+import { FileText } from "lucide-react";
+import { Flame } from "lucide-react";
+import { Layers } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import { Play } from "lucide-react";
+import { RotateCcw } from "lucide-react";
+import { Server } from "lucide-react";
+import { Shield } from "lucide-react";
+import { ShieldAlert } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
+import { Ship } from "lucide-react";
+import { Siren } from "lucide-react";
+import { Sliders } from "lucide-react";
+import { Sparkles } from "lucide-react";
+import { Volume2 } from "lucide-react";
+import { Wrench } from "lucide-react";
+import { XCircle } from "lucide-react";
+import { Zap } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-        Card,
-        CardContent,
-        CardDescription,
-        CardHeader,
-        CardTitle,
-} from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
+import { CardContent } from "@/components/ui/card";
+import { CardDescription } from "@/components/ui/card";
+import { CardHeader } from "@/components/ui/card";
+import { CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-        Select,
-        SelectContent,
-        SelectItem,
-        SelectTrigger,
-        SelectValue,
-} from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select } from "@/components/ui/select";
+import { SelectContent } from "@/components/ui/select";
+import { SelectItem } from "@/components/ui/select";
+import { SelectTrigger } from "@/components/ui/select";
+import { SelectValue } from "@/components/ui/select";
+import { Tabs } from "@/components/ui/tabs";
+import { TabsContent } from "@/components/ui/tabs";
+import { TabsList } from "@/components/ui/tabs";
+import { TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { marineApi } from "@/services/fullApi";
 import "@/styles/marine.css";
@@ -105,107 +102,114 @@ const SOCIETIES = [
 ];
 
 interface AnalogGaugeProps {
-        value: number;
-        min?: number;
-        max?: number;
-        label: string;
-        unit: string;
-        color?: string;
+  value: number;
+  min?: number;
+  max?: number;
+  label: string;
+  unit: string;
+  color?: string;
 }
 
-function AnalogGauge({ value, min = 0, max = 100, label, unit, color = "#c9a84c" }: {
-        value: number;
-        min?: number;
-        max?: number;
-        label: string;
-        unit: string;
-        color?: string;
-}) {
-        const percentage = Math.min(Math.max((value - min) / (max - min), 0), 1);
-        const angle = -120 + percentage * 240;
+// Static SVG elements hoisted outside the component
+const polarToCartesian = (centerX: number, centerY: number, radius: number, angleInDegrees: number) => {
+  const angleInRadians = ((angleInDegrees - 90) * Math.PI) / 180.0;
+  return {
+    x: Math.round(centerX + radius * Math.cos(angleInRadians)),
+    y: Math.round(centerY + radius * Math.sin(angleInRadians)),
+  };
+};
 
-        const polarToCartesian = (centerX: number, centerY: number, radius: number, angleInDegrees: number) => {
-                const angleInRadians = ((angleInDegrees - 90) * Math.PI) / 180.0;
-                return {
-                        x: centerX + radius * Math.cos(angleInRadians),
-                        y: centerY + radius * Math.sin(angleInRadians),
-                };
-        };
+const describeArc = (x: number, y: number, radius: number, startAngle: number, endAngle: number) => {
+  const start = polarToCartesian(x, y, radius, endAngle);
+  const end = polarToCartesian(x, y, radius, startAngle);
+  const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
+  return ["M", start.x, start.y, "A", radius, radius, 0, largeArcFlag, 0, end.x, end.y].join(" ");
+};
 
-        const describeArc = (x: number, y: number, radius: number, startAngle: number, endAngle: number) => {
-                const start = polarToCartesian(x, y, radius, endAngle);
-                const end = polarToCartesian(x, y, radius, startAngle);
-                const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
-                return ["M", start.x, start.y, "A", radius, radius, 0, largeArcFlag, 0, end.x, end.y].join(" ");
-        };
+const arcPath = describeArc(100, 100, 75, -120, 120);
 
-        const arcPath = describeArc(100, 100, 75, -120, 120);
+const AnalogGauge = React.memo(({
+  value,
+  min = 0,
+  max = 100,
+  label,
+  unit,
+  color = "#c9a84c",
+}: AnalogGaugeProps) => {
+  const percentage = Math.min(Math.max((value - min) / (max - min), 0), 1);
+  const angle = -120 + percentage * 240;
 
-        return (
-                <div className="flex flex-col items-center justify-center p-4 bg-[#04060a]/80 border border-[rgba(74,85,104,0.25)] rounded-md shadow-inner">
-                        <div className="relative w-32 h-32">
-                                <svg className="w-full h-full" viewBox="0 0 200 200">
-                                        {/* Background Arc */}
-                                        <path
-                                                d={arcPath}
-                                                fill="none"
-                                                stroke="rgba(74,85,104,0.15)"
-                                                strokeWidth="10"
-                                                strokeLinecap="round"
-                                        />
-                                        {/* Colored Value Arc */}
-                                        <path
-                                                d={describeArc(100, 100, 75, -120, -120 + percentage * 240)}
-                                                fill="none"
-                                                stroke={color}
-                                                strokeWidth="10"
-                                                strokeLinecap="round"
-                                                className="transition-all duration-1000 ease-out"
-                                        />
-                                        {/* Gauge Ticks */}
-                                        {[-120, -60, 0, 60, 120].map((deg, i) => {
-                                                const start = polarToCartesian(100, 100, 70, deg);
-                                                const end = polarToCartesian(100, 100, 82, deg);
-                                                return (
-                                                        <line
-                                                                key={i}
-                                                                x1={start.x}
-                                                                y1={start.y}
-                                                                x2={end.x}
-                                                                y2={end.y}
-                                                                stroke="rgba(176,184,196,0.2)"
-                                                                strokeWidth="2"
-                                                        />
-                                                );
-                                        })}
-                                        {/* Dial Needle */}
-                                        <g transform={`rotate(${angle} 100 100)`} className="transition-transform duration-1000 ease-out">
-                                                <polygon
-                                                        points="96,100 104,100 100,28"
-                                                        fill={color}
-                                                        className="drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]"
-                                                />
-                                        </g>
-                                        {/* Center Cap */}
-                                        <circle cx="100" cy="100" r="10" fill="#0f172a" stroke="rgba(176,184,196,0.4)" strokeWidth="2" />
-                                        <circle cx="100" cy="100" r="4" fill={color} />
-                                </svg>
-                                {/* Digital Readout */}
-                                <div className="absolute inset-0 flex flex-col items-center justify-end pb-1.5 text-center">
-                                        <span className="text-sm font-bold font-mono tracking-tight text-[#f1f5f9]">
-                                                {value.toLocaleString(undefined, { maximumFractionDigits: 1 })}
-                                        </span>
-                                        <span className="text-[8px] uppercase tracking-widest text-[#4a5568] font-semibold mt-0.5">
-                                                {unit}
-                                        </span>
-                                </div>
-                        </div>
-                        <div className="mt-3 text-center">
-                                <span className="text-[10px] font-bold text-[#c9a84c] font-mono uppercase tracking-wider">{label}</span>
-                        </div>
-                </div>
-        );
-}
+  // Static ticks hoisted outside the render
+  const ticks = useMemo(() =>
+    [-120, -60, 0, 60, 120].map((deg) => {
+      const start = polarToCartesian(100, 100, 70, deg);
+      const end = polarToCartesian(100, 100, 82, deg);
+      return (
+        <line
+          key={deg}
+          x1={start.x}
+          y1={start.y}
+          x2={end.x}
+          y2={end.y}
+          stroke="rgba(176,184,196,0.2)"
+          strokeWidth="2"
+        />
+      );
+    }),
+    [],
+  );
+
+  return (
+    <div className="flex flex-col items-center justify-center p-4 bg-[#04060a]/80 border border-[rgba(74,85,104,0.25)] rounded-md shadow-inner">
+      <div className="relative w-32 h-32">
+        <svg className="w-full h-full" viewBox="0 0 200 200">
+          {/* Background Arc */}
+          <path
+            d={arcPath}
+            fill="none"
+            stroke="rgba(74,85,104,0.15)"
+            strokeWidth="10"
+            strokeLinecap="round"
+          />
+          {/* Colored Value Arc */}
+          <path
+            d={describeArc(100, 100, 75, -120, -120 + percentage * 240)}
+            fill="none"
+            stroke={color}
+            strokeWidth="10"
+            strokeLinecap="round"
+            className="transition-all duration-300 ease-out"
+          />
+          {/* Gauge Ticks */}
+          {ticks}
+          {/* Dial Needle */}
+          <g transform={`rotate(${angle} 100 100)`} className="transition-transform duration-300 ease-out">
+            <polygon
+              points="96,100 104,100 100,28"
+              fill={color}
+              className="drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]"
+            />
+          </g>
+          {/* Center Cap */}
+          <circle cx="100" cy="100" r="10" fill="#0f172a" stroke="rgba(176,184,196,0.4)" strokeWidth="2" />
+          <circle cx="100" cy="100" r="4" fill={color} />
+        </svg>
+        {/* Digital Readout */}
+        <div className="absolute inset-0 flex flex-col items-center justify-end pb-1.5 text-center">
+          <span className="text-sm font-bold font-mono tracking-tight text-[#f1f5f9]">
+            {value.toLocaleString(undefined, { maximumFractionDigits: 1 })}
+          </span>
+          <span className="text-[8px] uppercase tracking-widest text-[#4a5568] font-semibold mt-0.5">
+            {unit}
+          </span>
+        </div>
+      </div>
+      <div className="mt-3 text-center">
+        <span className="text-[10px] font-bold text-[#c9a84c] font-mono uppercase tracking-wider">{label}</span>
+      </div>
+    </div>
+  );
+});
 
 const EFFECT_LABELS: Record<string, string> = {
         panel_pre_alarm: "Panel Pre-Alarm",
@@ -235,70 +239,115 @@ export function MarinePage() {
         const [logicView, setLogicView] = useState<"matrix" | "script">("matrix");
         const [scadaView, setScadaView] = useState<"table" | "yaml">("table");
 
-        // ── Vessel Specification Form ───────────────────────────────────────────
-        const [ship, setShip] = useState<ShipForm>({
-                project_id: "SOLAS-V-8821",
-                ship_name: "MV Atlantic Fire Guardian",
-                imo_number: "9812401",
-                ship_type: "passenger",
-                length_overall_m: "165",
-                gross_tonnage: "45000",
-                passenger_capacity: "1450",
-                flag_state: "PA",
-                classification_society: "LR",
+  // ── Active Tab & Loading States ──────────────────────────────────────────
+  const [activeTab, setActiveTab] = useState("viewport");
+  const [loading, setLoading] = useState<string | null>(null);
+  const [logicView, setLogicView] = useState<"matrix" | "script">("matrix");
+  const [scadaView, setScadaView] = useState<"table" | "yaml">("table");
+
+  // ── Interactive Alarm Simulation & Viewport State ───────────────────────
+  const [alarmActive, setAlarmActive] = useState(false);
+  const [selectedZoneIndex, setSelectedZoneIndex] = useState(0);
+  const [simulatedDamperClosed, setSimulatedDamperClosed] = useState(false);
+  const [simulatedCo2Discharging, setSimulatedCo2Discharging] = useState(false);
+
+  // ── Vessel Specification Form (Split States) ───────────────────────────
+  const [projectId, setProjectId] = useState("SOLAS-V-8821");
+  const [shipName, setShipName] = useState("MV Atlantic Fire Guardian");
+  const [imoNumber, setImoNumber] = useState("9812401");
+  const [shipType, setShipType] = useState("passenger");
+  const [lengthOverallM, setLengthOverallM] = useState("165");
+  const [grossTonnage, setGrossTonnage] = useState("45000");
+  const [passengerCapacity, setPassengerCapacity] = useState("1450");
+  const [flagState, setFlagState] = useState("PA");
+  const [classificationSociety, setClassificationSociety] = useState("LR");
+
+  // ── API Result States ───────────────────────────────────────────────────
+  const [standards, setStandards] = useState<Array<{ code: string; title: string; issuer: string }>>([]);
+  const [fireClasses, setFireClasses] = useState<Array<{ class_name: string; insulation_minutes: number; description: string }>>([]);
+  const [validation, setValidation] = useState<Record<string, unknown> | null>(null);
+  const [zones, setZones] = useState<Array<{ zone_id: string; name: string; area_m2: number; required_fire_class: string; deck?: string }>>([]);
+  const [detection, setDetection] = useState<Record<string, unknown> | null>(null);
+  const [extinguishing, setExtinguishing] = useState<Record<string, unknown> | null>(null);
+  const [divisions, setDivisions] = useState<Record<string, unknown> | null>(null);
+  const [alarmLogic, setAlarmLogic] = useState<Record<string, unknown> | null>(null);
+  const [powerDesign, setPowerDesign] = useState<Record<string, unknown> | null>(null);
+  const [scadaConfig, setScadaConfig] = useState<Record<string, unknown> | null>(null);
+  const [fullDesignResult, setFullDesignResult] = useState<Record<string, unknown> | null>(null);
+
+  // ── Helper: Build Ship Payload (Memoized) ────────────────────────────
+  const buildShipPayload = useMemo(
+    () => () => ({
+      ship: {
+        project_id: projectId,
+        ship_name: shipName || "MV Atlantic Guardian",
+        imo_number: imoNumber || "9812401",
+        ship_type: shipType,
+        service: shipType,
+        length_overall_m: Number.parseFloat(lengthOverallM) || 165,
+        gross_tonnage: Number.parseFloat(grossTonnage) || 45000,
+        passenger_capacity: Number.parseInt(passengerCapacity) || 1450,
+        flag_state: flagState || "PA",
+        classification_society: classificationSociety || "LR",
+      },
+    }),
+    [projectId, shipName, imoNumber, shipType, lengthOverallM, grossTonnage, passengerCapacity, flagState, classificationSociety],
+  );
+
+  // Alarm Trigger Simulation Toggle (Memoized)
+  const toggleAlarmSimulation = useCallback(() => {
+    if (!alarmActive) {
+      setAlarmActive(true);
+      setSimulatedDamperClosed(true);
+      setSimulatedCo2Discharging(true);
+      toast({
+        title: "FIRE ALARM SIMULATION INITIATED",
+        description: `MVZ-${selectedZoneIndex + 1} Smoke Detector #04 Activated — Dampers Closed & CO2 Discharge Primed!`,
+        variant: "destructive",
+      });
+    } else {
+      setAlarmActive(false);
+      setSimulatedDamperClosed(false);
+      setSimulatedCo2Discharging(false);
+      toast({
+        title: "Alarm Simulation Reset",
+        description: "Vessel safety systems returned to NORMAL monitoring state.",
+      });
+    }
+  }, [alarmActive, selectedZoneIndex]);
+
+  // Load GSAP dynamically for animations
+  useEffect(() => {
+    const loadGSAP = async () => {
+      if (alarmActive) {
+        const gsap = (await import("gsap")).gsap;
+        gsap.to(".marine-bulkhead--alarm", {
+          opacity: 0.8,
+          duration: 0.5,
+          repeat: -1,
+          yoyo: true,
         });
+      }
+    };
+    loadGSAP();
+  }, [alarmActive]);
 
-        // ── Interactive Alarm Simulation & Viewport State ───────────────────────
-        const [alarmActive, setAlarmActive] = useState(false);
-        const [selectedZoneIndex, setSelectedZoneIndex] = useState(0);
-        const [simulatedDamperClosed, setSimulatedDamperClosed] = useState(false);
-        const [simulatedCo2Discharging, setSimulatedCo2Discharging] = useState(false);
-
-        // ── API Result States ───────────────────────────────────────────────────
-        const [standards, setStandards] = useState<Array<{ code: string; title: string; issuer: string }>>([]);
-        const [fireClasses, setFireClasses] = useState<Array<{ class_name: string; insulation_minutes: number; description: string }>>([]);
-        const [validation, setValidation] = useState<Record<string, unknown> | null>(null);
-        const [zones, setZones] = useState<Array<{ zone_id: string; name: string; area_m2: number; required_fire_class: string; deck?: string }>>([]);
-        const [detection, setDetection] = useState<Record<string, unknown> | null>(null);
-        const [extinguishing, setExtinguishing] = useState<Record<string, unknown> | null>(null);
-        const [divisions, setDivisions] = useState<Record<string, unknown> | null>(null);
-        const [alarmLogic, setAlarmLogic] = useState<Record<string, unknown> | null>(null);
-        const [powerDesign, setPowerDesign] = useState<Record<string, unknown> | null>(null);
-        const [scadaConfig, setScadaConfig] = useState<Record<string, unknown> | null>(null);
-        const [fullDesignResult, setFullDesignResult] = useState<Record<string, unknown> | null>(null);
-
-        // ── Helper: Build Ship Payload ──────────────────────────────────────────
-        const buildShipPayload = () => ({
-                ship: {
-                        project_id: ship.project_id,
-                        ship_name: ship.ship_name || "MV Atlantic Guardian",
-                        imo_number: ship.imo_number || "9812401",
-                        ship_type: ship.ship_type,
-                        service: ship.ship_type,
-                        length_overall_m: Number.parseFloat(ship.length_overall_m) || 165,
-                        gross_tonnage: Number.parseFloat(ship.gross_tonnage) || 45000,
-                        passenger_capacity: Number.parseInt(ship.passenger_capacity) || 1450,
-                        flag_state: ship.flag_state || "PA",
-                        classification_society: ship.classification_society || "LR",
-                },
-        });
-
-        // Load Standards & Fire Classes on Mount
-        useEffect(() => {
-                const loadInitialMetadata = async () => {
-                        try {
-                                const [stRes, fcRes] = await Promise.all([
-                                        marineApi.getStandards(),
-                                        marineApi.getFireClasses(),
-                                ]);
-                                setStandards((stRes as { standards?: Array<{ code: string; title: string; issuer: string }> }).standards || []);
-                                setFireClasses((fcRes as { fire_classes?: Array<{ class_name: string; insulation_minutes: number; description: string }> }).fire_classes || []);
-                        } catch {
-                                // Silent fallback for metadata
-                        }
-                };
-                loadInitialMetadata();
-        }, []);
+// Load Standards & Fire Classes on Mount
+useEffect(() => {
+  const loadInitialMetadata = async () => {
+    try {
+      const [stRes, fcRes] = await Promise.all([
+        marineApi.getStandards(),
+        marineApi.getFireClasses(),
+      ]);
+      setStandards((stRes as { standards?: Array<{ code: string; title: string; issuer: string }> }).standards || []);
+      setFireClasses((fcRes as { fire_classes?: Array<{ class_name: string; insulation_minutes: number; description: string }> }).fire_classes || []);
+    } catch {
+      // Silent fallback for metadata
+    }
+  };
+  loadInitialMetadata();
+}, []);
 
         // ── API Handlers ────────────────────────────────────────────────────────
         const handleValidate = async () => {
@@ -710,15 +759,15 @@ export function MarinePage() {
                                                                 <line x1="50" y1="140" x2="960" y2="140" stroke="rgba(74,85,104,0.6)" strokeWidth="1" />
                                                                 <line x1="100" y1="195" x2="920" y2="195" stroke="rgba(74,85,104,0.6)" strokeWidth="1" />
 
-                                                                {/* MVZ Bulkhead Dividers (A-60 Rated) */}
-                                                                <line x1="280" y1="40" x2="280" y2="250" stroke="rgba(230,57,70,0.7)" strokeWidth="2" strokeDasharray="4 2" className={alarmActive ? "marine-bulkhead--alarm" : ""} />
-                                                                <line x1="500" y1="100" x2="500" y2="250" stroke="rgba(230,57,70,0.7)" strokeWidth="2" strokeDasharray="4 2" className={alarmActive ? "marine-bulkhead--alarm" : ""} />
-                                                                <line x1="720" y1="100" x2="720" y2="250" stroke="rgba(230,57,70,0.7)" strokeWidth="2" strokeDasharray="4 2" className={alarmActive ? "marine-bulkhead--alarm" : ""} />
+  {/* MVZ Bulkhead Dividers (A-60 Rated) */}
+  <line x1={280} y1={40} x2={280} y2={250} stroke="rgba(230,57,70,0.7)" strokeWidth={2} strokeDasharray="4 2" className={alarmActive ? "marine-bulkhead--alarm" : ""} />
+  <line x1={500} y1={100} x2={500} y2={250} stroke="rgba(230,57,70,0.7)" strokeWidth={2} strokeDasharray="4 2" className={alarmActive ? "marine-bulkhead--alarm" : ""} />
+  <line x1={720} y1={100} x2={720} y2={250} stroke="rgba(230,57,70,0.7)" strokeWidth={2} strokeDasharray="4 2" className={alarmActive ? "marine-bulkhead--alarm" : ""} />
 
-                                                                {/* MVZ Bulkhead Labels */}
-                                                                <text x="285" y="32" fill="rgba(230,57,70,0.8)" fontSize="10" fontFamily="monospace">A-60 BULKHEAD</text>
-                                                                <text x="505" y="92" fill="rgba(230,57,70,0.8)" fontSize="10" fontFamily="monospace">A-60 BULKHEAD</text>
-                                                                <text x="725" y="92" fill="rgba(230,57,70,0.8)" fontSize="10" fontFamily="monospace">A-60 BULKHEAD</text>
+  {/* MVZ Bulkhead Labels */}
+  <text x={285} y={32} fill="rgba(230,57,70,0.8)" fontSize={10} fontFamily="monospace">A-60 BULKHEAD</text>
+  <text x={505} y={92} fill="rgba(230,57,70,0.8)" fontSize={10} fontFamily="monospace">A-60 BULKHEAD</text>
+  <text x={725} y={92} fill="rgba(230,57,70,0.8)" fontSize={10} fontFamily="monospace">A-60 BULKHEAD</text>
 
                                                                 {/* Interactive MVZ Zone Clickable Overlays */}
                                                                 {/* MVZ 1: Bridge & Accommodation */}
@@ -763,16 +812,13 @@ export function MarinePage() {
                                                                 <circle cx="600" cy="120" r="5" className="marine-detector" />
                                                                 <circle cx="820" cy="120" r="5" className="marine-detector" />
 
-                                                                {/* Alarm Mode Animated Pulses */}
-                                                                {alarmActive && (
-                                                                        <>
-                                                                                <circle cx="380" cy="120" r="14" fill="none" stroke="#e63946" strokeWidth="2">
-                                                                                        <animate attributeName="r" values="6;22;6" dur="1.2s" repeatCount="indefinite" />
-                                                                                        <animate attributeName="opacity" values="1;0;1" dur="1.2s" repeatCount="indefinite" />
-                                                                                </circle>
-                                                                                <text x="350" y="95" fill="#e63946" fontSize="11" fontFamily="monospace" fontWeight="bold" className="animate-pulse">FIRE ALARM</text>
-                                                                        </>
-                                                                )}
+        {/* Alarm Mode Animated Pulses */}
+        {alarmActive && (
+          <>
+            <circle cx={380} cy={120} r={6} fill="none" stroke="#e63946" strokeWidth={2} className="marine-alarm-pulse" />
+            <text x={350} y={95} fill="#e63946" fontSize={11} fontFamily="monospace" fontWeight="bold" className="marine-alarm-text">FIRE ALARM</text>
+          </>
+        )}
                                                         </svg>
                                                 </div>
 
@@ -819,95 +865,95 @@ export function MarinePage() {
                                                                 </p>
                                                         </div>
                                                         <div className="p-5">
-                                                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                                                                        <div className="space-y-1.5">
-                                                                                <Label className="marine-label">Ship Name</Label>
-                                                                                <Input
-                                                                                        value={ship.ship_name}
-                                                                                        onChange={(e) => setShip({ ...ship, ship_name: e.target.value })}
-                                                                                        className="marine-input"
-                                                                                />
-                                                                        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+          <div className="space-y-1.5">
+            <Label className="marine-label">Ship Name</Label>
+            <Input
+              value={shipName}
+              onChange={(e) => setShipName(e.target.value)}
+              className="marine-input"
+            />
+          </div>
 
-                                                                        <div className="space-y-1.5">
-                                                                                <Label className="marine-label">IMO Number (7 Digits)</Label>
-                                                                                <Input
-                                                                                        value={ship.imo_number}
-                                                                                        onChange={(e) => setShip({ ...ship, imo_number: e.target.value })}
-                                                                                        className="marine-input"
-                                                                                />
-                                                                        </div>
+          <div className="space-y-1.5">
+            <Label className="marine-label">IMO Number (7 Digits)</Label>
+            <Input
+              value={imoNumber}
+              onChange={(e) => setImoNumber(e.target.value)}
+              className="marine-input"
+            />
+          </div>
 
-                                                                        <div className="space-y-1.5">
-                                                                                <Label className="marine-label">SOLAS Ship Category</Label>
-                                                                                <Select value={ship.ship_type} onValueChange={(v) => setShip({ ...ship, ship_type: v })}>
-                                                                                        <SelectTrigger className="marine-select-trigger">
-                                                                                                <SelectValue />
-                                                                                        </SelectTrigger>
-                                                                                        <SelectContent className="bg-[#0a0e16] border-[rgba(74,85,104,0.5)] text-[#b0b8c4]">
-                                                                                                {SHIP_TYPES.map((st) => (
-                                                                                                        <SelectItem key={st.value} value={st.value} className="text-xs">
-                                                                                                                {st.label}
-                                                                                                        </SelectItem>
-                                                                                                ))}
-                                                                                        </SelectContent>
-                                                                                </Select>
-                                                                        </div>
+          <div className="space-y-1.5">
+            <Label className="marine-label">SOLAS Ship Category</Label>
+            <Select value={shipType} onValueChange={setShipType}>
+              <SelectTrigger className="marine-select-trigger">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-[#0a0e16] border-[rgba(74,85,104,0.5)] text-[#b0b8c4]">
+                {SHIP_TYPES.map((st) => (
+                  <SelectItem key={st.value} value={st.value} className="text-xs">
+                    {st.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-                                                                        <div className="space-y-1.5">
-                                                                                <Label className="marine-label">Length Overall — LOA (m)</Label>
-                                                                                <Input
-                                                                                        type="number"
-                                                                                        value={ship.length_overall_m}
-                                                                                        onChange={(e) => setShip({ ...ship, length_overall_m: e.target.value })}
-                                                                                        className="marine-input"
-                                                                                />
-                                                                        </div>
+          <div className="space-y-1.5">
+            <Label className="marine-label">Length Overall — LOA (m)</Label>
+            <Input
+              type="number"
+              value={lengthOverallM}
+              onChange={(e) => setLengthOverallM(e.target.value)}
+              className="marine-input"
+            />
+          </div>
 
-                                                                        <div className="space-y-1.5">
-                                                                                <Label className="marine-label">Gross Tonnage (GT)</Label>
-                                                                                <Input
-                                                                                        type="number"
-                                                                                        value={ship.gross_tonnage}
-                                                                                        onChange={(e) => setShip({ ...ship, gross_tonnage: e.target.value })}
-                                                                                        className="marine-input"
-                                                                                />
-                                                                        </div>
+          <div className="space-y-1.5">
+            <Label className="marine-label">Gross Tonnage (GT)</Label>
+            <Input
+              type="number"
+              value={grossTonnage}
+              onChange={(e) => setGrossTonnage(e.target.value)}
+              className="marine-input"
+            />
+          </div>
 
-                                                                        <div className="space-y-1.5">
-                                                                                <Label className="marine-label">Passenger Capacity</Label>
-                                                                                <Input
-                                                                                        type="number"
-                                                                                        value={ship.passenger_capacity}
-                                                                                        onChange={(e) => setShip({ ...ship, passenger_capacity: e.target.value })}
-                                                                                        className="marine-input"
-                                                                                />
-                                                                        </div>
+          <div className="space-y-1.5">
+            <Label className="marine-label">Passenger Capacity</Label>
+            <Input
+              type="number"
+              value={passengerCapacity}
+              onChange={(e) => setPassengerCapacity(e.target.value)}
+              className="marine-input"
+            />
+          </div>
 
-                                                                        <div className="space-y-1.5">
-                                                                                <Label className="marine-label">Flag State (ISO Code)</Label>
-                                                                                <Input
-                                                                                        value={ship.flag_state}
-                                                                                        onChange={(e) => setShip({ ...ship, flag_state: e.target.value })}
-                                                                                        className="marine-input"
-                                                                                />
-                                                                        </div>
+          <div className="space-y-1.5">
+            <Label className="marine-label">Flag State (ISO Code)</Label>
+            <Input
+              value={flagState}
+              onChange={(e) => setFlagState(e.target.value)}
+              className="marine-input"
+            />
+          </div>
 
-                                                                        <div className="space-y-1.5">
-                                                                                <Label className="marine-label">Classification Society</Label>
-                                                                                <Select value={ship.classification_society} onValueChange={(v) => setShip({ ...ship, classification_society: v })}>
-                                                                                        <SelectTrigger className="marine-select-trigger">
-                                                                                                <SelectValue />
-                                                                                        </SelectTrigger>
-                                                                                        <SelectContent className="bg-[#0a0e16] border-[rgba(74,85,104,0.5)] text-[#b0b8c4]">
-                                                                                                {SOCIETIES.map((s) => (
-                                                                                                        <SelectItem key={s.value} value={s.value} className="text-xs">
-                                                                                                                {s.label}
-                                                                                                        </SelectItem>
-                                                                                                ))}
-                                                                                        </SelectContent>
-                                                                                </Select>
-                                                                        </div>
+          <div className="space-y-1.5">
+            <Label className="marine-label">Classification Society</Label>
+            <Select value={classificationSociety} onValueChange={setClassificationSociety}>
+              <SelectTrigger className="marine-select-trigger">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-[#0a0e16] border-[rgba(74,85,104,0.5)] text-[#b0b8c4]">
+                {SOCIETIES.map((s) => (
+                  <SelectItem key={s.value} value={s.value} className="text-xs">
+                    {s.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
                                                                 </div>
 
                                                                 <div className="mt-5 flex items-center gap-3">

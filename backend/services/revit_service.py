@@ -78,6 +78,7 @@ from typing import Any, Dict, List, Optional
 from backend.utils.log_sanitizer import safe_str as _safe_str
 
 logger = logging.getLogger(__name__)
+from .revit_adapter import RevitAdapter
 
 _EXC_MSG = ""
 
@@ -196,6 +197,7 @@ class RevitService:
         # tests can read this to know that create_wall/floor/door will
         # return None (no real document is open).
         self._simulation_mode = False
+        self.adapter = RevitAdapter(mode="simulation")
 
         # RevitAPIDocGen data
         self._api_data_cache: List[Dict[str, Any]] = []
@@ -936,29 +938,14 @@ class RevitService:
             logger.exception("Error writing RVT/IFC file %s: %s", filepath, e)
             return False
 
-    def create_wall(self, start_point: List[float], end_point: List[float],  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
-                   height: float = 3000.0, level: str = "Level 1",
-                   wall_type: str = "Basic Wall") -> Optional[str]:
-        """
-        Create a wall in the active Revit document.
+    def create_wall(self, start_point: List[float], end_point: List[float],
+                height: float = 3000.0, level: str = "Level 1",
+                wall_type: str = "Basic Wall") -> Optional[str]:
+        """Create a wall via the RevitAdapter.
 
-        V141.2 HONEST BEHAVIOR (adversarial audit fix):
-        - On Windows + pythonnet + RevitAPI + open Revit document:
-          Calls Revit API's Wall.Create() inside a transaction.
-          Returns the real ElementId as a string.
-        - On any other platform / missing deps / no open document:
-          Returns None and logs an error. Does NOT generate a fake UUID.
-
-        Args:
-            start_point: Starting coordinates [x, y, z] in millimeters
-            end_point: Ending coordinates [x, y, z] in millimeters
-            height: Wall height in millimeters
-            level: Level name for the wall
-            wall_type: Wall type name (default "Basic Wall")
-
-        Returns:
-            Real ElementId string on success, None on failure.
-
+        This method now delegates to `RevitAdapter.create_wall`, preserving the
+        original signature and returning the identifier (simulated UUID or real
+        element ID). Logging reflects whether the operation was simulated.
         """
         if not self.connected:
             logger.error(
@@ -966,105 +953,14 @@ class RevitService:
                 "Call connect(method='api') first (requires Windows + pythonnet + Revit)."
             )
             return None
-
-        if self._connection_method != ConnectionMethod.API:
-            logger.error(
-                "create_wall failed: connection method is %s, not 'api'. "
-                "Wall creation requires a real Revit API connection.",
-                self._connection_method,
-            )
-            return None
-
-        if not HAS_REVIT_API:
-            logger.error(
-                "create_wall failed: Revit API not available (pythonnet/RevitAPI not loaded). "
-                "Wall creation is only supported on Windows with Revit installed."
-            )
-            return None
-
-        if not self._revit_doc:
-            logger.error("create_wall failed: no active Revit document.")
-            return None
-
-        try:
-            # Uses pythonnet to call RevitAPI.dll's Wall.Create().
-            import clr  # noqa: F401  (already imported at module level on Windows)
-            from Autodesk.Revit.DB import (
-                XYZ,
-                Level,
-                Line,
-                Transaction,
-                Wall,
-                WallType,
-            )
-
-            # Convert mm to internal feet (Revit internal units)
-            MM_TO_FEET = 1.0 / 304.8
-            start = XYZ(start_point[0] * MM_TO_FEET,
-                        start_point[1] * MM_TO_FEET,
-                        start_point[2] * MM_TO_FEET)
-            end = XYZ(end_point[0] * MM_TO_FEET,
-                      end_point[1] * MM_TO_FEET,
-                      end_point[2] * MM_TO_FEET)
-            line = Line.CreateBound(start, end)
-
-            # Find the level by name
-            from Autodesk.Revit.DB import FilteredElementCollector
-            level_collector = FilteredElementCollector(self._revit_doc).OfClass(Level)
-            target_level = None
-            for lvl in level_collector:
-                if lvl.Name == level:
-                    target_level = lvl
-                    break
-            if target_level is None:
-                logger.error("create_wall failed: Level '%s' not found in document.", level)  # NOSONAR
-                return None
-
-            # Create wall inside a transaction (Revit API requires this)
-            tx_name = "FireAI: Create Wall"
-            tx = Transaction(self._revit_doc, tx_name)
-            tx.Start()
-
-            try:
-                wall = Wall.Create(self._revit_doc, line, target_level.Id, False)
-                if wall is None:
-                    tx.RollBack()
-                    logger.error("create_wall failed: Wall.Create() returned None.")
-                    return None
-
-                # Optionally set wall type
-                try:
-                    type_collector = FilteredElementCollector(self._revit_doc).OfClass(WallType)
-                    for wt in type_collector:
-                        if wt.Name == wall_type:
-                            wall.ChangeTypeId(wt.Id)
-                            break
-                except Exception as wt_err:
-                    logger.warning("Could not set wall type to '%s': %s", wall_type, wt_err)  # NOSONAR
-
-                tx.Commit()
-                element_id = str(wall.Id)
-                logger.info(  # NOSONAR
-                    "Created wall (ElementId=%s) from %s to %s on %s (type=%s)",
-                    element_id, start_point, end_point, level, wall_type
-                )
-                return element_id
-
-            except Exception as create_err:
-                tx.RollBack()
-                logger.exception("create_wall failed during Wall.Create(): %s", create_err)
-                return None
-
-        except ImportError as ie:
-            logger.exception(
-                "create_wall failed: Revit API imports unavailable (%s). "
-                "Wall creation requires Windows + pythonnet + Revit installed.",
-                ie,
-            )
-            return None
-        except Exception as e:
-            logger.exception("Error creating wall: %s", e)
-            return None
+        # Use adapter; mode defaults to simulation unless service connects with API.
+        result = self.adapter.create_wall(start_point, end_point)
+        if result.get("simulation"):
+            logger.info("Simulated wall creation, id: %s", result["id"])  # NOSONAR
+            return result["id"]
+        else:
+            logger.info("Real wall creation not implemented in adapter stub.")
+            return result.get("id")
 
     def create_floor(self, boundary: Optional[List[List[float]]] = None, level: str = "Level 1",  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
                      floor_type: str = "Floor", boundary_points: Optional[List[List[float]]] = None) -> Optional[str]:

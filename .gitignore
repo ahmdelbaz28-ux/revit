@@ -192,8 +192,9 @@ Thumbs.db
 *.sqlite3-shm
 *.sqlite3-wal
 fireai_learning.sqlite3
-db/api_keys.json
-backend/db/
+/db/
+backend/db/api_keys.json
+backend/db/api_keys.secret
 
 # Logs
 *.log

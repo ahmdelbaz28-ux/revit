@@ -49,10 +49,10 @@ def get_etap_service(request: Request):
 
 
 @router.post("/connect", dependencies=[Depends(require_permission(Permission.INTEGRATION_MANAGE))])
-async def test_connection(
+async def connect_to_etap(
     request: Request,
     settings: EtapConnectionSettings,
-    service = Depends(get_etap_service),
+    service: EtapService = Depends(get_etap_service),
 ) -> EtapConnectionTestResponse:
     """
     Test connection to ETAP server.
@@ -73,7 +73,7 @@ async def test_connection(
 )
 async def disconnect(
     request: Request,
-    service = Depends(get_etap_service),
+    service: EtapService = Depends(get_etap_service),
 ) -> dict:
     """Disconnect from ETAP (disable integration)."""
     project_id = request.query_params.get("project_id", "default")
