@@ -59,3 +59,13 @@ When multiple skills apply, process skills come first — they set the approach,
 - **Stack:** React + Vite (client-only SPA), TypeScript, Tailwind CSS, GSAP
 - **Not Next.js** — skip server-side rules (RSC, `next/dynamic`, `next/script`, `after()`, server actions).
 - **Most relevant rules:** Bundle size (barrel imports, dynamic imports), re-render optimization, JS perf, rendering perf.
+
+## Agent skills
+
+### Issue tracker
+
+GitHub issues. See `docs/agents/issue-tracker.md`.
+
+### Domain docs
+
+Single-context layout. See `docs/agents/domain.md`.
