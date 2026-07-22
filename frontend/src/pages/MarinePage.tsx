@@ -104,6 +104,109 @@ const SOCIETIES = [
         { value: "NK", label: "Nippon Kaiji Kyokai (ClassNK)" },
 ];
 
+interface AnalogGaugeProps {
+        value: number;
+        min?: number;
+        max?: number;
+        label: string;
+        unit: string;
+        color?: string;
+}
+
+function AnalogGauge({ value, min = 0, max = 100, label, unit, color = "#c9a84c" }: {
+        value: number;
+        min?: number;
+        max?: number;
+        label: string;
+        unit: string;
+        color?: string;
+}) {
+        const percentage = Math.min(Math.max((value - min) / (max - min), 0), 1);
+        const angle = -120 + percentage * 240;
+
+        const polarToCartesian = (centerX: number, centerY: number, radius: number, angleInDegrees: number) => {
+                const angleInRadians = ((angleInDegrees - 90) * Math.PI) / 180.0;
+                return {
+                        x: centerX + radius * Math.cos(angleInRadians),
+                        y: centerY + radius * Math.sin(angleInRadians),
+                };
+        };
+
+        const describeArc = (x: number, y: number, radius: number, startAngle: number, endAngle: number) => {
+                const start = polarToCartesian(x, y, radius, endAngle);
+                const end = polarToCartesian(x, y, radius, startAngle);
+                const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
+                return ["M", start.x, start.y, "A", radius, radius, 0, largeArcFlag, 0, end.x, end.y].join(" ");
+        };
+
+        const arcPath = describeArc(100, 100, 75, -120, 120);
+
+        return (
+                <div className="flex flex-col items-center justify-center p-4 bg-[#04060a]/80 border border-[rgba(74,85,104,0.25)] rounded-md shadow-inner">
+                        <div className="relative w-32 h-32">
+                                <svg className="w-full h-full" viewBox="0 0 200 200">
+                                        {/* Background Arc */}
+                                        <path
+                                                d={arcPath}
+                                                fill="none"
+                                                stroke="rgba(74,85,104,0.15)"
+                                                strokeWidth="10"
+                                                strokeLinecap="round"
+                                        />
+                                        {/* Colored Value Arc */}
+                                        <path
+                                                d={describeArc(100, 100, 75, -120, -120 + percentage * 240)}
+                                                fill="none"
+                                                stroke={color}
+                                                strokeWidth="10"
+                                                strokeLinecap="round"
+                                                className="transition-all duration-1000 ease-out"
+                                        />
+                                        {/* Gauge Ticks */}
+                                        {[-120, -60, 0, 60, 120].map((deg, i) => {
+                                                const start = polarToCartesian(100, 100, 70, deg);
+                                                const end = polarToCartesian(100, 100, 82, deg);
+                                                return (
+                                                        <line
+                                                                key={i}
+                                                                x1={start.x}
+                                                                y1={start.y}
+                                                                x2={end.x}
+                                                                y2={end.y}
+                                                                stroke="rgba(176,184,196,0.2)"
+                                                                strokeWidth="2"
+                                                        />
+                                                );
+                                        })}
+                                        {/* Dial Needle */}
+                                        <g transform={`rotate(${angle} 100 100)`} className="transition-transform duration-1000 ease-out">
+                                                <polygon
+                                                        points="96,100 104,100 100,28"
+                                                        fill={color}
+                                                        className="drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]"
+                                                />
+                                        </g>
+                                        {/* Center Cap */}
+                                        <circle cx="100" cy="100" r="10" fill="#0f172a" stroke="rgba(176,184,196,0.4)" strokeWidth="2" />
+                                        <circle cx="100" cy="100" r="4" fill={color} />
+                                </svg>
+                                {/* Digital Readout */}
+                                <div className="absolute inset-0 flex flex-col items-center justify-end pb-1.5 text-center">
+                                        <span className="text-sm font-bold font-mono tracking-tight text-[#f1f5f9]">
+                                                {value.toLocaleString(undefined, { maximumFractionDigits: 1 })}
+                                        </span>
+                                        <span className="text-[8px] uppercase tracking-widest text-[#4a5568] font-semibold mt-0.5">
+                                                {unit}
+                                        </span>
+                                </div>
+                        </div>
+                        <div className="mt-3 text-center">
+                                <span className="text-[10px] font-bold text-[#c9a84c] font-mono uppercase tracking-wider">{label}</span>
+                        </div>
+                </div>
+        );
+}
+
 const EFFECT_LABELS: Record<string, string> = {
         panel_pre_alarm: "Panel Pre-Alarm",
         notify_ecr: "Notify ECR",
@@ -130,6 +233,7 @@ export function MarinePage() {
         const [activeTab, setActiveTab] = useState("viewport");
         const [loading, setLoading] = useState<string | null>(null);
         const [logicView, setLogicView] = useState<"matrix" | "script">("matrix");
+        const [scadaView, setScadaView] = useState<"table" | "yaml">("table");
 
         // ── Vessel Specification Form ───────────────────────────────────────────
         const [ship, setShip] = useState<ShipForm>({
@@ -845,80 +949,158 @@ export function MarinePage() {
                                         <TabsContent value="systems" className="space-y-6 m-0">
 
                                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                                        {/* Detection Action Box */}
-                                                        <div className="marine-card">
-                                                                <div className="marine-card-header">
-                                                                        <div className="flex items-center gap-2">
-                                                                                <Siren className="h-4 w-4 text-[#c9a84c]" />
-                                                                                <h3 className="text-sm font-semibold text-[#f1f5f9]">Fire Detection System</h3>
-                                                                        </div>
-                                                                <CardDescription className="text-xs text-[#4a5568] mt-1">
-                                                                        Optical Smoke, Thermal Heat, and Flame IR3 sensor placement
-                                                                </CardDescription>
-                                                                </div>
-                                                                <div className="p-4 space-y-4">
-                                                                        <Button data-testid="marine-calculate-sensor-btn" onClick={handleDetection} disabled={loading === "detection"} className="marine-btn marine-btn--primary w-full">
-                                                                                {loading === "detection" ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Zap className="h-4 w-4 mr-2" />}
-                                                                                Calculate Sensor Layout
-                                                                        </Button>
+                                                         {/* Detection Action Box */}
+                                                         <div className="marine-card">
+                                                                 <div className="marine-card-header">
+                                                                         <div className="flex items-center gap-2">
+                                                                                 <Siren className="h-4 w-4 text-[#c9a84c]" />
+                                                                                 <h3 className="text-sm font-semibold text-[#f1f5f9]">Fire Detection System</h3>
+                                                                         </div>
+                                                                         <CardDescription className="text-xs text-[#4a5568] mt-1">
+                                                                                 Optical Smoke, Thermal Heat, and Flame IR3 sensor placement
+                                                                         </CardDescription>
+                                                                 </div>
+                                                                 <div className="p-4 space-y-4">
+                                                                         <Button data-testid="marine-calculate-sensor-btn" onClick={handleDetection} disabled={loading === "detection"} className="marine-btn marine-btn--primary w-full">
+                                                                                 {loading === "detection" ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Zap className="h-4 w-4 mr-2" />}
+                                                                                 Calculate Sensor Layout
+                                                                         </Button>
 
-                                                                        {detection && (
-                                                                                <pre className="marine-code-block">
-                                                                                        {JSON.stringify(detection, null, 2)}
-                                                                                </pre>
-                                                                        )}
-                                                                </div>
-                                                        </div>
+                                                                         {detection && (
+                                                                                 <div className="space-y-4">
+                                                                                         <AnalogGauge
+                                                                                                 value={Number((detection as any).placements?.length || 0)}
+                                                                                                 min={0}
+                                                                                                 max={50}
+                                                                                                 label="Placed Sensors"
+                                                                                                 unit="pcs"
+                                                                                         />
+                                                                                         <div className="bg-[#04060a] border border-[rgba(74,85,104,0.3)] rounded-md p-3 font-mono text-[10px] text-[#b0b8c4] space-y-1.5">
+                                                                                                 <div className="text-[9px] uppercase tracking-wider text-[#4a5568] font-bold border-b border-[rgba(74,85,104,0.2)] pb-1">Layout Summary</div>
+                                                                                                 {((detection as any).counts || []).map((c: any) => (
+                                                                                                         <div key={c.detector_type} className="flex justify-between items-center">
+                                                                                                                 <span className="text-[#c9a84c] uppercase">{c.detector_type.replace("_", " ")}</span>
+                                                                                                                 <span>{c.placement_count} units</span>
+                                                                                                         </div>
+                                                                                                 ))}
+                                                                                                 <div className="text-[8px] text-[#4a5568] mt-2 leading-tight">
+                                                                                                         Coverage standard: {(detection as any).selection?.standard_reference || "SOLAS Reg. 12"}
+                                                                                                 </div>
+                                                                                         </div>
+                                                                                 </div>
+                                                                         )}
+                                                                 </div>
+                                                         </div>
 
-                                                        {/* Extinguishing System Action Box */}
-                                                        <div className="marine-card">
-                                                                <div className="marine-card-header">
-                                                                        <div className="flex items-center gap-2">
-                                                                                <Flame className="h-4 w-4 text-[#c9a84c]" />
-                                                                                <h3 className="text-sm font-semibold text-[#f1f5f9]">Fire Suppression Sizing</h3>
-                                                                        </div>
-                                                                <CardDescription className="text-xs text-[#4a5568] mt-1">
-                                                                        CO2 Total Flooding, Novec 1230, and Hi-Fog Water Mist
-                                                                </CardDescription>
-                                                                </div>
-                                                                <div className="p-4 space-y-4">
-                                                                        <Button data-testid="marine-size-extinguishing-btn" onClick={handleExtinguishing} disabled={loading === "extinguishing"} className="marine-btn marine-btn--primary w-full">
-                                                                                {loading === "extinguishing" ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Flame className="h-4 w-4 mr-2" />}
-                                                                                Size Extinguishing System
-                                                                        </Button>
+                                                         {/* Extinguishing System Action Box */}
+                                                         <div className="marine-card">
+                                                                 <div className="marine-card-header">
+                                                                         <div className="flex items-center gap-2">
+                                                                                 <Flame className="h-4 w-4 text-[#c9a84c]" />
+                                                                                 <h3 className="text-sm font-semibold text-[#f1f5f9]">Fire Suppression Sizing</h3>
+                                                                         </div>
+                                                                         <CardDescription className="text-xs text-[#4a5568] mt-1">
+                                                                                 CO2 Total Flooding, Novec 1230, and Hi-Fog Water Mist
+                                                                         </CardDescription>
+                                                                 </div>
+                                                                 <div className="p-4 space-y-4">
+                                                                         <Button data-testid="marine-size-extinguishing-btn" onClick={handleExtinguishing} disabled={loading === "extinguishing"} className="marine-btn marine-btn--primary w-full">
+                                                                                 {loading === "extinguishing" ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Flame className="h-4 w-4 mr-2" />}
+                                                                                 Size Extinguishing System
+                                                                         </Button>
 
-                                                                        {extinguishing && (
-                                                                                <pre className="marine-code-block">
-                                                                                        {JSON.stringify(extinguishing, null, 2)}
-                                                                                </pre>
-                                                                        )}
-                                                                </div>
-                                                        </div>
+                                                                         {extinguishing && (
+                                                                                 <div className="space-y-4">
+                                                                                         <AnalogGauge
+                                                                                                 value={Number((extinguishing as any).agent_quantity_kg || 0)}
+                                                                                                 min={0}
+                                                                                                 max={5000}
+                                                                                                 label="Agent Capacity"
+                                                                                                 unit="kg"
+                                                                                         />
+                                                                                         <div className="bg-[#04060a] border border-[rgba(74,85,104,0.3)] rounded-md p-3 font-mono text-[10px] text-[#b0b8c4] space-y-1.5">
+                                                                                                 <div className="text-[9px] uppercase tracking-wider text-[#4a5568] font-bold border-b border-[rgba(74,85,104,0.2)] pb-1">Suppression Spec</div>
+                                                                                                 <div className="flex justify-between items-center">
+                                                                                                         <span className="text-[#c9a84c]">System Agent</span>
+                                                                                                         <span className="uppercase text-[#2ec4b6]">{(extinguishing as any).system_type}</span>
+                                                                                                 </div>
+                                                                                                 <div className="flex justify-between items-center">
+                                                                                                         <span className="text-[#c9a84c]">Room Volume</span>
+                                                                                                         <span>{(extinguishing as any).protected_volume_m3} m³</span>
+                                                                                                 </div>
+                                                                                                 <div className="flex justify-between items-center">
+                                                                                                         <span className="text-[#c9a84c]">Nozzles / Pipes</span>
+                                                                                                         <span>{(extinguishing as any).nozzles || 0} / {(extinguishing as any).pipe_length_m || 0}m</span>
+                                                                                                 </div>
+                                                                                                 <div className="flex justify-between items-center">
+                                                                                                         <span className="text-[#c9a84c]">Concentration</span>
+                                                                                                         <span>{(extinguishing as any).design_concentration_pct}%</span>
+                                                                                                 </div>
+                                                                                                 <div className="flex justify-between items-center">
+                                                                                                         <span className="text-[#c9a84c]">Discharge Time</span>
+                                                                                                         <span>{(extinguishing as any).discharge_time_s}s</span>
+                                                                                                 </div>
+                                                                                                 <div className="text-[8px] text-[#4a5568] mt-2 leading-tight">
+                                                                                                         Reference: {(extinguishing as any).standard_reference}
+                                                                                                 </div>
+                                                                                         </div>
+                                                                                 </div>
+                                                                         )}
+                                                                 </div>
+                                                         </div>
 
-                                                        {/* Emergency Power System Action Box */}
-                                                        <div className="marine-card">
-                                                                <div className="marine-card-header">
-                                                                        <div className="flex items-center gap-2">
-                                                                                <Zap className="h-4 w-4 text-[#c9a84c]" />
-                                                                                <h3 className="text-sm font-semibold text-[#f1f5f9]">Emergency Power Sizing</h3>
-                                                                        </div>
-                                                                <CardDescription className="text-xs text-[#4a5568] mt-1">
-                                                                        IEC 60092 Emergency Generator & UPS battery autonomy
-                                                                </CardDescription>
-                                                                </div>
-                                                                <div className="p-4 space-y-4">
-                                                                        <Button data-testid="marine-design-power-btn" onClick={handleDesignPower} disabled={loading === "power"} className="marine-btn marine-btn--primary w-full">
-                                                                                {loading === "power" ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Zap className="h-4 w-4 mr-2" />}
-                                                                                Design Emergency Power
-                                                                        </Button>
+                                                         {/* Emergency Power System Action Box */}
+                                                         <div className="marine-card">
+                                                                 <div className="marine-card-header">
+                                                                         <div className="flex items-center gap-2">
+                                                                                 <Zap className="h-4 w-4 text-[#c9a84c]" />
+                                                                                 <h3 className="text-sm font-semibold text-[#f1f5f9]">Emergency Power Sizing</h3>
+                                                                         </div>
+                                                                         <CardDescription className="text-xs text-[#4a5568] mt-1">
+                                                                                 IEC 60092 Emergency Generator & UPS battery autonomy
+                                                                         </CardDescription>
+                                                                 </div>
+                                                                 <div className="p-4 space-y-4">
+                                                                         <Button data-testid="marine-design-power-btn" onClick={handleDesignPower} disabled={loading === "power"} className="marine-btn marine-btn--primary w-full">
+                                                                                 {loading === "power" ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Zap className="h-4 w-4 mr-2" />}
+                                                                                 Design Emergency Power
+                                                                         </Button>
 
-                                                                        {powerDesign && (
-                                                                                <pre className="marine-code-block">
-                                                                                        {JSON.stringify(powerDesign, null, 2)}
-                                                                                </pre>
-                                                                        )}
-                                                                </div>
-                                                        </div>
+                                                                         {powerDesign && (
+                                                                                 <div className="space-y-4">
+                                                                                         <AnalogGauge
+                                                                                                 value={Number((powerDesign as any).ups_capacity_ah || 0)}
+                                                                                                 min={0}
+                                                                                                 max={100}
+                                                                                                 label="UPS Battery Size"
+                                                                                                 unit="Ah"
+                                                                                         />
+                                                                                         <div className="bg-[#04060a] border border-[rgba(74,85,104,0.3)] rounded-md p-3 font-mono text-[10px] text-[#b0b8c4] space-y-1.5">
+                                                                                                 <div className="text-[9px] uppercase tracking-wider text-[#4a5568] font-bold border-b border-[rgba(74,85,104,0.2)] pb-1">Power Distribution Spec</div>
+                                                                                                 <div className="flex justify-between items-center">
+                                                                                                         <span className="text-[#c9a84c]">Main Supply</span>
+                                                                                                         <span>{(powerDesign as any).main_supply_voltage}V AC</span>
+                                                                                                 </div>
+                                                                                                 <div className="flex justify-between items-center">
+                                                                                                         <span className="text-[#c9a84c]">Emergency Supply</span>
+                                                                                                         <span>{(powerDesign as any).emergency_supply_voltage}V AC</span>
+                                                                                                 </div>
+                                                                                                 <div className="flex justify-between items-center">
+                                                                                                         <span className="text-[#c9a84c]">UPS Autonomy</span>
+                                                                                                         <span>{(powerDesign as any).ups_autonomy_min} min</span>
+                                                                                                 </div>
+                                                                                                 <div className="flex justify-between items-center">
+                                                                                                         <span className="text-[#c9a84c]">Insulation Monitor</span>
+                                                                                                         <span className="text-[#2ec4b6]">{(powerDesign as any).insulation_monitoring ? "ACTIVE" : "INACTIVE"}</span>
+                                                                                                 </div>
+                                                                                                 <div className="text-[8px] text-[#4a5568] mt-2 leading-tight">
+                                                                                                         Standard compliance: {(powerDesign as any).standard_reference}
+                                                                                                 </div>
+                                                                                         </div>
+                                                                                 </div>
+                                                                         )}
+                                                                 </div>
+                                                         </div>
                                                 </div>
                                         </TabsContent>
 
@@ -1125,11 +1307,83 @@ export function MarinePage() {
                                                                         </div>
 
                                                                         {scadaConfig && (
-                                                                                <div className="mt-3">
-                                                                                        <Label className="marine-label">Generated SCADA Telemetry Map</Label>
-                                                                                        <pre className="marine-code-block marine-code-block--brass mt-1.5">
-                                                                                                {JSON.stringify(scadaConfig, null, 2)}
-                                                                                        </pre>
+                                                                                <div className="mt-4 space-y-3">
+                                                                                        <div className="flex items-center justify-between">
+                                                                                                <Label className="marine-label">Generated SCADA Telemetry Map</Label>
+                                                                                                <div className="flex gap-1.5 bg-[#04060a] p-1 rounded border border-[rgba(74,85,104,0.3)]">
+                                                                                                        <Button
+                                                                                                                size="sm"
+                                                                                                                variant="ghost"
+                                                                                                                className={`h-6 px-2 text-[9px] font-mono ${scadaView === "table" ? "bg-[rgba(201,168,76,0.15)] text-[#c9a84c]" : "text-[#4a5568] hover:text-[#b0b8c4]"}`}
+                                                                                                                onClick={() => setScadaView("table")}
+                                                                                                        >
+                                                                                                                Registers Table
+                                                                                                        </Button>
+                                                                                                        <Button
+                                                                                                                size="sm"
+                                                                                                                variant="ghost"
+                                                                                                                className={`h-6 px-2 text-[9px] font-mono ${scadaView === "yaml" ? "bg-[rgba(201,168,76,0.15)] text-[#c9a84c]" : "text-[#4a5568] hover:text-[#b0b8c4]"}`}
+                                                                                                                onClick={() => setScadaView("yaml")}
+                                                                                                        >
+                                                                                                                PyScada YAML
+                                                                                                        </Button>
+                                                                                                </div>
+                                                                                        </div>
+
+                                                                                        {scadaView === "table" ? (
+                                                                                                <div className="overflow-x-auto w-full border border-[rgba(74,85,104,0.3)] rounded-md bg-[#04060a]">
+                                                                                                        <table className="min-w-full text-[10px] font-mono text-[#b0b8c4] border-collapse">
+                                                                                                                <thead>
+                                                                                                                        <tr className="border-b border-[rgba(74,85,104,0.4)] bg-[rgba(15,23,38,0.8)]">
+                                                                                                                                <th className="p-2 text-left font-bold text-[#f1f5f9]">Tag ID</th>
+                                                                                                                                <th className="p-2 text-left font-bold text-[#b0b8c4] border-l border-[rgba(74,85,104,0.3)]">Description</th>
+                                                                                                                                <th className="p-2 text-left font-bold text-[#f1f5f9] border-l border-[rgba(74,85,104,0.3)]">MQTT Topic Address</th>
+                                                                                                                                <th className="p-2 text-center font-bold text-[#b0b8c4] border-l border-[rgba(74,85,104,0.3)] w-[60px]">Format</th>
+                                                                                                                        </tr>
+                                                                                                                </thead>
+                                                                                                                <tbody>
+                                                                                                                        {((scadaConfig as any).tags || []).map((tag: any) => (
+                                                                                                                                <tr key={tag.tag_id} className="border-b border-[rgba(74,85,104,0.2)] hover:bg-[rgba(201,168,76,0.04)]">
+                                                                                                                                        <td className="p-2 font-semibold text-[#c9a84c] truncate max-w-[150px]">{tag.tag_id}</td>
+                                                                                                                                        <td className="p-2 border-l border-[rgba(74,85,104,0.2)]">{tag.description}</td>
+                                                                                                                                        <td className="p-2 border-l border-[rgba(74,85,104,0.2)] text-[#2ec4b6] truncate max-w-[250px]" title={tag.address}>{tag.address}</td>
+                                                                                                                                        <td className="p-2 text-center border-l border-[rgba(74,85,104,0.2)] text-[9px] w-[60px]">
+                                                                                                                                                <span className="bg-[#0f172a] px-1.5 py-0.5 rounded border border-[rgba(74,85,104,0.3)] text-[#b0b8c4]">
+                                                                                                                                                        {tag.data_type}
+                                                                                                                                                </span>
+                                                                                                                                        </td>
+                                                                                                                                </tr>
+                                                                                                                        ))}
+                                                                                                                </tbody>
+                                                                                                        </table>
+                                                                                                </div>
+                                                                                        ) : (
+                                                                                                <div className="space-y-2">
+                                                                                                        <div className="flex items-center justify-between">
+                                                                                                                <span className="text-[9px] text-[#4a5568] font-mono">
+                                                                                                                        PyScada compliance layout model configurations.
+                                                                                                                </span>
+                                                                                                                <Button
+                                                                                                                        data-testid="marine-copy-yaml-btn"
+                                                                                                                        size="sm"
+                                                                                                                        variant="outline"
+                                                                                                                        className="marine-btn marine-btn--secondary h-6 text-[9px] px-2"
+                                                                                                                        onClick={() => {
+                                                                                                                                navigator.clipboard.writeText((scadaConfig as any).pyscada_yaml || "");
+                                                                                                                                toast({
+                                                                                                                                        title: "Copied YAML Configuration",
+                                                                                                                                        description: "SCADA config YAML copied to clipboard successfully.",
+                                                                                                                                });
+                                                                                                                        }}
+                                                                                                                >
+                                                                                                                        Copy YAML
+                                                                                                                </Button>
+                                                                                                        </div>
+                                                                                                        <pre className="marine-code-block marine-code-block--brass text-[10px] overflow-auto max-h-[240px] p-2.5 bg-[#04060a] border border-[rgba(74,85,104,0.4)] rounded-md font-mono whitespace-pre text-[#a7f3d0]">
+                                                                                                                {(scadaConfig as any).pyscada_yaml}
+                                                                                                        </pre>
+                                                                                                </div>
+                                                                                        )}
                                                                                 </div>
                                                                         )}
                                                                 </div>

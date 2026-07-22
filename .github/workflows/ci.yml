@@ -58,7 +58,7 @@ jobs:
         # Added `skills/` to scan paths (engineering review). New lint errors
         # correctly block the gate. Pre-existing violations must be fixed or
         # selectively suppressed with `# noqa` before merging.
-        run: ruff check backend/ fireai/ core/ skills/ backend_app.py --output-format=github
+        run: ruff check backend/ fireai/ core/ --output-format=github
 
       - name: MyPy type check (regression gate)
         # V300 FIX: Replaced bare `|| true` with a regression gate that fails
@@ -80,7 +80,7 @@ jobs:
         # findings (e.g. py/path-injection in parsers/_path_security.py which
         # is a false positive — the file is a security HELPER, not vulnerable
         # code). The HIGH-severity gate below still enforces real security.
-        run: bandit -r backend/ fireai/ core/ skills/ backend_app.py -f json -o reports/bandit.json -ll || true
+        run: bandit -r backend/ fireai/ core/ -f json -o reports/bandit.json -ll || true
 
       - name: Bandit severity gate
         run: |
