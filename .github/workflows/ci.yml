@@ -55,9 +55,8 @@ jobs:
 
       - name: Ruff lint
         # V300 / C-XX FIX: Removed `|| true` — Ruff failures now block CI.
-        # Added `skills/` to scan paths (engineering review). New lint errors
-        # correctly block the gate. Pre-existing violations must be fixed or
-        # selectively suppressed with `# noqa` before merging.
+        # New lint errors correctly block the gate. Pre-existing violations
+        # must be fixed or selectively suppressed with `# noqa` before merging.
         run: ruff check backend/ fireai/ core/ --output-format=github
 
       - name: MyPy type check (regression gate)
