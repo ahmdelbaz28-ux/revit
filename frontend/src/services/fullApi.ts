@@ -134,6 +134,8 @@ async function apiCall<T>(
                 }
         }
 
+        let lastError: Error | null = null;
+
         for (let attempt = 0; attempt < retries; attempt++) {
                 try {
                         const headers: Record<string, string> = {
