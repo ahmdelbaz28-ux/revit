@@ -562,18 +562,16 @@ class DetectorPlacementEngine:
             if swing == "right":
                 # Hinge on right, latch on LEFT → pull station on LEFT
                 x = max(exit_door.x_m - NFPA72_PULL_STATION_FROM_EXIT_M, 0.1)
-                placement_note = "latch-side (left) per ADA/IBC — door_swing=right"
+                # placement note: latch-side (left) per ADA/IBC — door_swing=right
             elif swing == "left":
                 # Hinge on left, latch on RIGHT → pull station on RIGHT
                 x = min(exit_door.x_m + NFPA72_PULL_STATION_FROM_EXIT_M, room.width_m - 0.1)
-                placement_note = "latch-side (right) per ADA/IBC — door_swing=left"
+                # placement note: latch-side (right) per ADA/IBC — door_swing=left
             else:
                 # Unknown swing — fall back to right-side placement and flag
                 x = min(exit_door.x_m + NFPA72_PULL_STATION_FROM_EXIT_M, room.width_m - 0.1)
-                placement_note = (
-                    "RIGHT-SIDE FALLBACK — door_swing unknown; "
-                    "verify latch-side placement per ADA/IBC §404.2.7"
-                )
+            # placement note: RIGHT-SIDE FALLBACK — door_swing unknown
+            # verify latch-side placement per ADA/IBC §404.2.7
                 unverifiable_count += 1
             stations.append(
                 PlacedPullStation(
@@ -672,12 +670,12 @@ class DetectorPlacementEngine:
         # additional for every full (nac_max_spacing_m) of length. This
         # ensures no occupant is more than nac_max_spacing_m/2 from an
         # appliance along the length axis.
-        n_along_length = max(1, int(math.ceil(l / nac_max_spacing_m)))
+        n_along_length = max(1, math.ceil(l / nac_max_spacing_m))
         # Number of appliances along the width axis: same logic but using
         # width. Wall-mounted appliances are placed on the long walls only
         # (width edges), so we use n_along_width to add interior appliances
         # along the length axis when the width is large.
-        n_along_width = max(1, int(math.ceil(w / nac_max_spacing_m)))
+        n_along_width = max(1, math.ceil(w / nac_max_spacing_m))
 
         # Place appliances on south and north walls, spaced along the WIDTH
         # axis (x-axis) at intervals <= nac_max_spacing_m. This guarantees

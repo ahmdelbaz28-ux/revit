@@ -38,9 +38,6 @@ V129 INFRASTRUCTURE SECURITY HARDENING (2026-06-18):
 import asyncio
 import logging
 import os
-import sys
-import threading
-import time
 from contextlib import asynccontextmanager
 from typing import Any
 
@@ -166,18 +163,24 @@ if not logger.handlers:
 # testable. Re-exports below maintain backward compatibility with code that
 # imports these symbols from backend.app.
 
-from backend.csp import build_csp as _build_csp
-from backend.cache import (
-    cache_get,
-    cache_set,
-    cache_delete,
-    cache_stats as _cache_stats_impl,
-    cache_invalidate as _cache_invalidate_impl,
-    get_cache,
+from backend.cache import (  # noqa: I001 — imports kept together for backward compat
+    _CACHE_MAX_ENTRIES,  # noqa: F401
+    _CACHE_MAX_VALUE_SIZE,  # noqa: F401
     _cache,
     _cache_lock,
-    _CACHE_MAX_ENTRIES,
-    _CACHE_MAX_VALUE_SIZE,
+    cache_delete,  # noqa: F401
+    cache_get,  # noqa: F401
+    cache_set,  # noqa: F401
+    get_cache,  # noqa: F401
+)
+from backend.cache import (
+    cache_invalidate as _cache_invalidate_impl,  # noqa: F401
+)
+from backend.cache import (
+    cache_stats as _cache_stats_impl,
+)
+from backend.csp import (
+    build_csp as _build_csp,  # noqa: F401 — re-exported for backward compatibility
 )
 
 

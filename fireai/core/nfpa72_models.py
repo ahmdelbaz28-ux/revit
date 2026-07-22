@@ -882,8 +882,10 @@ def get_smoke_detector_radius(ceiling_height_m: float) -> float:
 
     Args:
         ceiling_height_m: Ceiling height in meters
+
     Returns:
         Coverage radius in meters (6.37m = 0.7 × 9.1m, flat for all heights)
+
     Raises:
         CeilingHeightError: If height is outside NFPA 72 limits (3.0-18.288m)
 

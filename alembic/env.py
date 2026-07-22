@@ -48,12 +48,16 @@ def run_migrations_offline() -> None:
     script output.
     """
     url = config.get_main_option("sqlalchemy.url")
+    # H-03 FIX: render_as_batch is only needed for SQLite (batch mode generates
+    # CREATE TABLE _alembic_tmp → INSERT → DROP → RENAME on Postgres, which
+    # causes long table locks). Check the dialect at runtime.
+    is_sqlite = url.startswith("sqlite")
     context.configure(
         url=url,
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
-        render_as_batch=True,  # Required for SQLite ALTER TABLE support
+        render_as_batch=is_sqlite,
     )
 
     with context.begin_transaction():
@@ -74,10 +78,12 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
+        # H-03 FIX: render_as_batch is only needed for SQLite
+        is_sqlite = connection.dialect.name == "sqlite"
         context.configure(
             connection=connection,
             target_metadata=target_metadata,
-            render_as_batch=True,  # Required for SQLite ALTER TABLE support
+            render_as_batch=is_sqlite,
         )
 
         with context.begin_transaction():

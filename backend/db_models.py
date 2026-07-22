@@ -11,6 +11,7 @@ When you modify the schema in database.py, you MUST also update the correspondin
 SQLAlchemy model here, then run `alembic revision --autogenerate -m "description"`.
 """
 
+import sqlalchemy as sa
 from sqlalchemy import (
     CheckConstraint,
     Column,
@@ -190,6 +191,46 @@ class SyncOperation(Base):
     __table_args__ = (
         Index("idx_sync_ops_entity", "entity_type", "entity_id"),
         Index("idx_sync_ops_status", "status"),
+    )
+
+
+class ETAPIntegration(Base):
+    """ETAP electrical system integration configuration."""
+
+    __tablename__ = "etap_integrations"
+
+    id = Column(String, primary_key=True)
+    project_id = Column(String, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
+    host = Column(String, nullable=False)
+    port = Column(Integer, nullable=False)
+    username = Column(String, nullable=False)
+    password = Column(String, nullable=False)
+    enabled = Column(sa.Boolean, nullable=False, server_default="false")
+    last_sync = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), nullable=False)
+    updated_at = Column(DateTime(timezone=True), nullable=False)
+
+    __table_args__ = (
+        Index("idx_etap_integrations_project", "project_id"),
+    )
+
+
+class ETAPSyncLog(Base):
+    """Log of ETAP synchronization operations."""
+
+    __tablename__ = "etap_sync_logs"
+
+    id = Column(String, primary_key=True)
+    project_id = Column(String, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
+    direction = Column(String, nullable=False)
+    status = Column(String, nullable=False)
+    records_synced = Column(Integer, nullable=False, server_default="0")
+    error_message = Column(String, nullable=True)
+    created_at = Column(DateTime(timezone=True), nullable=False)
+
+    __table_args__ = (
+        Index("idx_etap_sync_logs_project", "project_id"),
+        Index("idx_etap_sync_logs_created", "created_at"),
     )
 
 

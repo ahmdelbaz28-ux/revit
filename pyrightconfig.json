@@ -1,13 +1,16 @@
 {
   "include": [
-    "tests",
+    "backend",
     "backend/tests",
+    "core",
     "core/tests",
+    "fireai",
     "fireai/core/tests",
+    "marine/tests",
     "parsers/tests",
     "qomn_conduit/tests",
     "qomn_fire/tests",
-    "marine/tests"
+    "tests"
   ],
   "exclude": [
     "**/node_modules",
@@ -34,7 +37,7 @@
   "reportAttributeAccessIssue": "none",
   "reportUnknownLambdaType": "none",
   "reportMissingStub": "none",
-  "reportPrivateUsage": "none",
+  "reportPrivateUsage": "warning",
   "reportUntypedFunctionDecorator": "none",
   "reportUnnecessaryIsInstance": "none",
   "reportUnnecessaryCast": "none",
@@ -43,6 +46,5 @@
   "reportCallIssue": "warning",
   "reportArgumentType": "warning",
   "reportUnannotatedClassAttribute": "warning",
-  "reportUnusedCallResult": "warning",
-  "reportPrivateUsage": "warning"
+  "reportUnusedCallResult": "warning"
 }

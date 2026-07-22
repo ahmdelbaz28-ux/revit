@@ -13,6 +13,12 @@
       "skillPath": "skills/debugging-wizard/SKILL.md",
       "computedHash": "7c578adb7a39ff6c4018f87055e4191e965c5e440119116914efd86318646a69"
     },
+    "improve-codebase-architecture": {
+      "source": "mattpocock/skills",
+      "sourceType": "github",
+      "skillPath": "skills/engineering/improve-codebase-architecture/SKILL.md",
+      "computedHash": "569299a60c8e93880f3b3c1eca55578f58f7e1a4155876edb4cb814da3d6b3ea"
+    },
     "resolve-merge-conflicts": {
       "source": "warpdotdev/common-skills",
       "sourceType": "github",
