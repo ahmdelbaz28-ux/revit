@@ -20,6 +20,10 @@ agent_response_futures: Dict[str, asyncio.Future[Any]] = {}
 # A lock per connection to serialize command dispatches
 agent_locks: Dict[str, asyncio.Lock] = {}
 
+# Track which futures belong to which websocket (for cleanup on disconnect)
+# Maps websocket id -> set of pending command IDs
+_agent_pending_commands: Dict[str, set[str]] = {}
+
 
 def get_agent_lock(websocket: WebSocket) -> asyncio.Lock:
     ws_id = str(id(websocket))
@@ -113,9 +117,19 @@ async def agent_websocket_endpoint(websocket: WebSocket):
     except WebSocketDisconnect:
         logger.info("Local Agent disconnected from WebSocket")
     finally:
+        # Fail all pending futures for this websocket
+        ws_id = str(id(websocket))
+        pending = _agent_pending_commands.pop(ws_id, set())
+        for cmd_id in pending:
+            future = agent_response_futures.pop(cmd_id, None)
+            if future and not future.done():
+                future.set_exception(
+                    ConnectionError(f"Agent disconnected while command {cmd_id} was pending")
+                )
+
         if agent_type in active_agents and websocket in active_agents[agent_type]:
             active_agents[agent_type].remove(websocket)
-        agent_locks.pop(str(id(websocket)), None)
+        agent_locks.pop(ws_id, None)
 
 
 def has_active_agent(agent_type: str = "autocad_revit") -> bool:
@@ -127,14 +141,20 @@ async def send_agent_command(agent_type: str, action: str, args: Dict[str, Any],
     """
     Send a command to the active agent and await the response.
     """
-    agents = active_agents.get("autocad_revit", [])
+    agents = active_agents.get(agent_type, [])
     if not agents:
         raise HTTPException(status_code=503, detail="No active local agent connected.")
 
     websocket = agents[0]
+    ws_id = str(id(websocket))
     cmd_id = str(uuid.uuid4())
     future = asyncio.get_running_loop().create_future()
     agent_response_futures[cmd_id] = future
+
+    # Track future ownership for cleanup on disconnect
+    if ws_id not in _agent_pending_commands:
+        _agent_pending_commands[ws_id] = set()
+    _agent_pending_commands[ws_id].add(cmd_id)
 
     lock = get_agent_lock(websocket)
     async with lock:
@@ -160,3 +180,9 @@ async def send_agent_command(agent_type: str, action: str, args: Dict[str, Any],
             raise HTTPException(status_code=502, detail=f"Failed to execute local agent command: {e}")
         finally:
             agent_response_futures.pop(cmd_id, None)
+            # Clean up tracking
+            pending = _agent_pending_commands.get(ws_id)
+            if pending is not None:
+                pending.discard(cmd_id)
+                if not pending:
+                    _agent_pending_commands.pop(ws_id, None)

@@ -13,6 +13,7 @@ from __future__ import annotations
 import json
 import logging
 import sqlite3
+import threading
 import uuid
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
@@ -134,77 +135,103 @@ class LearningAgent:
 
     def __init__(self, db_path: str = "fireai_learning.sqlite3") -> None:
         self.db_path = db_path
+        # V215 SAFETY FIX (report 5.8): SQLite connection is shared across
+        # calls. check_same_thread=False allows cross-thread use but provides
+        # NO serialization. A reentrant lock guards every DB operation to
+        # prevent "database is locked" errors and data races in threaded
+        # contexts (e.g. FastAPI, async pipelines). RLock allows nested
+        # method calls within the same thread to re-acquire safely.
+        self._lock = threading.RLock()
         self.conn = sqlite3.connect(db_path, check_same_thread=False)
         self.conn.row_factory = sqlite3.Row
         self._create_tables()
 
     def _create_tables(self) -> None:
-        cursor = self.conn.cursor()
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS experiences (
-                experience_id TEXT PRIMARY KEY,
-                room_config TEXT NOT NULL,
-                detector_count INTEGER NOT NULL,
-                coverage_pct REAL NOT NULL,
-                compliance_passed INTEGER NOT NULL,
-                patterns_used TEXT NOT NULL,
-                outcome TEXT NOT NULL,
-                timestamp TEXT NOT NULL
+        with self._lock:
+            cursor = self.conn.cursor()
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS experiences (
+                    experience_id TEXT PRIMARY KEY,
+                    room_config TEXT NOT NULL,
+                    detector_count INTEGER NOT NULL,
+                    coverage_pct REAL NOT NULL,
+                    compliance_passed INTEGER NOT NULL,
+                    patterns_used TEXT NOT NULL,
+                    outcome TEXT NOT NULL,
+                    timestamp TEXT NOT NULL
+                )
+            """)
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS patterns (
+                    pattern_id TEXT PRIMARY KEY,
+                    room_type TEXT NOT NULL,
+                    constraints TEXT NOT NULL,
+                    solution_summary TEXT NOT NULL,
+                    effectiveness_score REAL NOT NULL,
+                    usage_count INTEGER NOT NULL
+                )
+            """)
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS pattern_experience_links (
+                    pattern_id TEXT NOT NULL,
+                    experience_id TEXT NOT NULL,
+                    PRIMARY KEY (pattern_id, experience_id)
+                )
+            """)
+            # Performance indexes for common query patterns
+            cursor.execute(
+                "CREATE INDEX IF NOT EXISTS idx_experiences_timestamp "
+                "ON experiences(timestamp)"
             )
-        """)
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS patterns (
-                pattern_id TEXT PRIMARY KEY,
-                room_type TEXT NOT NULL,
-                constraints TEXT NOT NULL,
-                solution_summary TEXT NOT NULL,
-                effectiveness_score REAL NOT NULL,
-                usage_count INTEGER NOT NULL
+            cursor.execute(
+                "CREATE INDEX IF NOT EXISTS idx_patterns_effectiveness "
+                "ON patterns(effectiveness_score DESC, usage_count DESC)"
             )
-        """)
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS pattern_experience_links (
-                pattern_id TEXT NOT NULL,
-                experience_id TEXT NOT NULL,
-                PRIMARY KEY (pattern_id, experience_id)
+            cursor.execute(
+                "CREATE INDEX IF NOT EXISTS idx_patterns_room_type "
+                "ON patterns(room_type)"
             )
-        """)
-        self.conn.commit()
+            self.conn.commit()
 
     def store_experience(self, experience: DesignExperience) -> str:
         exp_id = experience.experience_id or str(uuid.uuid4())
-        cursor = self.conn.cursor()
-        cursor.execute(
-            """
-            INSERT OR REPLACE INTO experiences
-            (experience_id, room_config, detector_count, coverage_pct,
-             compliance_passed, patterns_used, outcome, timestamp)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        """,
-            (
-                exp_id,
-                experience.room_config,
-                experience.detector_count,
-                experience.coverage_pct,
-                1 if experience.compliance_passed else 0,
-                json.dumps(experience.patterns_used),
-                experience.outcome,
-                experience.timestamp,
-            ),
-        )
-        for pid in experience.patterns_used:
+        with self._lock:
+            cursor = self.conn.cursor()
             cursor.execute(
-                "INSERT OR IGNORE INTO pattern_experience_links (pattern_id, experience_id) VALUES (?, ?)",
-                (pid, exp_id),
+                """
+                INSERT OR REPLACE INTO experiences
+                (experience_id, room_config, detector_count, coverage_pct,
+                 compliance_passed, patterns_used, outcome, timestamp)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+                (
+                    exp_id,
+                    experience.room_config,
+                    experience.detector_count,
+                    experience.coverage_pct,
+                    1 if experience.compliance_passed else 0,
+                    json.dumps(experience.patterns_used),
+                    experience.outcome,
+                    experience.timestamp,
+                ),
             )
-        self.conn.commit()
+            for pid in experience.patterns_used:
+                cursor.execute(
+                    "INSERT OR IGNORE INTO pattern_experience_links (pattern_id, experience_id) VALUES (?, ?)",
+                    (pid, exp_id),
+                )
+            self.conn.commit()
         logger.info("Stored experience %s", exp_id)
         return exp_id
 
-    def retrieve_similar(self, design: Any, top_k: int = 5) -> list[DesignExperience]:
-        cursor = self.conn.cursor()
-        cursor.execute("SELECT * FROM experiences ORDER BY timestamp DESC")
-        rows = cursor.fetchall()
+    def retrieve_similar(self, design: Any, top_k: int = 5, limit: int = 100) -> list[DesignExperience]:
+        with self._lock:
+            cursor = self.conn.cursor()
+            cursor.execute(
+                "SELECT * FROM experiences ORDER BY timestamp DESC LIMIT ?",
+                (limit,),
+            )
+            rows = cursor.fetchall()
 
         query_features = _extract_room_features(design)
 
@@ -232,9 +259,10 @@ class LearningAgent:
         return results
 
     def get_pattern(self, pattern_id: str) -> DesignPattern | None:
-        cursor = self.conn.cursor()
-        cursor.execute("SELECT * FROM patterns WHERE pattern_id = ?", (pattern_id,))
-        row = cursor.fetchone()
+        with self._lock:
+            cursor = self.conn.cursor()
+            cursor.execute("SELECT * FROM patterns WHERE pattern_id = ?", (pattern_id,))
+            row = cursor.fetchone()
         if row is None:
             return None
         return DesignPattern(
@@ -248,31 +276,36 @@ class LearningAgent:
 
     def register_pattern(self, pattern: DesignPattern) -> str:
         pid = pattern.pattern_id or str(uuid.uuid4())
-        cursor = self.conn.cursor()
-        cursor.execute(
-            """
-            INSERT OR REPLACE INTO patterns
-            (pattern_id, room_type, constraints, solution_summary,
-             effectiveness_score, usage_count)
-            VALUES (?, ?, ?, ?, ?, ?)
-        """,
-            (
-                pid,
-                pattern.room_type,
-                json.dumps(pattern.constraints),
-                pattern.solution_summary,
-                pattern.effectiveness_score,
-                pattern.usage_count,
-            ),
-        )
-        self.conn.commit()
+        with self._lock:
+            cursor = self.conn.cursor()
+            cursor.execute(
+                """
+                INSERT OR REPLACE INTO patterns
+                (pattern_id, room_type, constraints, solution_summary,
+                 effectiveness_score, usage_count)
+                VALUES (?, ?, ?, ?, ?, ?)
+            """,
+                (
+                    pid,
+                    pattern.room_type,
+                    json.dumps(pattern.constraints),
+                    pattern.solution_summary,
+                    pattern.effectiveness_score,
+                    pattern.usage_count,
+                ),
+            )
+            self.conn.commit()
         logger.info("Registered pattern %s (type=%s, score=%.3f)", pid, pattern.room_type, pattern.effectiveness_score)
         return pid
 
-    def suggest_patterns(self, design: Any) -> list[DesignPattern]:
-        cursor = self.conn.cursor()
-        cursor.execute("SELECT * FROM patterns ORDER BY effectiveness_score DESC, usage_count DESC")
-        rows = cursor.fetchall()
+    def suggest_patterns(self, design: Any, limit: int = 100) -> list[DesignPattern]:
+        with self._lock:
+            cursor = self.conn.cursor()
+            cursor.execute(
+                "SELECT * FROM patterns ORDER BY effectiveness_score DESC, usage_count DESC LIMIT ?",
+                (limit,),
+            )
+            rows = cursor.fetchall()
         if not rows:
             return []
 
@@ -312,5 +345,6 @@ class LearningAgent:
         return results
 
     def close(self) -> None:
-        if self.conn:
-            self.conn.close()
+        with self._lock:
+            if self.conn:
+                self.conn.close()
