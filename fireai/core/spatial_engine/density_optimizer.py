@@ -47,7 +47,11 @@ import math
 import time
 from dataclasses import dataclass, field
 
-from fireai.constants.nfpa72 import WALL_MIN_DISTANCE_M
+from fireai.constants.nfpa72 import (
+    SMOKE_COVERAGE_RADIUS_M,
+    SMOKE_MAX_SPACING_M as _CANONICAL_SMOKE_MAX_SPACING_M,
+    WALL_MIN_DISTANCE_M,
+)
 
 # ── ConvergenceConfig integration (PDF Phase 3 requirement) ──
 # The density optimizer MUST have formal termination conditions:
@@ -66,8 +70,13 @@ DEFAULT_EPSILON = 1e-4
 DEFAULT_TIMEOUT_SECONDS = 300.0  # 5 minutes
 REMOVE_REDUNDANT_MAX_PASSES = 100  # Safety cap for _remove_redundant loop
 
-MAX_SPACING_M = 9.1  # 30 ft ≈ 9.1m (rounded, matches NFPA 72 Table 17.6.3.1.1)
-DETECTOR_RADIUS = 0.7 * MAX_SPACING_M  # 6.37 m (NFPA 72 §17.7.4.2.3.1 - 0.7S Rule)
+# V215 FIX (report 5.3): Eliminate duplicate radius constant definitions.
+# Previously MAX_SPACING_M and DETECTOR_RADIUS were hardcoded here as 9.1
+# and 0.7*9.1=6.37, duplicating the canonical constants in
+# fireai.constants.nfpa72. If the canonical value changes, this module
+# would silently use the old value. Now imports from the single source.
+MAX_SPACING_M = _CANONICAL_SMOKE_MAX_SPACING_M  # 9.1m — NFPA 72 Table 17.6.3.1.1
+DETECTOR_RADIUS = SMOKE_COVERAGE_RADIUS_M  # 6.37m — R = 0.7 × S (§17.7.4.2.3.1)
 # NOTE: Previous version used 9.144m (exact 30ft) giving R=6.40m. This was
 # inconsistent with the canonical nfpa72_models.RADIUS_MAP which uses 9.1m giving
 # R=6.37m. Aligned to 9.1m for consistency — all models now agree on R=6.37m.

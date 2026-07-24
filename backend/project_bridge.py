@@ -42,7 +42,7 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 _TARGET_DB = "udm_elements"
-_EXC_MSG = ""
+_SUPPRESSED_EXCEPTION_MSG = "Suppressed Exception in project_bridge.py"
 
 
 def sync_project_to_udm(project_data: dict[str, Any]) -> bool:
@@ -134,7 +134,7 @@ def sync_project_to_udm(project_data: dict[str, Any]) -> bool:
             from backend.database import get_db
             get_db().record_sync("project", project_id, _TARGET_DB, "error", str(e))
         except Exception:
-                        logger.debug(_EXC_MSG, exc_info=True)
+                        logger.debug(_SUPPRESSED_EXCEPTION_MSG, exc_info=True)
         return False
 
 
@@ -224,7 +224,7 @@ def sync_project_update_to_udm(project_id: str, updates: dict[str, Any]) -> bool
             from backend.database import get_db
             get_db().record_sync("project", project_id, _TARGET_DB, "error", str(e))
         except Exception:
-                        logger.debug(_EXC_MSG, exc_info=True)
+                        logger.debug(_SUPPRESSED_EXCEPTION_MSG, exc_info=True)
         return False
 
 
@@ -283,7 +283,7 @@ def sync_project_delete_to_udm(project_id: str) -> bool:
             from backend.database import get_db
             get_db().record_sync("project", project_id, _TARGET_DB, "error", str(e))
         except Exception:
-                        logger.debug(_EXC_MSG, exc_info=True)
+                        logger.debug(_SUPPRESSED_EXCEPTION_MSG, exc_info=True)
         return False
 
 
@@ -368,7 +368,7 @@ def sync_device_to_udm(project_id: str, device_data: dict[str, Any]) -> bool:
                 try:
                     udm.bridge_sql(migration)
                 except Exception:
-                                        logger.debug(_EXC_MSG, exc_info=True)
+                                        logger.debug(_SUPPRESSED_EXCEPTION_MSG, exc_info=True)
 
             udm.bridge_create_table("""
                 CREATE TABLE IF NOT EXISTS element_projects (
@@ -419,7 +419,7 @@ def sync_device_to_udm(project_id: str, device_data: dict[str, Any]) -> bool:
             from backend.database import get_db
             get_db().record_sync("device", device_id, _TARGET_DB, "error", str(e))
         except Exception:
-                        logger.debug(_EXC_MSG, exc_info=True)
+                        logger.debug(_SUPPRESSED_EXCEPTION_MSG, exc_info=True)
         return False
 
 
@@ -529,7 +529,7 @@ def sync_device_update_to_udm(project_id: str, device_id: str, updates: dict[str
             from backend.database import get_db
             get_db().record_sync("device", device_id, _TARGET_DB, "error", str(e))
         except Exception:
-                        logger.debug(_EXC_MSG, exc_info=True)
+                        logger.debug(_SUPPRESSED_EXCEPTION_MSG, exc_info=True)
         return False
 
 
@@ -580,7 +580,7 @@ def sync_device_delete_to_udm(project_id: str, device_id: str) -> bool:
             from backend.database import get_db
             get_db().record_sync("device", device_id, _TARGET_DB, "error", str(e))
         except Exception:
-                        logger.debug(_EXC_MSG, exc_info=True)
+                        logger.debug(_SUPPRESSED_EXCEPTION_MSG, exc_info=True)
         return False
 
 
@@ -690,7 +690,7 @@ def sync_connection_to_udm(project_id: str, connection_data: dict[str, Any]) -> 
             from backend.database import get_db
             get_db().record_sync("connection", connection_id, _TARGET_DB, "error", str(e))
         except Exception:
-                        logger.debug(_EXC_MSG, exc_info=True)
+                        logger.debug(_SUPPRESSED_EXCEPTION_MSG, exc_info=True)
         return False
 
 
@@ -761,5 +761,5 @@ def sync_connection_delete_to_udm(project_id: str, connection_id: str) -> bool:
             from backend.database import get_db
             get_db().record_sync("connection", connection_id, _TARGET_DB, "error", str(e))
         except Exception:
-                        logger.debug(_EXC_MSG, exc_info=True)
+                        logger.debug(_SUPPRESSED_EXCEPTION_MSG, exc_info=True)
         return False

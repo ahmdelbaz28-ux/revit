@@ -320,6 +320,13 @@ class Config:
         self.OLLAMA_TIMEOUT: float = self._safe_float("QOMN_OLLAMA_TIMEOUT", 2.0, min_val=0.1)
         self.OLLAMA_MAX_RPS: float = self._safe_float("QOMN_OLLAMA_MAX_RPS", 5.0, min_val=1.0)
 
+        # SAFETY GATE: LLM-generated engineering values are DISABLED by default.
+        # Set QOMN_ENABLE_LLM_HEALING=true to enable Tier 2 LLM recovery.
+        # When disabled, Tier 2 falls through to re-raise the original error.
+        # This prevents non-deterministic AI-generated values from being
+        # returned as official engineering results.
+        self.ENABLE_LLM_HEALING: bool = os.environ.get("QOMN_ENABLE_LLM_HEALING", "").lower() in ("1", "true", "yes")
+
         # Audit Logger Configuration
         self.AUDIT_MAX_BYTES: int = self._safe_int(
             "QOMN_AUDIT_MAX_BYTES", 10 * 1024 * 1024, min_val=1024
@@ -1545,6 +1552,17 @@ def self_healing(  # NOSONAR — S3776: cognitive complexity is inherent to the 
                     f"[TIER 2 HEALING INITIALIZED] Standard Tier 1 rules could "
                     f"not safely resolve {err_type} in {func_name}. Querying Local LLM Agent..."
                 )
+
+                # SAFETY GATE: LLM-generated engineering values are DISABLED by default.
+                # Set QOMN_ENABLE_LLM_HEALING=true to enable Tier 2 LLM recovery.
+                # When disabled, Tier 2 falls through to re-raise the original error.
+                if not _config.ENABLE_LLM_HEALING:
+                    logging.warning(
+                        f"[TIER 2 SAFETY GATE] LLM healing is disabled (QOMN_ENABLE_LLM_HEALING not set). "
+                        f"Tier 1 could not resolve {err_type} in {func_name}. "
+                        f"Re-raising original error. Set QOMN_ENABLE_LLM_HEALING=true to enable LLM recovery."
+                    )
+                    raise e
 
                 llm_response_val = None
                 tier_2_verified = False

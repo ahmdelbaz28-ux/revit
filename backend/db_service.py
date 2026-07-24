@@ -662,6 +662,52 @@ class DatabaseService:
 
             return result, total
 
+    def _build_property_updates(self, element, update_data: ElementUpdate) -> dict:
+        """Build property updates dictionary."""
+        updates: dict[str, Any] = {}
+        
+        if update_data.properties:
+            # Merge with existing properties
+            existing_props = element.properties
+            props_dict = existing_props.to_dict() if existing_props else {}
+
+            for field_name, value in update_data.properties.model_dump(exclude_unset=True).items():
+                if value is not None:
+                    props_dict[field_name] = value
+
+            updates["properties"] = props_dict
+            
+        return updates
+
+    def _build_geometry_updates(self, update_data: ElementUpdate, updates: dict) -> dict:
+        """Add geometry updates to the updates dictionary."""
+        if update_data.geometry:
+            updates["geometry"] = {
+                "points": [{"x": p.x, "y": p.y, "z": p.z} for p in update_data.geometry.points],
+                "polyline_closed": update_data.geometry.polyline_closed,
+            }
+        return updates
+
+    def _build_basic_field_updates(self, update_data: ElementUpdate, updates: dict) -> dict:
+        """Add basic field updates to the updates dictionary."""
+        if update_data.source_file is not None:
+            updates["source_file"] = update_data.source_file
+        if update_data.last_modified_by is not None:
+            updates["last_modified_by"] = update_data.last_modified_by
+        if update_data.is_deleted is not None:
+            updates["is_deleted"] = update_data.is_deleted
+        return updates
+
+    def _get_change_source(self, update_data: ElementUpdate):
+        """Get the change source from update data."""
+        source = ChangeSource.MANUAL
+        if update_data.last_modified_by:
+            try:
+                source = ChangeSource(update_data.last_modified_by)
+            except ValueError as ve:
+                logger.debug("Unknown ChangeSource '%s': %s", update_data.last_modified_by, ve)
+        return source
+
     def update_element(self, element_id: str, update_data: ElementUpdate) -> ElementResponse | None:  # NOSONAR — S3776: cognitive complexity is inherent to the safety-critical algorithm
         """Update an element."""
         with self._service_lock:
@@ -670,48 +716,16 @@ class DatabaseService:
                 return None
 
             # Build updates dict for UniversalDataModel.update_element()
-            updates: dict[str, Any] = {}
+            updates = self._build_property_updates(element, update_data)
+            updates = self._build_geometry_updates(update_data, updates)
+            updates = self._build_basic_field_updates(update_data, updates)
 
-            if update_data.properties:
-                # Merge with existing properties
-                existing_props = element.properties
-                props_dict = existing_props.to_dict() if existing_props else {}
-
-                for field_name, value in update_data.properties.model_dump(exclude_unset=True).items():
-                    if value is not None:
-                        props_dict[field_name] = value
-
-                updates["properties"] = props_dict
-
-            if update_data.geometry:
-                updates["geometry"] = {
-                    "points": [{"x": p.x, "y": p.y, "z": p.z} for p in update_data.geometry.points],
-                    "polyline_closed": update_data.geometry.polyline_closed,
-                }
-
-            if update_data.source_file is not None:
-                updates["source_file"] = update_data.source_file
-            if update_data.last_modified_by is not None:
-                updates["last_modified_by"] = update_data.last_modified_by
-            if update_data.is_deleted is not None:
-                updates["is_deleted"] = update_data.is_deleted
-
-            # If setting is_deleted to True, use delete_element instead
+            # Handle deletion case separately
             if update_data.is_deleted is True and not element.is_deleted:
-                source = ChangeSource.MANUAL
-                if update_data.last_modified_by:
-                    try:
-                        source = ChangeSource(update_data.last_modified_by)
-                    except ValueError as ve:
-                        logger.debug("Unknown ChangeSource '%s': %s", update_data.last_modified_by, ve)
+                source = self._get_change_source(update_data)
                 self._data_model.delete_element(element_id, source=source)
             elif updates:
-                source = ChangeSource.MANUAL
-                if update_data.last_modified_by:
-                    try:
-                        source = ChangeSource(update_data.last_modified_by)
-                    except ValueError as ve:
-                        logger.debug("Unknown ChangeSource '%s': %s", update_data.last_modified_by, ve)
+                source = self._get_change_source(update_data)
                 self._data_model.update_element(
                     element_id, updates, source=source
                 )

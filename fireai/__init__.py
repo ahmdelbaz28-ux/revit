@@ -84,30 +84,62 @@ _PUBLIC_NAMES = [
 
 
 def __getattr__(name):
-    """Lazy import: only load sub-modules when actually accessed."""
+    """
+    Lazy import: only load sub-modules when actually accessed.
+
+    V215 FIX (report 5.4): Previously raised bare AttributeError on import
+    failures, making it indistinguishable from a genuinely-missing attribute.
+    Now preserves the original ImportError chain so diagnostics show the root
+    cause (e.g. missing dependency), while still raising AttributeError for
+    names that simply don't exist in _PUBLIC_NAMES.
+    """
     if name in _PUBLIC_NAMES:
         _V17_NAMES = {"AcousticSPLCalculator", "StrictBatterySizer", "TenabilityEvaluator"}
         if name in _V17_NAMES:
-            from fireai.v17_core import (
-                AcousticSPLCalculator,
-                StrictBatterySizer,
-                TenabilityEvaluator,
-            )
+            try:
+                from fireai.v17_core import (
+                    AcousticSPLCalculator,
+                    StrictBatterySizer,
+                    TenabilityEvaluator,
+                )
 
-            return {
-                "AcousticSPLCalculator": AcousticSPLCalculator,
-                "StrictBatterySizer": StrictBatterySizer,
-                "TenabilityEvaluator": TenabilityEvaluator,
-            }[name]
+                return {
+                    "AcousticSPLCalculator": AcousticSPLCalculator,
+                    "StrictBatterySizer": StrictBatterySizer,
+                    "TenabilityEvaluator": TenabilityEvaluator,
+                }[name]
+            except ImportError as e:
+                raise ImportError(
+                    f"Cannot import '{name}' from fireai.v17_core. "
+                    f"This may indicate a missing optional dependency. "
+                    f"Original error: {e}"
+                ) from e
+
         if name == "EnterpriseOrchestrator":
-            from fireai.bridges.enterprise_pipeline import EnterpriseOrchestrator
+            try:
+                from fireai.bridges.enterprise_pipeline import EnterpriseOrchestrator
 
-            return EnterpriseOrchestrator
+                return EnterpriseOrchestrator
+            except ImportError as e:
+                raise ImportError(
+                    f"Cannot import 'EnterpriseOrchestrator' from "
+                    f"fireai.bridges.enterprise_pipeline. "
+                    f"Original error: {e}"
+                ) from e
 
-        from fireai.core import __dict__ as core_dict  # type: ignore[attr-defined]
+        try:
+            from fireai.core import __dict__ as core_dict  # type: ignore[attr-defined]
 
-        if name in core_dict:
-            return core_dict[name]
+            if name in core_dict:
+                return core_dict[name]
+        except ImportError as e:
+            raise ImportError(
+                f"Cannot import 'fireai.core' (required for lazy access to '{name}'). "
+                f"A sub-module of fireai.core failed to import — this usually means "
+                f"a dependency is missing or has an incompatible version. "
+                f"Original error: {e}"
+            ) from e
+
         # Fallback: try direct import from known modules
         try:
             from fireai.core.fireai_core import EnhancedRoomResult, FireAISystem
@@ -116,8 +148,11 @@ def __getattr__(name):
                 return (
                     locals().get(name) or {"FireAISystem": FireAISystem, "EnhancedRoomResult": EnhancedRoomResult}[name]
                 )
-        except ImportError:
-            pass
+        except ImportError as e:
+            raise ImportError(
+                f"Cannot import '{name}' from fireai.core.fireai_core. "
+                f"Original error: {e}"
+            ) from e
         raise AttributeError(f"module 'fireai' has no attribute '{name}'")
     raise AttributeError(f"module 'fireai' has no attribute '{name}'")
 

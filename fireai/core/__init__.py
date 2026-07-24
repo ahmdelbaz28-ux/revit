@@ -1,4 +1,52 @@
-"""fireai – NFPA 72-2022 Automated Fire Detector Placement Engine."""
+"""fireai – NFPA 72-2022 Automated Fire Detector Placement Engine.
+
+V215 FIX (report 5.7): Import-time side effects.
+This module eagerly imports ~50 sub-modules at package load time. If any
+dependency is missing (e.g. Shapely not installed), the entire fireai.core
+package fails to import — including `from fireai.core import *`.
+
+The top-level fireai/__init__.py mitigates this via lazy __getattr__, but
+direct imports of fireai.core still trigger eager loading.
+
+KNOWN ISSUE: A full refactor to lazy imports here would require changing
+all internal `from fireai.core.X import Y` patterns to direct module paths.
+That is a larger architectural change deferred to a future milestone.
+For now, the import_error_context() context manager below provides better
+diagnostics when an import fails.
+"""
+
+import logging as _logging
+
+_module_logger = _logging.getLogger(__name__)
+
+
+def import_error_context(module_name: str):
+    """
+    Context manager that wraps an import with better error diagnostics.
+
+    Usage:
+        with import_error_context("fireai.core.acoustics_engine"):
+            from fireai.core.acoustics_engine import AcousticCoverageResult
+
+    If the import fails, the raised ImportError includes the module name
+    and a hint about what may be missing.
+    """
+    import contextlib
+
+    return contextlib.contextmanager(_import_error_context_cm)(module_name)
+
+
+def _import_error_context_cm(module_name: str):
+    try:
+        yield
+    except ImportError as e:
+        raise ImportError(
+            f"Failed to import '{module_name}'. "
+            f"This sub-module of fireai.core could not be loaded — "
+            f"this usually means an optional dependency is missing or "
+            f"has an incompatible version. "
+            f"Original error: {e}"
+        ) from e
 
 __version__ = "1.0.0"
 

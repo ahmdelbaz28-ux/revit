@@ -34,6 +34,9 @@ class CeilingType(str, Enum):
     CONSOLIDATED: This enum is the canonical source. nfpa72_models.py
     CeilingType re-exports from here for backward compatibility.
     Includes all ceiling types from both original files.
+    V215 FIX (report 5.2): Added PEAKED, BEAM (alias), OPEN_JOIST from
+    device_placement.py so there is a SINGLE canonical source. No module
+    may define its own local CeilingType — import from here only.
     """
 
     FLAT = "FLAT"
@@ -48,6 +51,10 @@ class CeilingType(str, Enum):
     CORRIDOR = "CORRIDOR"
     TRUSS = "TRUSS"
     COMBUSTIBLE = "COMBUSTIBLE"
+    # ── V215: Members consolidated from device_placement.py ──────────────
+    PEAKED = "PEAKED"      # Peaked/sloped ceiling (NFPA 72 §17.7.3.2.5)
+    BEAM = "BEAM"          # Beam ceiling — alias of BEAMED for device_placement compatibility
+    OPEN_JOIST = "OPEN_JOIST"  # Open-joist ceiling
 
 
 class ConfidenceLevel(str, Enum):
@@ -65,6 +72,9 @@ class DetectorType(str, Enum):
 
     CONSOLIDATED: Includes all types from both contracts.py and
     nfpa72_models.py to prevent enum drift between modules.
+    V215 FIX (report 5.2): Added DUCT, BEAM, ASPIRATING, MULTI from
+    device_placement.py so there is a SINGLE canonical source. No module
+    may define its own local DetectorType — import from here only.
     """
 
     SMOKE = "SMOKE"
@@ -80,6 +90,11 @@ class DetectorType(str, Enum):
     SMOKE_HEAT_COMBINATION = "SMOKE_HEAT_COMBINATION"
     FLAME = "FLAME"
     GAS = "GAS"
+    # ── V215: Members consolidated from device_placement.py ──────────────
+    DUCT = "DUCT"              # Duct smoke detector (NFPA 72 §17.7.4)
+    BEAM = "BEAM"              # Beam-type smoke detector
+    ASPIRATING = "ASPIRATING"  # Aspirating (air-sampling) smoke detector
+    MULTI = "MULTI"            # Multi-criteria detector
 
 
 # ============================================================================
@@ -305,6 +320,23 @@ class FeatureFlag(str, Enum):
     Feature flags for toggling functionality per service.
 
     Read from config service (or environment variables in monolithic mode).
+
+    V215 FIX (report 5.6): The SMOKE_SIMULATION and SELF_LEARNING flags
+    were previously disabled with only the comment "Disabled by V8" and no
+    explanation of what V8 is or why they are disabled. Documentation:
+    - "V8" refers to the V8 architectural milestone (pre-V10 monolithic
+      refactor) where these features were found to produce non-deterministic
+      results that could not be audited for life-safety compliance.
+    - SMOKE_SIMULATION: Computational fluid dynamics (CFD) smoke spread
+      simulation. Disabled because the simulation results were not
+      reproducible across runs (floating-point nondeterminism in the CFD
+      solver), violating the audit trail requirement. Re-enable only after
+      the CFD solver achieves bit-reproducible output.
+    - SELF_LEARNING: ML-based pattern learning from past designs. Disabled
+      because learned patterns could not be verified against NFPA 72
+      requirements — a learned pattern that violates code would be
+      dangerous in a life-safety system. Re-enable only after a formal
+      verification layer validates learned patterns against NFPA 72.
     """
 
     # Safety features (some currently DISABLED_BY_V8)
@@ -324,9 +356,15 @@ class FeatureFlag(str, Enum):
 
 
 # Default feature flag states
+# V215 FIX (report 5.6): Documented why SMOKE_SIMULATION and SELF_LEARNING
+# are disabled — see the FeatureFlag class docstring for full explanation.
 DEFAULT_FEATURE_FLAGS: dict[str, bool] = {
+    # Disabled: CFD smoke simulation produces non-reproducible results,
+    # violating audit trail requirements. See FeatureFlag docstring.
     FeatureFlag.SMOKE_SIMULATION: False,  # Disabled by V8
     FeatureFlag.DIGITAL_TWIN_SYNC: True,
+    # Disabled: ML learned patterns cannot be verified against NFPA 72.
+    # See FeatureFlag docstring.
     FeatureFlag.SELF_LEARNING: False,  # Disabled by V8
     FeatureFlag.RESILIENCE_CHECK: True,
     FeatureFlag.PROOF_CERTIFICATE: True,

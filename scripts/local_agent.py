@@ -293,6 +293,158 @@ def _get_revit() -> Any:
 
 # ── Command dispatcher ────────────────────────────────────────────────────────
 
+def _handle_autocad_connect(svc, args):
+    """Handle the 'connect' action for AutoCAD."""
+    ok = svc.connect(visible=args.get("visible", True), force_new=args.get("force_new", False))
+    return {
+        "success": ok,
+        "message": "Connected to AutoCAD" if ok else "Failed to connect",
+        "connected": svc.connected,
+        "simulation_mode": svc.simulation_mode,
+    }
+
+def _handle_autocad_disconnect(svc, args):
+    """Handle the 'disconnect' action for AutoCAD."""
+    ok = svc.disconnect()
+    return {
+        "success": ok,
+        "message": "Disconnected" if ok else "Failed to disconnect",
+        "connected": svc.connected,
+        "simulation_mode": getattr(svc, "simulation_mode", False),
+    }
+
+def _handle_autocad_status(svc, args):
+    """Handle the 'status' action for AutoCAD."""
+    doc_info = svc.get_document_info() if svc.connected else {}
+    return {
+        "connected": svc.connected,
+        "message": "AutoCAD service status",
+        "document_info": doc_info if doc_info else None,
+    }
+
+def _handle_autocad_documents(svc, args):
+    """Handle the 'documents' action for AutoCAD."""
+    doc_info = svc.get_document_info()
+    return {"success": True, "documents": [doc_info] if doc_info else []}
+
+def _handle_autocad_read_dwg(svc, args):
+    """Handle the 'read_dwg' action for AutoCAD."""
+    result = svc.read_dwg(args["filepath"])
+    if not result.get("success"):
+        return {"error": result.get("error", "Failed to read DWG")}
+    return {
+        "filepath": args["filepath"],
+        "metadata": result.get("metadata", {}),
+        "layers": result.get("layers", []),
+        "entities": result.get("entities", []),
+        "blocks": result.get("blocks", {}),
+        "entity_count": len(result.get("entities", [])),
+    }
+
+def _handle_autocad_write_dwg(svc, args):
+    """Handle the 'write_dwg' action for AutoCAD."""
+    ok = svc.write_dwg(args["filepath"], args.get("entities", []))
+    if not ok:
+        return {"error": "Failed to write DWG file"}
+    return {"success": True, "message": "Successfully wrote DWG file"}
+
+def _handle_autocad_draw_line(svc, args):
+    """Handle the 'draw_line' action for AutoCAD."""
+    handle = svc.draw_line(
+        start_point=args["start_point"],
+        end_point=args["end_point"],
+        layer=args.get("layer", "0"),
+        color=args.get("color", 0),
+    )
+    if not handle:
+        return {"error": "Failed to draw line"}
+    return {"success": True, "message": "Line drawn successfully", "handle": handle}
+
+def _handle_autocad_draw_polyline(svc, args):
+    """Handle the 'draw_polyline' action for AutoCAD."""
+    handle = svc.draw_polyline(
+        vertices=args["vertices"],
+        layer=args.get("layer", "0"),
+        color=args.get("color", 0),
+        closed=args.get("closed", False),
+    )
+    if not handle:
+        return {"error": "Failed to draw polyline"}
+    return {"success": True, "message": "Polyline drawn successfully", "handle": handle}
+
+def _handle_autocad_draw_circle(svc, args):
+    """Handle the 'draw_circle' action for AutoCAD."""
+    handle = svc.draw_circle(
+        center=args["center"],
+        radius=args["radius"],
+        layer=args.get("layer", "0"),
+        color=args.get("color", 0),
+    )
+    if not handle:
+        return {"error": "Failed to draw circle"}
+    return {"success": True, "message": "Circle drawn successfully", "handle": handle}
+
+def _handle_autocad_draw_text(svc, args):
+    """Handle the 'draw_text' action for AutoCAD."""
+    handle = svc.draw_text(
+        text=args["text"],
+        insertion_point=args["insertion_point"],
+        height=args.get("height", 0.2),
+        layer=args.get("layer", "0"),
+        color=args.get("color", 0),
+    )
+    if not handle:
+        return {"error": "Failed to draw text"}
+    return {"success": True, "message": "Text drawn successfully", "handle": handle}
+
+def _handle_autocad_save(svc, args):
+    """Handle the 'save' action for AutoCAD."""
+    ok = svc.save(args.get("filepath", ""))
+    if not ok:
+        return {"error": "Failed to save document"}
+    return {"success": True, "message": "Document saved successfully"}
+
+def _handle_autocad_upload_dwg(svc, args):
+    """Handle the 'upload_dwg' action for AutoCAD."""
+    # Decode base64 content, write to temp file, read it
+    contents = base64.b64decode(args["contents_base64"])
+    safe_name = args.get("filename", "upload.dwg")
+    temp_dir = tempfile.mkdtemp()
+    temp_path = os.path.join(temp_dir, safe_name)
+    try:
+        with open(temp_path, "wb") as f:
+            f.write(contents)
+        result = svc.read_dwg(temp_path)
+        if not result.get("success"):
+            return {"error": result.get("error", "Failed to read DWG")}
+        return {
+            "filepath": safe_name,
+            "metadata": result.get("metadata", {}),
+            "layers": result.get("layers", []),
+            "entities": result.get("entities", []),
+            "blocks": result.get("blocks", {}),
+            "entity_count": len(result.get("entities", [])),
+        }
+    finally:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+        if os.path.exists(temp_dir):
+            os.rmdir(temp_dir)
+
+def _handle_autocad_delete_entity(svc, args):
+    """Handle the 'delete_entity' action for AutoCAD."""
+    ok = svc.delete_entity(args["handle"])
+    if not ok:
+        return {"error": "Failed to delete entity"}
+    return {"success": True, "message": "Entity deleted successfully"}
+
+def _handle_autocad_modify_entity(svc, args):
+    """Handle the 'modify_entity' action for AutoCAD."""
+    ok = svc.modify_entity(handle=args["handle"], properties=args.get("properties", {}))
+    if not ok:
+        return {"error": "Failed to modify entity"}
+    return {"success": True, "message": "Entity modified successfully"}
+
 def _dispatch_autocad(action: str, args: Dict[str, Any]) -> Any:
     """
     Dispatch an AutoCAD action locally and return the result dict.
@@ -322,150 +474,169 @@ def _dispatch_autocad(action: str, args: Dict[str, Any]) -> Any:
     if svc is None:
         return {"error": "AutoCADService not available on this machine"}
 
-    if action == "connect":
-        ok = svc.connect(visible=args.get("visible", True), force_new=args.get("force_new", False))
-        return {
-            "success": ok,
-            "message": "Connected to AutoCAD" if ok else "Failed to connect",
-            "connected": svc.connected,
-            "simulation_mode": svc.simulation_mode,
-        }
+    # Map actions to handler functions to reduce cognitive complexity
+    action_handlers = {
+        "connect": _handle_autocad_connect,
+        "disconnect": _handle_autocad_disconnect,
+        "status": _handle_autocad_status,
+        "documents": _handle_autocad_documents,
+        "read_dwg": _handle_autocad_read_dwg,
+        "write_dwg": _handle_autocad_write_dwg,
+        "draw_line": _handle_autocad_draw_line,
+        "draw_polyline": _handle_autocad_draw_polyline,
+        "draw_circle": _handle_autocad_draw_circle,
+        "draw_text": _handle_autocad_draw_text,
+        "save": _handle_autocad_save,
+        "upload_dwg": _handle_autocad_upload_dwg,
+        "delete_entity": _handle_autocad_delete_entity,
+        "modify_entity": _handle_autocad_modify_entity,
+    }
 
-    elif action == "disconnect":
-        ok = svc.disconnect()
-        return {
-            "success": ok,
-            "message": "Disconnected" if ok else "Failed to disconnect",
-            "connected": svc.connected,
-            "simulation_mode": getattr(svc, "simulation_mode", False),
-        }
-
-    elif action == "status":
-        doc_info = svc.get_document_info() if svc.connected else {}
-        return {
-            "connected": svc.connected,
-            "message": "AutoCAD service status",
-            "document_info": doc_info if doc_info else None,
-        }
-
-    elif action == "documents":
-        doc_info = svc.get_document_info()
-        return {"success": True, "documents": [doc_info] if doc_info else []}
-
-    elif action == "read_dwg":
-        result = svc.read_dwg(args["filepath"])
-        if not result.get("success"):
-            return {"error": result.get("error", "Failed to read DWG")}
-        return {
-            "filepath": args["filepath"],
-            "metadata": result.get("metadata", {}),
-            "layers": result.get("layers", []),
-            "entities": result.get("entities", []),
-            "blocks": result.get("blocks", {}),
-            "entity_count": len(result.get("entities", [])),
-        }
-
-    elif action == "write_dwg":
-        ok = svc.write_dwg(args["filepath"], args.get("entities", []))
-        if not ok:
-            return {"error": "Failed to write DWG file"}
-        return {"success": True, "message": "Successfully wrote DWG file"}
-
-    elif action == "draw_line":
-        handle = svc.draw_line(
-            start_point=args["start_point"],
-            end_point=args["end_point"],
-            layer=args.get("layer", "0"),
-            color=args.get("color", 0),
-        )
-        if not handle:
-            return {"error": "Failed to draw line"}
-        return {"success": True, "message": "Line drawn successfully", "handle": handle}
-
-    elif action == "draw_polyline":
-        handle = svc.draw_polyline(
-            vertices=args["vertices"],
-            layer=args.get("layer", "0"),
-            color=args.get("color", 0),
-            closed=args.get("closed", False),
-        )
-        if not handle:
-            return {"error": "Failed to draw polyline"}
-        return {"success": True, "message": "Polyline drawn successfully", "handle": handle}
-
-    elif action == "draw_circle":
-        handle = svc.draw_circle(
-            center=args["center"],
-            radius=args["radius"],
-            layer=args.get("layer", "0"),
-            color=args.get("color", 0),
-        )
-        if not handle:
-            return {"error": "Failed to draw circle"}
-        return {"success": True, "message": "Circle drawn successfully", "handle": handle}
-
-    elif action == "draw_text":
-        handle = svc.draw_text(
-            text=args["text"],
-            insertion_point=args["insertion_point"],
-            height=args.get("height", 0.2),
-            layer=args.get("layer", "0"),
-            color=args.get("color", 0),
-        )
-        if not handle:
-            return {"error": "Failed to draw text"}
-        return {"success": True, "message": "Text drawn successfully", "handle": handle}
-
-    elif action == "save":
-        ok = svc.save(args.get("filepath", ""))
-        if not ok:
-            return {"error": "Failed to save document"}
-        return {"success": True, "message": "Document saved successfully"}
-
-    elif action == "upload_dwg":
-        # Decode base64 content, write to temp file, read it
-        contents = base64.b64decode(args["contents_base64"])
-        safe_name = args.get("filename", "upload.dwg")
-        temp_dir = tempfile.mkdtemp()
-        temp_path = os.path.join(temp_dir, safe_name)
-        try:
-            with open(temp_path, "wb") as f:
-                f.write(contents)
-            result = svc.read_dwg(temp_path)
-            if not result.get("success"):
-                return {"error": result.get("error", "Failed to read DWG")}
-            return {
-                "filepath": safe_name,
-                "metadata": result.get("metadata", {}),
-                "layers": result.get("layers", []),
-                "entities": result.get("entities", []),
-                "blocks": result.get("blocks", {}),
-                "entity_count": len(result.get("entities", [])),
-            }
-        finally:
-            if os.path.exists(temp_path):
-                os.remove(temp_path)
-            if os.path.exists(temp_dir):
-                os.rmdir(temp_dir)
-
-    elif action == "delete_entity":
-        ok = svc.delete_entity(args["handle"])
-        if not ok:
-            return {"error": "Failed to delete entity"}
-        return {"success": True, "message": "Entity deleted successfully"}
-
-    elif action == "modify_entity":
-        ok = svc.modify_entity(handle=args["handle"], properties=args.get("properties", {}))
-        if not ok:
-            return {"error": "Failed to modify entity"}
-        return {"success": True, "message": "Entity modified successfully"}
-
+    if action in action_handlers:
+        return action_handlers[action](svc, args)
     elif action == "speckle_push":
         return {"success": False, "error": "speckle_push is only supported when BazSparkAutoCADBridge C# add-in is loaded."}
-
     else:
         return {"error": f"Unknown AutoCAD action: {action}"}
 
+
+def _handle_revit_connect(svc, args):
+    """Handle the 'connect' action for Revit."""
+    ok = svc.connect(method=args.get("method", "auto"))
+    return {
+        "success": ok,
+        "message": f"Connected via {getattr(svc, 'connection_method', 'unknown')}",
+        "connected": svc.connected,
+        "simulation_mode": getattr(svc, "simulation_mode", False),
+        "connection_method": getattr(svc, "connection_method", None),
+    }
+
+def _handle_revit_disconnect(svc, args):
+    """Handle the 'disconnect' action for Revit."""
+    ok = svc.disconnect()
+    return {
+        "success": ok,
+        "message": "Disconnected from Revit" if ok else "Disconnect failed",
+        "connected": svc.connected,
+        "simulation_mode": getattr(svc, "simulation_mode", False),
+    }
+
+def _handle_revit_status(svc, args):
+    """Handle the 'status' action for Revit."""
+    doc_info = svc.get_document_info() if svc.connected else {}
+    return {
+        "connected": svc.connected,
+        "message": "Revit service status",
+        "connection_method": getattr(svc, "connection_method", None),
+        "document_info": doc_info if doc_info else None,
+    }
+
+def _handle_revit_get_elements(svc, args):
+    """Handle the 'get_elements' action for Revit."""
+    elements = svc.get_elements(
+        category=args.get("category"),
+        element_class=args.get("element_class"),
+    )
+    return {"success": True, "elements": elements, "count": len(elements)}
+
+def _handle_revit_get_selected_elements(svc, args):
+    """Handle the 'get_selected_elements' action for Revit."""
+    elements = svc.get_selected_elements()
+    return {"success": True, "elements": elements, "count": len(elements)}
+
+def _handle_revit_get_element(svc, args):
+    """Handle the 'get_element' action for Revit."""
+    element = svc.get_element_by_id(args["element_id"])
+    if element:
+        return {"success": True, "element": element}
+    return {"success": False, "error": "Element not found"}
+
+def _handle_revit_get_element_parameters(svc, args):
+    """Handle the 'get_element_parameters' action for Revit."""
+    params = svc.get_element_parameters(args["element_id"])
+    return {"success": True, "parameters": params}
+
+def _handle_revit_create_wall(svc, args):
+    """Handle the 'create_wall' action for Revit."""
+    eid = svc.create_wall(
+        start_point=args["start_point"], end_point=args["end_point"],
+        height=args.get("height"), level=args.get("level"), wall_type=args.get("wall_type")
+    )
+    return {"success": eid is not None, "message": f"Wall: {eid}" if eid else "Failed", "element_id": eid}
+
+def _handle_revit_create_floor(svc, args):
+    """Handle the 'create_floor' action for Revit."""
+    eid = svc.create_floor(
+        boundary_points=args["boundary_points"], level=args.get("level"), floor_type=args.get("floor_type")
+    )
+    return {"success": eid is not None, "message": f"Floor: {eid}" if eid else "Failed", "element_id": eid}
+
+def _handle_revit_create_door(svc, args):
+    """Handle the 'create_door' action for Revit."""
+    eid = svc.create_door(
+        host_wall_id=args["host_wall_id"], location_point=args["location_point"],
+        family_type=args.get("family_type"), level=args.get("level")
+    )
+    return {"success": eid is not None, "message": f"Door: {eid}" if eid else "Failed", "element_id": eid}
+
+def _handle_revit_create_window(svc, args):
+    """Handle the 'create_window' action for Revit."""
+    eid = svc.create_window(
+        host_wall_id=args["host_wall_id"], location_point=args["location_point"],
+        family_type=args.get("family_type"), level=args.get("level")
+    )
+    return {"success": eid is not None, "message": f"Window: {eid}" if eid else "Failed", "element_id": eid}
+
+def _handle_revit_create_column(svc, args):
+    """Handle the 'create_column' action for Revit."""
+    eid = svc.create_column(
+        location_point=args["location_point"], height=args.get("height"),
+        level=args.get("level"), column_type=args.get("column_type")
+    )
+    return {"success": eid is not None, "message": f"Column: {eid}" if eid else "Failed", "element_id": eid}
+
+def _handle_revit_create_beam(svc, args):
+    """Handle the 'create_beam' action for Revit."""
+    eid = svc.create_beam(
+        start_point=args["start_point"], end_point=args["end_point"],
+        level=args.get("level"), beam_type=args.get("beam_type")
+    )
+    return {"success": eid is not None, "message": f"Beam: {eid}" if eid else "Failed", "element_id": eid}
+
+def _handle_revit_create_family(svc, args):
+    """Handle the 'create_family' action for Revit."""
+    eid = svc.create_family_instance(
+        family_name=args["family_name"], category=args.get("category"),
+        location_point=args["location_point"], level=args.get("level"),
+        parameters=args.get("parameters", {})
+    )
+    return {"success": eid is not None, "message": f"Family: {eid}" if eid else "Failed", "element_id": eid}
+
+def _handle_revit_update_parameters(svc, args):
+    """Handle the 'update_parameters' action for Revit."""
+    success = True
+    for pname, val in args.get("parameters", {}).items():
+        if not svc.set_element_parameter(args["element_id"], pname, val):
+            success = False
+    return {"success": success, "message": "Parameters updated" if success else "Some parameters failed"}
+
+def _handle_revit_delete_element(svc, args):
+    """Handle the 'delete_element' action for Revit."""
+    ok = svc.delete_element(args["element_id"])
+    if ok:
+        return {"success": True, "message": f"Element {args['element_id']} deleted"}
+    return {"error": "Failed to delete element"}
+
+def _handle_revit_get_special_actions(svc, args):
+    """Handle special actions like get_views, get_levels, get_grids, get_worksets for Revit."""
+    action = args.get("special_action", "")
+    method = getattr(svc, action)
+    items = method()
+    return {"success": True, "elements": items, "count": len(items)}
+
+def _handle_revit_execute_ai_command(svc, args):
+    """Handle the 'execute_ai_command' action for Revit."""
+    return svc.execute_ai_command(args.get("command", ""), args.get("context", {}))
 
 def _dispatch_revit(action: str, args: Dict[str, Any]) -> Any:
     """
@@ -502,128 +673,33 @@ def _dispatch_revit(action: str, args: Dict[str, Any]) -> Any:
     if svc is None:
         return {"error": "RevitService not available on this machine"}
 
-    if action == "connect":
-        ok = svc.connect(method=args.get("method", "auto"))
-        return {
-            "success": ok,
-            "message": f"Connected via {getattr(svc, 'connection_method', 'unknown')}",
-            "connected": svc.connected,
-            "simulation_mode": getattr(svc, "simulation_mode", False),
-            "connection_method": getattr(svc, "connection_method", None),
-        }
+    # Map actions to handler functions to reduce cognitive complexity
+    action_handlers = {
+        "connect": _handle_revit_connect,
+        "disconnect": _handle_revit_disconnect,
+        "status": _handle_revit_status,
+        "get_elements": _handle_revit_get_elements,
+        "get_selected_elements": _handle_revit_get_selected_elements,
+        "get_element": _handle_revit_get_element,
+        "get_element_parameters": _handle_revit_get_element_parameters,
+        "create_wall": _handle_revit_create_wall,
+        "create_floor": _handle_revit_create_floor,
+        "create_door": _handle_revit_create_door,
+        "create_window": _handle_revit_create_window,
+        "create_column": _handle_revit_create_column,
+        "create_beam": _handle_revit_create_beam,
+        "create_family": _handle_revit_create_family,
+        "update_parameters": _handle_revit_update_parameters,
+        "delete_element": _handle_revit_delete_element,
+        "execute_ai_command": _handle_revit_execute_ai_command,
+    }
 
-    elif action == "disconnect":
-        ok = svc.disconnect()
-        return {
-            "success": ok,
-            "message": "Disconnected from Revit" if ok else "Disconnect failed",
-            "connected": svc.connected,
-            "simulation_mode": getattr(svc, "simulation_mode", False),
-        }
-
-    elif action == "status":
-        doc_info = svc.get_document_info() if svc.connected else {}
-        return {
-            "connected": svc.connected,
-            "message": "Revit service status",
-            "connection_method": getattr(svc, "connection_method", None),
-            "document_info": doc_info if doc_info else None,
-        }
-
-    elif action == "get_elements":
-        elements = svc.get_elements(
-            category=args.get("category"),
-            element_class=args.get("element_class"),
-        )
-        return {"success": True, "elements": elements, "count": len(elements)}
-
-    elif action == "get_selected_elements":
-        elements = svc.get_selected_elements()
-        return {"success": True, "elements": elements, "count": len(elements)}
-
-    elif action == "get_element":
-        element = svc.get_element_by_id(args["element_id"])
-        if element:
-            return {"success": True, "element": element}
-        return {"success": False, "error": "Element not found"}
-
-    elif action == "get_element_parameters":
-        params = svc.get_element_parameters(args["element_id"])
-        return {"success": True, "parameters": params}
-
-    elif action == "create_wall":
-        eid = svc.create_wall(
-            start_point=args["start_point"], end_point=args["end_point"],
-            height=args.get("height"), level=args.get("level"), wall_type=args.get("wall_type")
-        )
-        return {"success": eid is not None, "message": f"Wall: {eid}" if eid else "Failed", "element_id": eid}
-
-    elif action == "create_floor":
-        eid = svc.create_floor(
-            boundary_points=args["boundary_points"], level=args.get("level"), floor_type=args.get("floor_type")
-        )
-        return {"success": eid is not None, "message": f"Floor: {eid}" if eid else "Failed", "element_id": eid}
-
-    elif action == "create_door":
-        eid = svc.create_door(
-            host_wall_id=args["host_wall_id"], location_point=args["location_point"],
-            family_type=args.get("family_type"), level=args.get("level")
-        )
-        return {"success": eid is not None, "message": f"Door: {eid}" if eid else "Failed", "element_id": eid}
-
-    elif action == "create_window":
-        eid = svc.create_window(
-            host_wall_id=args["host_wall_id"], location_point=args["location_point"],
-            family_type=args.get("family_type"), level=args.get("level")
-        )
-        return {"success": eid is not None, "message": f"Window: {eid}" if eid else "Failed", "element_id": eid}
-
-    elif action == "create_column":
-        eid = svc.create_column(
-            location_point=args["location_point"], height=args.get("height"),
-            level=args.get("level"), column_type=args.get("column_type")
-        )
-        return {"success": eid is not None, "message": f"Column: {eid}" if eid else "Failed", "element_id": eid}
-
-    elif action == "create_beam":
-        eid = svc.create_beam(
-            start_point=args["start_point"], end_point=args["end_point"],
-            level=args.get("level"), beam_type=args.get("beam_type")
-        )
-        return {"success": eid is not None, "message": f"Beam: {eid}" if eid else "Failed", "element_id": eid}
-
-    elif action == "create_family":
-        eid = svc.create_family_instance(
-            family_name=args["family_name"], category=args.get("category"),
-            location_point=args["location_point"], level=args.get("level"),
-            parameters=args.get("parameters", {})
-        )
-        return {"success": eid is not None, "message": f"Family: {eid}" if eid else "Failed", "element_id": eid}
-
-    elif action == "update_parameters":
-        success = True
-        for pname, val in args.get("parameters", {}).items():
-            if not svc.set_element_parameter(args["element_id"], pname, val):
-                success = False
-        return {"success": success, "message": "Parameters updated" if success else "Some parameters failed"}
-
-    elif action == "delete_element":
-        ok = svc.delete_element(args["element_id"])
-        if ok:
-            return {"success": True, "message": f"Element {args['element_id']} deleted"}
-        return {"error": "Failed to delete element"}
-
+    if action in action_handlers:
+        return action_handlers[action](svc, args)
     elif action in ("get_views", "get_levels", "get_grids", "get_worksets"):
-        method = getattr(svc, action)
-        items = method()
-        return {"success": True, "elements": items, "count": len(items)}
-
-    elif action == "execute_ai_command":
-        return svc.execute_ai_command(args.get("command", ""), args.get("context", {}))
-
+        return _handle_revit_get_special_actions(svc, {"special_action": action})
     elif action == "speckle_pull":
         return {"success": False, "error": "speckle_pull is only supported when BazSparkRevitBridge C# add-in is loaded."}
-
     else:
         return {"error": f"Unknown Revit action: {action}"}
 

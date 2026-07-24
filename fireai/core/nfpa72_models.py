@@ -1027,11 +1027,17 @@ def get_smoke_detector_radius_safe(ceiling_height_m: float, _return_details: boo
     elif ceiling_height_m > _SMOKE_MAX_CEILING_HEIGHT_M:
         safe_height = _SMOKE_MAX_CEILING_HEIGHT_M  # 18.288m
         flag = "HIGH_CEILING: Capped at 18.288m (60 ft) - REQUIRES PE REVIEW"
-    # Get radius using internal function
+    # V215 FIX (report 5.3): Previously called _get_radius_internal(), which
+    # uses a height-varying lookup table from NFPA 72 Table 17.6.3.1.1 (HEAT
+    # detector spacing). That table does NOT apply to smoke detectors —
+    # §17.7.3.2.3 specifies FLAT 9.1m spacing for smoke at all heights.
+    # Now delegates to the canonical get_smoke_detector_radius() to eliminate
+    # the duplicate radius path. _get_radius_internal() is retained for
+    # backward compatibility but no longer used by the smoke detector path.
     try:
-        radius = _get_radius_internal(safe_height)
+        radius = get_smoke_detector_radius(safe_height)
     except Exception as e:
-        radius = _get_radius_internal(3.0)  # Fallback
+        radius = get_smoke_detector_radius(3.0)  # Fallback
         flag = "FALLBACK: Used 3.0m values"
         logger.warning("Radius lookup failed for %sm: %s", safe_height, e)
     details = {
@@ -1047,7 +1053,21 @@ def get_smoke_detector_radius_safe(ceiling_height_m: float, _return_details: boo
 
 
 def _get_radius_internal(h: float) -> float:
-    """Internal radius lookup."""
+    """
+    Internal radius lookup — DEPRECATED for smoke detector use.
+
+    V215 FIX (report 5.3): This function uses NFPA 72 Table 17.6.3.1.1,
+    which is the HEAT detector height-spacing table. It was incorrectly
+    used by get_smoke_detector_radius_safe() for smoke detectors, producing
+    over-densified placements at high ceilings.
+
+    Smoke detector radius should always come from get_smoke_detector_radius(),
+    which correctly returns flat R=6.37m per §17.7.3.2.3.
+
+    This function is retained for backward compatibility and any code that
+    explicitly needs the heat detector spacing table. Do NOT use it for
+    smoke detector calculations.
+    """
     # V20.2 CRITICAL FIX: Same off-by-one bracket fix as RADIUS_MAP above.
     # Old brackets started at (3.0, 3.7) which gave h=3.5m the wrong R=6.37
     # instead of R=6.09. Now aligned with NFPA 72 Table 17.6.3.1.1.

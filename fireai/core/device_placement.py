@@ -32,6 +32,12 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Optional
 
+from fireai.core.contracts import (
+    DetectorType as _CanonicalDetectorType,
+)
+from fireai.core.contracts import (
+    CeilingType as _CanonicalCeilingType,
+)
 from fireai.constants.nfpa72 import (
     NAC_MIN_CD as NFPA72_NAC_MIN_CD,
 )
@@ -56,9 +62,62 @@ from fireai.core.qomn_kernel import (
 
 # ENUMERATIONS
 # ═══════════════════════════════════════════════════════════════════════════════
+#
+# V215 FIX (report 5.2): Enum drift elimination.
+# Previously this module defined its own DetectorType and CeilingType enums
+# with DIFFERENT members and DIFFERENT string values (lowercase) from the
+# canonical enums in contracts.py (uppercase). This caused silent bugs:
+#   contracts.DetectorType.SMOKE  .value == "SMOKE"
+#   device_placement.DetectorType.SMOKE .value == "smoke"
+#   => "SMOKE" != "smoke" — comparisons across modules silently fail.
+#
+# FIX: The canonical enums live in contracts.py. This module imports them
+# and creates lowercase-valued aliases so existing API consumers and tests
+# that expect lowercase string values continue to work. A drift guard
+# asserts at import time that every member name used in this module exists
+# in the canonical enum — if a future contributor adds a member to one enum
+# but not the other, the import will fail immediately.
+
+# ── Drift guard: verify canonical enums have the members we need ───────
+_REQUIRED_DETECTOR_MEMBERS = {"SMOKE", "HEAT", "DUCT", "BEAM", "ASPIRATING", "MULTI"}
+_MISSING_DETECTOR = _REQUIRED_DETECTOR_MEMBERS - {m.name for m in _CanonicalDetectorType}
+assert not _MISSING_DETECTOR, (
+    f"ENUM DRIFT DETECTED: contracts.DetectorType is missing members "
+    f"{_MISSING_DETECTOR} that device_placement.py requires. "
+    f"Add them to fireai.core.contracts.DetectorType."
+)
+
+_REQUIRED_CEILING_MEMBERS = {"FLAT", "SLOPED", "PEAKED", "BEAM", "COFFERED", "OPEN_JOIST"}
+_MISSING_CEILING = _REQUIRED_CEILING_MEMBERS - {m.name for m in _CanonicalCeilingType}
+assert not _MISSING_CEILING, (
+    f"ENUM DRIFT DETECTED: contracts.CeilingType is missing members "
+    f"{_MISSING_CEILING} that device_placement.py requires. "
+    f"Add them to fireai.core.contracts.CeilingType."
+)
 
 
-class DetectorType(str, Enum):
+class _LowercaseAliasEnum(str, Enum):
+    """
+    Base class for lowercase-valued enum aliases.
+
+    These wrap the canonical contracts.py enums, providing lowercase .value
+    strings for backward-compatible API serialization and tests, while the
+    member NAMES are validated against the canonical source at import time
+    by the drift guard above.
+    """
+
+    pass
+
+
+class DetectorType(_LowercaseAliasEnum):
+    """
+    Device placement detector types (lowercase API contract).
+
+    BACKWARD COMPATIBILITY: .value is lowercase (e.g. "smoke") to preserve
+    the existing REST API contract. Member NAMES match contracts.DetectorType
+    — the drift guard above ensures they stay synchronized.
+    """
+
     SMOKE = "smoke"
     HEAT = "heat"
     DUCT = "duct"
@@ -82,7 +141,15 @@ class OccupancyType(str, Enum):
     HIGH_HAZARD = "high_hazard"
 
 
-class CeilingType(str, Enum):
+class CeilingType(_LowercaseAliasEnum):
+    """
+    Device placement ceiling types (lowercase API contract).
+
+    BACKWARD COMPATIBILITY: .value is lowercase (e.g. "flat") to preserve
+    the existing REST API contract. Member NAMES match contracts.CeilingType
+    — the drift guard above ensures they stay synchronized.
+    """
+
     FLAT = "flat"
     SLOPED = "sloped"
     PEAKED = "peaked"

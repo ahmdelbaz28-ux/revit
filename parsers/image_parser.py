@@ -347,7 +347,7 @@ class ImageParser:
 
         return valid[:20]  # Max 20 rooms
 
-    def _process_contour(self, contour, img) -> Optional[ImageRoom]:  # NOSONAR — S1172: parameter retained for API stability
+    def _process_contour(self, contour, img, image_size=None) -> Optional[ImageRoom]:  # NOSONAR — S1172: parameter retained for API stability
         """Process contour to extract room info."""
         # Get bounding box
         x, y, w, h = cv2.boundingRect(contour)

@@ -475,6 +475,19 @@ export function LoginPage() {  // NOSONAR - typescript:S3776: cognitive complexi
                 return <Navigate to={from} replace />;
         }
 
+        const handleError = (err: unknown) => {
+                const msg = err instanceof Error ? err.message : "Login failed";
+                if (msg.includes("429") || msg.includes("Too many")) {
+                        setError("Too many failed attempts. Please wait a few minutes.");
+                } else if (msg.includes("401") || msg.includes("Invalid")) {
+                        setError("Invalid Authorization key. Please verify and try again.");
+                } else if (msg.includes("Failed to fetch") || msg.includes("Network")) {
+                        setError("Unable to reach the server. Check your connection.");
+                } else {
+                        setError(msg);
+                }
+        };
+
         const handleSubmit = async (e: FormEvent) => {
                 e.preventDefault();
                 setError(null);
@@ -511,16 +524,7 @@ export function LoginPage() {  // NOSONAR - typescript:S3776: cognitive complexi
                                 setRedirectReady(true);
                         }, 1500);
                 } catch (err) {
-                        const msg = err instanceof Error ? err.message : "Login failed";
-                        if (msg.includes("429") || msg.includes("Too many")) {
-                                setError("Too many failed attempts. Please wait a few minutes.");
-                        } else if (msg.includes("401") || msg.includes("Invalid")) {
-                                setError("Invalid Authorization key. Please verify and try again.");
-                        } else if (msg.includes("Failed to fetch") || msg.includes("Network")) {
-                                setError("Unable to reach the server. Check your connection.");
-                        } else {
-                                setError(msg);
-                        }
+                        handleError(err);
                         setSubmitting(false);
                 }
         };
