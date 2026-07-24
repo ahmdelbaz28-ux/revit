@@ -86,6 +86,8 @@ References
 
 from __future__ import annotations
 
+import hashlib
+import json
 import logging
 import math
 import multiprocessing
@@ -484,8 +486,6 @@ class GenerativeLayoutAgent:
         t_total = time.perf_counter()
 
         # Deterministic run_id (per agent.md V85 Bug #28)
-        import hashlib
-        import json
         if audit_run_id is None:
             content = json.dumps({
                 "room": {"name": room.name, "width": room.width,
@@ -731,7 +731,6 @@ class GenerativeLayoutAgent:
 
         Higher score = better variant.
         """
-        import math
 
         # Validate inputs (per agent.md V57 NaN/Inf bypass)
         for _name, val in (("coverage_pct", coverage_pct),
